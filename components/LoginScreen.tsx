@@ -41,7 +41,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     }
 
     setLoading(true); // Show loading indicator
-
+    
     try {
       // Make the API call
       const response = await axios.post(`${environment.API_BASE_URL}api/auth/login`, {
