@@ -68,10 +68,12 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
         <TouchableOpacity
         style={{ marginBottom: 16 }}
           className="flex-row items-center my-3 "
-          onPress={() => navigation.navigate("DashboardScreen")}
+          onPress={() => navigation.navigate("ProfileScreen")}
         >
           <View className="w-8 h-8 bg-gray-100 rounded-full justify-center items-center">
-          <Ionicons name="person-outline" size={20} color="#8F8F8F" />
+          <Ionicons name="person-outline" size={20} color="#8F8F8F" 
+           onPress={() => navigation.navigate("ProfileScreen")}
+          />
           </View>
           <Text className="flex-1 ml-4 text-gray-800 text-base">Profile</Text>
           <Ionicons
@@ -104,7 +106,7 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
         {complaintsExpanded && (
           <View className="pl-12 space-y-3 ">
             <TouchableOpacity
-            //   onPress={() => navigation.navigate("ReportComplaint")}
+              onPress={() => navigation.navigate("AddComplaintScreen")}
             >
               <Text className="text-sm text-gray-700 font-bold">Report a Complaint</Text>
             </TouchableOpacity>
