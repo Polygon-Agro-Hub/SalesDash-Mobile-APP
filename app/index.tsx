@@ -9,6 +9,9 @@ import LoginScreen from '@/components/LoginScreen';
 import DashboardScreen from '@/components/DashboardScreen';
 import ViewScreen from '@/components/ViewScreen';
 import CustomersScreen from '@/components/CustomersScreen';
+import SidebarScreen from '@/components/SidebarScreen';
+import ProfileScreen from '@/components/ProfileScreen';
+import AddComplaintScreen from '@/components/AddComplaintScreen';
 
 
 
@@ -20,7 +23,7 @@ const index = () => {
 
   return (
     <LanguageProvider>
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView >
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Splash" component={Splash} />
       <Stack.Screen name="ChangePasswordScreen" component={ChangePasswordScreen} />
@@ -28,6 +31,10 @@ const index = () => {
       <Stack.Screen name="DashboardScreen" component={DashboardScreen} />
       <Stack.Screen name="ViewScreen" component={ViewScreen} />
       <Stack.Screen name="CustomersScreen" component={CustomersScreen} />
+      <Stack.Screen name="SidebarScreen" component={SidebarScreen} />
+      <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
+      <Stack.Screen name="AddComplaintScreen" component={AddComplaintScreen} />
+     
     </Stack.Navigator>
    </GestureHandlerRootView>
     </LanguageProvider>

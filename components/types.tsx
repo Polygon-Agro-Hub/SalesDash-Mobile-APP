@@ -5,5 +5,7 @@ export type RootStackParamList = {
     DashboardScreen:undefined;
     ViewScreen:undefined;
     CustomersScreen:undefined;
-    
+    SidebarScreen:undefined;
+    ProfileScreen:undefined;
+    AddComplaintScreen:undefined;
 };

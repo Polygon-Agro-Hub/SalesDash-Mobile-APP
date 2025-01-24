@@ -85,10 +85,13 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       <View className="bg-white shadow-md p-5 rounded-b-3xl">
         <View className="flex-row justify-between items-center">
           <View className="flex-row items-center">
-            <Image
+          <TouchableOpacity onPress={() => navigation.navigate("SidebarScreen")}>
+          <Image
               source={require("../assets/images/profile.png")} // Replace with your profile image path
               className="w-12 h-12 rounded-full"
-            />
+          />
+          </TouchableOpacity>
+
             <Text className="ml-3 text-lg font-bold text-gray-800">
               Hello, Kusal
             </Text>
