@@ -33,8 +33,8 @@ const index = () => {
     <GestureHandlerRootView >
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Splash" component={Splash} />
-      <Stack.Screen name="ChangePasswordScreen" component={ChangePasswordScreen} />
       <Stack.Screen name="LoginScreen" component={LoginScreen} />
+      <Stack.Screen name="ChangePasswordScreen" component={ChangePasswordScreen} />
       <Stack.Screen name="DashboardScreen" component={DashboardScreen} />
       <Stack.Screen name="ViewScreen" component={ViewScreen} />
       <Stack.Screen name="CustomersScreen" component={CustomersScreen} />
