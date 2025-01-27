@@ -112,7 +112,7 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
             </TouchableOpacity>
             <TouchableOpacity
             style={{ marginBottom: 10 }}
-            //   onPress={() => navigation.navigate("ComplaintHistory")}
+              onPress={() => navigation.navigate("ViewComplainScreen")}
             >
               <Text className="text-sm text-gray-700 font-bold">View Complaint History</Text>
             </TouchableOpacity>

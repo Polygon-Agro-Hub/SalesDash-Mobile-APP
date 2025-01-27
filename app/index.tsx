@@ -12,10 +12,17 @@ import CustomersScreen from '@/components/CustomersScreen';
 import SidebarScreen from '@/components/SidebarScreen';
 import ProfileScreen from '@/components/ProfileScreen';
 import AddComplaintScreen from '@/components/AddComplaintScreen';
+import ViewComplainScreen from '@/components/ViewComplainScreen';
+import ViewCustomerScreen from '@/components/ViewCustomerScreen';
+import ReminderScreen from '@/components/ReminderScreen'
 
 
 
-const Stack = createNativeStackNavigator(); 
+import { RootStackParamList } from '@/components/types';
+
+
+//const Stack = createNativeStackNavigator(); 
+const Stack = createNativeStackNavigator<RootStackParamList>();
 const index = () => {
   
     // Prevent screenshots and screen recording
@@ -34,7 +41,9 @@ const index = () => {
       <Stack.Screen name="SidebarScreen" component={SidebarScreen} />
       <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
       <Stack.Screen name="AddComplaintScreen" component={AddComplaintScreen} />
-     
+      <Stack.Screen name="ViewComplainScreen" component={ViewComplainScreen} />
+      <Stack.Screen name="ViewCustomerScreen" component={ViewCustomerScreen} />
+      <Stack.Screen name="ReminderScreen" component={ReminderScreen} />
     </Stack.Navigator>
    </GestureHandlerRootView>
     </LanguageProvider>

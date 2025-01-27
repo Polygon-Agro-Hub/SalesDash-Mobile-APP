@@ -59,16 +59,16 @@ const Navbar: React.FC<NavbarProps> = ({ navigation, activeTab }) => {
 
       <TouchableOpacity
         className="items-center"
-        onPress={() => navigation.navigate("RemindersScreen")}
+        onPress={() => navigation.navigate("ReminderScreen")}
       >
         <Icon
           name="notifications"
           size={24}
-          color={activeTab === "RemindersScreen" ? "#854BDA" : "#A3A3A3"}
+          color={activeTab === "ReminderScreen" ? "#854BDA" : "#A3A3A3"}
         />
         <Text
           className={`${
-            activeTab === "RemindersScreen"
+            activeTab === "ReminderScreen"
               ? "text-purple-600"
               : "text-gray-600"
           } text-sm font-medium`}
