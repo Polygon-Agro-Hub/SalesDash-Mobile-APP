@@ -165,15 +165,17 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
 
         {/* Floating Add Button */}
         <TouchableOpacity
-          className="absolute bottom-10 right-6 bg-purple-600 w-14 h-14 rounded-full items-center justify-center shadow-lg"
-          onPress={() => console.log("Add Customer")}
-        >
-          <Image
-            source={require("../assets/images/plus.png")}
-            className="w-6 h-6"
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
+  style={{ zIndex: 1000 }}
+  className="absolute bottom-10 right-6 bg-purple-600 w-14 h-14 rounded-full items-center justify-center shadow-lg"
+  onPress={() => navigation.navigate("AddCustomersScreen")}
+>
+  <Image
+    source={require("../assets/images/plus.png")}
+    className="w-6 h-6"
+    resizeMode="contain"
+  />
+</TouchableOpacity>
+
 
         {isEmpty ? (
           <View className="flex-1 justify-center items-center px-4">

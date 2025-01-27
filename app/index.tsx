@@ -14,7 +14,8 @@ import ProfileScreen from '@/components/ProfileScreen';
 import AddComplaintScreen from '@/components/AddComplaintScreen';
 import ViewComplainScreen from '@/components/ViewComplainScreen';
 import ViewCustomerScreen from '@/components/ViewCustomerScreen';
-import ReminderScreen from '@/components/ReminderScreen'
+import ReminderScreen from '@/components/ReminderScreen';
+import AddCustomersScreen from '@/components/AddCustomersScreen'
 
 
 
@@ -44,6 +45,8 @@ const index = () => {
       <Stack.Screen name="ViewComplainScreen" component={ViewComplainScreen} />
       <Stack.Screen name="ViewCustomerScreen" component={ViewCustomerScreen} />
       <Stack.Screen name="ReminderScreen" component={ReminderScreen} />
+      <Stack.Screen name="AddCustomersScreen" component={AddCustomersScreen} />
+      
     </Stack.Navigator>
    </GestureHandlerRootView>
     </LanguageProvider>
