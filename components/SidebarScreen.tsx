@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { View, Text, Image, TouchableOpacity } from "react-native";
+import React, { useState,useEffect } from "react";
+import { View, Text, Image, TouchableOpacity,Alert } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
 import AntDesign from "@expo/vector-icons/AntDesign";
@@ -11,6 +11,11 @@ import {
     heightPercentageToDP as hp,
 } from "react-native-responsive-screen";
 import { ScrollView } from "react-native-gesture-handler";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+import environment from "@/environment/environment";
+import BackButton from "./BackButton";
+
 type SidebarScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
   "SidebarScreen"
@@ -23,26 +28,42 @@ interface SidebarScreenProps {
 const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
 
   const [complaintsExpanded, setComplaintsExpanded] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+    const [formData, setFormData] = useState({ username: "" , empId:" " });
+    useEffect(() => {
+      getUserProfile();
+    }, []); 
+  
+    const getUserProfile = async () => {
+      try {
+        const storedToken = await AsyncStorage.getItem("authToken");
+        if (!storedToken) {
+          Alert.alert("Error", "No authentication token found");
+          return;
+        }
+        setToken(storedToken);
+  
+        const response = await axios.get(`${environment.API_BASE_URL}api/auth/user/profile`, {
+          headers: { Authorization: `Bearer ${storedToken}` },
+        });
+  
+        setFormData(response.data.data);
+      } catch (error) {
+        Alert.alert("Error", "Failed to fetch user profile");
+        console.error(error);
+      }
+    };  
 
   return (
     <View className="flex-1 w-full bg-white ">
     <ScrollView 
 
-    style = {{ paddingHorizontal: wp(6), paddingVertical: hp(2)}}
+    style = {{ paddingHorizontal: wp(4)}}
     >
     
         
       {/* Back Button */}
-      <TouchableOpacity
-        className="mt-4  ml-2 flex-row items-center"
-        onPress={() => navigation.goBack()}
-      >
-         <View className="w-8 h-8 bg-gray-100 rounded-full justify-center items-center">
-        <AntDesign name="left" size={20} color="black" />
-        </View>
-
-   
-      </TouchableOpacity>
+      <BackButton navigation={navigation} />
 
       {/* Profile Section */}
       <View className="flex-row items-center  p-5">
@@ -51,8 +72,8 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
                  className="w-16 h-16 rounded-full"
          />
         <View className="ml-4">
-        <Text className="text-lg font-bold text-gray-900">Kusal Perera</Text>
-         <Text className="text-sm text-gray-500 mt-1">SA1245</Text>
+        <Text className="text-lg font-bold text-gray-900">{formData.username} </Text>
+         <Text className="text-sm text-gray-500 mt-1">{formData.empId}</Text>
          </View>
         </View>
         

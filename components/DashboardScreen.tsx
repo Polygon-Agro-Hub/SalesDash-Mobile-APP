@@ -6,6 +6,8 @@ import {
   FlatList,
   TouchableOpacity,
   ProgressBarAndroid,
+  Alert,
+  ScrollView
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack"; 
 import { RootStackParamList } from "./types"; 
@@ -13,6 +15,13 @@ import { RootStackParamList } from "./types";
 import Navbar from "./Navbar";
 import { LinearGradient } from "expo-linear-gradient";
 import DashboardSkeleton from "../components/Skeleton/DashboardSkeleton"; 
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+import environment from "@/environment/environment";
+import {
+  widthPercentageToDP as wp,
+  heightPercentageToDP as hp,
+} from "react-native-responsive-screen";
 
 type DashboardScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -33,14 +42,40 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     { id: 6, name: "All Grains", price: "Rs.3500", image: require("../assets/images/grain.png") },
   ];
   const [isLoading, setIsLoading] = useState(true);
-  
+  const [token, setToken] = useState<string | null>(null);
+  const [formData, setFormData] = useState({ username: "" });
+
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 5000); // Simulated loading
+    const timer = setTimeout(() => setIsLoading(false), 5000);
     return () => clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    getUserProfile();
+  }, []); 
+
+  const getUserProfile = async () => {
+    try {
+      const storedToken = await AsyncStorage.getItem("authToken");
+      if (!storedToken) {
+        Alert.alert("Error", "No authentication token found");
+        return;
+      }
+      setToken(storedToken);
+
+      const response = await axios.get(`${environment.API_BASE_URL}api/auth/user/profile`, {
+        headers: { Authorization: `Bearer ${storedToken}` },
+      });
+
+      setFormData(response.data.data);
+    } catch (error) {
+      Alert.alert("Error", "Failed to fetch user profile");
+      console.error(error);
+    }
+  };
+
   if (isLoading) {
-    return <DashboardSkeleton />; // Show skeleton screen while loading
+    return <DashboardSkeleton />;
   }
 
   const renderPackage = ({ item }: any) => (
@@ -81,6 +116,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
 
   return (
     <View className="flex-1 bg-white">
+       
       {/* Header Section */}
       <View className="bg-white shadow-md p-5 rounded-b-3xl">
         <View className="flex-row justify-between items-center">
@@ -93,7 +129,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
           </TouchableOpacity>
 
             <Text className="ml-3 text-lg font-bold text-gray-800">
-              Hello, Kusal
+              Hello, {formData.username} 
             </Text>
           </View>
           <View className="flex-row items-center bg-[#E6DBF766] py-1 px-3 rounded-full">
@@ -105,7 +141,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
           <Text className="ml-2 font-bold text-gray-700">10</Text>
         </View>
         </View>
-
+     
         {/* Progress Bar */}
         <Text className="text-lg text-purple-600 mt-5 font-bold">
           Your Daily Target
@@ -151,6 +187,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       />
 
       {/* Navbar */}
+      
       <Navbar navigation={navigation}activeTab="DashboardScreen"/>
     </View>
   );

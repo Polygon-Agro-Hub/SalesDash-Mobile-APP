@@ -1,11 +1,16 @@
 import React, { useState,useEffect } from "react";
-import { View, Text, ScrollView, TextInput, TouchableOpacity,Keyboard,Platform, KeyboardAvoidingView } from "react-native";
+import { View, Text, ScrollView, TextInput, TouchableOpacity,Keyboard,Platform, KeyboardAvoidingView,SafeAreaView } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import { AntDesign } from "@expo/vector-icons"; 
 import { Picker } from "@react-native-picker/picker";
 import Navbar from "./Navbar";
 import { LinearGradient } from "expo-linear-gradient";
+import {
+  widthPercentageToDP as wp,
+  heightPercentageToDP as hp,
+} from "react-native-responsive-screen";
+import BackButton from "./BackButton";
 
 type AddCustomersScreenNavigationProp = StackNavigationProp<RootStackParamList, "AddCustomersScreen">;
 
@@ -38,6 +43,8 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
       }, []);
 
   return (
+    <SafeAreaView className="flex-1 bg-white">
+   
      <KeyboardAvoidingView
               behavior={Platform.OS === "ios" ? "padding" : "height"}
               className="flex-1 bg-white"
@@ -46,22 +53,19 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
    
       {/* Header */}
       <View className="p-[-4]">
-      <View className="bg-white flex-row items-center h-17 shadow-lg px-2">
+      <View className="bg-white flex-row items-center h-17 shadow-lg px-1">
         {/* Back Button */}
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <View className="w-9 h-9 bg-purple-100 rounded-full justify-center items-center">
-            <AntDesign name="left" size={20} color="black" />
-          </View>
-        </TouchableOpacity>
-  
+        <BackButton navigation={navigation} />
         {/* Title */}
-        <Text style={{ fontSize: 18 }} className="font-bold text-center text-purple-600 flex-grow mr-5">
+        <Text style={{ fontSize: 18 }} className="font-bold text-center text-purple-600 flex-grow mr-9">
           New Customer Registration
         </Text>
       </View>
       </View>
-      <ScrollView className=" ">
-      <View className="p-3 px-7">
+      <ScrollView 
+       style = {{ paddingHorizontal: wp(1)}}
+      >
+      <View className="p-3 px-6">
      
       <View className="mb-4 mt-4 flex-row justify-between">
 
@@ -71,18 +75,21 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
       <Picker
         selectedValue={selectedCategory}
         onValueChange={(itemValue) => setSelectedCategory(itemValue)}
+        mode="dropdown"
         style={{
           height: 20, // Adjust height for better dropdown display
           width: "100%",
           color: "black",
+        
+      
         }}
         dropdownIconColor="#333"
         
       >
-        <Picker.Item label="Title" value="" style={{ fontSize: 8 }} />
-        <Picker.Item label="Mr" value="Mr" style={{ fontSize: 8 }} />
-        <Picker.Item label="Ms" value="Ms" style={{ fontSize: 8 }} />
-        <Picker.Item label="Miss" value="Miss" style={{ fontSize: 8 }} />
+        <Picker.Item label="Title" value="" style={{ fontSize: 8 , paddingRight:-4}} />
+        <Picker.Item label="Mr" value="Mr" style={{ fontSize: 8 , paddingRight:-4 }} />
+        <Picker.Item label="Ms" value="Ms" style={{ fontSize: 8 , paddingRight:-4 }} />
+       
       </Picker>
     </View>
   </View>
@@ -231,15 +238,23 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
       {/* Register Button */}
       
       <LinearGradient colors={["#854BDA", "#6E3DD1"]} className="py-3 px-4 rounded-lg items-center mt-6 mb-[15%] mr-[20%] ml-[20%] rounded-3xl h-15">
-             <TouchableOpacity >
+             <TouchableOpacity 
+             onPress={() => navigation.navigate("OtpScreen")}
+             >
         <Text className="text-center text-white font-bold ">Register</Text>
       </TouchableOpacity>
             </LinearGradient>
      
     </ScrollView>
     </View>
-    {!isKeyboardVisible && <Navbar navigation={navigation} activeTab="CustomersScreen" />}
+   
     </KeyboardAvoidingView>
+    
+    
+   
+  
+    {!isKeyboardVisible && <Navbar navigation={navigation} activeTab="CustomersScreen" />}
+    </SafeAreaView>
 
   );
 };

@@ -7,6 +7,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 
+
 type ReminderScreenNavigationProp = StackNavigationProp<RootStackParamList, "ReminderScreen">;
 
 interface ReminderScreenProps {
@@ -61,23 +62,27 @@ const ViewComplainScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
 
   return (
     <View className="flex-1 bg-white">
+      
+
       {/* Header Section */}
       <LinearGradient colors={["#854BDA", "#6E3DD1"]} className="h-20 shadow-md px-4 items-center justify-center">
         <Text className="text-white text-lg font-bold">{reminders.length} Unread Notifications</Text>
       </LinearGradient>
 
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+      <View style={{ flex: 1,  paddingVertical: hp(2) }}>
+
+      
         {isEmpty ? (
           <View className="flex-1 justify-center items-center px-4">
             <Image source={require("../assets/images/notification.png")} style={{ width: wp("50%"), height: hp("20%"), resizeMode: "contain" }} />
             <Text className="text-black text-center mt-4 font-bold text-1xl">No Notification Yet</Text>
           </View>
         ) : (
-          <View className="flex-1 pt-4">
+          <View className=" pt-4">
             <FlatList
               data={reminders}
               keyExtractor={(item) => item.id}
-              showsVerticalScrollIndicator={false}
+             
               contentContainerStyle={{ paddingBottom: 120 }}
               renderItem={({ item }) => {
                 const itemStyle = item.read ? "bg-white" : "bg-[#F4EDFF]"; // White for read, purple for unread
@@ -124,9 +129,10 @@ const ViewComplainScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
             </View>
           </View>
         </Modal>
-      </ScrollView>
+
 
       {/* Bottom Navbar */}
+      </View>
       <Navbar navigation={navigation} activeTab="ReminderScreen" />
     </View>
   );

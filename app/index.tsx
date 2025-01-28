@@ -15,7 +15,9 @@ import AddComplaintScreen from '@/components/AddComplaintScreen';
 import ViewComplainScreen from '@/components/ViewComplainScreen';
 import ViewCustomerScreen from '@/components/ViewCustomerScreen';
 import ReminderScreen from '@/components/ReminderScreen';
-import AddCustomersScreen from '@/components/AddCustomersScreen'
+import AddCustomersScreen from '@/components/AddCustomersScreen';
+import OtpScreen from '@/components/OtpScreen';
+import OtpSuccesfulScreen from '@/components/OtpSuccesfulScreen'
 
 
 
@@ -46,6 +48,8 @@ const index = () => {
       <Stack.Screen name="ViewCustomerScreen" component={ViewCustomerScreen} />
       <Stack.Screen name="ReminderScreen" component={ReminderScreen} />
       <Stack.Screen name="AddCustomersScreen" component={AddCustomersScreen} />
+      <Stack.Screen name="OtpScreen" component={OtpScreen} />
+      <Stack.Screen name="OtpSuccesfulScreen" component={OtpSuccesfulScreen} />
       
     </Stack.Navigator>
    </GestureHandlerRootView>

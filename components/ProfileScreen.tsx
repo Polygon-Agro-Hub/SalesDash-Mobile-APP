@@ -20,6 +20,11 @@ import { AntDesign } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import environment from "@/environment/environment";
+import {
+  widthPercentageToDP as wp,
+  heightPercentageToDP as hp,
+} from "react-native-responsive-screen";
+import BackButton from "./BackButton";
 
 type ProfileScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -101,7 +106,10 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <View 
+    
+    className="flex-1 bg-white">
+      
       <TouchableWithoutFeedback>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -116,17 +124,11 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                   className="w-full h-44 absolute top-0 left-0 right-0"
                 />
 
-                <TouchableOpacity
-                  className="absolute top-6 left-4 flex-row items-center z-10"
-                  onPress={() => navigation.goBack()}
-                >
-                  <View className="w-8 h-8 bg-purple-200 rounded-full justify-center items-center shadow-md">
-                    <AntDesign name="left" size={24} color="black" />
-                  </View>
-                </TouchableOpacity>
-              </View>
 
-              <View className="bg-white rounded-t-3xl mt-[45%] px-6 pt-6">
+              </View>
+              <BackButton navigation={navigation} />
+
+              <View className="bg-white rounded-t-3xl mt-[45%]  pt-6"   style = {{ paddingHorizontal: wp(6)}}>
                 <View className="items-center mt-[-25%]">
                   <TouchableOpacity className="relative">
                     {profileImage ? (
@@ -224,9 +226,11 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
       </TouchableWithoutFeedback>
 
       <View className="bg-white">
-        <Navbar navigation={navigation} activeTab="DashboardScreen" />
+        
       </View>
-    </SafeAreaView>
+     
+      <Navbar navigation={navigation} activeTab="DashboardScreen" />
+    </View>
   );
 };
 

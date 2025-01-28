@@ -9,6 +9,7 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
+  ScrollView
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
@@ -51,7 +52,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
       id: "1",
       customerID: "240001",
       name: "Nimal",
-      phoneNumber: "011223355",
+      phoneNumber: "0701835108",
       order: "2",
       orders: [
         {
@@ -129,22 +130,100 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
    
       ],
     },
+    {
+      id: "3",
+      customerID: "240002",
+      name: "Kamal",
+      phoneNumber: "011998877",
+      order: "4",
+      orders: [
+        {
+          id: "1",
+          
+          orderNumber: "#24123105",
+          schedule: "2024/12/31",
+          time: "12PM - 4PM",
+          status: "Delivered",
+          type: "One Time", // Filter type
+        },
+        {
+          id: "2",
+          
+          orderNumber: "#24121901",
+          schedule: "2024/12/29",
+          time: "12PM - 4PM",
+          status: "On the way",
+          type: "Once a Week", // Filter type
+        },
+        {
+          id: "3",
+          
+          orderNumber: "#24121902",
+          schedule: "2024/12/29",
+          time: "12PM - 4PM",
+          status: "Processing",
+          type: "Weekly", // Filter type
+        },
+   
+      ],
+    },
+    {
+      id: "4",
+      customerID: "240002",
+      name: "Kamal",
+      phoneNumber: "011998877",
+      order: "4",
+      orders: [
+        {
+          id: "1",
+          
+          orderNumber: "#24123105",
+          schedule: "2024/12/31",
+          time: "12PM - 4PM",
+          status: "Delivered",
+          type: "One Time", // Filter type
+        },
+        {
+          id: "2",
+          
+          orderNumber: "#24121901",
+          schedule: "2024/12/29",
+          time: "12PM - 4PM",
+          status: "On the way",
+          type: "Once a Week", // Filter type
+        },
+        {
+          id: "3",
+          
+          orderNumber: "#24121902",
+          schedule: "2024/12/29",
+          time: "12PM - 4PM",
+          status: "Processing",
+          type: "Weekly", // Filter type
+        },
+   
+      ],
+    },
+
   ];
 
   const isEmpty = customers.length === 0;
 
   return (
+    
+    
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       className="flex-1 bg-white"
     >
-      <View className="flex-1 bg-white">
+     
+      <View className=" bg-white flex-1">
         {/* Header Section */}
         <LinearGradient
           colors={["#854BDA", "#6E3DD1"]}
-          className="h-20 shadow-md px-4 pt-19 items-center justify-center"
+          className="h-20 shadow-md px-4 pt-17 items-center justify-center"
         >
-          <Text className="text-white text-lg font-bold">
+          <Text className="text-white text-lg font-bold mt-[-9]">
             Total Customers: <Text className="font-bold ">{customers.length}</Text>
           </Text>
         </LinearGradient>
@@ -162,11 +241,11 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
             resizeMode="contain"
           />
         </View>
-
+   
         {/* Floating Add Button */}
         <TouchableOpacity
   style={{ zIndex: 1000 }}
-  className="absolute bottom-10 right-6 bg-purple-600 w-14 h-14 rounded-full items-center justify-center shadow-lg"
+  className="absolute bottom-[10] right-6 bg-purple-600 w-14 h-14 rounded-full items-center justify-center shadow-lg mb-1"
   onPress={() => navigation.navigate("AddCustomersScreen")}
 >
   <Image
@@ -176,7 +255,9 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   />
 </TouchableOpacity>
 
-
+ <View 
+  style = {{ paddingHorizontal: wp(6), paddingVertical: hp(2)}}
+ className="flex-1">
         {isEmpty ? (
           <View className="flex-1 justify-center items-center px-4">
             <Image
@@ -190,7 +271,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
             <FlatList
               data={customers}
               keyExtractor={(item) => item.id}
-              showsVerticalScrollIndicator={false}
+              showsVerticalScrollIndicator={true}
               contentContainerStyle={{ paddingBottom: 120 }}
               renderItem={({ item }) => (
                 <TouchableOpacity
@@ -209,10 +290,14 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
           </View>
         )}
       </View>
-
+      </View>
       {/* Hide Navbar when keyboard is visible */}
+      
+     
       {!isKeyboardVisible && <Navbar navigation={navigation} activeTab="CustomersScreen" />}
+
     </KeyboardAvoidingView>
+    
   );
 };
 

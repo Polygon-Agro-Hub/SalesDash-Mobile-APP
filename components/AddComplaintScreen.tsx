@@ -17,6 +17,11 @@ import { RootStackParamList } from "./types";
 import { Picker } from "@react-native-picker/picker";
 import { AntDesign } from "@expo/vector-icons";
 import Navbar from "./Navbar";
+import {
+  widthPercentageToDP as wp,
+  heightPercentageToDP as hp,
+} from "react-native-responsive-screen";
+import BackButton from "./BackButton";
 
 type AddComplaintScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -42,22 +47,17 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
 
   return (
     <SafeAreaView className="flex-1 bg-white">
+      <ScrollView 
+      
+          style = {{ paddingHorizontal: wp(4)}}
+          >
       <TouchableWithoutFeedback>
              <KeyboardAvoidingView
                behavior={Platform.OS === "ios" ? "padding" : "height"}
                style={{ flex: 1 }}
              >
           <View className="flex-1">
-            <TouchableOpacity
-              className="mt-4 ml-4 flex-row items-center"
-              onPress={() => navigation.goBack()}
-              accessibilityLabel="Go Back"
-              accessibilityRole="button"
-            >
-              <View className="w-8 h-8 bg-purple-100 rounded-full justify-center items-center">
-                <AntDesign name="left" size={20} color="black" />
-              </View>
-            </TouchableOpacity>
+          <BackButton navigation={navigation} />
 
             <ScrollView
               className="px-8 py-4"
@@ -115,6 +115,9 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
           </View>
         </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
+      
+       
+       </ScrollView>
        <Navbar navigation={navigation} activeTab="DashboardScreen" />
     </SafeAreaView>
   );

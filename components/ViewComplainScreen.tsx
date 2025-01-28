@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, FlatList, TouchableOpacity, Image, Modal } from "react-native"; // Added Modal import
+import { View, Text, FlatList, TouchableOpacity, Image, Modal ,ScrollView} from "react-native"; // Added Modal import
 import { LinearGradient } from "expo-linear-gradient";
 import { AntDesign } from "@expo/vector-icons";
 import {
@@ -9,6 +9,8 @@ import {
 import Navbar from "./Navbar";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
+import BackButton from "./BackButton";
+
 
 type ViewComplainScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -56,25 +58,26 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({ navigation }) =
   };
 
   return (
-    <View className="flex-1 bg-gray-100">
+    <View className="flex-1 bg-white">
+    
+      
       {/* Header */}
-      <LinearGradient colors={["#854BDA", "#6E3DD1"]} className="h-20 shadow-md px-6 pt-4">
-        <View className="flex-row items-center justify-between">
-          <View>
-            <TouchableOpacity
-              className="mt-3 ml-2 flex-row items-center"
-              onPress={() => navigation.goBack()}
-            >
-              <View className="w-8 h-8 bg-purple-300 rounded-full justify-center items-center">
-                <AntDesign name="left" size={20} color="black" />
-              </View>
-            </TouchableOpacity>
+      <LinearGradient colors={["#854BDA", "#6E3DD1"]} className="h-25 shadow-md px-2 pt-4">
+        <View className="flex-row items-center justify-between ">
+          <View  
+         
+        >
+            <BackButton navigation={navigation} />
           </View>
 
-          <Text className="text-white text-lg font-bold flex-1 text-center">Complaint History</Text>
+          <Text className="text-white text-lg font-bold flex-1 mx-7">Complaint History</Text>
         </View>
       </LinearGradient>
 
+
+   <View 
+   style = {{ paddingHorizontal: wp(6)}}
+   className="flex-1">
       {/* Display Image if no complaints */}
       {isEmpty ? (
         <View className="flex-1 justify-center items-center px-4">
@@ -92,8 +95,9 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({ navigation }) =
             keyExtractor={(item) => item.id}
             showsVerticalScrollIndicator={true} // Enables scrollbar
             contentContainerStyle={{ paddingBottom: 100 }} // Prevents content cutoff
+          
             renderItem={({ item }) => (
-              <View className="bg-white shadow-md p-4 mb-4">
+              <View className="bg-white shadow-md p-4 mb-4 border border-gray-300">
                 <Text className="text-gray-700 font-semibold">Ref No: {item.refNo}</Text>
                 <Text className="text-gray-500 text-sm">
                   Sent {item.time}, {item.date}
@@ -184,8 +188,9 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({ navigation }) =
   </View>
 </Modal>
 
-
+</View>
       {/* Bottom Navigation */}
+    
       <Navbar navigation={navigation} activeTab="DashboardScreen" />
     </View>
   );
