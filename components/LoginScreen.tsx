@@ -4,7 +4,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types"; // Replace with the path to your types file
 import Icon from "react-native-vector-icons/Ionicons"; // For the eye icon in the password field
 import { LinearGradient } from "expo-linear-gradient"; // Gradient background
-import axios from "axios"; // Import axios
+import axios, { AxiosError } from "axios"; // Import axios and AxiosError
 import AsyncStorage from "@react-native-async-storage/async-storage"; // Import AsyncStorage
 import environment from "@/environment/environment";
 
@@ -19,46 +19,67 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState({ username: "", password: "" });
   const [loading, setLoading] = useState(false);
 
   const handleSignIn = async () => {
-    if (!username.trim() || !password.trim()) {
-      setError("Username and password are required");
-      return;
+    let hasError = false;
+    setError({ username: "", password: "" }); // Clear previous errors
+  
+    if (username.trim() === "") {
+      setError((prev) => ({ ...prev, username: "User Name is required" }));
+      hasError = true;
     }
-
-    setLoading(true);
-
+  
+    if (password.trim() === "") {
+      setError((prev) => ({ ...prev, password: "Password is required" }));
+      hasError = true;
+    }
+  
+    if (hasError) {
+      return; // Stop if there are errors
+    }
+  
+    setLoading(true); // Show loading indicator
+  
     try {
-      console.log("Base URL:", environment.API_BASE_URL);
-      console.log("Making API call to:", `${environment.API_BASE_URL}api/auth/login`);
-      console.log("Payload:", { username, password });
-
+      // Make the API call
       const response = await axios.post(`${environment.API_BASE_URL}api/auth/login`, {
         username,
         password,
       });
-
-      console.log("Response:", response.data);
-
+  
+      // Handle successful response
       if (response.data.success) {
         const { token, passwordUpdate } = response.data.data;
+  
+        // Save token in AsyncStorage
         await AsyncStorage.setItem("authToken", token);
-
+  
         if (passwordUpdate === 0) {
+          // Redirect to Password Update Screen
           navigation.navigate("ChangePasswordScreen");
         } else {
+          // Redirect to Dashboard Screen
           navigation.navigate("DashboardScreen");
         }
       }
     } catch (err) {
-      console.log("Error occurred:", err);
-      setError("Invalid username or password");
+      // Check if the error is an instance of AxiosError
+      if (axios.isAxiosError(err)) {
+        setError({
+          ...error,
+          password: err.response?.data?.message || "Something went wrong. Please try again.",
+        });
+      } else {
+        // Handle non-axios errors here if necessary
+        setError({ ...error, password: "Something went wrong. Please try again." });
+      }
     } finally {
-      setLoading(false);
+      setLoading(false); // Hide loading indicator
     }
   };
+  
 
   return (
     <View className="flex-1 bg-white">
@@ -69,17 +90,19 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
       {/* Form Section with Top Curve */}
       <View className="flex-1 bg-white px-9 py-8 rounded-t-3xl shadow-lg -mt-8">
+        {/* Title */}
         <Text className="text-center text-xl font-bold text-purple-500 mb-6">Welcome to Sign in</Text>
 
-        {error ? (
-          <View className="flex-row items-center mb-4">
+        {/* Username Error Message */}
+        {error.username ? (
+          <View className="flex-row items-center ">
             <Icon name="alert-circle" size={16} color="#DC2626" />
-            <Text className="text-red-600 text-sm ml-2">{error}</Text>
+            <Text className="text-red-600 text-sm ml-2">{error.username}</Text>
           </View>
         ) : null}
 
         {/* Username Input */}
-        <View className="border border-gray-300 rounded-full px-4 mb-4 flex-row items-center bg-gray-100">
+        <View className={`border ${error.username ? "border-red-500" : "border-gray-300"} rounded-full px-4 mb-4 flex-row items-center bg-gray-100 mt-5`}>
           <TextInput
             placeholder="Username"
             placeholderTextColor="#A3A3A3"
@@ -89,8 +112,16 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           />
         </View>
 
+        {/* Password Error Message */}
+        {error.password ? (
+          <View className="flex-row items-center ">
+            <Icon name="alert-circle" size={16} color="#DC2626" />
+            <Text className="text-red-600 text-sm ml-2">{error.password}</Text>
+          </View>
+        ) : null}
+
         {/* Password Input */}
-        <View className="border border-gray-300 rounded-full px-4 mb-6 flex-row items-center bg-gray-100">
+        <View className={`border ${error.password ? "border-red-500" : "border-gray-300"} rounded-full px-4 mb-6 flex-row items-center bg-gray-100 mt-4`}>
           <TextInput
             placeholder="Password"
             placeholderTextColor="#A3A3A3"
