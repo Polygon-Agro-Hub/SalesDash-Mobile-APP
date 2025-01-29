@@ -8,7 +8,6 @@ import {
   ScrollView,
   Alert,
   ImageBackground,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   TouchableWithoutFeedback,
@@ -43,13 +42,15 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
     phoneNumber1: "",
     phoneNumber2: "",
     nicNumber: "",
-    username:"",
+    username: "",
     email: "",
     buildingNo: "",
     streetName: "",
     city: "",
-    empId:"",
+    empId: "",
   });
+
+  
 
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -61,17 +62,16 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   const getUserProfile = async () => {
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
-      console.log("token", storedToken);
       if (!storedToken) {
         Alert.alert("Error", "No authentication token found");
         return;
       }
       setToken(storedToken);
 
-      const response = await axios.get(`${environment.API_BASE_URL}api/auth/user/profile`, {
-        headers: { Authorization: `Bearer ${storedToken}` },
-      });
-      console.log("profile", response.data);
+      const response = await axios.get(
+        `${environment.API_BASE_URL}api/auth/user/profile`,
+        { headers: { Authorization: `Bearer ${storedToken}` } }
+      );
 
       setFormData(response.data.data);
     } catch (error) {
@@ -94,9 +94,11 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
         return;
       }
 
-      await axios.put(`${environment.API_BASE_URL}api/auth/user-updateUser`, formData, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await axios.put(
+        `${environment.API_BASE_URL}api/auth/user-updateUser`,
+        formData,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
       Alert.alert("Success", "Profile updated successfully!");
     } catch (error) {
@@ -106,10 +108,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   };
 
   return (
-    <View 
-    
-    className="flex-1 bg-white">
-      
+    <View className="flex-1 bg-white">
       <TouchableWithoutFeedback>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -121,37 +120,54 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                 <ImageBackground
                   source={require("../assets/images/profilebackground.png")}
                   resizeMode="cover"
-                  className="w-full h-44 absolute top-0 left-0 right-0"
+                  style={{
+                    width: "100%",
+                    height: hp(25),
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                  }}
                 />
-
-
               </View>
               <BackButton navigation={navigation} />
 
-              <View className="bg-white rounded-t-3xl mt-[45%]  pt-6"   style = {{ paddingHorizontal: wp(6)}}>
-                <View className="items-center mt-[-25%]">
+              <View
+                className="bg-white rounded-t-3xl pt-6"
+                style={{ marginTop: hp(15), paddingHorizontal: wp(6) }}
+              >
+                <View className="items-center" style={{ marginTop: -hp(13) }}>
                   <TouchableOpacity className="relative">
                     {profileImage ? (
                       <Image
                         source={{ uri: profileImage }}
-                        className="w-32 h-32 rounded-full border-4 border-white"
+                        style={{
+                          width: wp(32),
+                          height: wp(32),
+                       
+                        
+                        }}
                       />
                     ) : (
                       <Image
                         source={require("../assets/images/profile.png")}
-                        className="w-32 h-32 rounded-full border-4 border-white"
+                        style={{
+                          width: wp(37),
+                          height: wp(37),
+                          borderRadius: wp(16),
+                       
+                        }}
                       />
                     )}
                   </TouchableOpacity>
                   <Text className="text-black text-2xl font-bold mb-2">
-                    {formData.username} 
+                    {formData.username}
                   </Text>
                 </View>
               </View>
 
               <View className="bg-white px-7">
                 <View className="p-4">
-                  <View className="bg-[#6839CF] flex-row justify-between mt-3 px-4 py-3 rounded-2xl ">
+                <View className="bg-[#6839CF] flex-row justify-between mt-3 px-4 py-3 rounded-2xl ">
                     <View className="flex-1 items-center">
                       <AntDesign name="star" size={24} color="gold" />
                       <Text className="text-white text-sm mt-1">Points</Text>
@@ -175,60 +191,60 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                     </View>
                   </View>
                 </View>
+
                 <View className="bg-white px-7">
-  {/* Display empId field at the top */}
-  <View className="mb-4">
-    <Text className="text-black-500 mb-1 capitalize mt-4">
-      Employee ID
-    </Text>
-    <Text className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-3xl px-3 py-2 text-gray-500">
-      {formData.empId}
-    </Text>
-  </View>
+                  {/* Employee ID Field */}
+                  <View className="mb-4">
+                    <Text className="text-black-500 mb-1 capitalize mt-4">
+                      Employee ID
+                    </Text>
+                    <Text
+                      className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-3xl px-3 py-2 text-gray-500"
+                      style={{ fontSize: wp(4) }}
+                    >
+                      {formData.empId}
+                    </Text>
+                  </View>
 
-  {/* Map through the remaining fields, excluding username */}
-  {Object.entries(formData).map(([key, value]) => {
-    // Skip empId and username fields as they are already rendered
-    if (key === "empId" || key === "username") return null;
-    return (
-      <View className="mb-4" key={key}>
-        <Text className="text-black-500 mb-1 capitalize mt-4">
-          {key.replace(/([A-Z])/g, " $1")}
-        </Text>
-        <TextInput
-          className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-3xl px-3 py-2"
-          value={value}
-          onChangeText={(text) => handleInputChange(key, text)}
-          editable={key !== "empId"} // Keep empId uneditable
-          placeholder={`Enter ${key.replace(/([A-Z])/g, " $1")}`}
-        />
-      </View>
-    );
-  })}
-</View>
-
-              </View>
-
-
-                <View className="bg-white px-7 ">
-                  <TouchableOpacity
-                    className="bg-[#6839CF] py-3 rounded-lg items-center mt-6 mb-[15%] mr-[16%] ml-[16%] rounded-3xl"
-                    onPress={handleUpdate}
-                  >
-                    <Text className="text-white text-lg font-bold">Update</Text>
-                  </TouchableOpacity>
+                  {/* Other Fields */}
+                  {Object.entries(formData).map(([key, value]) => {
+                    if (key === "empId" || key === "username") return null;
+                    return (
+                      <View className="mb-4" key={key}>
+                        <Text
+                          className="text-black-500 mb-1 capitalize mt-4"
+                          style={{ fontSize: wp(4) }}
+                        >
+                          {key.replace(/([A-Z])/g, " $1")}
+                        </Text>
+                        <TextInput
+                          className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-3xl px-3 py-2"
+                          value={value}
+                          onChangeText={(text) => handleInputChange(key, text)}
+                          editable={key !== "empId"}
+                          placeholder={`Enter ${key.replace(/([A-Z])/g, " $1")}`}
+                          style={{ fontSize: wp(4) }}
+                        />
+                      </View>
+                    );
+                  })}
                 </View>
               </View>
 
-       
+              <View className="bg-white px-7">
+                <TouchableOpacity
+                  className="bg-[#6839CF] py-3 rounded-full items-center mt-6 mb-10 px-4"
+                  onPress={handleUpdate}
+                  style={{ width: wp(60), alignSelf: "center" }}
+                >
+                  <Text className="text-white text-lg font-bold">Update</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </ScrollView>
         </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
 
-      <View className="bg-white">
-        
-      </View>
-     
       <Navbar navigation={navigation} activeTab="DashboardScreen" />
     </View>
   );
