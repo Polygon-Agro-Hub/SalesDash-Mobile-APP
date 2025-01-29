@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { View, Text, Image, TouchableOpacity, ActivityIndicator } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { View, Text, Image, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from "react-native";
+
 import { Ionicons } from "@expo/vector-icons";
 import Navbar from "./Navbar";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -167,3 +167,7 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
 };
 
 export default SidebarScreen;
+function useEffect(arg0: () => void, arg1: never[]) {
+  throw new Error("Function not implemented.");
+}
+
