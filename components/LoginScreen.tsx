@@ -25,45 +25,52 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const handleSignIn = async () => {
     let hasError = false;
     setError({ username: "", password: "" }); // Clear previous errors
-
+  
     if (username.trim() === "") {
       setError((prev) => ({ ...prev, username: "User Name is required" }));
       hasError = true;
     }
-
+  
     if (password.trim() === "") {
       setError((prev) => ({ ...prev, password: "Password is required" }));
       hasError = true;
     }
-
+  
     if (hasError) {
       return; // Stop if there are errors
     }
-
+  
     setLoading(true); // Show loading indicator
-    
+  
     try {
       // Make the API call
       const response = await axios.post(`${environment.API_BASE_URL}api/auth/login`, {
         username,
         password,
       });
-
+  
       // Handle successful response
       if (response.data.success) {
+        const { token, passwordUpdate } = response.data.data;
+  
         // Save token in AsyncStorage
-        const token = response.data.data.token;
-        await AsyncStorage.setItem("authToken", token); // Save token
-        console.log('login successful',response.data)
-
-        // Navigate to the next screen (e.g., Dashboard)
-        navigation.navigate("DashboardScreen");
+        await AsyncStorage.setItem("authToken", token);
+  
+        if (passwordUpdate === 0) {
+          // Redirect to Password Update Screen
+          navigation.navigate("ChangePasswordScreen");
+        } else {
+          // Redirect to Dashboard Screen
+          navigation.navigate("DashboardScreen");
+        }
       }
     } catch (err) {
       // Check if the error is an instance of AxiosError
       if (axios.isAxiosError(err)) {
-        // Now that TypeScript knows the type of err, you can access properties
-        setError({ ...error, password: err.response?.data?.message || "Something went wrong. Please try again." });
+        setError({
+          ...error,
+          password: err.response?.data?.message || "Something went wrong. Please try again.",
+        });
       } else {
         // Handle non-axios errors here if necessary
         setError({ ...error, password: "Something went wrong. Please try again." });
@@ -72,6 +79,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       setLoading(false); // Hide loading indicator
     }
   };
+  
 
   return (
     <View className="flex-1 bg-white">

@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, Image, TouchableOpacity, Alert, ScrollView } from "react-native";
+import React, { useState } from "react";
+import { View, Text, Image, TouchableOpacity, ActivityIndicator } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import Navbar from "./Navbar";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -9,6 +10,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import environment from "@/environment/environment";
 import BackButton from "./BackButton";
+
 
 type SidebarScreenNavigationProp = StackNavigationProp<RootStackParamList, "SidebarScreen">;
 
@@ -40,6 +42,21 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
     } catch (error) {
       Alert.alert("Error", "Failed to fetch user profile");
       console.error(error);
+    }
+  };
+  const [loading, setLoading] = useState(false);
+
+  // Function to handle logout
+  const handleLogout = async () => {
+    setLoading(true); // Show loading indicator
+    try {
+      await AsyncStorage.removeItem("authToken");
+      setTimeout(() => {
+        navigation.replace("LoginScreen"); // Redirect after 5 seconds
+      }, 5000);
+    } catch (error) {
+      console.error("Error removing authToken:", error);
+      setLoading(false);
     }
   };
 

@@ -1,7 +1,7 @@
 export type RootStackParamList = {
     Splash: undefined;
-    ChangePasswordScreen: undefined;
     LoginScreen: undefined;
+    ChangePasswordScreen: undefined;
     DashboardScreen: undefined;
     ViewScreen: undefined;
     CustomersScreen: undefined;
