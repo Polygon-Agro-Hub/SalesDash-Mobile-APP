@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, Image, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
@@ -62,6 +62,13 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
 
   return (
     <View className="flex-1 w-full bg-white">
+
+         {loading ? (
+        <View className="flex-1 justify-center items-center">
+          <ActivityIndicator size="large" color="#693ACF" />
+          <Text className="mt-4 text-lg text-[#693ACF] font-semibold">Logging out...</Text>
+        </View>
+      ) : (
       <ScrollView style={{ paddingHorizontal: wp(4) }}>
         <BackButton navigation={navigation} />
 
@@ -76,29 +83,55 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
         <View className="border-b border-gray-200 my-1 ml-4 mr-4" />
 
         <View className="flex-1 p-5">
-        <TouchableOpacity 
-  style={{ marginBottom: hp(2) }} 
-  className="flex-row items-center" 
+        <TouchableOpacity
+  style={{ marginBottom: hp(2) }}
+  className="flex-row items-center"
   onPress={() => navigation.navigate("ProfileScreen")}
-> 
-  <Ionicons name="person-outline" size={hp(3)} color="#8F8F8F" />
+>
+  {/* Round Icon */}
+  <View
+    style={{
+      width: hp(5), // Icon size
+      height: hp(5), // Icon size
+      borderRadius: hp(2.5), // Half of the width/height for circular effect
+      backgroundColor: "#F4F9FB", // Background color for the circle
+      justifyContent: "center",
+      alignItems: "center",
+    }}
+  >
+    <Ionicons name="person-outline" size={hp(3)} color="#8F8F8F" />
+  </View>
+
   <Text style={{ flex: 1, marginLeft: wp(4), fontSize: hp(2) }} className="text-gray-800">
     Profile
   </Text>
-  <Ionicons 
-    name="chevron-forward-outline"  
-    size={hp(2.5)} 
-    color="#8F8F8F" 
-    style={{ marginRight: wp(2) }} 
+
+  <Ionicons
+    name="chevron-forward-outline"
+    size={hp(2.5)}
+    color="#8F8F8F"
+    style={{ marginRight: wp(2) }}
   />
 </TouchableOpacity>
+
 
 
 <TouchableOpacity 
   className="flex-row items-center py-3" 
   onPress={() => setComplaintsExpanded(!complaintsExpanded)}
 >
+<View
+    style={{
+      width: hp(5), // Icon size
+      height: hp(5), // Icon size
+      borderRadius: hp(2.5), // Half of the width/height for circular effect
+      backgroundColor: "#F4F9FB", // Background color for the circle
+      justifyContent: "center",
+      alignItems: "center",
+    }}
+  >
   <Ionicons name="alert-circle-outline" size={hp(3)} color="#8F8F8F" />
+  </View>
   
   <Text 
     style={{ flex: 1, marginLeft: wp(4), fontSize: hp(2) }} 
@@ -129,7 +162,19 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
           )}
 
 <TouchableOpacity style={{ marginBottom: hp(2),marginTop: hp(1) }} className="flex-row items-center py-3" onPress={() => navigation.navigate("ChangePasswordScreen")}> 
+<View
+    style={{
+      width: hp(5), // Icon size
+      height: hp(5), // Icon size
+      borderRadius: hp(2.5), // Half of the width/height for circular effect
+      backgroundColor: "#F4F9FB", // Background color for the circle
+      justifyContent: "center",
+      alignItems: "center",
+    }}
+  >
   <Ionicons name="lock-closed-outline" size={hp(3)} color="#8F8F8F" />
+    </View>
+
   <Text style={{ flex: 1, marginLeft: wp(4), fontSize: hp(2) }} className="text-gray-800">
     Change Password
   </Text>
@@ -137,7 +182,19 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
 </TouchableOpacity>
 
 <TouchableOpacity style={{ marginBottom: hp(2) }} className="flex-row items-center py-3"> 
+
+<View
+    style={{
+      width: hp(5), // Icon size
+      height: hp(5), // Icon size
+      borderRadius: hp(2.5), // Half of the width/height for circular effect
+      backgroundColor: "#F4F9FB", // Background color for the circle
+      justifyContent: "center",
+      alignItems: "center",
+    }}
+  >
   <Ionicons name="document-text-outline" size={hp(3)} color="#8F8F8F" />
+  </View>
   <Text style={{ flex: 1, marginLeft: wp(4), fontSize: hp(2) }} className="text-gray-800">
     Privacy & Policy
   </Text>
@@ -145,7 +202,18 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
 </TouchableOpacity>
 
 <TouchableOpacity className="flex-row items-center py-3" onPress={() => console.log("Terms & Conditions Pressed")}> 
+<View
+    style={{
+      width: hp(5), // Icon size
+      height: hp(5), // Icon size
+      borderRadius: hp(2.5), // Half of the width/height for circular effect
+      backgroundColor: "#F4F9FB", // Background color for the circle
+      justifyContent: "center",
+      alignItems: "center",
+    }}
+  >
   <Ionicons name="information-circle-outline" size={hp(3)} color="#8F8F8F" />
+  </View>
   <Text style={{ flex: 1, marginLeft: wp(4), fontSize: hp(2) }} className="text-gray-800">
     Terms & Conditions
   </Text>
@@ -156,18 +224,28 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
           <View className="border-b border-gray-200 my-5" />
 
           <TouchableOpacity className="flex-row items-center" onPress={() => console.log("Logout")}> 
+          <View
+    style={{
+      width: hp(5), // Icon size
+      height: hp(5), // Icon size
+      borderRadius: hp(2.5), // Half of the width/height for circular effect
+      backgroundColor: "#FFF2EE", // Background color for the circle
+      justifyContent: "center",
+      alignItems: "center",
+    }}
+  >
             <Ionicons name="log-out-outline" size={hp(3)} color="#FF3B30" />
+            </View>
             <Text style={{ marginLeft: wp(4), fontSize: hp(2), color: "#FF3B30", fontWeight: "bold" }}>Logout</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
+    )}
       <Navbar navigation={navigation} activeTab="DashboardScreen" />
     </View>
   );
 };
 
 export default SidebarScreen;
-function useEffect(arg0: () => void, arg1: never[]) {
-  throw new Error("Function not implemented.");
-}
+
 
