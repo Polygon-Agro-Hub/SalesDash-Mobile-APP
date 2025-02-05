@@ -17,6 +17,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
 import axios from "axios";
 import environment from "@/environment/environment";
+import { ActivityIndicator } from "react-native";
 
 // Define navigation prop type
 type CustomersScreenNavigationProp = StackNavigationProp<RootStackParamList, "CustomersScreen">;
@@ -71,13 +72,17 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
     };
   
     fetchCustomers();
+  
+    // Refetch customers every 3 seconds (real-time updates)
+    const interval = setInterval(() => {
+      fetchCustomers();
+    }, 5000); // Refetch every 3 seconds
+  
     return () => {
-      setLoading(false);
-      setError(null); // Optional: Cleanup if the component unmounts
+      clearInterval(interval); // Cleanup on unmount
     };
   }, []);
   
-
   const isEmpty = customers.length === 0;
 
   return (
@@ -108,9 +113,8 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
         {/* Display Loading, Error, or Customer List */}
         <View style={{ paddingHorizontal: wp(6), paddingVertical: hp(2) }} className="flex-1">
           {loading ? (
-            <View className="flex-1 justify-center items-center px-4">
-              {/* <Image source={require("../assets/images/loading.png")} style={{ width: wp("20%"), height: hp("10%"), resizeMode: "contain" }} /> */}
-              <Text className="text-black text-center mt-4">Loading Customers...</Text>
+            <View className="flex-1 justify-center items-center">
+              <ActivityIndicator size="large" color="#6E3DD1" />
             </View>
           ) : error ? (
             <View className="flex-1 justify-center items-center px-4">
@@ -122,18 +126,24 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
               <Text className="text-black text-center mt-4">No Customers found</Text>
             </View>
           ) : (
-            <View className="flex-1 px-4 pt-4">
+            <View className="flex-1 px-2 pt-4">
               <FlatList
                 data={customers}
                 keyExtractor={(item) => item.id.toString()}
                 showsVerticalScrollIndicator={true}
                 contentContainerStyle={{ paddingBottom: 120 }}
                 renderItem={({ item }) => (
-                  <TouchableOpacity onPress={() => navigation.navigate("ViewCustomerScreen",{
-                    name:item.firstName,
-                    number:item.phoneNumber,
-                    customerId:item.cusId,
-                  })}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      console.log("Customer ID:", item.id); 
+                      navigation.navigate("ViewCustomerScreen", {
+                        name: item.firstName,
+                        number: item.phoneNumber,
+                        customerId: item.cusId, 
+                        id:item.id,
+                      });
+                    }}
+                  >
                     <View className="bg-white shadow-md p-4 mb-3 mx-3 flex-row justify-between items-center rounded-lg border border-gray-200">
                       <View>
                         <Text className="text-gray-700 font-semibold">{item.firstName} {item.lastName}</Text>

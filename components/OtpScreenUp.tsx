@@ -18,14 +18,14 @@ import { useTranslation } from "react-i18next";
 
 
 
-type OtpScreenNavigationProp = StackNavigationProp<RootStackParamList, "OtpScreen">;
+type OtpScreenUpNavigationProp = StackNavigationProp<RootStackParamList, "OtpScreenUp">;
 
-interface OtpScreenProps {
-    navigation: OtpScreenNavigationProp;
+interface OtpScreenUpProps {
+    navigation: OtpScreenUpNavigationProp;
   }
 
-const OtpScreen: React.FC = () => {
-  const navigation = useNavigation<OtpScreenNavigationProp>();
+const OtpScreenUp: React.FC = () => {
+  const navigation = useNavigation<OtpScreenUpNavigationProp>();
   const [otp, setOtp] = useState<string[]>(["", "", "", "",""]);
   const inputRefs = useRef<TextInput[]>([]);
   const [timer, setTimer] = useState(60);
@@ -80,8 +80,15 @@ const OtpScreen: React.FC = () => {
 
 const [isOtpInvalid, setIsOtpInvalid] = useState(false);
 
+
+
+
+
+
+
 const verifyOTP = async () => {
   const otpCode = otp.join(""); // Join OTP array into a single string
+  console.log('OTP code:', otpCode);
 
   if (otpCode.length < 5) {
     Alert.alert("Error", "Please enter a valid 5-digit OTP.");
@@ -92,6 +99,8 @@ const verifyOTP = async () => {
   try {
     setLoading(true);
     const referenceId = await AsyncStorage.getItem("referenceId");
+    console.log('Reference ID:', referenceId);
+    
     if (!referenceId) {
       Alert.alert("Error", "No OTP reference found.");
       return;
@@ -109,6 +118,8 @@ const verifyOTP = async () => {
     };
 
     const response = await axios.post(url, body, { headers });
+    console.log('OTP verification response:', response.data);
+
     const { statusCode } = response.data;
 
     if (statusCode === "1000") {
@@ -123,32 +134,59 @@ const verifyOTP = async () => {
       }
 
       const customerData = JSON.parse(customerDataString);
+      console.log('Customer Data:', customerData);
 
-      // Send customer data to the backend
-      const saveResponse = await axios.post(`${environment.API_BASE_URL}api/customer/add-customer`, customerData);
-      
-      if (saveResponse.status === 200) {
-        Alert.alert("Success", "Customer registered successfully.");
-        navigation.navigate("OtpSuccesfulScreen");
+      // Check if the customer already exists based on email or phone number
+      const existingCustomerResponse = await axios.get(
+        `${environment.API_BASE_URL}api/customer/get-customer-data/${id}}`
+      );
+
+      if (existingCustomerResponse.status === 200 && existingCustomerResponse.data) {
+        // Customer exists, update their details
+        const updateResponse = await axios.put(
+          `${environment.API_BASE_URL}api/customer/update-customer-data/${id}`,
+          customerData
+        );
+
+
+
+        console.log('Update response:', updateResponse);
+
+        
+
+        if (updateResponse.status === 200) {
+          Alert.alert("Success", "Customer updated successfully.");
+          navigation.navigate("OtpSuccesfulScreen");
+        } else {
+          Alert.alert("Error", `Failed to update customer: ${id}`);
+        }
       } else {
-        Alert.alert("Error", `Failed to save customer: ${saveResponse.data.error}`);
-      }
+        // Customer does not exist, register a new one
+        const saveResponse = await axios.post(
+          `${environment.API_BASE_URL}api/customer/add-customer`,
+          customerData
+        );
 
+        console.log('Save response:', saveResponse);
+
+        if (saveResponse.status === 200) {
+          Alert.alert("Success", "Customer registered successfully.");
+          navigation.navigate("OtpSuccesfulScreen");
+        } else {
+          Alert.alert("Error", `Failed to save customer: ${saveResponse.data.error}`);
+        }
+      }
     } else {
       setIsOtpInvalid(true);
       Alert.alert("Error", "Invalid OTP. Please try again.");
     }
   } catch (error) {
+    console.log('Error during OTP verification:', error);
     Alert.alert("Error", "An error occurred while verifying OTP.");
   } finally {
     setLoading(false);
   }
 };
-
-
-
-
-
 
 
 
@@ -489,4 +527,4 @@ useEffect(() => {
   );
 };
 
-export default OtpScreen;
+export default OtpScreenUp;

@@ -17,8 +17,10 @@ import ViewCustomerScreen from '@/components/ViewCustomerScreen';
 import ReminderScreen from '@/components/ReminderScreen';
 import AddCustomersScreen from '@/components/AddCustomersScreen';
 import OtpScreen from '@/components/OtpScreen';
-import OtpSuccesfulScreen from '@/components/OtpSuccesfulScreen'
-
+import OtpSuccesfulScreen from '@/components/OtpSuccesfulScreen';
+import EditCustomerScreen from '@/components/EditCustomerScreen';
+import OtpScreenUp from '@/components/OtpScreenUp';
+import OrderScreen from '@/components/OrderScreen';
 
 
 import { RootStackParamList } from '@/components/types';
@@ -49,7 +51,10 @@ const index = () => {
       <Stack.Screen name="ReminderScreen" component={ReminderScreen} />
       <Stack.Screen name="AddCustomersScreen" component={AddCustomersScreen} />
       <Stack.Screen name="OtpScreen" component={OtpScreen} />
+      <Stack.Screen name="OtpScreenUp" component={OtpScreenUp} />
       <Stack.Screen name="OtpSuccesfulScreen" component={OtpSuccesfulScreen} />
+      <Stack.Screen name="EditCustomerScreen" component={EditCustomerScreen} />
+      <Stack.Screen name="OrderScreen" component={OrderScreen} />
       
     </Stack.Navigator>
    </GestureHandlerRootView>

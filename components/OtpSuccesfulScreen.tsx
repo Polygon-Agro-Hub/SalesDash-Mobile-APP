@@ -8,9 +8,16 @@ import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from "react-native-responsive-screen";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { RootStackParamList } from "./types";
 
-const OtpSuccesfulScreen: React.FC = () => {
-  const navigation = useNavigation();
+type OtpSuccesfulScreenNavigationProp = StackNavigationProp<RootStackParamList, "OtpSuccesfulScreen">;
+
+interface OtpSuccesfulScreenProps {
+  navigation: OtpSuccesfulScreenNavigationProp;
+}
+
+const OtpSuccesfulScreen: React.FC<OtpSuccesfulScreenProps> = ({ navigation }) => {
 
   return (
     <View
@@ -52,12 +59,20 @@ Successfully Verified!
 
 
           {/* Verify Button */}
-          <LinearGradient
+          {/* <LinearGradient
             colors={["#6839CF", "#874DDB"]}
             className="py-3 px-14 rounded-lg items-center mt-[55%] mb-[5%] mr-[20%] ml-[20%] rounded-3xl h-15"
           >
             <TouchableOpacity>
               <Text className="text-center text-white font-bold">Order Now</Text>
+            </TouchableOpacity>
+          </LinearGradient> */}
+          <LinearGradient
+            colors={["#6839CF", "#874DDB"]}
+            className="py-3 px-14 rounded-lg items-center mt-[55%] mb-[5%] mr-[20%] ml-[20%] rounded-3xl h-15"
+          >
+            <TouchableOpacity  onPress={() => navigation.navigate("OrderScreen")}>
+              <Text className="text-center text-white font-bold text-lg">Order Now</Text>
             </TouchableOpacity>
           </LinearGradient>
         </View>

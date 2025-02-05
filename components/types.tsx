@@ -9,11 +9,13 @@ export type RootStackParamList = {
     ProfileScreen: undefined;
     AddComplaintScreen: undefined;
     ViewComplainScreen: undefined;
-    ViewCustomerScreen: {number:string,name:string, customerId:string}; // Update this type
+    ViewCustomerScreen: {number:string,name:string, customerId:string , id: string}; // Update this type
     ReminderScreen: undefined;
     AddCustomersScreen: undefined;
-    OtpScreen:undefined;
+    OtpScreen:{phoneNumber:string , id: string};
     OtpSuccesfulScreen:undefined;
-  
+    EditCustomerScreen:{ id: string}; 
+    OtpScreenUp:{phoneNumber:string , id: string};      
+    OrderScreen:undefined;
   };
   

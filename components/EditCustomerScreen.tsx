@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { View, Text, ScrollView, TextInput, TouchableOpacity, Keyboard, Platform, KeyboardAvoidingView, SafeAreaView, Alert } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
-
 import { Picker } from "@react-native-picker/picker";
 import Navbar from "./Navbar";
 import { LinearGradient } from "expo-linear-gradient";
@@ -10,15 +9,23 @@ import { widthPercentageToDP as wp } from "react-native-responsive-screen";
 import BackButton from "./BackButton";
 import axios from "axios";
 import environment from "@/environment/environment";
+import DropDownPicker from "react-native-dropdown-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-type AddCustomersScreenNavigationProp = StackNavigationProp<RootStackParamList, "AddCustomersScreen">;
+type EditCustomerScreenNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  "EditCustomerScreen"
+>;
 
-interface AddCustomersScreenProps {
-  navigation: AddCustomersScreenNavigationProp;
+interface EditCustomerScreenProps {
+  navigation: EditCustomerScreenNavigationProp;
+  route: any;  
 }
 
-const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) => {
+const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, route }) => {
+  const { id } = route.params;
+  console.log(id) // Get customerId from route params
+
   const [firstName, setFirstName] = useState<string>("");
   const [lastName, setLastName] = useState<string>("");
   const [phoneNumber, setPhoneNumber] = useState<string>("");
@@ -31,89 +38,71 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
   const [unitNo, setunitNo] = useState<string>("");
   const [buildingName, setbuildingName] = useState<string>("");
   const [buildingType, setBuildingType] = useState<string>("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
 
- 
-  const [otp, setOtp] = useState('');
+  const [originalPhoneNumber, setOriginalPhoneNumber] = useState<string>("");
+
   const [loading, setLoading] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
-
-
-  
+    const [otpSent, setOtpSent] = useState(false);
 
   const buildingOptions = [
     { key: "1", value: "House" },
     { key: "2", value: "Apartment" },
   ];
 
-  const handleRegister = async () => {
-    if (!selectedCategory || !firstName || !lastName || !phoneNumber || !email || !buildingType) {
-      Alert.alert("Error", "Please fill in all required fields.");
-      return;
-    }
-  
-    if (!validatePhoneNumber(phoneNumber)) {
-      Alert.alert("Error", "Please enter a valid phone number.");
-      return;
-    }
-  
-    if (!validateEmail(email)) {
-      Alert.alert("Error", "Please enter a valid email address.");
-      return;
-    }
-  
-    try {
-      // ✅ Step 1: Check for duplicate phone number or email in the backend
-      const checkResponse = await axios.post(`${environment.API_BASE_URL}api/customer/check-customer`, {
-        phoneNumber,
-        email,
-      });
-  
-      if (checkResponse.status === 400) {
-        Alert.alert("Error", "Phone number or email already exists.");
-        return;
+  // Fetch customer data based on customerId
+  useEffect(() => {
+    const fetchCustomerData = async () => {
+      try {
+        const response = await axios.get(
+          `${environment.API_BASE_URL}api/customer/get-customer-data/${id}`
+        );
+        if (response.status === 200) {
+          const customerData = response.data.customer;
+          const buildingData = response.data.building;
+
+          console.log("Customer Data:", customerData); 
+
+          setSelectedCategory(customerData.title);
+          setFirstName(customerData.firstName);
+          setLastName(customerData.lastName);
+          setPhoneNumber(customerData.phoneNumber);
+          setEmail(customerData.email);
+          setBuildingType(customerData.buildingType);
+          setOriginalPhoneNumber(customerData.phoneNumber);
+          setSelectedCategory(customerData.title);
+
+          if (customerData.buildingType === "House") {
+            setHouseNo(buildingData.houseNo || "");
+            setStreetName(buildingData.streetName || "");
+            setCity(buildingData.city || "");
+          } else if (customerData.buildingType === "Apartment") {
+            setbuildingNo(buildingData.buildingNo || "");
+            setbuildingName(buildingData.buildingName || "");
+            setunitNo(buildingData.unitNo || "");
+            setfloorNo(buildingData.floorNo || "");
+            setHouseNo(buildingData.houseNo || "");
+            setStreetName(buildingData.streetName || "");
+            setCity(buildingData.city || "");
+          }
+        } else {
+          Alert.alert("Error", "Failed to load customer data.");
+        }
+      } catch (error) {
+        console.error(error);
+        Alert.alert("Error", "Failed to load customer data.");
       }
-  
-      // ✅ Step 2: Store customer data locally
-      const customerData = {
-        title: selectedCategory,
-        firstName,
-        lastName,
-        phoneNumber,
-        email,
-        buildingType,
-        houseNo,
-        streetName,
-        city,
-        buildingNo,
-        floorNo,
-        unitNo,
-        buildingName,
-      };
-      await AsyncStorage.setItem("pendingCustomerData", JSON.stringify(customerData));
-  
-      // ✅ Step 3: Generate or retrieve the customer ID (you can change this logic based on your requirements)
-      const id = new Date().getTime().toString(); // Example: Using timestamp as the customer ID
-  
-      // ✅ Step 4: Send OTP and navigate to OTP screen
-      await sendOTP();
-      navigation.navigate("OtpScreen", { phoneNumber, id });
-  
-    } catch (error: any) {
-      console.log("Error checking customer:", error);
-      Alert.alert("Error", "Something went wrong. Please try again.");
-    }
-  };
-  
-  
-  
+    };
+
+    fetchCustomerData();
+  }, [id]);
+
 
   const sendOTP = async () => {
     if (!phoneNumber) {
       Alert.alert('Error', 'Please enter a phone number.');
-      return;
+      return { status: 400 }; // Return a mock response for error handling
     }
-    console.log("----check----",phoneNumber)
+    console.log("----check----", phoneNumber)
   
     try {
       setLoading(true);
@@ -149,8 +138,10 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
       if (response.status === 200) {
         setOtpSent(true);
         Alert.alert('Success', 'OTP sent successfully.');
+        return response; // Return the response object
       } else {
         Alert.alert('Error', 'Failed to send OTP.');
+        return { status: 400 }; // Return a failure response
       }
     } catch (error) {
       // Log the error response details for debugging
@@ -161,30 +152,109 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
         console.log('Unexpected error:', error);
         Alert.alert('Error', 'An unexpected error occurred.');
       }
+      return { status: 400 }; // Return a failure response on error
     } finally {
       setLoading(false);
     }
   };
   
 
-
+  const handleRegister = async () => {
+    if (!selectedCategory || !firstName || !lastName || !phoneNumber || !email || !buildingType) {
+      alert("Please fill in all required fields.");
+      return;
+    }
+  
+    // Validate phone number and email
+    if (!validatePhoneNumber(phoneNumber)) {
+      alert("Please enter a valid phone number.");
+      return;
+    }
+  
+    if (!validateEmail(email)) {
+      alert("Please enter a valid email address.");
+      return;
+    }
+  
+    const customerData = {
+      title: selectedCategory,
+      firstName,
+      lastName,
+      phoneNumber,
+      email,
+      buildingType,
+      houseNo,
+      streetName,
+      city,
+      buildingNo,
+      floorNo,
+      unitNo,
+      buildingName,
+    };
+  
+    try {
+      // If the phone number has changed, only send OTP and do not update backend yet
+      if (phoneNumber !== originalPhoneNumber) {
+        setOtpSent(false);  // Reset OTP sent state
+  
+        // Send OTP for verification
+        const otpResponse = await sendOTP();  // Send OTP
+        if (otpResponse.status === 200) {
+          // Save customer data temporarily for OTP verification process
+          await AsyncStorage.setItem("pendingCustomerData", JSON.stringify(customerData));
+  
+          // Navigate to OTP screen with the new phone number
+          navigation.navigate("OtpScreenUp", { phoneNumber ,id});
+          console.log(id)
+        } else {
+          alert("Failed to send OTP. Please try again.");
+        }
+      } else {
+        // If the phone number hasn't changed, update the data in the backend
+        const response = await axios.put(
+          `${environment.API_BASE_URL}api/customer/update-customer-data/${id}`,
+          customerData
+        );
+  
+        if (response.status === 200) {
+          console.log("Customer updated successfully:", response.data);
+          Alert.alert("Success", "Customer updated successfully.");
+          navigation.goBack();
+        } else {
+          console.error("Failed to update customer:", response.data.error);
+          Alert.alert("Error", "Failed to update customer. Please try again.");
+        }
+      }
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        Alert.alert("Error", `Failed to update customer: ${error.message}`);
+        console.error(error);
+      } else {
+        Alert.alert("Error", "An unknown error occurred");
+        console.error("An unknown error occurred", error);
+      }
+    }
+  };
+  
+  
   
 
+  const [open, setOpen] = useState(false);
+const [selectedCategory, setSelectedCategory] = useState("");
+const [items, setItems] = useState([
+  { label: "Mr", value: "Mr" },
+  { label: "Ms", value: "Ms" },
+]);
 
 
   const phoneRegex = /^\+?[0-9]{1,3}[0-9]{7,10}$/;
-
-
-
-  // Email validation regex
   const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
 
-  // Validate phone number and email
   const validatePhoneNumber = (phone: string) => phoneRegex.test(phone);
   const validateEmail = (email: string) => emailRegex.test(email);
 
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
-    
+
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
     const keyboardDidHideListener = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false));
@@ -202,31 +272,49 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
             <View className="bg-white flex-row items-center h-17 shadow-lg px-1">
               <BackButton navigation={navigation} />
               <Text style={{ fontSize: 18 }} className="font-bold text-center text-purple-600 flex-grow mr-9">
-                New Customer Registration
+                Edit Customer Details 
+           
               </Text>
             </View>
           </View>
 
-          <ScrollView style={{ paddingHorizontal: wp(1) }}>
+          <ScrollView style={{ paddingHorizontal: wp(1) }}
+          
+          >
             <View className="p-3 px-6">
               <View className="mb-4 mt-4 flex-row justify-between">
                 <View className="flex-[1]">
                   <Text className="text-gray-700 mb-1">Title</Text>
-                  <View className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full py-2 mt-1 justify-center justifyContent-flex-end">
-                    <Picker
-                      selectedValue={selectedCategory}
-                      onValueChange={(itemValue) => setSelectedCategory(itemValue)}
-                      mode="dropdown"
-                      style={{
-                        height: 20, 
-                        width: "100%",
-                        color: "black",
-                      }}
-                    >
-                      <Picker.Item label="Title" value="" style={{ fontSize: 8 }} />
-                      <Picker.Item label="Mr" value="Mr" style={{ fontSize: 8 }} />
-                      <Picker.Item label="Ms" value="Ms" style={{ fontSize: 8 }} />
-                    </Picker>
+                  {/* <View className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full py-2 mt-1 justify-center justifyContent-flex-end"> */}
+               
+                  <View className="mb-4">
+  
+                  <DropDownPicker
+  open={open}
+  value={selectedCategory}
+  items={items}
+  setOpen={setOpen}
+  setValue={setSelectedCategory}
+  setItems={setItems}
+  placeholder="Select Title"
+  style={{
+    backgroundColor: "#F6F6F6", 
+    borderColor: "#F6F6F6", 
+    borderRadius: 9999, // Equivalent to rounded-full
+    paddingVertical: 8, // Reduced padding
+    justifyContent: "flex-end", // Align content to the bottom
+    height: 40, // Set a specific height for the picker
+  }}
+  dropDownContainerStyle={{
+    backgroundColor: "#ffffff", 
+    borderRadius: 10, 
+    paddingTop: 10,
+    height: 140, // Set a height for the dropdown menu
+  }} 
+/>
+
+
+
                   </View>
                 </View>
 
@@ -255,7 +343,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
                 <Text className="text-gray-700 mb-1">Phone Number</Text>
                 <TextInput
                   className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
-                  placeholder="ex: +9477 XXXXXXX"
+                  placeholder="ex: 077 XXXXXXX"
                   keyboardType="phone-pad"
                   value={phoneNumber}
                   onChangeText={setPhoneNumber}
@@ -341,8 +429,8 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
                     <TextInput
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="Apartment / Building Name"
-                      value={ buildingName}
-                      onChangeText={ setbuildingName}
+                      value={buildingName}
+                      onChangeText={setbuildingName}
                     />
                   </View>
                   <View className="mb-4">
@@ -368,7 +456,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
                     <Text className="text-gray-700 mb-1">House No</Text>
                     <TextInput
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
-                      placeholder="ex : 14"
+                      placeholder="Building / House No (e.g., 14/B)"
                       value={houseNo}
                       onChangeText={setHouseNo}
                     />
@@ -395,8 +483,9 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
               )}
 
               <LinearGradient colors={["#854BDA", "#6E3DD1"]} className="py-3 px-4 rounded-lg items-center mt-6 mb-[15%] mr-[20%] ml-[20%] rounded-3xl h-15">
-                <TouchableOpacity onPress={handleRegister}>
-                  <Text className="text-center text-white font-bold">Register</Text>
+                <TouchableOpacity onPress={handleRegister}
+                >
+                  <Text className="text-center text-white font-bold">Save</Text>
                 </TouchableOpacity>
               </LinearGradient>
             </View>
@@ -408,4 +497,4 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
   );
 };
 
-export default AddCustomersScreen;
+export default EditCustomerScreen;

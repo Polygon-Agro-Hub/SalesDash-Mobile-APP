@@ -24,7 +24,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
   const [searchText, setSearchText] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("One Time");
 
-  const { name, number,customerId } = route.params;
+  const { name, number,id  ,customerId} = route.params;
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
@@ -77,8 +77,16 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
               <Text className="text-sm text-gray-500 px-3">Customer ID: {customerId}</Text>
             </View>
 
-            {/* Edit Button */}
-            <TouchableOpacity className="px-6">
+            {/* Edit Button */} 
+            <TouchableOpacity className="px-6"
+  onPress={() => {
+   
+    navigation.navigate("EditCustomerScreen", {
+      id:id,
+    });
+  }}
+>
+
               <MaterialIcons name="edit" size={20} color="purple" />
             </TouchableOpacity>
           </View>
