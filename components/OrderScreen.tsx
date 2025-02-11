@@ -6,6 +6,7 @@ import { SelectList } from "react-native-dropdown-select-list";
 import BackButton from "./BackButton";
 import Navbar from "./Navbar";
 import DropDownPicker from "react-native-dropdown-picker";
+import { LinearGradient } from "expo-linear-gradient"; // Gradient background
 
 
 type OrderScreenNavigationProp = StackNavigationProp<RootStackParamList, "OrderScreen">;
@@ -26,6 +27,8 @@ const [newItemQuantity, setNewItemQuantity] = useState("");
 const [newItemQuantity1, setNewItemQuantity1] = useState("");
 const [productOpen, setProductOpen] = useState(false);
 const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
+const [totalPrice, setTotalPrice] = useState(1800.00); // Example default price
+
 
   const [open, setOpen] = useState(false);
   const [units, setUnits] = useState([
@@ -115,7 +118,7 @@ const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
       {/* Header */}
       <View className="flex-row items-center h-16 shadow-md px-4 bg-white">
         <BackButton navigation={navigation} />
-        <Text className="text-lg font-bold text-purple-600 flex-grow text-center">Order Details</Text>
+        <Text className="text-lg font-bold text-[#6C3CD1] flex-grow text-center mr-7">Order Details</Text>
       </View>
   
       <ScrollView showsVerticalScrollIndicator={false} className="px-6 mt-4">
@@ -422,10 +425,22 @@ const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
             marginTop: -10,
           }}
           >
-            <Text className="text-lg font-semibold text-gray-800">Total: Rs.1800.00</Text>
-            <TouchableOpacity className="bg-purple-700 py-3 px-6 rounded-full">
-              <Text className="text-white font-semibold">Confirm</Text>
-            </TouchableOpacity>
+
+            
+
+  <Text className="text-lg font-semibold text-gray-800">Total : 
+    <Text className="text-lg font-semibold text-[#5C5C5C]">
+     Rs.{totalPrice.toFixed(2)} </Text></Text>
+  
+  <LinearGradient colors={["#854BDA", "#6E3DD1"]} className="py-3 px-6 rounded-full">
+    <TouchableOpacity 
+      onPress={() => navigation.navigate("ScheduleScreen", { totalPrice })}
+    >
+      <Text className="text-white font-semibold">Confirm</Text>
+    </TouchableOpacity>
+  </LinearGradient>
+
+
           </View>
         )}
       {!selectedPackage && !isKeyboardVisible && <Navbar navigation={navigation} activeTab="CustomersScreen" />}

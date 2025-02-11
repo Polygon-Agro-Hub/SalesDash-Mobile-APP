@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, TouchableOpacity, Image, Modal, ScrollView } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
@@ -6,6 +6,7 @@ import Navbar from "./Navbar";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
+import LottieView from "lottie-react-native";
 
 
 type ReminderScreenNavigationProp = StackNavigationProp<RootStackParamList, "ReminderScreen">;
@@ -14,7 +15,7 @@ interface ReminderScreenProps {
   navigation: ReminderScreenNavigationProp;
 }
 
-const ViewComplainScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
+const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
   const [reminders, setReminders] = useState([
     { id: "1", OrderNo: "#2412080001", CustomerNo: "7823456", type: "Payment Reminder", icon: require("../assets/images/payment-method.png"), read: false },
     { id: "2", OrderNo: "#2412080002", CustomerNo: "7888456", type: "Order is Processing", icon: require("../assets/images/payment-method.png"), read: false },
@@ -33,6 +34,8 @@ const ViewComplainScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
 
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedReminder, setSelectedReminder] = useState<{ id: string; OrderNo: string; CustomerNo: string; type: string; icon: string } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
 
   // Function to show delete confirmation modal
   const showDeleteModal = (reminder: any) => {
@@ -58,16 +61,37 @@ const ViewComplainScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
     );
   };
 
+  useEffect(() => {
+    setIsLoading(true); // Start loading
+    setTimeout(() => {
+      setIsLoading(false); // Stop loading after 3 seconds
+    }, 3000);
+  }, []);
+  
+
   const isEmpty = reminders.length === 0;
 
   return (
     <View className="flex-1 bg-white">
+
+{isLoading && (
+ <Modal transparent animationType="fade" visible={isLoading}>
+ <View className="flex-1 justify-center items-center bg-black/50">
+   <LottieView source={require("../assets/images/loading.json")}
+               autoPlay loop
+               style={{ width: wp(35), height: wp(35) }} />
+ </View>
+</Modal>
+
+)}
       
 
       {/* Header Section */}
-      <LinearGradient colors={["#854BDA", "#6E3DD1"]} className="h-20 shadow-md px-4 items-center justify-center">
-        <Text className="text-white text-lg font-bold">{reminders.length} Unread Notifications</Text>
-      </LinearGradient>
+      <LinearGradient colors={["#854BDA", "#6E3DD1"]} 
+    style={{ height: hp(10), width: wp(100), justifyContent: "center", alignItems: "center" }}>
+  <Text style={{ fontSize: wp(4.5) }} className="text-white font-bold">{reminders.length} Unread Notifications</Text>
+</LinearGradient>
+
 
       <View style={{ flex: 1,  paddingVertical: hp(2) }}>
 
@@ -138,4 +162,4 @@ const ViewComplainScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
   );
 };
 
-export default ViewComplainScreen;
+export default ReminderScreen;

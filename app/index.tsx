@@ -21,6 +21,12 @@ import OtpSuccesfulScreen from '@/components/OtpSuccesfulScreen';
 import EditCustomerScreen from '@/components/EditCustomerScreen';
 import OtpScreenUp from '@/components/OtpScreenUp';
 import OrderScreen from '@/components/OrderScreen';
+import ScheduleScreen from '@/components/ScheduleScreen';
+import SelectPaymentMethod from '@/components/SelectPaymentMethod';
+import OrderSummeryScreen from '@/components/OrderSummeryScreen';
+import OrderConfirmedScreen from '@/components/OrderConfirmedScreen';
+import ViewOrdersScreen from '@/components/ViewOrdersScreen';
+import View_CancelOrderScreen from '@/components/View_CancelOrderScreen'
 
 
 import { RootStackParamList } from '@/components/types';
@@ -55,6 +61,12 @@ const index = () => {
       <Stack.Screen name="OtpSuccesfulScreen" component={OtpSuccesfulScreen} />
       <Stack.Screen name="EditCustomerScreen" component={EditCustomerScreen} />
       <Stack.Screen name="OrderScreen" component={OrderScreen} />
+      <Stack.Screen name="ScheduleScreen" component={ScheduleScreen} />
+      <Stack.Screen name="SelectPaymentMethod" component={SelectPaymentMethod} />
+      <Stack.Screen name="OrderSummeryScreen" component={OrderSummeryScreen} />
+      <Stack.Screen name="OrderConfirmedScreen" component={OrderConfirmedScreen} />
+      <Stack.Screen name="ViewOrdersScreen" component={ViewOrdersScreen} />
+      <Stack.Screen name="View_CancelOrderScreen" component={View_CancelOrderScreen} />
       
     </Stack.Navigator>
    </GestureHandlerRootView>

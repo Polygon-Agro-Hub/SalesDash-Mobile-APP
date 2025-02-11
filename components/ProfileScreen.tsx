@@ -24,6 +24,7 @@ import {
   heightPercentageToDP as hp,
 } from "react-native-responsive-screen";
 import BackButton from "./BackButton";
+import { LinearGradient } from "expo-linear-gradient";
 
 type ProfileScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -129,7 +130,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                   }}
                 />
               </View>
+              <View className="ml-3"> 
               <BackButton navigation={navigation} />
+              </View>
 
               <View
                 className="bg-white rounded-t-3xl pt-6"
@@ -232,14 +235,18 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
               </View>
 
               <View className="bg-white px-7">
-                <TouchableOpacity
-                  className="bg-[#6839CF] py-3 rounded-full items-center mt-6 mb-10 px-4"
-                  onPress={handleUpdate}
-                  style={{ width: wp(60), alignSelf: "center" }}
-                >
-                  <Text className="text-white text-lg font-bold">Update</Text>
-                </TouchableOpacity>
-              </View>
+      <TouchableOpacity onPress={handleUpdate} style={{ width: wp(60), alignSelf: "center" }}>
+        <LinearGradient
+          colors={["#6839CF", "#874DDB"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          className="py-3 rounded-full items-center mt-6 mb-10 px-4"
+        >
+          <Text className="text-white text-lg font-bold">Update</Text>
+        </LinearGradient>
+      </TouchableOpacity>
+    </View>
+              
             </View>
           </ScrollView>
         </KeyboardAvoidingView>

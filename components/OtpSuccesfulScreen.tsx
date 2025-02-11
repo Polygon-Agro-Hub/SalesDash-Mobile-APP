@@ -10,6 +10,7 @@ import {
 } from "react-native-responsive-screen";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
+import { ScrollView } from "react-native-gesture-handler";
 
 type OtpSuccesfulScreenNavigationProp = StackNavigationProp<RootStackParamList, "OtpSuccesfulScreen">;
 
@@ -24,7 +25,7 @@ const OtpSuccesfulScreen: React.FC<OtpSuccesfulScreenProps> = ({ navigation }) =
      
       className="flex-1 bg-white"
     >
-      <View className="flex-1 bg-white px-3">
+      <ScrollView className="flex-1 bg-white px-3">
         {/* Header */}
         <View className="bg-white flex-row items-center h-17 shadow-lg px-1">
           {/* Back Button */}
@@ -69,7 +70,7 @@ Successfully Verified!
           </LinearGradient> */}
           <LinearGradient
             colors={["#6839CF", "#874DDB"]}
-            className="py-3 px-14 rounded-lg items-center mt-[55%] mb-[5%] mr-[20%] ml-[20%] rounded-3xl h-15"
+            className="py-2 px-10 rounded-lg items-center mt-[55%] mb-[5%] mr-[20%] ml-[20%] rounded-3xl h-15"
           >
             <TouchableOpacity  onPress={() => navigation.navigate("OrderScreen")}>
               <Text className="text-center text-white font-bold text-lg">Order Now</Text>
@@ -77,7 +78,7 @@ Successfully Verified!
           </LinearGradient>
         </View>
 
-       </View>
+        </ScrollView>
         <Navbar navigation={navigation} activeTab="CustomersScreen" />
       </View>
    

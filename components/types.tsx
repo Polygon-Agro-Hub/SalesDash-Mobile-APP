@@ -17,5 +17,12 @@ export type RootStackParamList = {
     EditCustomerScreen:{ id: string}; 
     OtpScreenUp:{phoneNumber:string , id: string};      
     OrderScreen:undefined;
+    ScheduleScreen: {totalPrice: Number };
+    SelectPaymentMethod: undefined;
+    OrderSummeryScreen:undefined;
+    OrderConfirmedScreen:undefined;
+    ViewOrdersScreen:undefined;
+    View_CancelOrderScreen:undefined;
+
   };
   

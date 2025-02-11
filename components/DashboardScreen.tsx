@@ -53,6 +53,8 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
   useEffect(() => {
     getUserProfile();
   }, []); 
+  
+
 
   const getUserProfile = async () => {
     try {
@@ -110,7 +112,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       </TouchableOpacity>
     </LinearGradient>
   </View>
-  
+
 
   );
 

@@ -7,6 +7,8 @@ import { LinearGradient } from "expo-linear-gradient"; // Gradient background
 import axios, { AxiosError } from "axios"; // Import axios and AxiosError
 import AsyncStorage from "@react-native-async-storage/async-storage"; // Import AsyncStorage
 import environment from "@/environment/environment";
+import LottieView from "lottie-react-native";
+import { Modal } from "react-native"; // Import Modal for full-screen loading
 
 // Navigation type
 type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, "LoginScreen">;
@@ -21,65 +23,111 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState({ username: "", password: "" });
   const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSignIn = async () => {
-    let hasError = false;
-    setError({ username: "", password: "" }); // Clear previous errors
+  // const handleSignIn = async () => {
+  //   let hasError = false;
+  //   setError({ username: "", password: "" }); // Clear previous errors
   
-    if (username.trim() === "") {
-      setError((prev) => ({ ...prev, username: "User Name is required" }));
-      hasError = true;
+  //   if (username.trim() === "") {
+  //     setError((prev) => ({ ...prev, username: "User Name is required" }));
+  //     hasError = true;
+  //   }
+  
+  //   if (password.trim() === "") {
+  //     setError((prev) => ({ ...prev, password: "Password is required" }));
+  //     hasError = true;
+  //   }
+  
+  //   if (hasError) {
+  //     return; // Stop if there are errors
+  //   }
+  
+  //   setLoading(true); // Show loading indicator
+  
+  //   try {
+  //     // Make the API call
+  //     const response = await axios.post(`${environment.API_BASE_URL}api/auth/login`, {
+  //       username,
+  //       password,
+  //     });
+  
+  //     // Handle successful response
+  //     if (response.data.success) {
+  //       const { token, passwordUpdate } = response.data.data;
+  
+  //       // Save token in AsyncStorage
+  //       await AsyncStorage.setItem("authToken", token);
+  
+  //       if (passwordUpdate === 0) {
+  //         // Redirect to Password Update Screen
+  //         navigation.navigate("ChangePasswordScreen");
+  //       } else {
+  //         // Redirect to Dashboard Screen
+  //         navigation.navigate("DashboardScreen");
+  //       }
+  //     }
+  //   } catch (err) {
+  //     // Check if the error is an instance of AxiosError
+  //     if (axios.isAxiosError(err)) {
+  //       setError({
+  //         ...error,
+  //         password: err.response?.data?.message || "Something went wrong. Please try again.",
+  //       });
+  //     } else {
+  //       // Handle non-axios errors here if necessary
+  //       setError({ ...error, password: "Something went wrong. Please try again." });
+  //     }
+  //   } finally {
+  //     setLoading(false); // Hide loading indicator
+  //   }
+  // };
+  
+ 
+
+
+const handleSignIn = async () => {
+  let hasError = false;
+  setError({ username: "", password: "" });
+
+  if (username.trim() === "") {
+    setError((prev) => ({ ...prev, username: "User Name is required" }));
+    hasError = true;
+  }
+
+  if (password.trim() === "") {
+    setError((prev) => ({ ...prev, password: "Password is required" }));
+    hasError = true;
+  }
+
+  if (hasError) return;
+
+  setLoading(true);
+  setIsLoading(true);
+
+  try {
+    const response = await axios.post(`${environment.API_BASE_URL}api/auth/login`, { username, password });
+
+    if (response.data.success) {
+      const { token, passwordUpdate } = response.data.data;
+      await AsyncStorage.setItem("authToken", token);
+
+      setTimeout(() => {
+        setIsLoading(false); // Hide animation after 3 seconds
+        navigation.navigate(passwordUpdate === 0 ? "ChangePasswordScreen" : "DashboardScreen");
+      }, 3000);
     }
-  
-    if (password.trim() === "") {
-      setError((prev) => ({ ...prev, password: "Password is required" }));
-      hasError = true;
-    }
-  
-    if (hasError) {
-      return; // Stop if there are errors
-    }
-  
-    setLoading(true); // Show loading indicator
-  
-    try {
-      // Make the API call
-      const response = await axios.post(`${environment.API_BASE_URL}api/auth/login`, {
-        username,
-        password,
-      });
-  
-      // Handle successful response
-      if (response.data.success) {
-        const { token, passwordUpdate } = response.data.data;
-  
-        // Save token in AsyncStorage
-        await AsyncStorage.setItem("authToken", token);
-  
-        if (passwordUpdate === 0) {
-          // Redirect to Password Update Screen
-          navigation.navigate("ChangePasswordScreen");
-        } else {
-          // Redirect to Dashboard Screen
-          navigation.navigate("DashboardScreen");
-        }
-      }
-    } catch (err) {
-      // Check if the error is an instance of AxiosError
-      if (axios.isAxiosError(err)) {
-        setError({
-          ...error,
-          password: err.response?.data?.message || "Something went wrong. Please try again.",
-        });
-      } else {
-        // Handle non-axios errors here if necessary
-        setError({ ...error, password: "Something went wrong. Please try again." });
-      }
-    } finally {
-      setLoading(false); // Hide loading indicator
-    }
-  };
-  
+  } catch (err) {
+    setError({
+      ...error,
+      password: axios.isAxiosError(err) ? err.response?.data?.message || "Something went wrong." : "Something went wrong.",
+    });
+    setIsLoading(false);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <View className="flex-1 bg-white">
@@ -134,6 +182,21 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             <Icon name={showPassword ? "eye-off" : "eye"} size={20} color="#6B7280" />
           </TouchableOpacity>
         </View>
+
+        {isLoading && (
+ <Modal transparent animationType="fade">
+ <View className="flex-1 justify-center items-center" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+   <LottieView
+     source={require("../assets/images/loading.json")}
+     autoPlay
+     loop
+     style={{ width: 100, height: 100 }}
+   />
+ </View>
+</Modal>
+
+)}
+
 
         {/* Sign In Button */}
         <LinearGradient colors={["#854BDA", "#6E3DD1"]} className="rounded-full py-3 px-12 self-center shadow-lg">

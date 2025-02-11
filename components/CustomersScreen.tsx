@@ -9,6 +9,7 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
+  Modal,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
@@ -17,7 +18,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
 import axios from "axios";
 import environment from "@/environment/environment";
-import { ActivityIndicator } from "react-native";
+import LottieView from "lottie-react-native";
 
 // Define navigation prop type
 type CustomersScreenNavigationProp = StackNavigationProp<RootStackParamList, "CustomersScreen">;
@@ -29,20 +30,9 @@ interface CustomersScreenProps {
 const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [customers, setCustomers] = useState<any[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Phone number validation regex
-  const phoneRegex = /^[+]?[0-9]{1,4}?[-.\s]?[0-9]{1,4}[-.\s]?[0-9]{1,4}$/;
-
-  // Email validation regex
-  const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
-
-  // Validate phone number and email
-  const validatePhoneNumber = (phone: string) => phoneRegex.test(phone);
-  const validateEmail = (email: string) => emailRegex.test(email);
-
-  // Listen for keyboard events
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
     const keyboardDidHideListener = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false));
@@ -53,55 +43,52 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
     };
   }, []);
 
-  // Fetch customers from the backend when the component mounts
   useEffect(() => {
     const fetchCustomers = async () => {
-      setLoading(true);
       try {
         const response = await axios.get(`${environment.API_BASE_URL}api/customer/get-customers`);
-        const validCustomers = response.data.filter((customer: any) => {
-          return validatePhoneNumber(customer.phoneNumber) && validateEmail(customer.email);
-        });
-        setCustomers(validCustomers);
-        setError(null);
+        setTimeout(() => {
+          setCustomers(response.data);
+          setError(null);
+          setLoading(false);
+        }, 3000); // Ensure loading lasts at least 3 seconds
       } catch (err) {
-        setError("Failed to fetch customers. Please try again.");
-      } finally {
-        setLoading(false);
+        setTimeout(() => {
+          setError("Failed to fetch customers. Please try again.");
+          setLoading(false);
+        }, 3000);
       }
     };
-  
+
     fetchCustomers();
-  
-    // Refetch customers every 3 seconds (real-time updates)
-    const interval = setInterval(() => {
-      fetchCustomers();
-    }, 5000); // Refetch every 3 seconds
-  
-    return () => {
-      clearInterval(interval); // Cleanup on unmount
-    };
+    const interval = setInterval(fetchCustomers, 3000);
+    return () => clearInterval(interval);
   }, []);
-  
+
   const isEmpty = customers.length === 0;
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1 bg-white">
       <View className=" bg-white flex-1">
-        {/* Header Section */}
+        {loading && (
+          <Modal transparent animationType="fade">
+            <View className="flex-1 justify-center items-center" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+              <LottieView source={require("../assets/images/loading.json")} autoPlay loop style={{ width: 100, height: 100 }} />
+            </View>
+          </Modal>
+        )}
+
         <LinearGradient colors={["#854BDA", "#6E3DD1"]} className="h-20 shadow-md px-4 pt-17 items-center justify-center">
           <Text className="text-white text-lg font-bold mt-[-9]">
             Total Customers: <Text className="font-bold ">{customers.length}</Text>
           </Text>
         </LinearGradient>
 
-        {/* Search Bar */}
         <View className="flex-row items-center bg-[#F5F1FC] px-6 py-3 rounded-full mt-[-22] mx-auto w-[90%] shadow-md">
           <TextInput placeholder="Search By Name, Phone Number" placeholderTextColor="#A3A3A3" className="flex-1 text-sm text-gray-700" />
           <Image source={require("../assets/images/search.png")} className="w-6 h-6" resizeMode="contain" />
         </View>
 
-        {/* Floating Add Button */}
         <TouchableOpacity
           style={{ zIndex: 1000 }}
           className="absolute bottom-[10] right-6 bg-purple-600 w-14 h-14 rounded-full items-center justify-center shadow-lg mb-1"
@@ -110,13 +97,8 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
           <Image source={require("../assets/images/plus.png")} className="w-6 h-6" resizeMode="contain" />
         </TouchableOpacity>
 
-        {/* Display Loading, Error, or Customer List */}
         <View style={{ paddingHorizontal: wp(6), paddingVertical: hp(2) }} className="flex-1">
-          {loading ? (
-            <View className="flex-1 justify-center items-center">
-              <ActivityIndicator size="large" color="#6E3DD1" />
-            </View>
-          ) : error ? (
+          {error ? (
             <View className="flex-1 justify-center items-center px-4">
               <Text className="text-red-500 text-center mt-4">{error}</Text>
             </View>
@@ -134,15 +116,14 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                 contentContainerStyle={{ paddingBottom: 120 }}
                 renderItem={({ item }) => (
                   <TouchableOpacity
-                    onPress={() => {
-                      console.log("Customer ID:", item.id); 
+                    onPress={() =>
                       navigation.navigate("ViewCustomerScreen", {
                         name: item.firstName,
                         number: item.phoneNumber,
-                        customerId: item.cusId, 
-                        id:item.id,
-                      });
-                    }}
+                        customerId: item.cusId,
+                        id: item.id,
+                      })
+                    }
                   >
                     <View className="bg-white shadow-md p-4 mb-3 mx-3 flex-row justify-between items-center rounded-lg border border-gray-200">
                       <View>
@@ -158,8 +139,6 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
           )}
         </View>
       </View>
-
-      {/* Hide Navbar when keyboard is visible */}
       {!isKeyboardVisible && <Navbar navigation={navigation} activeTab="CustomersScreen" />}
     </KeyboardAvoidingView>
   );

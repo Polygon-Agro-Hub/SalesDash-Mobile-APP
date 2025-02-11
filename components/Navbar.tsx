@@ -41,16 +41,16 @@ const Navbar: React.FC<NavbarProps> = ({ navigation, activeTab }) => {
 
       <TouchableOpacity
         className="items-center"
-        onPress={() => navigation.navigate("OrderScreen")}
+        onPress={() => navigation.navigate("ViewOrdersScreen")}
       >
         <Icon
           name="receipt"
           size={24}
-          color={activeTab === "OrdersScreen" ? "#854BDA" : "#A3A3A3"}
+          color={activeTab === "ViewOrdersScreen" ? "#854BDA" : "#A3A3A3"}
         />
         <Text
           className={`${
-            activeTab === "OrdersScreen" ? "text-purple-600" : "text-gray-600"
+            activeTab === "ViewOrdersScreen" ? "text-purple-600" : "text-gray-600"
           } text-sm font-medium`}
         >
           Orders

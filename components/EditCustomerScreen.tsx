@@ -269,7 +269,7 @@ const [items, setItems] = useState([
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1 bg-white">
         <View className="flex-1 bg-white py-4 p-2">
           <View className="p-[-4]">
-            <View className="bg-white flex-row items-center h-17 shadow-lg px-1">
+            <View className="bg-white flex-row items-center h-17 shadow-lg px-1 ">
               <BackButton navigation={navigation} />
               <Text style={{ fontSize: 18 }} className="font-bold text-center text-purple-600 flex-grow mr-9">
                 Edit Customer Details 
