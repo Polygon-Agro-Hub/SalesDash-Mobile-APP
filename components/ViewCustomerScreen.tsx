@@ -42,12 +42,12 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
     Linking.openURL(phoneNumber).catch((err) => console.error("Error opening dialer", err));
   };
 
-  const filters = ["One Time", "Once a Week", "Weekly"];
+  const filters = ["One Time", "Twice a Week", "Weekly"];
 
   // Static order data
   const orders = [
     { id: "1", orderNumber: "1234", schedule: "Monday", time: "9:00 AM - 12:00 PM", status: "Delivered", type: "One Time" },
-    { id: "2", orderNumber: "5678", schedule: "Tuesday", time: "2:00 PM - 4:00 PM", status: "On the way", type: "Once a Week" },
+    { id: "2", orderNumber: "5678", schedule: "Tuesday", time: "2:00 PM - 4:00 PM", status: "On the way", type: "Twice a Week" },
     { id: "3", orderNumber: "9101", schedule: "Wednesday", time: "10:00 AM - 1:00 PM", status: "Delivered", type: "Weekly" },
     { id: "4", orderNumber: "1123", schedule: "Friday", time: "8:00 AM - 10:00 AM", status: "Pending", type: "One Time" },
     { id: "5", orderNumber: "1123", schedule: "Friday", time: "8:00 AM - 10:00 AM", status: "Processing", type: "One Time" },
@@ -66,26 +66,25 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
         {/* Header Section */}
         <View className="relative">
           <View className="bg-white flex-row rounded-b-[35px] items-center justify-between h-28 z-50 shadow-lg px-5">
-            {/* Back Button */}
-            {/* <TouchableOpacity onPress={() => navigation.goBack()} style={{ paddingHorizontal: wp(6), paddingVertical: hp(2) }}>
-              <View className="w-9 h-9 bg-[#F6F6F680] rounded-full justify-center items-center">
-                <AntDesign name="left" size={20} color="black" />
-              </View>
-            </TouchableOpacity> */}
-            <View className="mt-[-10%] ml-[-2%]">
+         
+            <View className="mt-[-8%] ml-[-2%]">
              <BackButton navigation={navigation} />
              </View> 
 
             {/* Customer Info */}
-            <View className="flex-1 ml-8 mt-[-5%]">
-              <Text className="text-lg font-bold text-gray-800 px-12 ml-4">{name}</Text>
-              <Text className="text-sm text-gray-500 px-3">Customer ID: {customerId}</Text>
-            </View>
+            <View className="flex-1 ml-[8%] mt-[-3%]">
+  <Text className="text-xl font-bold text-gray-800" style={{ paddingHorizontal: wp("18%"), marginLeft: wp("2%") }}>
+    {name}
+  </Text>
+  <Text className=" text-gray-500" style={{ paddingHorizontal: wp("8%") }}>
+    Customer ID: {customerId}
+  </Text>
+</View>
 
             {/* Edit Button */} 
             <TouchableOpacity className="px-6 mt-[-20%] mr-[-10%]"
   onPress={() => {
-   
+
     navigation.navigate("EditCustomerScreen", {
       id:id,
     });
@@ -106,7 +105,9 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
               </TouchableOpacity>
 
               {/* New Order Button */}
-              <TouchableOpacity className="flex-row bg-[#6B3BCF] px-4 py-2 rounded-full items-center mt-5 mx-4">
+              <TouchableOpacity 
+              onPress={() => navigation.navigate("OrderScreen")}
+              className="flex-row bg-[#6B3BCF] px-4 py-2 rounded-full items-center mt-5 mx-4">
                 <Image source={require("../assets/images/newOrder.png")} className="w-5 h-5 mr-2" resizeMode="contain" />
                 <Text className="text-white font-bold">New Order</Text>
               </TouchableOpacity>
@@ -118,7 +119,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
         <View className="flex-row items-center bg-[#F5F1FC] px-8 py-2 rounded-full mt-4 mb-2 mx-5 w-[90%] shadow-sm">
           <TextInput
             placeholder="Search By Order Number"
-            placeholderTextColor="#A3A3A3"
+            placeholderTextColor="#000000"
             className="flex-1 text-sm text-purple"
             onChangeText={(text) => setSearchText(text)}
             value={searchText}
@@ -127,17 +128,20 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
         </View>
 
         {/* Filters */}
-        <View className="flex-row justify-around mt-4 mb-2 mx-2">
-                         {filters.map((filter) => (
-                           <TouchableOpacity
-                             key={filter}
-                             className={`px-4 py-2 rounded-full border ${selectedFilter === filter ? "bg-[#6B3BCF] border-[#6B3BCF]" : "border-[#6B3BCF]"}`}
-                             onPress={() => setSelectedFilter(filter)}
-                           >
-                             <Text className={`font ${selectedFilter === filter ? "text-white font-bold" : "text-[#6B3BCF]"}`}>{filter}</Text>
-                           </TouchableOpacity>
-                         ))}
-                       </View>
+        <View className="flex-row flex-wrap justify-center mt-[2%] mb-[1%] mx-[2%]">
+  {filters.map((filter) => (
+    <TouchableOpacity
+      key={filter}
+      className={`px-[4%] py-[1.5%] rounded-full border ${selectedFilter === filter ? "bg-[#6B3BCF] border-[#6B3BCF]" : "border-[#6B3BCF]"}`}
+      style={{ minWidth: wp("28%"), marginHorizontal: wp("1%"), marginBottom: hp("1%") }} // Ensures responsiveness
+      onPress={() => setSelectedFilter(filter)}
+    >
+      <Text className={`text-center text-sm ${selectedFilter === filter ? "text-white font-bold" : "text-[#6B3BCF]"}`}>
+        {filter}
+      </Text>
+    </TouchableOpacity>
+  ))}
+</View>
 
         {/* Orders List */}
         {filteredOrders.length > 0 ? (

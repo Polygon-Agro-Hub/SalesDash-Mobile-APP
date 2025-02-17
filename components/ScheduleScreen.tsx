@@ -36,9 +36,9 @@ const [selectedDate, setSelectedDate] = useState<string | null>(null);
   ];
 
   const timeSlots = [
-    { key: "morning", value: "Morning" },
-    { key: "afternoon", value: "Afternoon" },
-    { key: "evening", value: "Evening" },
+    { key: "morning", value: "Withing 8-12 AM" },
+    { key: "afternoon", value: "Withing 12-4 PM" },
+    { key: "evening", value: "Withing 4-8 PM" },
   ];
 
   const weekdays = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];

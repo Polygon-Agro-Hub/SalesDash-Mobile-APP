@@ -298,20 +298,28 @@ const [items, setItems] = useState([
   setItems={setItems}
   placeholder="Select Title"
   style={{
-    backgroundColor: "#F6F6F6", 
-    borderColor: "#F6F6F6", 
-    borderRadius: 9999, // Equivalent to rounded-full
-    paddingVertical: 8, // Reduced padding
-    justifyContent: "flex-end", // Align content to the bottom
-    height: 40, // Set a specific height for the picker
+    backgroundColor: "#F6F6F6",
+    borderColor: "#F6F6F6",
+    borderRadius: 9999, // Rounded full
+    paddingVertical: 0, // Minimize vertical padding
+    paddingHorizontal: 7,
+    height: 0, // Reduce picker height
+  }}
+  textStyle={{
+    fontSize: 12, // Reduce placeholder font size
+  
+    textAlignVertical: "center", // Align text properly
   }}
   dropDownContainerStyle={{
-    backgroundColor: "#ffffff", 
-    borderRadius: 10, 
-    paddingTop: 10,
-    height: 140, // Set a height for the dropdown menu
-  }} 
+    backgroundColor: "#ffffff",
+    borderRadius: 10,
+    paddingTop: 6,
+    maxHeight: 100, // Limit dropdown menu height
+    overflow: "hidden",
+  }}
 />
+
+
 
 
 

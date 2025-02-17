@@ -10,6 +10,7 @@ import {
 import { StackNavigationProp } from "@react-navigation/stack"; 
 import { RootStackParamList } from "./types"; 
 import Navbar from "./Navbar"; 
+import BackButton from "./BackButton";
 
 type ViewScreenNavigationProp = StackNavigationProp<RootStackParamList, "ViewScreen">;
 
@@ -34,15 +35,18 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation }) => {
   return (
     <View className="flex-1 bg-gray-100">
       {/* Top Section with Background Image */}
+      
       <ImageBackground
         source={require("../assets/images/Union.png")}
         className="h-64 rounded-b-3xl shadow-lg bg-[#E6DBF766]"
         resizeMode="cover"
       >
-
+<View className="ml-2">
+  <BackButton navigation={navigation} />
+  </View>
           <Image
             source={require("../assets/images/viewPack.png")} // Replace with your product image path
-            className="w-64 h-64 self-center mb-2"
+            className="w-64 h-64 self-center mb-2 mt-[-20%]"
             resizeMode="contain"
           />
 
@@ -72,22 +76,26 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation }) => {
 
         {/* Person and Duration */}
         <View className="items-center mb-6">
-          <TouchableOpacity className="bg-[#F5F1FC] flex-row items-center justify-center px-8 py-4 rounded-full">
-            <Image
-              source={require("../assets/images/person.png")} 
-              className="w-6 h-6 mr-2"
-              resizeMode="contain"
-            />
-            <Text className="text-purple-600 text-base font-medium mr-6">01 person</Text> 
+  <TouchableOpacity className="bg-[#F5F1FC] flex-row items-center justify-center px-8 py-4 rounded-full">
+    <View className="bg-white rounded-full p-2">
+      <Image
+        source={require("../assets/images/Bell Service.png")} 
+        className="w-5 h-5"
+        resizeMode="contain"
+      />
+    </View>
+    <Text className="text-purple-600 text-base font-medium mr-6 ml-1"> 01 person</Text> 
 
-            <Image
-              source={require("../assets/images/Clock.png")}
-              className="w-6 h-6 mr-2 ml-8"
-              resizeMode="contain"
-            />
-            <Text className="text-purple-600 text-base font-medium">01 week</Text>
-          </TouchableOpacity>
-        </View>
+    <View className="bg-white rounded-full p-2 ml-8 mt-[-2]">
+      <Image
+        source={require("../assets/images/Clock.png")}
+        className="w-5 h-5"
+        resizeMode="contain"
+      />
+    </View>
+    <Text className="text-purple-600 text-base font-medium ml-1">01 week</Text>
+  </TouchableOpacity>
+</View>
 
         {/* List Section */}
         <Text className="text-gray-800 text-lg font-bold p-4">All (10 items)</Text>

@@ -68,7 +68,10 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({ navigation }) =
       
         <View className="flex-row justify-between">
               <Text className="text-base font-semibold">Delivery - One Time</Text>
-              <TouchableOpacity className="border border-[#6C3CD1] px-3  rounded-full ml-12">
+              <TouchableOpacity 
+             // onPress={() => navigation.navigate("ScheduleScreen", { totalPrice })}
+
+              className="border border-[#6C3CD1] px-3  rounded-full ml-12">
                 <Text className="text-[#6C3CD1] font-medium">Edit</Text>
               </TouchableOpacity>
             </View>
@@ -103,7 +106,9 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({ navigation }) =
           <View className="bg-white border border-gray-300 rounded-lg p-4 mt-3 shadow-sm">
           <View className="flex-row justify-between">
               <Text className="text-black font-medium">Payment Summery</Text>
-              <TouchableOpacity className="border border-[#6C3CD1] px-3 rounded-full">
+              <TouchableOpacity 
+              onPress={() => navigation.navigate("OrderScreen")}
+              className="border border-[#6C3CD1] px-3 rounded-full">
                 <Text className="text-[#6C3CD1] font-medium">Edit</Text>
               </TouchableOpacity>
             </View>
@@ -125,7 +130,9 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({ navigation }) =
           <View className="bg-white border border-gray-300 rounded-lg p-4 mt-3 shadow-sm">
             <View className="flex-row justify-between">
               <Text className="text-black font-medium">Payment Method</Text>
-              <TouchableOpacity className="border border-[#6C3CD1] px-3 rounded-full">
+              <TouchableOpacity 
+              onPress={() => navigation.navigate("SelectPaymentMethod")}
+              className="border border-[#6C3CD1] px-3 rounded-full">
                 <Text className="text-[#6C3CD1] font-medium">Edit</Text>
               </TouchableOpacity>
             </View>

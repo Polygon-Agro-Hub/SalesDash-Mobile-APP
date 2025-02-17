@@ -1,5 +1,5 @@
 import React from "react";
-import { View, TouchableOpacity, Text } from "react-native";
+import { View, TouchableOpacity, Text, Image } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons"; // For icons
 
 interface NavbarProps {
@@ -21,81 +21,228 @@ const Navbar: React.FC<NavbarProps> = ({ navigation, activeTab }) => {
       }}
     >
       {/* Navigation Items */}
-      <TouchableOpacity
-        className="items-center"
-        onPress={() => navigation.navigate("DashboardScreen")}
-      >
-        <Icon
-          name="home"
-          size={24}
-          color={activeTab === "DashboardScreen" ? "#854BDA" : "#A3A3A3"}
-        />
-        <Text
-          className={`${
-            activeTab === "DashboardScreen" ? "text-purple-600" : "text-gray-600"
-          } text-sm font-medium`}
-        >
-          Home
-        </Text>
-      </TouchableOpacity>
+    
+ <TouchableOpacity
+  className="items-center"
+  onPress={() => navigation.navigate("DashboardScreen")}
+>
+  {/* Active / Inactive Image */}
+  {activeTab === "DashboardScreen" ? (
+    <View
+      style={{
+        backgroundColor: "#854BDA", // Purple background when active
+        padding: 8, // Space around the image
+        borderRadius: 9999, // Make it circular
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Image
+        source={require("../assets/images/Home1.png")}
+        style={{
+          width: 20,
+          height: 20,
+        }}
+      />
+    </View>
+  ) : (
+    <View
+    style={{
+      backgroundColor: "#FFFFFF", // Purple background when active
+      padding: 8, // Space around the image
+      borderRadius: 9999, // Make it circular
+      alignItems: "center",
+      justifyContent: "center",
+    }}
+  >
+    <Image
+      source={require("../assets/images/hut1.png")}
+      style={{
+        width: 20,
+        height: 20,
+      }}
+    />
+    </View>
+  )}
 
-      <TouchableOpacity
-        className="items-center"
-        onPress={() => navigation.navigate("ViewOrdersScreen")}
-      >
-        <Icon
-          name="receipt"
-          size={24}
-          color={activeTab === "ViewOrdersScreen" ? "#854BDA" : "#A3A3A3"}
-        />
-        <Text
-          className={`${
-            activeTab === "ViewOrdersScreen" ? "text-purple-600" : "text-gray-600"
-          } text-sm font-medium`}
-        >
-          Orders
-        </Text>
-      </TouchableOpacity>
+  {/* Text below image */}
+  <Text
+    className={`${
+      activeTab === "DashboardScreen" ? "text-purple-600" : "text-gray-600"
+    } text-sm font-medium`}
+  >
+    Home
+  </Text>
+</TouchableOpacity>
 
-      <TouchableOpacity
-        className="items-center"
-        onPress={() => navigation.navigate("ReminderScreen")}
-      >
-        <Icon
-          name="notifications"
-          size={24}
-          color={activeTab === "ReminderScreen" ? "#854BDA" : "#A3A3A3"}
-        />
-        <Text
-          className={`${
-            activeTab === "ReminderScreen"
-              ? "text-purple-600"
-              : "text-gray-600"
-          } text-sm font-medium`}
-        >
-          Reminders
-        </Text>
-      </TouchableOpacity>
 
-      <TouchableOpacity
-        className="items-center"
-        onPress={() => navigation.navigate("CustomersScreen")}
-      >
-        <Icon
-          name="people"
-          size={24}
-          color={activeTab === "CustomersScreen" ? "#854BDA" : "#A3A3A3"}
-        />
-        <Text
-          className={`${
-            activeTab === "CustomersScreen"
-              ? "text-purple-600"
-              : "text-gray-600"
-          } text-sm font-medium`}
-        >
-          Customers
-        </Text>
-      </TouchableOpacity>
+
+     
+
+
+<TouchableOpacity
+  className="items-center"
+  onPress={() => navigation.navigate("ViewOrdersScreen")}
+>
+  {/* Active / Inactive Image */}
+  {activeTab === "ViewOrdersScreen" ? (
+    <View
+      style={{
+        backgroundColor: "#854BDA", // Purple background when active
+        padding: 8, // Space around the image
+        borderRadius: 9999, // Make it circular
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Image
+        source={require("../assets/images/Bullet List1.png")}
+        style={{
+          width: 20,
+          height: 20,
+        }}
+      />
+    </View>
+  ) : (
+    <View
+    style={{
+      backgroundColor: "#FFFFFF", // Purple background when active
+      padding: 8, // Space around the image
+      borderRadius: 9999, // Make it circular
+      alignItems: "center",
+      justifyContent: "center",
+    }}
+  >
+    <Image
+      source={require("../assets/images/list-items.png")}
+      style={{
+        width: 20,
+        height: 20,
+      }}
+    />
+    </View>
+  )}
+
+  {/* Text below image */}
+  <Text
+    className={`${
+      activeTab === "ViewOrdersScreen" ? "text-purple-600" : "text-gray-600"
+    } text-sm font-medium`}
+  >
+   Orders
+  </Text>
+</TouchableOpacity>
+
+
+    
+    <TouchableOpacity
+  className="items-center"
+  onPress={() => navigation.navigate("ReminderScreen")}
+>
+  {/* Active / Inactive Image */}
+  {activeTab === "ReminderScreen" ? (
+    <View
+      style={{
+        backgroundColor: "#854BDA", // Purple background when active
+        padding: 8, // Space around the image
+        borderRadius: 9999, // Make it circular
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+       
+      <Image
+        source={require("../assets/images/Notification1.png")}
+        style={{
+          width: 20,
+          height: 20,
+        }}
+      />
+    </View>
+  ) : (
+    <View
+      style={{
+        backgroundColor: "#FFFFFF", // Purple background when active
+        padding: 8, // Space around the image
+        borderRadius: 9999, // Make it circular
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+    <Image
+      source={require("../assets/images/bell.png")}
+      style={{
+        width: 20,
+        height: 20,
+      }}
+    />
+    </View>
+  )}
+
+  {/* Text below image */}
+  <Text
+    className={`${
+      activeTab === "ReminderScreen" ? "text-purple-600" : "text-gray-600"
+    } text-sm font-medium`}
+  >
+    Reminders
+  </Text>
+</TouchableOpacity>
+
+   
+
+<TouchableOpacity
+  className="items-center"
+  onPress={() => navigation.navigate("CustomersScreen")}
+>
+  {/* Active / Inactive Image */}
+  {activeTab === "CustomersScreen" ? (
+    <View
+      style={{
+        backgroundColor: "#854BDA", // Purple background when active
+        padding: 8, // Space around the image
+        borderRadius: 9999, // Make it circular
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Image
+        source={require("../assets/images/user.png")}
+        style={{
+          width: 20,
+          height: 20,
+        }}
+      />
+    </View>
+  ) : (
+    <View
+      style={{
+        backgroundColor: "#FFFFFF", // Purple background when active
+        padding: 8, // Space around the image
+        borderRadius: 9999, // Make it circular
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+    <Image
+      source={require("../assets/images/user1.png")}
+      style={{
+        width: 20,
+        height: 20,
+      }}
+    />
+    </View>
+  )}
+
+  {/* Text below image */}
+  <Text
+    className={`${
+      activeTab === "CustomersScreen" ? "text-purple-600" : "text-gray-600"
+    } text-sm font-medium`}
+  >
+   Customers
+  </Text>
+</TouchableOpacity>
     </View>
   );
 };

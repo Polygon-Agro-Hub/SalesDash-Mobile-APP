@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Image, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from "react-native";
+import { View, Text, Image, TouchableOpacity, ActivityIndicator, Alert, ScrollView, Animated } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
 import Navbar from "./Navbar";
@@ -60,6 +60,7 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
     }
   };
 
+
   return (
     <View className="flex-1 w-full bg-white">
 
@@ -99,7 +100,10 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
       alignItems: "center",
     }}
   >
-    <Ionicons name="person-outline" size={hp(3)} color="#8F8F8F" />
+   <Image 
+  source={require('../assets/images/Account.png')} // Adjust the path as needed
+  style={{ width: hp(3), height: hp(3), tintColor: '#8F8F8F' }} 
+/>
   </View>
 
   <Text style={{ flex: 1, marginLeft: wp(4), fontSize: hp(2) }} className="text-gray-800">
@@ -130,7 +134,10 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
       alignItems: "center",
     }}
   >
-  <Ionicons name="alert-circle-outline" size={hp(3)} color="#8F8F8F" />
+ <Image 
+  source={require('../assets/images/Help.png')} // Adjust the path as needed
+  style={{ width: hp(3), height: hp(3), tintColor: '#8F8F8F' }} 
+/>
   </View>
   
   <Text 
@@ -141,7 +148,7 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
   </Text>
   
   <Ionicons 
-    name="chevron-forward-outline"  
+    name={complaintsExpanded ? "chevron-down-outline" : "chevron-forward-outline"}  
     size={hp(2.5)} 
     color="#8F8F8F" 
     style={{ marginRight: wp(2) }} 
@@ -172,7 +179,10 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
       alignItems: "center",
     }}
   >
-  <Ionicons name="lock-closed-outline" size={hp(3)} color="#8F8F8F" />
+  <Image 
+  source={require('../assets/images/Password.png')} // Adjust the path as needed
+  style={{ width: hp(3), height: hp(3), tintColor: '#8F8F8F' }} 
+/>
     </View>
 
   <Text style={{ flex: 1, marginLeft: wp(4), fontSize: hp(2) }} className="text-gray-800">
@@ -193,7 +203,10 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
       alignItems: "center",
     }}
   >
-  <Ionicons name="document-text-outline" size={hp(3)} color="#8F8F8F" />
+  <Image 
+  source={require('../assets/images/Privacy.png')} // Adjust the path as needed
+  style={{ width: hp(3), height: hp(3), tintColor: '#8F8F8F' }} 
+/>
   </View>
   <Text style={{ flex: 1, marginLeft: wp(4), fontSize: hp(2) }} className="text-gray-800">
     Privacy & Policy
@@ -212,7 +225,10 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
       alignItems: "center",
     }}
   >
-  <Ionicons name="information-circle-outline" size={hp(3)} color="#8F8F8F" />
+  <Image 
+  source={require('../assets/images/Terms and Conditions.png')} // Adjust the path as needed
+  style={{ width: hp(3), height: hp(3), tintColor: '#8F8F8F' }} 
+/>
   </View>
   <Text style={{ flex: 1, marginLeft: wp(4), fontSize: hp(2) }} className="text-gray-800">
     Terms & Conditions
@@ -220,7 +236,7 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
   <Ionicons name="chevron-forward-outline" size={hp(2.5)} color="#8F8F8F" style={{ marginRight: wp(2) }} />
 </TouchableOpacity>
 
-
+<View className="mb-8">
           <View className="border-b border-gray-200 my-5" />
 
           <TouchableOpacity className="flex-row items-center" onPress={() => console.log("Logout")}> 
@@ -238,6 +254,7 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
             </View>
             <Text style={{ marginLeft: wp(4), fontSize: hp(2), color: "#FF3B30", fontWeight: "bold" }}>Logout</Text>
           </TouchableOpacity>
+        </View>
         </View>
       </ScrollView>
     )}

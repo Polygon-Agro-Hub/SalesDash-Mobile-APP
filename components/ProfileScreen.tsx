@@ -110,7 +110,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
 
   return (
     <View className="flex-1 bg-white">
-      <TouchableWithoutFeedback>
+     
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={{ flex: 1 }}
@@ -138,14 +138,14 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                 className="bg-white rounded-t-3xl pt-6"
                 style={{ marginTop: hp(15), paddingHorizontal: wp(6) }}
               >
-                <View className="items-center" style={{ marginTop: -hp(13) }}>
+                <View className="items-center" style={{ marginTop: -hp(12) }}>
                   <TouchableOpacity className="relative">
                     {profileImage ? (
                       <Image
                         source={{ uri: profileImage }}
                         style={{
-                          width: wp(32),
-                          height: wp(32),
+                          width: wp(35),
+                          height: wp(35),
                        
                         
                         }}
@@ -154,9 +154,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                       <Image
                         source={require("../assets/images/profile.png")}
                         style={{
-                          width: wp(37),
-                          height: wp(37),
-                          borderRadius: wp(16),
+                          width: wp(34),
+                          height: wp(34),
+                          borderRadius: wp(1),
                        
                         }}
                       />
@@ -172,7 +172,10 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                 <View className="p-4">
                 <View className="bg-[#6839CF] flex-row justify-between mt-3 px-4 py-3 rounded-2xl ">
                     <View className="flex-1 items-center">
-                      <AntDesign name="star" size={24} color="gold" />
+                    <Image 
+  source={require("../assets/images/star.png")} // Ensure the correct path
+  style={{ width: 24, height: 24 }} 
+/>
                       <Text className="text-white text-sm mt-1">Points</Text>
                       <Text className="text-white text-lg font-bold">1000</Text>
                     </View>
@@ -180,7 +183,10 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                     <View className="w-[1px] bg-white h-full mx-2" />
 
                     <View className="flex-1 items-center">
-                      <AntDesign name="filetext1" size={24} color="white" />
+                    <Image 
+  source={require("../assets/images/Order Completed.png")} // Ensure the correct path
+  style={{ width: 24, height: 24 }} 
+/>
                       <Text className="text-white text-sm mt-1">Orders</Text>
                       <Text className="text-white text-lg font-bold">20</Text>
                     </View>
@@ -188,7 +194,10 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                     <View className="w-[1px] bg-white h-full mx-2" />
 
                     <View className="flex-1 items-center">
-                      <AntDesign name="team" size={24} color="white" />
+                    <Image 
+  source={require("../assets/images/Batch Assign.png")} // Ensure the correct path
+  style={{ width: 24, height: 24 }} 
+/>
                       <Text className="text-white text-sm mt-1">Customers</Text>
                       <Text className="text-white text-lg font-bold">100</Text>
                     </View>
@@ -250,7 +259,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
-      </TouchableWithoutFeedback>
+    
 
       <Navbar navigation={navigation} activeTab="DashboardScreen" />
     </View>

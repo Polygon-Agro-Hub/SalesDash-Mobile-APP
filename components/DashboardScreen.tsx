@@ -92,7 +92,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     }}
   >
     <Image source={item.image} className="w-20 h-20 mb-3" resizeMode="contain" />
-    <Text className="text-lg font-bold text-gray-700">{item.name}</Text>
+    <Text className=" font-bold text-[#6A3AD0]">{item.name}</Text>
     <Text className="text-sm font-medium text-gray-500">{item.price}</Text>
   
     <LinearGradient
@@ -100,7 +100,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       style={{
         marginTop: 12,
         borderRadius: 16,
-        paddingVertical: 8,
+        paddingVertical: 6,
         paddingHorizontal: 20,
       }}
     >
@@ -152,7 +152,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
         <Text
             className="absolute text-purple-600 text-sm font-bold"
             style={{
-              top: -1,
+              top: 2,
               left: "50%", 
               transform: [{ translateX: -12 }], 
             }}
@@ -185,7 +185,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
         renderItem={renderPackage}
         keyExtractor={(item) => item.id.toString()}
         numColumns={2}
-        contentContainerStyle={{ paddingHorizontal:10 }}
+        contentContainerStyle={{ paddingHorizontal:10, paddingLeft:2 }}
       />
 
       {/* Navbar */}

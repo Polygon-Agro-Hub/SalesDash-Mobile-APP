@@ -11,6 +11,7 @@ import BackButton from "./BackButton";
 import axios from "axios";
 import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import DropDownPicker from 'react-native-dropdown-picker';
 
 type AddCustomersScreenNavigationProp = StackNavigationProp<RootStackParamList, "AddCustomersScreen">;
 
@@ -198,7 +199,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
     <SafeAreaView className="flex-1 bg-white">
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1 bg-white">
         <View className="flex-1 bg-white py-4 p-2">
-          <View className="p-[-4]">
+          <View className="p-[-2]">
             <View className="bg-white flex-row items-center h-17 shadow-lg px-1">
               <BackButton navigation={navigation} />
               <Text style={{ fontSize: 18 }} className="font-bold text-center text-purple-600 flex-grow mr-9">

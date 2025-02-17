@@ -134,14 +134,22 @@ const [totalPrice, setTotalPrice] = useState(1800.00); // Example default price
   
         {/* Number of Persons */}
         <View className="mt-4">
-          <Text className="text-gray-700">No. of Persons</Text>
-          <TextInput className="bg-[#F6F6F6] p-3 rounded-lg mt-1 text-gray-500 rounded-full h-12" placeholder="ex: 3 " />
-        </View>
+  <Text className="text-gray-700">No. of Persons</Text>
+  <TextInput 
+    className="bg-[#F6F6F6] p-3 rounded-lg mt-1 text-gray-500 rounded-full h-12" 
+    placeholder="ex: 3" 
+    keyboardType="numeric"
+  />
+</View>
+
   
         {/* Number of Days */}
         <View className="mt-3">
           <Text className="text-gray-700">For How many days?</Text>
-          <TextInput className="bg-[#F6F6F6] p-3 rounded-lg mt-1 text-gray-500 rounded-full h-12" placeholder="ex: 5" />
+          <TextInput className="bg-[#F6F6F6] p-3 rounded-lg mt-1 text-gray-500 rounded-full h-12" 
+          placeholder="ex: 5"
+          keyboardType="numeric"
+           />
         </View>
   
         {/* Image when no package is selected */}

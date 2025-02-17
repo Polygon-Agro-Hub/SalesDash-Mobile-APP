@@ -512,7 +512,7 @@ useEffect(() => {
  >
    <TouchableOpacity onPress={verifyOTP} disabled={loading}>
      <Text className="text-center text-white font-bold">
-       {loading ? "Verifying..." : "Verify"}
+       {loading ? "Verify" : "Verify"}
      </Text>
    </TouchableOpacity>
  </LinearGradient>

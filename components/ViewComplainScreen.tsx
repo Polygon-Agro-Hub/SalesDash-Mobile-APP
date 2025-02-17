@@ -115,13 +115,13 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({ navigation }) =
       )}
 
       {/* Header */}
-      <LinearGradient colors={["#6839CF", "#854EDC"]} className="h-25 shadow-md px-2 pt-4">  
+      <LinearGradient colors={["#6839CF", "#854EDC"]} className="h-30 shadow-md px-2 pt-5">  
         <View className="flex-row items-center justify-between mt-[-4] ">
-          <View>
+          <View className="mt-[-3]">
             <BackButton navigation={navigation} />
           </View>
 
-          <Text className="text-white text-lg font-bold flex-1 mx-12 ">Complaint History</Text>
+          <Text className="text-white text-lg font-bold flex-1 mx-14 ">Complaint History</Text>
         </View>
       </LinearGradient>
 
@@ -133,7 +133,7 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({ navigation }) =
               source={require("../assets/images/searchr.png")}
               style={{ width: wp("60%"), height: hp("30%"), resizeMode: "contain" }}
             />
-            <Text className="text-black text-i text-center mt-4">You have no previous complaints</Text>
+            <Text className="text-black text-i text-center mt-4 italic">You have no previous complaints</Text>
           </View>
         ) : (
           // Complaint List (FlatList)
@@ -199,8 +199,8 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({ navigation }) =
                     {"\n\n"}
                     {selectedComplaint.reply || "No response available."}
                     {"\n\n"}
-                    <Text className="font-bold text-left ">Sincerely,</Text>
-                    <Text className="text-left">AgroWorld Customer Support Team</Text>
+                    <Text className=" text-left ">Sincerely,</Text>
+                    <Text className="text-left"> {"\n"}AgroWorld Customer Support Team</Text>
                     {"\n\n"}
                   </Text>
 

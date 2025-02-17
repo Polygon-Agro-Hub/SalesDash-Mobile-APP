@@ -139,8 +139,8 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
         )}
 
         {/* Delete Confirmation Modal */}
-        <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
-          <View className="flex-1 justify-end bg-black/50">
+        <Modal animationType="fade" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
+          <View className="flex-1 justify-end bg-[#00000033]">
             <View className="bg-white w-full p-2 rounded-t-lg mr-4">
               <View className="flex-row justify-between mt-3 ">
                 <TouchableOpacity className="flex-1 p-2 rounded-lg mr-4 " onPress={deleteNotification}>

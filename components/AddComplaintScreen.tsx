@@ -23,6 +23,7 @@ import axios from "axios";
 import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Alert } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 
 type AddComplaintScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -107,22 +108,24 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
                 <View className="items-center mb-6">
                   <Image source={require("../assets/images/complain11.png")} className="w-20 h-20" />
                   <Text className="text-xl font-bold text-gray-900 mt-2">
-                    Tell us the <Text className="text-purple-500">problem</Text>
+                    Tell us the <Text className="text-[#6839CF]">problem</Text>
                   </Text>
                 </View>
 
-                <View className="mb-4 border border-gray-300 rounded-full overflow-hidden">
-                  <Picker
-                    selectedValue={selectedCategory}
-                    onValueChange={(itemValue) => setSelectedCategory(itemValue)}
-                    style={{ height: 50, color: "#333" }}
-                  >
-                    <Picker.Item label="Select Complaint Category" value="" />
-                    <Picker.Item label="Technical Issue" value="Technical Issue" />
-                    <Picker.Item label="Billing Problem" value="Billing Problem" />
-                    <Picker.Item label="Customer Service" value="Customer Service" />
-                    <Picker.Item label="Other" value="Other" />
-                  </Picker>
+                <View className="mb-4 border border-[#393939] rounded-full overflow-hidden ">
+                <Picker
+  selectedValue={selectedCategory}
+  onValueChange={(itemValue) => setSelectedCategory(itemValue)}
+  style={{ height: 50, color: "#434343" }} // Remove the typo "#434343s"
+  itemStyle={{ fontSize: 10 }} // Adjust font size
+>
+  <Picker.Item label="Select Complaint Category" value="" />
+  <Picker.Item label="Technical Issue" value="Technical Issue" />
+  <Picker.Item label="Billing Problem" value="Billing Problem" />
+  <Picker.Item label="Customer Service" value="Customer Service" />
+  <Picker.Item label="Other" value="Other" />
+</Picker>
+
                 </View>
 
                 <Text className="text-center text-black mb-4">
@@ -130,23 +133,36 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
                 </Text>
 
                 <View className="mb-8">
-                  <TextInput
-                    multiline
-                    numberOfLines={6}
-                    textAlignVertical="top"
-                    placeholder="Add the Complaint here.."
-                    className="text-gray-800 bg-white border border-gray-300 rounded-lg p-4 min-h-[250px]"
-                    value={complaintText}
-                    onChangeText={setComplaintText}
-                  />
-                </View>
+  <TextInput
+    multiline
+    numberOfLines={6}
+    textAlignVertical="top"
+    placeholder="Add the Complaint here.."
+    placeholderTextColor="#808FA2 text-italic" 
+    className="text-black bg-white border border-[#393939] rounded-lg p-4 min-h-[250px] italic"
+    value={complaintText}
+    onChangeText={setComplaintText}
+  />
+</View>
 
-                <TouchableOpacity
+
+                {/* <TouchableOpacity
                   className="bg-purple-600 py-3 rounded-full items-center mx-auto w-40 shadow-lg"
                   onPress={handleSubmit}
                 >
                   <Text className="text-white font-semibold text-lg">Submit</Text>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
+                <TouchableOpacity onPress={handleSubmit} className="mx-auto shadow-lg w-40">
+  <LinearGradient
+    colors={["#6839CF", "#874DDB"]}
+    start={{ x: 0, y: 0 }}
+    end={{ x: 1, y: 1 }}
+    className="py-3 rounded-full items-center"
+  >
+    <Text className="text-white text-lg font-bold">Submit</Text>
+  </LinearGradient>
+</TouchableOpacity>
+
               </ScrollView>
             </View>
           </KeyboardAvoidingView>

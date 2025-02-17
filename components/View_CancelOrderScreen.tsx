@@ -42,10 +42,10 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
 
         {/* Order Status Timeline */}
         <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
-        <View className="p-5 mt-[-15] ml-5">
+        <View className="p-5 mt-[-5] ml-6">
   <View className="border-l border-[#A6A6A6] pl-5 relative">
     {/* Order Placed */}
-    <View className="flex-row items-center mb-12">
+    <View className="flex-row items-center mb-12 ">
       <View className="w-4 h-4 bg-[#6C3CD1] rounded-full absolute -left-7 border-4 border-[#F4EDFF]" />
       <Text className="text-gray-700">Order Placed on 21th July 2024</Text>
     </View>
