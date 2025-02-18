@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,31 +6,138 @@ import {
   TouchableOpacity,
   ScrollView,
   ImageBackground,
+  Alert,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack"; 
-import { RootStackParamList } from "./types"; 
+//import { RootStackParamList } from "./types"; 
 import Navbar from "./Navbar"; 
 import BackButton from "./BackButton";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+import environment from "@/environment/environment";
+import { RouteProp } from "@react-navigation/native";
 
 type ViewScreenNavigationProp = StackNavigationProp<RootStackParamList, "ViewScreen">;
+type ViewScreenRouteProp = RouteProp<RootStackParamList, "ViewScreen">; 
+type RootStackParamList = {
+  ViewScreen: { selectedPackage: Package };
+};
+
+
 
 interface ViewScreenProps {
   navigation: ViewScreenNavigationProp;
+  route: ViewScreenRouteProp;
+}
+interface Package {
+  id: number;
+  name: string;
+  total: string; // Change "price" to "total" to match API response
+  description:string;
 }
 
-const ViewScreen: React.FC<ViewScreenProps> = ({ navigation }) => {
-  const items = [
-    { name: "Orange", quantity: "500g" },
-    { name: "Grapes", quantity: "100g" },
-    { name: "Strawberry", quantity: "100g" },
-    { name: "Papaya", quantity: "100g" },
-    { name: "Lemon", quantity: "400g" },
-    { name: "Apple", quantity: "100g" },
-    { name: "Watermelon", quantity: "500g" },
-    { name: "Banana", quantity: "1kg" },
-    { name: "Woodapple", quantity: "100g" },
-    { name: "Guava", quantity: "250g" },
-  ];
+
+
+const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
+  const selectedPackage = route.params?.selectedPackage;
+
+  //console.log("Selected Package:", selectedPackage);
+
+
+    
+      const [token, setToken] = useState<string | null>(null);
+      const [packages, setPackages] = useState<Package[]>([]);
+      const [items, setItems] = useState<{ name: string; quantity: string; quantityType: string }[]>([]);
+
+
+
+
+
+      // useEffect(() => {
+      //   console.log("Packages state updated:", packages);
+      // }, [packages]);
+      
+      
+
+       useEffect(() => {
+     
+          fetchPackages(); // Fetch packages from the backend
+        }, []);
+
+        useEffect(() => {
+          if (selectedPackage) {
+            fetchItemsForPackage(selectedPackage.id); // Fetch items for selected package
+          }
+        }, [selectedPackage]);
+        
+      
+    
+
+        const fetchPackages = async () => {
+          try {
+            const storedToken = await AsyncStorage.getItem("authToken");
+            if (!storedToken) {
+              Alert.alert("Error", "No authentication token found");
+              return;
+            }
+        
+            setToken(storedToken);
+        
+            const response = await axios.get<{ data: Package[] }>(
+              `${environment.API_BASE_URL}api/packages/get-packages`,
+              {
+                headers: { Authorization: `Bearer ${storedToken}` },
+              }
+            );
+        
+            //console.log("API Response:", response.data);
+            
+            if (response.data && response.data.data) {
+              setPackages(response.data.data);
+            } else {
+              console.log("No packages found in response.");
+            }
+          } catch (error) {
+            console.error("Error fetching packages:", error);
+            Alert.alert("Error", "Failed to fetch packages");
+          }
+        };
+
+        const fetchItemsForPackage = async (packageId: number) => {
+          try {
+            const storedToken = await AsyncStorage.getItem("authToken");
+            if (!storedToken) {
+              Alert.alert("Error", "No authentication token found");
+              return;
+            }
+        
+            const response = await axios.get<{ data: { name: string; quantity: string, quantityType: string }[] }>(
+              `${environment.API_BASE_URL}api/packages/${packageId}/items`,
+              {
+                headers: { Authorization: `Bearer ${storedToken}` },
+              }
+            );
+        
+          //  console.log("Fetched Items:", response.data);  // Check the response data
+        
+            if (response.data && response.data.data) {
+              setItems(response.data.data);  // Update the state with the fetched data
+              console.log("Items state updated:", response.data.data);  // Verify the updated state
+            } else {
+              console.log("No items found for this package.");
+            }
+          } catch (error) {
+            console.error("Error fetching items:", error);
+            Alert.alert("Error", "Failed to fetch items for the package");
+          }
+        };
+        
+        
+        
+    
+
+    
+
 
   return (
     <View className="flex-1 bg-gray-100">
@@ -56,8 +163,8 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation }) => {
       <ScrollView className="flex-1 bg-white rounded-t-3xl -mt-7 px-6 pt-6 shadow-lg">
         {/* Title and Price */}
         <View className="flex-row justify-between items-center mb-4">
-          <Text className="text-xl font-bold text-purple-600">Fruity Pack</Text>
-          <Text className="text-lg font-bold text-gray-800">Rs.1800</Text>
+          <Text className="text-xl font-bold text-purple-600">{selectedPackage.name}</Text>
+          <Text className="text-lg font-bold text-gray-800">Rs.  {selectedPackage?.total}</Text>
         </View>
 
         {/* Description */}
@@ -67,10 +174,7 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation }) => {
           
           {/* Paragraph Text */}
           <Text className="text-gray-600 text-sm leading-6 mr-2">
-            Enjoy a handpicked mix of premium fruits, customized for one person's
-            weekly needs. Perfectly portioned, always fresh, and packed for
-            convenience. Stay healthy, energized, and satisfied all week long.
-            Order your FreshWeek Personal Fruit Pack today! 🍎🍇
+            {selectedPackage.description}
           </Text>
         </View>
 
@@ -98,16 +202,23 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation }) => {
 </View>
 
         {/* List Section */}
-        <Text className="text-gray-800 text-lg font-bold p-4">All (10 items)</Text>
-        {items.map((item, index) => (
-          <View
-            key={index}
-            className="flex-row justify-between items-center border-b border-gray-200 py-3 px-4"
-          >
-            <Text className="text-gray-700 text-sm">{item.name}</Text>
-            <Text className="text-gray-500 text-sm">{item.quantity}</Text>
-          </View>
-        ))}
+        <Text className="text-gray-800 text-lg font-bold p-4">All ({items.length} items)</Text>
+        <View   style={{ marginBottom: 50, flexShrink: 0 }} >
+        {items.map((item, index) => {
+  console.log("Rendering item:", item);  // Log each item being rendered
+  return (
+    <View
+      key={index}
+      className="flex-row justify-between items-center border-b border-gray-200 py-3 px-4"
+    
+    >
+      <Text className="text-gray-700 text-sm">{item.name}</Text>
+      <Text className="text-gray-500 text-sm">{item.quantity}{item.quantityType}</Text>
+    </View>
+  );
+})}
+</View>
+
       </ScrollView>
 
       {/* Navbar */}

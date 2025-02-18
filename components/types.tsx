@@ -1,9 +1,13 @@
+
+
+
 export type RootStackParamList = {
     Splash: undefined;
     LoginScreen: undefined;
     ChangePasswordScreen: undefined;
     DashboardScreen: undefined;
-    ViewScreen: undefined;
+   ViewScreen: {selectedPackage:string};
+  
     CustomersScreen: undefined;
     SidebarScreen: undefined;
     ProfileScreen: undefined;

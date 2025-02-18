@@ -31,19 +31,27 @@ type DashboardScreenNavigationProp = StackNavigationProp<
 interface DashboardScreenProps {
   navigation: DashboardScreenNavigationProp;
 }
+interface Package {
+  id: number;
+  name: string;
+  price: string;
+  description:string;
+}
 
 const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
-  const packages = [
-    { id: 1, name: "Family Pack", price: "Rs.3000", image: require("../assets/images/epack.png") },
-    { id: 2, name: "Salad Essentials", price: "Rs.2000", image: require("../assets/images/salad.png") },
-    { id: 3, name: "Fruity Pack", price: "Rs.1800", image: require("../assets/images/fruits.png") },
-    { id: 4, name: "All Grains", price: "Rs.3500", image: require("../assets/images/grain.png") },
-    { id: 5, name: "Fruity Pack", price: "Rs.1800", image: require("../assets/images/fruits.png") },
-    { id: 6, name: "All Grains", price: "Rs.3500", image: require("../assets/images/grain.png") },
-  ];
+  // const packages = [
+  //   { id: 1, name: "Family Pack", price: "Rs.3000", image: require("../assets/images/epack.png") },
+  //   { id: 2, name: "Salad Essentials", price: "Rs.2000", image: require("../assets/images/salad.png") },
+  //   { id: 3, name: "Fruity Pack", price: "Rs.1800", image: require("../assets/images/fruits.png") },
+  //   { id: 4, name: "All Grains", price: "Rs.3500", image: require("../assets/images/grain.png") },
+  //   { id: 5, name: "Fruity Pack", price: "Rs.1800", image: require("../assets/images/fruits.png") },
+  //   { id: 6, name: "All Grains", price: "Rs.3500", image: require("../assets/images/grain.png") },
+  // ];
   const [isLoading, setIsLoading] = useState(true);
   const [token, setToken] = useState<string | null>(null);
   const [formData, setFormData] = useState({ username: "" });
+  const [packages, setPackages] = useState<Package[]>([]);
+
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 5000);
@@ -52,7 +60,8 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
 
   useEffect(() => {
     getUserProfile();
-  }, []); 
+    fetchPackages(); // Fetch packages from the backend
+  }, []);
   
 
 
@@ -76,6 +85,34 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     }
   };
 
+  const fetchPackages = async () => {
+    try {
+      const storedToken = await AsyncStorage.getItem("authToken");
+      if (!storedToken) {
+        Alert.alert("Error", "No authentication token found");
+        return;
+      }
+  
+      setToken(storedToken);
+  
+      const response = await axios.get<{ data: Package[] }>(
+        `${environment.API_BASE_URL}api/packages/get-packages`,
+        {
+          headers: { Authorization: `Bearer ${storedToken}` },
+        }
+      );
+  
+      setPackages(response.data.data); // Ensure response structure matches
+      setIsLoading(false);
+    } catch (error) {
+      Alert.alert("Error", "Failed to fetch packages");
+      console.error(error);
+      setIsLoading(false);
+    }
+  };
+  
+
+
   if (isLoading) {
     return <DashboardSkeleton />;
   }
@@ -91,9 +128,9 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       elevation: 10, // Android shadow
     }}
   >
-    <Image source={item.image} className="w-20 h-20 mb-3" resizeMode="contain" />
-    <Text className=" font-bold text-[#6A3AD0]">{item.name}</Text>
-    <Text className="text-sm font-medium text-gray-500">{item.price}</Text>
+   <Image source={require("../assets/images/fruits.png")} className="w-20 h-20 mb-3" resizeMode="contain" />
+    <Text className="font-bold text-[#6A3AD0]">{item.name}</Text>
+      <Text className="text-sm font-medium text-gray-500">Rs. {item.total}</Text>
   
     <LinearGradient
       colors={["#854BDA", "#6E3DD1"]}
@@ -105,9 +142,10 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       }}
     >
       <TouchableOpacity
-        onPress={() => navigation.navigate('ViewScreen')}
-        className="items-center"
-      >
+  onPress={() => navigation.navigate("ViewScreen", { selectedPackage: item })} // Ensure key matches expected parameter
+  className="items-center"
+>
+
         <Text className="text-white font-bold text-sm">View</Text>
       </TouchableOpacity>
     </LinearGradient>
@@ -185,9 +223,8 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
         renderItem={renderPackage}
         keyExtractor={(item) => item.id.toString()}
         numColumns={2}
-        contentContainerStyle={{ paddingHorizontal:10, paddingLeft:2 }}
+        contentContainerStyle={{ paddingHorizontal: 10, paddingLeft: 2 }}
       />
-
       {/* Navbar */}
       
       <Navbar navigation={navigation}activeTab="DashboardScreen"/>
