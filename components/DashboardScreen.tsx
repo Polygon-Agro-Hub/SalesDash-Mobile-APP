@@ -142,7 +142,9 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       }}
     >
       <TouchableOpacity
-  onPress={() => navigation.navigate("ViewScreen", { selectedPackage: item })} // Ensure key matches expected parameter
+  //onPress={() => navigation.navigate("ViewScreen", { selectedPackage: item })} // Ensure key matches expected parameter
+  onPress={() => navigation.navigate("ViewScreen", { selectedPackageId: item.id, selectedPackageName: item.name, selectedPackageTotal: item.total ,selectedPackageDescription:item.description})}
+
   className="items-center"
 >
 

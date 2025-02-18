@@ -6,7 +6,13 @@ export type RootStackParamList = {
     LoginScreen: undefined;
     ChangePasswordScreen: undefined;
     DashboardScreen: undefined;
-   ViewScreen: {selectedPackage:string};
+   //ViewScreen: {selectedPackage:string};
+ ViewScreen: { 
+    selectedPackageId: number;
+    selectedPackageName: string;
+    selectedPackageTotal: string;
+    selectedPackageDescription:string;
+  };
   
     CustomersScreen: undefined;
     SidebarScreen: undefined;
