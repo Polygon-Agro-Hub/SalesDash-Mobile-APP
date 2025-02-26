@@ -25,6 +25,7 @@ import {
 } from "react-native-responsive-screen";
 import BackButton from "./BackButton";
 import { LinearGradient } from "expo-linear-gradient";
+import { AxiosError } from 'axios';
 
 type ProfileScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -88,25 +89,62 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
     }));
   };
 
+  // const handleUpdate = async () => {
+  //   try {
+  //     if (!token) {
+  //       Alert.alert("Error", "You are not authenticated");
+  //       return;
+  //     }
+
+  //     await axios.put(
+  //       `${environment.API_BASE_URL}api/auth/user-updateUser`,
+  //       formData,
+  //       { headers: { Authorization: `Bearer ${token}` } }
+  //     );
+
+  //     Alert.alert("Success", "Profile updated successfully!");
+  //   } catch (error) {
+  //     Alert.alert("Error", "Failed to update profile");
+  //     console.error(error);
+  //   }
+  // };
+
   const handleUpdate = async () => {
     try {
       if (!token) {
         Alert.alert("Error", "You are not authenticated");
         return;
       }
-
-      await axios.put(
+  
+      // Remove fields that are not allowed by the backend schema
+      const { empId, nicNumber, username, ...updatedData } = formData;
+  
+      console.log('Form data being sent:', updatedData);  // Log to verify
+  
+      const response = await axios.put(
         `${environment.API_BASE_URL}api/auth/user-updateUser`,
-        formData,
-        { headers: { Authorization: `Bearer ${token}` } }
+        updatedData,  // Send only the allowed fields
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          }
+        }
       );
-
+  
       Alert.alert("Success", "Profile updated successfully!");
     } catch (error) {
-      Alert.alert("Error", "Failed to update profile");
-      console.error(error);
+      if (error instanceof AxiosError) {
+        console.error('Backend error details:', error.response?.data);
+        Alert.alert("Error", `Failed to update profile: ${error.response?.data.message || 'Validation error'}`);
+      } else {
+        console.error('Error:', error instanceof Error ? error.message : 'Unknown error');
+        Alert.alert("Error", "Failed to update profile");
+      }
     }
   };
+  
+  
 
   return (
     <View className="flex-1 bg-white">

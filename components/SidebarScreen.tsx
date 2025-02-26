@@ -10,6 +10,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import environment from "@/environment/environment";
 import BackButton from "./BackButton";
+import LottieView from "lottie-react-native";
 
 
 type SidebarScreenNavigationProp = StackNavigationProp<RootStackParamList, "SidebarScreen">;
@@ -46,45 +47,51 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
   };
   const [loading, setLoading] = useState(false);
 
-  // Function to handle logout
-  const handleLogout = async () => {
-    setLoading(true); // Show loading indicator
-    try {
-      await AsyncStorage.removeItem("authToken");
-      setTimeout(() => {
-        navigation.replace("LoginScreen"); // Redirect after 5 seconds
-      }, 5000);
-    } catch (error) {
-      console.error("Error removing authToken:", error);
-      setLoading(false);
-    }
-  };
+//   // Function to handle logout
+const handleLogout = async () => {
+  setLoading(true); // Show loading indicator
+  try {
+    await AsyncStorage.removeItem("authToken");
+    setTimeout(() => {
+      navigation.replace("LoginScreen"); // Redirect after 5 seconds
+    }, 5000);
+  } catch (error) {
+    console.error("Error removing authToken:", error);
+    setLoading(false);
+  }
+};
 
 
   return (
     <View className="flex-1 w-full bg-white">
 
-         {loading ? (
+          {loading ? (
         <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#693ACF" />
-          <Text className="mt-4 text-lg text-[#693ACF] font-semibold">Logging out...</Text>
-        </View>
-      ) : (
-      <ScrollView style={{ paddingHorizontal: wp(4) }}>
-        <BackButton navigation={navigation} />
+        <LottieView
+          source={require("../assets/images/loading.json")}
+          autoPlay
+          loop
+          style={{ width: wp(25), height: hp(12) }}
+        />
+        <Text className="mt-4 text-lg text-[#693ACF] font-semibold">Logging out...</Text>
+      </View>
+    ) : (
+      <View className=" flex-1 w-full bg-white">
+    <ScrollView style={{ paddingHorizontal: wp(4) }}>
+         <BackButton navigation={navigation} />
 
-        <View className="flex-row items-center p-5">
-          <Image source={require("../assets/images/profile.png")} style={{ width: wp(16), height: wp(16), borderRadius: wp(8) }} />
-          <View style={{ marginLeft: wp(4) }}>
-            <Text className="text-lg font-bold text-gray-900">{formData.username}</Text>
-            <Text className="text-sm text-gray-500 mt-1">{formData.empId}</Text>
+         <View className="flex-row items-center p-5">
+           <Image source={require("../assets/images/profile.png")} style={{ width: wp(16), height: wp(16), borderRadius: wp(8) }} />
+           <View style={{ marginLeft: wp(4) }}>
+             <Text className="text-lg font-bold text-gray-900">{formData.username}</Text>
+             <Text className="text-sm text-gray-500 mt-1">{formData.empId}</Text>
           </View>
-        </View>
+       </View>
 
         <View className="border-b border-gray-200 my-1 ml-4 mr-4" />
 
         <View className="flex-1 p-5">
-        <TouchableOpacity
+         <TouchableOpacity
   style={{ marginBottom: hp(2) }}
   className="flex-row items-center"
   onPress={() => navigation.navigate("ProfileScreen")}
@@ -239,7 +246,8 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
 <View className="mb-8">
           <View className="border-b border-gray-200 my-5" />
 
-          <TouchableOpacity className="flex-row items-center" onPress={() => console.log("Logout")}> 
+          <TouchableOpacity className="flex-row items-center" onPress={handleLogout}> 
+
           <View
     style={{
       width: hp(5), // Icon size
@@ -256,13 +264,20 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
           </TouchableOpacity>
         </View>
         </View>
+        
+       
+
       </ScrollView>
-    )}
       <Navbar navigation={navigation} activeTab="DashboardScreen" />
+      </View>
+    )}
+   
     </View>
   );
 };
 
-export default SidebarScreen;
+ export default SidebarScreen;
+
+
 
 

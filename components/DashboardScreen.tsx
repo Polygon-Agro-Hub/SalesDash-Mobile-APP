@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   ProgressBarAndroid,
   Alert,
-  ScrollView
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack"; 
 import { RootStackParamList } from "./types"; 
@@ -23,48 +22,53 @@ import {
   heightPercentageToDP as hp,
 } from "react-native-responsive-screen";
 
-type DashboardScreenNavigationProp = StackNavigationProp<
-  RootStackParamList,
-  "DashboardScreen"
->;
+type DashboardScreenNavigationProp = StackNavigationProp<RootStackParamList, "DashboardScreen">;
 
 interface DashboardScreenProps {
   navigation: DashboardScreenNavigationProp;
 }
+
 interface Package {
   id: number;
   name: string;
   price: string;
-  description:string;
+  description: string;
 }
 
 const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
-  // const packages = [
-  //   { id: 1, name: "Family Pack", price: "Rs.3000", image: require("../assets/images/epack.png") },
-  //   { id: 2, name: "Salad Essentials", price: "Rs.2000", image: require("../assets/images/salad.png") },
-  //   { id: 3, name: "Fruity Pack", price: "Rs.1800", image: require("../assets/images/fruits.png") },
-  //   { id: 4, name: "All Grains", price: "Rs.3500", image: require("../assets/images/grain.png") },
-  //   { id: 5, name: "Fruity Pack", price: "Rs.1800", image: require("../assets/images/fruits.png") },
-  //   { id: 6, name: "All Grains", price: "Rs.3500", image: require("../assets/images/grain.png") },
-  // ];
   const [isLoading, setIsLoading] = useState(true);
   const [token, setToken] = useState<string | null>(null);
   const [formData, setFormData] = useState({ username: "" });
   const [packages, setPackages] = useState<Package[]>([]);
 
-
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 5000);
-    return () => clearTimeout(timer);
-  }, []);
+    const skeletonMinDuration = 3000; // Ensure skeleton shows for at least 3 seconds
+    const startTime = Date.now(); // Track when the loading starts
 
-  useEffect(() => {
-    getUserProfile();
-    fetchPackages(); // Fetch packages from the backend
-  }, []);
-  
+    const fetchData = async () => {
+      try {
+        // Fetch data asynchronously
+        await Promise.all([getUserProfile(), fetchPackages()]);
 
+        // Calculate elapsed time and remaining time to ensure the skeleton is shown for at least 3 seconds
+        const elapsedTime = Date.now() - startTime;
+        const remainingTime = skeletonMinDuration - elapsedTime;
 
+        if (remainingTime > 0) {
+          setTimeout(() => setIsLoading(false), remainingTime);
+        } else {
+          setIsLoading(false); // Hide skeleton if fetch takes longer than 3 seconds
+        }
+      } catch (error) {
+        console.error("Error during data fetch:", error);
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []); // Empty dependency array ensures this runs only once when the component mounts
+
+  // Fetch user profile data
   const getUserProfile = async () => {
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
@@ -85,6 +89,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     }
   };
 
+  // Fetch packages
   const fetchPackages = async () => {
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
@@ -92,26 +97,22 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
         Alert.alert("Error", "No authentication token found");
         return;
       }
-  
+
       setToken(storedToken);
-  
+
       const response = await axios.get<{ data: Package[] }>(
         `${environment.API_BASE_URL}api/packages/get-packages`,
         {
           headers: { Authorization: `Bearer ${storedToken}` },
         }
       );
-  
+
       setPackages(response.data.data); // Ensure response structure matches
-      setIsLoading(false);
     } catch (error) {
       Alert.alert("Error", "Failed to fetch packages");
       console.error(error);
-      setIsLoading(false);
     }
   };
-  
-
 
   if (isLoading) {
     return <DashboardSkeleton />;
@@ -158,32 +159,22 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
 
   return (
     <View className="flex-1 bg-white">
-       
       {/* Header Section */}
       <View className="bg-white shadow-md p-5 rounded-b-3xl">
         <View className="flex-row justify-between items-center">
           <View className="flex-row items-center">
-          <TouchableOpacity onPress={() => navigation.navigate("SidebarScreen")}>
-          <Image
-              source={require("../assets/images/profile.png")} // Replace with your profile image path
-              className="w-12 h-12 rounded-full"
-          />
-          </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate("SidebarScreen")}>
+              <Image source={require("../assets/images/profile.png")} className="w-12 h-12 rounded-full" />
+            </TouchableOpacity>
 
-            <Text className="ml-3 text-lg font-bold text-gray-800">
-              Hello, {formData.username} 
-            </Text>
+            <Text className="ml-3 text-lg font-bold text-gray-800">Hello, {formData.username}</Text>
           </View>
           <View className="flex-row items-center bg-[#E6DBF766] py-1 px-3 rounded-full">
-          <Image
-            source={require("../assets/images/star.png")} 
-            className="w-6 h-6"
-            resizeMode="contain"
-          />
-          <Text className="ml-2 font-bold text-gray-700">10</Text>
+            <Image source={require("../assets/images/star.png")} className="w-6 h-6" resizeMode="contain" />
+            <Text className="ml-2 font-bold text-gray-700">10</Text>
+          </View>
         </View>
-        </View>
-     
+
         {/* Progress Bar */}
         <Text className="text-lg text-purple-600 mt-5 font-bold">
           Your Daily Target
@@ -216,8 +207,8 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
         
       </View>
 
-      {/* Packages Section */}
-      <Text className="text-xl font-bold text-[#874CDB] mt-6 ml-6 mb-2">
+       {/* Packages Section */}
+       <Text className="text-xl font-bold text-[#874CDB] mt-6 ml-6 mb-2">
         Packages
       </Text>
       <FlatList
@@ -228,8 +219,8 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
         contentContainerStyle={{ paddingHorizontal: 10, paddingLeft: 2 }}
       />
       {/* Navbar */}
-      
-      <Navbar navigation={navigation}activeTab="DashboardScreen"/>
+      {/* Navbar */}
+      <Navbar navigation={navigation} activeTab="DashboardScreen" />
     </View>
   );
 };

@@ -80,10 +80,121 @@ const OtpScreen: React.FC = () => {
 
 const [isOtpInvalid, setIsOtpInvalid] = useState(false);
 
+const getUserProfile = async () => {
+  try {
+    const storedToken = await AsyncStorage.getItem("authToken");  // Retrieve the authToken
+    if (!storedToken) {
+      Alert.alert("Error", "No authentication token found");
+      return null;  // Return null if the token is not found
+    }
+    const response = await axios.get(`${environment.API_BASE_URL}api/auth/user/profile`, {
+      headers: { Authorization: `Bearer ${storedToken}` },
+    });
+    return storedToken;  // Return the token if successfully fetched
+  } catch (error) {
+    Alert.alert("Error", "Failed to fetch user profile");
+    console.error(error);
+    return null;  // Return null if there's an error
+  }
+};
+
+// const verifyOTP = async () => {
+//   const otpCode = otp.join(""); // Join OTP array into a single string
+
+//   if (otpCode.length < 5) {
+//     Alert.alert("Error", "Please enter a valid 5-digit OTP.");
+//     setIsOtpInvalid(true);
+//     return;
+//   }
+
+//   try {
+//     setLoading(true);
+//     const referenceId = await AsyncStorage.getItem("referenceId");
+//     console.log("Reference ID:", referenceId); // Log reference ID
+
+//     // Get the authToken from AsyncStorage
+//     const token = await getUserProfile();
+//     if (!referenceId || !token) {
+//       Alert.alert("Error", "Missing OTP reference or authentication token.");
+//       return;
+//     }
+
+//     const url = "https://api.getshoutout.com/otpservice/verify";
+//     const headers = {
+//       Authorization: `Apikey ${environment.SHOUTOUT_API_KEY}`,
+//       "Content-Type": "application/json",
+//     };
+//     console.log("Request Headers: before", headers);
+
+//     const body = {
+//       code: otpCode,
+//       referenceId,
+//     };
+
+//     console.log("Request Headers: after", headers);
+
+//     const response = await axios.post(url, body, { headers });
+//     const { statusCode } = response.data;
+
+//     if (statusCode === "1000") {
+//       setIsVerified(true);
+//       Alert.alert("Success", "OTP verified successfully.");
+
+//       // Retrieve stored customer data
+//       const customerDataString = await AsyncStorage.getItem("pendingCustomerData");
+//       console.log("Stored customer data:", customerDataString); // Log raw customer data
+
+//       if (!customerDataString) {
+//         Alert.alert("Error", "No customer data found.");
+//         return;
+//       }
+
+//       let customerData;
+//       try {
+//         customerData = JSON.parse(customerDataString);
+//         console.log("Parsed customer data:", customerData); // Log parsed customer data
+//       } catch (e) {
+//         console.error("Error parsing customer data:", e);
+//         Alert.alert("Error", "Failed to parse customer data.");
+//         return;
+//       }
+
+//       // Send customer data to the backend with the token in the header
+//       const saveResponse = await axios.post(
+//         `${environment.API_BASE_URL}api/customer/add-customer`,  // Correct the URL format
+//         customerData,
+//         {
+//           headers: {
+//             Authorization: `Bearer ${token}`,  // Correctly pass token as authorization header
+//             "Content-Type": "application/json",
+//           },
+//         }
+//       );
+
+//       if (saveResponse.status === 200) {
+//         Alert.alert("Success", "Customer registered successfully.");
+//         navigation.navigate("OtpSuccesfulScreen");
+//       } else {
+//         Alert.alert("Error", `Failed to save customer: ${saveResponse.data.error}`);
+//       }
+
+//     } else {
+//       setIsOtpInvalid(true);
+//       Alert.alert("Error", "Invalid OTP. Please try again.");
+//     }
+//   } catch (error) {
+//     Alert.alert("Error", "An error occurred while verifying OTP.");
+//     console.error(error);
+//   } finally {
+//     setLoading(false);
+//   }
+// };
+
 const verifyOTP = async () => {
   const otpCode = otp.join(""); // Join OTP array into a single string
 
-  if (otpCode.length < 5) {
+  // Ensure OTP is a valid 5-digit code
+  if (otpCode.length !== 5) {
     Alert.alert("Error", "Please enter a valid 5-digit OTP.");
     setIsOtpInvalid(true);
     return;
@@ -92,41 +203,68 @@ const verifyOTP = async () => {
   try {
     setLoading(true);
     const referenceId = await AsyncStorage.getItem("referenceId");
-    if (!referenceId) {
-      Alert.alert("Error", "No OTP reference found.");
+    console.log("Reference ID:", referenceId); // Log reference ID
+
+    // Get the authToken from AsyncStorage
+    const token = await getUserProfile();
+    if (!referenceId || !token) {
+      Alert.alert("Error", "Missing OTP reference or authentication token.");
       return;
     }
 
-    const url = "https://api.getshoutout.com/otpservice/verify";
-    const headers = {
-      Authorization: `Apikey ${environment.SHOUTOUT_API_KEY}`,
+    // Step 1: Verify OTP using the API
+    const otpVerificationUrl = "https://api.getshoutout.com/otpservice/verify";
+    const otpHeaders = {
+      Authorization: `Apikey ${environment.SHOUTOUT_API_KEY}`, // Use your correct API key
       "Content-Type": "application/json",
     };
 
-    const body = {
+    const otpBody = {
       code: otpCode,
       referenceId,
     };
 
-    const response = await axios.post(url, body, { headers });
-    const { statusCode } = response.data;
+    // Make the request to verify OTP
+    const otpResponse = await axios.post(otpVerificationUrl, otpBody, { headers: otpHeaders });
+    const { statusCode } = otpResponse.data;
 
     if (statusCode === "1000") {
       setIsVerified(true);
       Alert.alert("Success", "OTP verified successfully.");
 
-      // Retrieve stored customer data
+      // Step 2: After OTP is verified, retrieve the customer data from AsyncStorage
       const customerDataString = await AsyncStorage.getItem("pendingCustomerData");
+      console.log("Stored customer data:", customerDataString); // Log raw customer data
+
       if (!customerDataString) {
         Alert.alert("Error", "No customer data found.");
         return;
       }
 
-      const customerData = JSON.parse(customerDataString);
+      let customerData;
+      try {
+        customerData = JSON.parse(customerDataString);
+        console.log("Parsed customer data:", customerData); // Log parsed customer data
+      } catch (e) {
+        console.error("Error parsing customer data:", e);
+        Alert.alert("Error", "Failed to parse customer data.");
+        return;
+      }
 
-      // Send customer data to the backend
-      const saveResponse = await axios.post(`${environment.API_BASE_URL}api/customer/add-customer`, customerData);
-      
+      // Step 3: Send customer data to the backend
+      const saveCustomerUrl = `${environment.API_BASE_URL}api/customer/add-customer`;  // Correct URL format
+      const saveResponse = await axios.post(
+        saveCustomerUrl,
+        customerData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,  // Pass token as authorization header
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      // Step 4: Handle response from the backend
       if (saveResponse.status === 200) {
         Alert.alert("Success", "Customer registered successfully.");
         navigation.navigate("OtpSuccesfulScreen");
@@ -140,18 +278,11 @@ const verifyOTP = async () => {
     }
   } catch (error) {
     Alert.alert("Error", "An error occurred while verifying OTP.");
+    console.error(error);
   } finally {
     setLoading(false);
   }
 };
-
-
-
-
-
-
-
-
 
 
 

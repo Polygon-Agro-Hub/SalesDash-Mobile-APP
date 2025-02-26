@@ -49,6 +49,7 @@ const OtpScreenUp: React.FC = () => {
   const { t } = useTranslation();
   const [language, setLanguage] = useState("en");
   const [isOtpValid, setIsOtpValid] = useState<boolean>(false);
+  const [formData, setFormData] = useState({ username: "", id: "" });
 
  
  // const phoneNumber = route.params?.phoneNumber;
