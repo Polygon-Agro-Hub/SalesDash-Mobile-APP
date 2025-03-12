@@ -1,5 +1,5 @@
 import React from 'react'
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createStackNavigator } from "@react-navigation/stack";
 import Splash from '@/components/Splash';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as ScreenCapture from 'expo-screen-capture';
@@ -31,9 +31,10 @@ import View_CancelOrderScreen from '@/components/View_CancelOrderScreen'
 
 import { RootStackParamList } from '@/components/types';
 
+const Stack = createStackNavigator(); 
 
 //const Stack = createNativeStackNavigator(); 
-const Stack = createNativeStackNavigator<RootStackParamList>();
+// const Stack = createStackNavigator<RootStackParamList>();
 const index = () => {
   
     // Prevent screenshots and screen recording
@@ -47,13 +48,13 @@ const index = () => {
       <Stack.Screen name="LoginScreen" component={LoginScreen} />
       <Stack.Screen name="ChangePasswordScreen" component={ChangePasswordScreen} />
       <Stack.Screen name="DashboardScreen" component={DashboardScreen} />
-      <Stack.Screen name="ViewScreen" component={ViewScreen} />
+      <Stack.Screen name="ViewScreen" component={ViewScreen as any} />
       <Stack.Screen name="CustomersScreen" component={CustomersScreen} />
       <Stack.Screen name="SidebarScreen" component={SidebarScreen} />
       <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
       <Stack.Screen name="AddComplaintScreen" component={AddComplaintScreen} />
       <Stack.Screen name="ViewComplainScreen" component={ViewComplainScreen} />
-      <Stack.Screen name="ViewCustomerScreen" component={ViewCustomerScreen} />
+      <Stack.Screen name="ViewCustomerScreen" component={ViewCustomerScreen as any} />
       <Stack.Screen name="ReminderScreen" component={ReminderScreen} />
       <Stack.Screen name="AddCustomersScreen" component={AddCustomersScreen} />
       <Stack.Screen name="OtpScreen" component={OtpScreen} />
@@ -61,7 +62,7 @@ const index = () => {
       <Stack.Screen name="OtpSuccesfulScreen" component={OtpSuccesfulScreen} />
       <Stack.Screen name="EditCustomerScreen" component={EditCustomerScreen} />
       <Stack.Screen name="OrderScreen" component={OrderScreen} />
-      <Stack.Screen name="ScheduleScreen" component={ScheduleScreen} />
+      <Stack.Screen name="ScheduleScreen" component={ScheduleScreen as any} />
       <Stack.Screen name="SelectPaymentMethod" component={SelectPaymentMethod} />
       <Stack.Screen name="OrderSummeryScreen" component={OrderSummeryScreen} />
       <Stack.Screen name="OrderConfirmedScreen" component={OrderConfirmedScreen} />
