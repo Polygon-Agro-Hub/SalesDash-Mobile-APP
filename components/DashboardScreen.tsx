@@ -5,11 +5,11 @@ import {
   Image,
   FlatList,
   TouchableOpacity,
-  ProgressBarAndroid,
   Alert,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack"; 
 import { RootStackParamList } from "./types"; 
+import { Bar } from 'react-native-progress';
 
 import Navbar from "./Navbar";
 import { LinearGradient } from "expo-linear-gradient";
@@ -190,13 +190,14 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
           >
             8/10
           </Text>
-                  <ProgressBarAndroid
-                    styleAttr="Horizontal"
-                    indeterminate={false}
-                    progress={0.8} 
-                    color="#854BDA"
-                    className="flex-1"
-                  />
+                    <Bar
+                      progress={0.8} // Set progress value here
+                      width={200} // Set width for progress bar
+                      color="#854BDA" // Set progress bar color
+                      borderWidth={0} // Optional: to remove border around the progress bar
+                      height={10} // Optional: height of the progress bar
+                    />
+
                   <Image
                     source={require("../assets/images/star.png")} 
                     className="w-8 h-8 ml-5"
