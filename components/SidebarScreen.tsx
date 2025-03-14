@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Image, TouchableOpacity, ActivityIndicator, Alert, ScrollView, Animated } from "react-native";
+import { View, Text, Image, TouchableOpacity, ActivityIndicator, Alert, ScrollView, Animated, KeyboardAvoidingView, Platform } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
 import Navbar from "./Navbar";
@@ -63,6 +63,12 @@ const handleLogout = async () => {
 
 
   return (
+
+    <KeyboardAvoidingView 
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                    enabled 
+                    className="flex-1"
+                    >
     <View className="flex-1 w-full bg-white">
 
           {loading ? (
@@ -77,7 +83,9 @@ const handleLogout = async () => {
       </View>
     ) : (
       <View className=" flex-1 w-full bg-white">
-    <ScrollView style={{ paddingHorizontal: wp(4) }}>
+    <ScrollView style={{ paddingHorizontal: wp(4) }}
+    keyboardShouldPersistTaps="handled"
+    >
          <BackButton navigation={navigation} />
 
          <View className="flex-row items-center p-5">
@@ -273,6 +281,7 @@ const handleLogout = async () => {
     )}
    
     </View>
+    </KeyboardAvoidingView>
   );
 };
 

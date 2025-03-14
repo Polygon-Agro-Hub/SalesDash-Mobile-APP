@@ -270,7 +270,11 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
   );
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1 bg-white">
+   <KeyboardAvoidingView 
+                           behavior={Platform.OS === "ios" ? "padding" : "height"}
+                           enabled 
+                           className="flex-1"
+                           >
       <View className="flex-1 bg-white">
         {/* Header Section */}
         <View className="relative">

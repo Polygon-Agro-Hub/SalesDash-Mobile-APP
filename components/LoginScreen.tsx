@@ -211,7 +211,7 @@
 
 // export default LoginScreen;
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Image } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types"; 
 import Icon from "react-native-vector-icons/Ionicons"; 
@@ -280,13 +280,22 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   };
 
   return (
+    <KeyboardAvoidingView 
+                       behavior={Platform.OS === "ios" ? "padding" : "height"}
+                       enabled 
+                       className="flex-1"
+                     >
+                       <ScrollView 
+      contentContainerStyle={{ flexGrow: 1 }} 
+      keyboardShouldPersistTaps="handled"
+    >
     <View className="flex-1 bg-white">
       <LinearGradient colors={["#854BDA", "#6E3DD1"]} className="flex-1 items-center justify-center">
         <Image source={require("../assets/images/lgooo.png")} className="w-auto h-40" resizeMode="contain" />
       </LinearGradient>
 
       <View className="flex-1 bg-white px-9 py-8 rounded-t-3xl shadow-lg -mt-8">
-        <Text className="text-center text-xl font-bold text-purple-500 mb-6">Welcome to Sign in</Text>
+        <Text className="text-center text-xl font-bold text-purple-500 mb-6 mt-[12%]">Welcome to Sign in</Text>
 
         {/* Display all validation errors */}
         {errors.length > 0 && (
@@ -331,6 +340,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         </LinearGradient>
       </View>
     </View>
+    </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 

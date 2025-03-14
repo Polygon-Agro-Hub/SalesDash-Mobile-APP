@@ -114,7 +114,11 @@ const [totalPrice, setTotalPrice] = useState(1800.00); // Example default price
 
   return (
     <View className="flex-1 bg-white">
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1 bg-white">
+    <KeyboardAvoidingView 
+                               behavior={Platform.OS === "ios" ? "padding" : "height"}
+                               enabled 
+                               className="flex-1"
+                             >
       
       {/* Header */}
       <View className="flex-row items-center h-16 shadow-md px-4 bg-white">
@@ -122,7 +126,7 @@ const [totalPrice, setTotalPrice] = useState(1800.00); // Example default price
         <Text className="text-lg font-bold text-[#6C3CD1] flex-grow text-center mr-7">Order Details</Text>
       </View>
   
-      <ScrollView showsVerticalScrollIndicator={false} className="px-6 mt-4">
+      <ScrollView showsVerticalScrollIndicator={false} className="px-6 mt-4"  keyboardShouldPersistTaps="handled">
         
         {/* Package Selection */}
         <Text className="text-gray-700 text-base mb-2">Package</Text>

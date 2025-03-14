@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, ScrollView ,Image} from "react-native";
+import { View, Text, TouchableOpacity, ScrollView ,Image, KeyboardAvoidingView, Platform} from "react-native";
 import { SelectList } from "react-native-dropdown-select-list";
 import { Feather } from "@expo/vector-icons";
 import BackButton from "./BackButton";
@@ -76,6 +76,11 @@ const [selectedDate, setSelectedDate] = useState<string | null>(null);
   
 
   return (
+     <KeyboardAvoidingView 
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            enabled 
+            className="flex-1"
+            >
     <View className="flex-1 bg-white">
      
         {/* Header */}
@@ -118,7 +123,9 @@ const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
 
 
-<ScrollView className="px-10 mt-[-5]">
+<ScrollView className="px-10 mt-[-5]" 
+keyboardShouldPersistTaps="handled"
+>
 
 
         {/* Conditionally render Schedule Date section */}
@@ -226,6 +233,7 @@ const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
       </View>
     </View>
+    </KeyboardAvoidingView>
   );
 };
 

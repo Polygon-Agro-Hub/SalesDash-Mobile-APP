@@ -27,10 +27,11 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   navigation,
 }) => {
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      className="flex-1 bg-white"
-    >
+    <KeyboardAvoidingView 
+                        behavior={Platform.OS === "ios" ? "padding" : "height"}
+                        enabled 
+                        className="flex-1"
+                        >
       <View className="bg-white flex-1">
         {/* Header */}
         <View className="flex-row items-center shadow-md px-3 bg-white ">
@@ -41,7 +42,9 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
         </View>
 
         {/* Order Status Timeline */}
-        <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
+        <ScrollView contentContainerStyle={{ paddingBottom: 20 }}
+        keyboardShouldPersistTaps="handled"
+        >
         <View className="p-5 mt-[-5] ml-6">
   <View className="border-l border-[#A6A6A6] pl-5 relative">
     {/* Order Placed */}

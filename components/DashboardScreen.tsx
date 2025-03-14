@@ -6,6 +6,8 @@ import {
   FlatList,
   TouchableOpacity,
   Alert,
+  Platform,
+  KeyboardAvoidingView
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack"; 
 import { RootStackParamList } from "./types"; 
@@ -158,6 +160,11 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
   );
 
   return (
+     <KeyboardAvoidingView 
+             behavior={Platform.OS === "ios" ? "padding" : "height"}
+             enabled 
+             className="flex-1"
+           >
     <View className="flex-1 bg-white">
       {/* Header Section */}
       <View className="bg-white shadow-md p-5 rounded-b-3xl">
@@ -223,6 +230,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       {/* Navbar */}
       <Navbar navigation={navigation} activeTab="DashboardScreen" />
     </View>
+    </KeyboardAvoidingView >
   );
 };
 

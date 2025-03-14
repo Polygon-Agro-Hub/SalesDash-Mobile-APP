@@ -7,6 +7,8 @@ import {
   ScrollView,
   ImageBackground,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack"; 
 //import { RootStackParamList } from "./types"; 
@@ -87,6 +89,11 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
   };
 
   return (
+        <KeyboardAvoidingView 
+                                   behavior={Platform.OS === "ios" ? "padding" : "height"}
+                                   enabled 
+                                   className="flex-1"
+                                   >
     <View className="flex-1 bg-gray-100">
       {/* Top Section with Background Image */}
       <ImageBackground
@@ -105,7 +112,9 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
       </ImageBackground>
 
       {/* Scrollable Details Section */}
-      <ScrollView className="flex-1 bg-white rounded-t-3xl -mt-7 px-6 pt-6 shadow-lg">
+      <ScrollView className="flex-1 bg-white rounded-t-3xl -mt-7 px-6 pt-6 shadow-lg"
+      keyboardShouldPersistTaps="handled"
+      >
         {/* Title and Price */}
         <View className="flex-row justify-between items-center mb-4">
           <Text className="text-xl font-bold text-purple-600">{selectedPackageName}</Text>
@@ -165,6 +174,7 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
       {/* Navbar */}
       <Navbar navigation={navigation} activeTab="DashboardScreen" />
     </View>
+    </KeyboardAvoidingView>
   );
 };
 

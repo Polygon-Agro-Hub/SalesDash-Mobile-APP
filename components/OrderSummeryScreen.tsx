@@ -38,7 +38,11 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({ navigation }) =
     }, []);
   
     return (
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1 bg-white">
+      <KeyboardAvoidingView 
+                                     behavior={Platform.OS === "ios" ? "padding" : "height"}
+                                     enabled 
+                                     className="flex-1"
+                                   >
         
         {/* Scrollable Content */}
         
@@ -53,6 +57,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({ navigation }) =
           showsVerticalScrollIndicator={true} 
           contentContainerStyle={{ paddingBottom: 20 }} 
           className="flex-1 px-4"
+          keyboardShouldPersistTaps="handled"
         >
   <View className="px-2">
   

@@ -149,11 +149,12 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   return (
     <View className="flex-1 bg-white">
      
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={{ flex: 1 }}
+       <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        enabled 
+        className="flex-1"
         >
-          <ScrollView>
+          <ScrollView keyboardShouldPersistTaps="handled">
             <View className="bg-[#6839CF]">
               <View className="relative">
                 <ImageBackground

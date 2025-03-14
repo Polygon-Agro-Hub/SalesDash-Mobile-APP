@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { View, Text, TextInput, TouchableOpacity, Image, KeyboardAvoidingView,Platform,Keyboard, Alert } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Image, KeyboardAvoidingView,Platform,Keyboard, Alert, ScrollView } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import { useNavigation } from "@react-navigation/native";
@@ -525,10 +525,16 @@ useEffect(() => {
 
   return (
    
-        <KeyboardAvoidingView
-                      behavior={Platform.OS === "ios" ? "padding" : "height"}
-                      className="flex-1 bg-white"
-                    >
+        <KeyboardAvoidingView 
+                                            behavior={Platform.OS === "ios" ? "padding" : "height"}
+                                            enabled 
+                                            className="flex-1"
+                                          >
+
+<ScrollView 
+      contentContainerStyle={{ flexGrow: 1 }} 
+      keyboardShouldPersistTaps="handled"
+    >                                  
                          <View className="flex-1 bg-white px-3 ">
       {/* Header */}
       <View className="bg-white flex-row items-center h-17 shadow-lg px-1 mb-8">
@@ -615,7 +621,9 @@ useEffect(() => {
 </View>
 </View> 
 {!isKeyboardVisible && <Navbar navigation={navigation} activeTab="CustomersScreen" />}
+</ScrollView>
     </KeyboardAvoidingView>
+   
     
   );
 };

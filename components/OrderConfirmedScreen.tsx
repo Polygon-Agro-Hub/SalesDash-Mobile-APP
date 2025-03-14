@@ -220,8 +220,14 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation 
   
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+    <KeyboardAvoidingView 
+                           behavior={Platform.OS === "ios" ? "padding" : "height"}
+                           enabled 
+                           className="flex-1"
+                         >
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }} 
+      keyboardShouldPersistTaps="handled"
+      >
         <View className="flex-1 bg-white px-2">
           <View style={{ paddingHorizontal: wp(6), paddingVertical: hp(1) }} className="flex-1">
             <View className="px-2">
