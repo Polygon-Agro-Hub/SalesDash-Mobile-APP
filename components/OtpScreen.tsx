@@ -263,6 +263,7 @@ const verifyOTP = async () => {
           },
         }
       );
+      console.log(saveResponse)
 
       // Step 4: Handle response from the backend
       if (saveResponse.status === 200) {

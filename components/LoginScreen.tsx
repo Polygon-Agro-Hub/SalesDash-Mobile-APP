@@ -257,6 +257,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
       if (response.data.success) {
         const { token, passwordUpdate } = response.data.data;
+        console.log(token)
 
         // Store token (assuming server does not set HTTP-only cookie)
         await AsyncStorage.setItem("authToken", token);

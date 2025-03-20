@@ -26,7 +26,9 @@ type RootStackParamList = {
     selectedPackageId: number;
     selectedPackageName: string;
     selectedPackageTotal: string;
-    selectedPackageDescription:string
+    selectedPackageDescription:string;
+    selectedPackageportion: string;  // Add this
+    selectedPackageperiod: string;
   };
 };
 
@@ -44,15 +46,17 @@ interface Package {
   name: string;
   total: string; 
   description:string;
+  portion: number;
+   period :number;
 }
 
 
 
 const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
-  const { selectedPackageId, selectedPackageName, selectedPackageTotal,selectedPackageDescription } = route.params;
+  const { selectedPackageId, selectedPackageName, selectedPackageTotal,selectedPackageDescription,selectedPackageportion ,selectedPackageperiod  } = route.params;
 
   const [token, setToken] = useState<string | null>(null);
-  const [items, setItems] = useState<{ name: string; quantity: string; quantityType: string }[]>([]);
+  const [items, setItems] = useState<{ name: string; quantity: string; quantityType: string;  portion: number; period :number; }[]>([]);
 
   // Fetch items for the selected package
   useEffect(() => {
@@ -69,7 +73,7 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
         return;
       }
 
-      const response = await axios.get<{ data: { name: string; quantity: string, quantityType: string }[] }>(
+      const response = await axios.get<{ data: { name: string; quantity: string, quantityType: string, portion: number; period :number }[] }>(
         `${environment.API_BASE_URL}api/packages/${packageId}/items`,
         {
           headers: { Authorization: `Bearer ${storedToken}` },
@@ -142,7 +146,7 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
                 resizeMode="contain"
               />
             </View>
-            <Text className="text-purple-600 text-base font-medium mr-6 ml-1"> 01 person</Text> 
+            <Text className="text-purple-600 text-base font-medium mr-6 ml-1">{selectedPackageportion} person</Text> 
 
             <View className="bg-white rounded-full p-2 ml-8 mt-[-2]">
               <Image
@@ -151,7 +155,7 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
                 resizeMode="contain"
               />
             </View>
-            <Text className="text-purple-600 text-base font-medium ml-1">01 week</Text>
+            <Text className="text-purple-600 text-base font-medium ml-1">{selectedPackageperiod} week</Text>
           </TouchableOpacity>
         </View>
 
