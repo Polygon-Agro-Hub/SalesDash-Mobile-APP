@@ -32,7 +32,7 @@ export type RootStackParamList = {
     OrderSummeryScreen:undefined;
     OrderConfirmedScreen:undefined;
     ViewOrdersScreen:undefined;
-    View_CancelOrderScreen:undefined;
+    View_CancelOrderScreen:{orderId:number};
 
   };
   

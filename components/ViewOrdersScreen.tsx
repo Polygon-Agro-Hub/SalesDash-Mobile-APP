@@ -9,24 +9,49 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
-  Modal,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import Navbar from "./Navbar";
 import { LinearGradient } from "expo-linear-gradient";
-import LottieView from "lottie-react-native";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
-import OrderScreenSkeleton from '../components/Skeleton/OrderScreenSkeleton'; // Import the skeleton
+import OrderScreenSkeleton from '../components/Skeleton/OrderScreenSkeleton';
+import axios from "axios";
+import environment from "@/environment/environment";
 
-// Define navigation prop type
-type ViewOrdersScreenNavigationProp = StackNavigationProp<
-  RootStackParamList,
-  "ViewOrdersScreen"
->;
+type ViewOrdersScreenNavigationProp = StackNavigationProp<RootStackParamList, "ViewOrdersScreen">;
 
 interface ViewOrdersScreenProps {
   navigation: ViewOrdersScreenNavigationProp;
+}
+
+// Define the order interface based on the response
+interface Order {
+  orderId: number;
+  customerId: number;
+  deliveryType: string;
+  scheduleDate: string;
+  selectedDays: string;
+  weeklyDate: string;
+  paymentMethod: string;
+  paymentStatus: number;
+  orderStatus: string;
+  createdAt: string;
+  InvNo: string;
+  fullTotal: string | null;
+  fullDiscount: string | null;
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+  buildingType: string;
+  fullAddress: string;
+}
+
+// Define the API response interface
+interface OrdersResponse {
+  success: boolean;
+  count: number;
+  data: Order[];
 }
 
 const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
@@ -34,59 +59,85 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("All");
+  const [orders, setOrders] = useState<Order[]>([]);
 
   useEffect(() => {
-    // Simulate a 3-second loading screen on mount
-    setTimeout(() => setLoading(false), 2000);
-
+    const loadOrders = async () => {
+      try {
+        const response = await axios.get<OrdersResponse>(`${environment.API_BASE_URL}api/orders/get-orders`); // Replace with your backend URL
+        if (response.data.success) {
+          setOrders(response.data.data); // Set the fetched orders to state
+        }
+      } catch (error) {
+        console.error("Failed to fetch orders:", error);
+      } finally {
+        setLoading(false); // Stop loading
+      }
+    };
+  
+    loadOrders();
+  
     const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () =>
       setKeyboardVisible(true)
     );
     const keyboardDidHideListener = Keyboard.addListener("keyboardDidHide", () =>
       setKeyboardVisible(false)
     );
-
+  
     return () => {
       keyboardDidShowListener.remove();
       keyboardDidHideListener.remove();
     };
   }, []);
 
-  const orders = [
-    { id: "1", orderNumber: "1234", schedule: "Monday", time: "9:00 AM - 12:00 PM", status: "Delivered", type: "Today" },
-    { id: "2", orderNumber: "5678", schedule: "Tuesday", time: "2:00 PM - 4:00 PM", status: "On the way", type: "Tomorrow" },
-    { id: "3", orderNumber: "9101", schedule: "Wednesday", time: "10:00 AM - 1:00 PM", status: "Processing", type: "This Week" },
-    { id: "4", orderNumber: "1123", schedule: "Friday", time: "8:00 AM - 10:00 AM", status: "Ordered", type: "Tomorrow" },
-    { id: "5", orderNumber: "9101", schedule: "Wednesday", time: "10:00 AM - 1:00 PM", status: "Delivered", type: "This Week" },
-    { id: "6", orderNumber: "1123", schedule: "Friday", time: "8:00 AM - 10:00 AM", status: "Ordered", type: "Tomorrow" },
-  ];
-
   const filters = ["All", "Today", "Tomorrow", "This Week"];
 
+  // Updated filtering logic based on the new data structure
   const filteredOrders = orders.filter(
-    (order) =>
-      (selectedFilter === "All" || order.type === selectedFilter) &&
-      (!searchText || order.orderNumber.includes(searchText))
+    (order) => {
+      const matchesFilter = () => {
+        if (selectedFilter === "All") return true;
+        
+        const today = new Date();
+        const orderDate = new Date(order.scheduleDate);
+        
+        if (selectedFilter === "Today") {
+          return orderDate.toDateString() === today.toDateString();
+        }
+        
+        if (selectedFilter === "Tomorrow") {
+          const tomorrow = new Date();
+          tomorrow.setDate(today.getDate() + 1);
+          return orderDate.toDateString() === tomorrow.toDateString();
+        }
+        
+        if (selectedFilter === "This Week") {
+          const startOfWeek = new Date(today);
+          startOfWeek.setDate(today.getDate() - today.getDay());
+          const endOfWeek = new Date(startOfWeek);
+          endOfWeek.setDate(startOfWeek.getDate() + 6);
+          
+          return orderDate >= startOfWeek && orderDate <= endOfWeek;
+        }
+        
+        return false;
+      };
+      
+      return matchesFilter() && (!searchText || order.InvNo.toLowerCase().includes(searchText.toLowerCase()));
+    }
   );
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
+  };
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1 bg-white">
       <View className="flex-1 bg-white">
         {/* Loading Animation */}
         {loading ? (
-  <>
-    <OrderScreenSkeleton />
-    {/* <Modal transparent animationType="fade">
-      <View className="flex-1 justify-center items-center" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-        <LottieView
-          source={require("../assets/images/loading.json")}
-          autoPlay
-          loop
-          style={{ width: wp(25), height: hp(12) }}
-        />
-      </View>
-    </Modal> */}
-  </>
+          <OrderScreenSkeleton />
         ) : (
           <>
             {/* Header */}
@@ -96,14 +147,14 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
 
             {/* Search Bar */}
             <View className="flex-row items-center bg-[#F5F1FC] px-6 py-3 rounded-full mx-auto w-[90%] shadow-md mt-[-22]">
-             <TextInput
-                         placeholder="Search By Order Number"
-                         placeholderTextColor="#6839CF"
-                         className="flex-1 text-sm text-purple"
-                         onChangeText={(text) => setSearchText(text)}
-                         value={searchText}
-                         style={{ fontStyle: 'italic' }}
-                       />
+              <TextInput
+                placeholder="Search By Order Number"
+                placeholderTextColor="#6839CF"
+                className="flex-1 text-sm text-purple"
+                onChangeText={(text) => setSearchText(text)}
+                value={searchText}
+                style={{ fontStyle: 'italic' }}
+              />
               <Image source={require("../assets/images/search.png")} className="w-6 h-6" resizeMode="contain" />
             </View>
 
@@ -133,9 +184,13 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
             {filteredOrders.length > 0 ? (
               <FlatList
                 data={filteredOrders}
-                keyExtractor={(item) => item.id}
+                className="p-4"
+                keyExtractor={(item) => item.orderId.toString()}
                 renderItem={({ item }) => (
-                  <TouchableOpacity onPress={() => navigation.navigate("View_CancelOrderScreen")} activeOpacity={0.7}>
+                  <TouchableOpacity 
+                    onPress={() => navigation.navigate("View_CancelOrderScreen" as any, { orderId: item.orderId })} 
+                    activeOpacity={0.7}
+                  >
                     <View style={{
                       backgroundColor: "white",
                       borderRadius: wp(4),
@@ -152,39 +207,51 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                     }}>
                       {/* Order number and status */}
                       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                        <Text style={{ fontSize: wp(4.5), fontWeight: "600", color: "#393939" }}>Order: {item.orderNumber}</Text>
+                        <Text style={{ fontSize: wp(4.5), fontWeight: "600", color: "#393939" }}>Order: {item.InvNo}</Text>
                         <View style={{
                           paddingHorizontal: wp(3),
                           paddingVertical: hp(0.5),
                           borderRadius: wp(5),
                           backgroundColor:
-                            item.status === "Delivered" ? "#CCFBF1" :
-                            item.status === "On the way" ? "#FFFD99" :
-                            item.status === "Processing" ? "#CFE1FF" : "#EAEAEA",
+                            item.orderStatus === "Delivered" ? "#CCFBF1" :
+                            item.orderStatus === "On the way" ? "#FFFD99" :
+                            item.orderStatus === "Processing" ? "#CFE1FF" : 
+                            item.orderStatus === "Pending" ? "#FCE7F3" : "#EAEAEA",
                         }}>
                           <Text style={{
                             fontSize: wp(3),
                             fontWeight: "600",
                             color:
-                              item.status === "Delivered" ? "#0D9488" :
-                              item.status === "On the way" ? "#A6A100" :
-                              item.status === "Processing" ? "#3B82F6" : "#393939",
+                              item.orderStatus === "Delivered" ? "#0D9488" :
+                              item.orderStatus === "On the way" ? "#A6A100" :
+                              item.orderStatus === "Processing" ? "#3B82F6" : 
+                              item.orderStatus === "Pending" ? "#BE185D" : "#393939",
                           }}>
-                            {item.status}
+                            {item.orderStatus}
                           </Text>
                         </View>
                       </View>
 
-                      {/* Schedule */}
-                      <Text style={{ fontSize: wp(3.5), color: "#808FA2", marginTop: hp(0.5) }}>Scheduled to: {item.schedule}</Text>
-                      <Text style={{ fontSize: wp(3.5), color: "#808FA2" }}>Within {item.time}</Text>
+                      {/* Customer name */}
+                      <Text style={{ fontSize: wp(3.8), color: "#4B5563", marginTop: hp(0.5) }}>
+                        {item.firstName} {item.lastName}
+                      </Text>
+
+
+                      <Text style={{ fontSize: wp(3.5), color: "#808FA2" }}>
+                        Schedule to: {formatDate(item.scheduleDate)}
+                      </Text>
+                      
+                      {/* Price information if available */}
                     </View>
                   </TouchableOpacity>
                 )}
                 contentContainerStyle={{ paddingBottom: hp(5) }}
               />
             ) : (
-              <Text className="text-center text-gray-500">No orders found.</Text>
+              <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                <Text style={{ fontSize: wp(4), color: "#6B7280", textAlign: "center" }}>No orders found.</Text>
+              </View>
             )}
           </>
         )}
