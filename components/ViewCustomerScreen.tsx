@@ -328,7 +328,10 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
 
               {/* New Order Button */}
               <TouchableOpacity 
-              onPress={() => navigation.navigate("OrderScreen")}
+             onPress={() => {
+              console.log("cus id____________",id);  // Log the id
+              navigation.navigate("OrderScreen", { id: id });  // Navigate to OrderScreen
+            }}
               className="flex-row bg-[#6B3BCF] px-4 py-2 rounded-full items-center mt-5 mx-4">
                 <Image source={require("../assets/images/newOrder.png")} className="w-5 h-5 mr-2" resizeMode="contain" />
                 <Text className="text-white font-bold">New Order</Text>
