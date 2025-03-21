@@ -665,10 +665,26 @@ useEffect(() => {
   
     
     if (itemDetails) {
+      if (!newItemName || typeof newItemName !== "string" || !newItemName.trim()) {
+        Alert.alert("Error", "Please select a product.");
+        return;
+      }
+    
+      if (!newItemQuantity || !newItemQuantity.trim()) {
+        Alert.alert("Error", "Please enter a quantity.");
+        return;
+      }
+    
+      const parsedQuantity = parseFloat(newItemQuantity);
      
-      const updatedItemPrice = calculateTotalPrice(newValue, itemDetails, counter + 1); // Pass the updated counter value
-      setTotalPrice(updatedItemPrice + (Number(totalPrice) || 0)); // Use optional chaining
-    //  console.log("Updated Price:", updatedItemPrice);
+      const calculatedPrice = calculateTotalPriceAdd(parsedQuantity, itemDetails, counter);
+
+      console.log("ttt",totalPrice)
+  
+      console.log("calculatedPrice:", calculatedPrice);
+      const updatedItemPrice = calculatedPrice + (Number(totalPrice) || 0); // Pass the updated counter value
+    setTotalPrice(updatedItemPrice );
+   console.log ( "total", updatedItemPrice)
     }
 };
 
@@ -678,29 +694,42 @@ useEffect(() => {
 }, [counter]); 
   
   
-  const updateQuantity2Add = (changeBy: number, isIncrement: boolean) => {
-    setCounter((prevCounter) => {
-      const newCounter = prevCounter - 1;
-     // console.log("Counter inside setCounter22:", newCounter); 
-      return newCounter; 
-  });
+const updateQuantity2Add = (changeBy: number, isIncrement: boolean) => {
+  setCounter((prevCounter) => {
+    const newCounter = prevCounter - 1;
+    console.log("Counter inside setCounter22:", newCounter); 
+    return newCounter; 
+});
 
- // console.log("Updating quantity:22", changeBy, isIncrement);
+console.log("Updating quantity:22", changeBy, isIncrement);
 
-  const currentValue = parseFloat(newItemQuantity || "0");
-  const newValue = currentValue - changeBy; // Adjust quantity based on increment/decrement flag
-  setNewItemQuantity(newValue.toString());
+const currentValue = parseFloat(newItemQuantity || "0");
+const newValue = currentValue - changeBy; // Adjust quantity based on increment/decrement flag
+setNewItemQuantity(newValue.toString());
 
+
+
+// Recalculate the total price after changing quantity
+if (itemDetails) {
+
+  const parsedQuantity = parseFloat(newItemQuantity);
+     
+      const calculatedPrice = calculateTotalPriceAdd(parsedQuantity, itemDetails, counter);
+
+      console.log("ttt",totalPrice)
   
+      console.log("calculatedPrice:", calculatedPrice);
+      //const updatedItemPrice = calculatedPrice + (Number(totalPrice) || 0); // Pass the updated counter value
+      const updatedItemPrice = calculateTotalPrice(newValue, itemDetails, counter - 1);
+      //setTotalPrice(updatedItemPrice );
+   console.log ( "total", updatedItemPrice)
 
-  // Recalculate the total price after changing quantity
-  if (itemDetails) {
+  // Pass the updated counter value
+   setTotalPrice((-updatedItemPrice) + (Number(totalPrice) || 0)); // Use optional chaining
+  // console.log("Updated Price:2", updatedItemPrice);
+}
+};
 
-    const updatedItemPrice = calculateTotalPrice(newValue, itemDetails, counter - 1); // Pass the updated counter value
-    setTotalPrice(updatedItemPrice + (Number(totalPrice) || 0)); // Use optional chaining
-   // console.log("Updated Price:2", updatedItemPrice);
-  }
-  };
   
 
 
@@ -878,10 +907,55 @@ useEffect(() => {
   };
   
   
-  const addItem = () => {
-    console.log('newItemName:', newItemName);  // Check if the selected product is properly set
+  // const addItem = () => {
+  //   console.log('newItemName:', newItemName);  // Check if the selected product is properly set
   
-    if (!newItemName || typeof newItemName !== 'string' || !newItemName.trim()) {
+  //   if (!newItemName || typeof newItemName !== 'string' || !newItemName.trim()) {
+  //     Alert.alert("Error", "Please select a product.");
+  //     return;
+  //   }
+  
+  //   if (!newItemQuantity || !newItemQuantity.trim()) {
+  //     Alert.alert("Error", "Please enter a quantity.");
+  //     return;
+  //   }
+  
+  //   // Convert newItemQuantity to a number to calculate total price
+  //   const parsedQuantity = parseFloat(newItemQuantity);
+  
+  //   // Assuming `itemDetails` is available in the context (either passed as props or part of state)
+  //   if (itemDetails) {
+  //     // Calculate the price using the `calculateTotalPriceAdd` function
+  //     const calculatedPrice = calculateTotalPriceAdd(parsedQuantity, itemDetails, counter);
+
+  //     console.log("calculatedPrice",calculatedPrice)
+  
+  //  //   console.log("Calculated Price:", calculatedPrice);
+  
+  //     // Now you can add the item to your list with the calculated price
+  //     const newItem = {
+  //       name: newItemName ?? "",
+  //       quantity: `${String(newItemQuantity)} ${selectedUnit}`,  // Ensure it's a string
+  //       quantityType: selectedUnit || "unit",
+  //       price: calculatedPrice,  // Add the calculated price
+  //     };
+
+    
+  
+  //     setAdditionalItems((prevItems) => [...prevItems, newItem]);
+  //     setNewItemName('');
+  //     setNewItemQuantity('');
+  //     setPricePerKg('');
+  //     setModalVisible1(false);
+  //   } else {
+  //     Alert.alert("Error", "Item details are missing.");
+  //   }
+  // };
+  
+  const addItem = () => {
+    console.log("newItemName:", newItemName);
+  
+    if (!newItemName || typeof newItemName !== "string" || !newItemName.trim()) {
       Alert.alert("Error", "Please select a product.");
       return;
     }
@@ -891,30 +965,37 @@ useEffect(() => {
       return;
     }
   
-    // Convert newItemQuantity to a number to calculate total price
     const parsedQuantity = parseFloat(newItemQuantity);
   
-    // Assuming `itemDetails` is available in the context (either passed as props or part of state)
     if (itemDetails) {
-      // Calculate the price using the `calculateTotalPriceAdd` function
+      // Calculate price for the new item
       const calculatedPrice = calculateTotalPriceAdd(parsedQuantity, itemDetails, counter);
+
+      console.log("ttt",totalPrice)
   
-   //   console.log("Calculated Price:", calculatedPrice);
+      console.log("calculatedPrice:", calculatedPrice);
+     
   
-      // Now you can add the item to your list with the calculated price
       const newItem = {
         name: newItemName ?? "",
-        quantity: `${String(newItemQuantity)} ${selectedUnit}`,  // Ensure it's a string
+        quantity: `${String(newItemQuantity)} ${selectedUnit}`,
         quantityType: selectedUnit || "unit",
-        price: calculatedPrice,  // Add the calculated price
+        price: calculatedPrice,
       };
-
-    
   
+      // Add the new item to the list
       setAdditionalItems((prevItems) => [...prevItems, newItem]);
-      setNewItemName('');
-      setNewItemQuantity('');
-      setPricePerKg('');
+
+      
+
+      // **Update total price** by adding the new item's price
+      //setTotalPrice((prevTotal) => Number(prevTotal) + calculatedPrice);
+  
+      // Reset values after adding item
+      setNewItemName("");
+      setNewItemQuantity("");
+      setPricePerKg("");
+      setCounter(0); // Reset counter
       setModalVisible1(false);
     } else {
       Alert.alert("Error", "Item details are missing.");
