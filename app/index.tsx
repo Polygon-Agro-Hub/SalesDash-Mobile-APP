@@ -67,7 +67,7 @@ const index = () => {
       <Stack.Screen name="OrderSummeryScreen" component={OrderSummeryScreen} />
       <Stack.Screen name="OrderConfirmedScreen" component={OrderConfirmedScreen} />
       <Stack.Screen name="ViewOrdersScreen" component={ViewOrdersScreen} />
-      <Stack.Screen name="View_CancelOrderScreen" component={View_CancelOrderScreen} />
+      <Stack.Screen name="View_CancelOrderScreen" component={View_CancelOrderScreen as any} />
       
     </Stack.Navigator>
    </GestureHandlerRootView>

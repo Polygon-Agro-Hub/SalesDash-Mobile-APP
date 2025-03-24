@@ -24,6 +24,7 @@ import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Alert } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import DropDownPicker from "react-native-dropdown-picker";
 
 type AddComplaintScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -36,9 +37,49 @@ interface AddComplaintScreenProps {
 
 const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>("");
+  console.log(selectedCategory)
   const [complaintText, setComplaintText] = useState<string>("");
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
     const [token, setToken] = useState<string | null>(null);
+    const [category, setCategory] = useState<any[]>([]);
+    const [open, setOpen] = useState(false);
+
+    useEffect(() => {
+      let appName = "SalesDash";
+
+  
+      console.log("appName", appName);
+      const fetchComplainCategory = async () => {
+        try {
+          const response = await axios.get(
+            `${environment.API_BASE_URL}api/complain/get-complain/category/${appName}`
+          );
+          if (response.data.status === "success") {
+            console.log(response.data.data);
+  
+            // Determine which language field to use
+ 
+  
+            const mappedCategories = response.data.data
+              .map((item: any) => {
+                const categoryValue =
+                   item["categoryEnglish"];
+                return {
+                  value: item.id,
+                  label: categoryValue,
+                };
+              })
+              .filter((item: { value: any }) => item.value);
+  
+            setCategory(mappedCategories);
+          }
+        } catch (error) {
+          console.error(error);
+        }
+      };
+  
+      fetchComplainCategory();
+    }, []);
 
     const handleSubmit = async () => {
       if (!selectedCategory || !complaintText.trim()) {
@@ -53,9 +94,9 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
           return;
         }
     
-        console.log(storedToken, selectedCategory, complaintText);     
+        console.log(selectedCategory, complaintText);     
     
-        const apiUrl = `${environment.API_BASE_URL.replace(/\/$/, '')}/api/complain/add-complain`;
+        const apiUrl = `${environment.API_BASE_URL}api/complain/add-complain`;
     
         const response = await axios.post(
           apiUrl,
@@ -97,6 +138,9 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
     };
   }, []);
 
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+  };
   return (
     <SafeAreaView className="flex-1 bg-white">
       <ScrollView style={{ paddingHorizontal: wp(4) }}>
@@ -111,7 +155,40 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
                     Tell us the <Text className="text-[#6839CF]">problem</Text>
                   </Text>
                 </View>
+                <View className="w-full   mb-4">
+                {category.length > 0 && (
+                  <DropDownPicker
+                    open={open}
+                    value={selectedCategory} // Assuming complain value is for category
+                    setOpen={setOpen}
+                    setValue={setSelectedCategory} // Here it updates the complain value, which represents the selected category
+                    items={category.map((item) => ({
+                      label: (item.label), // Apply translation here
+                      value: item.value, // Keep the value as it is from Category
+                    }))}
+                    placeholder={("Select Complaint Category")} // Apply translation here
+                    placeholderStyle={{ color: "#d1d5db" }}
+                    listMode="SCROLLVIEW"
+                    zIndex={3000}
+                    zIndexInverse={1000}
+                    dropDownContainerStyle={{
+                      borderColor: "#ccc",
+                      borderWidth: 1,
+                    }}
+                    style={{
+                      borderWidth: 1,
+                      borderRadius:20,
+                      borderColor: "#ccc",
+                      paddingHorizontal: 8,
+                      paddingVertical: 10,
+                    }}
+                    textStyle={{ fontSize: 12 }}
+                    onOpen={dismissKeyboard}
+                  />
+                )}
+              </View>
 
+{/* 
                 <View className="mb-4 border border-[#393939] rounded-full overflow-hidden ">
                 <Picker
   selectedValue={selectedCategory}
@@ -125,8 +202,9 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
   <Picker.Item label="Customer Service" value="Customer Service" />
   <Picker.Item label="Other" value="Other" />
 </Picker>
-
-                </View>
+  
+                </View> */}
+                
 
                 <Text className="text-center text-black mb-4">
                   -- We will get back to you within 2 days --
