@@ -315,7 +315,13 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   const isEmpty = filteredCustomers.length === 0;
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1 bg-white">
+   <KeyboardAvoidingView 
+         behavior={Platform.OS === "ios" ? "padding" : "height"}
+         enabled 
+         className="flex-1"
+       >
+
+        
       <View className="bg-white flex-1">
         
         {/* Show Skeleton while loading */}

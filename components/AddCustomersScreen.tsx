@@ -197,7 +197,11 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1 bg-white">
+       <KeyboardAvoidingView 
+    behavior={Platform.OS ==="ios" ? "padding" : "height"}
+  enabled 
+  className="flex-1"
+>
         <View className="flex-1 bg-white py-4 p-2">
           <View className="p-[-2]">
             <View className="bg-white flex-row items-center h-17 shadow-lg px-1">
@@ -208,7 +212,9 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
             </View>
           </View>
 
-          <ScrollView style={{ paddingHorizontal: wp(1) }}>
+          <ScrollView style={{ paddingHorizontal: wp(1) }}
+          keyboardShouldPersistTaps="handled"
+          >
             <View className="p-3 px-6">
               <View className="mb-4 mt-4 flex-row justify-between">
                 <View className="flex-[1]">

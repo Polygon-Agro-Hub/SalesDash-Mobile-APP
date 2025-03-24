@@ -36,8 +36,14 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation })
   }, []);
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1 bg-white">
-      <ScrollView className="bg-white flex-1 ">
+    <KeyboardAvoidingView 
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                enabled 
+                className="flex-1"
+                >
+      <ScrollView className="bg-white flex-1 "
+      keyboardShouldPersistTaps="handled"
+      >
         {/* Header */}
         <View className="flex-row items-center shadow-md px-3  bg-white">
           <BackButton navigation={navigation} />

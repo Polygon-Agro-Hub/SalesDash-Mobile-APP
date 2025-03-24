@@ -6,6 +6,8 @@ import {
   FlatList,
   TouchableOpacity,
   Alert,
+  Platform,
+  KeyboardAvoidingView
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack"; 
 import { RootStackParamList } from "./types"; 
@@ -33,12 +35,14 @@ interface Package {
   name: string;
   price: string;
   description: string;
+  portion: number;
+   period :number;
 }
 
 const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [token, setToken] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ username: "" });
+  const [formData, setFormData] = useState({ firstName: "" });
   const [packages, setPackages] = useState<Package[]>([]);
 
   useEffect(() => {
@@ -144,7 +148,17 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     >
       <TouchableOpacity
   //onPress={() => navigation.navigate("ViewScreen", { selectedPackage: item })} // Ensure key matches expected parameter
-  onPress={() => navigation.navigate("ViewScreen", { selectedPackageId: item.id, selectedPackageName: item.name, selectedPackageTotal: item.total ,selectedPackageDescription:item.description})}
+  onPress={() => 
+    navigation.navigate("ViewScreen", {
+      selectedPackageId: item.id,
+      selectedPackageName: item.name,
+      selectedPackageTotal: item.total,
+      selectedPackageDescription: item.description,
+      selectedPackageportion: item.portion,  // Assuming this is a number
+      selectedPackageperiod: item.period    // Assuming this is a number
+    })
+  }
+  
 
   className="items-center"
 >
@@ -158,6 +172,11 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
   );
 
   return (
+     <KeyboardAvoidingView 
+             behavior={Platform.OS === "ios" ? "padding" : "height"}
+             enabled 
+             className="flex-1"
+           >
     <View className="flex-1 bg-white">
       {/* Header Section */}
       <View className="bg-white shadow-md p-5 rounded-b-3xl">
@@ -167,7 +186,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
               <Image source={require("../assets/images/profile.png")} className="w-12 h-12 rounded-full" />
             </TouchableOpacity>
 
-            <Text className="ml-3 text-lg font-bold text-gray-800">Hello, {formData.username}</Text>
+            <Text className="ml-3 text-lg font-bold text-gray-800">Hello, {formData.firstName}</Text>
           </View>
           <View className="flex-row items-center bg-[#E6DBF766] py-1 px-3 rounded-full">
             <Image source={require("../assets/images/star.png")} className="w-6 h-6" resizeMode="contain" />
@@ -223,6 +242,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       {/* Navbar */}
       <Navbar navigation={navigation} activeTab="DashboardScreen" />
     </View>
+    </KeyboardAvoidingView >
   );
 };
 

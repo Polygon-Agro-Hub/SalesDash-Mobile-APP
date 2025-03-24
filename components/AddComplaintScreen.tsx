@@ -143,9 +143,15 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
   };
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <ScrollView style={{ paddingHorizontal: wp(4) }}>
+      <ScrollView 
+      keyboardShouldPersistTaps="handled"
+      style={{ paddingHorizontal: wp(4) }}>
         <TouchableWithoutFeedback>
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
+        <KeyboardAvoidingView 
+    behavior={Platform.OS ==="ios" ? "padding" : "height"}
+  enabled 
+  className="flex-1"
+>
             <View className="flex-1">
               <BackButton navigation={navigation} />
               <ScrollView className="px-8 py-4" keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 100 }}>

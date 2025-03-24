@@ -21,11 +21,18 @@ interface OtpSuccesfulScreenProps {
 const OtpSuccesfulScreen: React.FC<OtpSuccesfulScreenProps> = ({ navigation }) => {
 
   return (
+    <KeyboardAvoidingView 
+                                                        behavior={Platform.OS === "ios" ? "padding" : "height"}
+                                                        enabled 
+                                                        className="flex-1"
+                                                      >
     <View
      
       className="flex-1 bg-white"
     >
-      <ScrollView className="flex-1 bg-white px-3">
+      <ScrollView className="flex-1 bg-white px-3"
+      keyboardShouldPersistTaps="handled"
+      >
         {/* Header */}
         <View className="bg-white flex-row items-center h-17 shadow-lg px-1">
           {/* Back Button */}
@@ -81,6 +88,7 @@ Successfully Verified!
         </ScrollView>
         <Navbar navigation={navigation} activeTab="CustomersScreen" />
       </View>
+      </KeyboardAvoidingView>
    
   );
 };
