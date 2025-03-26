@@ -11,7 +11,6 @@ import {
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
-import Navbar from "./Navbar";
 import BackButton from "./BackButton";
 import { LinearGradient } from "expo-linear-gradient";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
@@ -238,7 +237,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
       </View>
 
       {/* Bottom Navigation */}
-      <Navbar navigation={navigation} activeTab="ViewOrdersScreen" />
     </KeyboardAvoidingView>
   );
 };

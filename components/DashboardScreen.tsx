@@ -240,7 +240,6 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       />
       {/* Navbar */}
       {/* Navbar */}
-      <Navbar navigation={navigation} activeTab="DashboardScreen" />
     </View>
     </KeyboardAvoidingView >
   );

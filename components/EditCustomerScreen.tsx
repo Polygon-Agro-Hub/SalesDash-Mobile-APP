@@ -3,7 +3,6 @@ import { View, Text, ScrollView, TextInput, TouchableOpacity, Keyboard, Platform
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import { Picker } from "@react-native-picker/picker";
-import Navbar from "./Navbar";
 import { LinearGradient } from "expo-linear-gradient";
 import { widthPercentageToDP as wp } from "react-native-responsive-screen";
 import BackButton from "./BackButton";
@@ -515,7 +514,6 @@ const [items, setItems] = useState([
             </View>
           </ScrollView>
         </View>
-        {!isKeyboardVisible && <Navbar navigation={navigation} activeTab="CustomersScreen" />}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

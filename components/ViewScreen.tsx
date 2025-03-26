@@ -12,7 +12,6 @@ import {
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack"; 
 //import { RootStackParamList } from "./types"; 
-import Navbar from "./Navbar"; 
 import BackButton from "./BackButton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
@@ -176,7 +175,6 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
       </ScrollView>
 
       {/* Navbar */}
-      <Navbar navigation={navigation} activeTab="DashboardScreen" />
     </View>
     </KeyboardAvoidingView>
   );

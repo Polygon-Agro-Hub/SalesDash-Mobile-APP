@@ -263,7 +263,6 @@ import { View, Text, FlatList, TouchableOpacity, Image, Modal, Alert, RefreshCon
 import { LinearGradient } from "expo-linear-gradient";
 import { AntDesign } from "@expo/vector-icons";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
-import Navbar from "./Navbar";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import BackButton from "./BackButton";
@@ -496,7 +495,6 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({ navigation }) =
       </Modal>
   
       {/* Bottom Navigation */}
-      <Navbar navigation={navigation} activeTab="DashboardScreen" />
     </View>
   );
 };

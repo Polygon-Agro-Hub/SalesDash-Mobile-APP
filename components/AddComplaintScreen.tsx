@@ -14,9 +14,7 @@ import {
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
-import { Picker } from "@react-native-picker/picker";
 import { AntDesign } from "@expo/vector-icons";
-import Navbar from "./Navbar";
 import { widthPercentageToDP as wp } from "react-native-responsive-screen";
 import BackButton from "./BackButton";
 import axios from "axios";
@@ -252,7 +250,6 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
           </KeyboardAvoidingView>
         </TouchableWithoutFeedback>
       </ScrollView>
-      {!isKeyboardVisible && <Navbar navigation={navigation} activeTab="CustomersScreen" />}
     </SafeAreaView>
   );
 };

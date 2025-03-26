@@ -5,7 +5,6 @@ import { RootStackParamList } from "./types";
 import { useNavigation } from "@react-navigation/native";
 import BackButton from "./BackButton";
 import { LinearGradient } from "expo-linear-gradient";
-import Navbar from "./Navbar";
 import {
     widthPercentageToDP as wp,
     heightPercentageToDP as hp,
@@ -621,7 +620,6 @@ useEffect(() => {
 </View>
 </View>
 </View> 
-{!isKeyboardVisible && <Navbar navigation={navigation} activeTab="CustomersScreen" />}
 </ScrollView>
     </KeyboardAvoidingView>
    

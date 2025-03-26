@@ -6,7 +6,6 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import { SelectList } from "react-native-dropdown-select-list";
 import BackButton from "./BackButton";
-import Navbar from "./Navbar";
 import DropDownPicker from "react-native-dropdown-picker";
 import { LinearGradient } from "expo-linear-gradient"; // Gradient background
 import environment from "@/environment/environment";
@@ -1427,7 +1426,6 @@ if (itemDetails) {
 
           </View>
         )}
-      {!selectedPackage && !isKeyboardVisible && <Navbar navigation={navigation} activeTab="CustomersScreen" />}
     </KeyboardAvoidingView>
   </View>
   

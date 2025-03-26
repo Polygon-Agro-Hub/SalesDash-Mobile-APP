@@ -12,7 +12,6 @@ import {
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
-import Navbar from "./Navbar";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Print from "expo-print";
@@ -256,7 +255,6 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation 
           </View>
         </View>
       </ScrollView>
-      <Navbar navigation={navigation} activeTab="CustomersScreen" />
     </KeyboardAvoidingView>
   );
 };

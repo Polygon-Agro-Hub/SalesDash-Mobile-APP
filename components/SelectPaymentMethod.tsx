@@ -11,7 +11,6 @@ import {
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
-import Navbar from "./Navbar";
 import BackButton from "./BackButton";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -118,7 +117,6 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation })
       </ScrollView>
 
       {/* Bottom Navbar (hidden when keyboard is visible) */}
-      {!isKeyboardVisible && <Navbar navigation={navigation} activeTab="CustomersScreen" />}
     </KeyboardAvoidingView>
   );
 };

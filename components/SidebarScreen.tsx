@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { View, Text, Image, TouchableOpacity, ActivityIndicator, Alert, ScrollView, Animated, KeyboardAvoidingView, Platform } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
-import Navbar from "./Navbar";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
@@ -176,7 +175,7 @@ const handleLogout = async () => {
               <TouchableOpacity onPress={() => navigation.navigate("AddComplaintScreen")}>
                 <Text className="text-sm text-gray-700 font-bold">Report a Complaint</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={{ marginTop: hp(1), marginBottom: hp(1) }} onPress={() => navigation.navigate("ViewComplainScreen")}>
+              <TouchableOpacity style={{ marginTop: hp(1), marginBottom: hp(1) }} onPress={() => navigation.navigate("Main",{screen:"ViewComplainScreen"})}>
   <Text className="text-sm text-gray-700 font-bold">View Complaint History</Text>
 </TouchableOpacity>
 
@@ -276,7 +275,6 @@ const handleLogout = async () => {
        
 
       </ScrollView>
-      <Navbar navigation={navigation} activeTab="DashboardScreen" />
       </View>
     )}
    

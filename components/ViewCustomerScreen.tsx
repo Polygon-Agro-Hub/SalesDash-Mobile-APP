@@ -211,7 +211,6 @@ import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, FlatList, Image, Linking, Keyboard, Platform, KeyboardAvoidingView } from "react-native";
 import { RouteProp } from "@react-navigation/native"; // Import RouteProp for type safety
 import { RootStackParamList } from "./types"; // Adjust if you have a type file for navigation
-import Navbar from "./Navbar";
 import { StackNavigationProp } from "@react-navigation/stack"; // Import StackNavigationProp
 import { AntDesign } from "@expo/vector-icons";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
@@ -376,7 +375,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <TouchableOpacity 
-            onPress={() => navigation.navigate("View_CancelOrderScreen")}
+            onPress={() => navigation.navigate("Main",{screen:"View_CancelOrderScreen"})}
           >
             <View className="bg-white rounded-2xl p-4 mb-4 border border-gray-200 mx-4 shadow-sm mt-4">
               {/* Order number and status tag in the same row */}
@@ -419,7 +418,6 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
       </View>
 
       {/* Navbar */}
-      {!isKeyboardVisible && <Navbar navigation={navigation} activeTab="CustomersScreen" />}
     </KeyboardAvoidingView>
   );
 };

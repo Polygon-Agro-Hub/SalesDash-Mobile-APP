@@ -265,7 +265,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         if (passwordUpdate === 0) {
           navigation.navigate("ChangePasswordScreen");
         } else {
-          navigation.navigate("DashboardScreen");
+          navigation.navigate("Main", { screen: "DashboardScreen" });
         }
       }
     } catch (err) {

@@ -262,7 +262,6 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
       </View>
 
       {/* Navbar */}
-      {!isKeyboardVisible && <Navbar navigation={navigation} activeTab="ViewOrdersScreen" />}
     </KeyboardAvoidingView>
   );
 };
