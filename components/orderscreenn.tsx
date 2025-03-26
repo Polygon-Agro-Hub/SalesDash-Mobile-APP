@@ -843,6 +843,166 @@ useEffect(() => {
   };
 
 
+  // const handleEditItemClick = (item: any) => {
+  //   setEditingItem(item);
+  
+  //   // Check if item.quantity exists before trying to split it
+  //   if (item.quantity) {
+  //     // Safely extract the numeric part
+  //     const numericPart = item.quantity.toString().split(' ')[0];
+  //     setNewItemQuantity(numericPart);
+  //   } else {
+  //     setNewItemQuantity(""); // Set default empty string if quantity doesn't exist
+  //   }
+  
+  //   // Check if item.quantityType exists before setting it
+  //   if (item.quantityType) {
+  //     setSelectedUnit(item.quantityType);
+  //   }
+  
+  //   // Fetch marketplace item details when clicking on this item
+  //   if ('mpItemId' in item && item.mpItemId !== undefined && item.mpItemId !== null && typeof item.mpItemId === 'number') {
+  //     // Optional: show loading indicator
+  //     // setLoading(true);
+  
+  //     fetchMarketplaceItemDetails(item.mpItemId)
+  //       .then(details => {
+  //         if (details) {
+  //         //  console.log("Fetched item details on click:", details);
+  //           // Update the itemDetails state with the fetched data
+  //           setItemDetails({
+  //             changeby: details.changeby,
+  //             startValue: details.startValue,
+  //             unitType: details.unitType,
+  //             discountedPrice: details.discountedPrice,
+  //             normalPrice: details.normalPrice,
+  //             displayName: details.displayName
+  //           });
+  
+  //           // If you need to update the unitType state as well
+  //           if (details.unitType) {
+  //             setUnitType(details.unitType);
+  //           }
+  //         }
+  //       })
+  //       .catch(error => {
+  //         console.error("Error fetching item details on click:", error);
+  //       })
+  //       .finally(() => {
+  //         // Optional: hide loading indicator
+  //         // setLoading(false);
+  //       });
+  //   } else {
+  //     console.log("Invalid mpItemId:", item.mpItemId);
+  //    console.log("wwwwwwwwww")
+  //   }
+  
+  //   // Open the modal after setting the data
+  //   setModalVisible(true);
+  // };
+ 
+  
+  
+  
+ 
+  
+  
+
+  // const addItem = () => {
+  //   console.log("newItemName:", newItemName);
+  //   console.log("qqqqq",crops)
+  
+  //   if (!newItemName || typeof newItemName !== "string" || !newItemName.trim()) {
+  //     Alert.alert("Error", "Please select a product.");
+  //     return;
+  //   }
+  
+  //   if (!newItemQuantity || !newItemQuantity.trim()) {
+  //     Alert.alert("Error", "Please enter a quantity.");
+  //     return;
+  //   }
+    
+  //   const selectedCrop = crops.find((crop) => crop.displayName === newItemName);
+
+  //   if (!selectedCrop) {
+  //     Alert.alert("Error", "Selected crop not found.");
+  //     return;
+  //   }
+
+  //   // Access the cropId here
+  //   const cropId = selectedCrop.cropId;
+  //   console.log("Selected Crop ID:", cropId);  // Output the cropId
+  //   setCropid(cropId)
+
+  //   console.log("llllll",cropId)
+  
+  //   const parsedQuantity = parseFloat(newItemQuantity);
+  
+  //   if (itemDetails) {
+  //     // Calculate price for the new item using the counter value
+  //     const calculatedPrice = calculateTotalPriceAdd(parsedQuantity, itemDetails, counter);
+  
+  //     console.log("Current total price:", totalPrice);
+  //     console.log("Calculated price for new item:", calculatedPrice);
+  
+  //     // Create a new item object
+  //     const newItem: Item = {
+      
+  //       name: newItemName ?? "",
+  //       quantity: `${String(newItemQuantity)} ${selectedUnit}`,
+  //       quantityType: selectedUnit || "unit",
+  //       price: calculatedPrice,
+  //     };
+  
+  //     // Check if the quantity is 0, remove the item if true, otherwise add the item
+  //     if (parsedQuantity === 0) {
+  //       // Remove item from the list if quantity is 0
+  //       setAdditionalItems((prevItems) => {
+  //         const updatedItems = prevItems.filter((item) => item.name !== newItemName);
+  //         console.log("Item removed because quantity is 0:", updatedItems);
+  //         return updatedItems;
+  //       });
+  //       console.log("Item removed because quantity is 0");
+  //     } else {
+  //       // Check if the item already exists by name
+  //       const existingItemIndex = additionalItems.findIndex((item) => item.name === newItem.name);
+  
+  //       if (existingItemIndex !== -1) {
+  //         // If item exists, update the quantity and price
+  //         setAdditionalItems((prevItems) => {
+  //           const updatedItems = [...prevItems];
+  //           updatedItems[existingItemIndex].quantity = `${parsedQuantity + parseFloat(updatedItems[existingItemIndex].quantity)} ${selectedUnit}`;
+  //           updatedItems[existingItemIndex].price += calculatedPrice; // Update price as well
+  //           console.log("Updated additional items inside callback:", updatedItems); // Log updated items
+  //           return updatedItems;
+  //         });
+  //         console.log("Item quantity updated:", newItem);
+  //       } else {
+  //         // If item does not exist, add it to the array
+  //         setAdditionalItems((prevItems) => {
+  //           const updatedItems = [...prevItems, newItem];
+  //           console.log("Updated additional items inside callback:", updatedItems); // Log updated items
+  //           return updatedItems;
+  //         });
+  //         console.log("Item added:", newItem);
+  //       }
+  //     }
+  
+  //     // Update total price by adding the new item's price to the current total price
+  //     setTotalPrice((prevTotal) => (Number(prevTotal) || 0) + calculatedPrice);
+  
+  //     // Reset input fields and state after adding or removing the item
+  //     setNewItemName("");          
+  //     setNewItemQuantity("");       
+  //     setPricePerKg("");           
+  //     setNewPrice1("");            
+  //     setCounter(0);                
+  //     setFinaldiscount(finaldiscount); 
+  //     setModalVisible1(false);      
+  //   } else {
+  //     Alert.alert("Error", "Item details are missing.");
+  //   }
+  // };
   const addItem = () => {
     console.log("newItemName:", newItemName);
     console.log("qqqqq", crops);
