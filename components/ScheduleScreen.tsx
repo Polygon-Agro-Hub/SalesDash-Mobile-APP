@@ -25,6 +25,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
   const [selectedTimeSlot, setSelectedTimeSlot] = useState("");
   const [selectedDays, setSelectedDays] = useState<string[]>([]); 
 const [selectedDate, setSelectedDate] = useState<string | null>(null);
+const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedWeek, setSelectedWeek] = useState("");
 
 
   const [isDateSelected, setIsDateSelected] = useState(false); // Track if date is selected
@@ -42,6 +44,21 @@ const [selectedDate, setSelectedDate] = useState<string | null>(null);
   ];
 
   const weekdays = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
+
+  const months = [
+    { key: "1", value: "January" },
+    { key: "2", value: "February" },
+    { key: "3", value: "March" },
+    { key: "4", value: "April" },
+    // Add more months as needed
+  ];
+
+  const weeks = [
+    { key: "1", value: "Week 1" },
+    { key: "2", value: "Week 2" },
+    { key: "3", value: "Week 3" },
+    { key: "4", value: "Week 4" },
+  ];
 
   const toggleDaySelection = (day: string) => {
     setSelectedDays((prevSelectedDays) => {
@@ -126,6 +143,43 @@ const [selectedDate, setSelectedDate] = useState<string | null>(null);
 <ScrollView className="px-10 mt-[-5]" 
 keyboardShouldPersistTaps="handled"
 >
+
+
+      <Text className="text-black mb-2">Valid Period</Text>
+      <View className="flex-row items-center space-x-2">
+        {/* Month Selector */}
+        <SelectList
+  setSelected={(val: string) => setSelectedMonth(val)} 
+  data={months}
+  placeholder="Select Month"
+  boxStyles={{
+    borderColor: "#F6F6F6",
+    backgroundColor: "#F6F6F6",
+    borderRadius: 40,
+    padding: 10,
+    width: 130,
+  }}
+/>
+
+        <Text className="text-lg ml-5">+</Text>
+
+        {/* Week Selector */}
+        <SelectList
+  setSelected={(val: string) => setSelectedWeek(val)} 
+  data={weeks}
+  placeholder="Select Week"
+  boxStyles={{
+    borderColor: "#F6F6F6",
+    backgroundColor: "#F6F6F6",
+    borderRadius: 40,
+    padding: 10,
+    width: 130,
+    marginLeft:5,
+  }}
+/>
+      </View>
+
+
 
 
         {/* Conditionally render Schedule Date section */}
