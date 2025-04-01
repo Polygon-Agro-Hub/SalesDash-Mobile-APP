@@ -4,7 +4,6 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 
 import { Picker } from "@react-native-picker/picker";
-import Navbar from "./Navbar";
 import { LinearGradient } from "expo-linear-gradient";
 import { widthPercentageToDP as wp } from "react-native-responsive-screen";
 import BackButton from "./BackButton";
@@ -12,6 +11,7 @@ import axios from "axios";
 import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import DropDownPicker from 'react-native-dropdown-picker';
+import { SelectList } from "react-native-dropdown-select-list";
 
 type AddCustomersScreenNavigationProp = StackNavigationProp<RootStackParamList, "AddCustomersScreen">;
 
@@ -197,7 +197,11 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1 bg-white">
+       <KeyboardAvoidingView 
+    behavior={Platform.OS ==="ios" ? "padding" : "height"}
+  enabled 
+  className="flex-1"
+>
         <View className="flex-1 bg-white py-4 p-2">
           <View className="p-[-2]">
             <View className="bg-white flex-row items-center h-17 shadow-lg px-1">
@@ -208,12 +212,14 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
             </View>
           </View>
 
-          <ScrollView style={{ paddingHorizontal: wp(1) }}>
+          <ScrollView style={{ paddingHorizontal: wp(1) }}
+          keyboardShouldPersistTaps="handled"
+          >
             <View className="p-3 px-6">
               <View className="mb-4 mt-4 flex-row justify-between">
                 <View className="flex-[1]">
                   <Text className="text-gray-700 mb-1">Title</Text>
-                  <View className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full py-2 mt-1 justify-center justifyContent-flex-end">
+                  {/* <View className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full py-2 mt-1 justify-center justifyContent-flex-end">
                     <Picker
                       selectedValue={selectedCategory}
                       onValueChange={(itemValue) => setSelectedCategory(itemValue)}
@@ -228,7 +234,26 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
                       <Picker.Item label="Mr" value="Mr" style={{ fontSize: 8 }} />
                       <Picker.Item label="Ms" value="Ms" style={{ fontSize: 8 }} />
                     </Picker>
-                  </View>
+                  </View> */}
+                  <SelectList
+  setSelected={setSelectedCategory} // Set the selected value
+  data={[
+    { key: 'Mr', value: 'Mr' },
+    { key: 'Ms', value: 'Ms' },
+  ]} // The options for the select list
+  boxStyles={{
+    backgroundColor: '#F6F6F6',
+    borderColor: '#F6F6F6',
+    borderRadius: 30,
+    paddingVertical: 10, // Adjust padding if needed
+  }}
+  dropdownTextStyles={{
+    color: 'black',
+  }}
+  search={false} // Disable search
+  placeholder="Title" // Placeholder text
+/>
+
                 </View>
 
                 <View className="flex-[2] ml-2">
@@ -276,7 +301,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
 
               <View className="mb-4">
                 <Text className="text-gray-700 mb-1">Building Type</Text>
-                <View className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-4 py-2 mt-1 items-center justify-center">
+                {/* <View className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-4 py-2 mt-1 items-center justify-center">
                   <Picker
                     selectedValue={buildingType}
                     onValueChange={(itemValue) => setBuildingType(itemValue)}
@@ -290,7 +315,23 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
                       <Picker.Item key={option.key} label={option.value} value={option.value} />
                     ))}
                   </Picker>
-                </View>
+                </View> */}
+      <SelectList
+        setSelected={setBuildingType} // Set the selected value
+        data={buildingOptions} // The options for the select list
+        // defaultOption={{ key: "", value: "" }} // Default option if nothing is selected
+        boxStyles={{
+          backgroundColor: 'white',
+          borderColor: '#CFCFCF',
+          borderRadius: 30,
+        }}
+        dropdownTextStyles={{
+          color: '#000',
+        }}
+        search={false} // Enable search
+        placeholder="Select Building Type" // Placeholder text
+        
+      />
               </View>
 
               {buildingType === "House" && (
@@ -403,7 +444,6 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
             </View>
           </ScrollView>
         </View>
-        {!isKeyboardVisible && <Navbar navigation={navigation} activeTab="CustomersScreen" />}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

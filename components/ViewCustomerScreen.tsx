@@ -211,7 +211,6 @@ import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, FlatList, Image, Linking, Keyboard, Platform, KeyboardAvoidingView } from "react-native";
 import { RouteProp } from "@react-navigation/native"; // Import RouteProp for type safety
 import { RootStackParamList } from "./types"; // Adjust if you have a type file for navigation
-import Navbar from "./Navbar";
 import { StackNavigationProp } from "@react-navigation/stack"; // Import StackNavigationProp
 import { AntDesign } from "@expo/vector-icons";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
@@ -270,7 +269,11 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
   );
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1 bg-white">
+   <KeyboardAvoidingView 
+                           behavior={Platform.OS === "ios" ? "padding" : "height"}
+                           enabled 
+                           className="flex-1"
+                           >
       <View className="flex-1 bg-white">
         {/* Header Section */}
         <View className="relative">
@@ -324,7 +327,10 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
 
               {/* New Order Button */}
               <TouchableOpacity 
-              onPress={() => navigation.navigate("OrderScreen")}
+             onPress={() => {
+              console.log("cus id____________",id);  // Log the id
+              navigation.navigate("OrderScreen", { id: id });  // Navigate to OrderScreen
+            }}
               className="flex-row bg-[#6B3BCF] px-4 py-2 rounded-full items-center mt-5 mx-4">
                 <Image source={require("../assets/images/newOrder.png")} className="w-5 h-5 mr-2" resizeMode="contain" />
                 <Text className="text-white font-bold">New Order</Text>
@@ -369,7 +375,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <TouchableOpacity 
-            onPress={() => navigation.navigate("View_CancelOrderScreen")}
+            onPress={() => navigation.navigate("Main",{screen:"View_CancelOrderScreen"})}
           >
             <View className="bg-white rounded-2xl p-4 mb-4 border border-gray-200 mx-4 shadow-sm mt-4">
               {/* Order number and status tag in the same row */}
@@ -412,7 +418,6 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
       </View>
 
       {/* Navbar */}
-      {!isKeyboardVisible && <Navbar navigation={navigation} activeTab="CustomersScreen" />}
     </KeyboardAvoidingView>
   );
 };

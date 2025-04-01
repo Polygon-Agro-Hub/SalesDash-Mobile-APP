@@ -6,12 +6,16 @@ export type RootStackParamList = {
     LoginScreen: undefined;
     ChangePasswordScreen: undefined;
     DashboardScreen: undefined;
+    
    //ViewScreen: {selectedPackage:string};
  ViewScreen: { 
     selectedPackageId: number;
     selectedPackageName: string;
     selectedPackageTotal: string;
     selectedPackageDescription:string;
+    selectedPackageportion:number;
+    selectedPackageperiod:number;
+  
   };
   
     CustomersScreen: undefined;
@@ -26,13 +30,15 @@ export type RootStackParamList = {
     OtpSuccesfulScreen:undefined;
     EditCustomerScreen:{ id: string}; 
     OtpScreenUp:{phoneNumber:string , id: string, token:string};      
-    OrderScreen:undefined;
+    //OrderScreen:undefined;
+    OrderScreen: { id: string };
+   // OrderScreen: { itemId: number | null }; 
     ScheduleScreen: {totalPrice: Number };
     SelectPaymentMethod: undefined;
     OrderSummeryScreen:undefined;
     OrderConfirmedScreen:undefined;
     ViewOrdersScreen:undefined;
-    View_CancelOrderScreen:undefined;
-
+    View_CancelOrderScreen:{orderId:number};
+    Main: { screen: keyof RootStackParamList; params?: any };
   };
   

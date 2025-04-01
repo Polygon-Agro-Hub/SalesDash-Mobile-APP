@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, TouchableOpacity, Image, Modal, ScrollView } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
-import Navbar from "./Navbar";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
@@ -160,7 +159,6 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
         
       )}
        {/* Bottom Navbar */}
-       <Navbar navigation={navigation} activeTab="ReminderScreen" />
     </View>
   );
 };

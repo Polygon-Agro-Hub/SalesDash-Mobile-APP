@@ -11,7 +11,6 @@ import {
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
-import Navbar from "./Navbar";
 import BackButton from "./BackButton";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -38,7 +37,11 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({ navigation }) =
     }, []);
   
     return (
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1 bg-white">
+      <KeyboardAvoidingView 
+                                     behavior={Platform.OS === "ios" ? "padding" : "height"}
+                                     enabled 
+                                     className="flex-1"
+                                   >
         
         {/* Scrollable Content */}
         
@@ -53,6 +56,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({ navigation }) =
           showsVerticalScrollIndicator={true} 
           contentContainerStyle={{ paddingBottom: 20 }} 
           className="flex-1 px-4"
+          keyboardShouldPersistTaps="handled"
         >
   <View className="px-2">
   
@@ -107,7 +111,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({ navigation }) =
           <View className="flex-row justify-between">
               <Text className="text-black font-medium">Payment Summery</Text>
               <TouchableOpacity 
-              onPress={() => navigation.navigate("OrderScreen")}
+              onPress={() => navigation.navigate("Main",{screen:"OrderScreen"})}
               className="border border-[#6C3CD1] px-3 rounded-full">
                 <Text className="text-[#6C3CD1] font-medium">Edit</Text>
               </TouchableOpacity>
@@ -152,7 +156,6 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({ navigation }) =
   
         </ScrollView>
   
-        {!isKeyboardVisible && <Navbar navigation={navigation} activeTab="CustomersScreen" />}
       
       </KeyboardAvoidingView>
     );

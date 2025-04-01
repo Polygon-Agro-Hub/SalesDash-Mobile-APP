@@ -12,7 +12,6 @@ import {
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
-import Navbar from "./Navbar";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Print from "expo-print";
@@ -220,8 +219,14 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation 
   
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+    <KeyboardAvoidingView 
+                           behavior={Platform.OS === "ios" ? "padding" : "height"}
+                           enabled 
+                           className="flex-1"
+                         >
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }} 
+      keyboardShouldPersistTaps="handled"
+      >
         <View className="flex-1 bg-white px-2">
           <View style={{ paddingHorizontal: wp(6), paddingVertical: hp(1) }} className="flex-1">
             <View className="px-2">
@@ -250,7 +255,6 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation 
           </View>
         </View>
       </ScrollView>
-      <Navbar navigation={navigation} activeTab="CustomersScreen" />
     </KeyboardAvoidingView>
   );
 };

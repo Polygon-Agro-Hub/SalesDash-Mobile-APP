@@ -14,7 +14,6 @@ import {
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
-import Navbar from "./Navbar";
 import { AntDesign } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
@@ -149,11 +148,12 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   return (
     <View className="flex-1 bg-white">
      
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={{ flex: 1 }}
+       <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        enabled 
+        className="flex-1"
         >
-          <ScrollView>
+          <ScrollView keyboardShouldPersistTaps="handled">
             <View className="bg-[#6839CF]">
               <View className="relative">
                 <ImageBackground
@@ -299,7 +299,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
         </KeyboardAvoidingView>
     
 
-      <Navbar navigation={navigation} activeTab="DashboardScreen" />
     </View>
   );
 };

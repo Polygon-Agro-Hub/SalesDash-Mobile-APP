@@ -11,7 +11,6 @@ import {
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
-import Navbar from "./Navbar";
 import BackButton from "./BackButton";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -36,8 +35,14 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation })
   }, []);
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1 bg-white">
-      <ScrollView className="bg-white flex-1 ">
+    <KeyboardAvoidingView 
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                enabled 
+                className="flex-1"
+                >
+      <ScrollView className="bg-white flex-1 "
+      keyboardShouldPersistTaps="handled"
+      >
         {/* Header */}
         <View className="flex-row items-center shadow-md px-3  bg-white">
           <BackButton navigation={navigation} />
@@ -112,7 +117,6 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation })
       </ScrollView>
 
       {/* Bottom Navbar (hidden when keyboard is visible) */}
-      {!isKeyboardVisible && <Navbar navigation={navigation} activeTab="CustomersScreen" />}
     </KeyboardAvoidingView>
   );
 };
