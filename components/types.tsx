@@ -39,6 +39,9 @@ export type RootStackParamList = {
     OrderConfirmedScreen:undefined;
     ViewOrdersScreen:undefined;
     View_CancelOrderScreen:{orderId:number};
+    SelectOrderType:undefined;
+    CreateCustomPackage :undefined;
+    CratScreen:undefined;
     Main: { screen: keyof RootStackParamList; params?: any };
   };
   

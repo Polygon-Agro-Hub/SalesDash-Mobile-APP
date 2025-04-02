@@ -4,6 +4,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import { SelectList } from "react-native-dropdown-select-list";
 import BackButton from "./BackButton";
+import Navbar from "./Navbar";
 import DropDownPicker from "react-native-dropdown-picker";
 import { LinearGradient } from "expo-linear-gradient"; // Gradient background
 import environment from "@/environment/environment";
@@ -463,18 +464,7 @@ const fetchCropDetails = async (cropId: number) => {
   }
 };
 
-  
-  
 
-  
-  // Fetch data when dropdown opens
-  // useEffect(() => {
-  //   if (productOpen) {
-  //     fetchCrops();
-  //   }
-  // }, [productOpen]);
-
- 
   useEffect(() => {
     if (editingItem) {
       setNewItemQuantity(editingItem.quantity);
@@ -918,6 +908,41 @@ useEffect(() => {
           console.log("Item added:", newItem);
         }
       }
+      console.log("Save button pressed", totalPrice);
+
+      const parsedNewItemQuantity = parseFloat(newItemQuantity || "0");
+  
+      if (editingItem) {
+          const updatedItems = packageItems.map(item =>
+              item.name === editingItem.name
+                  ? {
+                      ...item,
+                      quantity: String(parsedNewItemQuantity),
+                      quantityType: selectedUnit || "",
+                  }
+                  : item
+          );
+  
+          console.log("Updated Items:", updatedItems);
+  
+          setPackageItems(updatedItems);
+  
+          setEditingItem(prev => ({
+              ...prev!,
+              quantity: String(parsedNewItemQuantity),
+              quantityType: selectedUnit || "",
+          }));
+      }
+  
+      // Ensure total price is updated based on the final counter value
+      if (itemDetails) {
+          const updatedTotalPrice = calculateTotalPrice(parsedNewItemQuantity, itemDetails, counter);
+          setTotalPrice(updatedTotalPrice + (Number(totalPrice) || 0));
+          console.log("Updated Total Price after Save:", updatedTotalPrice);
+      }
+  
+      setCounter(0);
+      setModalVisible(false);
   
       // Update total price by adding the new item's price
       setTotalPrice((prevTotal) => (Number(prevTotal) || 0) + calculatedPrice);
@@ -980,34 +1005,6 @@ useEffect(() => {
   
   
 
-
-// useEffect(() => {
-//   if (deliveryType !== "one_time") {
-//     // Calculate total price reduction
-//     const additionalItemsTotal = additionalItems.reduce((sum, item) => sum + (item.price || 0), 0);
-
-//     // Clear additional items and adjust total price
-//     setAdditionalItems([]);
-//     setTotalPrice((prevTotal) => Math.max(prevTotal - additionalItemsTotal, 0));
-
-//     console.log("Cleared additional items as deliveryType changed:", deliveryType);
-//   }
-// }, [deliveryType]); // Runs whenever deliveryType changes
-
-useEffect(() => {
-  if (deliveryType !== "one_time") {
-    setAdditionalItems([]); // Clear additional items
-    setTotalPrice((prevTotal) => {
-      const additionalItemsTotal = additionalItems.reduce((sum, item) => sum + (item.price || 0), 0);
-      return Math.max(prevTotal - additionalItemsTotal, 0);
-    });
-
-    console.log("Cleared additional items as deliveryType changed:", deliveryType);
-  }
-}, [deliveryType]);
-
-  
-  
   
   
   
@@ -1056,63 +1053,7 @@ useEffect(() => {
   boxStyles={{ borderColor: "#F6F6F6", backgroundColor: "#F6F6F6", borderRadius: 40, padding: 10 }}
 />
 
-        {/* Number of Persons */}
-        <View className="mt-4">
-  <Text className="text-gray-700">No. of Persons</Text>
-  {/* <TextInput 
-    className="bg-[#F6F6F6] p-3 rounded-lg mt-1 text-gray-500 rounded-full h-12" 
-    placeholder="ex: 3" 
-    keyboardType="numeric"
-  /> */}
- <TextInput 
-  className="bg-[#F6F6F6] p-3 rounded-lg mt-1 text-gray-500 rounded-full h-12"
-  placeholder="ex: 3"
-  keyboardType="numeric"
-  onChangeText={text => setPortion(text ? Number(text) : 0)}
-  value={portion ? portion.toString() : ""}
-/>
-</View>
-
-  
-        {/* Number of Days */}
-        <View className="mt-3">
-          <Text className="text-gray-700">For How many people?</Text>
-          <TextInput
-  className="bg-[#F6F6F6] p-3 rounded-lg mt-1 text-gray-500 rounded-full h-12"
-  placeholder="Enter here"
-  keyboardType="numeric"
- // onChangeText={text => setPeriod(text ? Number(text) : 0)}
- // value={period ? period.toString() : ""}
-/>
-        </View>
-
-        <Text className="text-[#000000] mb-2 mt-2">Delivery Type</Text>
     
-<SelectList
-  setSelected={(val: string) => {
-    setDeliveryType(val);
-    setSelectedDays([]); // Reset selected days when delivery type changes
-    console.log("Selected Delivery Type:", val); // Debugging log
-  }}
-  data={deliveryOptions}
-  defaultOption={{ key: "one_time", value: "One Time" }}
-  boxStyles={{
-    backgroundColor: "#F6F6F6",
-    padding: 12,
-    borderRadius: 30,
-    borderColor: "#F6F6F6",
-    borderWidth: 5,
-  }}
-  dropdownStyles={{
-    backgroundColor: "#F6F6F6",
-    borderRadius: 10,
-    borderColor: "#F6F6F6",
-  }}
-  inputStyles={{
-    color: deliveryType ? "#000000" : "#808080",
-  }}
-  placeholder="Select Delivery Type"
-/>
 
 {/* Package Items List */}
 {selectedPackage && (
@@ -1121,7 +1062,7 @@ useEffect(() => {
       <Text className="font-bold text-gray-800">Package ({packageItemsCount} items)</Text>
 
       {/* Ensure correct state name is used */}
-      {deliveryType === "one_time" && (
+   
         <TouchableOpacity
           className="ml-3 flex-row items-center"
           onPress={() => setModalVisible1(true)}
@@ -1129,7 +1070,7 @@ useEffect(() => {
           <Image source={require("../assets/images/Add.png")} className="w-5 h-5 mr-2" />
           <Text className="text-[#6839CF] font-semibold">Add More</Text>
         </TouchableOpacity>
-      )}
+
       
     </View>
      {packageItems.map((item, index) => (
@@ -1147,9 +1088,8 @@ useEffect(() => {
         </View>
         ))}
     
-        {/* "Additional" Label */}
-        {deliveryType === "one_time" && (
-  <>
+     
+ 
     {additionalItems.length > 0 && (
       <Text className="font-bold text-gray-800 mt-5">Additional</Text>
     )}
@@ -1169,8 +1109,8 @@ useEffect(() => {
         </View>
       </View>
     ))}
-  </>
-)}
+
+
 
       
       
@@ -1278,8 +1218,7 @@ useEffect(() => {
 
 
       
-     {/* Add New Item Modal */}
-     {deliveryType === "one_time" && (
+ 
       
      <Modal visible={modalVisible1} transparent animationType="slide">
   <TouchableOpacity
@@ -1291,41 +1230,7 @@ useEffect(() => {
       <Text className="text-gray-700 mb-2">Product</Text>
 
       <View  className="">
-        {/* <DropDownPicker
-          open={productOpen}
-          setOpen={setProductOpen}
-          value={newItemName}
-          setValue={setNewItemName}
-          onSelectItem={(item) => {
-            // Check if item and item.value exist and are not undefined
-            if (item && typeof item.value === 'string') {
-              handleCropSelect(item.value);
-            }
-          }}
-          items={crops.map(crop => ({
-            label: crop.displayName,
-            value: crop.displayName,
-            key: crop.cropId,
-          }))}
-          setItems={setCrops}
-          searchable={true}
-          searchPlaceholder="Search product..."
-          placeholder={loading ? "Fetching items..." : "Select a product"}
-          dropDownDirection="BOTTOM"
-          listMode="SCROLLVIEW"
-          containerStyle={{ width: "100%" }}
-          style={{
-            backgroundColor: "#F6F6F6",
-            borderColor: "#F6F6F6",
-            borderRadius: 50,
-            paddingHorizontal: 10,
-          }}
-          dropDownContainerStyle={{
-            backgroundColor: "#FFFFFF",
-            borderColor: "#FFFFFF",
-            maxHeight: 300,
-          }}
-        /> */}
+        
               <DropDownPicker
           open={productOpen}
           setOpen={setProductOpen}
@@ -1473,7 +1378,7 @@ useEffect(() => {
     </View>
   </TouchableOpacity>
 </Modal>
-)}
+
 
 
 
@@ -1513,6 +1418,7 @@ useEffect(() => {
 
           </View>
         )}
+   
     </KeyboardAvoidingView>
   </View>
   

@@ -136,7 +136,7 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
         </View>
 
         {/* Person and Duration */}
-        <View className="items-center mb-6">
+        {/* <View className="items-center mb-6">
           <TouchableOpacity className="bg-[#F5F1FC] flex-row items-center justify-center px-8 py-4 rounded-full">
             <View className="bg-white rounded-full p-2">
               <Image
@@ -156,9 +156,9 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
             </View>
             <Text className="text-purple-600 text-base font-medium ml-1">{selectedPackageperiod} week</Text>
           </TouchableOpacity>
-        </View>
+        </View> */}
 
-        {/* List Section */}
+       
         <Text className="text-gray-800 text-lg font-bold p-4">All ({items.length} items)</Text>
         <View style={{ marginBottom: 50, flexShrink: 0 }}>
           {items.map((item, index) => {
