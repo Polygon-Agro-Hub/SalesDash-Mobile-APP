@@ -295,7 +295,7 @@
 
 
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, ScrollView, Image, KeyboardAvoidingView, Platform, Modal } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, Image, KeyboardAvoidingView, Platform, Modal, Alert } from "react-native";
 import { SelectList } from "react-native-dropdown-select-list";
 import { Feather } from "@expo/vector-icons";
 import BackButton from "./BackButton";
@@ -328,6 +328,7 @@ interface ScheduleScreenProps {
       total: number;
       subtotal: number;
       discount: number;
+      id: string;
     };
   };
 }
@@ -351,7 +352,7 @@ interface CartItem {
 
 const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) => {
   //const { totalPrice } = route.params;
-  const { total, subtotal, discount ,items} = route.params;
+  const { total, subtotal, discount ,items , id} = route.params;
   const [deliveryType, setDeliveryType] = useState("One Time");
   const [selectedTimeSlot, setSelectedTimeSlot] = useState("");
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
@@ -365,6 +366,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
   const [date, setDate] = useState(new Date());
 
   console.log("kkk",items)
+  console.log("cusid",id)
 
   const DELIVERY_FEE = 350;
   const fullTotal = total + DELIVERY_FEE;
@@ -404,33 +406,44 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
     setShowDatePicker(true);
   };
   
- const handleConfirm = () => {
-  const selectedItems = items;
-  if (selectedItems.length > 0) {
-    navigation.navigate("SelectPaymentMethod" as any, {
-      items: selectedItems,
-      subtotal: subtotal,
-      discount: discount,
-      total: total,
-      fullTotal: fullTotal, // or any other calculation you need
-      selectedDate: selectedDate,
-      selectedTimeSlot:selectedTimeSlot
-    });
+  const handleConfirm = () => {
+    // Validate required fields
+    if (!selectedDate) {
+      Alert.alert("Required", "Please select a delivery date");
+      return;
+    }
 
-    console.log()
-  } else {
-    alert("Please select at least one item");
-  }
-};
+    if (!selectedTimeSlot) {
+      Alert.alert("Required", "Please select a time slot");
+      return;
+    }
+
+    const selectedItems = items;
+    if (selectedItems.length > 0) {
+      navigation.navigate("SelectPaymentMethod" as any, {
+        items: selectedItems,
+        subtotal: subtotal,
+        discount: discount,
+        total: total,
+        fullTotal: fullTotal,
+        selectedDate: selectedDate,
+        selectedTimeSlot: selectedTimeSlot,
+        id: id
+      });
+      console.log("datapass",selectedItems,subtotal,discount,total,fullTotal,selectedDate,selectedTimeSlot,id)
+    } else {
+      Alert.alert("Error", "Please select at least one item");
+    }
+  };
   
-  // Handle date change
+ 
   const onDateChange = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(Platform.OS === 'ios'); // On iOS, keep the picker open; on Android, close it
+    setShowDatePicker(Platform.OS === 'ios'); 
     
     if (selectedDate) {
       setDate(selectedDate);
       
-      // Format the date as DD MMM YYYY
+    
       const day = selectedDate.getDate();
       const month = selectedDate.toLocaleString('en-US', { month: 'short' });
       const year = selectedDate.getFullYear();
@@ -509,11 +522,11 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
             mode="date"
             display="default"
             onChange={onDateChange}
-            minimumDate={new Date()} // Cannot select dates before today
+            minimumDate={new Date()} 
           />
         )}
 
-        {/* For iOS, we might want to show a modal with the date picker and confirm/cancel buttons */}
+       
         {Platform.OS === 'ios' && showDatePicker && (
           <Modal
             visible={showDatePicker}
@@ -569,7 +582,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
 
    
         
-        {/* Confirm Button */}
+    
 <View
   className="bg-white flex-row justify-between items-center p-4 rounded-t-3xl shadow-lg"
   style={{
@@ -581,6 +594,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
     marginTop: -10,
   }}
 >
+ 
   <View className="flex-1">
     <View className="flex-row justify-between">
       <Text className="text-gray-500">Delivery Fee</Text>
@@ -593,21 +607,24 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
     </View>
   </View>
 
-  <LinearGradient colors={["#854BDA", "#6E3DD1"]} className="py-3 px-6 rounded-full flex-row ml-4">
-    <TouchableOpacity
-      className="flex-row"
-      onPress={() => navigation.navigate("SelectPaymentMethod")}
+  
+  <TouchableOpacity onPress={handleConfirm}>
+    <LinearGradient 
+      colors={["#854BDA", "#6E3DD1"]} 
+      className="py-3 px-6 rounded-full flex-row items-center ml-4"
     >
-      <Text className="text-white font-semibold mr-1">Proceed</Text>
+      <Text className="text-white font-semibold mr-2">Proceed</Text>
       <Image
         source={require("../assets/images/Done.png")}
         className="w-5 h-5"
         resizeMode="contain"
       />
-    </TouchableOpacity>
-  </LinearGradient>
+    </LinearGradient>
+  </TouchableOpacity>
 </View>
+
       </View>
+      
     </KeyboardAvoidingView>
   );
 };

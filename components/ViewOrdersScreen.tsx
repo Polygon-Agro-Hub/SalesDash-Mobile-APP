@@ -9,6 +9,7 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
@@ -47,7 +48,7 @@ interface Order {
   fullAddress: string;
 }
 
-// Define the API response interface
+
 interface OrdersResponse {
   success: boolean;
   count: number;
@@ -71,7 +72,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
       } catch (error) {
         console.error("Failed to fetch orders:", error);
       } finally {
-        setLoading(false); // Stop loading
+        setLoading(false); 
       }
     };
   
@@ -90,7 +91,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
     };
   }, []);
 
-  const filters = ["All", "Today", "Tomorrow", "This Week"];
+  const filters = ["All", "Today", "Tomorrow", "In 3 Days", "This Week"];
 
   // Updated filtering logic based on the new data structure
   const filteredOrders = orders.filter(
@@ -109,6 +110,12 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
           const tomorrow = new Date();
           tomorrow.setDate(today.getDate() + 1);
           return orderDate.toDateString() === tomorrow.toDateString();
+        }
+        
+        if (selectedFilter === "In 3 Days") {
+          const in3Days = new Date();
+          in3Days.setDate(today.getDate() + 3);
+          return orderDate.toDateString() === in3Days.toDateString();
         }
         
         if (selectedFilter === "This Week") {
@@ -163,7 +170,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
             </View>
 
             {/* Filters */}
-            <View style={{ flexDirection: "row", justifyContent: "space-around", marginTop: hp(2), marginBottom: hp(1.5), marginHorizontal: wp(2) }}>
+            {/* <View style={{ flexDirection: "row", justifyContent: "space-around", marginTop: hp(2), marginBottom: hp(1.5), marginHorizontal: wp(2) }}>
               {filters.map((filter) => (
                 <TouchableOpacity
                   key={filter}
@@ -182,13 +189,52 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                   </Text>
                 </TouchableOpacity>
               ))}
-            </View>
+            </View> */}
+         {/* Horizontal Scrollable Filters */}
+<ScrollView 
+  horizontal 
+  showsHorizontalScrollIndicator={false}
+  contentContainerStyle={{ 
+    paddingHorizontal: 16,
+    height: 40, 
+    marginBottom:5
+  }}
+  className="my-2"
+>
+  {filters.map((filter) => (
+    <TouchableOpacity
+      key={filter}
+      style={{
+        paddingHorizontal: 12, 
+        paddingVertical: 6,    
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: "#6B3BCF",
+        backgroundColor: selectedFilter === filter ? "#6B3BCF" : "transparent",
+        marginHorizontal: 4,   
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: 32,          
+        minWidth: 80,        
+      }}
+      onPress={() => setSelectedFilter(filter)}
+    >
+      <Text style={{
+        fontSize: 14,
+        fontWeight: selectedFilter === filter ? "bold" : "normal",
+        color: selectedFilter === filter ? "white" : "#6B3BCF",
+      }}>
+        {filter}
+      </Text>
+    </TouchableOpacity>
+  ))}
+</ScrollView>
 
             {/* Order List */}
             {filteredOrders.length > 0 ? (
               <FlatList
                 data={filteredOrders}
-                className="p-4"
+                className="p-4 mb-10 mt-5"
                 keyExtractor={(item) => item.orderId.toString()}
                 renderItem={({ item }) => (
                   <TouchableOpacity 
@@ -261,7 +307,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
         )}
       </View>
 
-      {/* Navbar */}
+ 
     </KeyboardAvoidingView>
   );
 };

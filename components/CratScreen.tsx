@@ -206,6 +206,7 @@ interface CratScreenProps {
   navigation: CratScreenNavigationProp;
   route: {
     params: {
+      id:string
       selectedProducts: Array<{
         id: number;
         name: string;
@@ -218,6 +219,7 @@ interface CratScreenProps {
         startValue: number;
         changeby: number;
       }>;
+      
     };
   };
 }
@@ -236,6 +238,7 @@ interface CartItem {
 }
 
 const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
+  const { id } = route.params || {};
   const { t } = useTranslation();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -244,21 +247,23 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     if (route.params?.selectedProducts) {
       const initializedItems = route.params.selectedProducts.map(item => ({
         ...item,
-        selected: false, // All items initially unselected (not marked for deletion)
-        changeby: item.unitType.toLowerCase() === 'g' ? 1000 : 1,
-        quantity: item.unitType.toLowerCase() === 'g' ? 1000 : 1
+        selected: false,
+        changeby: 1, // Default to 1 kg
+        quantity: 1,
+        unitType: 'kg' // Track the display unit separately
       }));
       setCartItems(initializedItems);
     }
   }, [route.params]);
 
-  // Check if any items are selected to toggle selection mode
   useEffect(() => {
     const hasSelectedItems = cartItems.some(item => item.selected);
     setIsSelectionMode(hasSelectedItems);
   }, [cartItems]);
 
-  // Modified to mark items for deletion when selected
+
+  console.log("oooo",id)
+
   const toggleItemSelection = (id: number) => {
     setCartItems(
       cartItems.map(item => 
@@ -269,29 +274,45 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     );
   };
 
-  // Delete selected items
   const deleteSelectedItems = () => {
     setCartItems(cartItems.filter(item => !item.selected));
   };
 
   const calculateItemTotal = (item: CartItem) => {
-    if (item.unitType.toLowerCase() === 'kg') {
-      return (item.discountedPrice/item.startValue * item.changeby).toFixed(2);
-    } else if (item.unitType.toLowerCase() === 'g') {
-      // For grams, calculate price per gram (divide kg price by 1000) then multiply by quantity
-      return ((item.discountedPrice/item.startValue ) * item.changeby).toFixed(2);
+    if (item.unitType === 'kg') {
+      return (item.discountedPrice * item.changeby).toFixed(2);
+    } else {
+      // For grams, convert kg price to grams (price per gram * quantity)
+      return ((item.discountedPrice / 1000) * item.changeby).toFixed(2);
     }
-    return (item.discountedPrice * item.changeby).toFixed(2);
   };
   
   const calculateItemNormalTotal = (item: CartItem) => {
-    if (item.unitType.toLowerCase() === 'kg') {
-      return (item.normalPrice/item.startValue * item.changeby).toFixed(2);
-    } else if (item.unitType.toLowerCase() === 'g') {
-      // For grams, calculate normal price per gram (divide kg price by 1000) then multiply by quantity
-      return ((item.normalPrice ) * item.changeby).toFixed(2);
+    if (item.unitType === 'kg') {
+      return (item.normalPrice * item.changeby).toFixed(2);
+    } else {
+      // For grams, convert kg price to grams
+      return ((item.normalPrice / 1000) * item.changeby).toFixed(2);
     }
-    return (item.normalPrice/item.startValue * item.changeby).toFixed(2);
+  };
+
+  const changeUnit = (id: number, newUnit: 'kg' | 'g') => {
+    setCartItems(
+      cartItems.map(item => {
+        if (item.id === id && item.unitType !== newUnit) {
+          // Convert the value when changing units (1kg = 1000g)
+          const newValue = newUnit === 'kg' ? item.changeby / 1000 : item.changeby * 1000;
+          
+          return { 
+            ...item, 
+            unitType: newUnit,
+            changeby: newValue,
+            quantity: newValue
+          };
+        }
+        return item;
+      })
+    );
   };
 
   const updateQuantity = (id: number, newValue: number) => {
@@ -312,7 +333,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     setCartItems(
       cartItems.map(item => {
         if (item.id === id) {
-          const increment = item.unitType.toLowerCase() === 'g' ? 100 : 0.5;
+          const increment = item.unitType === 'g' ? 50 : 0.5;
           const newValue = item.changeby + increment;
           return { 
             ...item, 
@@ -329,8 +350,8 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     setCartItems(
       cartItems.map(item => {
         if (item.id === id) {
-          const decrement = item.unitType.toLowerCase() === 'g' ? 100 : 0.5;
-          const minValue = item.unitType.toLowerCase() === 'g' ? 100 : 0.5;
+          const decrement = item.unitType === 'g' ? 50 : 0.5;
+          const minValue = item.unitType === 'g' ? 50 : 0.5;
           const newValue = Math.max(minValue, item.changeby - decrement);
           return { 
             ...item, 
@@ -343,17 +364,15 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     );
   };
 
-  // Calculate current subtotal based on quantities (excluding selected/to be deleted items)
   const currentSubtotal = cartItems.reduce((total, item) => {
-    if (!item.selected) { // Only include items not marked for deletion
+    if (!item.selected) {
       return total + parseFloat(calculateItemNormalTotal(item));
     }
     return total;
   }, 0);
   
-  // Calculate current total based on quantities (excluding selected/to be deleted items)
   const currentTotal = cartItems.reduce((total, item) => {
-    if (!item.selected) { // Only include items not marked for deletion
+    if (!item.selected) {
       return total + parseFloat(calculateItemTotal(item));
     }
     return total;
@@ -361,21 +380,10 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
 
   const discount = currentSubtotal - currentTotal;
 
-//   const handleConfirm = () => {
-//     const nonSelectedItems = cartItems.filter(item => !item.selected);
-//     if (nonSelectedItems.length > 0) {
-//       // Navigate to confirmation page or process order
-//       alert("Order confirmed!");
-//     } else {
-//       alert("Please add at least one item to your cart");
-//     }
-//   };
-
-const handleConfirm = () => {
+  const handleConfirm = () => {
     const nonSelectedItems = cartItems.filter(item => !item.selected);
     
     if (nonSelectedItems.length > 0) {
-      // Prepare the items to pass to the next screen
       const itemsToPass = nonSelectedItems.map(item => ({
         id: item.id,
         name: item.name,
@@ -384,38 +392,33 @@ const handleConfirm = () => {
         discountedPrice: item.discountedPrice,
         quantity: item.quantity,
         selected: item.selected,
-        unitType: item.unitType,
+        unitType: item.unitType,  // Removed the duplicate property
         startValue: item.startValue,
         changeby: item.changeby
       }));
   
-      // Navigate to ScheduleScreen and pass all the required data
       navigation.navigate('ScheduleScreen' as any, {
         items: itemsToPass,
         total: currentTotal,
         subtotal: currentSubtotal,
-        discount: discount
+        discount: discount,
+        id:id,
       });
-      console.log("items",itemsToPass)
-      console.log("total",currentTotal)
-      console.log("subtotal",currentSubtotal)
-      console.log("discount",discount)
     } else {
       alert("Please add at least one item to your cart");
     }
   };
 
   const formatQuantity = (item: CartItem) => {
-    if (item.unitType.toLowerCase() === 'g') {
-      return `${item.changeby}`;
+    if (item.unitType === 'kg') {
+      return item.changeby % 1 === 0 ? item.changeby.toFixed(0) : item.changeby.toFixed(1);
     }
-    return item.changeby.toFixed(1);
+    return item.changeby.toFixed(0);
   };
 
   return (
     <SafeAreaView className="flex-1 bg-white">
       <View className="flex-1 px-4">
-        {/* Header with back button, title, and delete button */}
         <View className="flex-row items-center">
           <BackButton navigation={navigation} />
           <Text className="text-lg font-medium text-[#6C3CD1] flex-1 text-center mr-10">
@@ -431,7 +434,6 @@ const handleConfirm = () => {
           )}
         </View>
 
-        {/* Cart Items */}
         <ScrollView className="flex-1 mt-4" showsVerticalScrollIndicator={false}>
           {cartItems.map((item) => (
             <View key={item.id} className="flex-row items-center py-4 border-b border-gray-200">
@@ -456,60 +458,53 @@ const handleConfirm = () => {
               </View>
               
               <View className="flex-row items-center">
+              <View className="flex-row mr-2">
+          <TouchableOpacity 
+            className={`px-2 py-1 rounded-md border border-purple-200 ${
+              item.unitType === 'kg' ? 'bg-purple-100' : 'bg-white'
+            }`}
+            onPress={() => changeUnit(item.id, 'kg')}
+          >
+            <Text className={`text-xs ${
+              item.unitType === 'kg' ? 'text-purple-600' : 'text-gray-600'
+            }`}>kg</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            className={`px-2 py-1 rounded-md border border-purple-200 ml-1 ${
+              item.unitType === 'g' ? 'bg-purple-100' : 'bg-white'
+            }`}
+            onPress={() => changeUnit(item.id, 'g')}
+          >
+            <Text className={`text-xs ${
+              item.unitType === 'g' ? 'text-purple-600' : 'text-gray-600'
+            }`}>g</Text>
+          </TouchableOpacity>
+        </View>
                 <View className="flex-row items-center">
-                  <TouchableOpacity 
-                    className={`px-2 py-1 rounded-md border border-purple-200 ${
-                      item.unitType.toLowerCase() === 'kg' ? 'bg-purple-100' : 'bg-white'
-                    }`}
-                    onPress={() => {
-                      if (item.unitType.toLowerCase() !== 'kg') {
-                        updateQuantity(item.id, 0.5);
-                      }
-                    }}
-                  >
-                    <Text className={`text-xs ${
-                      item.unitType.toLowerCase() === 'kg' ? 'text-purple-600' : 'text-gray-600'
-                    }`}>kg</Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity 
-                    className={`px-2 py-1 rounded-md border border-purple-200 ml-2 ${
-                      item.unitType.toLowerCase() === 'g' ? 'bg-purple-100' : 'bg-white'
-                    }`}
-                    onPress={() => {
-                      if (item.unitType.toLowerCase() !== 'g') {
-                        updateQuantity(item.id, 100);
-                      }
-                    }}
-                  >
-                    <Text className={`text-xs ${
-                      item.unitType.toLowerCase() === 'g' ? 'text-purple-600' : 'text-gray-600'
-                    }`}>g</Text>
-                  </TouchableOpacity>
-                </View>
-                <View className="flex-row mr-4">
-                  <TouchableOpacity 
-                    className="bg-gray-200 w-6 h-6 rounded-full justify-center items-center"
-                    onPress={() => decreaseQuantity(item.id)}
-                  >
-                    <Ionicons name="remove" size={16} color="#333" />
-                  </TouchableOpacity>
-                  
-                  <Text className="mx-3 text-base">{formatQuantity(item)}</Text>
-                  
-                  <TouchableOpacity 
-                    className="bg-gray-200 w-6 h-6 rounded-full justify-center items-center"
-                    onPress={() => increaseQuantity(item.id)}
-                  >
-                    <Ionicons name="add" size={16} color="#333" />
-                  </TouchableOpacity>
-                </View>
+          <TouchableOpacity 
+            className="bg-gray-200 w-6 h-6 rounded-full justify-center items-center"
+            onPress={() => decreaseQuantity(item.id)}
+          >
+            <Ionicons name="remove" size={16} color="#333" />
+          </TouchableOpacity>
+          
+          <Text className="mx-2 text-base w-12 text-center">
+            {formatQuantity(item)}
+          </Text>
+          
+          <TouchableOpacity 
+            className="bg-gray-200 w-6 h-6 rounded-full justify-center items-center"
+            onPress={() => increaseQuantity(item.id)}
+          >
+            <Ionicons name="add" size={16} color="#333" />
+          </TouchableOpacity>
+        </View>
               </View>
             </View>
           ))}
         </ScrollView>
         
-        {/* Order Summary - only including non-selected items */}
         <View className="py-4 border-t border-gray-200">
           <View className="flex-row justify-between py-2">
             <Text className="text-gray-500">Subtotal</Text>
@@ -527,7 +522,6 @@ const handleConfirm = () => {
           </View>
         </View>
         
-        {/* Confirm Button */}
         <View className="py-4 px-6">
           <TouchableOpacity
             onPress={handleConfirm}

@@ -1,4 +1,15 @@
-
+export interface CartItem {
+  id: number;
+  name: string;
+  price: number;
+  normalPrice: number;
+  discountedPrice: number;
+  quantity: number;
+  selected: boolean;
+  unitType: string;
+  startValue: number;
+  changeby: number;
+}
 
 
 export type RootStackParamList = {
@@ -34,14 +45,38 @@ export type RootStackParamList = {
     OrderScreen: { id: string };
    // OrderScreen: { itemId: number | null }; 
     ScheduleScreen: {totalPrice: Number };
-    SelectPaymentMethod: undefined;
-    OrderSummeryScreen:undefined;
+   // SelectPaymentMethod: undefined;
+   // OrderSummeryScreen:undefined;
     OrderConfirmedScreen:undefined;
     ViewOrdersScreen:undefined;
     View_CancelOrderScreen:{orderId:number};
     SelectOrderType:undefined;
-    CreateCustomPackage :undefined;
-    CratScreen:undefined;
+    CreateCustomPackage :{id: string};
+   // CratScreen:undefined;
+   CratScreen: {
+    selectedProducts: CartItem[];
+    id: string; 
+  };
     Main: { screen: keyof RootStackParamList; params?: any };
+    SelectPaymentMethod: {
+      items: CartItem[];
+      subtotal: number;
+      discount: number;
+      total: number;
+      fullTotal: number;
+      selectedDate: string;
+      selectedTimeSlot: string;
+    };
+    OrderSummeryScreen: {
+      items: CartItem[];
+      subtotal: number;
+      discount: number;
+      total: number;
+      fullTotal: number;
+      selectedDate: string;
+      selectedTimeSlot: string;
+      paymentMethod: "Online Payment" | "Pay By Cash";
+      id: string
+    };
   };
   

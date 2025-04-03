@@ -217,9 +217,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
             </View>
           </View>
 
-          <ScrollView style={{ paddingHorizontal: wp(1) }}
-          keyboardShouldPersistTaps="handled"
-          >
+          <ScrollView className="flex-1 " keyboardShouldPersistTaps="handled">
             <View className="p-3 px-6">
               <View className="mb-4 mt-4 flex-row justify-between">
                 <View className="flex-[1]">

@@ -11,7 +11,6 @@ import {
   Platform,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack"; 
-//import { RootStackParamList } from "./types"; 
 import BackButton from "./BackButton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
@@ -26,7 +25,7 @@ type RootStackParamList = {
     selectedPackageName: string;
     selectedPackageTotal: string;
     selectedPackageDescription:string;
-    selectedPackageportion: string;  // Add this
+    selectedPackageportion: string;  
     selectedPackageperiod: string;
   };
 };
@@ -57,10 +56,10 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
   const [token, setToken] = useState<string | null>(null);
   const [items, setItems] = useState<{ name: string; quantity: string; quantityType: string;  portion: number; period :number; }[]>([]);
 
-  // Fetch items for the selected package
+  
   useEffect(() => {
     if (selectedPackageId) {
-      fetchItemsForPackage(selectedPackageId); // Fetch items for selected package
+      fetchItemsForPackage(selectedPackageId); 
     }
   }, [selectedPackageId]);
 
@@ -80,8 +79,8 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
       );
 
       if (response.data && response.data.data) {
-        setItems(response.data.data);  // Update the state with the fetched data
-        console.log("Items state updated:", response.data.data);  // Verify the updated state
+        setItems(response.data.data);  
+        console.log("Items state updated:", response.data.data);  
       } else {
         console.log("No items found for this package.");
       }
@@ -162,7 +161,7 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
         <Text className="text-gray-800 text-lg font-bold p-4">All ({items.length} items)</Text>
         <View style={{ marginBottom: 50, flexShrink: 0 }}>
           {items.map((item, index) => {
-            console.log("Rendering item:", item);  // Log each item being rendered
+            console.log("Rendering item:", item);  
             return (
               <View key={index} className="flex-row justify-between items-center border-b border-gray-200 py-3 px-4">
                 <Text className="text-gray-700 text-sm">{item.name}</Text>
@@ -174,7 +173,7 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
 
       </ScrollView>
 
-      {/* Navbar */}
+
     </View>
     </KeyboardAvoidingView>
   );

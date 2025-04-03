@@ -25,13 +25,20 @@ type CreateCustomPackageNavigationProp = StackNavigationProp<
   "CreateCustomPackage"
 >;
 
+
+
 interface CreateCustomPackageProps {
   navigation: CreateCustomPackageNavigationProp;
+  route: {
+    params: {
+      id: string; // or number, depending on your ID type
+    };
+  };
 }
 
 interface Product {
   id: number;
-  cropId: string;
+  varietyId: string;
   displayName: string;
   normalPrice: number;
   discountedPrice: number;
@@ -41,7 +48,8 @@ interface Product {
   changeby:number;
 }
 
-const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation }) => {
+const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation , route}) => {
+  const { id } = route.params || {};
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
@@ -92,6 +100,8 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation })
       product.displayName.toLowerCase().includes(searchQuery.toLowerCase())
     ) // Added missing closing parenthesis here
   : products;
+
+  console.log("kjk",id)
 
 const toggleProductSelection = (id: number) => {
   setProducts(
@@ -151,6 +161,7 @@ const toggleProductSelection = (id: number) => {
       .map(product => {
         const discountedPricePerKg = calculatePricePerKg(product);
         const normalPricePerKg = calculateNormalPricePerKg(product);
+        const cutId = id;
         
         return {
           id: product.id,
@@ -162,14 +173,15 @@ const toggleProductSelection = (id: number) => {
           changeby: product.changeby, // Default quantity
           selected: true,
           unitType: product.unitType,
-          startValue: product.startValue
+          startValue: product.startValue,
+          cutId : cutId
         };
       });
   
     if (selectedProducts.length > 0) {
-      navigation.navigate("CratScreen" as any, { selectedProducts });
+      navigation.navigate("CratScreen" as any, { selectedProducts ,id });
 
-      console.log("nn",selectedProducts)
+      console.log("nn",selectedProducts,id)
     } else {
       alert("Please select at least one product");
     }
@@ -266,7 +278,7 @@ const toggleProductSelection = (id: number) => {
          
 
           {/* Go to Cart Button */}
-          <View className="py-4 px-6">
+          <View className="py-4 px-6 ">
             <TouchableOpacity
             //  className="bg-[#6839CF] py-3 rounded-full items-center"
               onPress={goToCart}

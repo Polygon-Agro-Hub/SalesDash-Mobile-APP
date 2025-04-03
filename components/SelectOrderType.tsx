@@ -19,7 +19,7 @@ interface SelectOrderTypeProps {
   navigation: SelectOrderTypeNavigationProp;
   route: {
     params: {
-      id: string; // or number, depending on your ID type
+      id: string; 
     };
   };
 }
@@ -27,10 +27,11 @@ interface SelectOrderTypeProps {
 const SelectOrderType: React.FC<SelectOrderTypeProps> = ({ navigation, route }) => {
   // Get the ID from route params
   const { id } = route.params || {};
+  console.log("ll",id)
 
   return (
     <View className="flex-1 bg-white">
-      {/* Back Button */}
+     
       <View className="flex-row items-center h-16 shadow-md px-4 bg-white">
         <BackButton navigation={navigation} />
         <Text className="text-lg font-bold text-[#6C3CD1] flex-grow text-center mr-7">
@@ -40,14 +41,14 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({ navigation, route }) 
       
       <ScrollView>
         <View className="flex-1 bg-white items-center justify-center relative">
-          {/* Cart Illustration */}
+         
           <Image
             source={require("../assets/images/cart.webp")}
             className="w-[70%] h-40 mt-[20%]"
             resizeMode="contain"
           />
           
-          {/* Buttons */}
+          
           <TouchableOpacity 
             className="w-4/5 bg-white py-4 rounded-2xl my-2 shadow-xl items-center mt-5"
             onPress={() => navigation.navigate("CreateCustomPackage" as any, { id })}
