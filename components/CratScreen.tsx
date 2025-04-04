@@ -207,6 +207,8 @@ interface CratScreenProps {
   route: {
     params: {
       id:string
+      isCustomPackage:string;
+       isSelectPackage:string;
       selectedProducts: Array<{
         id: number;
         name: string;
@@ -238,11 +240,14 @@ interface CartItem {
 }
 
 const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
-  const { id } = route.params || {};
+  const { id ,isCustomPackage, isSelectPackage} = route.params || {};
   const { t } = useTranslation();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
 
+
+  console.log("isCustomPackage, ",isCustomPackage)
+  console.log(" isSelectPackage",isSelectPackage)
   useEffect(() => {
     if (route.params?.selectedProducts) {
       const initializedItems = route.params.selectedProducts.map(item => ({
@@ -391,10 +396,12 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
         normalPrice: item.normalPrice,
         discountedPrice: item.discountedPrice,
         quantity: item.quantity,
-        selected: item.selected,
+       // selected: item.selected,
         unitType: item.unitType,  // Removed the duplicate property
         startValue: item.startValue,
-        changeby: item.changeby
+        changeby: item.changeby,
+        isSelectPackage: isSelectPackage,
+        isCustomPackage:isCustomPackage
       }));
   
       navigation.navigate('ScheduleScreen' as any, {
@@ -403,6 +410,8 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
         subtotal: currentSubtotal,
         discount: discount,
         id:id,
+        isSelectPackage: isSelectPackage,
+          isCustomPackage:isCustomPackage
       });
     } else {
       alert("Please add at least one item to your cart");

@@ -32,6 +32,8 @@ interface CreateCustomPackageProps {
   route: {
     params: {
       id: string; // or number, depending on your ID type
+      isCustomPackage:string;
+       isSelectPackage:string;
     };
   };
 }
@@ -49,12 +51,16 @@ interface Product {
 }
 
 const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation , route}) => {
-  const { id } = route.params || {};
+  const { id ,isCustomPackage, isSelectPackage} = route.params || {};
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  console.log("isCustomPackage",isCustomPackage);
+  console.log('isSelectPackage',isSelectPackage)
+
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -171,15 +177,17 @@ const toggleProductSelection = (id: number) => {
           normalPrice:product.normalPrice,
           discountedPrice:product.discountedPrice,
           changeby: product.changeby, // Default quantity
-          selected: true,
+        //  selected: true,
           unitType: product.unitType,
           startValue: product.startValue,
-          cutId : cutId
+          cutId : cutId,
+          isSelectPackage: isSelectPackage,
+          isCustomPackage:isCustomPackage
         };
       });
   
     if (selectedProducts.length > 0) {
-      navigation.navigate("CratScreen" as any, { selectedProducts ,id });
+      navigation.navigate("CratScreen" as any, { selectedProducts ,id, isCustomPackage, isSelectPackage });
 
       console.log("nn",selectedProducts,id)
     } else {

@@ -329,6 +329,8 @@ interface ScheduleScreenProps {
       subtotal: number;
       discount: number;
       id: string;
+      isCustomPackage:string;
+      isSelectPackage:string;
     };
   };
 }
@@ -352,7 +354,7 @@ interface CartItem {
 
 const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) => {
   //const { totalPrice } = route.params;
-  const { total, subtotal, discount ,items , id} = route.params;
+  const { total, subtotal, discount ,items , id ,isCustomPackage, isSelectPackage} = route.params;
   const [deliveryType, setDeliveryType] = useState("One Time");
   const [selectedTimeSlot, setSelectedTimeSlot] = useState("");
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
@@ -365,6 +367,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [date, setDate] = useState(new Date());
 
+  console.log("isCustomPackage",isCustomPackage);
+  console.log('isSelectPackage',isSelectPackage)
   console.log("kkk",items)
   console.log("cusid",id)
 
@@ -378,6 +382,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
   ];
 
   console.log("ll",selectedTimeSlot)
+  
 
   const toggleDaySelection = (day: string) => {
     setSelectedDays((prevSelectedDays) => {
@@ -428,7 +433,9 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
         fullTotal: fullTotal,
         selectedDate: selectedDate,
         selectedTimeSlot: selectedTimeSlot,
-        id: id
+        customerId: id,
+        isSelectPackage: isSelectPackage,
+        isCustomPackage:isCustomPackage
       });
       console.log("datapass",selectedItems,subtotal,discount,total,fullTotal,selectedDate,selectedTimeSlot,id)
     } else {

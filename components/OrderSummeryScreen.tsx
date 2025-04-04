@@ -43,10 +43,12 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({ navigation, rou
     selectedDate = "",
     selectedTimeSlot = "",
     paymentMethod = "",
-    id = ""
+    customerId = "",
+    isSelectPackage= 0,
+    isCustomPackage=0
   } = route.params || {};
 
-  console.log("cusid", id);
+  console.log("cusid", customerId);
 
   // Format date for display
   const formattedDate = selectedDate ? new Date(selectedDate).toLocaleDateString() : "Not set";
@@ -59,6 +61,8 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({ navigation, rou
 
   console.log("subtotal-----------------",subTotalDeliveryPlus)
   console.log("total----------------------",totalDeliveryPlus)
+  console.log("isCustomPackage-----------",isCustomPackage);
+  console.log('isSelectPackage-------',isSelectPackage)
 
  // Fetch customer data from backend
  useEffect(() => {
@@ -73,8 +77,8 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({ navigation, rou
         setLoading(false);
         return;
       }
-      console.log("k",id)
-      const apiUrl = `${environment.API_BASE_URL}api/orders/get-customer-data/${id}`;
+      console.log("k",customerId)
+      const apiUrl = `${environment.API_BASE_URL}api/orders/get-customer-data/${customerId}`;
       console.log("o",apiUrl)
       
       const response = await axios.get(apiUrl, {
@@ -99,10 +103,10 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({ navigation, rou
     }
   };
   
-  if (id) {
+  if (customerId) {
     fetchCustomerData();
   }
-}, [id]);
+}, [customerId]);
 
   useEffect(() => {
     // Log received data for debugging
@@ -128,7 +132,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({ navigation, rou
 
   const handleConfirmOrder = () => {
     // Validate that we have all required data before proceeding
-    if (!id) {
+    if (!customerId) {
       // Show error message - customer ID is required
       Alert.alert("Error", "Customer information is missing");
       return;
@@ -139,7 +143,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({ navigation, rou
       orderId: Math.floor(1000000 + Math.random() * 9000000), 
       total,
       paymentMethod,
-      customerId: id, 
+      customerId: customerId, 
       items,
       selectedDate: formattedDate,
       selectedTimeSlot: timeDisplay
@@ -224,7 +228,7 @@ ${customerData.buildingDetails.city || ''}` :
                     <TouchableOpacity 
                       onPress={() => navigation.navigate("ScheduleScreen" as any, { 
                         totalPrice: total,
-                        id, 
+                        customerId, 
                         items,
                         subtotal,
                         discount
@@ -290,7 +294,7 @@ ${customerData.buildingDetails.city || ''}` :
               <TouchableOpacity 
                 onPress={() => navigation.navigate("CratScreen" as any, { 
                   screen: "OrderScreen",
-                  params: { id ,items } 
+                  params: { customerId ,items } 
                 })}
                 className="border border-[#6C3CD1] px-3 rounded-full">
                 <Text className="text-[#6C3CD1] font-medium">Edit</Text>
@@ -329,7 +333,7 @@ ${customerData.buildingDetails.city || ''}` :
                   fullTotal,
                   selectedDate,
                   selectedTimeSlot,
-                  id 
+                  customerId 
                 })}
                 className="border border-[#6C3CD1] px-3 rounded-full">
                 <Text className="text-[#6C3CD1] font-medium">Edit</Text>

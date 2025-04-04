@@ -42,7 +42,7 @@ export type RootStackParamList = {
     EditCustomerScreen:{ id: string}; 
     OtpScreenUp:{phoneNumber:string , id: string, token:string};      
     //OrderScreen:undefined;
-    OrderScreen: { id: string };
+    OrderScreen: {id: string; isCustomPackage:string; isSelectPackage:string;};
    // OrderScreen: { itemId: number | null }; 
     ScheduleScreen: {totalPrice: Number };
    // SelectPaymentMethod: undefined;
@@ -51,7 +51,7 @@ export type RootStackParamList = {
     ViewOrdersScreen:undefined;
     View_CancelOrderScreen:{orderId:number};
     SelectOrderType:undefined;
-    CreateCustomPackage :{id: string};
+    CreateCustomPackage :{id: string; isCustomPackage:string; isSelectPackage:string;};
    // CratScreen:undefined;
    CratScreen: {
     selectedProducts: CartItem[];
@@ -76,7 +76,9 @@ export type RootStackParamList = {
       selectedDate: string;
       selectedTimeSlot: string;
       paymentMethod: "Online Payment" | "Pay By Cash";
-      id: string
+      customerId: string;
+      isSelectPackage:number;
+    isCustomPackage : number;
     };
   };
   

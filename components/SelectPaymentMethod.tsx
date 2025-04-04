@@ -43,16 +43,21 @@ interface SelectPaymentMethodProps {
       fullTotal: number;
       selectedDate: string;
       selectedTimeSlot: string;
-      id:string;
+      customerId:string;
+      isCustomPackage:string;
+      isSelectPackage:string;
     };
   };
 }
 
 const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, route }) => {
-  const { id } = route.params || {};
+  const {  customerId ,isCustomPackage, isSelectPackage} = route.params || {};
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<"Online Payment" | "Pay By Cash" | null>("Online Payment");
 
+  console.log("isCustomPackage",isCustomPackage);
+  console.log('isSelectPackage',isSelectPackage)
+  
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
     const keyboardDidHideListener = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false));
@@ -63,7 +68,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, r
     };
   }, []);
 
-  console.log("cusid",id)
+  console.log("cusid=============", customerId)
 
  
 const handleProceed = () => {
@@ -81,7 +86,9 @@ const handleProceed = () => {
   const navigationData = {
     ...route.params,
     paymentMethod: selectedMethod,
-    id:id
+    customerId: customerId,
+    isSelectPackage: isSelectPackage,
+    isCustomPackage:isCustomPackage
   };
 
 
@@ -94,9 +101,11 @@ const handleProceed = () => {
   console.log("Selected Date:", navigationData.selectedDate);
   console.log("Selected Time Slot:", navigationData.selectedTimeSlot);
   console.log("Payment Method:", navigationData.paymentMethod);
-  console.log("cusid:", navigationData.id);
+  console.log("cusid:", navigationData. customerId);
+  console.log("isCustomPackage",isCustomPackage);
+  console.log('isSelectPackage',isSelectPackage)
 
-  navigation.navigate("OrderSummeryScreen", navigationData);
+  navigation.navigate("OrderSummeryScreen" as any, navigationData);
 };
   return (
     <KeyboardAvoidingView 

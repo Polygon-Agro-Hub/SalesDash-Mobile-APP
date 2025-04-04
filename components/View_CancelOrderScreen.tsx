@@ -31,7 +31,7 @@ interface View_CancelOrderScreenProps {
   route: View_CancelOrderScreenRouteProp;
 }
 
-// Define the order interface based on the response
+
 interface Order {
   orderId: number;
   customerId: number;

@@ -17,14 +17,59 @@ type OrderScreenNavigationProp = StackNavigationProp<RootStackParamList, "OrderS
 type OrderScreenRouteProp = RouteProp<RootStackParamList, "OrderScreen">;
 
 
+
 interface OrderScreenProps {
   navigation: OrderScreenNavigationProp;
-  route: OrderScreenRouteProp;
+  //route: OrderScreenRouteProp;
+  route: {
+    params: {
+      id: string; 
+      isCustomPackage:string;
+       isSelectPackage:string;
+    };
+  };
 }
+interface ModifiedPlusItem {
+  packageDetailsId: number;
+  originalQuantity: number;
+  modifiedQuantity: number;
+  originalPrice: number;
+  additionalPrice: number;
+  additionalDiscount: number;
+}
+
+interface ModifiedMinItem {
+  packageDetailsId: number;
+  originalQuantity: number;
+  modifiedQuantity: number;
+  originalPrice: number;
+  additionalPrice: number;
+  additionalDiscount: number;
+}
+
+interface AdditionalItem {
+  mpItemId: number;
+  quantity: number;
+  price: number;
+  discount: number;
+}
+
+interface OrderItem {
+  packageId: number;
+  isModifiedPlus: boolean;
+  isModifiedMin: boolean;
+  isAdditionalItems: boolean;
+  packageTotal: number;
+  packageDiscount: number;
+  modifiedPlusItems: ModifiedPlusItem[];
+  modifiedMinItems: ModifiedMinItem[];
+  additionalItems: AdditionalItem[];
+}
+
 
 interface Package {
   id: number;
-  name: string;
+  displayName: string;
   price: string;
   description: string;
   portion: string;
@@ -86,6 +131,7 @@ interface CropDetails {
 
 
 const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
+  const { id ,isCustomPackage, isSelectPackage} = route.params || {};
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalVisible1, setModalVisible1] = useState(false);
@@ -116,7 +162,7 @@ const [marketplaceItems, setMarketplaceItems] = useState<any[]>([]);
 const [newItemName, setNewItemName] = useState<string>('');
 const [changeBy, setChangeBy] = useState(0.5); 
 const [unitType, setUnitType] = useState('kg'); 
-const [packageItems, setPackageItems] = useState<{ name: string; quantity: string; quantityType: string; mpItemId?: number }[]>([]);
+//const [packageItems, setPackageItems] = useState<{ name: string; quantity: string; quantityType: string; mpItemId?: number ; price?: number }[]>([]);
 const [crops, setCrops] = useState<Crop[]>([]);
 //const [crops, setCrops] = useState(false);
 const [error, setError] = useState<string | null>(null);
@@ -133,7 +179,7 @@ const [itemDetails, setItemDetails] = useState<{
   normalPrice?: string;
   displayName?: string;
 } | null>(null);
-const { id  } = route.params;
+//const { id  } = route.params;
 const [isModifiedPlus, setIsModifiedPlus] = useState(false);
 const [isModifiedMin, setIsModifiedMin] = useState(false);
 const [pricePerKg, setPricePerKg] = useState<string>("0.00");
@@ -144,9 +190,170 @@ const [finaldiscount, setFinaldiscount] = useState("0.00");
  const [deliveryType, setDeliveryType] = useState("One Time");
  const [selectedDays, setSelectedDays] = useState<string[]>([]); 
  //const [additionalItems, setAdditionalItems] = useState<Item[]>([]);
+ const [editingItemType, setEditingItemType] = useState<'package' | 'additional'>('package');
 
    const [selectedDelivery, setSelectedDelivery] = useState("");
    const [cropId, setCropid] = useState<number>(0);
+   const [originalPackageItems, setOriginalPackageItems] = useState<{
+    mpItemId: number;
+    name: string;
+    quantity: string;
+    quantityType: string;
+    price?: number 
+  }[]>([]);
+  const [packageItems, setPackageItems] = useState<{ 
+    name: string; 
+    quantity: string; 
+    quantityType: string; 
+    mpItemId?: number;
+    price?: number 
+  }[]>([]);
+  
+  // Make sure to set this when fetching items
+  useEffect(() => {
+    if (selectedPackage) {
+      fetchItemsForPackage(selectedPackage.id).then((items) => {
+        setPackageItems(items);
+        setOriginalPackageItems(items); // Store the original items for comparison
+      });
+    }
+  }, [selectedPackage]);
+  
+  // Fix the ModifiedPlusItem and ModifiedMinItem interfaces
+  interface ModifiedPlusItem {
+    packageDetailsId: number; // Remove the undefined type
+    originalQuantity: number;
+    modifiedQuantity: number;
+    originalPrice: number;
+    additionalPrice: number;
+    additionalDiscount: number;
+  }
+  
+  interface ModifiedMinItem {
+    packageDetailsId: number; // Remove the undefined type
+    originalQuantity: number;
+    modifiedQuantity: number;
+    originalPrice: number;
+    additionalPrice: number;
+    additionalDiscount: number;
+  }
+  
+  // Update the Package interface to include packageId
+  interface Package {
+    id: number;
+    packageId: number; // Add this property
+    displayName: string;
+    price: string;
+    description: string;
+    portion: string;
+    period: string;
+    total: number;
+  }
+  
+  // Fix for the prepareOrderItems function
+  // Fixed prepareOrderItems function
+const prepareOrderItems = () => {
+  // Calculate modified plus items (items with increased quantity)
+  const modifiedPlusItems = packageItems
+    .filter(item => {
+      const originalItem = originalPackageItems.find(original => original.mpItemId === item.mpItemId);
+      return originalItem && parseFloat(item.quantity) > parseFloat(originalItem.quantity);
+    })
+    .map(item => {
+      const originalItem = originalPackageItems.find(original => original.mpItemId === item.mpItemId)!;
+      const originalQuantity = parseFloat(originalItem.quantity);
+      const modifiedQuantity = parseFloat(item.quantity);
+      
+      // Calculate price differences
+      const originalPrice = parseFloat(originalItem.price?.toString() || "0");
+      const modifiedPrice = parseFloat(item.price?.toString() || "0");
+      const additionalPrice = modifiedPrice - originalPrice;
+      
+      // Calculate discount based on price difference and discount rate
+      const discountRate = parseFloat(finaldiscount || "0") / 100;
+      const additionalDiscount = additionalPrice * discountRate;
+      
+      return {
+        packageDetailsId: item.mpItemId || 0,
+        originalQuantity,
+        modifiedQuantity,
+        originalPrice,
+        additionalPrice,
+        additionalDiscount
+      };
+    });
+
+  // Calculate modified minus items (items with decreased quantity)
+  const modifiedMinItems = packageItems
+    .filter(item => {
+      const originalItem = originalPackageItems.find(original => original.mpItemId === item.mpItemId);
+      return originalItem && parseFloat(item.quantity) < parseFloat(originalItem.quantity);
+    })
+    .map(item => {
+      const originalItem = originalPackageItems.find(original => original.mpItemId === item.mpItemId)!;
+      const originalQuantity = parseFloat(originalItem.quantity);
+      const modifiedQuantity = parseFloat(item.quantity);
+      
+      // Calculate price differences
+      const originalPrice = parseFloat(originalItem.price?.toString() || "0");
+      const modifiedPrice = parseFloat(item.price?.toString() || "0");
+      const additionalPrice = modifiedPrice - originalPrice; // Will be negative for reduced items
+      
+      // Calculate discount based on price difference and discount rate
+      const discountRate = parseFloat(finaldiscount || "0") / 100;
+      const additionalDiscount = Math.abs(additionalPrice) * discountRate;
+      
+      return {
+        packageDetailsId: item.mpItemId || 0,
+        originalQuantity,
+        modifiedQuantity,
+        originalPrice,
+        additionalPrice,
+        additionalDiscount
+      };
+    });
+
+  // Process additional items
+  const finalAdditionalItems = additionalItems.map(item => {
+    // Extract the numeric part of quantity
+    const quantityStr = typeof item.quantity === 'string' ? 
+      item.quantity.split(' ')[0] : 
+      String(item.quantity);
+    
+    return {
+      mpItemId: editingItem?.mpItemId|| 0,  // Use cropId for additional items
+      quantity: parseFloat(quantityStr),
+      price: parseFloat(item.price?.toString() || "0"),
+      discount: parseFloat(finaldiscount || "0")
+    };
+  });
+  console.log("modifiedPlusItems", modifiedPlusItems)
+  console.log("modifiedMinItems", modifiedMinItems)
+  
+  console.log("finalAdditionalItems", finalAdditionalItems)
+  
+
+
+  // Create the complete orderItems array
+  const orderItems = [
+    {
+      packageId: selectedPackage?.id || 0,
+      isModifiedPlus: modifiedPlusItems.length > 0,
+      isModifiedMin: modifiedMinItems.length > 0,
+      isAdditionalItems: additionalItems.length > 0,
+      packageTotal: parseFloat(totalPrice?.toString() || "0"),
+      packageDiscount: parseFloat(finaldiscount || "0"),
+      modifiedPlusItems: modifiedPlusItems.length > 0 ? modifiedPlusItems : undefined,
+      modifiedMinItems: modifiedMinItems.length > 0 ? modifiedMinItems : undefined,
+      additionalItems: finalAdditionalItems.length > 0 ? finalAdditionalItems : undefined
+    }
+    
+  ];
+  
+  return orderItems;
+  
+};
+
 
 const [clickCount, setClickCount] = useState<number>(1); // Default value is 1 (or whatever makes sense)
 
@@ -157,6 +364,14 @@ const [clickCount, setClickCount] = useState<number>(1); // Default value is 1 (
   ]);
 
   const [counter, setCounter] = useState(0);
+  //console.log(orderItems)
+
+
+  //console.log("isCustomPackage",isCustomPackage);
+  //console.log('isSelectPackage',isSelectPackage)
+
+ // console.log("cusid",id)
+
 //console.log("=====",counter)
 //console.log("cusid_____", id)
     // Function is called everytime increment button is clicked
@@ -178,60 +393,68 @@ const [clickCount, setClickCount] = useState<number>(1); // Default value is 1 (
     ];
 
 
-//console.log(packageItems , packages)
-  const fetchPackages = async () => {
-    try {
-      const storedToken = await AsyncStorage.getItem("authToken");
-      if (!storedToken) {
-        Alert.alert("Error", "No authentication token found");
-        return;
-      }
+// //console.log(packageItems , packages)
+//   const fetchPackages = async () => {
+//     try {
+//       const storedToken = await AsyncStorage.getItem("authToken");
+//       if (!storedToken) {
+//         Alert.alert("Error", "No authentication token found");
+//         return;
+//       }
 
-      setToken(storedToken);
+//       setToken(storedToken);
 
-      const response = await axios.get<{ data: Package[] }>(
-        `${environment.API_BASE_URL}api/packages/get-packages`,
-        {
-          headers: { Authorization: `Bearer ${storedToken}` },
-        }
-      );
+//       const response = await axios.get<{ data: Package[] }>(
+//         `${environment.API_BASE_URL}api/packages/get-packages`,
+//         {
+//           headers: { Authorization: `Bearer ${storedToken}` },
+//         }
+//       );
 
-      setPackages(response.data.data); // Ensure response structure matches
+//       setPackages(response.data.data); // Ensure response structure matches
      
-    } catch (error) {
-      Alert.alert("Error", "Failed to fetch packages");
-      console.error(error);
-    }
-  };
+//     } catch (error) {
+//       Alert.alert("Error", "Failed to fetch packages");
+//       console.error(error);
+//     }
+//   };
 
  
-  useEffect(() => {
-    fetchPackages();
-  }, []); // Fetch packages once on mount
+//   useEffect(() => {
+//     fetchPackages();
+//   }, []); // Fetch packages once on mount
   
-  
-  useEffect(() => {
-    if (selectedPackage) {
-      setPortion(Number(selectedPackage.portion));
-      setPeriod(Number(selectedPackage.period));
-  
-      fetchItemsForPackage(selectedPackage.id)
-        .then((items) => {
-          if (items.length > 0) {
-            setPackageItems(items);// Make sure to update the state with fetched items
-            items.forEach((item) => {
-              console.log("Fetching item details for mpItemId:", item.mpItemId);
-              fetchMarketplaceItemDetails(item.mpItemId);
-            });
-          } else {
-            console.log("No items found in the package.");
-          }
-        })
-        .catch((error) => {
-          console.error("Error fetching items for package:", error);
-        });
+const fetchPackages = async () => {
+  try {
+    const storedToken = await AsyncStorage.getItem("authToken");
+    if (!storedToken) {
+      Alert.alert("Error", "No authentication token found");
+      return;
     }
-  }, [selectedPackage]);
+    
+    setToken(storedToken);
+    
+    const response = await axios.get<{ data: Package[] }>(
+      `${environment.API_BASE_URL}api/packages/get-packages`,
+      {
+        headers: { Authorization: `Bearer ${storedToken}` },
+      }
+    );
+    
+    setPackages(response.data.data); // This is where you set the packages
+  
+  } catch (error) {
+    Alert.alert("Error", "Failed to fetch packages");
+    console.error(error);
+  }
+};
+
+useEffect(() => {
+  fetchPackages().then(() => {
+   // console.log("Packages fetched:", packages);
+  });
+}, []);
+  
   
   
   
@@ -303,15 +526,7 @@ const [clickCount, setClickCount] = useState<number>(1); // Default value is 1 (
       if (response.data && response.data.data) {
         const itemDetails = response.data.data;
   
-       // Log each property individually
-        // console.log("Item Details:");
-        // console.log("ID:", itemDetails.id);
-        // console.log("Display Name:", itemDetails.displayName);
-        // console.log("Normal Price:", itemDetails.normalPrice);
-        // console.log("Discounted Price:", itemDetails.discountedPrice);
-        // console.log("Start Value:", itemDetails.startValue);
-        // console.log("Unit Type:", itemDetails.unitType);
-        // console.log("Change By:", itemDetails.changeby);
+     
   
         setChangeBy(parseFloat(itemDetails.changeby)); // Set the changeby value from the response
   
@@ -358,11 +573,11 @@ const handleCropSelect = (selectedCropName: string) => {
     let totalDiscount = discountPerKg * startValue;
     let totalPriceAfterDiscount = normalPrice - totalDiscount;
 
-    console.log("Normal Price:", normalPrice);
-    console.log("Start Value:", startValue, unitType);
-    console.log("Price per 1kg:", pricePerKg);
-    console.log("Total Amount after discount:", totalPriceAfterDiscount.toFixed(2));
-    console.log("Discount Amount:", totalDiscount.toFixed(2));
+    //console.log("Normal Price:", normalPrice);
+    //console.log("Start Value:", startValue, unitType);
+   // console.log("Price per 1kg:", pricePerKg);
+  //  console.log("Total Amount after discount:", totalPriceAfterDiscount.toFixed(2));
+  //  console.log("Discount Amount:", totalDiscount.toFixed(2));
 
     setItemDetails({
       changeby: selectedCrop.changeby,
@@ -411,7 +626,7 @@ const fetchCrops = async () => {
 
     if (response.status === 200 && response.data && Array.isArray(response.data.data)) {
       setCrops(response.data.data);  // Update crops list
-      console.log("Crops fetched successfully:", response.data);
+    //  console.log("Crops fetched successfully:", response.data);
 
   
     } else {
@@ -452,7 +667,7 @@ const fetchCropDetails = async (cropId: number) => {
     });
 
     if (response.status === 200 && response.data) {
-      console.log("CROP datata", response.data)
+     // console.log("CROP datata", response.data)
       return response.data;  // Return the crop details
       
     } else {
@@ -489,8 +704,8 @@ const fetchCropDetails = async (cropId: number) => {
     // Modify the price calculation using the clickCount if needed
     const newPrice = (discountedPrice / startValue) * changeBy * clickCount;
   
-    console.log("New Quantity:", newQuantity);
-    console.log("Calculated Price:+-=-=-=", newPrice);
+   // console.log("New Quantity:", newQuantity);
+   // console.log("Calculated Price:+-=-=-=", newPrice);
   
     return newPrice;
   }
@@ -500,12 +715,12 @@ const fetchCropDetails = async (cropId: number) => {
     // Use previous counter value to update counter correctly
     setCounter((prevCounter) => {
         const newCounter = prevCounter + 1;
-        console.log("Counter inside setCounter:", newCounter);  // Logs the updated counter immediately
+      //  console.log("Counter inside setCounter:", newCounter);  // Logs the updated counter immediately
         return newCounter; // Return new value to update state
     });
 
-    console.log("Updating quantity:", changeBy, isIncrement);
-    console.log("jjjjjj")
+  //  console.log("Updating quantity:", changeBy, isIncrement);
+  //  console.log("jjjjjj")
   
     const currentValue = parseFloat(newItemQuantity || "0");
     const newValue = currentValue + changeBy; // Adjust quantity based on increment/decrement flag
@@ -518,80 +733,172 @@ const fetchCropDetails = async (cropId: number) => {
      
       const updatedItemPrice = calculateTotalPrice(newValue, itemDetails, counter + 1); // Pass the updated counter value
     //  setTotalPrice(updatedItemPrice + (Number(totalPrice) || 0)); // Use optional chaining
-      console.log("Updated Price:", updatedItemPrice);
+    //  console.log("Updated Price:", updatedItemPrice);
     }
 };
 
 
 useEffect(() => {
-  console.log("Updated counter value:", counter);
+//  console.log("Updated counter value:", counter);
 }, [counter]); 
   
   
-  const updateQuantity2 = (changeBy: number, isIncrement: boolean) => {
+//   const updateQuantity2 = (changeBy: number, isIncrement: boolean) => {
+//     setCounter((prevCounter) => {
+//       const newCounter = prevCounter - 1;
+//       console.log("Counter inside setCounter22:", newCounter); 
+//       return newCounter; 
+//   });
+
+//   console.log("Updating quantity:22", changeBy, isIncrement);
+
+//   const currentValue = parseFloat(newItemQuantity || "0");
+//   const newValue = currentValue - changeBy; // Adjust quantity based on increment/decrement flag
+//   setNewItemQuantity(newValue.toString());
+
+  
+
+//   // Recalculate the total price after changing quantity
+//   if (itemDetails) {
+
+//     const updatedItemPrice = calculateTotalPrice(newValue, itemDetails, counter - 1); // Pass the updated counter value
+//  //   setTotalPrice(updatedItemPrice + (Number(totalPrice) || 0)); // Use optional chaining
+//     console.log("Updated Price:2", updatedItemPrice);
+//   }
+//   };
+  
+
+const updateQuantity2 = (changeBy: number, isIncrement: boolean) => {
+  const currentValue = parseFloat(newItemQuantity || "0");
+  
+  // Only decrease if the current value is greater than the change amount
+  if (currentValue >= changeBy) {
     setCounter((prevCounter) => {
       const newCounter = prevCounter - 1;
-      console.log("Counter inside setCounter22:", newCounter); 
-      return newCounter; 
-  });
-
-  console.log("Updating quantity:22", changeBy, isIncrement);
-
-  const currentValue = parseFloat(newItemQuantity || "0");
-  const newValue = currentValue - changeBy; // Adjust quantity based on increment/decrement flag
-  setNewItemQuantity(newValue.toString());
-
-  
-
-  // Recalculate the total price after changing quantity
-  if (itemDetails) {
-
-    const updatedItemPrice = calculateTotalPrice(newValue, itemDetails, counter - 1); // Pass the updated counter value
- //   setTotalPrice(updatedItemPrice + (Number(totalPrice) || 0)); // Use optional chaining
-    console.log("Updated Price:2", updatedItemPrice);
-  }
-  };
-  
-
-
-  const saveUpdatedItem = () => {
-    console.log("Save button pressed", totalPrice);
-
-    const parsedNewItemQuantity = parseFloat(newItemQuantity || "0");
-
-    if (editingItem) {
-        const updatedItems = packageItems.map(item =>
-            item.name === editingItem.name
-                ? {
-                    ...item,
-                    quantity: String(parsedNewItemQuantity),
-                    quantityType: selectedUnit || "",
-                }
-                : item
-        );
-
-        console.log("Updated Items:", updatedItems);
-
-        setPackageItems(updatedItems);
-
-        setEditingItem(prev => ({
-            ...prev!,
-            quantity: String(parsedNewItemQuantity),
-            quantityType: selectedUnit || "",
-        }));
-    }
-
-    // Ensure total price is updated based on the final counter value
+     // console.log("Counter inside setCounter22:", newCounter);
+      return newCounter;
+    });
+    
+   // console.log("Updating quantity:22", changeBy, isIncrement);
+    const newValue = currentValue - changeBy;
+    setNewItemQuantity(newValue.toString());
+    
+    // Recalculate the total price after changing quantity
     if (itemDetails) {
-        const updatedTotalPrice = calculateTotalPrice(parsedNewItemQuantity, itemDetails, counter);
-        setTotalPrice(updatedTotalPrice + (Number(totalPrice) || 0));
-        console.log("Updated Total Price after Save:", updatedTotalPrice);
+      const updatedItemPrice = calculateTotalPrice(newValue, itemDetails, counter - 1);
+    //  console.log("Updated Price:2", updatedItemPrice);
     }
-
-    setCounter(0);
-    setModalVisible(false);
+  } else {
+    // If trying to decrease below 0, set to 0 but don't change counter or price
+    if (currentValue > 0) {
+      setNewItemQuantity("0");
+      setCounter((prevCounter) => {
+        const newCounter = prevCounter - 1;
+        //console.log("Counter inside setCounter22:", newCounter);
+        return newCounter;
+      });
+      
+      // Recalculate price when setting to exactly 0
+      if (itemDetails) {
+        const updatedItemPrice = calculateTotalPrice(0, itemDetails, counter - 1);
+      //  console.log("Updated Price:2", updatedItemPrice);
+      }
+    }
+  //  console.log("Cannot decrease below 0");
+  }
 };
 
+
+//   const saveUpdatedItem = () => {
+//     console.log("Save button pressed", totalPrice);
+
+//     const parsedNewItemQuantity = parseFloat(newItemQuantity || "0");
+
+//     if (editingItem) {
+//         const updatedItems = packageItems.map(item =>
+//             item.name === editingItem.name
+//                 ? {
+//                     ...item,
+//                     quantity: String(parsedNewItemQuantity),
+//                     quantityType: selectedUnit || "",
+//                 }
+//                 : item
+//         );
+
+//         console.log("Updated Items:", updatedItems);
+
+//         setPackageItems(updatedItems);
+
+//         setEditingItem(prev => ({
+//             ...prev!,
+//             quantity: String(parsedNewItemQuantity),
+//             quantityType: selectedUnit || "",
+//         }));
+//     }
+
+//     // Ensure total price is updated based on the final counter value
+//     if (itemDetails) {
+//         const updatedTotalPrice = calculateTotalPrice(parsedNewItemQuantity, itemDetails, counter);
+//         setTotalPrice(updatedTotalPrice + (Number(totalPrice) || 0));
+//         console.log("Updated Total Price after Save:", updatedTotalPrice);
+//     }
+
+//     setCounter(0);
+//     setModalVisible(false);
+// };
+
+
+const saveUpdatedItem = () => {
+ // console.log("Save button pressed", totalPrice);
+  
+  const parsedNewItemQuantity = parseFloat(newItemQuantity || "0");
+  
+  if (editingItem) {
+    if (editingItemType === 'package') {
+      // Update package item
+      const updatedItems = packageItems.map(item =>
+        item.name === editingItem.name
+          ? {
+              ...item,
+              quantity: String(parsedNewItemQuantity),
+              quantityType: selectedUnit || "",
+            }
+          : item
+      );
+    //  console.log("Updated Items:", updatedItems);
+      setPackageItems(updatedItems);
+    } else {
+      // Update additional item
+      const updatedItems = additionalItems.map(item =>
+        item.name === editingItem.name
+          ? {
+              ...item,
+              quantity: `${String(parsedNewItemQuantity)} ${selectedUnit}`,
+              quantityType: selectedUnit || "",
+            }
+          : item
+      );
+      setAdditionalItems(updatedItems);
+    }
+
+    // Update the editingItem reference
+    setEditingItem(prev => ({
+      ...prev!,
+      quantity: String(parsedNewItemQuantity),
+      quantityType: selectedUnit || "",
+    }));
+  }
+  
+  // Ensure total price is updated based on the final counter value
+  if (itemDetails) {
+    const updatedTotalPrice = calculateTotalPrice(parsedNewItemQuantity, itemDetails, counter);
+    setTotalPrice(updatedTotalPrice + (Number(totalPrice) || 0));
+ //   console.log("Updated Total Price after Save:", updatedTotalPrice);
+  }
+  
+  setCounter(0);
+  setModalVisible(false);
+};
 
   //+++++++ ADDD
 
@@ -606,7 +913,7 @@ useEffect(() => {
     setCounter(newCounterValue);
     
     // Log the new counter value
-    console.log("Counter updated to:", newCounterValue);
+   // console.log("Counter updated to:", newCounterValue);
     
     // Update the quantity
     const currentValue = parseFloat(newItemQuantity || "0");
@@ -629,13 +936,13 @@ useEffect(() => {
       // Use the newCounterValue instead of counter
       const calculatedPrice = calculateTotalPriceAdd(parsedQuantity, itemDetails, newCounterValue);
       
-      console.log("Current total price:", totalPrice);
+    //  console.log("Current total price:", totalPrice);
       const updatedItemPrice = calculatedPrice + (Number(totalPrice) || 0);
      // setTotalPrice(updatedItemPrice);
-      console.log("Updated total price:", updatedItemPrice);
+   //   console.log("Updated total price:", updatedItemPrice);
       
       const total = calculatedPrice;
-      console.log("Calculated price:", calculatedPrice);
+   //   console.log("Calculated price:", calculatedPrice);
      // setTotalAmont(total.toFixed(2));
     }
   };
@@ -648,7 +955,7 @@ useEffect(() => {
     setCounter(newCounterValue);
     
     // Log the new counter value
-    console.log("Counter decremented to:", newCounterValue);
+   // console.log("Counter decremented to:", newCounterValue);
     
     // Update the quantity
     const currentValue = parseFloat(newItemQuantity || "0");
@@ -661,18 +968,18 @@ useEffect(() => {
       // Use the newCounterValue instead of counter
       const calculatedPrice = calculateTotalPriceAdd(parsedQuantity, itemDetails, newCounterValue);
       
-      console.log("Current total price:", totalPrice);
+   //   console.log("Current total price:", totalPrice);
       // Use the updated counter value for price calculation
       const updatedItemPrice = calculateTotalPrice(newValue, itemDetails, newCounterValue);
       
       // Update total price
    //   setTotalPrice((-updatedItemPrice) + (Number(totalPrice) || 0));
-      console.log("Updated total price:", (-updatedItemPrice) + (Number(totalPrice) || 0));
+ //     console.log("Updated total price:", (-updatedItemPrice) + (Number(totalPrice) || 0));
     }
   };
   
   function calculateTotalPriceAdd(newQuantity: number, itemDetails: ItemDetails | null, counterValue: number) {
-    console.log("Calculating price with:", {itemDetails, counterValue});
+  //  console.log("Calculating price with:", {itemDetails, counterValue});
     
     if (itemDetails === null) {
       throw new Error("Item details are missing");
@@ -699,13 +1006,13 @@ useEffect(() => {
   
 
     
-    console.log("Quantity:", newQuantity);
-    console.log("Counter value:", counterValue);
-    console.log("Base calculation:", newPrice);
-    console.log("Final calculated price:", newPrice1);
-    console.log("Discount....", discount)
-    console.log("Discount", newdiscount)
-    console.log ("finalDiscount",finaldiscount )
+    // console.log("Quantity:", newQuantity);
+    // console.log("Counter value:", counterValue);
+    // console.log("Base calculation:", newPrice);
+    // console.log("Final calculated price:", newPrice1);
+    // console.log("Discount....", discount)
+    // console.log("Discount", newdiscount)
+    // console.log ("finalDiscount",finaldiscount )
     
     setNewPrice1(newPrice1.toFixed(2));
     setFinaldiscount(finaldiscount)
@@ -773,68 +1080,68 @@ useEffect(() => {
     setModalVisible(true);
   };
   
-  const handleItemClick = (item: any) => {
-    setEditingItem(item);
+  // const handleItemClick = (item: any) => {
+  //   setEditingItem(item);
   
-    // Check if item.quantity exists before trying to split it
-    if (item.quantity) {
-      // Safely extract the numeric part
-      const numericPart = item.quantity.toString().split(' ')[0];
-      setNewItemQuantity(numericPart);
-    } else {
-      setNewItemQuantity(""); // Set default empty string if quantity doesn't exist
-    }
+  //   // Check if item.quantity exists before trying to split it
+  //   if (item.quantity) {
+  //     // Safely extract the numeric part
+  //     const numericPart = item.quantity.toString().split(' ')[0];
+  //     setNewItemQuantity(numericPart);
+  //   } else {
+  //     setNewItemQuantity(""); // Set default empty string if quantity doesn't exist
+  //   }
   
-    // Check if item.quantityType exists before setting it
-    if (item.quantityType) {
-      setSelectedUnit(item.quantityType);
-    }
+  //   // Check if item.quantityType exists before setting it
+  //   if (item.quantityType) {
+  //     setSelectedUnit(item.quantityType);
+  //   }
   
-    // Fetch marketplace item details when clicking on this item
-    if ('mpItemId' in item && item.mpItemId !== undefined && item.mpItemId !== null && typeof item.mpItemId === 'number') {
-      // Optional: show loading indicator
-      // setLoading(true);
+  //   // Fetch marketplace item details when clicking on this item
+  //   if ('mpItemId' in item && item.mpItemId !== undefined && item.mpItemId !== null && typeof item.mpItemId === 'number') {
+  //     // Optional: show loading indicator
+  //     // setLoading(true);
   
-      fetchMarketplaceItemDetails(item.mpItemId)
-        .then(details => {
-          if (details) {
-         //   console.log("Fetched item details on click:", details);
-            // Update the itemDetails state with the fetched data
-            setItemDetails({
-              changeby: details.changeby,
-              startValue: details.startValue,
-              unitType: details.unitType,
-              discountedPrice: details.discountedPrice,
-              normalPrice: details.normalPrice,
-              displayName: details.displayName
-            });
+  //     fetchMarketplaceItemDetails(item.mpItemId)
+  //       .then(details => {
+  //         if (details) {
+  //        //   console.log("Fetched item details on click:", details);
+  //           // Update the itemDetails state with the fetched data
+  //           setItemDetails({
+  //             changeby: details.changeby,
+  //             startValue: details.startValue,
+  //             unitType: details.unitType,
+  //             discountedPrice: details.discountedPrice,
+  //             normalPrice: details.normalPrice,
+  //             displayName: details.displayName
+  //           });
   
-            // If you need to update the unitType state as well
-            if (details.unitType) {
-              setUnitType(details.unitType);
-            }
-          }
-        })
-        .catch(error => {
-          console.error("Error fetching item details on click:", error);
-        })
-        .finally(() => {
-          // Optional: hide loading indicator
-          // setLoading(false);
-        });
-    } else {
-      console.log("Invalid mpItemId:", item.mpItemId);
-      console.log("zzzzzzzzzzzz")
-    }
+  //           // If you need to update the unitType state as well
+  //           if (details.unitType) {
+  //             setUnitType(details.unitType);
+  //           }
+  //         }
+  //       })
+  //       .catch(error => {
+  //         console.error("Error fetching item details on click:", error);
+  //       })
+  //       .finally(() => {
+  //         // Optional: hide loading indicator
+  //         // setLoading(false);
+  //       });
+  //   } else {
+  //     console.log("Invalid mpItemId:", item.mpItemId);
+  //     console.log("zzzzzzzzzzzz")
+  //   }
   
-    // Open the modal after setting the data
-    setModalVisible(true);
-  };
+  //   // Open the modal after setting the data
+  //   setModalVisible(true);
+  // };
 
 
   const addItem = () => {
-    console.log("newItemName:", newItemName);
-    console.log("qqqqq", crops);
+ //   console.log("newItemName:", newItemName);
+  //  console.log("qqqqq", crops);
   
     if (!newItemName || typeof newItemName !== "string" || !newItemName.trim()) {
       Alert.alert("Error", "Please select a product.");
@@ -855,18 +1162,18 @@ useEffect(() => {
   
     // Access the cropId here
     const cropId = selectedCrop.cropId;
-    console.log("Selected Crop ID:", cropId);  // Output the cropId
+  //  console.log("Selected Crop ID:", cropId);  // Output the cropId
     setCropid(cropId);
   
-    console.log("llllll", cropId);
+ //   console.log("llllll", cropId);
   
     const parsedQuantity = parseFloat(newItemQuantity);
   
     if (itemDetails) {
       const calculatedPrice = calculateTotalPriceAdd(parsedQuantity, itemDetails, counter);
   
-      console.log("Current total price:", totalPrice);
-      console.log("Calculated price for new item:", calculatedPrice);
+//      console.log("Current total price:", totalPrice);
+ //     console.log("Calculated price for new item:", calculatedPrice);
   
       // Create new item object
       const newItem: Item = {
@@ -881,10 +1188,10 @@ useEffect(() => {
       if (parsedQuantity === 0) {
         setAdditionalItems((prevItems) => {
           const updatedItems = prevItems.filter((item) => item.name !== newItemName);
-          console.log("Item removed because quantity is 0:", updatedItems);
+    //      console.log("Item removed because quantity is 0:", updatedItems);
           return updatedItems;
         });
-        console.log("Item removed because quantity is 0");
+   //     console.log("Item removed because quantity is 0");
       } else {
         // Check if the item already exists
         const existingItemIndex = additionalItems.findIndex((item) => item.name === newItem.name);
@@ -895,20 +1202,20 @@ useEffect(() => {
             updatedItems[existingItemIndex].quantity = `${parsedQuantity + parseFloat(updatedItems[existingItemIndex].quantity)} ${selectedUnit}`;
             updatedItems[existingItemIndex].price += calculatedPrice; // Update price as well
             updatedItems[existingItemIndex].cropId = cropId; // Ensure cropId is updated if needed
-            console.log("Updated additional items inside callback:", updatedItems);
+      //      console.log("Updated additional items inside callback:", updatedItems);
             return updatedItems;
           });
           console.log("Item quantity updated:", newItem);
         } else {
           setAdditionalItems((prevItems) => {
             const updatedItems = [...prevItems, newItem];
-            console.log("Updated additional items inside callback:", updatedItems);
+       //     console.log("Updated additional items inside callback:", updatedItems);
             return updatedItems;
           });
-          console.log("Item added:", newItem);
+      //    console.log("Item added:", newItem);
         }
       }
-      console.log("Save button pressed", totalPrice);
+    //  console.log("Save button pressed", totalPrice);
 
       const parsedNewItemQuantity = parseFloat(newItemQuantity || "0");
   
@@ -923,7 +1230,7 @@ useEffect(() => {
                   : item
           );
   
-          console.log("Updated Items:", updatedItems);
+    //      console.log("Updated Items:", updatedItems);
   
           setPackageItems(updatedItems);
   
@@ -938,7 +1245,7 @@ useEffect(() => {
       if (itemDetails) {
           const updatedTotalPrice = calculateTotalPrice(parsedNewItemQuantity, itemDetails, counter);
           setTotalPrice(updatedTotalPrice + (Number(totalPrice) || 0));
-          console.log("Updated Total Price after Save:", updatedTotalPrice);
+        //  console.log("Updated Total Price after Save:", updatedTotalPrice);
       }
   
       setCounter(0);
@@ -960,23 +1267,67 @@ useEffect(() => {
     }
   };
   
-  const handleEditItemClick = (item: any) => {
-    setEditingItem(item);
+  // const handleEditItemClick = (item: any) => {
+  //   setEditingItem(item);
   
+  //   if (item.quantity) {
+  //     const numericPart = item.quantity.toString().split(' ')[0];
+  //     setNewItemQuantity(numericPart);
+  //   } else {
+  //     setNewItemQuantity(""); // Set default empty string if quantity doesn't exist
+  //   }
+  
+  //   if (item.quantityType) {
+  //     setSelectedUnit(item.quantityType);
+  //   }
+  
+  //   if (item.cropId) {
+  //     fetchCropDetails(item.cropId)
+  //       .then((details: CropDetails) => {  // Specify the type here
+  //         if (details) {
+  //           setItemDetails({
+  //             changeby: details.changeby,
+  //             startValue: details.startValue,
+  //             unitType: details.unitType,
+  //             discountedPrice: details.discountedPrice,
+  //             normalPrice: details.normalPrice,
+  //             displayName: details.displayName
+  //           });
+  
+  //           if (details.unitType) {
+  //             setUnitType(details.unitType);
+  //           }
+  //         }
+  //         console.log("CORP", cropId)
+  //       })
+  //       .catch((error: Error) => {  // Specify the error type
+  //         console.error("Error fetching crop details on click:", error);
+  //       });
+  //   } else {
+  //     console.log("Invalid item: No valid cropId found");
+  //   }
+  
+  //   setModalVisible(true);
+  // };
+
+  const handleItemClick = (item: any) => {
+    setEditingItem(item);
+    setEditingItemType('package'); // Mark as package item
+    
     if (item.quantity) {
       const numericPart = item.quantity.toString().split(' ')[0];
       setNewItemQuantity(numericPart);
     } else {
-      setNewItemQuantity(""); // Set default empty string if quantity doesn't exist
+      setNewItemQuantity("");
     }
   
     if (item.quantityType) {
       setSelectedUnit(item.quantityType);
     }
   
-    if (item.cropId) {
-      fetchCropDetails(item.cropId)
-        .then((details: CropDetails) => {  // Specify the type here
+    if ('mpItemId' in item && item.mpItemId !== undefined) {
+      fetchMarketplaceItemDetails(item.mpItemId)
+        .then(details => {
           if (details) {
             setItemDetails({
               changeby: details.changeby,
@@ -986,25 +1337,112 @@ useEffect(() => {
               normalPrice: details.normalPrice,
               displayName: details.displayName
             });
-  
             if (details.unitType) {
               setUnitType(details.unitType);
             }
           }
-          console.log("CORP", cropId)
         })
-        .catch((error: Error) => {  // Specify the error type
-          console.error("Error fetching crop details on click:", error);
-        });
-    } else {
-      console.log("Invalid item: No valid cropId found");
+        .catch(error => console.error("Error:", error));
     }
-  
     setModalVisible(true);
   };
   
+  const handleEditItemClick = (item: any) => {
+    setEditingItem(item);
+    setEditingItemType('additional'); // Mark as additional item
+    
+    if (item.quantity) {
+      const numericPart = item.quantity.toString().split(' ')[0];
+      setNewItemQuantity(numericPart);
+    } else {
+      setNewItemQuantity("");
+    }
   
-
+    if (item.quantityType) {
+      setSelectedUnit(item.quantityType);
+    }
+  
+    if (item.cropId) {
+      fetchCropDetails(item.cropId)
+        .then(details => {
+          if (details) {
+            setItemDetails({
+              changeby: details.changeby,
+              startValue: details.startValue,
+              unitType: details.unitType,
+              discountedPrice: details.discountedPrice,
+              normalPrice: details.normalPrice,
+              displayName: details.displayName
+            });
+            if (details.unitType) {
+              setUnitType(details.unitType);
+            }
+          }
+        })
+        .catch(error => console.error("Error:", error));
+    }
+    setModalVisible(true);
+  };
+  
+  // Update the saveUpdatedItem function to handle both types
+  // const saveUpdatedItem = () => {
+  //   const parsedNewItemQuantity = parseFloat(newItemQuantity || "0");
+  
+  //   if (editingItem) {
+  //     if (editingItemType === 'package') {
+  //       // Update package item
+  //       const updatedItems = packageItems.map(item =>
+  //         item.name === editingItem.name
+  //           ? {
+  //               ...item,
+  //               quantity: String(parsedNewItemQuantity),
+  //               quantityType: selectedUnit || "",
+  //             }
+  //           : item
+  //       );
+  //       setPackageItems(updatedItems);
+  //     } else {
+  //       // Update additional item
+  //       const updatedItems = additionalItems.map(item =>
+  //         item.name === editingItem.name
+  //           ? {
+  //               ...item,
+  //               quantity: `${String(parsedNewItemQuantity)} ${selectedUnit}`,
+  //               quantityType: selectedUnit || "",
+  //             }
+  //           : item
+  //       );
+  //       setAdditionalItems(updatedItems);
+  //     }
+  
+  //     // Update the editingItem reference
+  //     setEditingItem(prev => ({
+  //       ...prev!,
+  //       quantity: String(parsedNewItemQuantity),
+  //       quantityType: selectedUnit || "",
+  //     }));
+  //   }
+  
+  //   // Update total price if needed
+  //   if (itemDetails) {
+  //     const updatedTotalPrice = calculateTotalPrice(parsedNewItemQuantity, itemDetails, counter);
+  //     setTotalPrice(updatedTotalPrice + (Number(totalPrice) || 0));
+  //   }
+  
+  //   setCounter(0);
+  //   setModalVisible(false);
+  // };
+  
+  
+  
+  const navigateToNextScreen = () => {
+    const orderItems = prepareOrderItems();
+    
+    // Navigate to the next screen with the order items data
+    navigation.navigate('ScheduleScreen' as any, { orderItems,isCustomPackage, isSelectPackage});
+    console.log("data",orderItems)
+  };
+  
   
   
   
@@ -1037,7 +1475,7 @@ useEffect(() => {
         
         {/* Package Selection */}
         <Text className="text-gray-700 text-base mb-2">Package</Text>
-        <SelectList
+        {/* <SelectList
   setSelected={(val: string) => {
     // Find the package by its id
     const selectedPkg = packages.find(pkg => pkg.id.toString() === val);
@@ -1051,43 +1489,69 @@ useEffect(() => {
   data={packages.map(pkg => ({ key: pkg.id.toString(), value: pkg.name }))}
   placeholder="Select Package"
   boxStyles={{ borderColor: "#F6F6F6", backgroundColor: "#F6F6F6", borderRadius: 40, padding: 10 }}
+/> */}
+<SelectList
+  setSelected={async (val: string) => {
+    const selectedPkg = packages.find(pkg => pkg.id.toString() === val);
+    if (selectedPkg) {
+      setSelectedPackage(selectedPkg);
+      setTotalPrice(Number(selectedPkg.total) || 0);
+      
+      // Fetch items for the selected package
+      const items = await fetchItemsForPackage(selectedPkg.id);
+      setPackageItems(items);
+      setPackageItemsCount(items.length);
+    }
+  }}
+  data={packages.map(pkg => ({
+    key: pkg.id.toString(),
+    value: pkg.displayName || "Unnamed Package"
+  }))}
+  save="key"
+  search={true}
+  placeholder="Select Package"
+  boxStyles={{
+    borderColor: "#F6F6F6",
+    backgroundColor: "#F6F6F6",
+    borderRadius: 40,
+    padding: 10
+  }}
 />
 
-    
 
-{/* Package Items List */}
 {selectedPackage && (
   <View className="mt-6 px-3 mb-20">
     <View className="flex-row justify-between items-center border-b border-gray-200 py-3">
-      <Text className="font-bold text-gray-800">Package ({packageItemsCount} items)</Text>
-
-      {/* Ensure correct state name is used */}
-   
-        <TouchableOpacity
-          className="ml-3 flex-row items-center"
-          onPress={() => setModalVisible1(true)}
-        >
-          <Image source={require("../assets/images/Add.png")} className="w-5 h-5 mr-2" />
-          <Text className="text-[#6839CF] font-semibold">Add More</Text>
-        </TouchableOpacity>
-
+      <Text className="font-bold text-gray-800">
+        Package ({packageItemsCount} items)
+      </Text>
       
+      <TouchableOpacity
+        className="ml-3 flex-row items-center"
+        onPress={() => setModalVisible1(true)}
+      >
+        <Image source={require("../assets/images/Add.png")} className="w-5 h-5 mr-2" />
+        <Text className="text-[#6839CF] font-semibold">Add More</Text>
+      </TouchableOpacity>
     </View>
-     {packageItems.map((item, index) => (
-          <View key={index} className="flex-row justify-between items-center border-b border-gray-200 py-3">
-          <Text className="text-gray-700 text-base">{item.name}</Text>
-          <View className="flex-row items-center">
-        <Text className="text-gray-600 text-base">{item.quantity}{item.quantityType}</Text>
-        <TouchableOpacity
-      className="ml-3"
-      onPress={() =>  handleItemClick (item)} // Call the new function here
-    >
-              <Image source={require("../assets/images/Edit.png")} className="w-4 h-4" />
-            </TouchableOpacity>
-          </View>
-        </View>
-        ))}
     
+    {/* Render package items */}
+    {packageItems.map((item, index) => (
+      <View key={index} className="flex-row justify-between items-center border-b border-gray-200 py-3">
+        <Text className="text-gray-700 text-base">{item.name}</Text>
+        <View className="flex-row items-center">
+          <Text className="text-gray-600 text-base">
+            {item.quantity} {item.quantityType}
+          </Text>
+          <TouchableOpacity
+            className="ml-3"
+            onPress={() => handleItemClick(item)}
+          >
+            <Image source={require("../assets/images/Edit.png")} className="w-4 h-4" />
+          </TouchableOpacity>
+        </View>
+      </View>
+    ))}
      
  
     {additionalItems.length > 0 && (
@@ -1243,9 +1707,10 @@ useEffect(() => {
             }
           }}
           items={crops.map(crop => ({
-            label: crop.displayName,
-            value: crop.displayName,
-            key: crop.cropId,
+            label: crop.displayName,  // This should be a string
+            value: crop.displayName,  // This should be a string
+           // key: crop.cropId.toString()
+            key: crop.cropId
           }))}
                    searchable={true}
           searchPlaceholder="Search product..."
@@ -1409,7 +1874,7 @@ useEffect(() => {
   
   <LinearGradient colors={["#854BDA", "#6E3DD1"]} className="py-3 px-6 rounded-full">
     <TouchableOpacity 
-      onPress={() => navigation.navigate("ScheduleScreen", { totalPrice })}
+      onPress={navigateToNextScreen}
     >
       <Text className="text-white font-semibold">Confirm</Text>
     </TouchableOpacity>

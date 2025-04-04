@@ -20,6 +20,8 @@ interface SelectOrderTypeProps {
   route: {
     params: {
       id: string; 
+      isCustomPackage:string;
+      isSelectPackage:string;
     };
   };
 }
@@ -27,11 +29,28 @@ interface SelectOrderTypeProps {
 const SelectOrderType: React.FC<SelectOrderTypeProps> = ({ navigation, route }) => {
   // Get the ID from route params
   const { id } = route.params || {};
-  console.log("ll",id)
+  console.log("Customer ID:", id);
+
+  // Navigate to Create Custom Package with appropriate flags
+  const handleCreateCustomPackage = () => {
+    navigation.navigate("CreateCustomPackage" as any, { 
+      id, 
+      isCustomPackage: 1,
+      isSelectPackage: 0 
+    });
+  };
+
+  // Navigate to Order Screen with appropriate flags
+  const handleSelectPackage = () => {
+    navigation.navigate("OrderScreen" as any, { 
+      id, 
+      isCustomPackage: 0,
+      isSelectPackage: 1 
+    });
+  };
 
   return (
     <View className="flex-1 bg-white">
-     
       <View className="flex-row items-center h-16 shadow-md px-4 bg-white">
         <BackButton navigation={navigation} />
         <Text className="text-lg font-bold text-[#6C3CD1] flex-grow text-center mr-7">
@@ -41,26 +60,24 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({ navigation, route }) 
       
       <ScrollView>
         <View className="flex-1 bg-white items-center justify-center relative">
-         
           <Image
             source={require("../assets/images/cart.webp")}
             className="w-[70%] h-40 mt-[20%]"
             resizeMode="contain"
           />
           
-          
           <TouchableOpacity 
             className="w-4/5 bg-white py-4 rounded-2xl my-2 shadow-xl items-center mt-5"
-            onPress={() => navigation.navigate("CreateCustomPackage" as any, { id })}
+            onPress={handleCreateCustomPackage}
           >
             <Text className="text-lg font-semibold text-[#6839CF] text-center">
               Create{"\n"}Custom Package
             </Text>
           </TouchableOpacity>
-    
+          
           <TouchableOpacity 
             className="w-4/5 bg-white py-4 rounded-2xl my-2 shadow-xl items-center"
-            onPress={() => navigation.navigate("OrderScreen" as any , { id })}
+            onPress={handleSelectPackage}
           >
             <Text className="text-lg font-semibold text-[#6839CF] text-center">
               Select{"\n"}Package
