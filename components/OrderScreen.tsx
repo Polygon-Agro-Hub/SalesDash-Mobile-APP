@@ -80,7 +80,7 @@ interface Item {
   name: string;
   quantity: string;
   quantityType: string;
-  price: number;  // Add price as part of the type
+  price: number;  
   cropId: number;
 }
 
@@ -161,6 +161,7 @@ const [marketplaceItems, setMarketplaceItems] = useState<any[]>([]);
 //const [productOpen, setProductOpen] = useState(false);
 const [newItemName, setNewItemName] = useState<string>('');
 const [changeBy, setChangeBy] = useState(0.5); 
+const [originalPrice ,setOrinalPrice] = useState(0);
 const [unitType, setUnitType] = useState('kg'); 
 //const [packageItems, setPackageItems] = useState<{ name: string; quantity: string; quantityType: string; mpItemId?: number ; price?: number }[]>([]);
 const [crops, setCrops] = useState<Crop[]>([]);
@@ -249,111 +250,186 @@ const [finaldiscount, setFinaldiscount] = useState("0.00");
     period: string;
     total: number;
   }
+
+
+  console.log(" isCustomPackage",  isCustomPackage);
+  console.log("  isSelectPackage",   isSelectPackage);
+
   
   // Fix for the prepareOrderItems function
   // Fixed prepareOrderItems function
-const prepareOrderItems = () => {
-  // Calculate modified plus items (items with increased quantity)
-  const modifiedPlusItems = packageItems
-    .filter(item => {
-      const originalItem = originalPackageItems.find(original => original.mpItemId === item.mpItemId);
-      return originalItem && parseFloat(item.quantity) > parseFloat(originalItem.quantity);
-    })
-    .map(item => {
-      const originalItem = originalPackageItems.find(original => original.mpItemId === item.mpItemId)!;
-      const originalQuantity = parseFloat(originalItem.quantity);
-      const modifiedQuantity = parseFloat(item.quantity);
-      
-      // Calculate price differences
-      const originalPrice = parseFloat(originalItem.price?.toString() || "0");
-      const modifiedPrice = parseFloat(item.price?.toString() || "0");
-      const additionalPrice = modifiedPrice - originalPrice;
-      
-      // Calculate discount based on price difference and discount rate
-      const discountRate = parseFloat(finaldiscount || "0") / 100;
-      const additionalDiscount = additionalPrice * discountRate;
-      
-      return {
-        packageDetailsId: item.mpItemId || 0,
-        originalQuantity,
-        modifiedQuantity,
-        originalPrice,
-        additionalPrice,
-        additionalDiscount
-      };
-    });
-
-  // Calculate modified minus items (items with decreased quantity)
-  const modifiedMinItems = packageItems
-    .filter(item => {
-      const originalItem = originalPackageItems.find(original => original.mpItemId === item.mpItemId);
-      return originalItem && parseFloat(item.quantity) < parseFloat(originalItem.quantity);
-    })
-    .map(item => {
-      const originalItem = originalPackageItems.find(original => original.mpItemId === item.mpItemId)!;
-      const originalQuantity = parseFloat(originalItem.quantity);
-      const modifiedQuantity = parseFloat(item.quantity);
-      
-      // Calculate price differences
-      const originalPrice = parseFloat(originalItem.price?.toString() || "0");
-      const modifiedPrice = parseFloat(item.price?.toString() || "0");
-      const additionalPrice = modifiedPrice - originalPrice; // Will be negative for reduced items
-      
-      // Calculate discount based on price difference and discount rate
-      const discountRate = parseFloat(finaldiscount || "0") / 100;
-      const additionalDiscount = Math.abs(additionalPrice) * discountRate;
-      
-      return {
-        packageDetailsId: item.mpItemId || 0,
-        originalQuantity,
-        modifiedQuantity,
-        originalPrice,
-        additionalPrice,
-        additionalDiscount
-      };
-    });
-
-  // Process additional items
-  const finalAdditionalItems = additionalItems.map(item => {
-    // Extract the numeric part of quantity
-    const quantityStr = typeof item.quantity === 'string' ? 
-      item.quantity.split(' ')[0] : 
-      String(item.quantity);
+  const prepareOrderItems = async () => {
+    // Arrays to store the processed items
+    const modifiedPlusItems = [];
+    const modifiedMinItems = [];
     
-    return {
-      mpItemId: editingItem?.mpItemId|| 0,  // Use cropId for additional items
-      quantity: parseFloat(quantityStr),
-      price: parseFloat(item.price?.toString() || "0"),
-      discount: parseFloat(finaldiscount || "0")
-    };
-  });
-  console.log("modifiedPlusItems", modifiedPlusItems)
-  console.log("modifiedMinItems", modifiedMinItems)
-  
-  console.log("finalAdditionalItems", finalAdditionalItems)
-  
+    // Process items with increased quantity
+    for (const item of packageItems) {
+      const originalItem = originalPackageItems.find(original => original.mpItemId === item.mpItemId);
+      
+      if (!originalItem) continue;
+      
+      const originalQuantity = parseFloat(originalItem.quantity);
+      const modifiedQuantity1 = parseFloat(item.quantity);
+      const originalPrice = item.price
 
+      
+      
+      // Check if quantity increased
+      if (modifiedQuantity1 > originalQuantity) {
+        const modifiedQuantity = modifiedQuantity1 - originalQuantity;
+        
+        // Fetch marketplace item details to get pricing information
+        const marketplaceItemDetails = await fetchMarketplaceItemDetails(item.mpItemId ?? 0);
+        
+        if (!marketplaceItemDetails) {
+          console.error(`Marketplace item not found for mpItemId: ${item.mpItemId}`);
+          continue;
+        }
+        
+        // Get prices from marketplace item
+        const normalPrice = parseFloat(marketplaceItemDetails.normalPrice?.toString().replace(/,/g, '') || "0");
+        const discountedPrice = parseFloat(marketplaceItemDetails.discountedPrice?.toString().replace(/,/g, '') || "0");
+        const startValue = parseFloat(marketplaceItemDetails.startValue?.toString().replace(/,/g, '') || "0")
 
-  // Create the complete orderItems array
-  const orderItems = [
-    {
-      packageId: selectedPackage?.id || 0,
-      isModifiedPlus: modifiedPlusItems.length > 0,
-      isModifiedMin: modifiedMinItems.length > 0,
-      isAdditionalItems: additionalItems.length > 0,
-      packageTotal: parseFloat(totalPrice?.toString() || "0"),
-      packageDiscount: parseFloat(finaldiscount || "0"),
-      modifiedPlusItems: modifiedPlusItems.length > 0 ? modifiedPlusItems : undefined,
-      modifiedMinItems: modifiedMinItems.length > 0 ? modifiedMinItems : undefined,
-      additionalItems: finalAdditionalItems.length > 0 ? finalAdditionalItems : undefined
+        // Calculate price per unit using normal price
+        const pricePerUnit = discountedPrice / startValue;
+        const pricePerUnitNormal = normalPrice / startValue;
+        
+        // Calculate additional price for the added quantity
+        const additionalPrice = pricePerUnit * modifiedQuantity;
+        const additionalPriceNormal = pricePerUnitNormal * modifiedQuantity;
+        const discount = additionalPriceNormal-additionalPrice;
+        
+        // Calculate discount percentage
+        const discountPercentage = normalPrice > 0 ? ((normalPrice - discountedPrice) / normalPrice) * 100 : 0;
+        
+        // Apply the discount to the additional price
+        const additionalDiscount = discount;
+        
+        console.log(`Plus item ${item.mpItemId} (${item.name}): 
+          Normal price ${normalPrice}, 
+          Discounted price ${discountedPrice}, 
+          Price per unit ${pricePerUnit}, 
+          Additional price ${additionalPrice}, 
+          Discount ${additionalDiscount},
+          startValue ${startValue}
+          `);
+      
+          
+        
+        modifiedPlusItems.push({
+          packageDetailsId: item.mpItemId || 0,
+          originalQuantity,
+          modifiedQuantity,
+          originalPrice: originalPrice,
+          additionalPrice,
+          additionalDiscount
+        });
+      }
+      
+      // Check if quantity decreased
+      else if (modifiedQuantity1 < originalQuantity) {
+        const modifiedQuantity = originalQuantity - modifiedQuantity1;
+        
+        // Fetch marketplace item details to get pricing information
+        const marketplaceItemDetails = await fetchMarketplaceItemDetails(item.mpItemId ?? 0);
+        
+        if (!marketplaceItemDetails) {
+          console.error(`Marketplace item not found for mpItemId: ${item.mpItemId}`);
+          continue;
+        }
+        
+        // Get prices from marketplace item
+        const normalPrice = parseFloat(marketplaceItemDetails.normalPrice?.toString().replace(/,/g, '') || "0");
+        const discountedPrice = parseFloat(marketplaceItemDetails.discountedPrice?.toString().replace(/,/g, '') || "0");
+        const startValue = parseFloat(marketplaceItemDetails.startValue?.toString().replace(/,/g, '') || "0")
+
+        // Calculate price per unit using normal price
+        const pricePerUnit = discountedPrice / startValue;
+        const pricePerUnitNormal = normalPrice / startValue;
+        
+        // Calculate additional price for the added quantity
+        const additionalPrice = pricePerUnit * modifiedQuantity;
+        const additionalPriceNormal = pricePerUnitNormal * modifiedQuantity;
+        const discount = additionalPriceNormal-additionalPrice;
+        
+        // Calculate discount percentage
+        const discountPercentage = normalPrice > 0 ? ((normalPrice - discountedPrice) / normalPrice) * 100 : 0;
+        
+        // Apply the discount to the absolute price difference
+        const additionalDiscount = discount;
+        
+        console.log(`Minus item ${item.mpItemId} (${item.name}): 
+          Normal price ${normalPrice}, 
+          Discounted price ${discountedPrice}, 
+          Price per unit ${pricePerUnit}, 
+          Additional price ${additionalPrice}, 
+          Discount ${additionalDiscount}`);
+        
+        modifiedMinItems.push({
+          packageDetailsId: item.mpItemId || 0,
+          originalQuantity,
+          modifiedQuantity,
+          originalPrice: originalPrice,
+          additionalPrice,
+          additionalDiscount
+        });
+      }
     }
+  
+    // Process additional items (unchanged from your original code)
+    const finalAdditionalItems = additionalItems.map(item => {
+      // Extract the numeric part of quantity
+      const quantityStr = typeof item.quantity === 'string' ? 
+        item.quantity.split(' ')[0] : 
+        String(item.quantity);
+      
+      const quantity = parseFloat(quantityStr);
+      
+      // Get price and ensure proper numeric conversion
+      const itemPrice = parseFloat(item.price?.toString().replace(/,/g, '') || "0");
+      
+      // Calculate total price (price * quantity)
+      const totalPrice = itemPrice * quantity;
+      
+      // Apply discount to the total price
+      const discountRate = parseFloat(finaldiscount || "0") / 100;
+      const discountAmount = totalPrice * discountRate;
+      const finalPrice = totalPrice - discountAmount;
+      
+      console.log(`Additional item ${item.cropId} (${item.name}): Price ${itemPrice}, Quantity ${quantity}, Total ${totalPrice}, Discount ${discountAmount}, Final ${finalPrice}`);
+      
+      return {
+        mpItemId: item.cropId || editingItem?.mpItemId || 0,
+        quantity: quantity,
+        price: itemPrice,
+        discount: parseFloat(finaldiscount || "0")
+      };
+    });
     
-  ];
+    console.log("modifiedPlusItems", modifiedPlusItems);
+    console.log("modifiedMinItems", modifiedMinItems);
+    console.log("finalAdditionalItems", finalAdditionalItems);
   
-  return orderItems;
-  
-};
-
+    // Create the complete orderItems array
+    const orderItems = [
+      {
+        packageId: selectedPackage?.id || 0,
+        isModifiedPlus: modifiedPlusItems.length > 0,
+        isModifiedMin: modifiedMinItems.length > 0,
+        isAdditionalItems: additionalItems.length > 0,
+        packageTotal: parseFloat(totalPrice?.toString() || "0"),
+        packageDiscount: parseFloat(finaldiscount || "0"),
+        modifiedPlusItems: modifiedPlusItems.length > 0 ? modifiedPlusItems : undefined,
+        modifiedMinItems: modifiedMinItems.length > 0 ? modifiedMinItems : undefined,
+        additionalItems: finalAdditionalItems.length > 0 ? finalAdditionalItems : undefined
+      }
+      
+    ];
+    
+    return orderItems;
+  };
 
 const [clickCount, setClickCount] = useState<number>(1); // Default value is 1 (or whatever makes sense)
 
@@ -467,6 +543,7 @@ useEffect(() => {
     name: string;
     quantity: string;
     quantityType: string;
+    price: number;
   }[]> => {
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
@@ -481,6 +558,7 @@ useEffect(() => {
           name: string;
           quantity: string;
           quantityType: string;
+          price: number;
         }[] 
       }>(
         `${environment.API_BASE_URL}api/packages/${packageId}/items`,
@@ -490,7 +568,8 @@ useEffect(() => {
       );
   
       if (response.data && response.data.data) {
-        //console.log("Package items fetched:", response.data.data);
+        console.log("Package items fetched:", response.data.data);
+    
         setPackageItemsCount(response.data.data.length);
         return response.data.data; // Ensure function returns an array
         
@@ -1435,14 +1514,20 @@ const saveUpdatedItem = () => {
   
   
   
-  const navigateToNextScreen = () => {
-    const orderItems = prepareOrderItems();
-    
-    // Navigate to the next screen with the order items data
-    navigation.navigate('ScheduleScreen' as any, { orderItems,isCustomPackage, isSelectPackage});
-    console.log("data",orderItems)
+  const navigateToNextScreen = async () => {
+    try {
+      // Wait for the promise to resolve
+      const orderItems = await prepareOrderItems();
+      
+      // Now navigate with the resolved data
+      navigation.navigate('ScheduleScreen' as any, { orderItems ,  isCustomPackage, isSelectPackage });
+      
+      // Log the actual data, not the promise
+      console.log("data=============", orderItems);
+    } catch (error) {
+      console.error("Error preparing order items:", error);
+    }
   };
-  
   
   
   

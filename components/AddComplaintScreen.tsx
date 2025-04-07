@@ -23,6 +23,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Alert } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import DropDownPicker from "react-native-dropdown-picker";
+import { SelectList } from "react-native-dropdown-select-list";
 
 type AddComplaintScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -159,6 +160,17 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
                     Tell us the <Text className="text-[#6839CF]">problem</Text>
                   </Text>
                 </View>
+                <SelectList
+  setSelected={(val: string) => setSelectedCategory(val)}
+  data={category}
+  save="value"
+  placeholder="Select Complaint Category"
+  boxStyles={{ borderColor: "#ccc", height: 50 }}
+  inputStyles={{ color: "#434343", fontSize: 14 }}
+  dropdownTextStyles={{ fontSize: 12 }}
+  search={false}
+/>
+
                 <View className="w-full   mb-4">
                 {category.length > 0 && (
                   <DropDownPicker
