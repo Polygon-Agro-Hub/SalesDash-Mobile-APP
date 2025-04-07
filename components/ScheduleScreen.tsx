@@ -294,7 +294,7 @@
 // export default ScheduleScreen;
 
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, ScrollView, Image, KeyboardAvoidingView, Platform, Modal, Alert } from "react-native";
 import { SelectList } from "react-native-dropdown-select-list";
 import { Feather } from "@expo/vector-icons";
@@ -309,11 +309,19 @@ import DateTimePicker from '@react-native-community/datetimepicker'; // Using th
 type ScheduleScreenNavigationProp = StackNavigationProp<RootStackParamList, "ScheduleScreen">;
 type ScheduleScreenRouteProp = RouteProp<RootStackParamList, "ScheduleScreen">;
 
+interface AdditionalItem {
+  discount: number;
+  mpItemId: number;
+  price: number;
+  quantity: number;
+}
+
+
 interface ScheduleScreenProps {
   navigation: ScheduleScreenNavigationProp;
   route: {
     params: {
-      items: Array<{
+      items?: Array<{
         id: number;
         name: string;
         price: number;
@@ -325,12 +333,41 @@ interface ScheduleScreenProps {
         startValue: number;
         changeby: number;
       }>;
-      total: number;
-      subtotal: number;
-      discount: number;
-      id: string;
-      isCustomPackage:string;
-      isSelectPackage:string;
+      total?: number;
+      subtotal?: number;
+      discount?: number;
+      id?: string;
+      isCustomPackage?: string;
+      isSelectPackage?: string;
+      customerid?: string; // Add customerid at the top level of params
+      
+      orderItems?: Array<{
+        additionalItems?: Array<AdditionalItem>;
+        isAdditionalItems: boolean;
+        customerid?: string; // Keep this too if needed in orderItems
+        isModifiedMin: boolean;
+        isModifiedPlus: boolean;
+        modifiedMinItems: Array<{
+          additionalDiscount: number;
+          additionalPrice: number;
+          modifiedQuantity: number;
+          originalPrice: string;
+          originalQuantity: number;
+          packageDetailsId: number;
+        }>;
+        modifiedPlusItems: Array<{
+          additionalDiscount: number;
+          additionalPrice: number;
+          modifiedQuantity: number;
+          originalPrice: string;
+          originalQuantity: number;
+          packageDetailsId: number;
+        }>;
+        packageDiscount: number;
+        packageId: number;
+        
+        packageTotal: number;
+      }>;
     };
   };
 }
@@ -346,15 +383,35 @@ interface CartItem {
   unitType: string;
   startValue: number;
   changeby: number;
-  currentTotal: number;
-  currentSubtotal: number;
-   discount: number;
+  currentTotal?: number;
+  currentSubtotal?: number;
+  discount?: number;
 }
 
-
 const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) => {
-  //const { totalPrice } = route.params;
-  const { total, subtotal, discount ,items , id ,isCustomPackage, isSelectPackage} = route.params;
+  // Extract data from both possible parameter structures
+  const {
+    // Original structure
+    total: originalTotal = 0,
+    subtotal: originalSubtotal = 0,
+    discount: originalDiscount = 0,
+    items: originalItems = [],
+    id: customerId = "",
+    isCustomPackage = "", 
+    isSelectPackage = "",
+    customerid = "",
+    // New structure
+    orderItems = []
+  } = route.params;
+
+  // Calculate totals based on which data structure is provided
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [total, setTotal] = useState(0);
+  const [subtotal, setSubtotal] = useState(0);
+  const [discount, setDiscount] = useState(0);
+ // const { customerid } = route.params || {};
+  
+  // State for scheduling
   const [deliveryType, setDeliveryType] = useState("One Time");
   const [selectedTimeSlot, setSelectedTimeSlot] = useState("");
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
@@ -362,15 +419,115 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedWeek, setSelectedWeek] = useState("");
   const [isDateSelected, setIsDateSelected] = useState(false);
+ // const customerid = orderItems?.[0]?.customerid || "";
   
-  // Add state for date picker
+  // Date picker state
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [date, setDate] = useState(new Date());
+  
 
-  console.log("isCustomPackage",isCustomPackage);
-  console.log('isSelectPackage',isSelectPackage)
-  console.log("kkk",items)
-  console.log("cusid",id)
+  console.log("._____________________",customerid )
+
+  // Process the data based on what's available
+  useEffect(() => {
+    // Only process data if it hasn't been processed yet or if dependencies change significantly
+    // This prevents continuous re-rendering
+    const shouldProcessData = 
+      (orderItems && orderItems.length > 0 && items.length === 0) || 
+      (originalItems && originalItems.length > 0 && items.length === 0);
+    
+    if (!shouldProcessData) {
+      return; // Skip processing if data is already processed
+    }
+    
+    if (orderItems && orderItems.length > 0) {
+      // Process new order items structure
+      const orderData = orderItems[0]; // Assuming the first item in array
+      
+      // Create a unified item structure from the order data
+      const processedItems: CartItem[] = [];
+      
+      // Process modified plus items
+      if (orderData.modifiedPlusItems && orderData.modifiedPlusItems.length > 0) {
+        orderData.modifiedPlusItems.forEach(item => {
+          processedItems.push({
+            id: item.packageDetailsId,
+            
+            name: `Modified Plus Item ${item.packageDetailsId}`,
+            price: parseFloat(item.originalPrice) + item.additionalPrice,
+            normalPrice: parseFloat(item.originalPrice),
+            discountedPrice: parseFloat(item.originalPrice) + item.additionalPrice - item.additionalDiscount,
+            quantity: item.originalQuantity + item.modifiedQuantity,
+            selected: true,
+            unitType: "",
+            startValue: item.originalQuantity,
+            changeby: item.modifiedQuantity,
+            discount: item.additionalDiscount,
+            
+          });
+        });
+      }
+      
+      // Process modified min items
+      if (orderData.modifiedMinItems && orderData.modifiedMinItems.length > 0) {
+        orderData.modifiedMinItems.forEach(item => {
+          processedItems.push({
+            id: item.packageDetailsId,
+            name: `Modified Min Item ${item.packageDetailsId}`,
+            price: parseFloat(item.originalPrice) - item.additionalPrice,
+            normalPrice: parseFloat(item.originalPrice),
+            discountedPrice: parseFloat(item.originalPrice) - item.additionalPrice + item.additionalDiscount,
+            quantity: item.originalQuantity - item.modifiedQuantity,
+            selected: true,
+            unitType: "",
+           
+            startValue: item.originalQuantity,
+            changeby: -item.modifiedQuantity,
+            discount: item.additionalDiscount
+          });
+        });
+      }
+      
+      // Process additional items
+      if (orderData.additionalItems && orderData.additionalItems.length > 0) {
+        // Make sure we're handling the correct structure
+        orderData.additionalItems.forEach((item: any) => {
+          processedItems.push({
+            id: item.mpItemId,
+            name: `Additional Item ${item.mpItemId}`,
+            price: item.price,
+            normalPrice: item.price,
+            discountedPrice: item.price - item.discount,
+            quantity: item.quantity,
+            selected: true,
+            unitType: "",
+            startValue: 0,
+            changeby: item.quantity,
+            discount: item.discount
+          });
+        });
+      }
+      
+      // Set state in a batch to prevent multiple renders
+      const newTotal = orderData.packageTotal || 0;
+      const newDiscount = orderData.packageDiscount || 0;
+      const newSubtotal = newTotal + newDiscount;
+      
+      setItems(processedItems);
+      setTotal(newTotal);
+      setSubtotal(newSubtotal);
+      setDiscount(newDiscount);
+      
+    } else if (originalItems && originalItems.length > 0) {
+      // Use original structure
+      setItems(originalItems);
+      setTotal(originalTotal);
+      setSubtotal(originalSubtotal);
+      setDiscount(originalDiscount);
+    }
+  }, [orderItems, originalItems]);
+
+
 
   const DELIVERY_FEE = 350;
   const fullTotal = total + DELIVERY_FEE;
@@ -381,8 +538,9 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
     { key: "Withing 4-8 PM", value: "Withing 4-8 PM" },
   ];
 
-  console.log("ll",selectedTimeSlot)
-  
+  console.log("Current selected time slot:", selectedTimeSlot);
+  console.log("Current items:", items);
+  console.log("Current total:", total);
 
   const toggleDaySelection = (day: string) => {
     setSelectedDays((prevSelectedDays) => {
@@ -423,34 +581,41 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
       return;
     }
 
-    const selectedItems = items;
-    if (selectedItems.length > 0) {
+    if (items.length > 0) {
+      // Include packageId if available from orderItems
+      const packageId = orderItems && orderItems.length > 0 ? orderItems[0].packageId : undefined;
+      
       navigation.navigate("SelectPaymentMethod" as any, {
-        items: selectedItems,
+        items: items,
         subtotal: subtotal,
         discount: discount,
         total: total,
         fullTotal: fullTotal,
         selectedDate: selectedDate,
         selectedTimeSlot: selectedTimeSlot,
-        customerId: id,
+        customerId: customerId,
         isSelectPackage: isSelectPackage,
-        isCustomPackage:isCustomPackage
+        isCustomPackage: isCustomPackage,
+        packageId: packageId, // Pass package ID if available
+        customerid:customerid,
+        // Pass additional data as needed
+        orderItems: orderItems // Optional: Pass the original orderItems if needed downstream
       });
-      console.log("datapass",selectedItems,subtotal,discount,total,fullTotal,selectedDate,selectedTimeSlot,id)
+      console.log("Data passed to payment:", {
+        items, subtotal, discount, total, fullTotal, selectedDate, selectedTimeSlot, customerId,
+        isSelectPackage, isCustomPackage, packageId
+      });
     } else {
       Alert.alert("Error", "Please select at least one item");
     }
   };
   
- 
   const onDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(Platform.OS === 'ios'); 
     
     if (selectedDate) {
       setDate(selectedDate);
       
-    
       const day = selectedDate.getDate();
       const month = selectedDate.toLocaleString('en-US', { month: 'short' });
       const year = selectedDate.getFullYear();
@@ -500,26 +665,39 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
           </TouchableOpacity>
 
           <Text className="text-[#000000] mt-4 mb-2">Schedule Time Slot</Text>
-          <SelectList
-            setSelected={(val: string) => setSelectedTimeSlot(val)}
-            data={timeSlots}
-            placeholder="Select Time Slot"
-            inputStyles={{
-              color: "#7F7F7F",
-            }}
-            boxStyles={{
-              backgroundColor: "#F6F6F6",
-              padding: 12,
-              borderRadius: 30,
-              borderColor: "#F6F6F6",
-              borderWidth: 5,
-            }}
-            dropdownStyles={{
-              backgroundColor: "#F6F6F6",
-              borderRadius: 10,
-              borderColor: "#F6F6F6",
-            }}
-          />
+
+<SelectList
+  key="time-slot-select"
+  setSelected={(val: string) => {
+    if (val !== selectedTimeSlot) {
+      setSelectedTimeSlot(val);
+    }
+  }}
+  data={timeSlots}
+  save="value"
+  placeholder="Select Time Slot"
+  search={false}
+  defaultOption={
+    selectedTimeSlot 
+      ? timeSlots.find(slot => slot.value === selectedTimeSlot) 
+      : undefined // Use undefined instead of null
+  }
+  inputStyles={{
+    color: "#7F7F7F",
+  }}
+  boxStyles={{
+    backgroundColor: "#F6F6F6",
+    padding: 12,
+    borderRadius: 30,
+    borderColor: "#F6F6F6",
+    borderWidth: 5,
+  }}
+  dropdownStyles={{
+    backgroundColor: "#F6F6F6",
+    borderRadius: 10,
+    borderColor: "#F6F6F6",
+  }}
+/>
         </ScrollView>
 
         {/* Date Picker (conditionally rendered) */}
@@ -533,7 +711,6 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
           />
         )}
 
-       
         {Platform.OS === 'ios' && showDatePicker && (
           <Modal
             visible={showDatePicker}
@@ -586,52 +763,46 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
             </View>
           </Modal>
         )}
-
    
-        
-    
-<View
-  className="bg-white flex-row justify-between items-center p-4 rounded-t-3xl shadow-lg"
-  style={{
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 10,
-    marginTop: -10,
-  }}
->
- 
-  <View className="flex-1">
-    <View className="flex-row justify-between">
-      <Text className="text-gray-500">Delivery Fee</Text>
-      <Text className="font-medium">+ Rs.350.00</Text>
-    </View>
-    
-    <View className="flex-row justify-between mt-2">
-      <Text className="font-semibold text-lg">Full Total</Text>
-      <Text className="font-bold text-lg">Rs.{fullTotal.toFixed(2)}</Text>
-    </View>
-  </View>
+        <View
+          className="bg-white flex-row justify-between items-center p-4 rounded-t-3xl shadow-lg"
+          style={{
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: -4 },
+            shadowOpacity: 0.2,
+            shadowRadius: 8,
+            elevation: 10,
+            marginTop: -10,
+          }}
+        >
+         
+          <View className="flex-1">
+            <View className="flex-row justify-between">
+              <Text className="text-gray-500">Delivery Fee</Text>
+              <Text className="font-medium">+ Rs.350.00</Text>
+            </View>
+            
+            <View className="flex-row justify-between mt-2">
+              <Text className="font-semibold text-lg">Full Total</Text>
+              <Text className="font-bold text-lg">Rs.{fullTotal.toFixed(2)}</Text>
+            </View>
+          </View>
 
-  
-  <TouchableOpacity onPress={handleConfirm}>
-    <LinearGradient 
-      colors={["#854BDA", "#6E3DD1"]} 
-      className="py-3 px-6 rounded-full flex-row items-center ml-4"
-    >
-      <Text className="text-white font-semibold mr-2">Proceed</Text>
-      <Image
-        source={require("../assets/images/Done.png")}
-        className="w-5 h-5"
-        resizeMode="contain"
-      />
-    </LinearGradient>
-  </TouchableOpacity>
-</View>
-
+          <TouchableOpacity onPress={handleConfirm}>
+            <LinearGradient 
+              colors={["#854BDA", "#6E3DD1"]} 
+              className="py-3 px-6 rounded-full flex-row items-center ml-4"
+            >
+              <Text className="text-white font-semibold mr-2">Proceed</Text>
+              <Image
+                source={require("../assets/images/Done.png")}
+                className="w-5 h-5"
+                resizeMode="contain"
+              />
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
       </View>
-      
     </KeyboardAvoidingView>
   );
 };

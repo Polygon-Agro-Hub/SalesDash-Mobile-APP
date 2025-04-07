@@ -47,7 +47,7 @@ export type RootStackParamList = {
     ScheduleScreen: {totalPrice: Number };
    // SelectPaymentMethod: undefined;
    // OrderSummeryScreen:undefined;
-    OrderConfirmedScreen:undefined;
+    //OrderConfirmedScreen:undefined;
     ViewOrdersScreen:undefined;
     View_CancelOrderScreen:{orderId:number};
     SelectOrderType:undefined;
@@ -68,17 +68,29 @@ export type RootStackParamList = {
       selectedTimeSlot: string;
     };
     OrderSummeryScreen: {
-      items: CartItem[];
+      items: Array<CartItem>;
       subtotal: number;
       discount: number;
       total: number;
       fullTotal: number;
       selectedDate: string;
       selectedTimeSlot: string;
-      paymentMethod: "Online Payment" | "Pay By Cash";
-      customerId: string;
-      isSelectPackage:number;
-    isCustomPackage : number;
+      paymentMethod: string;
+      customerId?: string | number;
+      customerid?: string | number;
+      isSelectPackage?: number;
+      isCustomPackage?: number;
+    };
+    OrderConfirmedScreen: {
+      orderId: number;
+      total: number;
+      paymentMethod: string;
+      customerId: string | number;
+      customerid?: string | number;
+      items?: Array<CartItem>;
+      selectedDate: string;
+      selectedTimeSlot: string;
+      orderData?: any;
     };
   };
   

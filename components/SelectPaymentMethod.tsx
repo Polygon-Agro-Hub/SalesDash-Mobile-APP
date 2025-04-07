@@ -19,6 +19,13 @@ import { RouteProp } from "@react-navigation/native";
 // Define types for the route parameters
 type SelectPaymentMethodRouteProp = RouteProp<RootStackParamList, "SelectPaymentMethod">;
 
+interface AdditionalItem {
+  discount: number;
+  mpItemId: number;
+  price: number;
+  quantity: number;
+}
+
 interface CartItem {
   id: number;
   name: string;
@@ -35,23 +42,63 @@ interface CartItem {
 interface SelectPaymentMethodProps {
   navigation: StackNavigationProp<RootStackParamList, "SelectPaymentMethod">;
   route: SelectPaymentMethodRouteProp & {
-    params: {
-      items: CartItem[];
-      subtotal: number;
-      discount: number;
-      total: number;
-      fullTotal: number;
-      selectedDate: string;
-      selectedTimeSlot: string;
-      customerId:string;
-      isCustomPackage:string;
-      isSelectPackage:string;
+   
+      params: {
+        items?: Array<{
+          id: number;
+          name: string;
+          price: number;
+          normalPrice: number;
+          discountedPrice: number;
+          quantity: number;
+          selected: boolean;
+          customerId:string;
+          unitType: string;
+          startValue: number;
+          changeby: number;
+        }>;
+        total?: number;
+        subtotal?: number;
+        discount?: number;
+        id?: string;
+        isCustomPackage?: string;
+        isSelectPackage?: string;
+        customerid?: string; // Add customerid at the top level of params
+        
+        orderItems?: Array<{
+          additionalItems?: Array<AdditionalItem>;
+          isAdditionalItems: boolean;
+          customerid?: string; // Keep this too if needed in orderItems
+          isModifiedMin: boolean;
+          isModifiedPlus: boolean;
+          modifiedMinItems: Array<{
+            additionalDiscount: number;
+            additionalPrice: number;
+            modifiedQuantity: number;
+            originalPrice: string;
+            originalQuantity: number;
+            packageDetailsId: number;
+          }>;
+          modifiedPlusItems: Array<{
+            additionalDiscount: number;
+            additionalPrice: number;
+            modifiedQuantity: number;
+            originalPrice: string;
+            originalQuantity: number;
+            packageDetailsId: number;
+          }>;
+          packageDiscount: number;
+          packageId: number;
+          
+          packageTotal: number;
+        }>;
+      };
     };
-  };
+  
 }
 
 const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, route }) => {
-  const {  customerId ,isCustomPackage, isSelectPackage} = route.params || {};
+  const { customerid, isCustomPackage, isSelectPackage} = route.params || {};
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<"Online Payment" | "Pay By Cash" | null>("Online Payment");
 
@@ -68,7 +115,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, r
     };
   }, []);
 
-  console.log("cusid=============", customerId)
+ console.log("cusid=============", customerid)
 
  
 const handleProceed = () => {
@@ -86,7 +133,7 @@ const handleProceed = () => {
   const navigationData = {
     ...route.params,
     paymentMethod: selectedMethod,
-    customerId: customerId,
+   // customerId: customerId,
     isSelectPackage: isSelectPackage,
     isCustomPackage:isCustomPackage
   };
@@ -101,7 +148,7 @@ const handleProceed = () => {
   console.log("Selected Date:", navigationData.selectedDate);
   console.log("Selected Time Slot:", navigationData.selectedTimeSlot);
   console.log("Payment Method:", navigationData.paymentMethod);
-  console.log("cusid:", navigationData. customerId);
+  //console.log("cusid:", navigationData. customerId);
   console.log("isCustomPackage",isCustomPackage);
   console.log('isSelectPackage',isSelectPackage)
 

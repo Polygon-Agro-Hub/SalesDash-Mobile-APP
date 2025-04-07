@@ -26,6 +26,64 @@ interface OrderSummeryScreenProps {
   navigation: OrderSummeryScreenNavigationProp;
   route: OrderSummeryScreenRouteProp;
 }
+interface BaseItem {
+  id: number;
+  name: string;
+  price: number;
+  quantity: number;
+  unitType?: string;
+}
+
+
+
+interface PackageItem {
+  packageId: number;
+  isModifiedPlus: boolean;
+  isModifiedMin: boolean;
+  isAdditionalItems: boolean;
+  packageTotal: number;
+  packageDiscount: number;
+  modifiedPlusItems: ModifiedPlusItem[];
+  modifiedMinItems: ModifiedMinItem[];
+  additionalItems: AdditionalItem[];
+}
+
+interface ModifiedPlusItem {
+  packageDetailsId: number;
+  originalQuantity: number;
+  modifiedQuantity: number;
+  originalPrice: number;
+  additionalPrice: number;
+  additionalDiscount: number;
+}
+
+interface ModifiedMinItem {
+  packageDetailsId: number;
+  originalQuantity: number;
+  modifiedQuantity: number;
+  originalPrice: number;
+  additionalPrice: number;
+  additionalDiscount: number;
+}
+
+interface AdditionalItem {
+  mpItemId: number;
+  quantity: number;
+  price: number;
+  discount: number;
+}
+
+// Define the order data structure
+interface OrderData {
+  customerId: string | number;
+  deliveryType: string;
+  scheduleDate: string;
+  paymentMethod: string;
+  orderStatus: string;
+  isSelectPackage?: number;
+  isCustomPackage?: number;
+  orderItems: (CartItem | PackageItem)[];
+}
 
 const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({ navigation, route }) => {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
@@ -44,11 +102,25 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({ navigation, rou
     selectedTimeSlot = "",
     paymentMethod = "",
     customerId = "",
-    isSelectPackage= 0,
-    isCustomPackage=0
+    customerid = "",
+    isSelectPackage = 0,
+    isCustomPackage = 0
   } = route.params || {};
+  
+  // Type guard to ensure items is always an array
+  const safeItems = Array.isArray(items) ? items : [];
+  
+  // Use console.log for debugging route params
+  console.log("Route params:", {
+    customerId,
+    customerid,
+    isSelectPackage,
+    isCustomPackage,
+    itemsCount: safeItems.length
+  });
 
-  console.log("cusid", customerId);
+  console.log("cusid,,,,,,,,,,,", customerId);
+  console.log("cusid,,,,,,,,,,,",  customerid);
 
   // Format date for display
   const formattedDate = selectedDate ? new Date(selectedDate).toLocaleDateString() : "Not set";
@@ -65,21 +137,97 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({ navigation, rou
   console.log('isSelectPackage-------',isSelectPackage)
 
  // Fetch customer data from backend
- useEffect(() => {
+//  useEffect(() => {
+//   const fetchCustomerData = async () => {
+//     try {
+//       setLoading(true);
+//       setError(''); 
+      
+//       const storedToken = await AsyncStorage.getItem("authToken");
+//       if (!storedToken) {
+//         setError("No authentication token found");
+//         setLoading(false);
+//         return;
+//       }
+//       console.log("k",customerId)
+//       const apiUrl = `${environment.API_BASE_URL}api/orders/get-customer-data/${customerId}`;
+//       console.log("o",apiUrl)
+      
+//       const response = await axios.get(apiUrl, {
+//         headers: { Authorization: `Bearer ${storedToken}` },
+//       });
+      
+//       if (response.data.success) {
+//         setCustomerData(response.data.data);
+//       } else {
+//         setError(response.data.message || "Failed to fetch customer data");
+//       }
+//     } catch (error) {
+//       console.error("Error fetching customer data:", error);
+     
+//       if (error instanceof Error) {
+//         setError(error.message || "Failed to fetch customer data");
+//       } else {
+//         setError("Failed to fetch customer data");
+//       }
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+  
+//   if (customerId) {
+//     fetchCustomerData();
+//   }
+// }, [customerId]);
+
+//   useEffect(() => {
+//     // Log received data for debugging
+//     console.log("Received data in OrderSummeryScreen:", JSON.stringify(route.params, null, 2));
+//     console.log("Items:", items);
+//     console.log("Subtotal:", subtotal);
+//     console.log("Discount:", discount);
+//     console.log("Total:", total);
+//     console.log("Full Total:", fullTotal);
+//     console.log("Selected Date:", selectedDate);
+//     console.log("Selected Time Slot:", selectedTimeSlot);
+//     console.log("Payment Method:", paymentMethod);
+//     console.log("Customer Data:", customerData);
+//     console.log(" customerid",customerId)
+    
+//     const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
+//     const keyboardDidHideListener = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false));
+
+//     return () => {
+//       keyboardDidShowListener.remove();
+//       keyboardDidHideListener.remove();
+//     };
+//   }, [route.params, items, subtotal, discount, total, fullTotal, selectedDate, selectedTimeSlot, paymentMethod, customerData]);
+
+useEffect(() => {
   const fetchCustomerData = async () => {
     try {
       setLoading(true);
-      setError(''); 
+      
+      // Handle both customerId and customerid from route params
+      const customerIdValue = customerId || route.params?.customerId || route.params?.customerid;
+      
+      if (!customerIdValue) {
+        setError("No customer ID found");
+        setLoading(false);
+        return;
+      }
       
       const storedToken = await AsyncStorage.getItem("authToken");
+      
       if (!storedToken) {
         setError("No authentication token found");
         setLoading(false);
         return;
       }
-      console.log("k",customerId)
-      const apiUrl = `${environment.API_BASE_URL}api/orders/get-customer-data/${customerId}`;
-      console.log("o",apiUrl)
+      
+      console.log("k", customerIdValue);
+      const apiUrl = `${environment.API_BASE_URL}api/orders/get-customer-data/${customerIdValue}`;
+      console.log("o", apiUrl);
       
       const response = await axios.get(apiUrl, {
         headers: { Authorization: `Bearer ${storedToken}` },
@@ -92,7 +240,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({ navigation, rou
       }
     } catch (error) {
       console.error("Error fetching customer data:", error);
-     
+      
       if (error instanceof Error) {
         setError(error.message || "Failed to fetch customer data");
       } else {
@@ -102,54 +250,114 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({ navigation, rou
       setLoading(false);
     }
   };
-  
-  if (customerId) {
+
+  // Check both possible parameter names
+  if (route.params?.customerId || route.params?.customerid) {
     fetchCustomerData();
   }
-}, [customerId]);
+}, [route.params]);
 
-  useEffect(() => {
-    // Log received data for debugging
-    console.log("Received data in OrderSummeryScreen:", JSON.stringify(route.params, null, 2));
-    console.log("Items:", items);
-    console.log("Subtotal:", subtotal);
-    console.log("Discount:", discount);
-    console.log("Total:", total);
-    console.log("Full Total:", fullTotal);
-    console.log("Selected Date:", selectedDate);
-    console.log("Selected Time Slot:", selectedTimeSlot);
-    console.log("Payment Method:", paymentMethod);
-    console.log("Customer Data:", customerData);
-    
-    const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
-    const keyboardDidHideListener = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false));
-
-    return () => {
-      keyboardDidShowListener.remove();
-      keyboardDidHideListener.remove();
-    };
-  }, [route.params, items, subtotal, discount, total, fullTotal, selectedDate, selectedTimeSlot, paymentMethod, customerData]);
-
-  const handleConfirmOrder = () => {
-    // Validate that we have all required data before proceeding
-    if (!customerId) {
-      // Show error message - customer ID is required
-      Alert.alert("Error", "Customer information is missing");
-      return;
-    }
-    
-   
-    navigation.navigate("OrderConfirmedScreen" as any, { 
-      orderId: Math.floor(1000000 + Math.random() * 9000000), 
-      total,
-      paymentMethod,
-      customerId: customerId, 
-      items,
-      selectedDate: formattedDate,
-      selectedTimeSlot: timeDisplay
-    });
-    console.log("orderId")
+const handleConfirmOrder = () => {
+  // Validate that we have all required data before proceeding
+  if (!customerId) {
+    // Show error message - customer ID is required
+    Alert.alert("Error", "Customer information is missing");
+    return;
+  }
+  
+  // Base order data
+  const orderData: {
+    customerId: string | number;
+    deliveryType: string;
+    scheduleDate: string;
+    paymentMethod: string;
+    orderStatus: string;
+    isSelectPackage?: number;
+    isCustomPackage?: number;
+    orderItems: any[];
+  } = {
+    customerId: customerId || customerid,
+    deliveryType: "Scheduled",
+    scheduleDate: selectedDate,
+    paymentMethod: paymentMethod,
+    orderStatus: "Pending",
+    orderItems: []
   };
+  
+  // Handle selected package data (isSelectPackage: 1)
+  if (isSelectPackage === 1) {
+    orderData.isSelectPackage = 1;
+    orderData.isCustomPackage = 0;
+    
+    // For packages, we need to handle the specialized structure
+    orderData.orderItems = items.map((item: any) => {
+      // Make sure all required properties exist
+      return {
+        packageId: item.packageId || 0,
+        isModifiedPlus: Boolean(item.isModifiedPlus),
+        isModifiedMin: Boolean(item.isModifiedMin),
+        isAdditionalItems: Boolean(item.isAdditionalItems),
+        packageTotal: item.packageTotal || 0,
+        packageDiscount: item.packageDiscount || 0,
+        modifiedPlusItems: Array.isArray(item.modifiedPlusItems) ? item.modifiedPlusItems : [],
+        modifiedMinItems: Array.isArray(item.modifiedMinItems) ? item.modifiedMinItems : [],
+        additionalItems: Array.isArray(item.additionalItems) ? item.additionalItems : []
+      };
+    });
+  } 
+  // Handle custom package data (isCustomPackage: 1)
+  else if (isCustomPackage === 1) {
+    orderData.isSelectPackage = 0;
+    orderData.isCustomPackage = 1;
+    
+    // For custom packages, map the cart items to the order format
+    orderData.orderItems = items.map((item: CartItem) => ({
+      itemId: item.id,
+      name: item.name,
+      quantity: item.quantity,
+      unitType: item.unitType || "kg",
+      price: item.price,
+      normalPrice: item.normalPrice,
+      discountedPrice: item.discountedPrice
+    }));
+  }
+  // Handle regular items
+  else {
+    orderData.isSelectPackage = 0;
+    orderData.isCustomPackage = 0;
+    
+    // For regular items
+    orderData.orderItems = items.map((item: CartItem) => ({
+      itemId: item.id,
+      name: item.name,
+      quantity: item.quantity,
+      unitType: item.unitType || "kg",
+      price: item.price,
+      discount: (item.normalPrice && item.discountedPrice) 
+        ? item.normalPrice - item.discountedPrice 
+        : 0
+    }));
+  }
+  
+  // Include additional data for display on the confirmation screen
+  // const displayData = {
+  //   orderId: Math.floor(1000000 + Math.random() * 9000000),
+  //   total,
+  //   paymentMethod,
+  //   customerId: customerId || customerid,
+  //   selectedDate: formattedDate,
+  //   selectedTimeSlot: timeDisplay
+  // };
+  
+  // Log the order data that will be sent to the API
+  console.log("Order Data to be submitted:", JSON.stringify(orderData, null, 2));
+  
+  // Navigate to the confirmation screen
+  navigation.navigate("OrderConfirmedScreen" as any, {
+    //...displayData,
+    orderData // Pass the complete order data for API submission
+  });
+};
 
   // Get customer info from API or fallback to default
 const getCustomerInfo = () => {

@@ -195,6 +195,7 @@ const [finaldiscount, setFinaldiscount] = useState("0.00");
 
    const [selectedDelivery, setSelectedDelivery] = useState("");
    const [cropId, setCropid] = useState<number>(0);
+  
    const [originalPackageItems, setOriginalPackageItems] = useState<{
     mpItemId: number;
     name: string;
@@ -254,6 +255,10 @@ const [finaldiscount, setFinaldiscount] = useState("0.00");
 
   console.log(" isCustomPackage",  isCustomPackage);
   console.log("  isSelectPackage",   isSelectPackage);
+  console.log("cusid",   id);
+  const customerid = id;
+  console.log("[[[[[[[[]]]]]]]]]",customerid)
+
 
   
   // Fix for the prepareOrderItems function
@@ -1520,7 +1525,7 @@ const saveUpdatedItem = () => {
       const orderItems = await prepareOrderItems();
       
       // Now navigate with the resolved data
-      navigation.navigate('ScheduleScreen' as any, { orderItems ,  isCustomPackage, isSelectPackage });
+      navigation.navigate('ScheduleScreen' as any, { orderItems ,  isCustomPackage, isSelectPackage, customerid });
       
       // Log the actual data, not the promise
       console.log("data=============", orderItems);
