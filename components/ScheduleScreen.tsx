@@ -294,7 +294,7 @@
 // export default ScheduleScreen;
 
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { View, Text, TouchableOpacity, ScrollView, Image, KeyboardAvoidingView, Platform, Modal, Alert } from "react-native";
 import { SelectList } from "react-native-dropdown-select-list";
 import { Feather } from "@expo/vector-icons";
@@ -532,11 +532,17 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
   const DELIVERY_FEE = 350;
   const fullTotal = total + DELIVERY_FEE;
 
-  const timeSlots = [
+  const timeSlots = useMemo(() => [
     { key: "Withing 8-12 AM", value: "Withing 8-12 AM" },
     { key: "Withing 12-4 PM", value: "Withing 12-4 PM" },
     { key: "Withing 4-8 PM", value: "Withing 4-8 PM" },
-  ];
+  ], []);
+  
+  const defaultOption = useMemo(() => {
+    return selectedTimeSlot 
+      ? timeSlots.find(slot => slot.value === selectedTimeSlot) 
+      : undefined;
+  }, [selectedTimeSlot]);
 
   console.log("Current selected time slot:", selectedTimeSlot);
   console.log("Current items:", items);
@@ -666,9 +672,10 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
 
           <Text className="text-[#000000] mt-4 mb-2">Schedule Time Slot</Text>
 
-<SelectList
+          <SelectList
   key="time-slot-select"
   setSelected={(val: string) => {
+    // Only update state if value actually changes
     if (val !== selectedTimeSlot) {
       setSelectedTimeSlot(val);
     }
@@ -677,11 +684,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
   save="value"
   placeholder="Select Time Slot"
   search={false}
-  defaultOption={
-    selectedTimeSlot 
-      ? timeSlots.find(slot => slot.value === selectedTimeSlot) 
-      : undefined // Use undefined instead of null
-  }
+  // Use the value directly instead of creating a new object reference each render
+  defaultOption={selectedTimeSlot ? { key: selectedTimeSlot, value: selectedTimeSlot } : undefined}
   inputStyles={{
     color: "#7F7F7F",
   }}

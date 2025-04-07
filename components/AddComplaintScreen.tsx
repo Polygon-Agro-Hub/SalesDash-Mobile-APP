@@ -43,6 +43,12 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
     const [category, setCategory] = useState<any[]>([]);
     const [open, setOpen] = useState(false);
 
+    const departments = [
+      { key: "1", value: "Technical" },
+      { key: "2", value: "Billing" },
+      { key: "3", value: "Customer Service" },
+    ];
+
     useEffect(() => {
       let appName = "SalesDash";
 
@@ -160,7 +166,7 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
                     Tell us the <Text className="text-[#6839CF]">problem</Text>
                   </Text>
                 </View>
-                <SelectList
+               <SelectList
   setSelected={(val: string) => setSelectedCategory(val)}
   data={category}
   save="value"
