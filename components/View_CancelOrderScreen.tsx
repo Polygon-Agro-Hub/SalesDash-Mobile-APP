@@ -56,6 +56,34 @@ interface Order {
   fullAddress: string;
 }
 
+interface View_CancelOrderScreenProps {
+  navigation: View_CancelOrderScreenNavigationProp;
+  route: View_CancelOrderScreenRouteProp;
+}
+
+interface Order {
+  orderId: number;
+  customerId: number;
+  deliveryType: string;
+  scheduleDate: string;
+  scheduleTimeSlot: string;
+  weeklyDate: string;
+  paymentMethod: string;
+  paymentStatus: number;
+  orderStatus: string;
+  createdAt: string;
+  InvNo: string;
+  fullTotal: string | null;
+  fullSubTotal: string | null;
+  fullDiscount: string | null;
+  deleteStatus: string | null;
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+  buildingType: string;
+  fullAddress: string;
+}
+
 const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   navigation, route
 }) => {
@@ -117,6 +145,25 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
     }
   };
 
+  // Check if the order time is after 6 PM
+  const isAfter6PM = (dateString: string) => {
+    if (!dateString) return false;
+    const date = new Date(dateString);
+    return date.getHours() >= 18; // 18 = 6 PM in 24-hour format
+  };
+
+  // Determine the actual status based on time
+  const getActualStatus = () => {
+    if (!order) return "";
+    
+    // If order is placed after 6 PM, automatically move to Processing
+    if (order.orderStatus === "Ordered" && isAfter6PM(order.createdAt)) {
+      return "Processing";
+    }
+    
+    return order.orderStatus;
+  };
+
   const isCancelDisabled = () => {
     if (!order) return true;
     return order.orderStatus === "On way" || order.orderStatus === "Delivered" || order.orderStatus === "Cancelled";
@@ -164,7 +211,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   };
 
   const handlePhoneCall = () => {
-
     Alert.alert(
       "Contact Customer",
       `Would you like to call ${order?.firstName} ${order?.lastName}?`,
@@ -176,7 +222,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
         {
           text: "Call",
           onPress: () => {
-    
             Alert.alert("Calling", `Calling ${order?.phoneNumber}...`);
           }
         }
@@ -190,22 +235,16 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
       return;
     }
 
- 
     setReportModalVisible(false);
     setShowStatusMessage(true);
-    
-   
-    // setTimeout(() => {
-    //   setShowStatusMessage(false);
-    // }, 3000);
   };
   
- 
   const isTimelineItemActive = (status: string) => {
     if (!order) return false;
     
     const orderStatuses = ["Ordered", "Processing", "On way", "Delivered"];
-    const currentIndex = orderStatuses.indexOf(order.orderStatus);
+    const actualStatus = getActualStatus();
+    const currentIndex = orderStatuses.indexOf(actualStatus);
     const itemIndex = orderStatuses.indexOf(status);
     
     return itemIndex <= currentIndex;
@@ -217,7 +256,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
       className="flex-1 bg-white"
     >
       <View className="bg-white flex-1">
- 
         <View className="flex-row items-center shadow-md px-4 py-3 bg-white">
           <BackButton navigation={navigation} />
           <Text className="text-lg font-bold text-[#6C3CD1] flex-grow text-center mr-8">
@@ -245,9 +283,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
           </View>
         ) : order ? (
           <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
-            {/* Status message */}
-          
-            
             {/* Order Status Timeline */}
             <View className="p-5 ml-6">
               <View className="border-l-2 border-[#D9D9D9] pl-5 relative">
@@ -257,7 +292,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                     className={`w-4 h-4 rounded-full absolute -left-7 ${isTimelineItemActive("Ordered") ? "bg-[#6C3CD1]" : "bg-[#D9D9D9]"}`} 
                   />
                   <Text className="text-gray-800 font-medium">
-                    Order Placed {formatDateShort(order.scheduleDate)}
+                    Order Placed {formatDateShort(order.createdAt)}
                   </Text>
                 </View>
 
@@ -274,7 +309,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                 {/* On the way */}
                 <View className="flex-row items-center mb-10">
                   <View 
-                    className={`w-4 h-4 rounded-full absolute -left-7 ${isTimelineItemActive("On the way") ? "bg-[#6C3CD1]" : "bg-[#D9D9D9]"}`} 
+                    className={`w-4 h-4 rounded-full absolute -left-7 ${isTimelineItemActive("On way") ? "bg-[#6C3CD1]" : "bg-[#D9D9D9]"}`} 
                   />
                   <Text className="text-gray-800 font-medium">
                     Order is On the way
@@ -349,7 +384,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
 
             {/* Report Status Button */}
             <TouchableOpacity 
-            //  onPress={handleReportStatus}
+              onPress={handlePhoneCall}
               className="mx-5 mb-3 rounded-full px-8"
             >
               <LinearGradient
@@ -450,8 +485,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
           </View>
         </View>
       </Modal>
-
-      
     </KeyboardAvoidingView>
   );
 };
