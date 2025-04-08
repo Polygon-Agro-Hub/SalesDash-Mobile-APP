@@ -96,8 +96,8 @@ const index = () => {
       <Stack.Screen name="EditCustomerScreen" component={EditCustomerScreen} />
       <Stack.Screen name="OrderScreen" component={OrderScreen as any} />
       <Stack.Screen name="ScheduleScreen" component={ScheduleScreen as any} />
-      <Stack.Screen name="SelectPaymentMethod" component={SelectPaymentMethod} />
-      <Stack.Screen name="OrderSummeryScreen" component={OrderSummeryScreen} />
+      <Stack.Screen name="SelectPaymentMethod" component={SelectPaymentMethod as any} />
+      <Stack.Screen name="OrderSummeryScreen" component={OrderSummeryScreen as any} />
       <Stack.Screen name="OrderConfirmedScreen" component={OrderConfirmedScreen} />
       {/* <Stack.Screen name="ViewOrdersScreen" component={ViewOrdersScreen} /> */}
       <Stack.Screen name="View_CancelOrderScreen" component={View_CancelOrderScreen as any} /> 

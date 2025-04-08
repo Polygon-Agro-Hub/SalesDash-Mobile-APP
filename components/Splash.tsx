@@ -1,8 +1,9 @@
 import { View, Image } from 'react-native';
 import React, { useEffect } from 'react';
-import { LinearGradient } from 'expo-linear-gradient'; // Import LinearGradient
+import { LinearGradient } from 'expo-linear-gradient';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from './types'; // Adjust the import path as needed
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { RootStackParamList } from './types';
 
 type SplashNavigationProp = StackNavigationProp<RootStackParamList, 'Splash'>;
 
@@ -12,13 +13,30 @@ interface SplashProps {
 
 const Splash: React.FC<SplashProps> = ({ navigation }) => {
   useEffect(() => {
-    // Timer to navigate after 5 seconds
-    const timer = setTimeout(() => {
-      navigation.navigate('LoginScreen');
-    }, 5000);
+    const checkToken = async () => {
+      try {
+        // Check if auth token exists
+        const authToken = await AsyncStorage.getItem('authToken');
+        
+        // Timer to navigate after 5 seconds
+        setTimeout(() => {
+          // If token exists, navigate to Dashboard, otherwise to Login
+          if (authToken) {
+            navigation.navigate("Main", { screen: 'DashboardScreen' });
+          } else {
+            navigation.navigate('LoginScreen');
+          }
+        }, 5000);
+      } catch (error) {
+        console.error('Error checking authentication token:', error);
+        // If there's an error, navigate to login as fallback
+        setTimeout(() => {
+          navigation.navigate('LoginScreen');
+        }, 5000);
+      }
+    };
 
-    // Cleanup function to clear the timer
-    return () => clearTimeout(timer);
+    checkToken();
   }, [navigation]);
 
   return (
@@ -28,19 +46,17 @@ const Splash: React.FC<SplashProps> = ({ navigation }) => {
         colors={['#854BDA', '#6E3DD1']} // Gradient colors
         style={{ flex: 1, position: 'absolute', width: '100%', height: '100%' }} // Fullscreen gradient
       />
-
       {/* Background Image */}
       <Image
-        source={require('../assets/images/splash.png')} // Replace with the correct path to your background image
+        source={require('../assets/images/splash.png')}
         className="absolute w-full h-full"
         resizeMode="cover"
       />
-
       {/* Logo and App Name */}
       <View className="flex-1 justify-center items-center">
         <Image
-          source={require('../assets/images/lgooo.png')} // Replace with the correct path to your logo image
-          className="w-60 h-60" // Increased size for the logo
+          source={require('../assets/images/lgooo.png')}
+          className="w-60 h-60"
           resizeMode="contain"
         />
       </View>
