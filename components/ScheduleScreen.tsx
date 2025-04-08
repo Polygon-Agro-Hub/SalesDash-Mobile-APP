@@ -294,7 +294,7 @@
 // export default ScheduleScreen;
 
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { View, Text, TouchableOpacity, ScrollView, Image, KeyboardAvoidingView, Platform, Modal, Alert } from "react-native";
 import { SelectList } from "react-native-dropdown-select-list";
 import { Feather } from "@expo/vector-icons";
@@ -388,6 +388,24 @@ interface CartItem {
   discount?: number;
 }
 
+interface ModifiedPlusItem {
+  packageDetailsId: number;
+  originalPrice: string;
+  additionalPrice: number;
+  additionalDiscount: number;
+  originalQuantity: number;
+  modifiedQuantity: number;
+}
+
+interface ModifiedMinItem {
+  packageDetailsId: number;
+  originalPrice: string;
+  additionalPrice: number;
+  additionalDiscount: number;
+  originalQuantity: number;
+  modifiedQuantity: number;
+}
+
 const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) => {
   // Extract data from both possible parameter structures
   const {
@@ -402,14 +420,18 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
     customerid = "",
     // New structure
     orderItems = []
-  } = route.params;
+  } = route.params || {};
 
-  // Calculate totals based on which data structure is provided
-  const [items, setItems] = useState<CartItem[]>([]);
-  const [total, setTotal] = useState(0);
-  const [subtotal, setSubtotal] = useState(0);
-  const [discount, setDiscount] = useState(0);
- // const { customerid } = route.params || {};
+  // Initialize state with processed data instead of using useEffect
+  const [items, setItems] = useState<CartItem[]>(() => {
+    // Process data when component initializes
+    return processInitialData(originalItems, orderItems);
+  });
+  
+  // Initialize other state values
+  const [total, setTotal] = useState(() => calculateInitialTotal(originalTotal, orderItems));
+  const [subtotal, setSubtotal] = useState(() => calculateInitialSubtotal(originalSubtotal, orderItems));
+  const [discount, setDiscount] = useState(() => calculateInitialDiscount(originalDiscount, orderItems));
   
   // State for scheduling
   const [deliveryType, setDeliveryType] = useState("One Time");
@@ -419,209 +441,131 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedWeek, setSelectedWeek] = useState("");
   const [isDateSelected, setIsDateSelected] = useState(false);
- // const customerid = orderItems?.[0]?.customerid || "";
   
   // Date picker state
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [date, setDate] = useState(new Date());
   
+  console.log("._____________________", customerid);
 
-  console.log("._____________________",customerid )
-
-  // Process the data based on what's available
-  useEffect(() => {
-    // Only process data if it hasn't been processed yet or if dependencies change significantly
-    // This prevents continuous re-rendering
-    const shouldProcessData = 
-      (orderItems && orderItems.length > 0 && items.length === 0) || 
-      (originalItems && originalItems.length > 0 && items.length === 0);
-    
-    if (!shouldProcessData) {
-      return; // Skip processing if data is already processed
-    }
-    
+  // Constants
+  const DELIVERY_FEE = 350;
+  const fullTotal = total + DELIVERY_FEE;
+  
+  const timeSlots = [
+    { key: "Within 8-12 AM", value: "Within 8-12 AM" },
+    { key: "Within 12-4 PM", value: "Within 12-4 PM" },
+    { key: "Within 4-8 PM", value: "Within 4-8 PM" },
+  ];
+  
+  // Helper functions for initial state calculation
+  function processInitialData(originalItems: any[], orderItems: any[]) {
     if (orderItems && orderItems.length > 0) {
-      // Process new order items structure
-      const orderData = orderItems[0]; // Assuming the first item in array
-      
-      // Create a unified item structure from the order data
+      const orderData = orderItems[0];
       const processedItems: CartItem[] = [];
       
       // Process modified plus items
-      if (orderData.modifiedPlusItems && orderData.modifiedPlusItems.length > 0) {
-        orderData.modifiedPlusItems.forEach(item => {
-          processedItems.push({
-            id: item.packageDetailsId,
-            
-            name: `Modified Plus Item ${item.packageDetailsId}`,
-            price: parseFloat(item.originalPrice) + item.additionalPrice,
-            normalPrice: parseFloat(item.originalPrice),
-            discountedPrice: parseFloat(item.originalPrice) + item.additionalPrice - item.additionalDiscount,
-            quantity: item.originalQuantity + item.modifiedQuantity,
-            selected: true,
-            unitType: "",
-            startValue: item.originalQuantity,
-            changeby: item.modifiedQuantity,
-            discount: item.additionalDiscount,
-            
-          });
-        });
-      }
+      // if (orderData.modifiedPlusItems && orderData.modifiedPlusItems.length > 0) {
+      //   orderData.modifiedPlusItems.forEach((item: ModifiedPlusItem) => {
+      //     processedItems.push({
+      //       id: item.packageDetailsId,
+      //       name: `Modified Plus Item ${item.packageDetailsId}`,
+      //       price: parseFloat(item.originalPrice) + item.additionalPrice,
+      //       normalPrice: parseFloat(item.originalPrice),
+      //       discountedPrice: parseFloat(item.originalPrice) + item.additionalPrice - item.additionalDiscount,
+      //       quantity: item.originalQuantity + item.modifiedQuantity,
+      //       selected: true,
+      //       unitType: "",
+      //       startValue: item.originalQuantity,
+      //       changeby: item.modifiedQuantity,
+      //       discount: item.additionalDiscount,
+      //     });
+      //   });
+      // }
       
-      // Process modified min items
-      if (orderData.modifiedMinItems && orderData.modifiedMinItems.length > 0) {
-        orderData.modifiedMinItems.forEach(item => {
-          processedItems.push({
-            id: item.packageDetailsId,
-            name: `Modified Min Item ${item.packageDetailsId}`,
-            price: parseFloat(item.originalPrice) - item.additionalPrice,
-            normalPrice: parseFloat(item.originalPrice),
-            discountedPrice: parseFloat(item.originalPrice) - item.additionalPrice + item.additionalDiscount,
-            quantity: item.originalQuantity - item.modifiedQuantity,
-            selected: true,
-            unitType: "",
-           
-            startValue: item.originalQuantity,
-            changeby: -item.modifiedQuantity,
-            discount: item.additionalDiscount
-          });
-        });
-      }
+      // // Process modified min items
+      // if (orderData.modifiedMinItems && orderData.modifiedMinItems.length > 0) {
+      //   orderData.modifiedMinItems.forEach((item: ModifiedMinItem) => {
+      //     processedItems.push({
+      //       id: item.packageDetailsId,
+      //       name: `Modified Min Item ${item.packageDetailsId}`,
+      //       price: parseFloat(item.originalPrice) - item.additionalPrice,
+      //       normalPrice: parseFloat(item.originalPrice),
+      //       discountedPrice: parseFloat(item.originalPrice) - item.additionalPrice + item.additionalDiscount,
+      //       quantity: item.originalQuantity - item.modifiedQuantity,
+      //       selected: true,
+      //       unitType: "",
+      //       startValue: item.originalQuantity,
+      //       changeby: -item.modifiedQuantity,
+      //       discount: item.additionalDiscount
+      //     });
+      //   });
+      // }
       
-      // Process additional items
-      if (orderData.additionalItems && orderData.additionalItems.length > 0) {
-        // Make sure we're handling the correct structure
-        orderData.additionalItems.forEach((item: any) => {
-          processedItems.push({
-            id: item.mpItemId,
-            name: `Additional Item ${item.mpItemId}`,
-            price: item.price,
-            normalPrice: item.price,
-            discountedPrice: item.price - item.discount,
-            quantity: item.quantity,
-            selected: true,
-            unitType: "",
-            startValue: 0,
-            changeby: item.quantity,
-            discount: item.discount
-          });
-        });
-      }
+      // // Process additional items
+      // if (orderData.additionalItems && orderData.additionalItems.length > 0) {
+      //   orderData.additionalItems.forEach((item: any) => {
+      //     processedItems.push({
+      //       id: item.mpItemId,
+      //       name: `Additional Item ${item.mpItemId}`,
+      //       price: item.price,
+      //       normalPrice: item.price,
+      //       discountedPrice: item.price - item.discount,
+      //       quantity: item.quantity,
+      //       selected: true,
+      //       unitType: "",
+      //       startValue: 0,
+      //       changeby: item.quantity,
+      //       discount: item.discount
+      //     });
+      //   });
+      // }
       
-      // Set state in a batch to prevent multiple renders
-      const newTotal = orderData.packageTotal || 0;
-      const newDiscount = orderData.packageDiscount || 0;
-      const newSubtotal = newTotal + newDiscount;
-      
-      setItems(processedItems);
-      setTotal(newTotal);
-      setSubtotal(newSubtotal);
-      setDiscount(newDiscount);
-      
+      return processedItems;
     } else if (originalItems && originalItems.length > 0) {
-      // Use original structure
-      setItems(originalItems);
-      setTotal(originalTotal);
-      setSubtotal(originalSubtotal);
-      setDiscount(originalDiscount);
+      return originalItems;
     }
-  }, [orderItems, originalItems]);
-
-
-
-  const DELIVERY_FEE = 350;
-  const fullTotal = total + DELIVERY_FEE;
-
-  const timeSlots = useMemo(() => [
-    { key: "Withing 8-12 AM", value: "Withing 8-12 AM" },
-    { key: "Withing 12-4 PM", value: "Withing 12-4 PM" },
-    { key: "Withing 4-8 PM", value: "Withing 4-8 PM" },
-  ], []);
+    
+    return [];
+  }
   
-  const defaultOption = useMemo(() => {
-    return selectedTimeSlot 
-      ? timeSlots.find(slot => slot.value === selectedTimeSlot) 
-      : undefined;
-  }, [selectedTimeSlot]);
-
-  console.log("Current selected time slot:", selectedTimeSlot);
-  console.log("Current items:", items);
-  console.log("Current total:", total);
-
-  const toggleDaySelection = (day: string) => {
-    setSelectedDays((prevSelectedDays) => {
-      let updatedDays = [...prevSelectedDays];
+  function calculateInitialTotal(originalTotal: number, orderItems: any[]) {
+    if (orderItems && orderItems.length > 0) {
+      return orderItems[0].packageTotal || 0;
+    }
+    return originalTotal;
+  }
   
-      if (deliveryType === "weekly") {
-        updatedDays = [day]; // Only one selection for Weekly
-      } else if (deliveryType === "twice_week") {
-        if (updatedDays.includes(day)) {
-          updatedDays = updatedDays.filter((d) => d !== day); // Remove if already selected
-        } else if (updatedDays.length < 2) {
-          updatedDays.push(day); // Allow selecting up to two days
-        } else {
-          return prevSelectedDays; // Do not add more than 2
-        }
-      } else {
-        updatedDays = [day]; // Only one selection for One Time
-      }
+  function calculateInitialSubtotal(originalSubtotal: number, orderItems: any[]) {
+    if (orderItems && orderItems.length > 0) {
+      const total = orderItems[0].packageTotal || 0;
+      const discount = orderItems[0].packageDiscount || 0;
+      return total + discount;
+    }
+    return originalSubtotal;
+  }
   
-      return updatedDays;
-    });
-  };
+  function calculateInitialDiscount(originalDiscount: number, orderItems: any[]) {
+    if (orderItems && orderItems.length > 0) {
+      return orderItems[0].packageDiscount || 0;
+    }
+    return originalDiscount;
+  }
   
-  // Show date picker
-  const handleDateSelection = () => {
+  // Separate function for handling date selection
+  const handleScheduleDateSelection = () => {
     setShowDatePicker(true);
   };
   
-  const handleConfirm = () => {
-    // Validate required fields
-    if (!selectedDate) {
-      Alert.alert("Required", "Please select a delivery date");
-      return;
-    }
-
-    if (!selectedTimeSlot) {
-      Alert.alert("Required", "Please select a time slot");
-      return;
-    }
-
-    if (items.length > 0) {
-      // Include packageId if available from orderItems
-      const packageId = orderItems && orderItems.length > 0 ? orderItems[0].packageId : undefined;
-      
-      navigation.navigate("SelectPaymentMethod" as any, {
-        items: items,
-        subtotal: subtotal,
-        discount: discount,
-        total: total,
-        fullTotal: fullTotal,
-        selectedDate: selectedDate,
-        selectedTimeSlot: selectedTimeSlot,
-        customerId: customerId,
-        isSelectPackage: isSelectPackage,
-        isCustomPackage: isCustomPackage,
-        packageId: packageId, // Pass package ID if available
-        customerid:customerid,
-        // Pass additional data as needed
-        orderItems: orderItems // Optional: Pass the original orderItems if needed downstream
-      });
-      console.log("Data passed to payment:", {
-        items, subtotal, discount, total, fullTotal, selectedDate, selectedTimeSlot, customerId,
-        isSelectPackage, isCustomPackage, packageId
-      });
-    } else {
-      Alert.alert("Error", "Please select at least one item");
-    }
-  };
-  
-  const onDateChange = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(Platform.OS === 'ios'); 
+  // Function to handle date change from the date picker
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    // Close datepicker on Android automatically, keep open on iOS
+    setShowDatePicker(Platform.OS === 'ios');
     
     if (selectedDate) {
       setDate(selectedDate);
       
+      // Format the date consistently
       const day = selectedDate.getDate();
       const month = selectedDate.toLocaleString('en-US', { month: 'short' });
       const year = selectedDate.getFullYear();
@@ -631,6 +575,70 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
       setIsDateSelected(true);
     }
   };
+  
+  // Function to handle iOS date confirmation
+  const handleIOSDateConfirm = () => {
+    const day = date.getDate();
+    const month = date.toLocaleString('en-US', { month: 'short' });
+    const year = date.getFullYear();
+    const formattedDate = `${day} ${month} ${year}`;
+    
+    setSelectedDate(formattedDate);
+    setIsDateSelected(true);
+    setShowDatePicker(false);
+  };
+  
+  // Function to handle time slot selection
+  const handleTimeSlotSelection = (val: string) => {
+    if (val !== selectedTimeSlot) {
+      setSelectedTimeSlot(val);
+      console.log("Selected time slot:", val);
+    }
+  };
+  
+  // Function to handle form validation and navigation
+  const handleProceed = () => {
+    // Validate required fields
+    if (!selectedDate) {
+      Alert.alert("Required", "Please select a delivery date");
+      return;
+    }
+  
+    if (!selectedTimeSlot) {
+      Alert.alert("Required", "Please select a time slot");
+      return;
+    }
+  
+    // if (items.length === 0) {
+    //   Alert.alert("Error", "Please select at least one item");
+    //   return;
+    // }
+    
+    // Include packageId if available from orderItems
+    const packageId = orderItems && orderItems.length > 0 ? orderItems[0].packageId : undefined;
+    
+    navigation.navigate("SelectPaymentMethod" as any, {
+      items: items,
+      subtotal: subtotal,
+      discount: discount,
+      total: total,
+      fullTotal: fullTotal,
+      selectedDate: selectedDate,
+      selectedTimeSlot: selectedTimeSlot,
+      customerId: customerId,
+      isSelectPackage: isSelectPackage,
+      isCustomPackage: isCustomPackage,
+      packageId: packageId,
+      customerid: customerid,
+      orderItems: orderItems
+    });
+    
+    console.log("Data passed to payment:", {
+      items, subtotal, discount, total, fullTotal, selectedDate, selectedTimeSlot, customerId,
+      isSelectPackage, isCustomPackage, packageId
+    });
+  };
+  
 
   return (
     <KeyboardAvoidingView 
@@ -652,10 +660,10 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
             className="flex-row items-center px-4 py-3 bg-gray-100 rounded-full"
             activeOpacity={0.7}
           >
-            <Text className="text-gray-700">{deliveryType}</Text>
+            <Text className="text-gray-700">One Time</Text>
           </TouchableOpacity>
         </View>
-
+  
         <ScrollView 
           className="px-10 mt-[-5]" 
           keyboardShouldPersistTaps="handled"
@@ -663,58 +671,56 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
           {/* Schedule Date section */}
           <Text className="text-[#000000] mt-4 mb-2">Schedule Date</Text>
           <TouchableOpacity
-            onPress={handleDateSelection}
+            onPress={handleScheduleDateSelection}
             className="flex-row items-center bg-[#F6F6F6] p-3 rounded-full"
           >
             <Text className="flex-1 text-[#7F7F7F]">{selectedDate || "Select Date"}</Text>
             <Image source={require("../assets/images/Calendar.png")} className="w-8 h-8" resizeMode="contain" />
           </TouchableOpacity>
-
+  
           <Text className="text-[#000000] mt-4 mb-2">Schedule Time Slot</Text>
-
+  
           <SelectList
-  key="time-slot-select"
-  setSelected={(val: string) => {
-    // Only update state if value actually changes
-    if (val !== selectedTimeSlot) {
-      setSelectedTimeSlot(val);
-    }
-  }}
-  data={timeSlots}
-  save="value"
-  placeholder="Select Time Slot"
-  search={false}
-  // Use the value directly instead of creating a new object reference each render
-  defaultOption={selectedTimeSlot ? { key: selectedTimeSlot, value: selectedTimeSlot } : undefined}
-  inputStyles={{
-    color: "#7F7F7F",
-  }}
-  boxStyles={{
-    backgroundColor: "#F6F6F6",
-    padding: 12,
-    borderRadius: 30,
-    borderColor: "#F6F6F6",
-    borderWidth: 5,
-  }}
-  dropdownStyles={{
-    backgroundColor: "#F6F6F6",
-    borderRadius: 10,
-    borderColor: "#F6F6F6",
-  }}
-/>
+            key="time-slot-select"
+            setSelected={handleTimeSlotSelection}
+            data={timeSlots}
+            save="value"
+            placeholder="Select Time Slot"
+            search={false}
+            defaultOption={
+              selectedTimeSlot 
+                ? timeSlots.find(slot => slot.value === selectedTimeSlot) 
+                : undefined
+            }
+            inputStyles={{
+              color: "#7F7F7F",
+            }}
+            boxStyles={{
+              backgroundColor: "#F6F6F6",
+              padding: 12,
+              borderRadius: 30,
+              borderColor: "#F6F6F6",
+              borderWidth: 5,
+            }}
+            dropdownStyles={{
+              backgroundColor: "#F6F6F6",
+              borderRadius: 10,
+              borderColor: "#F6F6F6",
+            }}
+          />
         </ScrollView>
-
+  
         {/* Date Picker (conditionally rendered) */}
-        {showDatePicker && (
+        {showDatePicker && Platform.OS === 'android' && (
           <DateTimePicker
             value={date}
             mode="date"
             display="default"
-            onChange={onDateChange}
+            onChange={handleDateChange}
             minimumDate={new Date()} 
           />
         )}
-
+  
         {Platform.OS === 'ios' && showDatePicker && (
           <Modal
             visible={showDatePicker}
@@ -734,7 +740,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
                   value={date}
                   mode="date"
                   display="spinner"
-                  onChange={onDateChange}
+                  onChange={handleDateChange}
                   minimumDate={new Date()}
                   style={{ height: 200, marginTop: -10 }}
                 />
@@ -748,16 +754,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
                   </TouchableOpacity>
                   
                   <TouchableOpacity
-                    onPress={() => {
-                      const day = date.getDate();
-                      const month = date.toLocaleString('en-US', { month: 'short' });
-                      const year = date.getFullYear();
-                      const formattedDate = `${day} ${month} ${year}`;
-                      
-                      setSelectedDate(formattedDate);
-                      setIsDateSelected(true);
-                      setShowDatePicker(false);
-                    }}
+                    onPress={handleIOSDateConfirm}
                     className="px-4 py-2"
                   >
                     <Text className="text-[#6C3CD1] font-semibold">Confirm</Text>
@@ -783,7 +780,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
           <View className="flex-1">
             <View className="flex-row justify-between">
               <Text className="text-gray-500">Delivery Fee</Text>
-              <Text className="font-medium">+ Rs.350.00</Text>
+              <Text className="font-medium">+ Rs.{DELIVERY_FEE.toFixed(2)}</Text>
             </View>
             
             <View className="flex-row justify-between mt-2">
@@ -791,8 +788,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
               <Text className="font-bold text-lg">Rs.{fullTotal.toFixed(2)}</Text>
             </View>
           </View>
-
-          <TouchableOpacity onPress={handleConfirm}>
+  
+          <TouchableOpacity onPress={handleProceed}>
             <LinearGradient 
               colors={["#854BDA", "#6E3DD1"]} 
               className="py-3 px-6 rounded-full flex-row items-center ml-4"

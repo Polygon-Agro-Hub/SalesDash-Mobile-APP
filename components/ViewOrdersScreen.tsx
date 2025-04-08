@@ -191,6 +191,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
               ))}
             </View> */}
          {/* Horizontal Scrollable Filters */}
+         <View>
 <ScrollView 
   horizontal 
   showsHorizontalScrollIndicator={false}
@@ -229,18 +230,23 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
     </TouchableOpacity>
   ))}
 </ScrollView>
+</View>
+
+<View className="py-[-12%] mb-[60%]">
 
             {/* Order List */}
             {filteredOrders.length > 0 ? (
               <FlatList
                 data={filteredOrders}
-                className="p-4 mb-10 mt-5"
+                className="p-4 mb-10 "
                 keyExtractor={(item) => item.orderId.toString()}
                 renderItem={({ item }) => (
                   <TouchableOpacity 
                     onPress={() => navigation.navigate("View_CancelOrderScreen" as any, { orderId: item.orderId })} 
                     activeOpacity={0.7}
                   >
+
+                    
                     <View style={{
                       backgroundColor: "white",
                       borderRadius: wp(4),
@@ -281,6 +287,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                           </Text>
                         </View>
                       </View>
+                      
 
                       {/* Customer name */}
                       <Text style={{ fontSize: wp(3.8), color: "#4B5563", marginTop: hp(0.5) }}>
@@ -295,16 +302,24 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                       {/* Price information if available */}
                     </View>
                   </TouchableOpacity>
+
+                  
                 )}
+                
                 contentContainerStyle={{ paddingBottom: hp(5) }}
               />
+              
             ) : (
               <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
                 <Text style={{ fontSize: wp(4), color: "#6B7280", textAlign: "center" }}>No orders found.</Text>
               </View>
             )}
+
+</View>
           </>
+          
         )}
+        
       </View>
 
  
