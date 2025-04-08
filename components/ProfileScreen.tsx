@@ -8,18 +8,23 @@ import {
   ScrollView,
   Alert,
   ImageBackground,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   TouchableWithoutFeedback,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
-import Navbar from "./Navbar";
 import { AntDesign } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import environment from "@/environment/environment";
+import {
+  widthPercentageToDP as wp,
+  heightPercentageToDP as hp,
+} from "react-native-responsive-screen";
+import BackButton from "./BackButton";
+import { LinearGradient } from "expo-linear-gradient";
+import { AxiosError } from 'axios';
 
 type ProfileScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -38,13 +43,15 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
     phoneNumber1: "",
     phoneNumber2: "",
     nicNumber: "",
-    username:"",
+    username: "",
     email: "",
     buildingNo: "",
     streetName: "",
     city: "",
-    empId:"",
+    empId: "",
   });
+
+  
 
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -56,17 +63,16 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   const getUserProfile = async () => {
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
-      console.log("token", storedToken);
       if (!storedToken) {
         Alert.alert("Error", "No authentication token found");
         return;
       }
       setToken(storedToken);
 
-      const response = await axios.get(`${environment.API_BASE_URL}api/auth/user/profile`, {
-        headers: { Authorization: `Bearer ${storedToken}` },
-      });
-      console.log("profile", response.data);
+      const response = await axios.get(
+        `${environment.API_BASE_URL}api/auth/user/profile`,
+        { headers: { Authorization: `Bearer ${storedToken}` } }
+      );
 
       setFormData(response.data.data);
     } catch (error) {
@@ -82,76 +88,132 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
     }));
   };
 
+  // const handleUpdate = async () => {
+  //   try {
+  //     if (!token) {
+  //       Alert.alert("Error", "You are not authenticated");
+  //       return;
+  //     }
+
+  //     await axios.put(
+  //       `${environment.API_BASE_URL}api/auth/user-updateUser`,
+  //       formData,
+  //       { headers: { Authorization: `Bearer ${token}` } }
+  //     );
+
+  //     Alert.alert("Success", "Profile updated successfully!");
+  //   } catch (error) {
+  //     Alert.alert("Error", "Failed to update profile");
+  //     console.error(error);
+  //   }
+  // };
+
   const handleUpdate = async () => {
     try {
       if (!token) {
         Alert.alert("Error", "You are not authenticated");
         return;
       }
-
-      await axios.put(`${environment.API_BASE_URL}api/auth/user-updateUser`, formData, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
+  
+      // Remove fields that are not allowed by the backend schema
+      const { empId, nicNumber, username, ...updatedData } = formData;
+  
+      console.log('Form data being sent:', updatedData);  // Log to verify
+  
+      const response = await axios.put(
+        `${environment.API_BASE_URL}api/auth/user-updateUser`,
+        updatedData,  // Send only the allowed fields
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          }
+        }
+      );
+  
       Alert.alert("Success", "Profile updated successfully!");
     } catch (error) {
-      Alert.alert("Error", "Failed to update profile");
-      console.error(error);
+      if (error instanceof AxiosError) {
+        console.error('Backend error details:', error.response?.data);
+        Alert.alert("Error", `Failed to update profile: ${error.response?.data.message || 'Validation error'}`);
+      } else {
+        console.error('Error:', error instanceof Error ? error.message : 'Unknown error');
+        Alert.alert("Error", "Failed to update profile");
+      }
     }
   };
+  
+  
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <TouchableWithoutFeedback>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={{ flex: 1 }}
+    <View className="flex-1 bg-white">
+     
+       <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        enabled 
+        className="flex-1"
         >
-          <ScrollView>
+          <ScrollView keyboardShouldPersistTaps="handled">
             <View className="bg-[#6839CF]">
               <View className="relative">
                 <ImageBackground
                   source={require("../assets/images/profilebackground.png")}
                   resizeMode="cover"
-                  className="w-full h-44 absolute top-0 left-0 right-0"
+                  style={{
+                    width: "100%",
+                    height: hp(25),
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                  }}
                 />
-
-                <TouchableOpacity
-                  className="absolute top-6 left-4 flex-row items-center z-10"
-                  onPress={() => navigation.goBack()}
-                >
-                  <View className="w-8 h-8 bg-purple-200 rounded-full justify-center items-center shadow-md">
-                    <AntDesign name="left" size={24} color="black" />
-                  </View>
-                </TouchableOpacity>
+              </View>
+              <View className="ml-3"> 
+              <BackButton navigation={navigation} />
               </View>
 
-              <View className="bg-white rounded-t-3xl mt-[45%] px-6 pt-6">
-                <View className="items-center mt-[-25%]">
+              <View
+                className="bg-white rounded-t-3xl pt-6"
+                style={{ marginTop: hp(15), paddingHorizontal: wp(6) }}
+              >
+                <View className="items-center" style={{ marginTop: -hp(12) }}>
                   <TouchableOpacity className="relative">
                     {profileImage ? (
                       <Image
                         source={{ uri: profileImage }}
-                        className="w-32 h-32 rounded-full border-4 border-white"
+                        style={{
+                          width: wp(35),
+                          height: wp(35),
+                       
+                        
+                        }}
                       />
                     ) : (
                       <Image
                         source={require("../assets/images/profile.png")}
-                        className="w-32 h-32 rounded-full border-4 border-white"
+                        style={{
+                          width: wp(34),
+                          height: wp(34),
+                          borderRadius: wp(1),
+                       
+                        }}
                       />
                     )}
                   </TouchableOpacity>
                   <Text className="text-black text-2xl font-bold mb-2">
-                    {formData.username} 
+                    {formData.username}
                   </Text>
                 </View>
               </View>
 
               <View className="bg-white px-7">
                 <View className="p-4">
-                  <View className="bg-[#6839CF] flex-row justify-between mt-3 px-4 py-3 rounded-2xl ">
+                <View className="bg-[#6839CF] flex-row justify-between mt-3 px-4 py-3 rounded-2xl ">
                     <View className="flex-1 items-center">
-                      <AntDesign name="star" size={24} color="gold" />
+                    <Image 
+  source={require("../assets/images/star.png")} // Ensure the correct path
+  style={{ width: 24, height: 24 }} 
+/>
                       <Text className="text-white text-sm mt-1">Points</Text>
                       <Text className="text-white text-lg font-bold">1000</Text>
                     </View>
@@ -159,7 +221,10 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                     <View className="w-[1px] bg-white h-full mx-2" />
 
                     <View className="flex-1 items-center">
-                      <AntDesign name="filetext1" size={24} color="white" />
+                    <Image 
+  source={require("../assets/images/Order Completed.png")} // Ensure the correct path
+  style={{ width: 24, height: 24 }} 
+/>
                       <Text className="text-white text-sm mt-1">Orders</Text>
                       <Text className="text-white text-lg font-bold">20</Text>
                     </View>
@@ -167,66 +232,74 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                     <View className="w-[1px] bg-white h-full mx-2" />
 
                     <View className="flex-1 items-center">
-                      <AntDesign name="team" size={24} color="white" />
+                    <Image 
+  source={require("../assets/images/Batch Assign.png")} // Ensure the correct path
+  style={{ width: 24, height: 24 }} 
+/>
                       <Text className="text-white text-sm mt-1">Customers</Text>
                       <Text className="text-white text-lg font-bold">100</Text>
                     </View>
                   </View>
                 </View>
+
                 <View className="bg-white px-7">
-  {/* Display empId field at the top */}
-  <View className="mb-4">
-    <Text className="text-black-500 mb-1 capitalize mt-4">
-      Employee ID
-    </Text>
-    <Text className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-3xl px-3 py-2 text-gray-500">
-      {formData.empId}
-    </Text>
-  </View>
+                  {/* Employee ID Field */}
+                  <View className="mb-4">
+                    <Text className="text-black-500 mb-1 capitalize mt-4">
+                      Employee ID
+                    </Text>
+                    <Text
+                      className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-3xl px-3 py-2 text-gray-500"
+                      style={{ fontSize: wp(4) }}
+                    >
+                      {formData.empId}
+                    </Text>
+                  </View>
 
-  {/* Map through the remaining fields, excluding username */}
-  {Object.entries(formData).map(([key, value]) => {
-    // Skip empId and username fields as they are already rendered
-    if (key === "empId" || key === "username") return null;
-    return (
-      <View className="mb-4" key={key}>
-        <Text className="text-black-500 mb-1 capitalize mt-4">
-          {key.replace(/([A-Z])/g, " $1")}
-        </Text>
-        <TextInput
-          className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-3xl px-3 py-2"
-          value={value}
-          onChangeText={(text) => handleInputChange(key, text)}
-          editable={key !== "empId"} // Keep empId uneditable
-          placeholder={`Enter ${key.replace(/([A-Z])/g, " $1")}`}
-        />
-      </View>
-    );
-  })}
-</View>
-
-              </View>
-
-
-                <View className="bg-white px-7 ">
-                  <TouchableOpacity
-                    className="bg-[#6839CF] py-3 rounded-lg items-center mt-6 mb-[15%] mr-[16%] ml-[16%] rounded-3xl"
-                    onPress={handleUpdate}
-                  >
-                    <Text className="text-white text-lg font-bold">Update</Text>
-                  </TouchableOpacity>
+                  {/* Other Fields */}
+                  {Object.entries(formData).map(([key, value]) => {
+                    if (key === "empId" || key === "username") return null;
+                    return (
+                      <View className="mb-4" key={key}>
+                        <Text
+                          className="text-black-500 mb-1 capitalize mt-4"
+                          style={{ fontSize: wp(4) }}
+                        >
+                          {key.replace(/([A-Z])/g, " $1")}
+                        </Text>
+                        <TextInput
+                          className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-3xl px-3 py-2"
+                          value={value}
+                          onChangeText={(text) => handleInputChange(key, text)}
+                          editable={key !== "empId"}
+                          placeholder={`Enter ${key.replace(/([A-Z])/g, " $1")}`}
+                          style={{ fontSize: wp(4) }}
+                        />
+                      </View>
+                    );
+                  })}
                 </View>
               </View>
 
-       
+              <View className="bg-white px-7">
+      <TouchableOpacity onPress={handleUpdate} style={{ width: wp(60), alignSelf: "center" }}>
+        <LinearGradient
+          colors={["#6839CF", "#874DDB"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          className="py-3 rounded-full items-center mt-6 mb-10 px-4"
+        >
+          <Text className="text-white text-lg font-bold">Update</Text>
+        </LinearGradient>
+      </TouchableOpacity>
+    </View>
+              
+            </View>
           </ScrollView>
         </KeyboardAvoidingView>
-      </TouchableWithoutFeedback>
+    
 
-      <View className="bg-white">
-        <Navbar navigation={navigation} activeTab="DashboardScreen" />
-      </View>
-    </SafeAreaView>
+    </View>
   );
 };
 

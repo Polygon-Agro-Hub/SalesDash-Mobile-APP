@@ -1,21 +1,18 @@
-import React, { useState } from "react";
-import { View, Text, Image, TouchableOpacity, ActivityIndicator } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useEffect, useState } from "react";
+import { View, Text, Image, TouchableOpacity, ActivityIndicator, Alert, ScrollView, Animated, KeyboardAvoidingView, Platform } from "react-native";
+
 import { Ionicons } from "@expo/vector-icons";
-import AntDesign from "@expo/vector-icons/AntDesign";
-import Navbar from "./Navbar";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
-import {
-    widthPercentageToDP as wp,
-    heightPercentageToDP as hp,
-} from "react-native-responsive-screen";
-import { ScrollView } from "react-native-gesture-handler";
+import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+import environment from "@/environment/environment";
+import BackButton from "./BackButton";
+import LottieView from "lottie-react-native";
 
-type SidebarScreenNavigationProp = StackNavigationProp<
-  RootStackParamList,
-  "SidebarScreen"
->;
+
+type SidebarScreenNavigationProp = StackNavigationProp<RootStackParamList, "SidebarScreen">;
 
 interface SidebarScreenProps {
   navigation: SidebarScreenNavigationProp;
@@ -23,135 +20,271 @@ interface SidebarScreenProps {
 
 const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
   const [complaintsExpanded, setComplaintsExpanded] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+  const [formData, setFormData] = useState({ username: "", empId: "" });
 
-  // Function to handle logout
-  const handleLogout = async () => {
-    setLoading(true); // Show loading indicator
+  useEffect(() => {
+    getUserProfile();
+  }, []);
+
+  const getUserProfile = async () => {
     try {
-      await AsyncStorage.removeItem("authToken");
-      setTimeout(() => {
-        navigation.replace("LoginScreen"); // Redirect after 5 seconds
-      }, 5000);
+      const storedToken = await AsyncStorage.getItem("authToken");
+      if (!storedToken) {
+        Alert.alert("Error", "No authentication token found");
+        return;
+      }
+      setToken(storedToken);
+      const response = await axios.get(`${environment.API_BASE_URL}api/auth/user/profile`, {
+        headers: { Authorization: `Bearer ${storedToken}` },
+      });
+      setFormData(response.data.data);
     } catch (error) {
-      console.error("Error removing authToken:", error);
-      setLoading(false);
+      Alert.alert("Error", "Failed to fetch user profile");
+      console.error(error);
     }
   };
+  const [loading, setLoading] = useState(false);
+
+//   // Function to handle logout
+const handleLogout = async () => {
+  setLoading(true); // Show loading indicator
+  try {
+    await AsyncStorage.removeItem("authToken");
+    setTimeout(() => {
+      navigation.replace("LoginScreen"); // Redirect after 5 seconds
+    }, 5000);
+  } catch (error) {
+    console.error("Error removing authToken:", error);
+    setLoading(false);
+  }
+};
+
 
   return (
-   
-    <View className="flex-1 w-full bg-white">
-      {loading ? (
-        <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#693ACF" />
-          <Text className="mt-4 text-lg text-[#693ACF] font-semibold">Logging out...</Text>
-        </View>
-      ) : (
-        <ScrollView style={{ paddingHorizontal: wp(6), paddingVertical: hp(2) }}>
-          {/* Back Button */}
-          <TouchableOpacity
-            className="mt-4 ml-2 flex-row items-center"
-            onPress={() => navigation.goBack()}
-          >
-            <View className="w-8 h-8 bg-gray-100 rounded-full justify-center items-center">
-              <AntDesign name="left" size={20} color="black" />
-            </View>
-          </TouchableOpacity>
 
-        {/* Profile Section */}
-        <View className="flex-row items-center p-5">
-          <Image
-            source={require("../assets/images/profile.png")}
-            className="w-16 h-16 rounded-full"
-          />
-          <View className="ml-4">
-            <Text className="text-lg font-bold text-gray-900">Kusal Perera</Text>
-            <Text className="text-sm text-gray-500 mt-1">SA1245</Text>
+    <KeyboardAvoidingView 
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                    enabled 
+                    className="flex-1"
+                    >
+    <View className="flex-1 w-full bg-white">
+
+          {loading ? (
+        <View className="flex-1 justify-center items-center">
+        <LottieView
+          source={require("../assets/images/loading.json")}
+          autoPlay
+          loop
+          style={{ width: wp(25), height: hp(12) }}
+        />
+        <Text className="mt-4 text-lg text-[#693ACF] font-semibold">Logging out...</Text>
+      </View>
+    ) : (
+      <View className=" flex-1 w-full bg-white">
+    <ScrollView style={{ paddingHorizontal: wp(4) }}
+    keyboardShouldPersistTaps="handled"
+    >
+         <BackButton navigation={navigation} />
+
+         <View className="flex-row items-center p-5">
+           <Image source={require("../assets/images/profile.png")} style={{ width: wp(16), height: wp(16), borderRadius: wp(8) }} />
+           <View style={{ marginLeft: wp(4) }}>
+             <Text className="text-lg font-bold text-gray-900">{formData.username}</Text>
+             <Text className="text-sm text-gray-500 mt-1">{formData.empId}</Text>
           </View>
-        </View>
+       </View>
 
         <View className="border-b border-gray-200 my-1 ml-4 mr-4" />
 
-        {/* Navigation Items */}
         <View className="flex-1 p-5">
-          {/* Profile */}
-          <TouchableOpacity
-            style={{ marginBottom: 16 }}
-            className="flex-row items-center my-3"
-            onPress={() => navigation.navigate("ProfileScreen")}
-          >
-            <View className="w-8 h-8 bg-gray-100 rounded-full justify-center items-center">
-              <Ionicons name="person-outline" size={20} color="#8F8F8F" />
-            </View>
-            <Text className="flex-1 ml-4 text-gray-800 text-base">Profile</Text>
-            <Ionicons name="chevron-forward-outline" size={18} color="#8F8F8F" />
-          </TouchableOpacity>
+         <TouchableOpacity
+  style={{ marginBottom: hp(2) }}
+  className="flex-row items-center"
+  onPress={() => navigation.navigate("ProfileScreen")}
+>
+  {/* Round Icon */}
+  <View
+    style={{
+      width: hp(5), // Icon size
+      height: hp(5), // Icon size
+      borderRadius: hp(2.5), // Half of the width/height for circular effect
+      backgroundColor: "#F4F9FB", // Background color for the circle
+      justifyContent: "center",
+      alignItems: "center",
+    }}
+  >
+   <Image 
+  source={require('../assets/images/Account.png')} // Adjust the path as needed
+  style={{ width: hp(3), height: hp(3), tintColor: '#8F8F8F' }} 
+/>
+  </View>
 
-          {/* Complaints */}
-          <TouchableOpacity
-            className="flex-row items-center py-3"
-            onPress={() => setComplaintsExpanded(!complaintsExpanded)}
-          >
-            <View className="w-8 h-8 bg-gray-100 rounded-full justify-center items-center">
-              <Ionicons name="alert-circle-outline" size={20} color="#8F8F8F" />
-            </View>
-            <Text className="flex-1 ml-4 text-gray-800 text-base">Complaints</Text>
-            <Ionicons name={complaintsExpanded ? "chevron-down-outline" : "chevron-forward-outline"} size={18} color="#8F8F8F" />
-          </TouchableOpacity>
+  <Text style={{ flex: 1, marginLeft: wp(4), fontSize: hp(2) }} className="text-gray-800">
+    Profile
+  </Text>
 
-          {/* Submenu for Complaints */}
+  <Ionicons
+    name="chevron-forward-outline"
+    size={hp(2.5)}
+    color="#8F8F8F"
+    style={{ marginRight: wp(2) }}
+  />
+</TouchableOpacity>
+
+
+
+<TouchableOpacity 
+  className="flex-row items-center py-3" 
+  onPress={() => setComplaintsExpanded(!complaintsExpanded)}
+>
+<View
+    style={{
+      width: hp(5), // Icon size
+      height: hp(5), // Icon size
+      borderRadius: hp(2.5), // Half of the width/height for circular effect
+      backgroundColor: "#F4F9FB", // Background color for the circle
+      justifyContent: "center",
+      alignItems: "center",
+    }}
+  >
+ <Image 
+  source={require('../assets/images/Help.png')} // Adjust the path as needed
+  style={{ width: hp(3), height: hp(3), tintColor: '#8F8F8F' }} 
+/>
+  </View>
+  
+  <Text 
+    style={{ flex: 1, marginLeft: wp(4), fontSize: hp(2) }} 
+    className="text-gray-800"
+  >
+    Complaints
+  </Text>
+  
+  <Ionicons 
+    name={complaintsExpanded ? "chevron-down-outline" : "chevron-forward-outline"}  
+    size={hp(2.5)} 
+    color="#8F8F8F" 
+    style={{ marginRight: wp(2) }} 
+  />
+</TouchableOpacity>
+
+
           {complaintsExpanded && (
-            <View className="pl-12 space-y-3">
+            <View style={{ paddingLeft: wp(10) }}>
               <TouchableOpacity onPress={() => navigation.navigate("AddComplaintScreen")}>
                 <Text className="text-sm text-gray-700 font-bold">Report a Complaint</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate("ViewComplainScreen")}>
-                <Text className="text-sm text-gray-700 font-bold">View Complaint History</Text>
-              </TouchableOpacity>
+              <TouchableOpacity style={{ marginTop: hp(1), marginBottom: hp(1) }} onPress={() => navigation.navigate("Main",{screen:"ViewComplainScreen"})}>
+  <Text className="text-sm text-gray-700 font-bold">View Complaint History</Text>
+</TouchableOpacity>
+
             </View>
           )}
 
-          {/* Change Password */}
-          <TouchableOpacity
-            style={{ marginBottom: 10 }}
-            className="flex-row items-center py-3"
-            onPress={() => navigation.navigate("ChangePasswordScreen")}
-          >
-            <View className="w-8 h-8 bg-gray-100 rounded-full justify-center items-center">
-              <Ionicons name="lock-closed-outline" size={22} color="#8F8F8F" />
-            </View>
-            <Text className="flex-1 ml-4 text-gray-800 text-base">Change Password</Text>
-            <Ionicons name="chevron-forward-outline" size={18} color="#8F8F8F" />
-          </TouchableOpacity>
+<TouchableOpacity style={{ marginBottom: hp(2),marginTop: hp(1) }} className="flex-row items-center py-3" onPress={() => navigation.navigate("ChangePasswordScreen")}> 
+<View
+    style={{
+      width: hp(5), // Icon size
+      height: hp(5), // Icon size
+      borderRadius: hp(2.5), // Half of the width/height for circular effect
+      backgroundColor: "#F4F9FB", // Background color for the circle
+      justifyContent: "center",
+      alignItems: "center",
+    }}
+  >
+  <Image 
+  source={require('../assets/images/Password.png')} // Adjust the path as needed
+  style={{ width: hp(3), height: hp(3), tintColor: '#8F8F8F' }} 
+/>
+    </View>
 
-          {/* Privacy & Policy */}
-          <TouchableOpacity style={{ marginBottom: 10 }} className="flex-row items-center py-3">
-            <View className="w-8 h-8 bg-gray-100 rounded-full justify-center items-center">
-              <Ionicons name="document-text-outline" size={22} color="#8F8F8F" />
+  <Text style={{ flex: 1, marginLeft: wp(4), fontSize: hp(2) }} className="text-gray-800">
+    Change Password
+  </Text>
+  <Ionicons name="chevron-forward-outline" size={hp(2.5)} color="#8F8F8F" style={{ marginRight: wp(2) }} />
+</TouchableOpacity>
+
+<TouchableOpacity style={{ marginBottom: hp(2) }} className="flex-row items-center py-3"> 
+
+<View
+    style={{
+      width: hp(5), // Icon size
+      height: hp(5), // Icon size
+      borderRadius: hp(2.5), // Half of the width/height for circular effect
+      backgroundColor: "#F4F9FB", // Background color for the circle
+      justifyContent: "center",
+      alignItems: "center",
+    }}
+  >
+  <Image 
+  source={require('../assets/images/Privacy.png')} // Adjust the path as needed
+  style={{ width: hp(3), height: hp(3), tintColor: '#8F8F8F' }} 
+/>
+  </View>
+  <Text style={{ flex: 1, marginLeft: wp(4), fontSize: hp(2) }} className="text-gray-800">
+    Privacy & Policy
+  </Text>
+  <Ionicons name="chevron-forward-outline" size={hp(2.5)} color="#8F8F8F" style={{ marginRight: wp(2) }} />
+</TouchableOpacity>
+
+<TouchableOpacity className="flex-row items-center py-3" onPress={() => console.log("Terms & Conditions Pressed")}> 
+<View
+    style={{
+      width: hp(5), // Icon size
+      height: hp(5), // Icon size
+      borderRadius: hp(2.5), // Half of the width/height for circular effect
+      backgroundColor: "#F4F9FB", // Background color for the circle
+      justifyContent: "center",
+      alignItems: "center",
+    }}
+  >
+  <Image 
+  source={require('../assets/images/Terms and Conditions.png')} // Adjust the path as needed
+  style={{ width: hp(3), height: hp(3), tintColor: '#8F8F8F' }} 
+/>
+  </View>
+  <Text style={{ flex: 1, marginLeft: wp(4), fontSize: hp(2) }} className="text-gray-800">
+    Terms & Conditions
+  </Text>
+  <Ionicons name="chevron-forward-outline" size={hp(2.5)} color="#8F8F8F" style={{ marginRight: wp(2) }} />
+</TouchableOpacity>
+
+<View className="mb-8">
+          <View className="border-b border-gray-200 my-5" />
+
+          <TouchableOpacity className="flex-row items-center" onPress={handleLogout}> 
+
+          <View
+    style={{
+      width: hp(5), // Icon size
+      height: hp(5), // Icon size
+      borderRadius: hp(2.5), // Half of the width/height for circular effect
+      backgroundColor: "#FFF2EE", // Background color for the circle
+      justifyContent: "center",
+      alignItems: "center",
+    }}
+  >
+            <Ionicons name="log-out-outline" size={hp(3)} color="#FF3B30" />
             </View>
-            <Text className="flex-1 ml-4 text-gray-800 text-base">Privacy & Policy</Text>
-            <Ionicons name="chevron-forward-outline" size={18} color="#8F8F8F" />
+            <Text style={{ marginLeft: wp(4), fontSize: hp(2), color: "#FF3B30", fontWeight: "bold" }}>Logout</Text>
           </TouchableOpacity>
         </View>
+        </View>
+        
+       
 
-        <View className="border-b border-gray-200 my-5" />
-
-        {/* Logout Section with loading indicator */}
-        <TouchableOpacity className="flex-row items-center" onPress={handleLogout}>
-            <View className="w-8 h-8 bg-red-100 rounded-full justify-center items-center">
-              <Ionicons name="log-out-outline" size={22} color="#FF3B30" />
-            </View>
-            <Text className="ml-4 text-base text-red-600 font-semibold">Logout</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      )}
-
-
-      {/* Navbar */}
-      <Navbar navigation={navigation} activeTab="DashboardScreen" />
+      </ScrollView>
+      </View>
+    )}
+   
     </View>
+    </KeyboardAvoidingView>
   );
 };
 
-export default SidebarScreen;
+ export default SidebarScreen;
+
+
+
+

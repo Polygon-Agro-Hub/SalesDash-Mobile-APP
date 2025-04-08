@@ -88,37 +88,35 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-white"
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      enabled 
+      className="flex-1"
     >
-      {/* Top Section with Background Vector Image */}
-      <ImageBackground
-        source={require('../assets/images/g16.png')}
-        className="h-64 items-center"
-        resizeMode="cover"
+      <ScrollView 
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
       >
-        <Image
-          source={require('../assets/images/updatepsw.png')}
-          className="w-64 h-64"
-          resizeMode="contain"
-        />
-      </ImageBackground>
-
-      {/* Form Section */}
-      <View className="flex-1">
-        <LinearGradient colors={['#854BDA', '#6E3DD1']} className="flex-1 rounded-t-3xl px-7 pt-6 pb-14">
-          <ScrollView
-            contentContainerStyle={{
-              flexGrow: 1,
-              justifyContent: 'center',
-            }}
-            keyboardShouldPersistTaps="handled"
-          >
-            <Text className="text-white text-lg font-bold text-center mb-6">
+        {/* Top Section with Background Vector Image */}
+        <ImageBackground
+          source={require('../assets/images/g16.png')}
+          className="h-64 items-center"
+          resizeMode="cover"
+        >
+          <Image
+            source={require('../assets/images/updatepsw.png')}
+            className="w-64 h-64"
+            resizeMode="contain"
+          />
+        </ImageBackground>
+  
+        {/* Form Section */}
+        <View className="flex-1">
+          <LinearGradient colors={['#854BDA', '#6E3DD1']} className="flex-1 rounded-t-3xl px-7 pt-6 pb-14">
+            <Text className="text-white text-lg font-bold text-center mb-6 mt-[12%]">
               Change Your Password
             </Text>
-
+  
             {/* Current Password */}
             <View className="bg-purple-500 rounded-full flex-row items-center px-4 mb-4">
               <TextInput
@@ -133,7 +131,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
                 <Icon name={showCurrentPassword ? 'eye-off' : 'eye'} size={20} color="#E5E5E5" />
               </TouchableOpacity>
             </View>
-
+  
             {/* New Password */}
             <View className="bg-purple-500 rounded-full flex-row items-center px-4 mb-4">
               <TextInput
@@ -148,7 +146,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
                 <Icon name={showNewPassword ? 'eye-off' : 'eye'} size={20} color="#E5E5E5" />
               </TouchableOpacity>
             </View>
-
+  
             {/* Confirm New Password */}
             <View className="bg-purple-500 rounded-full flex-row items-center px-4 mb-6">
               <TextInput
@@ -163,7 +161,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
                 <Icon name={showConfirmPassword ? 'eye-off' : 'eye'} size={20} color="#E5E5E5" />
               </TouchableOpacity>
             </View>
-
+  
             {/* Update Button */}
             <TouchableOpacity
               className="bg-white rounded-full py-3 px-10 self-center"
@@ -174,11 +172,12 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
                 {loading ? 'Updating...' : 'Update'}
               </Text>
             </TouchableOpacity>
-          </ScrollView>
-        </LinearGradient>
-      </View>
+          </LinearGradient>
+        </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
+  
 };
 
 export default ChangePasswordScreen;

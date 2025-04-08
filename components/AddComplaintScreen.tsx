@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Text,
   View,
@@ -14,9 +14,16 @@ import {
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
-import { Picker } from "@react-native-picker/picker";
 import { AntDesign } from "@expo/vector-icons";
-import Navbar from "./Navbar";
+import { widthPercentageToDP as wp } from "react-native-responsive-screen";
+import BackButton from "./BackButton";
+import axios from "axios";
+import environment from "@/environment/environment";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Alert } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import DropDownPicker from "react-native-dropdown-picker";
+import { SelectList } from "react-native-dropdown-select-list";
 
 type AddComplaintScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -29,93 +36,238 @@ interface AddComplaintScreenProps {
 
 const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>("");
+  console.log(selectedCategory)
   const [complaintText, setComplaintText] = useState<string>("");
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+    const [token, setToken] = useState<string | null>(null);
+    const [category, setCategory] = useState<any[]>([]);
+    const [open, setOpen] = useState(false);
 
-  const handleSubmit = () => {
-    if (!selectedCategory || !complaintText.trim()) {
-      alert("Please fill out all fields before submitting.");
-      return;
+    const departments = [
+      { key: "1", value: "Technical" },
+      { key: "2", value: "Billing" },
+      { key: "3", value: "Customer Service" },
+    ];
+
+    useEffect(() => {
+      let appName = "SalesDash";
+
+  
+      console.log("appName", appName);
+      const fetchComplainCategory = async () => {
+        try {
+          const response = await axios.get(
+            `${environment.API_BASE_URL}api/complain/get-complain/category/${appName}`
+          );
+          if (response.data.status === "success") {
+            console.log(response.data.data);
+  
+            // Determine which language field to use
+ 
+  
+            const mappedCategories = response.data.data
+              .map((item: any) => {
+                const categoryValue =
+                   item["categoryEnglish"];
+                return {
+                  value: item.id,
+                  label: categoryValue,
+                };
+              })
+              .filter((item: { value: any }) => item.value);
+  
+            setCategory(mappedCategories);
+          }
+        } catch (error) {
+          console.error(error);
+        }
+      };
+  
+      fetchComplainCategory();
+    }, []);
+
+    const handleSubmit = async () => {
+      if (!selectedCategory || !complaintText.trim()) {
+        alert("Please fill out all fields before submitting.");
+        return;
+      }
+    
+      try {
+        const storedToken = await AsyncStorage.getItem("authToken");
+        if (!storedToken) {
+          Alert.alert("Error", "No authentication token found");
+          return;
+        }
+    
+        console.log(selectedCategory, complaintText);     
+    
+        const apiUrl = `${environment.API_BASE_URL}api/complain/add-complain`;
+    
+        const response = await axios.post(
+          apiUrl,
+          {
+            language: "English",
+            category: selectedCategory,
+            complain: complaintText,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${storedToken}`,
+            },
+          }
+        );
+    
+        alert("Complaint submitted successfully!");
+        setSelectedCategory(""); // Clear form after submission
+        setComplaintText("");
+        navigation.goBack(); // Navigate back after submitting
+       } catch (error: unknown) {
+        if (error instanceof Error) {
+          console.error("Error message:", error.message);
+          alert("Failed to submit complaint. Please try again.");
+        } else {
+          console.error("An unknown error occurred.");
+          alert("An unknown error occurred.");
+        }
+      }
     }
-    console.log("Complaint Category:", selectedCategory);
-    console.log("Complaint Text:", complaintText);
-  };
+      
+    
 
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
+    const keyboardDidHideListener = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false));
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
+
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+  };
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <TouchableWithoutFeedback>
-             <KeyboardAvoidingView
-               behavior={Platform.OS === "ios" ? "padding" : "height"}
-               style={{ flex: 1 }}
-             >
-          <View className="flex-1">
-            <TouchableOpacity
-              className="mt-4 ml-4 flex-row items-center"
-              onPress={() => navigation.goBack()}
-              accessibilityLabel="Go Back"
-              accessibilityRole="button"
-            >
-              <View className="w-8 h-8 bg-purple-100 rounded-full justify-center items-center">
-                <AntDesign name="left" size={20} color="black" />
-              </View>
-            </TouchableOpacity>
+      <ScrollView 
+      keyboardShouldPersistTaps="handled"
+      style={{ paddingHorizontal: wp(4) }}>
+        <TouchableWithoutFeedback>
+        <KeyboardAvoidingView 
+    behavior={Platform.OS ==="ios" ? "padding" : "height"}
+  enabled 
+  className="flex-1"
+>
+            <View className="flex-1">
+              <BackButton navigation={navigation} />
+              <ScrollView className="px-8 py-4" keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 100 }}>
+                <View className="items-center mb-6">
+                  <Image source={require("../assets/images/complain11.png")} className="w-20 h-20" />
+                  <Text className="text-xl font-bold text-gray-900 mt-2">
+                    Tell us the <Text className="text-[#6839CF]">problem</Text>
+                  </Text>
+                </View>
+               <SelectList
+  setSelected={(val: string) => setSelectedCategory(val)}
+  data={category}
+  save="value"
+  placeholder="Select Complaint Category"
+  boxStyles={{ borderColor: "#ccc", height: 50 }}
+  inputStyles={{ color: "#434343", fontSize: 14 }}
+  dropdownTextStyles={{ fontSize: 12 }}
+  search={false}
+/>
 
-            <ScrollView
-              className="px-8 py-4"
-              keyboardShouldPersistTaps="handled"
-              contentContainerStyle={{ paddingBottom: 100 }}
-            >
-              <View className="items-center mb-6">
-                <Image
-                  source={require("../assets/images/complain11.png")}
-                  className="w-20 h-20"
-                />
-                <Text className="text-xl font-bold text-gray-900 mt-2">
-                  Tell us the <Text className="text-purple-500">problem</Text>
-                </Text>
+                <View className="w-full   mb-4">
+                {category.length > 0 && (
+                  <DropDownPicker
+                    open={open}
+                    value={selectedCategory} // Assuming complain value is for category
+                    setOpen={setOpen}
+                    setValue={setSelectedCategory} // Here it updates the complain value, which represents the selected category
+                    items={category.map((item) => ({
+                      label: (item.label), // Apply translation here
+                      value: item.value, // Keep the value as it is from Category
+                    }))}
+                    placeholder={("Select Complaint Category")} // Apply translation here
+                    placeholderStyle={{ color: "#d1d5db" }}
+                    listMode="SCROLLVIEW"
+                    zIndex={3000}
+                    zIndexInverse={1000}
+                    dropDownContainerStyle={{
+                      borderColor: "#ccc",
+                      borderWidth: 1,
+                    }}
+                    style={{
+                      borderWidth: 1,
+                      borderRadius:20,
+                      borderColor: "#ccc",
+                      paddingHorizontal: 8,
+                      paddingVertical: 10,
+                    }}
+                    textStyle={{ fontSize: 12 }}
+                    onOpen={dismissKeyboard}
+                  />
+                )}
               </View>
 
-              <View className="mb-4 border border-gray-300 rounded-full overflow-hidden">
+{/* 
+                <View className="mb-4 border border-[#393939] rounded-full overflow-hidden ">
                 <Picker
-                  selectedValue={selectedCategory}
-                  onValueChange={(itemValue) => setSelectedCategory(itemValue)}
-                  style={{ height: 50, color: "#333" }}
+  selectedValue={selectedCategory}
+  onValueChange={(itemValue) => setSelectedCategory(itemValue)}
+  style={{ height: 50, color: "#434343" }} // Remove the typo "#434343s"
+  itemStyle={{ fontSize: 10 }} // Adjust font size
+>
+  <Picker.Item label="Select Complaint Category" value="" />
+  <Picker.Item label="Technical Issue" value="Technical Issue" />
+  <Picker.Item label="Billing Problem" value="Billing Problem" />
+  <Picker.Item label="Customer Service" value="Customer Service" />
+  <Picker.Item label="Other" value="Other" />
+</Picker>
+  
+                </View> */}
+                
+
+                <Text className="text-center text-black mb-4">
+                  -- We will get back to you within 2 days --
+                </Text>
+
+                <View className="mb-8">
+  <TextInput
+    multiline
+    numberOfLines={6}
+    textAlignVertical="top"
+    placeholder="Add the Complaint here.."
+    placeholderTextColor="#808FA2 text-italic" 
+    className="text-black bg-white border border-[#393939] rounded-lg p-4 min-h-[250px] italic"
+    value={complaintText}
+    onChangeText={setComplaintText}
+  />
+</View>
+
+
+                {/* <TouchableOpacity
+                  className="bg-purple-600 py-3 rounded-full items-center mx-auto w-40 shadow-lg"
+                  onPress={handleSubmit}
                 >
-                  <Picker.Item label="Select Complaint Category" value="" />
-                  <Picker.Item label="Technical Issue" value="Technical Issue" />
-                  <Picker.Item label="Billing Problem" value="Billing Problem" />
-                  <Picker.Item label="Customer Service" value="Customer Service" />
-                  <Picker.Item label="Other" value="Other" />
-                </Picker>
-              </View>
+                  <Text className="text-white font-semibold text-lg">Submit</Text>
+                </TouchableOpacity> */}
+                <TouchableOpacity onPress={handleSubmit} className="mx-auto shadow-lg w-40">
+  <LinearGradient
+    colors={["#6839CF", "#874DDB"]}
+    start={{ x: 0, y: 0 }}
+    end={{ x: 1, y: 1 }}
+    className="py-3 rounded-full items-center"
+  >
+    <Text className="text-white text-lg font-bold">Submit</Text>
+  </LinearGradient>
+</TouchableOpacity>
 
-              <Text className="text-center text-black mb-4">
-                -- We will get back to you within 2 days --
-              </Text>
-
-              <View className="mb-8">
-                <TextInput
-                  multiline
-                  numberOfLines={6}
-                  placeholder="Add the Complaint here.."
-                  className="text-gray-800 bg-white border border-gray-300 rounded-lg p-4 min-h-[250px]"
-                  value={complaintText}
-                  onChangeText={setComplaintText}
-                />
-              </View>
-
-              <TouchableOpacity
-            className="bg-purple-600 py-3 rounded-full items-center mx-auto w-40 shadow-lg"
-            onPress={handleSubmit}
-          >
-            <Text className="text-white font-semibold text-lg">Submit</Text>
-          </TouchableOpacity>
-            </ScrollView>
-
-           
-          </View>
-        </KeyboardAvoidingView>
-      </TouchableWithoutFeedback>
-       <Navbar navigation={navigation} activeTab="DashboardScreen" />
+              </ScrollView>
+            </View>
+          </KeyboardAvoidingView>
+        </TouchableWithoutFeedback>
+      </ScrollView>
     </SafeAreaView>
   );
 };
