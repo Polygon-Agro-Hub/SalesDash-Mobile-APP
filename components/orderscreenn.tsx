@@ -1674,7 +1674,7 @@ useEffect(() => {
 
           </View>
         )}
-      {!selectedPackage && !isKeyboardVisible && <Navbar navigation={navigation} activeTab="CustomersScreen" />}
+     
     </KeyboardAvoidingView>
   </View>
   

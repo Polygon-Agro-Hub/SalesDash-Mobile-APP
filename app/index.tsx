@@ -29,6 +29,9 @@ import OrderConfirmedScreen from '@/components/OrderConfirmedScreen';
 import ViewOrdersScreen from '@/components/ViewOrdersScreen';
 import View_CancelOrderScreen from '@/components/View_CancelOrderScreen'
 import NavigationBar from "@/components/Navbar";
+import SelectOrderType from "@/components/SelectOrderType";
+import CreateCustomPackage from "@/components/CreateCustomPackage";
+import CratScreen from "@/components/CratScreen"
 
 import { RootStackParamList } from '@/components/types';
 
@@ -97,8 +100,12 @@ const index = () => {
       <Stack.Screen name="OrderSummeryScreen" component={OrderSummeryScreen} />
       <Stack.Screen name="OrderConfirmedScreen" component={OrderConfirmedScreen} />
       {/* <Stack.Screen name="ViewOrdersScreen" component={ViewOrdersScreen} /> */}
-      <Stack.Screen name="View_CancelOrderScreen" component={View_CancelOrderScreen as any} />
+      <Stack.Screen name="View_CancelOrderScreen" component={View_CancelOrderScreen as any} /> 
+      <Stack.Screen name="SelectOrderType" component={SelectOrderType as any} />
+      <Stack.Screen name="CreateCustomPackage" component={CreateCustomPackage as any} />
+      <Stack.Screen name="CratScreen" component={CratScreen as any} />
       <Stack.Screen name="Main" component={MainTabNavigator} />
+
       
     </Stack.Navigator>
    </GestureHandlerRootView>

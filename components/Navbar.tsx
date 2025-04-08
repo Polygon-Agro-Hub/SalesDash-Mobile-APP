@@ -381,7 +381,7 @@ const NavigationBar = ({
 
    {tabs.map((tab, index) => {
   const isFocused = currentTabName === tab.name;
-  console.log("isFocused", isFocused);
+  console.log("currentTabName", currentTabName);
   return (
     <Animated.View
       style={{

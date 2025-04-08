@@ -9,6 +9,7 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
@@ -47,7 +48,7 @@ interface Order {
   fullAddress: string;
 }
 
-// Define the API response interface
+
 interface OrdersResponse {
   success: boolean;
   count: number;
@@ -71,7 +72,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
       } catch (error) {
         console.error("Failed to fetch orders:", error);
       } finally {
-        setLoading(false); // Stop loading
+        setLoading(false); 
       }
     };
   
@@ -90,7 +91,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
     };
   }, []);
 
-  const filters = ["All", "Today", "Tomorrow", "This Week"];
+  const filters = ["All", "Today", "Tomorrow", "In 3 Days", "This Week"];
 
   // Updated filtering logic based on the new data structure
   const filteredOrders = orders.filter(
@@ -109,6 +110,12 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
           const tomorrow = new Date();
           tomorrow.setDate(today.getDate() + 1);
           return orderDate.toDateString() === tomorrow.toDateString();
+        }
+        
+        if (selectedFilter === "In 3 Days") {
+          const in3Days = new Date();
+          in3Days.setDate(today.getDate() + 3);
+          return orderDate.toDateString() === in3Days.toDateString();
         }
         
         if (selectedFilter === "This Week") {
@@ -163,7 +170,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
             </View>
 
             {/* Filters */}
-            <View style={{ flexDirection: "row", justifyContent: "space-around", marginTop: hp(2), marginBottom: hp(1.5), marginHorizontal: wp(2) }}>
+            {/* <View style={{ flexDirection: "row", justifyContent: "space-around", marginTop: hp(2), marginBottom: hp(1.5), marginHorizontal: wp(2) }}>
               {filters.map((filter) => (
                 <TouchableOpacity
                   key={filter}
@@ -182,19 +189,64 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                   </Text>
                 </TouchableOpacity>
               ))}
-            </View>
+            </View> */}
+         {/* Horizontal Scrollable Filters */}
+         <View>
+<ScrollView 
+  horizontal 
+  showsHorizontalScrollIndicator={false}
+  contentContainerStyle={{ 
+    paddingHorizontal: 16,
+    height: 40, 
+    marginBottom:5
+  }}
+  className="my-2"
+>
+  {filters.map((filter) => (
+    <TouchableOpacity
+      key={filter}
+      style={{
+        paddingHorizontal: 12, 
+        paddingVertical: 6,    
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: "#6B3BCF",
+        backgroundColor: selectedFilter === filter ? "#6B3BCF" : "transparent",
+        marginHorizontal: 4,   
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: 32,          
+        minWidth: 80,        
+      }}
+      onPress={() => setSelectedFilter(filter)}
+    >
+      <Text style={{
+        fontSize: 14,
+        fontWeight: selectedFilter === filter ? "bold" : "normal",
+        color: selectedFilter === filter ? "white" : "#6B3BCF",
+      }}>
+        {filter}
+      </Text>
+    </TouchableOpacity>
+  ))}
+</ScrollView>
+</View>
+
+<View className="py-[-12%] mb-[60%]">
 
             {/* Order List */}
             {filteredOrders.length > 0 ? (
               <FlatList
                 data={filteredOrders}
-                className="p-4"
+                className="p-4 mb-10 "
                 keyExtractor={(item) => item.orderId.toString()}
                 renderItem={({ item }) => (
                   <TouchableOpacity 
                     onPress={() => navigation.navigate("View_CancelOrderScreen" as any, { orderId: item.orderId })} 
                     activeOpacity={0.7}
                   >
+
+                    
                     <View style={{
                       backgroundColor: "white",
                       borderRadius: wp(4),
@@ -235,6 +287,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                           </Text>
                         </View>
                       </View>
+                      
 
                       {/* Customer name */}
                       <Text style={{ fontSize: wp(3.8), color: "#4B5563", marginTop: hp(0.5) }}>
@@ -249,19 +302,27 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                       {/* Price information if available */}
                     </View>
                   </TouchableOpacity>
+
+                  
                 )}
+                
                 contentContainerStyle={{ paddingBottom: hp(5) }}
               />
+              
             ) : (
               <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
                 <Text style={{ fontSize: wp(4), color: "#6B7280", textAlign: "center" }}>No orders found.</Text>
               </View>
             )}
+
+</View>
           </>
+          
         )}
+        
       </View>
 
-      {/* Navbar */}
+ 
     </KeyboardAvoidingView>
   );
 };

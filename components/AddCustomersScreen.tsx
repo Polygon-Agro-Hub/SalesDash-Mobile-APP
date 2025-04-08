@@ -32,6 +32,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
   const [unitNo, setunitNo] = useState<string>("");
   const [buildingName, setbuildingName] = useState<string>("");
   const [buildingType, setBuildingType] = useState<string>("");
+  console.log("..",buildingType)
   const [selectedCategory, setSelectedCategory] = useState<string>("");
 
  
@@ -42,6 +43,10 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
 
   
 
+  // const buildingOptions = [
+  //   { key: "1", value: "House" },
+  //   { key: "2", value: "Apartment" },
+  // ];
   const buildingOptions = [
     { key: "1", value: "House" },
     { key: "2", value: "Apartment" },
@@ -212,9 +217,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
             </View>
           </View>
 
-          <ScrollView style={{ paddingHorizontal: wp(1) }}
-          keyboardShouldPersistTaps="handled"
-          >
+          <ScrollView className="flex-1 " keyboardShouldPersistTaps="handled">
             <View className="p-3 px-6">
               <View className="mb-4 mt-4 flex-row justify-between">
                 <View className="flex-[1]">
@@ -316,10 +319,11 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
                     ))}
                   </Picker>
                 </View> */}
-      <SelectList
+       <SelectList
         setSelected={setBuildingType} // Set the selected value
         data={buildingOptions} // The options for the select list
-        // defaultOption={{ key: "", value: "" }} // Default option if nothing is selected
+         defaultOption={{ key: "", value: "" }} // Default option if nothing is selected
+       
         boxStyles={{
           backgroundColor: 'white',
           borderColor: '#CFCFCF',
@@ -330,8 +334,11 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
         }}
         search={false} // Enable search
         placeholder="Select Building Type" // Placeholder text
+        save="value"
         
-      />
+      /> 
+ 
+    
               </View>
 
               {buildingType === "House" && (

@@ -7,7 +7,8 @@ import {
   TouchableOpacity,
   Alert,
   Platform,
-  KeyboardAvoidingView
+  KeyboardAvoidingView,
+  ScrollView
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack"; 
 import { RootStackParamList } from "./types"; 
@@ -32,7 +33,7 @@ interface DashboardScreenProps {
 
 interface Package {
   id: number;
-  name: string;
+  displayName: string;
   price: string;
   description: string;
   portion: number;
@@ -134,7 +135,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     }}
   >
    <Image source={require("../assets/images/fruits.png")} className="w-20 h-20 mb-3" resizeMode="contain" />
-    <Text className="font-bold text-[#6A3AD0]">{item.name}</Text>
+    <Text className="font-bold text-[#6A3AD0]">{item.displayName}</Text>
       <Text className="text-sm font-medium text-gray-500">Rs. {item.total}</Text>
   
     <LinearGradient
@@ -228,18 +229,23 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       </View>
 
        {/* Packages Section */}
-       <Text className="text-xl font-bold text-[#874CDB] mt-6 ml-6 mb-2">
-        Packages
-      </Text>
-      <FlatList
-        data={packages}
-        renderItem={renderPackage}
-        keyExtractor={(item) => item.id.toString()}
-        numColumns={2}
-        contentContainerStyle={{ paddingHorizontal: 10, paddingLeft: 2 }}
-      />
-      {/* Navbar */}
-      {/* Navbar */}
+       <ScrollView className="flex-1">
+        <Text className="text-xl font-bold text-[#874CDB] mt-6 ml-6 mb-2">
+          Packages
+        </Text>
+        <FlatList
+          data={packages}
+          renderItem={renderPackage}
+          keyExtractor={(item) => item.id.toString()}
+          numColumns={2}
+          scrollEnabled={false}
+          contentContainerStyle={{ 
+            paddingHorizontal: 10, 
+            paddingLeft: 2,
+            paddingBottom: 60
+          }}
+        />
+      </ScrollView>
     </View>
     </KeyboardAvoidingView >
   );
