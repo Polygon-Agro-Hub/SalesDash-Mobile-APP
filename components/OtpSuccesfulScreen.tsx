@@ -3,7 +3,6 @@ import { View, Text, Image, KeyboardAvoidingView, Platform, TouchableOpacity } f
 import { useNavigation } from "@react-navigation/native";
 import BackButton from "./BackButton";
 import { LinearGradient } from "expo-linear-gradient";
-import Navbar from "./Navbar";
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
@@ -21,11 +20,18 @@ interface OtpSuccesfulScreenProps {
 const OtpSuccesfulScreen: React.FC<OtpSuccesfulScreenProps> = ({ navigation }) => {
 
   return (
+    <KeyboardAvoidingView 
+                                                        behavior={Platform.OS === "ios" ? "padding" : "height"}
+                                                        enabled 
+                                                        className="flex-1"
+                                                      >
     <View
      
       className="flex-1 bg-white"
     >
-      <ScrollView className="flex-1 bg-white px-3">
+      <ScrollView className="flex-1 bg-white px-3"
+      keyboardShouldPersistTaps="handled"
+      >
         {/* Header */}
         <View className="bg-white flex-row items-center h-17 shadow-lg px-1">
           {/* Back Button */}
@@ -72,15 +78,15 @@ Successfully Verified!
             colors={["#6839CF", "#874DDB"]}
             className="py-2 px-10 rounded-lg items-center mt-[55%] mb-[5%] mr-[20%] ml-[20%] rounded-3xl h-15"
           >
-            <TouchableOpacity  onPress={() => navigation.navigate("OrderScreen")}>
+            <TouchableOpacity  onPress={() => navigation.navigate("Main", {screen:"SelectOrderType"})}>
               <Text className="text-center text-white font-bold text-lg">Order Now</Text>
             </TouchableOpacity>
           </LinearGradient>
         </View>
 
         </ScrollView>
-        <Navbar navigation={navigation} activeTab="CustomersScreen" />
       </View>
+      </KeyboardAvoidingView>
    
   );
 };

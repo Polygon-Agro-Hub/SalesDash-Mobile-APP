@@ -3,7 +3,6 @@ import { View, Text, ScrollView, TextInput, TouchableOpacity, Keyboard, Platform
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import { Picker } from "@react-native-picker/picker";
-import Navbar from "./Navbar";
 import { LinearGradient } from "expo-linear-gradient";
 import { widthPercentageToDP as wp } from "react-native-responsive-screen";
 import BackButton from "./BackButton";
@@ -43,11 +42,23 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
 
   const [loading, setLoading] = useState(false);
     const [otpSent, setOtpSent] = useState(false);
+    const [token, setToken] = useState<string>("");
 
   const buildingOptions = [
     { key: "1", value: "House" },
     { key: "2", value: "Apartment" },
   ];
+
+  useEffect(() => {
+    const getToken = async () => {
+      const storedToken = await AsyncStorage.getItem("authToken");
+      if (storedToken) {
+        setToken(storedToken);
+      }
+    };
+    
+    getToken();
+  }, []);
 
   // Fetch customer data based on customerId
   useEffect(() => {
@@ -204,7 +215,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
           await AsyncStorage.setItem("pendingCustomerData", JSON.stringify(customerData));
   
           // Navigate to OTP screen with the new phone number
-          navigation.navigate("OtpScreenUp", { phoneNumber ,id});
+          navigation.navigate("OtpScreenUp", { phoneNumber ,id, token});
           console.log(id)
         } else {
           alert("Failed to send OTP. Please try again.");
@@ -266,7 +277,11 @@ const [items, setItems] = useState([
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1 bg-white">
+      <KeyboardAvoidingView 
+                   behavior={Platform.OS === "ios" ? "padding" : "height"}
+                   enabled 
+                   className="flex-1"
+                 >
         <View className="flex-1 bg-white py-4 p-2">
           <View className="p-[-4]">
             <View className="bg-white flex-row items-center h-17 shadow-lg px-1 ">
@@ -279,7 +294,7 @@ const [items, setItems] = useState([
           </View>
 
           <ScrollView style={{ paddingHorizontal: wp(1) }}
-          
+          keyboardShouldPersistTaps="handled"
           >
             <View className="p-3 px-6">
               <View className="mb-4 mt-4 flex-row justify-between">
@@ -499,7 +514,6 @@ const [items, setItems] = useState([
             </View>
           </ScrollView>
         </View>
-        {!isKeyboardVisible && <Navbar navigation={navigation} activeTab="CustomersScreen" />}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

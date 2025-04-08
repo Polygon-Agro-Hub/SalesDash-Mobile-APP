@@ -194,7 +194,6 @@ import {
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
-import Navbar from "./Navbar";
 import { LinearGradient } from "expo-linear-gradient";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
 import axios from "axios";
@@ -315,7 +314,13 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   const isEmpty = filteredCustomers.length === 0;
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1 bg-white">
+   <KeyboardAvoidingView 
+         behavior={Platform.OS === "ios" ? "padding" : "height"}
+         enabled 
+         className="flex-1"
+       >
+
+        
       <View className="bg-white flex-1">
         
         {/* Show Skeleton while loading */}
@@ -353,7 +358,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
             {/* Floating Button */}
             <TouchableOpacity
               style={{ zIndex: 1000 }}
-              className="absolute bottom-[10px] right-6 bg-[#7743D4] w-14 h-14 rounded-full items-center justify-center shadow-lg mb-1"
+              className="absolute bottom-20 right-6 bg-[#7743D4] w-14 h-14 rounded-full items-center justify-center shadow-lg mb-1"
               onPress={() => navigation.navigate("AddCustomersScreen")}
             >
               <Image source={require("../assets/images/plus.png")} className="w-6 h-6" resizeMode="contain" />
@@ -406,7 +411,6 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
         )}
       </View>
 
-      {!isKeyboardVisible && <Navbar navigation={navigation} activeTab="CustomersScreen" />}
     </KeyboardAvoidingView>
   );
 };

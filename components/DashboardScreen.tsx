@@ -5,11 +5,14 @@ import {
   Image,
   FlatList,
   TouchableOpacity,
-  ProgressBarAndroid,
   Alert,
+  Platform,
+  KeyboardAvoidingView,
+  ScrollView
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack"; 
 import { RootStackParamList } from "./types"; 
+import { Bar } from 'react-native-progress';
 
 import Navbar from "./Navbar";
 import { LinearGradient } from "expo-linear-gradient";
@@ -30,15 +33,17 @@ interface DashboardScreenProps {
 
 interface Package {
   id: number;
-  name: string;
+  displayName: string;
   price: string;
   description: string;
+  portion: number;
+   period :number;
 }
 
 const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [token, setToken] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ username: "" });
+  const [formData, setFormData] = useState({ firstName: "" });
   const [packages, setPackages] = useState<Package[]>([]);
 
   useEffect(() => {
@@ -130,7 +135,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     }}
   >
    <Image source={require("../assets/images/fruits.png")} className="w-20 h-20 mb-3" resizeMode="contain" />
-    <Text className="font-bold text-[#6A3AD0]">{item.name}</Text>
+    <Text className="font-bold text-[#6A3AD0]">{item.displayName}</Text>
       <Text className="text-sm font-medium text-gray-500">Rs. {item.total}</Text>
   
     <LinearGradient
@@ -144,7 +149,17 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     >
       <TouchableOpacity
   //onPress={() => navigation.navigate("ViewScreen", { selectedPackage: item })} // Ensure key matches expected parameter
-  onPress={() => navigation.navigate("ViewScreen", { selectedPackageId: item.id, selectedPackageName: item.name, selectedPackageTotal: item.total ,selectedPackageDescription:item.description})}
+  onPress={() => 
+    navigation.navigate("ViewScreen", {
+      selectedPackageId: item.id,
+      selectedPackageName: item.name,
+      selectedPackageTotal: item.total,
+      selectedPackageDescription: item.description,
+      selectedPackageportion: item.portion,  // Assuming this is a number
+      selectedPackageperiod: item.period    // Assuming this is a number
+    })
+  }
+  
 
   className="items-center"
 >
@@ -158,6 +173,11 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
   );
 
   return (
+     <KeyboardAvoidingView 
+             behavior={Platform.OS === "ios" ? "padding" : "height"}
+             enabled 
+             className="flex-1"
+           >
     <View className="flex-1 bg-white">
       {/* Header Section */}
       <View className="bg-white shadow-md p-5 rounded-b-3xl">
@@ -167,7 +187,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
               <Image source={require("../assets/images/profile.png")} className="w-12 h-12 rounded-full" />
             </TouchableOpacity>
 
-            <Text className="ml-3 text-lg font-bold text-gray-800">Hello, {formData.username}</Text>
+            <Text className="ml-3 text-lg font-bold text-gray-800">Hello, {formData.firstName}</Text>
           </View>
           <View className="flex-row items-center bg-[#E6DBF766] py-1 px-3 rounded-full">
             <Image source={require("../assets/images/star.png")} className="w-6 h-6" resizeMode="contain" />
@@ -190,13 +210,14 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
           >
             8/10
           </Text>
-                  <ProgressBarAndroid
-                    styleAttr="Horizontal"
-                    indeterminate={false}
-                    progress={0.8} 
-                    color="#854BDA"
-                    className="flex-1"
-                  />
+                    <Bar
+                      progress={0.8} // Set progress value here
+                      width={200} // Set width for progress bar
+                      color="#854BDA" // Set progress bar color
+                      borderWidth={0} // Optional: to remove border around the progress bar
+                      height={10} // Optional: height of the progress bar
+                    />
+
                   <Image
                     source={require("../assets/images/star.png")} 
                     className="w-8 h-8 ml-5"
@@ -208,20 +229,25 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       </View>
 
        {/* Packages Section */}
-       <Text className="text-xl font-bold text-[#874CDB] mt-6 ml-6 mb-2">
-        Packages
-      </Text>
-      <FlatList
-        data={packages}
-        renderItem={renderPackage}
-        keyExtractor={(item) => item.id.toString()}
-        numColumns={2}
-        contentContainerStyle={{ paddingHorizontal: 10, paddingLeft: 2 }}
-      />
-      {/* Navbar */}
-      {/* Navbar */}
-      <Navbar navigation={navigation} activeTab="DashboardScreen" />
+       <ScrollView className="flex-1">
+        <Text className="text-xl font-bold text-[#874CDB] mt-6 ml-6 mb-2">
+          Packages
+        </Text>
+        <FlatList
+          data={packages}
+          renderItem={renderPackage}
+          keyExtractor={(item) => item.id.toString()}
+          numColumns={2}
+          scrollEnabled={false}
+          contentContainerStyle={{ 
+            paddingHorizontal: 10, 
+            paddingLeft: 2,
+            paddingBottom: 60
+          }}
+        />
+      </ScrollView>
     </View>
+    </KeyboardAvoidingView >
   );
 };
 
