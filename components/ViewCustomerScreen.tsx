@@ -415,7 +415,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
           />
           <Image source={require("../assets/images/search.png")} className="w-8 h-8" />
         </View>
-
+<View>
         <ScrollView 
   horizontal 
   showsHorizontalScrollIndicator={false}
@@ -434,6 +434,10 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
     </TouchableOpacity>
   ))}
 </ScrollView>
+</View>
+
+
+<View className="mb-[20%]">
         {/* Orders List */}
         {loading ? (
           <View className="flex-1 justify-center items-center">
@@ -508,6 +512,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
             </Text>
           </View>
         )}
+      </View>
       </View>
     </KeyboardAvoidingView>
   );

@@ -11,6 +11,43 @@ export interface CartItem {
   changeby: number;
 }
 
+export interface PackageItem {
+  packageId: number;
+  isModifiedPlus: boolean;
+  isModifiedMin: boolean;
+  isAdditionalItems: boolean;
+  packageTotal: number;
+  packageDiscount: number;
+  modifiedPlusItems: ModifiedPlusItem[];
+  modifiedMinItems: ModifiedMinItem[];
+  additionalItems: AdditionalItem[];
+}
+
+interface ModifiedPlusItem {
+  packageDetailsId: number;
+  originalQuantity: number;
+  modifiedQuantity: number;
+  originalPrice: number | string;
+  additionalPrice: number;
+  additionalDiscount: number;
+}
+
+interface ModifiedMinItem {
+  packageDetailsId: number;
+  originalQuantity: number;
+  modifiedQuantity: number;
+  originalPrice: number | string;
+  additionalPrice: number;
+  additionalDiscount: number;
+}
+
+interface AdditionalItem {
+  mpItemId: number;
+  quantity: number;
+  price: number;
+  discount: number;
+}
+
 
 export type RootStackParamList = {
     Splash: undefined;
@@ -68,22 +105,26 @@ export type RootStackParamList = {
       selectedTimeSlot: string;
     };
     OrderSummeryScreen: {
-      items: Array<CartItem>;
-      subtotal: number;
-      discount: number;
-      total: number;
-      fullTotal: number;
-      selectedDate: string;
-      selectedTimeSlot: string;
-      paymentMethod: string;
+      items?: CartItem[];
+      subtotal?: number;
+      discount?: number;
+      total?: number;
+      fullTotal?: number;
+      selectedDate?: string;
+      selectedTimeSlot?: string;
+      paymentMethod?: string;
       customerId?: string | number;
       customerid?: string | number;
       isSelectPackage?: number;
       isCustomPackage?: number;
+      packageId?: number;
+      orderItems?: PackageItem[]; // Add this line to include orderItems
     };
     OrderConfirmedScreen: {
       orderId: number;
       total: number;
+      subtotal:number,
+      discount:number,
       paymentMethod: string;
       customerId: string | number;
       customerid?: string | number;

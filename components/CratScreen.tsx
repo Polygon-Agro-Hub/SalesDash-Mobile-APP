@@ -246,8 +246,8 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
 
 
-  console.log("isCustomPackage, ",isCustomPackage)
-  console.log(" isSelectPackage",isSelectPackage)
+ // console.log("isCustomPackage, ",isCustomPackage)
+  //console.log(" isSelectPackage",isSelectPackage)
   useEffect(() => {
     if (route.params?.selectedProducts) {
       const initializedItems = route.params.selectedProducts.map(item => ({
@@ -267,7 +267,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
   }, [cartItems]);
 
 
-  console.log("oooo",id)
+ // console.log("oooo",id)
 
   const toggleItemSelection = (id: number) => {
     setCartItems(

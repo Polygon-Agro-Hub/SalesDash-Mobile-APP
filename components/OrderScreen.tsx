@@ -101,6 +101,7 @@ interface CropItem {
   unitType: string;
 }
 interface Crop {
+  id:number;
   cropId: number;
   displayName: string;
   changeby: string;
@@ -149,7 +150,7 @@ const [token, setToken] = useState<string | null>(null);
 const [packages, setPackages] = useState<Package[]>([]);
 const [items, setItems] = useState<{ name: string; quantity: string; quantityType: string }[]>([]);
 //const [packageItems, setPackageItems] = useState<{ name: string; quantity: string; quantityType: string }[]>([]);
-const [additionalItems, setAdditionalItems] = useState<{ name: string; quantity: string; quantityType: string; price: number; cropId:number }[]>([]);
+const [additionalItems, setAdditionalItems] = useState<{ id: string;name: string; quantity: string; quantityType: string; price: number; cropId:number }[]>([]);
 const [packageItemsCount, setPackageItemsCount] = useState<number>(0); 
 const [portion, setPortion] = useState<number>(0);  // To store portion
 const [period, setPeriod] = useState<number>(0);    // To store period
@@ -168,11 +169,13 @@ const [crops, setCrops] = useState<Crop[]>([]);
 //const [crops, setCrops] = useState(false);
 const [error, setError] = useState<string | null>(null);
 //const [newItemQuantity, setNewItemQuantity] = useState("");
-const [editingItem, setEditingItem] = useState<{ name: string; quantity: string; quantityType: string; mpItemId?: number ;price: number; cropId:number } | null>(null);
+const [editingItem, setEditingItem] = useState<{ id: number;name: string; quantity: string; quantityType: string; mpItemId?: number ;price: number; cropId:number } | null>(null);
 const [productOpen, setProductOpen] = useState<boolean>(false);  // State for controlling dropdown open/close
 //const [crops, setCrops] = useState<any[]>([]);  // State for storing the list of crops
 //const [loading, setLoading] = useState(false);
 const [itemDetails, setItemDetails] = useState<{
+  id?: number;
+  mpItemId?: string;
   changeby?: string;
   startValue?: string;
   unitType?: string;
@@ -185,6 +188,7 @@ const [isModifiedPlus, setIsModifiedPlus] = useState(false);
 const [isModifiedMin, setIsModifiedMin] = useState(false);
 const [pricePerKg, setPricePerKg] = useState<string>("0.00");
 const [totalAmont,setTotalAmont] = useState("0.00");
+const [mpItemId1,setMpItemId] = useState(0);
 const [newPrice1, setNewPrice1] = useState("0.00");
 const [discount, setDiscount] = useState("0.00");
 const [finaldiscount, setFinaldiscount] = useState("0.00");
@@ -197,6 +201,7 @@ const [finaldiscount, setFinaldiscount] = useState("0.00");
    const [cropId, setCropid] = useState<number>(0);
   
    const [originalPackageItems, setOriginalPackageItems] = useState<{
+    //id: number;
     mpItemId: number;
     name: string;
     quantity: string;
@@ -204,6 +209,7 @@ const [finaldiscount, setFinaldiscount] = useState("0.00");
     price?: number 
   }[]>([]);
   const [packageItems, setPackageItems] = useState<{ 
+    id:number;
     name: string; 
     quantity: string; 
     quantityType: string; 
@@ -253,11 +259,11 @@ const [finaldiscount, setFinaldiscount] = useState("0.00");
   }
 
 
-  console.log(" isCustomPackage",  isCustomPackage);
-  console.log("  isSelectPackage",   isSelectPackage);
-  console.log("cusid",   id);
+  // console.log(" isCustomPackage",  isCustomPackage);
+  // console.log("  isSelectPackage",   isSelectPackage);
+  // console.log("cusid",   id);
   const customerid = id;
-  console.log("[[[[[[[[]]]]]]]]]",customerid)
+  //console.log("[[[[[[[[]]]]]]]]]",customerid)
 
 
   
@@ -312,19 +318,19 @@ const [finaldiscount, setFinaldiscount] = useState("0.00");
         // Apply the discount to the additional price
         const additionalDiscount = discount;
         
-        console.log(`Plus item ${item.mpItemId} (${item.name}): 
-          Normal price ${normalPrice}, 
-          Discounted price ${discountedPrice}, 
-          Price per unit ${pricePerUnit}, 
-          Additional price ${additionalPrice}, 
-          Discount ${additionalDiscount},
-          startValue ${startValue}
-          `);
+        // console.log(`Plus item ${item.mpItemId} (${item.name}): 
+        //   Normal price ${normalPrice}, 
+        //   Discounted price ${discountedPrice}, 
+        //   Price per unit ${pricePerUnit}, 
+        //   Additional price ${additionalPrice}, 
+        //   Discount ${additionalDiscount},
+        //   startValue ${startValue}
+        //   `);
       
           
         
         modifiedPlusItems.push({
-          packageDetailsId: item.mpItemId || 0,
+          packageDetailsId:  item.id || 0,
           originalQuantity,
           modifiedQuantity,
           originalPrice: originalPrice,
@@ -373,7 +379,7 @@ const [finaldiscount, setFinaldiscount] = useState("0.00");
           Discount ${additionalDiscount}`);
         
         modifiedMinItems.push({
-          packageDetailsId: item.mpItemId || 0,
+          packageDetailsId:  item.id || 0,
           originalQuantity,
           modifiedQuantity,
           originalPrice: originalPrice,
@@ -403,19 +409,24 @@ const [finaldiscount, setFinaldiscount] = useState("0.00");
       const discountAmount = totalPrice * discountRate;
       const finalPrice = totalPrice - discountAmount;
       
-      console.log(`Additional item ${item.cropId} (${item.name}): Price ${itemPrice}, Quantity ${quantity}, Total ${totalPrice}, Discount ${discountAmount}, Final ${finalPrice}`);
+    const total = itemPrice+ parseFloat(finaldiscount)
+    
+      const selectedCrop = crops.find((crop) => crop.displayName === newItemName);
+     // console.log(`Additional item ${item.cropId} (${item.name}): Price ${itemPrice}, Quantity ${quantity}, Total ${totalPrice}, Discount ${discountAmount}, Final ${finalPrice}`);
       
       return {
-        mpItemId: item.cropId || editingItem?.mpItemId || 0,
+        id:item.id,
         quantity: quantity,
-        price: itemPrice,
+        unitType: unitType,
+        total: total,
+        subtotal: itemPrice,
         discount: parseFloat(finaldiscount || "0")
       };
     });
     
-    console.log("modifiedPlusItems", modifiedPlusItems);
-    console.log("modifiedMinItems", modifiedMinItems);
-    console.log("finalAdditionalItems", finalAdditionalItems);
+     console.log("........",itemDetails?.id);
+    // console.log("modifiedMinItems", modifiedMinItems);
+    // console.log("finalAdditionalItems", finalAdditionalItems);
   
     // Create the complete orderItems array
     const orderItems = [
@@ -544,6 +555,7 @@ useEffect(() => {
   
   
   const fetchItemsForPackage = async (packageId: number): Promise<{ 
+    id: number;
     mpItemId: number;
     name: string;
     quantity: string;
@@ -559,6 +571,7 @@ useEffect(() => {
   
       const response = await axios.get<{ 
         data: { 
+          id: number;
           mpItemId: number;
           name: string;
           quantity: string;
@@ -609,6 +622,7 @@ useEffect(() => {
   
       if (response.data && response.data.data) {
         const itemDetails = response.data.data;
+        console.log("=======",response.data)
   
      
   
@@ -657,11 +671,15 @@ const handleCropSelect = (selectedCropName: string) => {
     let totalDiscount = discountPerKg * startValue;
     let totalPriceAfterDiscount = normalPrice - totalDiscount;
 
-    //console.log("Normal Price:", normalPrice);
-    //console.log("Start Value:", startValue, unitType);
-   // console.log("Price per 1kg:", pricePerKg);
-  //  console.log("Total Amount after discount:", totalPriceAfterDiscount.toFixed(2));
-  //  console.log("Discount Amount:", totalDiscount.toFixed(2));
+    console.log("Normal Price:", normalPrice);
+    console.log("id", selectedCrop.id)
+    console.log("Start Value:", startValue, unitType);
+   console.log("Price per 1kg:", pricePerKg);
+   console.log("Total Amount after discount:", totalPriceAfterDiscount.toFixed(2));
+   console.log("Discount Amount:", totalDiscount.toFixed(2));
+
+   //setMpItemId(selectedCrop.id)
+   
 
     setItemDetails({
       changeby: selectedCrop.changeby,
@@ -669,10 +687,12 @@ const handleCropSelect = (selectedCropName: string) => {
       unitType: selectedCrop.unitType,
       discountedPrice: selectedCrop.discountedPrice,
       normalPrice: selectedCrop.normalPrice,
-      displayName: selectedCrop.displayName
+      displayName: selectedCrop.displayName,
+   //   id: selectedCrop.id
     });
 
     setNewItemQuantity(selectedCrop.startValue);
+    //setMpItemId(selectedCrop.id)
     setSelectedUnit(selectedCrop.unitType);
     setPricePerKg(pricePerKg);
     setNewPrice1(newPrice1); 
@@ -751,7 +771,7 @@ const fetchCropDetails = async (cropId: number) => {
     });
 
     if (response.status === 200 && response.data) {
-     // console.log("CROP datata", response.data)
+     console.log("CROP datata", response.data)
       return response.data;  // Return the crop details
       
     } else {
@@ -762,7 +782,7 @@ const fetchCropDetails = async (cropId: number) => {
     throw error;
   }
 };
-
+console.log("//////",editingItem?.id)
 
   useEffect(() => {
     if (editingItem) {
@@ -1256,26 +1276,23 @@ const saveUpdatedItem = () => {
     if (itemDetails) {
       const calculatedPrice = calculateTotalPriceAdd(parsedQuantity, itemDetails, counter);
   
-//      console.log("Current total price:", totalPrice);
- //     console.log("Calculated price for new item:", calculatedPrice);
-  
-      // Create new item object
-      const newItem: Item = {
+      // Create new item object WITH id property
+      const newItem = {
+        id: selectedCrop.id ? String(selectedCrop.id) : String(Date.now()),
         name: newItemName ?? "",
         quantity: `${String(newItemQuantity)} ${selectedUnit}`,
         quantityType: selectedUnit || "unit",
         price: calculatedPrice,
-        cropId: cropId,  // Add cropId to the new item
+        cropId: cropId,
       };
   
-      // Check if quantity is 0, remove the item if true, otherwise add the item
+      // Rest of your code remains the same...
+      
       if (parsedQuantity === 0) {
         setAdditionalItems((prevItems) => {
           const updatedItems = prevItems.filter((item) => item.name !== newItemName);
-    //      console.log("Item removed because quantity is 0:", updatedItems);
           return updatedItems;
         });
-   //     console.log("Item removed because quantity is 0");
       } else {
         // Check if the item already exists
         const existingItemIndex = additionalItems.findIndex((item) => item.name === newItem.name);
@@ -1284,19 +1301,18 @@ const saveUpdatedItem = () => {
           setAdditionalItems((prevItems) => {
             const updatedItems = [...prevItems];
             updatedItems[existingItemIndex].quantity = `${parsedQuantity + parseFloat(updatedItems[existingItemIndex].quantity)} ${selectedUnit}`;
-            updatedItems[existingItemIndex].price += calculatedPrice; // Update price as well
-            updatedItems[existingItemIndex].cropId = cropId; // Ensure cropId is updated if needed
-      //      console.log("Updated additional items inside callback:", updatedItems);
+            updatedItems[existingItemIndex].price += calculatedPrice;
+            updatedItems[existingItemIndex].id = selectedCrop.id ? String(selectedCrop.id) : String(Date.now());
+            updatedItems[existingItemIndex].cropId = cropId;
+            console.log("Updated additional items inside callback:", updatedItems);
             return updatedItems;
           });
           console.log("Item quantity updated:", newItem);
         } else {
           setAdditionalItems((prevItems) => {
             const updatedItems = [...prevItems, newItem];
-       //     console.log("Updated additional items inside callback:", updatedItems);
             return updatedItems;
           });
-      //    console.log("Item added:", newItem);
         }
       }
     //  console.log("Save button pressed", totalPrice);
@@ -1345,7 +1361,8 @@ const saveUpdatedItem = () => {
       setNewPrice1("");            
       setCounter(0);                
       setFinaldiscount(finaldiscount); 
-      setModalVisible1(false);      
+      setModalVisible1(false);   
+    
     } else {
       Alert.alert("Error", "Item details are missing.");
     }

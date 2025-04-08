@@ -312,6 +312,7 @@ type ScheduleScreenRouteProp = RouteProp<RootStackParamList, "ScheduleScreen">;
 interface AdditionalItem {
   discount: number;
   mpItemId: number;
+  unitType: string;
   price: number;
   quantity: number;
 }
@@ -446,7 +447,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [date, setDate] = useState(new Date());
   
-  console.log("._____________________", customerid);
+  //console.log("._____________________", customerid);
 
   // Constants
   const DELIVERY_FEE = 350;
