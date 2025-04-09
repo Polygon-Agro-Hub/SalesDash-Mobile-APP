@@ -19,6 +19,8 @@ import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { Asset } from "expo-asset";
 import * as FileSystem from "expo-file-system";
+import axios from "axios";
+import environment from "@/environment/environment";
 
 type OrderConfirmedScreenNavigationProp = StackNavigationProp<RootStackParamList, "OrderConfirmedScreen">;
 type OrderConfirmedScreenRouteProp = RouteProp<RootStackParamList, "OrderConfirmedScreen">;
@@ -36,8 +38,35 @@ interface OrderConfirmedScreenProps {
   route: OrderConfirmedScreenRouteProp;
 }
 
+interface Order {
+  orderId: number;
+  customerId: number;
+  deliveryType: string;
+  scheduleDate: string;
+  scheduleTimeSlot: string;
+  weeklyDate: string;
+  paymentMethod: string;
+  paymentStatus: number;
+  orderStatus: string;
+  createdAt: string;
+  InvNo: string;
+  fullTotal: string | null;
+  fullSubTotal: string | null;
+  fullDiscount: string | null;
+  deleteStatus: string | null;
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+  buildingType: string;
+  fullAddress: string;
+}
+
 const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation, route }) => {
+ // const { orderId } = route.params;
+    const [order, setOrder] = useState<Order | null>(null);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+   const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
   // Extract params with default values to prevent undefined errors
   const { 
@@ -51,6 +80,91 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
     selectedTimeSlot = "N/A",
     items = []
   } = route.params || {};
+
+  // useEffect(() => {
+  //   const fetchOrderDetails = async () => {
+  //     try {
+  //       setLoading(true);
+  //       const response = await axios.get(`${environment.API_BASE_URL}api/orders/get-order/${orderId}`);
+  //       console.log("mkk", response.data);
+  //       if (response.data.success) {
+  //         setOrder(response.data.data);
+  //       } else {
+  //         setError("Failed to load order details");
+  //       }
+  //     } catch (err) {
+  //       console.error("Error fetching order details:", err);
+  //       setError("An error occurred while fetching order details");
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   fetchOrderDetails();
+  // }, [orderId]);
+
+  useEffect(() => {
+    let isMounted = true;
+    let timeoutId = null;
+    
+    const fetchOrderDetails = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get(
+          `${environment.API_BASE_URL}api/orders/get-order/${orderId}`,
+          { timeout: 30000 } 
+        );
+        
+        if (!isMounted) return;
+        
+        console.log("mkk", response.data);
+        if (response.data.success) {
+          setOrder(response.data.data);
+        } else {
+          setError("Failed to load order details");
+        }
+      } catch (err) {
+        if (!isMounted) return;
+        
+        console.error("Error fetching order details:", err);
+        setError("An error occurred while fetching order details");
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+    
+    // Initial fetch
+    fetchOrderDetails();
+    
+    // Set timeout for retry after 10 seconds
+    timeoutId = setTimeout(() => {
+      if (isMounted) {
+        console.log("Retrying order fetch after timeout...");
+        fetchOrderDetails();
+      }
+    }, 10000);
+    
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [orderId]);
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
@@ -166,7 +280,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
                 table {
                     width: 100%;
                     border-collapse: collapse;
-                    margin-top: 10px;
+                    margin-top: 5px;
                 }
                 table, th, td {
                     border: 1px solid black;
@@ -189,18 +303,26 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
                 <h1>Purchase Invoice</h1>
                 <div class="section">
                     <p class="bold">AgroWorld (Pvt) Ltd.</p>
-                    <p>Address: [Your Address]</p>
-                    <p>Contact: 07x-xxxxxxx</p>
-                    <p>Invoice Number: <strong>${invoiceNumber}</strong></p>
+                    <p>Address: No. 1 Colombo 2</p>
+                    <p>Contact: 077123457</p>
+                    <p>Invoice Number: <strong>${order?.InvNo}</strong></p>
                     <p>Order ID: <strong>${orderId}</strong></p>
                     <p>Date: <strong>${new Date().toLocaleDateString()}</strong></p>
                 </div>
 
                 <div class="section">
                     <h2>Customer Details</h2>
-                    <p><span class="bold">Customer ID:</span> ${customerId}</p>
+                    <p><span class="bold">Delivery Type:</span> One time</p>
                     <p><span class="bold">Selected Date:</span> ${selectedDate}</p>
-                    <p><span class="bold">Selected Time Slot:</span> ${selectedTimeSlot}</p>
+                    <p><span class="bold"> Time :</span> ${selectedTimeSlot}</p>
+                </div>
+
+                <div class="section">
+                    <h2>Receiver Details</h2>
+                    <p><span class="bold">Receiver's Name:</span> ${order?.firstName}  ${order?.lastName}</p>
+                    <p><span class="bold">Phone Number:</span> ${order?.phoneNumber}</p>
+                    <p><span class="bold">Building Type:</span> ${order?.buildingType}</p>
+                     <p><span class="bold">Address:</span> ${order?.fullAddress}</p>
                 </div>
 
                 ${items && items.length > 0 ? `
@@ -231,7 +353,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
                         </tr>
                         <tr>
                             <td>Discount</td>
-                            <td>-${discount.toFixed(2)}</td>
+                            <td>${discount.toFixed(2)}</td>
                         </tr>
                         <tr>
                             <td><strong>Grand Total</strong></td>
@@ -292,7 +414,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
                 Order is Confirmed!
               </Text>
               <Text style={{ fontSize: 18 }} className="text-[#3F3F3F] text-center mt-2">
-                Order No: {orderId}
+                Order No: {order?.InvNo}
               </Text>
               <Text style={{ fontSize: 16 }} className="text-[#747474] text-center mt-5">
                 Order Confirmation message and Payment Gateway Link has been sent to your Customer

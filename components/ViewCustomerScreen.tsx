@@ -243,7 +243,7 @@ interface Order {
   customerId: string;
   deliveryType: string;
   scheduleDate: string;
-  selectedDays: string;
+  scheduleTimeSlot: string;
   weeklyDate: string;
   paymentMethod: string;
   paymentStatus: number;
@@ -317,7 +317,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
     Linking.openURL(phoneNumber).catch((err) => console.error("Error opening dialer", err));
   };
 
-  const filters = ["Ordered", "Processing", "On way", "Cancelled"];
+  const filters = ["Ordered", "Processing", "On the way", "Cancelled"];
 
   // Helper function to format schedule date
   const formatScheduleDate = (dateString: string) => {
@@ -327,18 +327,18 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
   };
 
   // Helper function to format time slot based on deliveryType
-  const formatTimeSlot = (deliveryType: string) => {
-    switch(deliveryType) {
-      case "Morning":
-        return "9:00 AM - 12:00 PM";
-      case "Afternoon":
-        return "2:00 PM - 4:00 PM";
-      case "Evening":
-        return "5:00 PM - 8:00 PM";
-      default:
-        return "Not specified";
-    }
-  };
+  // const formatTimeSlot = (deliveryType: string) => {
+  //   switch(deliveryType) {
+  //     case "Morning":
+  //       return "9:00 AM - 12:00 PM";
+  //     case "Afternoon":
+  //       return "2:00 PM - 4:00 PM";
+  //     case "Evening":
+  //       return "5:00 PM - 8:00 PM";
+  //     default:
+  //       return "Not specified";
+  //   }
+  // };
 
   // Filter orders based on status and search text
   const filteredOrders = orders.filter(order => {
@@ -437,7 +437,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
 </View>
 
 
-<View className="mb-[20%]">
+<View className="">
         {/* Orders List */}
         {loading ? (
           <View className="flex-1 justify-center items-center">
@@ -474,14 +474,14 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
                     </Text>
                     <View className={`px-3 py-1 rounded-full ${
                       item.orderStatus === "Ordered" ? "bg-[#CCFBF1]" 
-                      : item.orderStatus === "On way" ? "bg-[#FFFD99]" 
+                      : item.orderStatus === "On the way" ? "bg-[#FFFD99]" 
                       : item.orderStatus === "Processing" ? "bg-[#CFE1FF]"
                       : item.orderStatus === "Cancelled" ? "bg-[#FFE4E1]"
                       : "bg-[#EAEAEA]"
                     }`}>
                       <Text className={`text-xs font-semibold ${
                         item.orderStatus === "Ordered" ? "text-[#0D9488]"
-                        : item.orderStatus === "On way" ? "text-[#A6A100]"
+                        : item.orderStatus === "On the way" ? "text-[#A6A100]"
                         : item.orderStatus === "Processing" ? "text-[#3B82F6]"
                         : item.orderStatus === "Cancelled" ? "text-[#FF0000]"
                         : "text-[#393939]"
@@ -495,7 +495,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
                     Scheduled: {formatScheduleDate(item.scheduleDate)}
                   </Text>
                   <Text className="text-sm text-[#808FA2]">
-                    Time Slot: {formatTimeSlot(item.deliveryType)}
+                    Time Slot: {item.scheduleTimeSlot}
                   </Text>
                   <Text className="text-sm text-[#808FA2]">
                     Total: {item.fullTotal ? `$${item.fullTotal}` : "Not available"}

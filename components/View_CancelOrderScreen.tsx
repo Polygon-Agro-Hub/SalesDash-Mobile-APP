@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
+  Linking,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
@@ -19,6 +20,7 @@ import { RouteProp } from "@react-navigation/native";
 import axios from "axios";
 import environment from "@/environment/environment";
 import { Feather } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type View_CancelOrderScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -43,6 +45,7 @@ interface Order {
   orderStatus: string;
   createdAt: string;
   InvNo: string;
+  reportStatus:string;
   fullTotal: string | null;
   fullSubTotal: string | null;
   fullDiscount: string | null;
@@ -64,6 +67,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [selectedReportOption, setSelectedReportOption] = useState<string | null>(null);
   const [showStatusMessage, setShowStatusMessage] = useState(false);
+  const [cancelModalVisible, setCancelModalVisible] = useState(false);
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
@@ -141,10 +145,10 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
 
   const isCancelDisabled = () => {
     if (!order) return true;
-    return order.orderStatus === "On way" || order.orderStatus === "Processing" || order.orderStatus === "Delivered" || order.orderStatus === "Cancelled";
+    return order.orderStatus === "On the way" || order.orderStatus === "Processing" || order.orderStatus === "Delivered" || order.orderStatus === "Cancelled";
   };
 
-  const handleCancelOrder = () => {
+  const handlePhone = () => {
     if (isCancelDisabled()) {
       Alert.alert(
         "Cannot Cancel Order",
@@ -204,14 +208,55 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
     );
   };
 
-  const handleConfirmReport = () => {
+  // const handleConfirmReport = () => {
+  //   if (!selectedReportOption) {
+  //     Alert.alert("Please select an option", "You must select a report status option.");
+  //     return;
+  //   }
+
+  //   setReportModalVisible(false);
+  //   setShowStatusMessage(true);
+  // };
+
+  const handleConfirmReport = async () => {
     if (!selectedReportOption) {
       Alert.alert("Please select an option", "You must select a report status option.");
       return;
     }
-
-    setReportModalVisible(false);
-    setShowStatusMessage(true);
+    
+    try {
+      const storedToken = await AsyncStorage.getItem("authToken");
+        
+      if (!storedToken) {
+        Alert.alert("Error", "Authentication token not found. Please log in again.");
+        setLoading(false);
+        return;
+      }
+  
+      const apiUrl = `${environment.API_BASE_URL}api/orders/report-order/${orderId}`;
+      const response = await axios.post(
+        apiUrl, 
+        { reportStatus: selectedReportOption }, // Send the selected option in the request body
+        {
+          headers: { 
+            Authorization: `Bearer ${storedToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      // Access data from response.data, not just data
+      if (response.data.success) {
+        setReportModalVisible(false);
+        setShowStatusMessage(true);
+        // Optionally refresh your order data
+      } else {
+        Alert.alert("Error", response.data.message || "Failed to update report status");
+      }
+    } catch (error) {
+      console.error("Error updating report status:", error);
+      Alert.alert("Error", "Failed to update report status. Please try again.");
+    }
   };
   
  
@@ -221,7 +266,7 @@ const isTimelineItemActive = (status: string) => {
   if (!order) return false;
   
   // The standard order flow statuses
-  const orderStatuses = ["Ordered", "Processing", "On way", "Delivered"];
+  const orderStatuses = ["Ordered", "Processing", "On the way", "Delivered"];
   const actualStatus = getActualStatus();
   
   // Special case: if order is cancelled, only show Ordered and Cancelled as active
@@ -249,7 +294,85 @@ const shouldShowCancelledItem = () => {
     if (!order) return false;
     return order.orderStatus === "Cancelled";
   };
-  
+    const handleGetACall = () => {
+      const phoneNumber = `tel:${order?.phoneNumber}`;
+      Linking.openURL(phoneNumber).catch((err) => console.error("Error opening dialer", err));
+    };
+
+    const handleCancelOrder = () => {
+      if (isCancelDisabled()) {
+        Alert.alert(
+          "Cannot Cancel Order",
+          "Orders that are on the way or delivered cannot be canceled."
+        );
+        return;
+      }
+    
+      // Show custom cancel modal instead of Alert
+      setCancelModalVisible(true);
+    };
+    console.log("=+=========",order?.reportStatus)
+    
+    // Add function to handle actual cancellation
+    // const confirmCancelOrder = async () => {
+    //   try {
+    //     setLoading(true);
+    //     // Add your API call here to cancel the order
+    //     // const response = await axios.post(`${environment.API_BASE_URL}api/orders/cancel-order/${orderId}`);
+        
+    //     setCancelModalVisible(false);
+    //     Alert.alert("Order Cancelled", "Your order has been successfully cancelled.");
+    //     navigation.goBack();
+    //   } catch (err) {
+    //     console.error("Error cancelling order:", err);
+    //     Alert.alert("Error", "Failed to cancel the order. Please try again.");
+    //   } finally {
+    //     setLoading(false);
+    //   }
+    // };
+
+    const confirmCancelOrder = async () => {
+      try {
+        setLoading(true);
+        
+        // Get the stored authentication token
+        const storedToken = await AsyncStorage.getItem("authToken");
+        
+        if (!storedToken) {
+          Alert.alert("Error", "Authentication token not found. Please log in again.");
+          setLoading(false);
+          return;
+        }
+        
+        // Make API call to cancel the order
+        const apiUrl = `${environment.API_BASE_URL}api/orders/cancel-order/${orderId}`;
+        const response = await axios.post(apiUrl, {}, {
+          headers: { 
+            Authorization: `Bearer ${storedToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.data.success) {
+          setCancelModalVisible(false);
+          Alert.alert("Order Cancelled", "Your order has been successfully cancelled.");
+          navigation.goBack();
+        } else {
+          Alert.alert("Error", response.data.message || "Failed to cancel the order.");
+        }
+      } catch (error: any) { // Type annotation for the error
+        console.error("Error cancelling order:", error);
+        
+        let errorMessage = "Failed to cancel the order. Please try again.";
+        if (error.response && error.response.data) {
+          errorMessage = error.response.data.message || errorMessage;
+        }
+        
+        Alert.alert("Error", errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -261,7 +384,7 @@ const shouldShowCancelledItem = () => {
           <Text className="text-lg font-bold text-[#6C3CD1] flex-grow text-center mr-8">
             Order Status
           </Text>
-          <TouchableOpacity onPress={handleReportStatus} className="absolute right-4">
+          <TouchableOpacity onPress={handleGetACall} className="absolute right-4">
             <Feather name="phone" size={24} color="#6C3CD1" />
           </TouchableOpacity>
         </View>
@@ -312,7 +435,7 @@ const shouldShowCancelledItem = () => {
     {/* On the way */}
     <View className="flex-row items-center mb-10">
       <View 
-        className={`w-4 h-4 rounded-full absolute -left-7 ${isTimelineItemActive("On way") ? "bg-[#6C3CD1]" : "bg-[#D9D9D9]"}`} 
+        className={`w-4 h-4 rounded-full absolute -left-7 ${isTimelineItemActive("On the way") ? "bg-[#6C3CD1]" : "bg-[#D9D9D9]"}`} 
       />
       <Text className="text-gray-800 font-medium">
         Order is On the way
@@ -388,18 +511,22 @@ const shouldShowCancelledItem = () => {
                 {order.paymentMethod === "Credit Card" ? "Online Payment" : "Cash on Delivery"}
               </Text>
             </View>
+            
 
             {showStatusMessage && (
               <View className="mx-4 mt-2 p-2 rounded-lg">
                 <Text className="text-red-500 font-medium text-center">
                   {selectedReportOption}
                 </Text>
+                
               </View>
             )}
+            <Text className="text-red-500 font-medium text-center mb-2">{order.reportStatus}</Text>
+            
 
             {/* Report Status Button */}
-            <TouchableOpacity 
-              onPress={handlePhoneCall}
+            {/* <TouchableOpacity 
+              onPress={handleReportStatus}
               className="mx-5 mb-3 rounded-full px-8"
             >
               <LinearGradient
@@ -410,7 +537,24 @@ const shouldShowCancelledItem = () => {
               >
                 <Text className="text-white text-center font-semibold">Report Status</Text>
               </LinearGradient>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
+
+            {/* Report Status Button - Only shown when not Ordered or Cancelled */}
+{ order.orderStatus !== "Cancelled" && (
+  <TouchableOpacity 
+    onPress={handleReportStatus}
+    className="mx-5 mb-3 rounded-full px-8"
+  >
+    <LinearGradient
+      colors={["#6839CF", "#874DDB"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      className="py-3 rounded-lg items-center"
+    >
+      <Text className="text-white text-center font-semibold">Report Status</Text>
+    </LinearGradient>
+  </TouchableOpacity>
+)}
 
             {/* Cancel Order Button */}
             <TouchableOpacity 
@@ -438,6 +582,45 @@ const shouldShowCancelledItem = () => {
 
       {/* Report Status Modal */}
       <Modal
+  animationType="slide"
+  transparent={true}
+  visible={cancelModalVisible}
+  onRequestClose={() => setCancelModalVisible(false)}
+>
+  <View className="flex-1 justify-center items-center bg-black/50">
+    <View className="bg-white rounded-lg p-5 w-5/6 max-w-md">
+      <Text className="text-xl font-bold text-center mb-2">
+        Are you sure?
+      </Text>
+      
+      <Text className="text-center text-gray-600 mb-8">
+        This will permanently delete the order placed by customer and cannot be undone.
+      </Text>
+
+      {/* Confirm Button */}
+      <TouchableOpacity 
+        onPress={confirmCancelOrder}
+        className="mb-3 rounded-lg overflow-hidden"
+      >
+        <View className="bg-black py-3 rounded-lg items-center">
+          <Text className="text-white text-center font-semibold">Confirm</Text>
+        </View>
+      </TouchableOpacity>
+
+      {/* Cancel Button */}
+      <TouchableOpacity 
+        onPress={() => setCancelModalVisible(false)}
+        className="rounded-lg"
+      >
+        <View className="bg-gray-200 py-3 rounded-lg items-center">
+          <Text className="text-black text-center font-semibold">Cancel</Text>
+        </View>
+      </TouchableOpacity>
+    </View>
+  </View>
+</Modal>
+
+<Modal
         animationType="slide"
         transparent={true}
         visible={reportModalVisible}
@@ -445,29 +628,29 @@ const shouldShowCancelledItem = () => {
       >
         <View className="flex-1 justify-center items-center bg-black/50">
           <View className="bg-white rounded-lg p-5 w-5/6 max-w-md">
-            <View className="flex-row items-center shadow-md px-3 bg-white mb-5">
+            {/* <View className="flex-row items-center shadow-md px-3 bg-white mb-5">
               <BackButton navigation={{ goBack: () => setReportModalVisible(false) }} />
               <Text className="text-lg font-bold text-[#6C3CD1] flex-grow text-center mr-8">
                 Report Status
               </Text>
-            </View>
+            </View> */}
 
             {/* Status Options */}
             <View className="mb-4">
               <TouchableOpacity 
                 className="flex-row items-center justify-between p-3 mb-2" 
-                onPress={() => setSelectedReportOption("Answered & Confirmed")}
+                onPress={() => setSelectedReportOption("Confirmed")}
               >
-                <Text className="text-black font-medium">Answered & Confirmed</Text>
-                <View className={`w-6 h-6 border border-gray-400 rounded ${selectedReportOption === "Answered & Confirmed" ? "bg-[#6C3CD1]" : "bg-white"}`} />
+                <Text className="text-black font-medium">Confirmed</Text>
+                <View className={`w-6 h-6 border border-gray-400 rounded ${selectedReportOption === "Confirmed" ? "bg-[#6C3CD1]" : "bg-white"}`} />
               </TouchableOpacity>
 
               <TouchableOpacity 
                 className="flex-row items-center justify-between p-3 mb-2" 
-                onPress={() => setSelectedReportOption("Answered & Not-Confirmed")}
+                onPress={() => setSelectedReportOption("Not-Confirmed")}
               >
-                <Text className="text-black font-medium">Answered & Not-Confirmed</Text>
-                <View className={`w-6 h-6 border border-gray-400 rounded ${selectedReportOption === "Answered & Not-Confirmed" ? "bg-[#6C3CD1]" : "bg-white"}`} />
+                <Text className="text-black font-medium">Not-Confirmed</Text>
+                <View className={`w-6 h-6 border border-gray-400 rounded ${selectedReportOption === "Not-Confirmed" ? "bg-[#6C3CD1]" : "bg-white"}`} />
               </TouchableOpacity>
 
               <TouchableOpacity 

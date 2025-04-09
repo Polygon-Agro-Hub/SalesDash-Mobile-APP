@@ -289,7 +289,7 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
           paymentMethod: paymentMethod,
           customerId: customerId || customerid as string,
           selectedDate: selectedDate,
-          selectedTimeSlot: selectedTimeSlot
+          selectedTimeSlot: selectedTimeSlot,
         });
       } else {
         Alert.alert("Error", response.data.message || "Failed to create order");
