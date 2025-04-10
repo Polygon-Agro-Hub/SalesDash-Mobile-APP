@@ -102,8 +102,8 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, r
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<"Online Payment" | "Pay By Cash" | null>("Online Payment");
 
-  console.log("isCustomPackage",isCustomPackage);
-  console.log('isSelectPackage',isSelectPackage)
+  //console.log("isCustomPackage",isCustomPackage);
+ // console.log('isSelectPackage',isSelectPackage)
   
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
@@ -115,7 +115,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, r
     };
   }, []);
 
- console.log("cusid=============", customerid)
+ //console.log("cusid=============", customerid)
 
  
 const handleProceed = () => {
