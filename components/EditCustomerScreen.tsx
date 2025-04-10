@@ -23,7 +23,7 @@ interface EditCustomerScreenProps {
 
 const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, route }) => {
   const { id } = route.params;
-  console.log(id) // Get customerId from route params
+  console.log(id) 
 
   const [firstName, setFirstName] = useState<string>("");
   const [lastName, setLastName] = useState<string>("");
@@ -111,14 +111,14 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
   const sendOTP = async () => {
     if (!phoneNumber) {
       Alert.alert('Error', 'Please enter a phone number.');
-      return { status: 400 }; // Return a mock response for error handling
+      return { status: 400 }; 
     }
     console.log("----check----", phoneNumber)
   
     try {
       setLoading(true);
   
-      // Clean phone number, removing any non-numeric characters if needed
+ 
       const cleanedPhoneNumber = phoneNumber.replace(/[^\d]/g, "");
   
       const apiUrl = "https://api.getshoutout.com/otpservice/send";
@@ -128,34 +128,34 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
       };
   
       const body = {
-        source: "ShoutDEMO", // Ensure this is a valid source
-        transport: "sms",    // Ensure the transport method is correct
+        source: "ShoutDEMO",
+        transport: "sms",    
         content: {
-          sms: "Your code is {{code}}",  // OTP content message
+          sms: "Your code is {{code}}",  
         },
-        destination: cleanedPhoneNumber, // Use the cleaned phone number
+        destination: cleanedPhoneNumber, 
       };
   
-      console.log("Request body:", body); // Log the request body
+      console.log("Request body:", body); 
   
       const response = await axios.post(apiUrl, body, { headers });
   
-      console.log("API response:", response.data); // Log full API response
+      console.log("API response:", response.data); 
   
-      // Save the referenceId for future tracking
+ 
       await AsyncStorage.setItem("referenceId", response.data.referenceId);
   
-      // Handle success response
+
       if (response.status === 200) {
         setOtpSent(true);
         Alert.alert('Success', 'OTP sent successfully.');
-        return response; // Return the response object
+        return response; 
       } else {
         Alert.alert('Error', 'Failed to send OTP.');
-        return { status: 400 }; // Return a failure response
+        return { status: 400 }; 
       }
     } catch (error) {
-      // Log the error response details for debugging
+    
       if (axios.isAxiosError(error)) {
         console.log('Axios error details:', error.response ? error.response.data : error.message);
         Alert.alert('Error', `Error: ${error.response ? error.response.data.message : error.message}`);
@@ -163,7 +163,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
         console.log('Unexpected error:', error);
         Alert.alert('Error', 'An unexpected error occurred.');
       }
-      return { status: 400 }; // Return a failure response on error
+      return { status: 400 }; 
     } finally {
       setLoading(false);
     }
@@ -176,7 +176,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
       return;
     }
   
-    // Validate phone number and email
+ 
     if (!validatePhoneNumber(phoneNumber)) {
       alert("Please enter a valid phone number.");
       return;
@@ -204,24 +204,23 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
     };
   
     try {
-      // If the phone number has changed, only send OTP and do not update backend yet
-      if (phoneNumber !== originalPhoneNumber) {
-        setOtpSent(false);  // Reset OTP sent state
   
-        // Send OTP for verification
-        const otpResponse = await sendOTP();  // Send OTP
+      if (phoneNumber !== originalPhoneNumber) {
+        setOtpSent(false);  
+  
+ 
+        const otpResponse = await sendOTP();  
         if (otpResponse.status === 200) {
-          // Save customer data temporarily for OTP verification process
+          
           await AsyncStorage.setItem("pendingCustomerData", JSON.stringify(customerData));
   
-          // Navigate to OTP screen with the new phone number
           navigation.navigate("OtpScreenUp", { phoneNumber ,id, token});
           console.log(id)
         } else {
           alert("Failed to send OTP. Please try again.");
         }
       } else {
-        // If the phone number hasn't changed, update the data in the backend
+    
         const response = await axios.put(
           `${environment.API_BASE_URL}api/customer/update-customer-data/${id}`,
           customerData
@@ -247,15 +246,12 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
     }
   };
   
-  
-  
-
   const [open, setOpen] = useState(false);
-const [selectedCategory, setSelectedCategory] = useState("");
-const [items, setItems] = useState([
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [items, setItems] = useState([
   { label: "Mr", value: "Mr" },
   { label: "Ms", value: "Ms" },
-]);
+  ]);
 
 
   const phoneRegex = /^\+?[0-9]{1,3}[0-9]{7,10}$/;
@@ -300,8 +296,7 @@ const [items, setItems] = useState([
               <View className="mb-4 mt-4 flex-row justify-between">
                 <View className="flex-[1]">
                   <Text className="text-gray-700 mb-1">Title</Text>
-                  {/* <View className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full py-2 mt-1 justify-center justifyContent-flex-end"> */}
-               
+                
                   <View className="mb-4">
   
                   <DropDownPicker
@@ -315,27 +310,24 @@ const [items, setItems] = useState([
   style={{
     backgroundColor: "#F6F6F6",
     borderColor: "#F6F6F6",
-    borderRadius: 9999, // Rounded full
-    paddingVertical: 0, // Minimize vertical padding
+    borderRadius: 9999, 
+    paddingVertical: 0, 
     paddingHorizontal: 7,
-    height: 0, // Reduce picker height
+    height: 0, 
   }}
   textStyle={{
-    fontSize: 12, // Reduce placeholder font size
+    fontSize: 12, 
   
-    textAlignVertical: "center", // Align text properly
+    textAlignVertical: "center",
   }}
   dropDownContainerStyle={{
     backgroundColor: "#ffffff",
     borderRadius: 10,
     paddingTop: 6,
-    maxHeight: 100, // Limit dropdown menu height
+    maxHeight: 100, 
     overflow: "hidden",
   }}
 />
-
-
-
 
 
                   </View>

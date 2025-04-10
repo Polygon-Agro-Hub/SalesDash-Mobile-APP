@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, TouchableOpacity, Image, Modal, ScrollView } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, Image, Modal } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-import LottieView from "lottie-react-native";
+
 import ReminderScreenSkeleton from "../components/Skeleton/ReminderSkeleton"; // Import the skeleton
 
 type ReminderScreenNavigationProp = StackNavigationProp<RootStackParamList, "ReminderScreen">;
@@ -34,29 +34,28 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
   const [selectedReminder, setSelectedReminder] = useState<{ id: string; OrderNo: string; CustomerNo: string; type: string; icon: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Function to show delete confirmation modal
+ 
   const showDeleteModal = (reminder: any) => {
     setSelectedReminder(reminder);
     setModalVisible(true);
   };
 
   useEffect(() => {
-    setIsLoading(true); // Start loading
+    setIsLoading(true); 
     setTimeout(() => {
-      setIsLoading(false); // Stop loading after 3 seconds
+      setIsLoading(false); 
     }, 3000);
   }, []);
 
-  // Function to delete notification
+
   const deleteNotification = () => {
     if (selectedReminder) {
       setReminders(reminders.filter((reminder) => reminder.id !== selectedReminder.id));
-      setSelectedReminder(null); // Reset selection
-      setModalVisible(false); // Close modal
+      setSelectedReminder(null);
+      setModalVisible(false); 
     }
   };
 
-  // Function to mark a notification as read
   const markAsRead = (id: string) => {
     setReminders((prevReminders) =>
       prevReminders.map((reminder) =>
@@ -69,20 +68,11 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
 
   return (
     <View className="flex-1 bg-white">
-      {/* Loading State */}
+
       {isLoading ? (
         <>
         <ReminderScreenSkeleton />
-          {/* <Modal transparent animationType="fade">
-              <View className="flex-1 justify-center items-center" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-                <LottieView
-                  source={require("../assets/images/loading.json")}
-                  autoPlay
-                  loop
-                  style={{ width: wp(25), height: hp(12) }}
-                />
-              </View>
-            </Modal> */}
+        
             </>
       ) : (
         <>

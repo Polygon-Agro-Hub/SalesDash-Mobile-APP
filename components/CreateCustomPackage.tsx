@@ -31,9 +31,9 @@ interface CreateCustomPackageProps {
   navigation: CreateCustomPackageNavigationProp;
   route: {
     params: {
-      id: string; // or number, depending on your ID type
+      id: string;
       isCustomPackage:string;
-       isSelectPackage:string;
+      isSelectPackage:string;
     };
   };
 }
@@ -52,14 +52,12 @@ interface Product {
 
 const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation , route}) => {
   const { id ,isCustomPackage, isSelectPackage} = route.params || {};
-  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  //console.log("isCustomPackage",isCustomPackage);
-  //console.log('isSelectPackage',isSelectPackage)
+
 
 
   useEffect(() => {
@@ -80,10 +78,10 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation , 
         });
       
         if (response.data && response.data.data) {
-          //  console.log("uu",response.data)
+     
           setProducts(response.data.data.map((item: any) => ({
             ...item,
-            // Convert string prices to numbers
+      
             normalPrice: parseFloat(item.normalPrice),
             discountedPrice: parseFloat(item.discountedPrice),
             startValue: parseFloat(item.startValue),
@@ -104,10 +102,10 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation , 
   const filteredProducts = searchQuery
   ? products.filter(product => 
       product.displayName.toLowerCase().includes(searchQuery.toLowerCase())
-    ) // Added missing closing parenthesis here
+    ) 
   : products;
 
- // console.log("kjk",id)
+
 
 const toggleProductSelection = (id: number) => {
   setProducts(
@@ -120,24 +118,21 @@ const toggleProductSelection = (id: number) => {
 };
 
 
-
-  // Function to calculate price per 1kg based on unit type
   const calculatePricePerKg = (product: Product) => {
     const price = product.discountedPrice ;
     
     if (product.unitType.toLowerCase() === 'kg') {
-      // If already in kg, divide by startValue to get price per 1kg
+   
       return price / product.startValue;
     } else if (product.unitType.toLowerCase() === 'g') {
-      // If in grams, convert to kg (1000g = 1kg)
+
       return (price / product.startValue) * 1000;
     }
-    
-    // Default case (shouldn't happen if data is correct)
+ 
     return price;
   };
 
-  // Function to safely format price
+  
   const formatPrice = (price: number) => {
     return price.toFixed(2);
   };
@@ -145,21 +140,18 @@ const toggleProductSelection = (id: number) => {
     const pricenoraml =  product.normalPrice;
     
     if (product.unitType.toLowerCase() === 'kg') {
-      // If already in kg, divide by startValue to get price per 1kg
+  
       return pricenoraml / product.startValue;
     } else if (product.unitType.toLowerCase() === 'g') {
-      // If in grams, convert to kg (1000g = 1kg)
+ 
       return (pricenoraml / product.startValue) * 1000;
     }
     
-    // Default case (shouldn't happen if data is correct)
+ 
     return pricenoraml;
   };
 
-  // Function to safely format price
-  const formatPriceNoral = (pricenoraml: number) => {
-    return pricenoraml.toFixed(2);
-  };
+
 
   const goToCart = () => {
     const selectedProducts = products
@@ -176,8 +168,7 @@ const toggleProductSelection = (id: number) => {
           pricenoraml: normalPricePerKg,
           normalPrice:product.normalPrice,
           discountedPrice:product.discountedPrice,
-          changeby: product.changeby, // Default quantity
-        //  selected: true,
+          changeby: product.changeby, 
           unitType: product.unitType,
           startValue: product.startValue,
           cutId : cutId,
@@ -189,7 +180,7 @@ const toggleProductSelection = (id: number) => {
     if (selectedProducts.length > 0) {
       navigation.navigate("CratScreen" as any, { selectedProducts ,id, isCustomPackage, isSelectPackage });
 
-     // console.log("nn",selectedProducts,id)
+
     } else {
       alert("Please select at least one product");
     }
@@ -288,7 +279,6 @@ const toggleProductSelection = (id: number) => {
           {/* Go to Cart Button */}
           <View className="py-4 px-6 ">
             <TouchableOpacity
-            //  className="bg-[#6839CF] py-3 rounded-full items-center"
               onPress={goToCart}
             >
                  <LinearGradient

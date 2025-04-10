@@ -16,7 +16,7 @@ import BackButton from "./BackButton";
 import { LinearGradient } from "expo-linear-gradient";
 import { RouteProp } from "@react-navigation/native";
 
-// Define types for the route parameters
+
 type SelectPaymentMethodRouteProp = RouteProp<RootStackParamList, "SelectPaymentMethod">;
 
 interface AdditionalItem {
@@ -26,18 +26,7 @@ interface AdditionalItem {
   quantity: number;
 }
 
-interface CartItem {
-  id: number;
-  name: string;
-  price: number;
-  normalPrice: number;
-  discountedPrice: number;
-  quantity: number;
-  selected: boolean;
-  unitType: string;
-  startValue: number;
-  changeby: number;
-}
+
 
 interface SelectPaymentMethodProps {
   navigation: StackNavigationProp<RootStackParamList, "SelectPaymentMethod">;
@@ -63,12 +52,12 @@ interface SelectPaymentMethodProps {
         id?: string;
         isCustomPackage?: string;
         isSelectPackage?: string;
-        customerid?: string; // Add customerid at the top level of params
+        customerid?: string; 
         
         orderItems?: Array<{
           additionalItems?: Array<AdditionalItem>;
           isAdditionalItems: boolean;
-          customerid?: string; // Keep this too if needed in orderItems
+          customerid?: string; 
           isModifiedMin: boolean;
           isModifiedPlus: boolean;
           modifiedMinItems: Array<{
@@ -102,8 +91,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, r
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<"Online Payment" | "Pay By Cash" | null>("Online Payment");
 
-  //console.log("isCustomPackage",isCustomPackage);
- // console.log('isSelectPackage',isSelectPackage)
+ 
   
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
@@ -115,7 +103,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, r
     };
   }, []);
 
- //console.log("cusid=============", customerid)
+
 
  
 const handleProceed = () => {
@@ -133,7 +121,7 @@ const handleProceed = () => {
   const navigationData = {
     ...route.params,
     paymentMethod: selectedMethod,
-   // customerId: customerId,
+ 
     isSelectPackage: isSelectPackage,
     isCustomPackage:isCustomPackage
   };
@@ -148,7 +136,6 @@ const handleProceed = () => {
   console.log("Selected Date:", navigationData.selectedDate);
   console.log("Selected Time Slot:", navigationData.selectedTimeSlot);
   console.log("Payment Method:", navigationData.paymentMethod);
-  //console.log("cusid:", navigationData. customerId);
   console.log("isCustomPackage",isCustomPackage);
   console.log('isSelectPackage',isSelectPackage)
 
@@ -164,7 +151,7 @@ const handleProceed = () => {
         className="bg-white flex-1"
         keyboardShouldPersistTaps="handled"
       >
-        {/* Header */}
+ 
         <View className="flex-row items-center shadow-md px-3 bg-white">
           <BackButton navigation={navigation} />
           <Text className="text-lg font-bold text-[#6C3CD1] flex-grow text-center mr-8">
@@ -172,7 +159,7 @@ const handleProceed = () => {
           </Text>
         </View>
 
-        {/* Payment Image */}
+
         <View className="flex items-center justify-center mt-3">
           <Image
             source={require("../assets/images/payment.png")}
@@ -181,7 +168,7 @@ const handleProceed = () => {
           />
         </View>
 
-        {/* Payment Options */}
+ 
         <View className="flex-1 w-full items-center space-y-5 p-12 mt-[-10]">
      
           <TouchableOpacity

@@ -91,24 +91,15 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
     fetchOrderDetails();
   }, [orderId]);
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "";
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
-  };
+  
 
-  // Format date for timeline display (get only date)
   const formatDateShort = (dateString: string) => {
     if (!dateString) return "";
     const date = new Date(dateString);
     return `on ${date.getDate()}${getDaySuffix(date.getDate())} ${date.toLocaleString('default', { month: 'short' })} ${date.getFullYear()}`;
   };
 
-  // Get the day suffix (st, nd, rd, th)
+  
   const getDaySuffix = (day: number) => {
     if (day > 3 && day < 21) return 'th';
     switch (day % 10) {
@@ -119,23 +110,23 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
     }
   };
 
-  // Check if the order time is after 6 PM
+
   const isAfter6PM = (dateString: string) => {
     if (!dateString) return false;
     const date = new Date(dateString);
-    return date.getHours() >= 18; // 18 = 6 PM in 24-hour format
+    return date.getHours() >= 18; 
   };
 
-  // Determine the actual status based on time
+
   const getActualStatus = () => {
     if (!order) return "";
     
-    // If order is marked as cancelled, return that status
+
     if (order.orderStatus === "Cancelled") {
       return "Cancelled";
     }
     
-    // If order is placed after 6 PM, automatically move to Processing
+  
     if (order.orderStatus === "Ordered" && isAfter6PM(order.createdAt)) {
       return "Processing";
     }
@@ -189,34 +180,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
     setReportModalVisible(true);
   };
 
-  const handlePhoneCall = () => {
-    Alert.alert(
-      "Contact Customer",
-      `Would you like to call ${order?.firstName} ${order?.lastName}?`,
-      [
-        {
-          text: "Cancel",
-          style: "cancel"
-        },
-        {
-          text: "Call",
-          onPress: () => {
-            Alert.alert("Calling", `Calling ${order?.phoneNumber}...`);
-          }
-        }
-      ]
-    );
-  };
-
-  // const handleConfirmReport = () => {
-  //   if (!selectedReportOption) {
-  //     Alert.alert("Please select an option", "You must select a report status option.");
-  //     return;
-  //   }
-
-  //   setReportModalVisible(false);
-  //   setShowStatusMessage(true);
-  // };
+ 
 
   const handleConfirmReport = async () => {
     if (!selectedReportOption) {
@@ -236,7 +200,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
       const apiUrl = `${environment.API_BASE_URL}api/orders/report-order/${orderId}`;
       const response = await axios.post(
         apiUrl, 
-        { reportStatus: selectedReportOption }, // Send the selected option in the request body
+        { reportStatus: selectedReportOption }, 
         {
           headers: { 
             Authorization: `Bearer ${storedToken}`,
@@ -245,11 +209,11 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
         }
       );
       
-      // Access data from response.data, not just data
+  
       if (response.data.success) {
         setReportModalVisible(false);
         setShowStatusMessage(true);
-        // Optionally refresh your order data
+
       } else {
         Alert.alert("Error", response.data.message || "Failed to update report status");
       }
@@ -260,40 +224,26 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   };
   
  
-
-  // Determine if a timeline item should be active based on the current order status
 const isTimelineItemActive = (status: string) => {
   if (!order) return false;
-  
-  // The standard order flow statuses
   const orderStatuses = ["Ordered", "Processing", "On the way", "Delivered"];
   const actualStatus = getActualStatus();
   
-  // Special case: if order is cancelled, only show Ordered and Cancelled as active
+
   if (actualStatus === "Cancelled") {
     return status === "Ordered" || status === "Cancelled";
   }
   
-  // For normal flow, show all statuses up to the current one as active
+
   const currentIndex = orderStatuses.indexOf(actualStatus);
   const itemIndex = orderStatuses.indexOf(status);
   
-  // If status is not in our standard flow (like "Cancelled"), don't highlight it
+
   if (itemIndex === -1) return false;
   
   return itemIndex <= currentIndex;
 };
 
-// Check if the timeline should show the cancelled item
-const shouldShowCancelledItem = () => {
-  return order?.orderStatus === "Cancelled";
-};
-  
-  // Check if the order is cancelled
-  const isOrderCancelled = () => {
-    if (!order) return false;
-    return order.orderStatus === "Cancelled";
-  };
     const handleGetACall = () => {
       const phoneNumber = `tel:${order?.phoneNumber}`;
       Linking.openURL(phoneNumber).catch((err) => console.error("Error opening dialer", err));
@@ -308,34 +258,17 @@ const shouldShowCancelledItem = () => {
         return;
       }
     
-      // Show custom cancel modal instead of Alert
+
       setCancelModalVisible(true);
     };
     console.log("=+=========",order?.reportStatus)
-    
-    // Add function to handle actual cancellation
-    // const confirmCancelOrder = async () => {
-    //   try {
-    //     setLoading(true);
-    //     // Add your API call here to cancel the order
-    //     // const response = await axios.post(`${environment.API_BASE_URL}api/orders/cancel-order/${orderId}`);
-        
-    //     setCancelModalVisible(false);
-    //     Alert.alert("Order Cancelled", "Your order has been successfully cancelled.");
-    //     navigation.goBack();
-    //   } catch (err) {
-    //     console.error("Error cancelling order:", err);
-    //     Alert.alert("Error", "Failed to cancel the order. Please try again.");
-    //   } finally {
-    //     setLoading(false);
-    //   }
-    // };
+ 
 
     const confirmCancelOrder = async () => {
       try {
         setLoading(true);
         
-        // Get the stored authentication token
+
         const storedToken = await AsyncStorage.getItem("authToken");
         
         if (!storedToken) {
@@ -344,7 +277,7 @@ const shouldShowCancelledItem = () => {
           return;
         }
         
-        // Make API call to cancel the order
+
         const apiUrl = `${environment.API_BASE_URL}api/orders/cancel-order/${orderId}`;
         const response = await axios.post(apiUrl, {}, {
           headers: { 
@@ -360,7 +293,7 @@ const shouldShowCancelledItem = () => {
         } else {
           Alert.alert("Error", response.data.message || "Failed to cancel the order.");
         }
-      } catch (error: any) { // Type annotation for the error
+      } catch (error: any) { 
         console.error("Error cancelling order:", error);
         
         let errorMessage = "Failed to cancel the order. Please try again.";
@@ -406,10 +339,9 @@ const shouldShowCancelledItem = () => {
           </View>
         ) : order ? (
           <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
-            {/* Order Status Timeline */}
-          {/* Order Status Timeline */}
+        
 {/* Order Status Timeline */}
-{/* Order Status Timeline */}
+
 <View className="p-5 ml-6">
   <View className="border-l-2 border-[#D9D9D9] pl-5 relative">
     {/* Order Placed */}
@@ -524,21 +456,6 @@ const shouldShowCancelledItem = () => {
             <Text className="text-red-500 font-medium text-center mb-2">{order.reportStatus}</Text>
             
 
-            {/* Report Status Button */}
-            {/* <TouchableOpacity 
-              onPress={handleReportStatus}
-              className="mx-5 mb-3 rounded-full px-8"
-            >
-              <LinearGradient
-                colors={["#6839CF", "#874DDB"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                className="py-3 rounded-lg items-center"
-              >
-                <Text className="text-white text-center font-semibold">Report Status</Text>
-              </LinearGradient>
-            </TouchableOpacity> */}
-
             {/* Report Status Button - Only shown when not Ordered or Cancelled */}
 { order.orderStatus !== "Cancelled" && (
   <TouchableOpacity 
@@ -628,12 +545,7 @@ const shouldShowCancelledItem = () => {
       >
         <View className="flex-1 justify-center items-center bg-black/50">
           <View className="bg-white rounded-lg p-5 w-5/6 max-w-md">
-            {/* <View className="flex-row items-center shadow-md px-3 bg-white mb-5">
-              <BackButton navigation={{ goBack: () => setReportModalVisible(false) }} />
-              <Text className="text-lg font-bold text-[#6C3CD1] flex-grow text-center mr-8">
-                Report Status
-              </Text>
-            </View> */}
+            
 
             {/* Status Options */}
             <View className="mb-4">
