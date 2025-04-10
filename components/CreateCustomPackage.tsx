@@ -58,8 +58,8 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation , 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  console.log("isCustomPackage",isCustomPackage);
-  console.log('isSelectPackage',isSelectPackage)
+  //console.log("isCustomPackage",isCustomPackage);
+  //console.log('isSelectPackage',isSelectPackage)
 
 
   useEffect(() => {
@@ -80,7 +80,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation , 
         });
       
         if (response.data && response.data.data) {
-            console.log("uu",response.data)
+          //  console.log("uu",response.data)
           setProducts(response.data.data.map((item: any) => ({
             ...item,
             // Convert string prices to numbers
@@ -107,7 +107,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation , 
     ) // Added missing closing parenthesis here
   : products;
 
-  console.log("kjk",id)
+ // console.log("kjk",id)
 
 const toggleProductSelection = (id: number) => {
   setProducts(
@@ -189,7 +189,7 @@ const toggleProductSelection = (id: number) => {
     if (selectedProducts.length > 0) {
       navigation.navigate("CratScreen" as any, { selectedProducts ,id, isCustomPackage, isSelectPackage });
 
-      console.log("nn",selectedProducts,id)
+     // console.log("nn",selectedProducts,id)
     } else {
       alert("Please select at least one product");
     }

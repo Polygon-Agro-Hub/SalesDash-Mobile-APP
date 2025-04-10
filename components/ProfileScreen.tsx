@@ -201,7 +201,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                     )}
                   </TouchableOpacity>
                   <Text className="text-black text-2xl font-bold mb-2">
-                    {formData.username}
+                    {formData.firstName}
                   </Text>
                 </View>
               </View>

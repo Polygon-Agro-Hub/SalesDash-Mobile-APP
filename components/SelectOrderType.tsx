@@ -29,7 +29,7 @@ interface SelectOrderTypeProps {
 const SelectOrderType: React.FC<SelectOrderTypeProps> = ({ navigation, route }) => {
   // Get the ID from route params
   const { id } = route.params || {};
-  console.log("Customer ID:", id);
+//  console.log("Customer ID:", id);
 
   // Navigate to Create Custom Package with appropriate flags
   const handleCreateCustomPackage = () => {
