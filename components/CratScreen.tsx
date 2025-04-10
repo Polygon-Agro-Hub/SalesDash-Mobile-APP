@@ -385,33 +385,70 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
 
   const discount = currentSubtotal - currentTotal;
 
+  // const handleConfirm = () => {
+  //   const nonSelectedItems = cartItems.filter(item => !item.selected);
+    
+  //   if (nonSelectedItems.length > 0) {
+  //     const itemsToPass = nonSelectedItems.map(item => ({
+  //       id: item.id,
+  //       name: item.name,
+  //       price: item.price,
+  //       normalPrice: item.normalPrice,
+  //       discountedPrice: item.discountedPrice,
+  //       quantity: item.quantity,
+  //      // selected: item.selected,
+  //       unitType: item.unitType,  // Removed the duplicate property
+  //       startValue: item.startValue,
+  //       changeby: item.changeby,
+  //       isSelectPackage: isSelectPackage,
+  //       isCustomPackage:isCustomPackage
+  //     }));
+  
+  //     navigation.navigate('ScheduleScreen' as any, {
+  //       items: itemsToPass,
+  //       total: currentTotal,
+  //       subtotal: currentSubtotal,
+  //       discount: discount,
+  //       id:id,
+  //       isSelectPackage: isSelectPackage,
+  //         isCustomPackage:isCustomPackage
+  //     });
+  //   } else {
+  //     alert("Please add at least one item to your cart");
+  //   }
+  // };
+
   const handleConfirm = () => {
     const nonSelectedItems = cartItems.filter(item => !item.selected);
     
     if (nonSelectedItems.length > 0) {
-      const itemsToPass = nonSelectedItems.map(item => ({
-        id: item.id,
-        name: item.name,
-        price: item.price,
-        normalPrice: item.normalPrice,
-        discountedPrice: item.discountedPrice,
-        quantity: item.quantity,
-       // selected: item.selected,
-        unitType: item.unitType,  // Removed the duplicate property
-        startValue: item.startValue,
-        changeby: item.changeby,
-        isSelectPackage: isSelectPackage,
-        isCustomPackage:isCustomPackage
-      }));
+      const itemsToPass = nonSelectedItems.map(item => {
+        // Convert grams to kg for the backend
+        const weightInKg = item.unitType === 'g' ? item.changeby / 1000 : item.changeby;
+        
+        return {
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          normalPrice: item.normalPrice,
+          discountedPrice: item.discountedPrice,
+          quantity: weightInKg, // Set quantity to the converted kg value
+          unitType: 'kg',       // Always set to kg for backend
+          startValue: item.startValue,
+          changeby: weightInKg, // Consistent with quantity
+          isSelectPackage: isSelectPackage,
+          isCustomPackage: isCustomPackage
+        };
+      });
   
       navigation.navigate('ScheduleScreen' as any, {
         items: itemsToPass,
         total: currentTotal,
         subtotal: currentSubtotal,
         discount: discount,
-        id:id,
+        id: id,
         isSelectPackage: isSelectPackage,
-          isCustomPackage:isCustomPackage
+        isCustomPackage: isCustomPackage
       });
     } else {
       alert("Please add at least one item to your cart");

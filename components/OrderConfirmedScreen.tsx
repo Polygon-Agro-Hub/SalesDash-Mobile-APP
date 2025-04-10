@@ -8,7 +8,9 @@ import {
   Image,
   TouchableOpacity,
   ScrollView,
-  Alert
+  Alert,
+  BackHandler,
+  Linking
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RouteProp } from "@react-navigation/native";
@@ -21,6 +23,8 @@ import { Asset } from "expo-asset";
 import * as FileSystem from "expo-file-system";
 import axios from "axios";
 import environment from "@/environment/environment";
+// Add this import at the top of your file
+import * as MediaLibrary from 'expo-media-library';
 
 type OrderConfirmedScreenNavigationProp = StackNavigationProp<RootStackParamList, "OrderConfirmedScreen">;
 type OrderConfirmedScreenRouteProp = RouteProp<RootStackParamList, "OrderConfirmedScreen">;
@@ -80,6 +84,24 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
     selectedTimeSlot = "N/A",
     items = []
   } = route.params || {};
+
+
+  useEffect(() => {
+    // Function to handle back button press
+    const handleBackPress = () => {
+      // Return true to prevent default behavior (going back)
+      return true;
+    };
+  
+    // Add event listener for back press
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      handleBackPress
+    );
+  
+    // Clean up the event listener when component unmounts
+    return () => backHandler.remove();
+  }, []);
 
   // useEffect(() => {
   //   const fetchOrderDetails = async () => {
@@ -164,6 +186,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
       day: 'numeric' 
     });
   };
+  
 
 
   useEffect(() => {
@@ -179,15 +202,14 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
   // Function to convert the watermark image to base64
   const convertImageToBase64 = async () => {
     try {
-      // Get the local URI of the asset
       const asset = Asset.fromModule(require("../assets/images/Watermark.png"));
-      await asset.downloadAsync(); // Ensure it's available on the filesystem
+      await asset.downloadAsync();
   
       if (!asset.localUri) {
-        throw new Error("Failed to load asset");
+        console.warn("Asset local URI not found");
+        return "";
       }
   
-      // Read the image as Base64
       const base64 = await FileSystem.readAsStringAsync(asset.localUri, {
         encoding: FileSystem.EncodingType.Base64,
       });
@@ -199,31 +221,35 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
     }
   };
   
+  
   // Function to generate and download the invoice PDF
   const handleDownloadInvoice = async () => {
     try {
-      const watermarkBase64 = await convertImageToBase64(); // Convert watermark image to Base64
+      // 1. Convert watermark image
+      const watermarkBase64 = await convertImageToBase64();
+      
+      // 2. Generate invoice number
       const currentDate = new Date();
       const formattedDate = `${currentDate.getFullYear()}${(currentDate.getMonth() + 1).toString().padStart(2, '0')}${currentDate.getDate().toString().padStart(2, '0')}`;
       const invoiceNumber = `MP${formattedDate}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
   
-      // Create items table rows if items are available
+      // 3. Generate items rows HTML
       let itemsRows = '';
       if (items && items.length > 0) {
         items.forEach(item => {
           const itemPrice = item.price || 0;
           const itemQuantity = item.quantity || 0;
-          itemsRows += `
-            <tr>
+          itemsRows += 
+            `<tr>
               <td>${item.name || 'Item'}</td>
               <td>${itemQuantity}</td>
               <td>${itemPrice.toFixed(2)}</td>
               <td>${(itemPrice * itemQuantity).toFixed(2)}</td>
-            </tr>
-          `;
+            </tr>`;
         });
       }
-
+  
+      // 4. Generate HTML content
       const htmlContent = `
         <!DOCTYPE html>
         <html lang="en">
@@ -234,20 +260,19 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
             <style>
                 body {
                     font-family: Arial, sans-serif;
-                    padding: 20px;
+                    padding: 10px;
                     margin: 0;
                     background-color: #ffffff;
                     position: relative;
                 }
                 .invoice-container {
                     position: relative;
-                    border: 1px solid #ddd;
-                    padding: 20px;
+                    border: 1px solid #ccc;
+                    padding: 10px;
                     max-width: 700px;
                     margin: auto;
                     background: white;
-                    z-index: 1;
-                    overflow: hidden; /* Ensures watermark stays inside */
+                    overflow: hidden;
                 }
                 .watermark {
                     position: absolute;
@@ -255,14 +280,14 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
                     left: 0;
                     width: 100%;
                     height: 100%;
-                    opacity: 0.1; /* Adjust transparency */
-                    z-index: -1; /* Push it behind text */
+                    opacity: 0.5;
+                    z-index: 0;
                     display: flex;
                     justify-content: center;
                     align-items: center;
                 }
                 .watermark img {
-                    width: 70%; /* Adjust size as needed */
+                    width: 70%;
                     height: auto;
                 }
                 h1, h2 {
@@ -270,9 +295,10 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
                     text-align: left;
                 }
                 .section {
-                    margin-top: 20px;
-                    border-bottom: 1px solid #ddd;
+                    border-bottom: 2px solid #ddd;
                     padding-bottom: 10px;
+                    line-height: 0.8;
+                    margin-bottom: 5px;
                 }
                 .bold {
                     font-weight: bold;
@@ -280,7 +306,6 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
                 table {
                     width: 100%;
                     border-collapse: collapse;
-                    margin-top: 5px;
                 }
                 table, th, td {
                     border: 1px solid black;
@@ -289,7 +314,6 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
                 }
                 .footer {
                     text-align: center;
-                    margin-top: 20px;
                     font-size: 14px;
                 }
             </style>
@@ -300,34 +324,33 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
                     <img src="${watermarkBase64}" alt="Watermark" />
                 </div>
                 
-                <h1>Purchase Invoice</h1>
+                <h3>Purchase Invoice</h3>
                 <div class="section">
                     <p class="bold">AgroWorld (Pvt) Ltd.</p>
                     <p>Address: No. 1 Colombo 2</p>
                     <p>Contact: 077123457</p>
                     <p>Invoice Number: <strong>${order?.InvNo}</strong></p>
-                    <p>Order ID: <strong>${orderId}</strong></p>
                     <p>Date: <strong>${new Date().toLocaleDateString()}</strong></p>
                 </div>
-
+  
                 <div class="section">
-                    <h2>Customer Details</h2>
+                    <h3>Order Details</h3>
                     <p><span class="bold">Delivery Type:</span> One time</p>
                     <p><span class="bold">Selected Date:</span> ${selectedDate}</p>
                     <p><span class="bold"> Time :</span> ${selectedTimeSlot}</p>
                 </div>
-
+  
                 <div class="section">
-                    <h2>Receiver Details</h2>
+                    <h3>Receiver Details</h3>
                     <p><span class="bold">Receiver's Name:</span> ${order?.firstName}  ${order?.lastName}</p>
                     <p><span class="bold">Phone Number:</span> ${order?.phoneNumber}</p>
                     <p><span class="bold">Building Type:</span> ${order?.buildingType}</p>
-                     <p><span class="bold">Address:</span> ${order?.fullAddress}</p>
+                    <p><span class="bold">Address:</span> ${order?.fullAddress}</p>
                 </div>
-
+  
                 ${items && items.length > 0 ? `
                 <div class="section">
-                    <h2>Order Items</h2>
+                    <h3>Order Items</h3>
                     <table>
                         <tr>
                             <th>Item</th>
@@ -339,9 +362,9 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
                     </table>
                 </div>
                 ` : ''}
-
+  
                 <div class="section">
-                    <h2>Payment Summary</h2>
+                    <h3>Payment Summary</h3>
                     <table>
                         <tr>
                             <th>Description</th>
@@ -363,7 +386,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
                 </div>
                 
                 <div class="section">
-                    <h2>Payment Method</h2>
+                    <h3>Payment Method</h3>
                     <p><span class="bold">Payment Method:</span> ${paymentMethod}</p>
                 </div>
                 
@@ -377,19 +400,290 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
         </html>
       `;
   
+      // 5. Generate PDF
       const { uri } = await Print.printToFileAsync({ html: htmlContent });
   
-      if (Platform.OS === "android") {
-        Alert.alert("PDF Generated", `Saved to: ${uri}`);
+      // 6. Save to local storage
+      const downloadDir = FileSystem.documentDirectory + 'Invoices/';
+      const fileName = `Invoice_${order?.InvNo || invoiceNumber}.pdf`;
+      const fileUri = `${downloadDir}${fileName}`;
+  
+      await FileSystem.makeDirectoryAsync(downloadDir, { intermediates: true });
+      await FileSystem.copyAsync({ from: uri, to: fileUri });
+  
+      // 7. Handle platform-specific saving
+      if (Platform.OS === 'android') {
+        const permissions = await MediaLibrary.requestPermissionsAsync();
+        if (permissions.granted) {
+          const asset = await MediaLibrary.createAssetAsync(fileUri);
+          await MediaLibrary.createAlbumAsync('Downloads', asset, false);
+        }
       }
   
-      await Sharing.shareAsync(uri);
+      // 8. Show success and share options
+      Alert.alert(
+        'Success',
+        `Invoice saved to: ${fileUri}`,
+        [
+          { text: 'OK' },
+          { text: 'Share', onPress: () => Sharing.shareAsync(fileUri) }
+        ]
+      );
+  
     } catch (error) {
-      console.error("Error generating PDF:", error);
-      Alert.alert("Error", "Failed to generate PDF.");
+      console.error("Error:", error);
+      Alert.alert("Error", "Failed to generate or save PDF.");
     }
   };
+
+  const handleDownloadAndShareInvoice = async () => {
+    try {
+      // 1. Convert watermark image
+      const watermarkBase64 = await convertImageToBase64();
+      
+      // 2. Generate invoice number
+      const invoiceNumber = order?.InvNo || `INV-${Date.now()}`;
   
+      // 3. Generate items rows HTML
+      let itemsRows = '';
+      if (items && items.length > 0) {
+        items.forEach(item => {
+          const itemPrice = item.price || 0;
+          const itemQuantity = item.quantity || 0;
+          itemsRows += 
+            `<tr>
+              <td>${item.name || 'Item'}</td>
+              <td>${itemQuantity}</td>
+              <td>${itemPrice.toFixed(2)}</td>
+              <td>${(itemPrice * itemQuantity).toFixed(2)}</td>
+            </tr>`;
+        });
+      }
+  
+      // 4. Generate HTML content
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Purchase Invoice</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    padding: 10px;
+                    margin: 0;
+                    background-color: #ffffff;
+                    position: relative;
+                }
+                .invoice-container {
+                    position: relative;
+                    border: 1px solid #ccc;
+                    padding: 10px;
+                    max-width: 700px;
+                    margin: auto;
+                    background: white;
+                    overflow: hidden;
+                }
+                .watermark {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    opacity: 0.5;
+                    z-index: 0;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                }
+                .watermark img {
+                    width: 70%;
+                    height: auto;
+                }
+                h1, h2 {
+                    color: #000;
+                    text-align: left;
+                }
+                .section {
+                    border-bottom: 2px solid #ddd;
+                    padding-bottom: 10px;
+                    line-height: 0.8;
+                    margin-bottom: 5px;
+                }
+                .bold {
+                    font-weight: bold;
+                }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                }
+                table, th, td {
+                    border: 1px solid black;
+                    padding: 10px;
+                    text-align: left;
+                }
+                .footer {
+                    text-align: center;
+                    font-size: 14px;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="invoice-container">
+                <div class="watermark">
+                    <img src="${watermarkBase64}" alt="Watermark" />
+                </div>
+                
+                <h3>Purchase Invoice</h3>
+                <div class="section">
+                    <p class="bold">AgroWorld (Pvt) Ltd.</p>
+                    <p>Address: No. 1 Colombo 2</p>
+                    <p>Contact: 077123457</p>
+                    <p>Invoice Number: <strong>${order?.InvNo}</strong></p>
+                    <p>Date: <strong>${new Date().toLocaleDateString()}</strong></p>
+                </div>
+  
+                <div class="section">
+                    <h3>Order Details</h3>
+                    <p><span class="bold">Delivery Type:</span> One time</p>
+                    <p><span class="bold">Selected Date:</span> ${selectedDate}</p>
+                    <p><span class="bold"> Time :</span> ${selectedTimeSlot}</p>
+                </div>
+  
+                <div class="section">
+                    <h3>Receiver Details</h3>
+                    <p><span class="bold">Receiver's Name:</span> ${order?.firstName}  ${order?.lastName}</p>
+                    <p><span class="bold">Phone Number:</span> ${order?.phoneNumber}</p>
+                    <p><span class="bold">Building Type:</span> ${order?.buildingType}</p>
+                    <p><span class="bold">Address:</span> ${order?.fullAddress}</p>
+                </div>
+  
+                ${items && items.length > 0 ? `
+                <div class="section">
+                    <h3>Order Items</h3>
+                    <table>
+                        <tr>
+                            <th>Item</th>
+                            <th>Quantity</th>
+                            <th>Unit Price</th>
+                            <th>Total</th>
+                        </tr>
+                        ${itemsRows}
+                    </table>
+                </div>
+                ` : ''}
+  
+                <div class="section">
+                    <h3>Payment Summary</h3>
+                    <table>
+                        <tr>
+                            <th>Description</th>
+                            <th>Amount</th>
+                        </tr>
+                        <tr>
+                            <td>Subtotal</td>
+                            <td>${subtotal.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                            <td>Discount</td>
+                            <td>${discount.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Grand Total</strong></td>
+                            <td><strong>${total.toFixed(2)}</strong></td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <div class="section">
+                    <h3>Payment Method</h3>
+                    <p><span class="bold">Payment Method:</span> ${paymentMethod}</p>
+                </div>
+                
+                <div class="footer">
+                    <p><strong>Thank You for Shopping with Us!</strong></p>
+                    <p>We value your trust and look forward to serving you again.</p>
+                    <p>We are an Agro Fin Tech Company</p>
+                </div>
+            </div>
+        </body>
+        </html>
+      `;
+      // 5. Generate PDF
+      const { uri: pdfUri } = await Print.printToFileAsync({ 
+        html: htmlContent,
+        width: 595,   // A4 width in points (8.27in)
+        height: 842,  // A4 height in points (11.69in)
+        base64: false
+      });
+  
+      // 6. Save to local storage
+      const downloadDir = FileSystem.documentDirectory + 'Invoices/';
+      const fileName = `Invoice_${invoiceNumber}.pdf`;
+      const localUri = `${downloadDir}${fileName}`;
+  
+      // Create directory if it doesn't exist
+      await FileSystem.makeDirectoryAsync(downloadDir, { intermediates: true });
+      
+      // Move the PDF to our permanent location
+      await FileSystem.moveAsync({
+        from: pdfUri,
+        to: localUri
+      });
+  
+      // 7. For Android: Save to Downloads folder
+      if (Platform.OS === 'android') {
+        try {
+          const { status } = await MediaLibrary.requestPermissionsAsync();
+          if (status === 'granted') {
+            await MediaLibrary.createAssetAsync(localUri);
+          }
+        } catch (e) {
+          console.log('Error saving to Downloads:', e);
+        }
+      }
+  
+      // 8. Show success alert with both options
+      Alert.alert(
+        'Invoice Ready',
+        'What would you like to do with the invoice?',
+        [
+          {
+            text: 'Download Only',
+            onPress: () => {
+              Alert.alert('Success', `Invoice saved to: ${localUri}`);
+            }
+          },
+          {
+            text: 'Share',
+            onPress: async () => {
+              try {
+                await Sharing.shareAsync(localUri, {
+                  mimeType: 'application/pdf',
+                  dialogTitle: 'Share Invoice',
+                  UTI: 'com.adobe.pdf'
+                });
+              } catch (shareError) {
+                Alert.alert('Error', 'Failed to share invoice');
+              }
+            }
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel'
+          }
+        ]
+      );
+  
+    } catch (error) {
+      console.error('Invoice generation error:', error);
+      Alert.alert('Error', 'Failed to generate invoice. Please try again.');
+    }
+  };
+
+
+
   // Safely format a number with toFixed or return '0.00' if undefined
   const safeToFixed = (num: any, decimals = 2) => {
     if (num === undefined || num === null || isNaN(Number(num))) {
@@ -459,7 +753,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
             </View>
 
             {/* Download Invoice Button */}
-            <TouchableOpacity 
+            {/* <TouchableOpacity 
               onPress={handleDownloadInvoice} 
               style={{ marginHorizontal: wp(20), marginTop: hp(7) }}
             >
@@ -469,7 +763,19 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
               >
                 <Text style={{ color: "white", fontWeight: "bold" }}>Download Invoice</Text>
               </LinearGradient>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
+
+<TouchableOpacity 
+  onPress={handleDownloadAndShareInvoice} 
+  style={{ marginHorizontal: wp(20), marginTop: hp(7) }}
+>
+  <LinearGradient 
+    colors={["#6839CF", "#874DDB"]} 
+    style={{ paddingVertical: 12, paddingHorizontal: 16, borderRadius: 30, alignItems: "center" }}
+  >
+    <Text style={{ color: "white", fontWeight: "bold" }}>Download Invoice</Text>
+  </LinearGradient>
+</TouchableOpacity>
           </View>
         </View>
       </ScrollView>
