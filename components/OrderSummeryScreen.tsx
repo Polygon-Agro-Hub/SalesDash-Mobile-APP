@@ -22,32 +22,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 type OrderSummeryScreenNavigationProp = StackNavigationProp<RootStackParamList, "OrderSummeryScreen">;
 type OrderSummeryScreenRouteProp = RouteProp<RootStackParamList, "OrderSummeryScreen">;
 
-interface OrderSummeryScreenProps {
-  navigation: OrderSummeryScreenNavigationProp;
-  route: OrderSummeryScreenRouteProp;
-}
-interface BaseItem {
-  id: number;
-  name: string;
-  price: number;
-  quantity: number;
-  unitType?: string;
-}
-
-
-
-interface PackageItem {
-  packageId: number;
-  isModifiedPlus: boolean;
-  isModifiedMin: boolean;
-  isAdditionalItems: boolean;
-  packageTotal: number;
-  packageDiscount: number;
-  modifiedPlusItems: ModifiedPlusItem[];
-  modifiedMinItems: ModifiedMinItem[];
-  additionalItems: AdditionalItem[];
-}
-
 interface ModifiedPlusItem {
   packageDetailsId: number;
   originalQuantity: number;
@@ -73,25 +47,50 @@ interface AdditionalItem {
   discount: number;
 }
 
-// Define the order data structure
-interface OrderData {
-  customerId: string | number;
-  deliveryType: string;
-  scheduleDate: string;
-  paymentMethod: string;
-  orderStatus: string;
-  isSelectPackage?: number;
-  isCustomPackage?: number;
-  orderItems: (CartItem | PackageItem)[];
+interface PackageItem {
+  packageId: number;
+  isModifiedPlus: boolean;
+  isModifiedMin: boolean;
+  isAdditionalItems: boolean;
+  packageTotal: number;
+  packageDiscount: number;
+  modifiedPlusItems: ModifiedPlusItem[];
+  modifiedMinItems: ModifiedMinItem[];
+  additionalItems: AdditionalItem[];
+}
+
+
+
+interface OrderSummeryScreenProps {
+  navigation: OrderSummeryScreenNavigationProp;
+  route: OrderSummeryScreenRouteProp;
+}
+
+// Define customer data interface
+interface CustomerData {
+  title?: string;
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
+  buildingType?: string;
+  buildingDetails?: {
+    buildingNo?: string;
+    unitNo?: string;
+    buildingName?: string;
+    floorNo?: string;
+    houseNo?: string;
+    streetName?: string;
+    city?: string;
+  };
 }
 
 const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({ navigation, route }) => {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
-  const [customerData, setCustomerData] = useState<any>(null);
+  const [customerData, setCustomerData] = useState<CustomerData | null>(null);
   const [loading, setLoading] = useState(true);
-   const [error, setError] = useState("");
+  const [error, setError] = useState("");
   
-  // Extract all params from route
+  // Extract all params from route with safe defaults
   const {
     items = [],
     subtotal = 0,
@@ -104,26 +103,14 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({ navigation, rou
     customerId = "",
     customerid = "",
     isSelectPackage = 0,
-    isCustomPackage = 0
+    isCustomPackage = 0,
+    orderItems = [] // Add this line to extract orderItems from route params
   } = route.params || {};
   
   // Type guard to ensure items is always an array
   const safeItems = Array.isArray(items) ? items : [];
-  
-  // Use console.log for debugging route params
-  console.log("Route params:", {
-    customerId,
-    customerid,
-    isSelectPackage,
-    isCustomPackage,
-    itemsCount: safeItems.length
-  });
-
-  console.log("cusid,,,,,,,,,,,", customerId);
-  console.log("cusid,,,,,,,,,,,",  customerid);
-
-  // Format date for display
-  const formattedDate = selectedDate ? new Date(selectedDate).toLocaleDateString() : "Not set";
+// Type guard to ensure orderItems is always an array
+const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
   
   // Format time slot for display
   const timeDisplay = selectedTimeSlot || "Not set";
@@ -131,275 +118,238 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({ navigation, rou
   const subTotalDeliveryPlus = 350 + subtotal;
   const totalDeliveryPlus = 350 + total;
 
-  console.log("subtotal-----------------",subTotalDeliveryPlus)
-  console.log("total----------------------",totalDeliveryPlus)
-  console.log("isCustomPackage-----------",isCustomPackage);
-  console.log('isSelectPackage-------',isSelectPackage)
-
- // Fetch customer data from backend
-//  useEffect(() => {
-//   const fetchCustomerData = async () => {
-//     try {
-//       setLoading(true);
-//       setError(''); 
-      
-//       const storedToken = await AsyncStorage.getItem("authToken");
-//       if (!storedToken) {
-//         setError("No authentication token found");
-//         setLoading(false);
-//         return;
-//       }
-//       console.log("k",customerId)
-//       const apiUrl = `${environment.API_BASE_URL}api/orders/get-customer-data/${customerId}`;
-//       console.log("o",apiUrl)
-      
-//       const response = await axios.get(apiUrl, {
-//         headers: { Authorization: `Bearer ${storedToken}` },
-//       });
-      
-//       if (response.data.success) {
-//         setCustomerData(response.data.data);
-//       } else {
-//         setError(response.data.message || "Failed to fetch customer data");
-//       }
-//     } catch (error) {
-//       console.error("Error fetching customer data:", error);
-     
-//       if (error instanceof Error) {
-//         setError(error.message || "Failed to fetch customer data");
-//       } else {
-//         setError("Failed to fetch customer data");
-//       }
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-  
-//   if (customerId) {
-//     fetchCustomerData();
-//   }
-// }, [customerId]);
-
-//   useEffect(() => {
-//     // Log received data for debugging
-//     console.log("Received data in OrderSummeryScreen:", JSON.stringify(route.params, null, 2));
-//     console.log("Items:", items);
-//     console.log("Subtotal:", subtotal);
-//     console.log("Discount:", discount);
-//     console.log("Total:", total);
-//     console.log("Full Total:", fullTotal);
-//     console.log("Selected Date:", selectedDate);
-//     console.log("Selected Time Slot:", selectedTimeSlot);
-//     console.log("Payment Method:", paymentMethod);
-//     console.log("Customer Data:", customerData);
-//     console.log(" customerid",customerId)
-    
-//     const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
-//     const keyboardDidHideListener = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false));
-
-//     return () => {
-//       keyboardDidShowListener.remove();
-//       keyboardDidHideListener.remove();
-//     };
-//   }, [route.params, items, subtotal, discount, total, fullTotal, selectedDate, selectedTimeSlot, paymentMethod, customerData]);
-
-useEffect(() => {
-  const fetchCustomerData = async () => {
-    try {
-      setLoading(true);
-      
-      // Handle both customerId and customerid from route params
-      const customerIdValue = customerId || route.params?.customerId || route.params?.customerid;
-      
-      if (!customerIdValue) {
-        setError("No customer ID found");
+  useEffect(() => {
+    const fetchCustomerData = async () => {
+      try {
+        setLoading(true);
+        
+        // Handle both customerId and customerid from route params
+        const customerIdValue = customerId || route.params?.customerId || route.params?.customerid;
+        
+        if (!customerIdValue) {
+          setError("No customer ID found");
+          setLoading(false);
+          return;
+        }
+        
+        const storedToken = await AsyncStorage.getItem("authToken");
+        
+        if (!storedToken) {
+          setError("No authentication token found");
+          setLoading(false);
+          return;
+        }
+        
+        const apiUrl = `${environment.API_BASE_URL}api/orders/get-customer-data/${customerIdValue}`;
+        
+        const response = await axios.get(apiUrl, {
+          headers: { Authorization: `Bearer ${storedToken}` },
+        });
+        
+        if (response.data.success) {
+          setCustomerData(response.data.data);
+        } else {
+          setError(response.data.message || "Failed to fetch customer data");
+        }
+      } catch (error: any) {
+        console.error("Error fetching customer data:", error);
+        
+        if (error instanceof Error) {
+          setError(error.message || "Failed to fetch customer data");
+        } else {
+          setError("Failed to fetch customer data");
+        }
+      } finally {
         setLoading(false);
-        return;
       }
-      
+    };
+
+    // Check both possible parameter names
+    if (route.params?.customerId || route.params?.customerid) {
+      fetchCustomerData();
+    }
+  }, [route.params]);
+
+  const handleConfirmOrder = async () => {
+    // Validate that we have all required data before proceeding
+    if (!customerId && !customerid) {
+      Alert.alert("Error", "Customer information is missing");
+      return;
+    }
+    
+    setLoading(true);
+    
+    try {
+      // Get the stored token
       const storedToken = await AsyncStorage.getItem("authToken");
       
       if (!storedToken) {
-        setError("No authentication token found");
+        Alert.alert("Error", "Authentication token not found. Please log in again.");
         setLoading(false);
         return;
       }
       
-      console.log("k", customerIdValue);
-      const apiUrl = `${environment.API_BASE_URL}api/orders/get-customer-data/${customerIdValue}`;
-      console.log("o", apiUrl);
+      // Format the order data based on order type
+      let orderPayload: any = {
+        customerId: customerId || customerid,
+        scheduleDate: selectedDate,
+        selectedTimeSlot: selectedTimeSlot,
+        paymentMethod: paymentMethod,
+        fullTotal: fullTotal || total,
+        discount: discount,
+        subtotal: subtotal
+      };
       
-      const response = await axios.get(apiUrl, {
-        headers: { Authorization: `Bearer ${storedToken}` },
+      // Handle selected package data (isSelectPackage: 1)
+      if (isSelectPackage === 1) {
+        orderPayload.isSelectPackage = 1;
+        orderPayload.isCustomPackage = 0;
+        
+        // Extract package data from orderItems array directly
+        if (safeOrderItems.length > 0) {
+          const packageItem = safeOrderItems[0]; // Get the first package item
+          
+          orderPayload.packageId = packageItem.packageId;
+          orderPayload.isModifiedPlus = packageItem.isModifiedPlus;
+          orderPayload.isModifiedMin = packageItem.isModifiedMin;
+          orderPayload.isAdditionalItems = packageItem.isAdditionalItems;
+          orderPayload.packageTotal = packageItem.packageTotal;
+          orderPayload.packageDiscount = packageItem.packageDiscount;
+          
+          // Add modified plus items if present
+          if (packageItem.modifiedPlusItems && packageItem.modifiedPlusItems.length > 0) {
+            orderPayload.modifiedPlusItems = packageItem.modifiedPlusItems;
+          }
+          
+          // Add modified minus items if present
+          if (packageItem.modifiedMinItems && packageItem.modifiedMinItems.length > 0) {
+            orderPayload.modifiedMinItems = packageItem.modifiedMinItems;
+          }
+          
+          // Add additional items if present
+          if (packageItem.additionalItems && packageItem.additionalItems.length > 0) {
+            orderPayload.additionalItems = packageItem.additionalItems;
+          }
+        }
+      } 
+      // Handle custom package data (isCustomPackage: 1)
+      else if (isCustomPackage === 1) {
+        orderPayload.isSelectPackage = 0;
+        orderPayload.isCustomPackage = 1;
+        
+        // Format items for custom package - use safeItems directly
+        orderPayload.items = safeItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          quantity: item.quantity,
+          unitType: item.unitType || "kg",
+          price: item.price,
+          normalPrice: item.normalPrice,
+          discountedPrice: item.discountedPrice
+        }));
+      } else {
+        // Handle regular items
+        orderPayload.isSelectPackage = 0;
+        orderPayload.isCustomPackage = 0;
+        
+        // Format items for regular order
+        orderPayload.items = safeItems.map(item => ({
+          itemId: item.id,
+          name: item.name,
+          quantity: item.quantity,
+          unitType: item.unitType || "kg",
+          price: item.price,
+          discount: (item.normalPrice && item.discountedPrice) 
+            ? item.normalPrice - item.discountedPrice 
+            : 0
+        }));
+      }
+      
+      console.log("Sending order data to API:", JSON.stringify(orderPayload, null, 2));
+      
+      // Make API call to create order
+      const apiUrl = `${environment.API_BASE_URL}api/orders/create-order`;
+      const response = await axios.post(apiUrl, orderPayload, {
+        headers: { 
+          Authorization: `Bearer ${storedToken}`,
+          'Content-Type': 'application/json'
+        }
       });
       
       if (response.data.success) {
-        setCustomerData(response.data.data);
+        // Order created successfully
+        console.log("Order created successfully:", response.data);
+        
+        // Navigate to confirmation screen with order ID
+        navigation.navigate("OrderConfirmedScreen", {
+          orderId: response.data.data.orderId,
+          total: total,
+          subtotal: subtotal,
+          discount:discount,
+          paymentMethod: paymentMethod,
+          customerId: customerId || customerid as string,
+          selectedDate: selectedDate,
+          selectedTimeSlot: selectedTimeSlot,
+        });
       } else {
-        setError(response.data.message || "Failed to fetch customer data");
+        Alert.alert("Error", response.data.message || "Failed to create order");
       }
-    } catch (error) {
-      console.error("Error fetching customer data:", error);
+    } catch (error: any) {
+      console.error("Error creating order:", error);
       
-      if (error instanceof Error) {
-        setError(error.message || "Failed to fetch customer data");
-      } else {
-        setError("Failed to fetch customer data");
+      let errorMessage = "Failed to create order";
+      if (error.response && error.response.data) {
+        errorMessage = error.response.data.message || errorMessage;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
       }
+      
+      Alert.alert("Error", errorMessage);
     } finally {
       setLoading(false);
     }
   };
-
-  // Check both possible parameter names
-  if (route.params?.customerId || route.params?.customerid) {
-    fetchCustomerData();
-  }
-}, [route.params]);
-
-const handleConfirmOrder = () => {
-  // Validate that we have all required data before proceeding
-  if (!customerId) {
-    // Show error message - customer ID is required
-    Alert.alert("Error", "Customer information is missing");
-    return;
-  }
-  
-  // Base order data
-  const orderData: {
-    customerId: string | number;
-    deliveryType: string;
-    scheduleDate: string;
-    paymentMethod: string;
-    orderStatus: string;
-    isSelectPackage?: number;
-    isCustomPackage?: number;
-    orderItems: any[];
-  } = {
-    customerId: customerId || customerid,
-    deliveryType: "Scheduled",
-    scheduleDate: selectedDate,
-    paymentMethod: paymentMethod,
-    orderStatus: "Pending",
-    orderItems: []
-  };
-  
-  // Handle selected package data (isSelectPackage: 1)
-  if (isSelectPackage === 1) {
-    orderData.isSelectPackage = 1;
-    orderData.isCustomPackage = 0;
-    
-    // For packages, we need to handle the specialized structure
-    orderData.orderItems = items.map((item: any) => {
-      // Make sure all required properties exist
-      return {
-        packageId: item.packageId || 0,
-        isModifiedPlus: Boolean(item.isModifiedPlus),
-        isModifiedMin: Boolean(item.isModifiedMin),
-        isAdditionalItems: Boolean(item.isAdditionalItems),
-        packageTotal: item.packageTotal || 0,
-        packageDiscount: item.packageDiscount || 0,
-        modifiedPlusItems: Array.isArray(item.modifiedPlusItems) ? item.modifiedPlusItems : [],
-        modifiedMinItems: Array.isArray(item.modifiedMinItems) ? item.modifiedMinItems : [],
-        additionalItems: Array.isArray(item.additionalItems) ? item.additionalItems : []
-      };
-    });
-  } 
-  // Handle custom package data (isCustomPackage: 1)
-  else if (isCustomPackage === 1) {
-    orderData.isSelectPackage = 0;
-    orderData.isCustomPackage = 1;
-    
-    // For custom packages, map the cart items to the order format
-    orderData.orderItems = items.map((item: CartItem) => ({
-      itemId: item.id,
-      name: item.name,
-      quantity: item.quantity,
-      unitType: item.unitType || "kg",
-      price: item.price,
-      normalPrice: item.normalPrice,
-      discountedPrice: item.discountedPrice
-    }));
-  }
-  // Handle regular items
-  else {
-    orderData.isSelectPackage = 0;
-    orderData.isCustomPackage = 0;
-    
-    // For regular items
-    orderData.orderItems = items.map((item: CartItem) => ({
-      itemId: item.id,
-      name: item.name,
-      quantity: item.quantity,
-      unitType: item.unitType || "kg",
-      price: item.price,
-      discount: (item.normalPrice && item.discountedPrice) 
-        ? item.normalPrice - item.discountedPrice 
-        : 0
-    }));
-  }
-  
-  // Include additional data for display on the confirmation screen
-  // const displayData = {
-  //   orderId: Math.floor(1000000 + Math.random() * 9000000),
-  //   total,
-  //   paymentMethod,
-  //   customerId: customerId || customerid,
-  //   selectedDate: formattedDate,
-  //   selectedTimeSlot: timeDisplay
-  // };
-  
-  // Log the order data that will be sent to the API
-  console.log("Order Data to be submitted:", JSON.stringify(orderData, null, 2));
-  
-  // Navigate to the confirmation screen
-  navigation.navigate("OrderConfirmedScreen" as any, {
-    //...displayData,
-    orderData // Pass the complete order data for API submission
-  });
-};
-
   // Get customer info from API or fallback to default
-const getCustomerInfo = () => {
-  if (loading) {
-    return {
-      name: "Loading...",
-      phone: "Loading...",
-      buildingType: "Loading...",
-      address: "Loading..."
-    };
-  }
-  
-  if (customerData) {
-    // Format address using the actual fields from the response
-    const address = customerData.buildingDetails ? 
-      `${customerData.buildingDetails.buildingNo || ''} ${customerData.buildingDetails.unitNo || ''}, 
-${customerData.buildingDetails.buildingName || ''}, 
-${customerData.buildingDetails.floorNo ? 'Apartment ' + customerData.buildingDetails.floorNo + ', ' : ''}
-${customerData.buildingDetails.houseNo ? 'House ' + customerData.buildingDetails.houseNo + ', ' : ''}
-${customerData.buildingDetails.streetName || ''}, 
-${customerData.buildingDetails.city || ''}` : 
-      "No address found";
-
-    // Clean up the address by removing extra spaces and line breaks
-    const cleanedAddress = address.replace(/\s+/g, ' ').trim();
+  const getCustomerInfo = () => {
+    if (loading) {
+      return {
+        name: "Loading...",
+        phone: "Loading...",
+        buildingType: "Loading...",
+        address: "Loading..."
+      };
+    }
     
+    if (customerData) {
+      // Format address using the actual fields from the response
+      const address = customerData.buildingDetails ? 
+        `${customerData.buildingDetails.buildingNo || ''} ${customerData.buildingDetails.unitNo || ''}, 
+  ${customerData.buildingDetails.buildingName || ''}, 
+  ${customerData.buildingDetails.floorNo ? 'Apartment ' + customerData.buildingDetails.floorNo + ', ' : ''}
+  ${customerData.buildingDetails.houseNo ? 'House ' + customerData.buildingDetails.houseNo + ', ' : ''}
+  ${customerData.buildingDetails.streetName || ''}, 
+  ${customerData.buildingDetails.city || ''}` : 
+        "No address found";
+
+      // Clean up the address by removing extra spaces and line breaks
+      const cleanedAddress = address.replace(/\s+/g, ' ').trim();
+      
+      return {
+        name: `${customerData.title || ''} ${customerData.firstName || ''} ${customerData.lastName || ''}`,
+        phone: customerData.phoneNumber || "No phone",
+        buildingType: customerData.buildingType || "Not specified",
+        address: cleanedAddress
+      };
+    }
+   
     return {
-      name: `${customerData.title || ''} ${customerData.firstName || ''} ${customerData.lastName || ''}`,
-      phone: customerData.phoneNumber || "No phone",
-      buildingType: customerData.buildingType || "Not specified",
-      address: cleanedAddress
+      name: "Guest User",
+      phone: "Not available",
+      buildingType: "Not specified",
+      address: "Address not available"
     };
-  }
-  
- 
-  return {
-    name: "Guest User",
-    phone: "Not available",
-    buildingType: "Not specified",
-    address: "Address not available"
   };
-};
+  
   const customerInfo = getCustomerInfo();
 
   return (
