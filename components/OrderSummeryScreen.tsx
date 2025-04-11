@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
-  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Image,
@@ -66,7 +65,7 @@ interface OrderSummeryScreenProps {
   route: OrderSummeryScreenRouteProp;
 }
 
-// Define customer data interface
+
 interface CustomerData {
   title?: string;
   firstName?: string;
@@ -85,12 +84,11 @@ interface CustomerData {
 }
 
 const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({ navigation, route }) => {
-  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   
-  // Extract all params from route with safe defaults
+
   const {
     items = [],
     subtotal = 0,
@@ -104,15 +102,15 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({ navigation, rou
     customerid = "",
     isSelectPackage = 0,
     isCustomPackage = 0,
-    orderItems = [] // Add this line to extract orderItems from route params
+    orderItems = [] 
   } = route.params || {};
   
-  // Type guard to ensure items is always an array
+
   const safeItems = Array.isArray(items) ? items : [];
-// Type guard to ensure orderItems is always an array
+
 const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
   
-  // Format time slot for display
+
   const timeDisplay = selectedTimeSlot || "Not set";
 
   const subTotalDeliveryPlus = 350 + subtotal;
@@ -123,7 +121,7 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
       try {
         setLoading(true);
         
-        // Handle both customerId and customerid from route params
+
         const customerIdValue = customerId || route.params?.customerId || route.params?.customerid;
         
         if (!customerIdValue) {
@@ -164,14 +162,14 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
       }
     };
 
-    // Check both possible parameter names
+
     if (route.params?.customerId || route.params?.customerid) {
       fetchCustomerData();
     }
   }, [route.params]);
 
   const handleConfirmOrder = async () => {
-    // Validate that we have all required data before proceeding
+
     if (!customerId && !customerid) {
       Alert.alert("Error", "Customer information is missing");
       return;
@@ -180,7 +178,7 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
     setLoading(true);
     
     try {
-      // Get the stored token
+
       const storedToken = await AsyncStorage.getItem("authToken");
       
       if (!storedToken) {
@@ -189,7 +187,7 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
         return;
       }
       
-      // Format the order data based on order type
+
       let orderPayload: any = {
         customerId: customerId || customerid,
         scheduleDate: selectedDate,
@@ -200,14 +198,14 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
         subtotal: subtotal
       };
       
-      // Handle selected package data (isSelectPackage: 1)
+
       if (isSelectPackage === 1) {
         orderPayload.isSelectPackage = 1;
         orderPayload.isCustomPackage = 0;
         
-        // Extract package data from orderItems array directly
+
         if (safeOrderItems.length > 0) {
-          const packageItem = safeOrderItems[0]; // Get the first package item
+          const packageItem = safeOrderItems[0]; 
           
           orderPayload.packageId = packageItem.packageId;
           orderPayload.isModifiedPlus = packageItem.isModifiedPlus;
@@ -216,28 +214,28 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
           orderPayload.packageTotal = packageItem.packageTotal;
           orderPayload.packageDiscount = packageItem.packageDiscount;
           
-          // Add modified plus items if present
+
           if (packageItem.modifiedPlusItems && packageItem.modifiedPlusItems.length > 0) {
             orderPayload.modifiedPlusItems = packageItem.modifiedPlusItems;
           }
           
-          // Add modified minus items if present
+
           if (packageItem.modifiedMinItems && packageItem.modifiedMinItems.length > 0) {
             orderPayload.modifiedMinItems = packageItem.modifiedMinItems;
           }
           
-          // Add additional items if present
+        
           if (packageItem.additionalItems && packageItem.additionalItems.length > 0) {
             orderPayload.additionalItems = packageItem.additionalItems;
           }
         }
       } 
-      // Handle custom package data (isCustomPackage: 1)
+   
       else if (isCustomPackage === 1) {
         orderPayload.isSelectPackage = 0;
         orderPayload.isCustomPackage = 1;
         
-        // Format items for custom package - use safeItems directly
+
         orderPayload.items = safeItems.map(item => ({
           id: item.id,
           name: item.name,
@@ -248,11 +246,11 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
           discountedPrice: item.discountedPrice
         }));
       } else {
-        // Handle regular items
+
         orderPayload.isSelectPackage = 0;
         orderPayload.isCustomPackage = 0;
         
-        // Format items for regular order
+
         orderPayload.items = safeItems.map(item => ({
           itemId: item.id,
           name: item.name,
@@ -267,7 +265,7 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
       
       console.log("Sending order data to API:", JSON.stringify(orderPayload, null, 2));
       
-      // Make API call to create order
+
       const apiUrl = `${environment.API_BASE_URL}api/orders/create-order`;
       const response = await axios.post(apiUrl, orderPayload, {
         headers: { 
@@ -277,10 +275,10 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
       });
       
       if (response.data.success) {
-        // Order created successfully
+    
         console.log("Order created successfully:", response.data);
         
-        // Navigate to confirmation screen with order ID
+ 
         navigation.navigate("OrderConfirmedScreen", {
           orderId: response.data.data.orderId,
           total: total,
@@ -309,7 +307,7 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
       setLoading(false);
     }
   };
-  // Get customer info from API or fallback to default
+
   const getCustomerInfo = () => {
     if (loading) {
       return {
@@ -321,7 +319,7 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
     }
     
     if (customerData) {
-      // Format address using the actual fields from the response
+   
       const address = customerData.buildingDetails ? 
         `${customerData.buildingDetails.buildingNo || ''} ${customerData.buildingDetails.unitNo || ''}, 
   ${customerData.buildingDetails.buildingName || ''}, 
@@ -331,7 +329,6 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
   ${customerData.buildingDetails.city || ''}` : 
         "No address found";
 
-      // Clean up the address by removing extra spaces and line breaks
       const cleanedAddress = address.replace(/\s+/g, ' ').trim();
       
       return {
@@ -413,8 +410,7 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
             <Text className="text-[#808FA2] text-xs mt-2">Building Type</Text>
             <Text className="text-black font-medium">{customerInfo.buildingType}</Text>
   
-            {/* <Text className="text-[#808FA2] text-xs mt-2">Address</Text>
-            <Text className="text-black font-medium">{customerInfo.address}</Text> */}
+        
             <Text className="text-[#808FA2] text-xs mt-2">Address</Text>
 {customerData && customerData.buildingDetails ? (
   <View>

@@ -1,263 +1,3 @@
-// import React, { useState, useEffect } from "react";
-// import { View, Text, FlatList, TouchableOpacity, Image, Modal, Alert, RefreshControl } from "react-native";
-// import { LinearGradient } from "expo-linear-gradient";
-// import { AntDesign } from "@expo/vector-icons";
-// import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
-// import Navbar from "./Navbar";
-// import { StackNavigationProp } from "@react-navigation/stack";
-// import { RootStackParamList } from "./types";
-// import BackButton from "./BackButton";
-// import axios from "axios";
-// import environment from "@/environment/environment";
-// import AsyncStorage from "@react-native-async-storage/async-storage";
-// import LottieView from "lottie-react-native";
-// import ViewComplainScreenSkeleton from "../components/Skeleton/ViewComplainScreenSkeleton";  // Assuming skeleton loader component
-
-// type ViewComplainScreenNavigationProp = StackNavigationProp<RootStackParamList, "ViewComplainScreen">;
-
-// interface ViewComplainScreenProps {
-//   navigation: ViewComplainScreenNavigationProp;
-// }
-
-// const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({ navigation }) => {
-//   const [modalVisible, setModalVisible] = useState(false); 
-//   const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null); 
-//   const [complaints, setComplaints] = useState<Complaint[]>([]); 
-//   const [loading, setLoading] = useState<boolean>(true); 
-//   const [formData, setFormData] = useState({ username: "" });
-//   const [refreshing, setRefreshing] = useState(false);
-
-//   interface Complaint {
-//     id: number;
-//     refNo: string;
-//     complain: string;
-//     createdAt: string;
-//     status: string;
-//     reply?: string;
-//     userName?: string;
-//     replyTime: string;
-//   }
-
-//   const isEmpty = complaints.every(
-//     (complaint) => !complaint.refNo && !complaint.complain && !complaint.status
-//   );
-
-//   // Fetch complaints
-//   const fetchComplaints = async () => {
-//     try {
-//       const storedToken = await AsyncStorage.getItem("authToken");
-//       if (!storedToken) {
-//         Alert.alert("Error", "No authentication token found");
-//         return;
-//       }
-  
-//       const complaintsUrl = `${environment.API_BASE_URL.replace(/\/$/, '')}/api/complain/get-complains`;
-  
-//       setTimeout(async () => {
-//         try {
-//           const complaintsResponse = await axios.get(complaintsUrl, {
-//             headers: { Authorization: `Bearer ${storedToken}` },
-//           });
-  
-//           if (complaintsResponse.status === 404) {
-//             // No complaints found, handle this case
-//             Alert.alert("No Complaints", "You have no previous complaints.");
-//             setComplaints([]);
-//           } else {
-//             const formattedComplaints = complaintsResponse.data.map((complaint: { createdAt: string | number | Date }) => ({
-//               ...complaint,
-//               createdAt: new Date(complaint.createdAt).toLocaleString("en-US", {
-//                 hour: "2-digit",
-//                 minute: "2-digit",
-//                 hour12: true,
-//                 day: "numeric",
-//                 month: "short",
-//                 year: "numeric",
-//               }),
-//             }));
-  
-//             setComplaints(formattedComplaints);
-//           }
-  
-//           setLoading(false);
-  
-//           const profileUrl = `${environment.API_BASE_URL.replace(/\/$/, '')}/api/auth/user/profile`;
-//           const profileResponse = await axios.get(profileUrl, {
-//             headers: { Authorization: `Bearer ${storedToken}` },
-//           });
-  
-//           setFormData(profileResponse.data.data);
-//         } catch (error) {
-//           console.error("Error fetching complaints or user profile:", error);
-//           setLoading(false);
-//           Alert.alert("Error", "Failed to fetch complaints or user profile");
-//         }
-//       }, 2000); // 2-second delay
-//     } catch (error) {
-//       console.error("Error fetching complaints or user profile:", error);
-//       setLoading(false);
-//       Alert.alert("Error", "Failed to fetch complaints or user profile");
-//     }
-//   };
-  
-
-//   useEffect(() => {
-//     fetchComplaints(); // Initial fetch with delay
-//   }, []);
-  
-//   const onRefresh = async () => {
-//     setRefreshing(true);
-//     try {
-//       await fetchComplaints(); // Re-fetch the complaints from the server
-//     } catch (error) {
-//       console.error("Error refreshing complaints:", error);
-//     } finally {
-//       setRefreshing(false); // Reset refreshing state after data is fetched
-//     }
-//   };
-
-//   const handleViewResponse = (complaint: Complaint) => {
-//     setSelectedComplaint(complaint);
-//     setModalVisible(true);
-//   };
-
-  
-//   return (
-//     <View className="flex-1 bg-white">
-//       {loading && (
-//         <Modal transparent animationType="fade">
-//           <View className="flex-1 justify-center items-center" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-//             <LottieView
-//               source={require("../assets/images/loading.json")}
-//               autoPlay
-//               loop
-//               style={{ width: wp(25), height: hp(12) }}
-//             />
-//           </View>
-//         </Modal>
-//       )}
-  
-//       {/* Header */}
-//       <LinearGradient colors={["#6839CF", "#854EDC"]} className="h-30 shadow-md px-2 pt-5">
-//         <View className="flex-row items-center justify-between mt-[-4]">
-//           <View className="mt-[-3]">
-//             <BackButton navigation={navigation} />
-//           </View>
-  
-//           <Text className="text-white text-lg font-bold flex-1 mx-14 ">Complaint History</Text>
-//         </View>
-//       </LinearGradient>
-  
-//       <View style={{ paddingHorizontal: wp(6) }} className="flex-1">
-//         {/* If loading, show skeleton */}
-      
-//         {loading ? (
-//   <ViewComplainScreenSkeleton />
-// ) : isEmpty ? (
-//   <View className="flex-1 justify-center items-center px-4">
-//     <Image
-//       source={require("../assets/images/searchr.png")}
-//       style={{ width: wp("60%"), height: hp("30%"), resizeMode: "contain" }}
-//     />
-//     <Text className="text-black text-i text-center mt-4">You have no previous complaints</Text>
-//   </View>
-// ) : (
-//         // Complaint List (FlatList)
-//         <View className="flex-1 px-4 pt-4">
-//             <FlatList
-//       data={complaints}
-//       keyExtractor={(item) => item.id.toString()}
-//       showsVerticalScrollIndicator={true}
-//       contentContainerStyle={{ paddingBottom: 100 }}
-//       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-//       renderItem={({ item }) => (
-//               <View className="bg-white shadow-md p-4 mb-4 border border-gray-300 rounded-lg">
-//                 <Text className="text-gray-700 font-semibold">Ref No: {item.refNo}</Text>
-//                 <Text className="text-gray-500 text-sm">Sent {item.createdAt}</Text>
-//                 <Text className="text-gray-700 mt-2">{item.complain}</Text>
-      
-//                 {/* Status & Action Buttons */}
-//                 <View className="mt-4 flex-row justify-between items-center rounded-lg">
-//                   {item.status === "Opened" ? (
-//                     <Text></Text>
-//                   ) : (
-//                     <TouchableOpacity
-//                       className="bg-black px-3 py-1 text-xs rounded-lg"
-//                       onPress={() => handleViewResponse(item)}
-//                     >
-//                       <Text className="text-white text-xs">View Response</Text>
-//                     </TouchableOpacity>
-//                   )}
-//                   <Text
-//                     className={`px-3 py-1 text-xs rounded-lg ${item.status === "Opened" ? "bg-blue-200 text-blue-700" : "bg-purple-200 text-purple-700"}`}
-//                   >
-//                     {item.status}
-//                   </Text>
-//                 </View>
-//               </View>
-//             )}
-//           />
-//         </View>
-//       )}
-      
-  
-//         {/* Modal to View Response */}
-//         <Modal
-//           animationType="fade"
-//           transparent={true}
-//           visible={modalVisible}
-//           onRequestClose={() => setModalVisible(false)}
-//         >
-//           <View className="flex-1 items-center bg-white bg-opacity-50">
-//             <View className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-//               {/* Close Button */}
-//               <TouchableOpacity className="absolute top-3 right-3" onPress={() => setModalVisible(false)}>
-//                 <AntDesign name="closecircle" size={24} color="gray" />
-//               </TouchableOpacity>
-  
-//               {/* Complaint Response Content */}
-//               {selectedComplaint ? (
-//                 <View className="mt-4">
-//                   <Text className="text-gray-800 text-base leading-relaxed text-left">
-//                     <Text className="font-bold">Dear {formData.username || "User"},</Text>
-//                     {"\n\n"}
-//                     {selectedComplaint.reply || "No response available."}
-//                     {"\n\n"}
-//                     <Text className="text-left">Sincerely,</Text>
-//                     {"\n"}
-//                     <Text className="text-left">AgroWorld Customer Support Team</Text>
-//                     {"\n\n"}
-//                   </Text>
-  
-//                   {selectedComplaint.replyTime ? (
-//                     <Text className="text-gray-800 mt-[-28] text-base">
-//                       {new Date(selectedComplaint.replyTime).toLocaleString("en-US", {
-//                         day: "2-digit",     
-//                         month: "2-digit",    
-//                         year: "numeric",    
-//                       })}
-//                     </Text>
-//                   ) : (
-//                     <Text className="text-gray-600 text-sm">No reply time available</Text>
-//                   )}
-//                 </View>
-//               ) : (
-//                 <Text className="text-gray-700">No response available.</Text>
-//               )}
-//             </View>
-//           </View>
-//         </Modal>
-//       </View>
-  
-//       {/* Bottom Navigation */}
-//       <Navbar navigation={navigation} activeTab="DashboardScreen" />
-//     </View>
-//   );
-  
-// };
-
-// export default ViewComplainScreen;
-
 import React, { useState, useEffect } from "react";
 import { View, Text, FlatList, TouchableOpacity, Image, Modal, Alert, RefreshControl } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -269,7 +9,6 @@ import BackButton from "./BackButton";
 import axios from "axios";
 import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import LottieView from "lottie-react-native";
 import ViewComplainScreenSkeleton from "../components/Skeleton/ViewComplainScreenSkeleton";  // Assuming skeleton loader component
 
 type ViewComplainScreenNavigationProp = StackNavigationProp<RootStackParamList, "ViewComplainScreen">;
@@ -301,7 +40,7 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({ navigation }) =
     (complaint) => !complaint.refNo && !complaint.complain && !complaint.status
   );
 
-  // Fetch complaints
+
   const fetchComplaints = async () => {
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
@@ -319,7 +58,7 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({ navigation }) =
           });
   
           if (complaintsResponse.status === 404) {
-            // No complaints found, handle this case
+      
             Alert.alert("No Complaints", "You have no previous complaints.");
             setComplaints([]);
           } else {
@@ -351,7 +90,7 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({ navigation }) =
           setLoading(false);
           Alert.alert("Error", "Failed to fetch complaints or user profile");
         }
-      }, 2000); // 2-second delay
+      }, 2000); 
     } catch (error) {
       console.error("Error fetching complaints or user profile:", error);
       setLoading(false);
@@ -361,17 +100,17 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({ navigation }) =
   
 
   useEffect(() => {
-    fetchComplaints(); // Initial fetch with delay
+    fetchComplaints(); 
   }, []);
   
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      await fetchComplaints(); // Re-fetch the complaints from the server
+      await fetchComplaints(); 
     } catch (error) {
       console.error("Error refreshing complaints:", error);
     } finally {
-      setRefreshing(false); // Reset refreshing state after data is fetched
+      setRefreshing(false); 
     }
   };
 
@@ -421,7 +160,7 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({ navigation }) =
                     <Text className="text-gray-500 text-sm">Sent {item.createdAt}</Text>
                     <Text className="text-gray-700 mt-2">{item.complain}</Text>
     
-                    {/* Status & Action Buttons */}
+      
                     <View className="mt-4 flex-row justify-between items-center rounded-lg">
                       {item.status === "Opened" ? (
                         <Text></Text>

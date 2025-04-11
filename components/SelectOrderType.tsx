@@ -27,11 +27,9 @@ interface SelectOrderTypeProps {
 }
 
 const SelectOrderType: React.FC<SelectOrderTypeProps> = ({ navigation, route }) => {
-  // Get the ID from route params
-  const { id } = route.params || {};
-//  console.log("Customer ID:", id);
 
-  // Navigate to Create Custom Package with appropriate flags
+  const { id } = route.params || {};
+
   const handleCreateCustomPackage = () => {
     navigation.navigate("CreateCustomPackage" as any, { 
       id, 
@@ -40,7 +38,7 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({ navigation, route }) 
     });
   };
 
-  // Navigate to Order Screen with appropriate flags
+
   const handleSelectPackage = () => {
     navigation.navigate("OrderScreen" as any, { 
       id, 
@@ -49,6 +47,7 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({ navigation, route }) 
     });
   };
 
+  console.log("----------",id)
   return (
     <View className="flex-1 bg-white">
       <View className="flex-row items-center h-16 shadow-md px-4 bg-white">

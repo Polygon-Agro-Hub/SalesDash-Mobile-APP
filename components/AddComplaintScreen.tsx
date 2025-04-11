@@ -14,7 +14,6 @@ import {
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
-import { AntDesign } from "@expo/vector-icons";
 import { widthPercentageToDP as wp } from "react-native-responsive-screen";
 import BackButton from "./BackButton";
 import axios from "axios";
@@ -39,15 +38,8 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
   console.log(selectedCategory)
   const [complaintText, setComplaintText] = useState<string>("");
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
-    const [token, setToken] = useState<string | null>(null);
     const [category, setCategory] = useState<any[]>([]);
     const [open, setOpen] = useState(false);
-
-    const departments = [
-      { key: "1", value: "Technical" },
-      { key: "2", value: "Billing" },
-      { key: "3", value: "Customer Service" },
-    ];
 
     useEffect(() => {
       let appName = "SalesDash";
@@ -61,20 +53,16 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
           );
           if (response.data.status === "success") {
             console.log(response.data.data);
-  
-            // Determine which language field to use
- 
-  
             const mappedCategories = response.data.data
-              .map((item: any) => {
-                const categoryValue =
-                   item["categoryEnglish"];
-                return {
-                  value: item.id,
-                  label: categoryValue,
-                };
-              })
-              .filter((item: { value: any }) => item.value);
+            .map((item: any) => {
+              return {
+                key: item.id,           // This will be stored in state when selected
+                value: item.categoryEnglish  // This will be displayed to the user
+              };
+            })
+            .filter((item: { key: any }) => item.key);
+          
+          setCategory(mappedCategories);
   
             setCategory(mappedCategories);
           }
@@ -169,66 +157,19 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
                <SelectList
   setSelected={(val: string) => setSelectedCategory(val)}
   data={category}
-  save="value"
+  save="key"
   placeholder="Select Complaint Category"
-  boxStyles={{ borderColor: "#ccc", height: 50 }}
+  boxStyles={{ borderColor: "#393939", height: 50 }}
   inputStyles={{ color: "#434343", fontSize: 14 }}
   dropdownTextStyles={{ fontSize: 12 }}
   search={false}
 />
 
-                <View className="w-full   mb-4">
-                {category.length > 0 && (
-                  <DropDownPicker
-                    open={open}
-                    value={selectedCategory} // Assuming complain value is for category
-                    setOpen={setOpen}
-                    setValue={setSelectedCategory} // Here it updates the complain value, which represents the selected category
-                    items={category.map((item) => ({
-                      label: (item.label), // Apply translation here
-                      value: item.value, // Keep the value as it is from Category
-                    }))}
-                    placeholder={("Select Complaint Category")} // Apply translation here
-                    placeholderStyle={{ color: "#d1d5db" }}
-                    listMode="SCROLLVIEW"
-                    zIndex={3000}
-                    zIndexInverse={1000}
-                    dropDownContainerStyle={{
-                      borderColor: "#ccc",
-                      borderWidth: 1,
-                    }}
-                    style={{
-                      borderWidth: 1,
-                      borderRadius:20,
-                      borderColor: "#ccc",
-                      paddingHorizontal: 8,
-                      paddingVertical: 10,
-                    }}
-                    textStyle={{ fontSize: 12 }}
-                    onOpen={dismissKeyboard}
-                  />
-                )}
-              </View>
+              
 
-{/* 
-                <View className="mb-4 border border-[#393939] rounded-full overflow-hidden ">
-                <Picker
-  selectedValue={selectedCategory}
-  onValueChange={(itemValue) => setSelectedCategory(itemValue)}
-  style={{ height: 50, color: "#434343" }} // Remove the typo "#434343s"
-  itemStyle={{ fontSize: 10 }} // Adjust font size
->
-  <Picker.Item label="Select Complaint Category" value="" />
-  <Picker.Item label="Technical Issue" value="Technical Issue" />
-  <Picker.Item label="Billing Problem" value="Billing Problem" />
-  <Picker.Item label="Customer Service" value="Customer Service" />
-  <Picker.Item label="Other" value="Other" />
-</Picker>
-  
-                </View> */}
                 
 
-                <Text className="text-center text-black mb-4">
+                <Text className="text-center text-black mb-4 mt-4">
                   -- We will get back to you within 2 days --
                 </Text>
 
@@ -245,13 +186,6 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
   />
 </View>
 
-
-                {/* <TouchableOpacity
-                  className="bg-purple-600 py-3 rounded-full items-center mx-auto w-40 shadow-lg"
-                  onPress={handleSubmit}
-                >
-                  <Text className="text-white font-semibold text-lg">Submit</Text>
-                </TouchableOpacity> */}
                 <TouchableOpacity onPress={handleSubmit} className="mx-auto shadow-lg w-40">
   <LinearGradient
     colors={["#6839CF", "#874DDB"]}

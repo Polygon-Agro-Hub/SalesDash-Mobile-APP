@@ -57,25 +57,11 @@ const OrderScreenSkeleton: React.FC = () => {
         keyExtractor={(item, index) => index.toString()}
         renderItem={() => (
           <View
-            // style={{
-            //   backgroundColor: "white",
-            //   borderRadius: wp(4),
-            //   padding: wp(1),
-            //   marginBottom: hp(1),
-            //   borderWidth: 1,
-            //   borderColor: "#EAEAEA",
-            //   marginHorizontal: wp(1),
-            //   shadowColor: "#0000001A",
-            //   shadowOpacity: 0.2,
-            //   shadowOffset: { width: 0, height: 1 },
-            //   shadowRadius: 5,
-            //   elevation: 5,
-            // }}
             style={{
               backgroundColor: "white",
               borderRadius: wp(4),
-              padding: wp(0.8),  // Reduced padding
-              marginBottom: hp(0.8),  // Reduced bottom margin
+              padding: wp(0.8),  
+              marginBottom: hp(0.8),  
               borderWidth: 1,
               borderColor: "#EAEAEA",
               marginHorizontal: wp(1),

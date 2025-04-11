@@ -14,8 +14,6 @@ import {
 import { StackNavigationProp } from "@react-navigation/stack"; 
 import { RootStackParamList } from "./types"; 
 import { Bar } from 'react-native-progress';
-
-import Navbar from "./Navbar";
 import { LinearGradient } from "expo-linear-gradient";
 import DashboardSkeleton from "../components/Skeleton/DashboardSkeleton"; 
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -81,14 +79,14 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     }
   });
   
-  // Add refresh function
+  
   const refreshData = async () => {
     setIsLoading(true);
     await Promise.all([getUserProfile(), fetchPackages(), fetchAgentStats()]);
     setIsLoading(false);
   };
 
-  // Check auth status and load data when screen comes into focus
+
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       refreshData();
@@ -97,12 +95,12 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     return unsubscribe;
   }, [navigation]);
 
-  // Fetch user profile data
+
   const getUserProfile = async () => {
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
       if (!storedToken) {
-        // If no token found, redirect to login
+
         navigation.reset({
           index: 0,
           routes: [{ name: "LoginScreen" }],
@@ -118,7 +116,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       setFormData(response.data.data);
     } catch (error) {
       console.error("Profile fetch error:", error);
-      // Check if error is due to invalid token
+
       if (axios.isAxiosError(error) && error.response?.status === 401) {
         await AsyncStorage.removeItem("authToken");
         navigation.reset({
@@ -131,7 +129,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     }
   };
 
-  // Fetch packages
+
   const fetchPackages = async () => {
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
@@ -152,7 +150,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     }
   };
 
-  // Fetch sales agent stats
+
   const fetchAgentStats = async () => {
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
@@ -175,15 +173,6 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     return <DashboardSkeleton />;
   }
 
-  // Add refresh button component
-  const RefreshButton = () => (
-    <TouchableOpacity 
-      onPress={refreshData}
-      className="bg-[#E6DBF766] p-2 rounded-full mr-3"
-    >
-      <Text className="font-bold text-[#6A3AD0]">↻</Text>
-    </TouchableOpacity>
-  );
 
   const renderPackage = ({ item }: { item: Package }) => (
     <View

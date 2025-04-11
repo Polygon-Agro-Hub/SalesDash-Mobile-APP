@@ -2,15 +2,12 @@ import React, { useState, useEffect } from "react";
 import { View, Text, ScrollView, TextInput, TouchableOpacity, Keyboard, Platform, KeyboardAvoidingView, SafeAreaView, Alert } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
-
-import { Picker } from "@react-native-picker/picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { widthPercentageToDP as wp } from "react-native-responsive-screen";
 import BackButton from "./BackButton";
 import axios from "axios";
 import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import DropDownPicker from 'react-native-dropdown-picker';
 import { SelectList } from "react-native-dropdown-select-list";
 
 type AddCustomersScreenNavigationProp = StackNavigationProp<RootStackParamList, "AddCustomersScreen">;
@@ -34,19 +31,11 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
   const [buildingType, setBuildingType] = useState<string>("");
   console.log("..",buildingType)
   const [selectedCategory, setSelectedCategory] = useState<string>("");
-
- 
-  const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
 
 
-  
 
-  // const buildingOptions = [
-  //   { key: "1", value: "House" },
-  //   { key: "2", value: "Apartment" },
-  // ];
   const buildingOptions = [
     { key: "1", value: "House" },
     { key: "2", value: "Apartment" },
@@ -69,7 +58,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
     }
   
     try {
-      // ✅ Step 1: Check for duplicate phone number or email in the backend
+ 
       const checkResponse = await axios.post(`${environment.API_BASE_URL}api/customer/check-customer`, {
         phoneNumber,
         email,
@@ -80,7 +69,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
         return;
       }
   
-      // ✅ Step 2: Store customer data locally
+
       const customerData = {
         title: selectedCategory,
         firstName,
@@ -98,10 +87,10 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
       };
       await AsyncStorage.setItem("pendingCustomerData", JSON.stringify(customerData));
   
-      // ✅ Step 3: Generate or retrieve the customer ID (you can change this logic based on your requirements)
-      const id = new Date().getTime().toString(); // Example: Using timestamp as the customer ID
+     
+      const id = new Date().getTime().toString(); 
   
-      // ✅ Step 4: Send OTP and navigate to OTP screen
+
       await sendOTP();
       navigation.navigate("OtpScreen", { phoneNumber, id });
   
@@ -124,7 +113,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
     try {
       setLoading(true);
   
-      // Clean phone number, removing any non-numeric characters if needed
+
       const cleanedPhoneNumber = phoneNumber.replace(/[^\d]/g, "");
   
       const apiUrl = "https://api.getshoutout.com/otpservice/send";
@@ -134,24 +123,24 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
       };
   
       const body = {
-        source: "ShoutDEMO", // Ensure this is a valid source
-        transport: "sms",    // Ensure the transport method is correct
+        source: "ShoutDEMO", 
+        transport: "sms",   
         content: {
-          sms: "Your code is {{code}}",  // OTP content message
+          sms: "Your code is {{code}}",  
         },
-        destination: cleanedPhoneNumber, // Use the cleaned phone number
+        destination: cleanedPhoneNumber, 
       };
   
-      console.log("Request body:", body); // Log the request body
+      console.log("Request body:", body); 
   
       const response = await axios.post(apiUrl, body, { headers });
   
-      console.log("API response:", response.data); // Log full API response
+      console.log("API response:", response.data); 
   
-      // Save the referenceId for future tracking
+    
       await AsyncStorage.setItem("referenceId", response.data.referenceId);
   
-      // Handle success response
+
       if (response.status === 200) {
         setOtpSent(true);
         Alert.alert('Success', 'OTP sent successfully.');
@@ -159,7 +148,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
         Alert.alert('Error', 'Failed to send OTP.');
       }
     } catch (error) {
-      // Log the error response details for debugging
+
       if (axios.isAxiosError(error)) {
         console.log('Axios error details:', error.response ? error.response.data : error.message);
         Alert.alert('Error', `Error: ${error.response ? error.response.data.message : error.message}`);
@@ -173,19 +162,10 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
   };
   
 
-
-  
-
-
-
   const phoneRegex = /^\+?[0-9]{1,3}[0-9]{7,10}$/;
-
-
-
-  // Email validation regex
   const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
 
-  // Validate phone number and email
+
   const validatePhoneNumber = (phone: string) => phoneRegex.test(phone);
   const validateEmail = (email: string) => emailRegex.test(email);
 
@@ -222,39 +202,23 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
               <View className="mb-4 mt-4 flex-row justify-between">
                 <View className="flex-[1]">
                   <Text className="text-gray-700 mb-1">Title</Text>
-                  {/* <View className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full py-2 mt-1 justify-center justifyContent-flex-end">
-                    <Picker
-                      selectedValue={selectedCategory}
-                      onValueChange={(itemValue) => setSelectedCategory(itemValue)}
-                      mode="dropdown"
-                      style={{
-                        height: 20, 
-                        width: "100%",
-                        color: "black",
-                      }}
-                    >
-                      <Picker.Item label="Title" value="" style={{ fontSize: 8 }} />
-                      <Picker.Item label="Mr" value="Mr" style={{ fontSize: 8 }} />
-                      <Picker.Item label="Ms" value="Ms" style={{ fontSize: 8 }} />
-                    </Picker>
-                  </View> */}
                   <SelectList
-  setSelected={setSelectedCategory} // Set the selected value
+  setSelected={setSelectedCategory} 
   data={[
     { key: 'Mr', value: 'Mr' },
     { key: 'Ms', value: 'Ms' },
-  ]} // The options for the select list
+  ]} 
   boxStyles={{
     backgroundColor: '#F6F6F6',
     borderColor: '#F6F6F6',
     borderRadius: 30,
-    paddingVertical: 10, // Adjust padding if needed
+    paddingVertical: 10, 
   }}
   dropdownTextStyles={{
     color: 'black',
   }}
-  search={false} // Disable search
-  placeholder="Title" // Placeholder text
+  search={false} 
+  placeholder="Title" 
 />
 
                 </View>
@@ -304,25 +268,11 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
 
               <View className="mb-4">
                 <Text className="text-gray-700 mb-1">Building Type</Text>
-                {/* <View className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-4 py-2 mt-1 items-center justify-center">
-                  <Picker
-                    selectedValue={buildingType}
-                    onValueChange={(itemValue) => setBuildingType(itemValue)}
-                    style={{
-                      height: 25,
-                      width: "100%",
-                    }}
-                  >
-                    <Picker.Item label="Select Building Type" value="" color="#999" style={{ fontSize: 14 }} />
-                    {buildingOptions.map((option) => (
-                      <Picker.Item key={option.key} label={option.value} value={option.value} />
-                    ))}
-                  </Picker>
-                </View> */}
+             
        <SelectList
-        setSelected={setBuildingType} // Set the selected value
-        data={buildingOptions} // The options for the select list
-         defaultOption={{ key: "", value: "" }} // Default option if nothing is selected
+        setSelected={setBuildingType} 
+        data={buildingOptions} 
+         defaultOption={{ key: "", value: "" }} 
        
         boxStyles={{
           backgroundColor: 'white',
@@ -332,8 +282,8 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
         dropdownTextStyles={{
           color: '#000',
         }}
-        search={false} // Enable search
-        placeholder="Select Building Type" // Placeholder text
+        search={false} 
+        placeholder="Select Building Type" 
         save="value"
         
       /> 

@@ -19,7 +19,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import environment from '@/environment/environment';
 
-// Navigation type
+
 type ChangePasswordScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
   'ChangePasswordScreen'
@@ -33,13 +33,12 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Function to handle password update
+
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmNewPassword) {
       Alert.alert('Error', 'All fields are required');
@@ -54,7 +53,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
     setLoading(true);
 
     try {
-      // Retrieve token from AsyncStorage
+
       const token = await AsyncStorage.getItem('authToken');
       
       if (!token) {
@@ -63,7 +62,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
         return;
       }
 
-      // Make API request to update password
+
       const response = await axios.put(
         `${environment.API_BASE_URL}api/auth/user/update-password`,
         { oldPassword: currentPassword, newPassword },
