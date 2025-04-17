@@ -97,7 +97,6 @@ interface CartItem {
 const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) => {
 
   const {
-
     total: originalTotal = 0,
     subtotal: originalSubtotal = 0,
     discount: originalDiscount = 0,
@@ -106,17 +105,13 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
     isCustomPackage = "", 
     isSelectPackage = "",
     customerid = "",
-
     orderItems = []
   } = route.params || {};
 
-
   const [items, setItems] = useState<CartItem[]>(() => {
-
     return processInitialData(originalItems, orderItems);
   });
   
-
   const [total, setTotal] = useState(() => calculateInitialTotal(originalTotal, orderItems));
   const [subtotal, setSubtotal] = useState(() => calculateInitialSubtotal(originalSubtotal, orderItems));
   const [discount, setDiscount] = useState(() => calculateInitialDiscount(originalDiscount, orderItems));
@@ -126,7 +121,15 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [date, setDate] = useState(new Date());
   
+  // Calculate minimum date (2 days from today)
+  const getMinimumSelectableDate = () => {
+    const minDate = new Date();
+    minDate.setDate(minDate.getDate() + 2); // Add 2 days to current date
+    return minDate;
+  };
 
+  // Set minimum date for selection
+  const minimumDate = getMinimumSelectableDate();
 
   const DELIVERY_FEE = 350;
   const fullTotal = total + DELIVERY_FEE;
@@ -137,18 +140,14 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
     { key: "Within 4-8 PM", value: "Within 4-8 PM" },
   ];
   
-
   function processInitialData(originalItems: any[], orderItems: any[]) {
     if (orderItems && orderItems.length > 0) {
       const orderData = orderItems[0];
       const processedItems: CartItem[] = [];
-     
-      
       return processedItems;
     } else if (originalItems && originalItems.length > 0) {
       return originalItems;
     }
-    
     return [];
   }
   
@@ -176,41 +175,71 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
   }
 
   const handleScheduleDateSelection = () => {
+    // Initialize date picker with minimum date if not already selected
+    if (!isDateSelected) {
+      setDate(minimumDate);
+    }
     setShowDatePicker(true);
   };
   
-
   const handleDateChange = (event: any, selectedDate?: Date) => {
- 
     setShowDatePicker(Platform.OS === 'ios');
     
     if (selectedDate) {
-      setDate(selectedDate);
+      // Validate selected date is at least 2 days from today
+      const today = new Date();
+      const minSelectableDate = new Date(today);
+      minSelectableDate.setDate(today.getDate() + 2);
       
-
-      const day = selectedDate.getDate();
-      const month = selectedDate.toLocaleString('en-US', { month: 'short' });
-      const year = selectedDate.getFullYear();
+      if (selectedDate >= minSelectableDate) {
+        setDate(selectedDate);
+        
+        const day = selectedDate.getDate();
+        const month = selectedDate.toLocaleString('en-US', { month: 'short' });
+        const year = selectedDate.getFullYear();
+        const formattedDate = `${day} ${month} ${year}`;
+        
+        setSelectedDate(formattedDate);
+        setIsDateSelected(true);
+      } else {
+        // Alert user if they somehow selected an invalid date
+        Alert.alert(
+          "Invalid Date", 
+          "Please select a date at least 2 days from today."
+        );
+        
+        // Reset to minimum date
+        setDate(minimumDate);
+      }
+    }
+  };
+  
+  const handleIOSDateConfirm = () => {
+    // Validate selected date is at least 2 days from today for iOS
+    const today = new Date();
+    const minSelectableDate = new Date(today);
+    minSelectableDate.setDate(today.getDate() + 2);
+    
+    if (date >= minSelectableDate) {
+      const day = date.getDate();
+      const month = date.toLocaleString('en-US', { month: 'short' });
+      const year = date.getFullYear();
       const formattedDate = `${day} ${month} ${year}`;
       
       setSelectedDate(formattedDate);
       setIsDateSelected(true);
+      setShowDatePicker(false);
+    } else {
+      Alert.alert(
+        "Invalid Date", 
+        "Please select a date at least 2 days from today."
+      );
+      
+      // Reset to minimum date
+      setDate(minimumDate);
     }
   };
   
-
-  const handleIOSDateConfirm = () => {
-    const day = date.getDate();
-    const month = date.toLocaleString('en-US', { month: 'short' });
-    const year = date.getFullYear();
-    const formattedDate = `${day} ${month} ${year}`;
-    
-    setSelectedDate(formattedDate);
-    setIsDateSelected(true);
-    setShowDatePicker(false);
-  };
-  
-
   const handleTimeSlotSelection = (val: string) => {
     if (val !== selectedTimeSlot) {
       setSelectedTimeSlot(val);
@@ -218,9 +247,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
     }
   };
   
-  
   const handleProceed = () => {
- 
     if (!selectedDate) {
       Alert.alert("Required", "Please select a delivery date");
       return;
@@ -255,7 +282,6 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
     });
   };
   
-
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -290,7 +316,9 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
             onPress={handleScheduleDateSelection}
             className="flex-row items-center bg-[#F6F6F6] p-3 rounded-full"
           >
-            <Text className="flex-1 text-[#7F7F7F]">{selectedDate || "Select Date"}</Text>
+            <Text className="flex-1 text-[#7F7F7F]">
+              {selectedDate || "Select Date"}
+            </Text>
             <Image source={require("../assets/images/Calendar.png")} className="w-8 h-8" resizeMode="contain" />
           </TouchableOpacity>
   
@@ -333,7 +361,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
             mode="date"
             display="default"
             onChange={handleDateChange}
-            minimumDate={new Date()} 
+            minimumDate={minimumDate} // Set minimum date to 2 days from today
           />
         )}
   
@@ -357,7 +385,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
                   mode="date"
                   display="spinner"
                   onChange={handleDateChange}
-                  minimumDate={new Date()}
+                  minimumDate={minimumDate} // Set minimum date to 2 days from today
                   style={{ height: 200, marginTop: -10 }}
                 />
                 

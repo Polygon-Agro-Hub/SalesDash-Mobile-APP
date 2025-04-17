@@ -58,15 +58,15 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({ navigation, route }) 
       </View>
       
       <ScrollView>
-        <View className="flex-1 bg-white items-center justify-center relative">
+        <View className="flex-1 items-center justify-center relative">
           <Image
             source={require("../assets/images/cart.webp")}
             className="w-[70%] h-40 mt-[20%]"
             resizeMode="contain"
           />
           
-          <TouchableOpacity 
-            className="w-4/5 bg-white py-4 rounded-2xl my-2 shadow-xl items-center mt-5"
+          {/* <TouchableOpacity 
+            className="w-4/5  border border-[#F2F4F7] py-4 rounded-2xl my-2 items-center mt-5"
             onPress={handleCreateCustomPackage}
           >
             <Text className="text-lg font-semibold text-[#6839CF] text-center">
@@ -75,13 +75,71 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({ navigation, route }) 
           </TouchableOpacity>
           
           <TouchableOpacity 
-            className="w-4/5 bg-white py-4 rounded-2xl my-2 shadow-xl items-center"
+            className="w-4/5 bg-[white] border border-[#F2F4F7] py-4 rounded-2xl my-2 items-center"
             onPress={handleSelectPackage}
           >
             <Text className="text-lg font-semibold text-[#6839CF] text-center">
               Select{"\n"}Package
             </Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
+          <TouchableOpacity
+  style={{
+    width: '70%',
+    borderWidth: 1,
+    borderColor: '#F2F4F7',
+    paddingVertical: 20,
+    borderRadius: 16,
+    marginVertical: 8,
+    alignItems: 'center',
+    marginTop: 50,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 40,
+    elevation: 5, // for Android shadow
+  }}
+  onPress={handleCreateCustomPackage}
+>
+  <Text style={{
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#6839CF',
+    textAlign: 'center'
+  }}>
+    Create{"\n"}Custom Package
+  </Text>
+</TouchableOpacity>
+
+<TouchableOpacity
+  style={{
+    width: '70%',
+    borderWidth: 1,
+    borderColor: '#F2F4F7',
+    paddingVertical: 20,
+    borderRadius: 16,
+    marginVertical: 8,
+    alignItems: 'center',
+    marginTop: 30,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 40,
+    elevation: 5, // for Android shadow
+  }}
+  onPress={handleSelectPackage}
+>
+  <Text style={{
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#6839CF',
+    textAlign: 'center'
+  }}>
+    Select{"\n"}Package
+  </Text>
+</TouchableOpacity>
+
         </View>
       </ScrollView>
     </View>

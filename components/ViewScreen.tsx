@@ -22,6 +22,7 @@ type RootStackParamList = {
   ViewScreen: {
     selectedPackageId: number;
     selectedPackageName: string;
+    selectedPackageImage: string;
     selectedPackageTotal: string;
     selectedPackageDescription:string;
     selectedPackageportion: string;  
@@ -42,7 +43,7 @@ interface ViewScreenProps {
 
 
 const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
-  const { selectedPackageId, selectedPackageName, selectedPackageTotal,selectedPackageDescription,selectedPackageportion ,selectedPackageperiod  } = route.params;
+  const { selectedPackageId, selectedPackageName, selectedPackageImage ,selectedPackageTotal,selectedPackageDescription,selectedPackageportion ,selectedPackageperiod  } = route.params;
 
   const [items, setItems] = useState<{ name: string; quantity: string; quantityType: string;  portion: number; period :number; }[]>([]);
 
@@ -97,10 +98,11 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
           <BackButton navigation={navigation} />
         </View>
         <Image
-          source={require("../assets/images/viewPack.png")}
-          className="w-64 h-64 self-center mb-2 mt-[-20%]"
-          resizeMode="contain"
-        />
+  source={{ uri: selectedPackageImage }}
+    className="w-64 h-64 self-center mb-2 mt-[-20%]"
+  resizeMode="contain"
+/>
+
       </ImageBackground>
 
       {/* Scrollable Details Section */}

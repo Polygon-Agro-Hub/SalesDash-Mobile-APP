@@ -9,6 +9,7 @@ import {
   Platform,
   KeyboardAvoidingView,
   ScrollView,
+  BackHandler,
   RefreshControl
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack"; 
@@ -33,6 +34,7 @@ interface DashboardScreenProps {
 interface Package {
   id: number;
   displayName: string;
+  image:string;
   price: string;
   description: string;
   portion: number;
@@ -42,6 +44,7 @@ interface Package {
 interface Package {
   id: number;
   displayName: string;
+  image:string;
   name: string;
   price: string;
   total: string;
@@ -78,6 +81,16 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       totalStars: 0
     }
   });
+
+  useEffect(() => {
+    // Handle hardware back button (Android)
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      // Return true to prevent default behavior (going back)
+      return true;
+    });
+  
+    return () => backHandler.remove();
+  }, []);
   
   
   const refreshData = async () => {
@@ -114,6 +127,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       });
 
       setFormData(response.data.data);
+      console.log(response.data)
     } catch (error) {
       console.error("Profile fetch error:", error);
 
@@ -143,6 +157,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
           headers: { Authorization: `Bearer ${storedToken}` },
         }
       );
+      console.log(response.data)
 
       setPackages(response.data.data);
     } catch (error) {
@@ -185,7 +200,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
         elevation: 10,
       }}
     >
-      <Image source={require("../assets/images/fruits.png")} className="w-20 h-20 mb-3" resizeMode="contain" />
+      <Image  source={{ uri: item.image }} className="w-20 h-20 mb-3 " resizeMode="contain" />
       <Text className="font-bold text-[#6A3AD0]">{item.displayName}</Text>
       <Text className="text-sm font-medium text-gray-500">Rs. {item.total}</Text>
     
@@ -202,7 +217,8 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
           onPress={() => 
             navigation.navigate("ViewScreen", {
               selectedPackageId: item.id,
-              selectedPackageName: item.name,
+              selectedPackageName: item.displayName,
+              selectedPackageImage:item.image,
               selectedPackageTotal: item.total,
               selectedPackageDescription: item.description,
               selectedPackageportion: item.portion,
@@ -243,34 +259,36 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
           </View>
 
           {/* Progress Bar */}
-          <Text className="text-lg text-purple-600 mt-5 font-bold">
-            Your Daily Target
-          </Text>
-          <View className="flex-row bg-[#824AD933] h-14 rounded-xl items-center mt-3 px-6">
-            <Text
-              className="absolute text-purple-600 text-sm font-bold"
-              style={{
-                top: 2,
-                left: "50%", 
-                transform: [{ translateX: -12 }], 
-              }}
-            >
-              {agentStats.daily.completed}/{agentStats.daily.target}
-            </Text>
-            <Bar
-              progress={agentStats.daily.progress}
-              width={200}
-              color="#854BDA"
-              borderWidth={0}
-              height={10}
-            />
+       {/* Progress Bar */}
+<Text className="text-lg text-purple-600 mt-5 font-bold">
+  Your Daily Target
+</Text>
+<View className="flex-row bg-[#824AD933] h-14 rounded-xl items-center mt-3 px-6">
+  <Text
+    className="absolute text-purple-600 text-sm font-bold"
+    style={{
+      top: 2,
+      left: "50%", 
+      transform: [{ translateX: -12 }], 
+    }}
+  >
+    {agentStats.daily.completed}/{agentStats.daily.target}
+  </Text>
+  <Bar
+  progress={agentStats.daily.progress}
+  width={200}
+  color="#854BDA"
+  unfilledColor="#FFFFFF"  /* Add this line to make unfilled portion white */
+  borderWidth={0}
+  height={10}
+/>
 
-            <Image
-              source={require("../assets/images/star.png")} 
-              className="w-8 h-8 ml-5"
-              resizeMode="contain"
-            />
-          </View>
+  <Image
+    source={require("../assets/images/star.png")} 
+    className="w-8 h-8 ml-5"
+    resizeMode="contain"
+  />
+</View>
         </View>
 
         {/* Packages Section with Pull to Refresh */}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, SafeAreaView,Image } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -247,6 +247,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
             </TouchableOpacity>
           )}
         </View>
+      
 
         <ScrollView className="flex-1 mt-4" showsVerticalScrollIndicator={false}>
           {cartItems.map((item) => (
@@ -300,7 +301,11 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
             className="bg-gray-200 w-6 h-6 rounded-full justify-center items-center"
             onPress={() => decreaseQuantity(item.id)}
           >
-            <Ionicons name="remove" size={16} color="#333" />
+              <Image
+                source={require("../assets/images/minns.png")}
+                className="w-7 h-7 "
+                resizeMode="contain"
+              />
           </TouchableOpacity>
           
           <Text className="mx-2 text-base w-12 text-center">
@@ -311,14 +316,22 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
             className="bg-gray-200 w-6 h-6 rounded-full justify-center items-center"
             onPress={() => increaseQuantity(item.id)}
           >
-            <Ionicons name="add" size={16} color="#333" />
+           
+              <Image
+                source={require("../assets/images/adddd.png")}
+                className="w-7 h-7 "
+                resizeMode="contain"
+              />
           </TouchableOpacity>
         </View>
               </View>
             </View>
           ))}
         </ScrollView>
+      
         
+     
+        <View>
         <View className="py-4 border-t border-gray-200">
           <View className="flex-row justify-between py-2">
             <Text className="text-gray-500">Subtotal</Text>
@@ -327,7 +340,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
           
           <View className="flex-row justify-between py-2">
             <Text className="text-gray-500">Discount</Text>
-            <Text className="font-medium">Rs.{discount.toFixed(2)}</Text>
+            <Text className="font-medium text-[#686868]">Rs.{discount.toFixed(2)}</Text>
           </View>
           
           <View className="flex-row justify-between py-2">
@@ -335,8 +348,10 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
             <Text className="font-bold">Rs.{currentTotal.toFixed(2)}</Text>
           </View>
         </View>
+        </View>
+        </View>
         
-        <View className="py-4 px-6">
+        <View className="py-4 px-6 ">
           <TouchableOpacity
             onPress={handleConfirm}
           >
@@ -350,7 +365,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
             </LinearGradient>
           </TouchableOpacity>
         </View>
-      </View>
+ 
     </SafeAreaView>
   );
 };

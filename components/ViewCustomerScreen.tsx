@@ -59,8 +59,9 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
-  const { name, number, id, customerId } = route.params;
+  const { name, number, id, customerId,title } = route.params;
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
@@ -82,6 +83,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
           `${environment.API_BASE_URL}api/orders/get-order-bycustomerId/${id}`
         );
 
+        console.log(response.data)
         if (response.data.success) {
           setOrders(response.data.data);
         } else {
@@ -108,13 +110,40 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
 
   const formatScheduleDate = (dateString: string) => {
     const date = new Date(dateString);
-    const options: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    return date.toLocaleDateString(undefined, options);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}/${month}/${day}`;
   };
 
  
 
   // Filter orders based on status and search text
+  // const filteredOrders = orders.filter(order => {
+  //   const matchesStatus = selectedFilter === "All" || order.orderStatus === selectedFilter;
+  //   const matchesSearch = !searchText || 
+  //     (order.InvNo && order.InvNo.toLowerCase().includes(searchText.toLowerCase()));
+    
+  //   return matchesStatus && matchesSearch;
+  // });
+
+  const handleSearch = () => {
+    if (searchText.trim() === "") {
+      return;
+    }
+    
+    // Check if the search returns any results
+    const results = orders.filter(order => 
+      order.InvNo && order.InvNo.toLowerCase().includes(searchText.toLowerCase()) &&
+      (selectedFilter === "All" || order.orderStatus === selectedFilter)
+    );
+    
+    if (results.length === 0) {
+      setSearchError(`No order found with number "${searchText}"`);
+    } else {
+      setSearchError(null);
+    }
+  };
   const filteredOrders = orders.filter(order => {
     const matchesStatus = selectedFilter === "All" || order.orderStatus === selectedFilter;
     const matchesSearch = !searchText || 
@@ -139,7 +168,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
 
             <View className="flex-1 justify-center items-center mt-[-3%]">
               <Text className="text-xl font-bold text-gray-800" style={{ textAlign: 'center' }}>
-                {name}
+                {title}.{name}
               </Text>
               <Text className="text-gray-500" style={{ textAlign: 'center' }}>
                 Customer ID: {customerId}
@@ -178,18 +207,31 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
         </View>
 
         {/* Search and Filters */}
-        <View className="flex-row items-center bg-[#F5F1FC] px-8 py-2 rounded-full mt-4 mb-2 mx-5 shadow-sm">
-          <TextInput
-            placeholder="Search By Order Number"
-            placeholderTextColor="#6839CF"
-            className="flex-1 text-sm text-purple"
-            onChangeText={setSearchText}
-            value={searchText}
-            style={{ fontStyle: 'italic' }}
-          />
-          <Image source={require("../assets/images/search.png")} className="w-8 h-8" />
+        <View className="mx-5">
+          <View className="flex-row items-center bg-[#F5F1FC] px-8 py-2 border border-[#6B3BCF] rounded-full mt-4 shadow-sm">
+            <TextInput
+              placeholder="Search By Order Number"
+              placeholderTextColor="#000000"
+              className="flex-1 text-sm text-black"
+              onChangeText={setSearchText}
+              value={searchText}
+              style={{ fontStyle: 'italic' }}
+              onSubmitEditing={handleSearch}
+              returnKeyType="search"
+            />
+            <TouchableOpacity onPress={handleSearch}>
+              <Image source={require("../assets/images/search.png")} className="w-8 h-8" />
+            </TouchableOpacity>
+          </View>
+          
+          {/* Search Error Message */}
+          {searchError && (
+            <View className="bg-red-50 px-4 py-2 mt-2 rounded-lg border border-red-200">
+              <Text className="text-red-600 text-center">{searchError}</Text>
+            </View>
+          )}
         </View>
-<View>
+<View className="mt-4">
         <ScrollView 
   horizontal 
   showsHorizontalScrollIndicator={false}
@@ -211,12 +253,12 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
 </View>
 
 
-<View className="">
+<View className="mt-3">
         {/* Orders List */}
         {loading ? (
           <View className="flex-1 justify-center items-center">
-            <ActivityIndicator size="large" color="#6B3BCF" />
-            <Text className="text-[#6B3BCF] mt-2">Loading orders...</Text>
+            {/* <ActivityIndicator size="large" color="#6B3BCF" /> */}
+            {/* <Text className="text-[#6B3BCF] mt-2">Loading orders...</Text> */}
           </View>
         ) : error ? (
           <View className="flex-1 justify-center items-center px-4">
@@ -244,17 +286,17 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
                 <View className="bg-white rounded-2xl p-4 mb-4 border border-gray-200 mx-4 shadow-sm mt-4">
                   <View className="flex-row justify-between items-center">
                     <Text className="text-lg font-semibold text-gray-900">
-                      Order: {item.InvNo || "N/A"}
+                      Order: #{item.InvNo || "N/A"}
                     </Text>
                     <View className={`px-3 py-1 rounded-full ${
-                      item.orderStatus === "Ordered" ? "bg-[#CCFBF1]" 
+                      item.orderStatus === "Ordered" ? "bg-[#E0E0E0]" 
                       : item.orderStatus === "On the way" ? "bg-[#FFFD99]" 
                       : item.orderStatus === "Processing" ? "bg-[#CFE1FF]"
                       : item.orderStatus === "Cancelled" ? "bg-[#FFE4E1]"
                       : "bg-[#EAEAEA]"
                     }`}>
                       <Text className={`text-xs font-semibold ${
-                        item.orderStatus === "Ordered" ? "text-[#0D9488]"
+                        item.orderStatus === "Ordered" ? "text-[#3F3F3F]"
                         : item.orderStatus === "On the way" ? "text-[#A6A100]"
                         : item.orderStatus === "Processing" ? "text-[#3B82F6]"
                         : item.orderStatus === "Cancelled" ? "text-[#FF0000]"
@@ -266,14 +308,12 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
                   </View>
                   
                   <Text className="text-sm text-[#808FA2] mt-1">
-                    Scheduled: {formatScheduleDate(item.scheduleDate)}
+                    Scheduled to : {formatScheduleDate(item.scheduleDate)}
                   </Text>
                   <Text className="text-sm text-[#808FA2]">
-                    Time Slot: {item.scheduleTimeSlot}
+                     {item.scheduleTimeSlot}
                   </Text>
-                  <Text className="text-sm text-[#808FA2]">
-                    Total: {item.fullTotal ? `$${item.fullTotal}` : "Not available"}
-                  </Text>
+                 
                 </View>
               </TouchableOpacity>
             )}
