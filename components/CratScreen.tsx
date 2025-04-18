@@ -133,41 +133,107 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
 
  
 
+  // const increaseQuantity = (id: number) => {
+  //   setCartItems(
+  //     cartItems.map(item => {
+  //       if (item.id === id) {
+  //         const increment = item.unitType === 'g' ? 50 : 0.5;
+  //         const newValue = item.changeby + increment;
+  //         return { 
+  //           ...item, 
+  //           changeby: newValue,
+  //           quantity: newValue
+  //         };
+  //       }
+  //       return item;
+  //     })
+  //   );
+  // };
+
+  // const decreaseQuantity = (id: number) => {
+  //   setCartItems(
+  //     cartItems.map(item => {
+  //       if (item.id === id) {
+  //         const decrement = item.unitType === 'g' ? 50 : 0.5;
+  //         // Use startValue as minimum instead of fixed value
+  //         const minValue = item.unitType === 'g' 
+  //           ? item.startValue * 1000 
+  //           : item.startValue;
+  //         const newValue = Math.max(minValue, item.changeby - decrement);
+  //         return { 
+  //           ...item, 
+  //           changeby: newValue,
+  //           quantity: newValue
+  //         };
+  //       }
+  //       return item;
+  //     })
+  //   );
+  // };
+
+
   const increaseQuantity = (id: number) => {
     setCartItems(
       cartItems.map(item => {
         if (item.id === id) {
-          const increment = item.unitType === 'g' ? 50 : 0.5;
-          const newValue = item.changeby + increment;
+          // Parse the initial changeby value from your data (fixed increment amount)
+          const incrementAmount = typeof item.startValue === 'string' 
+            ? parseFloat(item.startValue) 
+            : item.startValue;
+            
+          // Current quantity value
+          const currentQuantity = typeof item.changeby === 'string' 
+            ? parseFloat(item.changeby) 
+            : item.changeby;
+            
+          // Add the fixed increment to the current quantity
+          const newValue = currentQuantity + incrementAmount;
+          
           return { 
             ...item, 
-            changeby: newValue,
-            quantity: newValue
+            changeby: newValue, // Update the display value
+            quantity: newValue  // Also update quantity
           };
         }
         return item;
       })
     );
   };
-
+  
   const decreaseQuantity = (id: number) => {
     setCartItems(
       cartItems.map(item => {
         if (item.id === id) {
-          const decrement = item.unitType === 'g' ? 50 : 0.5;
-          const minValue = item.unitType === 'g' ? 50 : 0.5;
-          const newValue = Math.max(minValue, item.changeby - decrement);
+          // Parse the initial changeby value from your data (fixed decrement amount)
+          const decrementAmount = typeof item.startValue === 'string' 
+            ? parseFloat(item.startValue) 
+            : item.startValue;
+            
+          // Current quantity value
+          const currentQuantity = typeof item.changeby === 'string' 
+            ? parseFloat(item.changeby) 
+            : item.changeby;
+            
+          // Minimum value is startValue
+          const minValue = typeof item.startValue === 'string' 
+            ? parseFloat(item.startValue) 
+            : item.startValue;
+            
+          // Subtract the fixed decrement from current quantity, but not below minimum
+          const newValue = Math.max(minValue, currentQuantity - decrementAmount);
+          
           return { 
             ...item, 
-            changeby: newValue,
-            quantity: newValue
+            changeby: newValue, // Update the display value
+            quantity: newValue  // Also update quantity 
           };
         }
         return item;
       })
     );
   };
-
+  
+  
   const currentSubtotal = cartItems.reduce((total, item) => {
     if (!item.selected) {
       return total + parseFloat(calculateItemNormalTotal(item));

@@ -253,7 +253,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
 </View>
 
 
-<View className="mt-3">
+<View className="mt-3 mb-[100%]">
         {/* Orders List */}
         {loading ? (
           <View className="flex-1 justify-center items-center">

@@ -108,7 +108,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
   const [totalPrice, setTotalPrice] = useState<number>(0);
   const [token, setToken] = useState<string | null>(null);
   const [packages, setPackages] = useState<Package[]>([]);
-  const [additionalItems, setAdditionalItems] = useState<{ id: string;name: string; quantity: string; quantityType: string; price: number; cropId:number }[]>([]);
+  const [additionalItems, setAdditionalItems] = useState<{ id: string;name: string; quantity: string; quantityType: string; price: number; cropId:number ; discount:string}[]>([]);
   const [packageItemsCount, setPackageItemsCount] = useState<number>(0); 
   const [loading, setLoading] = useState<boolean>(true);
   const [newItemName, setNewItemName] = useState<string>('');
@@ -116,6 +116,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
   const [unitType, setUnitType] = useState('kg'); 
   const [crops, setCrops] = useState<Crop[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [totalDiscount, setTotalDiscount] = useState('');
   const [editingItem, setEditingItem] = useState<{ id: number;name: string; quantity: string; quantityType: string; mpItemId?: number ;price: number; cropId:number } | null>(null);const [productOpen, setProductOpen] = useState<boolean>(false);  // State for controlling dropdown open/close
   const [itemDetails, setItemDetails] = useState<{
   id?: number;
@@ -134,6 +135,7 @@ const [pricePerKg, setPricePerKg] = useState<string>("0.00");
 const [editingItemOriginalPrice, setEditingItemOriginalPrice] = useState<number | null>(null);
 
 const [newPrice1, setNewPrice1] = useState("0.00");
+const [ adding , setAdding] = useState(0);
 const [discount, setDiscount] = useState("0.00");
 const [finaldiscount, setFinaldiscount] = useState("0.00");
 
@@ -316,17 +318,15 @@ const [finaldiscount, setFinaldiscount] = useState("0.00");
       
       const quantity = parseFloat(quantityStr);
       const itemPrice = parseFloat(item.price?.toString().replace(/,/g, '') || "0");
-      const totalPrice = itemPrice * quantity;
-      const discountRate = parseFloat(finaldiscount || "0") / 100;
-      const discountAmount = totalPrice * discountRate;
+      const itemDiscount = parseFloat(item.discount?.toString().replace(/,/g, '') || "0");
       
       return {
         id: item.id,
         quantity: quantity,
         unitType: unitType,
-        total: itemPrice + parseFloat(finaldiscount || "0"),
+        total: itemPrice + itemDiscount, // Don't add discount to total
         subtotal: itemPrice,
-        discount: parseFloat(finaldiscount || "0")
+        discount: itemDiscount // Use the item's own discount
       };
     });
     
@@ -342,7 +342,7 @@ const [finaldiscount, setFinaldiscount] = useState("0.00");
         isModifiedMin: finalModifiedMinItems.length > 0,
         isAdditionalItems: additionalItems.length > 0,
         packageTotal: parseFloat(totalPrice?.toString() || "0"),
-        packageDiscount: parseFloat(finaldiscount || "0"),
+        packageDiscount: parseFloat(discount || "0"),
         modifiedPlusItems: finalModifiedPlusItems.length > 0 ? finalModifiedPlusItems : undefined,
         modifiedMinItems: finalModifiedMinItems.length > 0 ? finalModifiedMinItems : undefined,
         additionalItems: finalAdditionalItems.length > 0 ? finalAdditionalItems : undefined,
@@ -700,6 +700,7 @@ const updateQuantity2Add = (changeBy: number, isIncrement: boolean) => {
 };
 
 // Unified price calculation function
+// Unified price calculation function
 function calculateTotalPriceAdd(quantity: number, itemDetails: ItemDetails | null, counterValue: number) {
   if (itemDetails === null) {
     throw new Error("Item details are missing");
@@ -710,27 +711,31 @@ function calculateTotalPriceAdd(quantity: number, itemDetails: ItemDetails | nul
   const changeBy = parseFloat(itemDetails.changeby ?? "0.50");
   const discountedPrice = parseFloat(itemDetails.discountedPrice ?? "0.00");
   const normalPrice = parseFloat(itemDetails.normalPrice ?? "0.00");
-  const unit = itemDetails.unitType;
-
-
+  
   // Calculate discounted price
-  const additionalPrice = (discountedPrice ) * changeBy * counterValue;
+  const additionalPrice = discountedPrice * changeBy * counterValue;
   const totalDiscountedPrice = discountedPrice * startValue + additionalPrice;
   
   // Calculate normal price (without discount)
-  const normalAdditionalPrice = (normalPrice ) * changeBy * counterValue;
+  const normalAdditionalPrice = normalPrice * changeBy * counterValue;
   const totalNormalPrice = normalPrice * startValue + normalAdditionalPrice;
   
-  // Calculate total discount amount
-  const totalDiscount = totalNormalPrice - totalDiscountedPrice;
+  // Calculate total discount amount for this item
+  const totalDiscount = (totalNormalPrice - totalDiscountedPrice).toFixed(2);
   
   // Update state values
   setNewPrice1(totalDiscountedPrice.toFixed(2));
-  setFinaldiscount(totalDiscount.toFixed(2));
+  setFinaldiscount(totalDiscount);
   
-  return totalDiscountedPrice;
+  // Return calculated discounted price and discount amount
+  return {
+    price: totalDiscountedPrice,
+    discount: totalDiscount
+  };
 }
 
+// Add a separate function to recalculate total discount from all items
+// This can be used to verify/fix the total discount at any time
 
   
   const handleItemEdit = (item: any) => {
@@ -792,73 +797,154 @@ function calculateTotalPriceAdd(quantity: number, itemDetails: ItemDetails | nul
 
   const addItem = () => {
     // Existing validation code...
-  
     const selectedCrop = crops.find((crop) => crop.displayName === newItemName);
     if (!selectedCrop) {
       Alert.alert("Error", "Selected crop not found.");
       return;
     }
-  
+    
     // Get the crop ID if available, otherwise generate a unique ID
     const itemId = selectedCrop.id ? String(selectedCrop.id) : String(Date.now());
     
     const parsedQuantity = parseFloat(newItemQuantity);
-  
+    
     if (itemDetails) {
-      const calculatedPrice = calculateTotalPriceAdd(parsedQuantity, itemDetails, counter);
-  
+      // Calculate price and discount for the item
+      const calculatedPriceResult = calculateTotalPriceAdd(parsedQuantity, itemDetails, counter);
+      const calculatedPrice = calculatedPriceResult.price;
+      const totalDiscount = calculatedPriceResult.discount;
+      
       const newItem = {
         id: itemId,
         name: newItemName ?? "",
         quantity: `${String(newItemQuantity)} ${selectedUnit}`,
         quantityType: selectedUnit || "unit",
         price: calculatedPrice,
-        cropId: selectedCrop.cropId // Store this even if undefined for consistency
+        cropId: selectedCrop.cropId,
+        discount: totalDiscount
       };
       
       console.log("''''''''", newItem);
+      console.log("lllllll", totalDiscount);
       
+      // Create a variable to track what the new discount should be
+      let updatedDiscount;
+      
+      // Logic for handling the updated items and total discount
       if (parsedQuantity === 0) {
         // Remove item if quantity is 0
-        setAdditionalItems((prevItems) => {
-          return prevItems.filter((item) => item.id !== itemId);
-        });
+        const itemToRemove = additionalItems.find(item => item.id === itemId);
+        if (itemToRemove) {
+          const discountToRemove = parseFloat(itemToRemove.discount || "0");
+          // Remove from additionalItems array
+          setAdditionalItems(prev => prev.filter(item => item.id !== itemId));
+          // Calculate the new discount total
+          const currentTotal = parseFloat(discount || "0");
+          updatedDiscount = Math.max(0, currentTotal - discountToRemove).toFixed(2);
+          // Update the discount state
+          setDiscount(updatedDiscount);
+          console.log(`Removing discount: ${discountToRemove}, New total: ${updatedDiscount}`);
+        }
       } else {
         // Check if item with this ID already exists
         const existingItemIndex = additionalItems.findIndex((item) => item.id === itemId);
         
         if (existingItemIndex !== -1) {
-          // Update existing item
-          setAdditionalItems((prevItems) => {
-            const updatedItems = [...prevItems];
-            updatedItems[existingItemIndex] = {
-              ...updatedItems[existingItemIndex],
-              quantity: `${parsedQuantity} ${selectedUnit}`,
-              price: calculatedPrice
-            };
-            return updatedItems;
-          });
+          // Get existing item's discount before updating
+          const existingItem = additionalItems[existingItemIndex];
+          const oldDiscount = parseFloat(existingItem.discount || "0");
+          const newDiscount = parseFloat(totalDiscount);
+          
+          // Update the item in additionalItems array
+          const updatedItems = [...additionalItems];
+          updatedItems[existingItemIndex] = {
+            ...existingItem,
+            quantity: `${parsedQuantity} ${selectedUnit}`,
+            price: calculatedPrice,
+            discount: totalDiscount
+          };
+          setAdditionalItems(updatedItems);
+          
+          // Calculate the new discount total
+          const currentTotal = parseFloat(discount || "0");
+          updatedDiscount = (currentTotal - oldDiscount + newDiscount).toFixed(2);
+          // Update the discount state
+          setDiscount(updatedDiscount);
+          console.log(`Updating discount: ${oldDiscount} → ${newDiscount}, New total: ${updatedDiscount}`);
         } else {
-          // Add new item
-          setAdditionalItems((prevItems) => [...prevItems, newItem]);
+          // Add new item to additionalItems array
+          setAdditionalItems(prev => [...prev, newItem]);
+          
+          // Calculate the new discount total
+          const itemDiscount = parseFloat(totalDiscount || "0");
+          const currentTotal = parseFloat(discount || "0");
+          updatedDiscount = (currentTotal + itemDiscount).toFixed(2);
+          // Update the discount state
+          setDiscount(updatedDiscount);
+          setAdding(itemDiscount)
+          console.log(`Current total: ${currentTotal}, Adding: ${itemDiscount}, New total: ${updatedDiscount}`);
         }
         
         // Update total price
-        setTotalPrice((prevTotal) => (Number(prevTotal) || 0) + calculatedPrice);
+        setTotalPrice(prevTotal => (Number(prevTotal) || 0) + calculatedPrice);
       }
-  
+      
       // Reset states after adding item
       setCounter(0);
       setModalVisible(false);
-      setNewItemName("");          
-      setNewItemQuantity("");       
-      setPricePerKg("");           
-      setNewPrice1("");            
-      setFinaldiscount(finaldiscount); 
+      setNewItemName("");
+      setNewItemQuantity("");
+      setPricePerKg("");
+      setNewPrice1("");
+      setFinaldiscount("0.00"); 
       setModalVisible1(false);
+      
+      // Log the updated discount value we just calculated - this will be accurate
+      console.log("Updated total discount:", updatedDiscount);
     } else {
       Alert.alert("Error", "Item details are missing.");
     }
+  };
+  
+  // Add this function to verify the total discount whenever needed
+  const verifyTotalDiscount = () => {
+    let calculatedTotal = 0;
+    for (const item of additionalItems) {
+      calculatedTotal += parseFloat(item.discount || "0");
+    }
+    
+    const formattedTotal = calculatedTotal.toFixed(2);
+    console.log("Calculated total from items:", formattedTotal);
+    console.log("Current discount state:", discount);
+    
+    // If there's a mismatch, fix it
+    if (formattedTotal !== discount) {
+      console.log("Mismatch detected! Fixing discount...");
+      setDiscount(formattedTotal);
+    }
+
+    console.log("//////////",discount)
+    
+    return formattedTotal;
+  };
+  
+  // You can call this in a useEffect to keep the discount in sync
+  useEffect(() => {
+    verifyTotalDiscount();
+  }, [additionalItems]);
+  
+  // Add a function to recalculate the total discount from all items
+  // This can be called at any time to ensure the total is correct
+  const recalculateTotalDiscount = () => {
+    let total = 0;
+    additionalItems.forEach(item => {
+      total += parseFloat(item.discount || "0");
+    });
+    
+    const formattedTotal = total.toFixed(2);
+    setDiscount(formattedTotal);
+    console.log("Recalculated total discount:", formattedTotal);
+    return formattedTotal;
   };
 
 

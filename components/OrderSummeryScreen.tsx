@@ -191,16 +191,18 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
         setLoading(false);
         return;
       }
-      
+
+      const subT = fullTotal + discount;
+      console.log("...........",fullTotal)
 
       let orderPayload: any = {
         customerId: customerId || customerid,
         scheduleDate: selectedDate,
         selectedTimeSlot: selectedTimeSlot,
         paymentMethod: paymentMethod,
-        fullTotal: fullTotal || total,
+        fullTotal: subT,
         discount: discount,
-        subtotal: subtotal
+        subtotal: fullTotal 
       };
       
 
@@ -210,13 +212,16 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
         
         if (safeOrderItems.length > 0) {
           const packageItem = safeOrderItems[0]; 
+
+          const packageSub = packageItem.packageTotal + packageItem.packageDiscount;
           
           orderPayload.packageId = packageItem.packageId;
           orderPayload.isModifiedPlus = packageItem.isModifiedPlus;
           orderPayload.isModifiedMin = packageItem.isModifiedMin;
           orderPayload.isAdditionalItems = packageItem.isAdditionalItems;
-          orderPayload.packageTotal = packageItem.packageTotal;
+          orderPayload.packageTotal = packageSub ;
           orderPayload.packageDiscount = packageItem.packageDiscount;
+          orderPayload.packageSubTotal = packageItem.packageTotal;
           
           // Add modifiedPlusItems if present
           if (packageItem.modifiedPlusItems && packageItem.modifiedPlusItems.length > 0) {

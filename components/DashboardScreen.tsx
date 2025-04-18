@@ -272,7 +272,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       transform: [{ translateX: -12 }], 
     }}
   >
-    {agentStats.daily.completed}/{agentStats.daily.target}
+    {agentStats.daily.completed}/{agentStats.daily.target || '0'}
   </Text>
   <Bar
   progress={agentStats.daily.progress}
