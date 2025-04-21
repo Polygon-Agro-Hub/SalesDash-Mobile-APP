@@ -1176,75 +1176,7 @@ const updateQuantity2 = (changeBy: number, isIncrement: boolean) => {
   }
 };
 
-  
-// const saveUpdatedItem = () => {
-//   const parsedNewItemQuantity = parseFloat(newItemQuantity || "0");
-  
-//   if (editingItem) {
-//     console.log("Saving edited item:", editingItem);
-    
-//     if (editingItemType === 'package') {
-//       // Update package item
-//       const updatedItems = packageItems.map(item =>
-//         item.name === editingItem.name
-//           ? {
-//               ...item,
-//               quantity: String(parsedNewItemQuantity),
-//               quantityType: selectedUnit || "",
-//             }
-//           : item
-//       );
-//    //  console.log("Updated Items:", updatedItems);
-//       setPackageItems(updatedItems);
-//     } else {
-//       // Update additional item with correct price calculation
-//       if (itemDetails) {
-//         // Calculate the new price for the edited item
-//         const basePrice = editingItem.price/parseFloat(editingItem.quantity);
-//         console.log("88888888", editingItem)
-//         const calculatedPrice = basePrice * parsedNewItemQuantity;
-        
-//         console.log("Updating item with ID:", editingItem.id);
-//         console.log("New quantity:", parsedNewItemQuantity);
-//         console.log("New calculated price:", calculatedPrice);
-        
-//         // Find the original item to get its price
-//         const originalItem = additionalItems.find(item => String(item.id) === String(editingItem.id));
-//         const originalPrice = originalItem ? Number(originalItem.price) : 0;
-        
-//         console.log("Original price:", originalPrice);
-        
-//         // Update the item in the array - use ID for reliable matching
-//         const updatedItems = additionalItems.map(item => {
-//           // Convert both IDs to the same type (string) before comparison
-//           if (String(item.id) === String(editingItem.id)) {
-//             console.log("Found item to update:", item);
-//             return {
-//               ...item,
-//               quantity: `${String(parsedNewItemQuantity)} ${selectedUnit}`,
-//               quantityType: selectedUnit || "",
-//               price: calculatedPrice
-//             };
-//           }
-//           return item;
-//         });
-        
-//         // Update state
-//         setAdditionalItems(updatedItems);
-        
-//         // Adjust total price by removing old price and adding new price
-//         const priceDifference = calculatedPrice - originalPrice;
-//         setTotalPrice(prevTotal => Number(prevTotal) + priceDifference);
-        
-//         console.log("Updated items:", updatedItems);
-//       }
-//     }
-//   }
- 
-  
-//   setCounter(0);
-//   setModalVisible(false);
-// };
+
 
 const saveUpdatedItem = () => {
   const parsedNewItemQuantity = parseFloat(newItemQuantity || "0");
@@ -1531,27 +1463,7 @@ const saveUpdatedItem = () => {
 
           </View>
           
-          {/* Unit Selection */}
-          {/* <DropDownPicker
-            open={open}
-            setOpen={setOpen}
-            value={selectedUnit}
-            setValue={setSelectedUnit}
-            items={units}
-            setItems={setUnits}
-            dropDownDirection="TOP"
-            containerStyle={{ width: 100 }}
-            style={{
-              backgroundColor: "#F6F6F6",
-              borderColor: "#F6F6F6",
-              borderRadius: 50,
-              paddingHorizontal: 10,
-            }}
-            dropDownContainerStyle={{
-              backgroundColor: "#FFFFFF",
-              borderColor: "#FFFFFF",
-            }}
-          /> */}
+        
               <DropDownPicker
               open={open}
               setOpen={setOpen}

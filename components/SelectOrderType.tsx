@@ -65,23 +65,7 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({ navigation, route }) 
             resizeMode="contain"
           />
           
-          {/* <TouchableOpacity 
-            className="w-4/5  border border-[#F2F4F7] py-4 rounded-2xl my-2 items-center mt-5"
-            onPress={handleCreateCustomPackage}
-          >
-            <Text className="text-lg font-semibold text-[#6839CF] text-center">
-              Create{"\n"}Custom Package
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            className="w-4/5 bg-[white] border border-[#F2F4F7] py-4 rounded-2xl my-2 items-center"
-            onPress={handleSelectPackage}
-          >
-            <Text className="text-lg font-semibold text-[#6839CF] text-center">
-              Select{"\n"}Package
-            </Text>
-          </TouchableOpacity> */}
+        
           <TouchableOpacity
   style={{
     width: '70%',

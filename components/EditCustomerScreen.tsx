@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View, Text, ScrollView, TextInput, TouchableOpacity, Keyboard, Platform, KeyboardAvoidingView, SafeAreaView, Alert } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
-import { Picker } from "@react-native-picker/picker";
+//import { Picker } from "@react-native-picker/picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { widthPercentageToDP as wp } from "react-native-responsive-screen";
 import BackButton from "./BackButton";
@@ -10,6 +10,7 @@ import axios from "axios";
 import environment from "@/environment/environment";
 import DropDownPicker from "react-native-dropdown-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { SelectList } from "react-native-dropdown-select-list";
 
 type EditCustomerScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -32,22 +33,25 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
   const [houseNo, setHouseNo] = useState<string>("");
   const [streetName, setStreetName] = useState<string>("");
   const [city, setCity] = useState<string>("");
-  const [buildingNo, setbuildingNo] = useState<string>("");
-  const [floorNo, setfloorNo] = useState<string>("");
-  const [unitNo, setunitNo] = useState<string>("");
-  const [buildingName, setbuildingName] = useState<string>("");
+  const [buildingNo, setBuildingNo] = useState<string>("");
+  const [floorNo, setFloorNo] = useState<string>("");
+  const [unitNo, setUnitNo] = useState<string>("");
+  const [buildingName, setBuildingName] = useState<string>("");
   const [buildingType, setBuildingType] = useState<string>("");
-
+  const [originalBuildingType, setOriginalBuildingType] = useState<string>("");
+  
   const [originalPhoneNumber, setOriginalPhoneNumber] = useState<string>("");
 
   const [loading, setLoading] = useState(false);
-    const [otpSent, setOtpSent] = useState(false);
-    const [token, setToken] = useState<string>("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [token, setToken] = useState<string>("");
 
-  const buildingOptions = [
-    { key: "1", value: "House" },
-    { key: "2", value: "Apartment" },
-  ];
+  // For building type dropdown picker
+  const [buildingTypeOpen, setBuildingTypeOpen] = useState(false);
+  const [buildingTypeItems, setBuildingTypeItems] = useState([
+    { label: "House", value: "House" },
+    { label: "Apartment", value: "Apartment" },
+  ]);
 
   useEffect(() => {
     const getToken = async () => {
@@ -60,6 +64,11 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
     getToken();
   }, []);
 
+  // Helper function to convert null to empty string
+  const nullToEmptyString = (value: any): string => {
+    return value !== null && value !== undefined ? value : "";
+  };
+
   // Fetch customer data based on customerId
   useEffect(() => {
     const fetchCustomerData = async () => {
@@ -71,29 +80,32 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
           const customerData = response.data.customer;
           const buildingData = response.data.building;
 
-          console.log("Customer Data:", customerData); 
+          console.log("Customer Data:", customerData);
+          console.log("Building Data:", buildingData);
 
-          setSelectedCategory(customerData.title);
-          setFirstName(customerData.firstName);
-          setLastName(customerData.lastName);
-          setPhoneNumber(customerData.phoneNumber);
-          setEmail(customerData.email);
-          setBuildingType(customerData.buildingType);
-          setOriginalPhoneNumber(customerData.phoneNumber);
-          setSelectedCategory(customerData.title);
-
-          if (customerData.buildingType === "House") {
-            setHouseNo(buildingData.houseNo || "");
-            setStreetName(buildingData.streetName || "");
-            setCity(buildingData.city || "");
-          } else if (customerData.buildingType === "Apartment") {
-            setbuildingNo(buildingData.buildingNo || "");
-            setbuildingName(buildingData.buildingName || "");
-            setunitNo(buildingData.unitNo || "");
-            setfloorNo(buildingData.floorNo || "");
-            setHouseNo(buildingData.houseNo || "");
-            setStreetName(buildingData.streetName || "");
-            setCity(buildingData.city || "");
+          setSelectedCategory(customerData.title || "");
+          setFirstName(customerData.firstName || "");
+          setLastName(customerData.lastName || "");
+          setPhoneNumber(customerData.phoneNumber || "");
+          setEmail(customerData.email || "");
+          setBuildingType(customerData.buildingType || "");
+          setOriginalBuildingType(customerData.buildingType || "");
+          setOriginalPhoneNumber(customerData.phoneNumber || "");
+          
+          if (buildingData) {
+            if (customerData.buildingType === "House") {
+              setHouseNo(nullToEmptyString(buildingData.houseNo));
+              setStreetName(nullToEmptyString(buildingData.streetName));
+              setCity(nullToEmptyString(buildingData.city));
+            } else if (customerData.buildingType === "Apartment") {
+              setBuildingNo(nullToEmptyString(buildingData.buildingNo));
+              setBuildingName(nullToEmptyString(buildingData.buildingName));
+              setUnitNo(nullToEmptyString(buildingData.unitNo));
+              setFloorNo(nullToEmptyString(buildingData.floorNo));
+              setHouseNo(nullToEmptyString(buildingData.houseNo));
+              setStreetName(nullToEmptyString(buildingData.streetName));
+              setCity(nullToEmptyString(buildingData.city));
+            }
           }
         } else {
           Alert.alert("Error", "Failed to load customer data.");
@@ -118,7 +130,6 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
     try {
       setLoading(true);
   
- 
       const cleanedPhoneNumber = phoneNumber.replace(/[^\d]/g, "");
   
       const apiUrl = "https://api.getshoutout.com/otpservice/send";
@@ -142,10 +153,8 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
   
       console.log("API response:", response.data); 
   
- 
       await AsyncStorage.setItem("referenceId", response.data.referenceId);
   
-
       if (response.status === 200) {
         setOtpSent(true);
         Alert.alert('Success', 'OTP sent successfully.');
@@ -155,7 +164,6 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
         return { status: 400 }; 
       }
     } catch (error) {
-    
       if (axios.isAxiosError(error)) {
         console.log('Axios error details:', error.response ? error.response.data : error.message);
         Alert.alert('Error', `Error: ${error.response ? error.response.data.message : error.message}`);
@@ -169,6 +177,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
     }
   };
   
+ 
 
   const handleRegister = async () => {
     if (!selectedCategory || !firstName || !lastName || !phoneNumber || !email || !buildingType) {
@@ -176,7 +185,6 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
       return;
     }
   
- 
     if (!validatePhoneNumber(phoneNumber)) {
       alert("Please enter a valid phone number.");
       return;
@@ -187,54 +195,114 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
       return;
     }
   
-    const customerData = {
-      title: selectedCategory,
-      firstName,
-      lastName,
-      phoneNumber,
-      email,
-      buildingType,
-      houseNo,
-      streetName,
-      city,
-      buildingNo,
-      floorNo,
-      unitNo,
-      buildingName,
-    };
-  
     try {
+      // Only check phone number if it's changed
+      if (phoneNumber !== originalPhoneNumber) {
+        try {
+          const checkResponse = await axios.post(
+            `${environment.API_BASE_URL}api/customer/check-customer`,
+            { phoneNumber }, // ONLY sending phoneNumber now
+            {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
   
+          // If server replies 400, phone already registered
+          if (checkResponse.status === 400) {
+            Alert.alert("Error", "This phone number is already registered.");
+            return;
+          }
+        } catch (error) {
+          if (axios.isAxiosError(error)) {
+            if (error.response?.status === 400) {
+              Alert.alert("Error", "This phone number is already registered.");
+              return;
+            } else if (error.response?.status === 404) {
+              console.log("(NOBRIDGE) INFO: Phone number not found, proceeding...");
+              // Valid case — allow to continue.
+            } else {
+              console.error("(NOBRIDGE) ERROR checking phone:", error.response?.data);
+              Alert.alert("Error", "Failed to verify phone number. Please try again.");
+              return;
+            }
+          } else {
+            console.error("(NOBRIDGE) Unknown error checking phone:", error);
+            Alert.alert("Error", "Failed to verify phone number. Please try again.");
+            return;
+          }
+        }
+      }
+  
+      // Create the customer data object
+      const customerData = {
+        title: selectedCategory,
+        firstName,
+        lastName,
+        phoneNumber,
+        email,
+        buildingType,
+      };
+  
+      // Create building data object based on the selected building type
+      let buildingData = {};
+  
+      if (buildingType === "House") {
+        buildingData = {
+          houseNo: houseNo || "",
+          streetName: streetName || "",
+          city: city || ""
+        };
+      } else if (buildingType === "Apartment") {
+        buildingData = {
+          buildingNo: buildingNo || "",
+          buildingName: buildingName || "",
+          unitNo: unitNo || "",
+          floorNo: floorNo || "",
+          houseNo: houseNo || "",
+          streetName: streetName || "",
+          city: city || ""
+        };
+      }
+  
+      // If phone number has changed, send OTP
       if (phoneNumber !== originalPhoneNumber) {
         setOtpSent(false);  
-  
- 
         const otpResponse = await sendOTP();  
         if (otpResponse.status === 200) {
-          
-          await AsyncStorage.setItem("pendingCustomerData", JSON.stringify(customerData));
-  
-          navigation.navigate("OtpScreenUp", { phoneNumber ,id, token});
-          console.log(id)
+          await AsyncStorage.setItem("pendingCustomerData", JSON.stringify({ customerData, buildingData }));
+          navigation.navigate("OtpScreenUp", { phoneNumber, id, token });
         } else {
           alert("Failed to send OTP. Please try again.");
         }
       } else {
-    
+        const dataToSend = {
+          ...customerData,
+          buildingData,
+          originalBuildingType
+        };
+  
         const response = await axios.put(
           `${environment.API_BASE_URL}api/customer/update-customer-data/${id}`,
-          customerData
+          dataToSend,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
         );
   
         if (response.status === 200) {
-          console.log("Customer updated successfully:", response.data);
           Alert.alert("Success", "Customer updated successfully.");
           navigation.goBack();
         } else {
-          console.error("Failed to update customer:", response.data.error);
           Alert.alert("Error", "Failed to update customer. Please try again.");
         }
       }
+  
     } catch (error: unknown) {
       if (error instanceof Error) {
         Alert.alert("Error", `Failed to update customer: ${error.message}`);
@@ -246,13 +314,13 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
     }
   };
   
+  
   const [open, setOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [items, setItems] = useState([
-  { label: "Mr", value: "Mr" },
-  { label: "Ms", value: "Ms" },
+    { key: 'Mr', label: "Mr", value: "Mr" },
+    { key: 'Ms', label: "Ms", value: "Ms" },
   ]);
-
 
   const phoneRegex = /^\+?[0-9]{1,3}[0-9]{7,10}$/;
   const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
@@ -270,6 +338,33 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
       keyboardDidHideListener.remove();
     };
   }, []);
+  
+  // Handle building type change - clear irrelevant fields
+  const handleBuildingTypeChange = (value: string) => {
+    setBuildingType(value);
+    
+    // If building type changed, clear fields from the other type
+    if (value !== originalBuildingType) {
+      if (value === "House") {
+        // Clear apartment fields
+        setBuildingNo("");
+        setBuildingName("");
+        setUnitNo("");
+        setFloorNo("");
+        // Initialize house fields with empty strings if they're not set
+        setHouseNo(houseNo || "");
+        setStreetName(streetName || "");
+        setCity(city || "");
+      } else if (value === "Apartment") {
+        // Initialize apartment fields with empty strings if they're not set
+        setBuildingNo("");
+        setBuildingName("");
+        setUnitNo("");
+        setFloorNo("");
+        // Keep house fields as they may be needed for apartment too
+      }
+    }
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -284,7 +379,6 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
               <BackButton navigation={navigation} />
               <Text style={{ fontSize: 18 }} className="font-bold text-center text-purple-600 flex-grow mr-9">
                 Edit Customer Details 
-           
               </Text>
             </View>
           </View>
@@ -297,9 +391,11 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                 <View className="flex-[1]">
                   <Text className="text-gray-700 mb-1">Title</Text>
                 
-                  <View className="mb-4">
+                  <View className="mb-2">
   
-                  <DropDownPicker
+              
+
+<DropDownPicker
   open={open}
   value={selectedCategory}
   items={items}
@@ -308,24 +404,24 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
   setItems={setItems}
   placeholder="Select Title"
   style={{
-    backgroundColor: "#F6F6F6",
-    borderColor: "#F6F6F6",
-    borderRadius: 9999, 
-    paddingVertical: 0, 
-    paddingHorizontal: 7,
-    height: 0, 
+    backgroundColor: '#F6F6F6',
+    borderColor: '#F6F6F6',
+    borderRadius: 30,
+    minHeight: 40,
   }}
   textStyle={{
-    fontSize: 12, 
-  
+    fontSize: 12,
     textAlignVertical: "center",
   }}
   dropDownContainerStyle={{
-    backgroundColor: "#ffffff",
+    backgroundColor: '#ffffff',
+    borderColor: '#F6F6F6',
     borderRadius: 10,
-    paddingTop: 6,
-    maxHeight: 100, 
-    overflow: "hidden",
+    zIndex: 1000,
+  }}
+  listMode="SCROLLVIEW"          // <-- ADD this
+  scrollViewProps={{             // <-- ADD this
+    nestedScrollEnabled: true,
   }}
 />
 
@@ -344,7 +440,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                 </View>
               </View>
 
-              <View className="mb-4">
+              <View className="mb-4 ">
                 <Text className="text-gray-700 mb-1">Last Name</Text>
                 <TextInput
                   className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
@@ -376,23 +472,50 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                 />
               </View>
 
-              <View className="mb-4">
+              <View className="mb-4 z-10">
                 <Text className="text-gray-700 mb-1">Building Type</Text>
-                <View className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-4 py-2 mt-1 items-center justify-center">
-                  <Picker
-                    selectedValue={buildingType}
-                    onValueChange={(itemValue) => setBuildingType(itemValue)}
-                    style={{
-                      height: 25,
-                      width: "100%",
-                    }}
-                  >
-                    <Picker.Item label="Select Building Type" value="" color="#999" style={{ fontSize: 14 }} />
-                    {buildingOptions.map((option) => (
-                      <Picker.Item key={option.key} label={option.value} value={option.value} />
-                    ))}
-                  </Picker>
-                </View>
+                <DropDownPicker
+                  open={buildingTypeOpen}
+                  value={buildingType}
+                  items={buildingTypeItems}
+                  setOpen={setBuildingTypeOpen}
+                  setValue={(callback) => {
+                    setBuildingType((val) => {
+                      const newValue = callback(val);
+                      handleBuildingTypeChange(newValue);
+                      return newValue;
+                    });
+                  }}
+                  setItems={setBuildingTypeItems}
+                  placeholder="Select Building Type"
+                  style={{
+                    backgroundColor: '#F6F6F6',
+                    borderColor: '#F6F6F6',
+                    borderRadius: 30,
+                    minHeight: 40,
+                  }}
+                  dropDownContainerStyle={{
+                    backgroundColor: '#ffffff',
+                    borderColor: '#F6F6F6',
+                    borderRadius: 10,
+                    zIndex: 1000,
+                  }}
+                  textStyle={{
+                    color: '#333',
+                    fontSize: 14,
+                    paddingLeft: 5,
+                  }}
+                  placeholderStyle={{
+                    color: '#999',
+                    fontSize: 14,
+                  }}
+                  zIndex={3000}
+                  zIndexInverse={1000}
+                  listMode="SCROLLVIEW"        
+  scrollViewProps={{            
+    nestedScrollEnabled: true,
+  }}
+                />
               </View>
 
               {buildingType === "House" && (
@@ -433,9 +556,9 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                    <Text className="text-gray-700 mb-1">Apartment / Building No</Text>
                     <TextInput
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
-                      placeholder="Apartment / Building Name"
+                      placeholder="Apartment / Building No"
                       value={buildingNo}
-                      onChangeText={setbuildingNo}
+                      onChangeText={setBuildingNo}
                     />
                   </View>
 
@@ -445,7 +568,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="Apartment / Building Name"
                       value={buildingName}
-                      onChangeText={setbuildingName}
+                      onChangeText={setBuildingName}
                     />
                   </View>
                   <View className="mb-4">
@@ -454,7 +577,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="ex : Building B"
                       value={unitNo}
-                      onChangeText={setunitNo}
+                      onChangeText={setUnitNo}
                     />
                   </View>
                   <View className="mb-4">
@@ -463,7 +586,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="ex : 3rd Floor"
                       value={floorNo}
-                      onChangeText={setfloorNo}
+                      onChangeText={setFloorNo}
                     />
                   </View>
 
@@ -498,8 +621,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
               )}
 
               <LinearGradient colors={["#854BDA", "#6E3DD1"]} className="py-3 px-4 rounded-lg items-center mt-6 mb-[15%] mr-[20%] ml-[20%] rounded-3xl h-15">
-                <TouchableOpacity onPress={handleRegister}
-                >
+                <TouchableOpacity onPress={handleRegister}>
                   <Text className="text-center text-white font-bold">Save</Text>
                 </TouchableOpacity>
               </LinearGradient>

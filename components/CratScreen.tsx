@@ -133,43 +133,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
 
  
 
-  // const increaseQuantity = (id: number) => {
-  //   setCartItems(
-  //     cartItems.map(item => {
-  //       if (item.id === id) {
-  //         const increment = item.unitType === 'g' ? 50 : 0.5;
-  //         const newValue = item.changeby + increment;
-  //         return { 
-  //           ...item, 
-  //           changeby: newValue,
-  //           quantity: newValue
-  //         };
-  //       }
-  //       return item;
-  //     })
-  //   );
-  // };
-
-  // const decreaseQuantity = (id: number) => {
-  //   setCartItems(
-  //     cartItems.map(item => {
-  //       if (item.id === id) {
-  //         const decrement = item.unitType === 'g' ? 50 : 0.5;
-  //         // Use startValue as minimum instead of fixed value
-  //         const minValue = item.unitType === 'g' 
-  //           ? item.startValue * 1000 
-  //           : item.startValue;
-  //         const newValue = Math.max(minValue, item.changeby - decrement);
-  //         return { 
-  //           ...item, 
-  //           changeby: newValue,
-  //           quantity: newValue
-  //         };
-  //       }
-  //       return item;
-  //     })
-  //   );
-  // };
+ 
 
 
   const increaseQuantity = (id: number) => {

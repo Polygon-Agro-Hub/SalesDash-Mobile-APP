@@ -197,64 +197,7 @@ const [titleError, setTitleError] = useState<string>("");
     }));
   };
 
-  // const handleRegister = async () => {
-  //   if (!selectedCategory || !firstName || !lastName || !phoneNumber || !email || !buildingType) {
-  //     Alert.alert("Error", "Please fill in all required fields.");
-  //     return;
-  //   }
   
-  //   if (!validatePhoneNumber(phoneNumber)) {
-  //     Alert.alert("Error", "Please enter a valid phone number.");
-  //     return;
-  //   }
-  
-  //   if (!validateEmail(email)) {
-  //     Alert.alert("Error", "Please enter a valid email address.");
-  //     return;
-  //   }
-  
-  //   try {
- 
-  //     const checkResponse = await axios.post(`${environment.API_BASE_URL}api/customer/check-customer`, {
-  //       phoneNumber,
-  //       email,
-  //     });
-  
-  //     if (checkResponse.status === 400) {
-  //       Alert.alert("Error", "Phone number or email already exists.");
-  //       return;
-  //     }
-  
-
-  //     const customerData = {
-  //       title: selectedCategory,
-  //       firstName,
-  //       lastName,
-  //       phoneNumber,
-  //       email,
-  //       buildingType,
-  //       houseNo,
-  //       streetName,
-  //       city,
-  //       buildingNo,
-  //       floorNo,
-  //       unitNo,
-  //       buildingName,
-  //     };
-  //     await AsyncStorage.setItem("pendingCustomerData", JSON.stringify(customerData));
-  
-     
-  //     const id = new Date().getTime().toString(); 
-  
-
-  //     await sendOTP();
-  //     navigation.navigate("OtpScreen", { phoneNumber, id });
-  
-  //   } catch (error: any) {
-  //     console.log("Error checking customer:", error);
-  //     Alert.alert("Error", "Phone number or email already exists.");
-  //   }
-  // };
 
  const handleRegister = async () => {
   if (!selectedCategory || !firstName || !lastName || !phoneNumber || !email || !buildingType) {
@@ -576,11 +519,7 @@ const [titleError, setTitleError] = useState<string>("");
                 </>
               )}
 
-              {/* <LinearGradient colors={["#854BDA", "#6E3DD1"]} className="py-3 px-4 rounded-lg items-center mt-6 mb-[15%] mr-[20%] ml-[20%] rounded-3xl h-15">
-                <TouchableOpacity onPress={handleRegister}>
-                  <Text className="text-center text-white font-bold">Register</Text>
-                </TouchableOpacity>
-              </LinearGradient> */}
+             
               
             <LinearGradient 
               colors={["#854BDA", "#6E3DD1"]} 
