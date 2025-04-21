@@ -20,7 +20,7 @@ interface SidebarScreenProps {
 const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
   const [complaintsExpanded, setComplaintsExpanded] = useState(false);
   const [token, setToken] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ firstName: "", empId: "" });
+  const [formData, setFormData] = useState({ firstName: "", lastName:"", empId: "" });
 
   useEffect(() => {
     getUserProfile();
@@ -89,7 +89,7 @@ const handleLogout = async () => {
          <View className="flex-row items-center p-5">
            <Image source={require("../assets/images/profile.png")} style={{ width: wp(16), height: wp(16), borderRadius: wp(8) }} />
            <View style={{ marginLeft: wp(4) }}>
-             <Text className="text-lg font-bold text-gray-900">{formData.firstName}</Text>
+             <Text className="text-lg font-bold text-gray-900">{formData.firstName} {formData.lastName}</Text>
              <Text className="text-sm text-gray-500 mt-1">{formData.empId}</Text>
           </View>
        </View>
@@ -170,7 +170,7 @@ const handleLogout = async () => {
 
 
           {complaintsExpanded && (
-            <View style={{ paddingLeft: wp(10) }}>
+            <View style={{ paddingLeft: wp(15) }}>
               <TouchableOpacity onPress={() => navigation.navigate("AddComplaintScreen")}>
                 <Text className="text-sm text-gray-700 font-bold">Report a Complaint</Text>
               </TouchableOpacity>

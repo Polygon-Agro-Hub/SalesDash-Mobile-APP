@@ -68,6 +68,9 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   const [selectedReportOption, setSelectedReportOption] = useState<string | null>(null);
   const [showStatusMessage, setShowStatusMessage] = useState(false);
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
+  const [subtotal, setSubtotal] = useState(0);
+
+  console.log(";;;;;;",route.params)
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
@@ -180,6 +183,16 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
     setReportModalVisible(true);
   };
 
+
+  const handlesubtotal = () => {
+    if (order && order.fullTotal) {
+      // Convert string to number before addition
+      const subtotal = parseFloat(order.fullTotal) + 350;
+      setSubtotal(subtotal);
+    }
+  };
+
+  console.log(subtotal)
  
 
   const handleConfirmReport = async () => {
@@ -418,19 +431,25 @@ const isTimelineItemActive = (status: string) => {
               <View className="bg-white border border-gray-200 rounded-lg shadow-sm mx-4 p-4 mb-4">
                 <Text className="text-black font-semibold mb-2">Payment Summary</Text>
                 <View className="flex-row justify-between mb-2">
-                  <Text className="text-[#8492A3]">Subtotal</Text>
-                  <Text className="text-black font-medium">Rs.{parseFloat(order.fullSubTotal || "0").toFixed(2)}</Text>
-                </View>
+  <Text className="text-[#8492A3]">Subtotal</Text>
+  <Text className="text-black font-medium">
+    Rs.{(parseFloat(order.fullTotal || "0") - 350 ).toFixed(2)}
+  </Text>
+</View>
                 {order.fullDiscount && parseFloat(order.fullDiscount) > 0 && (
                   <View className="flex-row justify-between mb-2">
                     <Text className="text-[#8492A3]">Discount</Text>
                     <Text className="text-[#8492A3]">Rs.{parseFloat(order.fullDiscount).toFixed(2)}</Text>
                   </View>
                 )}
+                <View className="flex-row justify-between mb-2">
+                    <Text className="text-[#8492A3]">Delivery</Text>
+                    <Text className="text-[#8492A3]">Rs.350.00</Text>
+                  </View>
                 <View className="flex-row justify-between pt-2">
                   <Text className="font-semibold text-black">Grand Total</Text>
                   <Text className="font-bold text-black">
-                    Rs.{(parseFloat(order.fullTotal) - (parseFloat(order.fullDiscount || "0"))).toFixed(2)}
+                  Rs.{parseFloat(order.fullSubTotal || "0").toFixed(2)}
                   </Text>
                 </View>
               </View>

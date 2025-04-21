@@ -56,8 +56,13 @@ interface PackageItem {
   modifiedPlusItems: ModifiedPlusItem[];
   modifiedMinItems: ModifiedMinItem[];
   additionalItems: AdditionalItem[];
+  finalOrderPackageList?: Array<{
+    productId: number;
+    quantity: number;
+    price: number | string;
+    isPacking: number;
+  }>;
 }
-
 
 
 interface OrderSummeryScreenProps {
@@ -186,16 +191,18 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
         setLoading(false);
         return;
       }
-      
+
+      const subT = fullTotal + discount;
+      console.log("...........",fullTotal)
 
       let orderPayload: any = {
         customerId: customerId || customerid,
         scheduleDate: selectedDate,
         selectedTimeSlot: selectedTimeSlot,
         paymentMethod: paymentMethod,
-        fullTotal: fullTotal || total,
+        fullTotal: subT,
         discount: discount,
-        subtotal: subtotal
+        subtotal: fullTotal 
       };
       
 
@@ -203,33 +210,40 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
         orderPayload.isSelectPackage = 1;
         orderPayload.isCustomPackage = 0;
         
-
         if (safeOrderItems.length > 0) {
           const packageItem = safeOrderItems[0]; 
+
+          const packageSub = packageItem.packageTotal + packageItem.packageDiscount;
           
           orderPayload.packageId = packageItem.packageId;
           orderPayload.isModifiedPlus = packageItem.isModifiedPlus;
           orderPayload.isModifiedMin = packageItem.isModifiedMin;
           orderPayload.isAdditionalItems = packageItem.isAdditionalItems;
-          orderPayload.packageTotal = packageItem.packageTotal;
+          orderPayload.packageTotal = packageSub ;
           orderPayload.packageDiscount = packageItem.packageDiscount;
+          orderPayload.packageSubTotal = packageItem.packageTotal;
           
-
+          // Add modifiedPlusItems if present
           if (packageItem.modifiedPlusItems && packageItem.modifiedPlusItems.length > 0) {
             orderPayload.modifiedPlusItems = packageItem.modifiedPlusItems;
           }
           
-
+          // Add modifiedMinItems if present
           if (packageItem.modifiedMinItems && packageItem.modifiedMinItems.length > 0) {
             orderPayload.modifiedMinItems = packageItem.modifiedMinItems;
           }
           
-        
+          // Add additionalItems if present
           if (packageItem.additionalItems && packageItem.additionalItems.length > 0) {
             orderPayload.additionalItems = packageItem.additionalItems;
           }
+      
+          // Add finalOrderPackageList if present
+          if (packageItem.finalOrderPackageList && packageItem.finalOrderPackageList.length > 0) {
+            orderPayload.finalOrderPackageList = packageItem.finalOrderPackageList;
+          }
         }
-      } 
+      }
    
       else if (isCustomPackage === 1) {
         orderPayload.isSelectPackage = 0;

@@ -21,6 +21,12 @@ export interface PackageItem {
   modifiedPlusItems: ModifiedPlusItem[];
   modifiedMinItems: ModifiedMinItem[];
   additionalItems: AdditionalItem[];
+  finalOrderPackageList?: Array<{
+    productId: number;
+    quantity: number;
+    price: number | string;
+    isPacking: number;
+  }>;
 }
 
 interface ModifiedPlusItem {
@@ -59,6 +65,7 @@ export type RootStackParamList = {
  ViewScreen: { 
     selectedPackageId: number;
     selectedPackageName: string;
+    selectedPackageImage: string;
     selectedPackageTotal: string;
     selectedPackageDescription:string;
     selectedPackageportion:number;
@@ -71,7 +78,7 @@ export type RootStackParamList = {
     ProfileScreen: undefined;
     AddComplaintScreen: undefined;
     ViewComplainScreen: undefined;
-    ViewCustomerScreen: {number:string,name:string, customerId:string , id: string}; // Update this type
+    ViewCustomerScreen: {number:string,name:string, customerId:string , id: string , title:string}; // Update this type
     ReminderScreen: undefined;
     AddCustomersScreen: undefined;
     OtpScreen:{phoneNumber:string , id: string};

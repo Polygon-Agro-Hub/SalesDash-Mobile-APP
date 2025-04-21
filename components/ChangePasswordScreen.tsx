@@ -117,7 +117,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
             </Text>
   
             {/* Current Password */}
-            <View className="bg-purple-500 rounded-full flex-row items-center px-4 mb-4">
+            <View className="bg-[#FFFFFF66] rounded-full flex-row items-center px-4 mb-4">
               <TextInput
                 placeholder="Current Password"
                 placeholderTextColor="#E5E5E5"
@@ -132,7 +132,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
             </View>
   
             {/* New Password */}
-            <View className="bg-purple-500 rounded-full flex-row items-center px-4 mb-4">
+            <View className="bg-[#FFFFFF66] rounded-full flex-row items-center px-4 mb-4">
               <TextInput
                 placeholder="New Password"
                 placeholderTextColor="#E5E5E5"
@@ -147,7 +147,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
             </View>
   
             {/* Confirm New Password */}
-            <View className="bg-purple-500 rounded-full flex-row items-center px-4 mb-6">
+            <View className="bg-[#FFFFFF66] rounded-full flex-row items-center px-4 mb-6">
               <TextInput
                 placeholder="Confirm New Password"
                 placeholderTextColor="#E5E5E5"

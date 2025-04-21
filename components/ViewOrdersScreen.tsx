@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import {
   View,
   Text,
@@ -63,15 +63,36 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
   const [searchText, setSearchText] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("All");
   const [orders, setOrders] = useState<Order[]>([]);
+  const isMounted = useRef(true);
 
-  
+  // Function to safely update state only if component is mounted
+  const safeSetOrders = (data: Order[]) => {
+    if (isMounted.current) {
+      setOrders(data);
+    }
+  };
+
+  const safeSetLoading = (value: boolean) => {
+    if (isMounted.current) {
+      setLoading(value);
+    }
+  };
+
+  const safeSetRefreshing = (value: boolean) => {
+    if (isMounted.current) {
+      setRefreshing(value);
+    }
+  };
+
   const loadOrders = async (showFullLoading = true) => {
-    if (showFullLoading) setLoading(true);
+    if (showFullLoading) safeSetLoading(true);
     
     try {
       const token = await AsyncStorage.getItem("authToken");
       if (!token) {
-        navigation.navigate("LoginScreen" as any);
+        if (isMounted.current) {
+          navigation.navigate("LoginScreen" as any);
+        }
         return;
       }
       
@@ -82,33 +103,42 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
         }
       );
       
-      if (response.data.success) {
-        setOrders(response.data.data);
+      if (response.data.success && response.data.data) {
+        safeSetOrders(response.data.data);
+        console.log("Orders loaded:", response.data.data.length);
+      } else {
+        safeSetOrders([]);
+        console.log("No orders data or success is false");
       }
     } catch (error) {
       console.error("Failed to fetch orders:", error);
+      safeSetOrders([]);
+      
       if (axios.isAxiosError(error) && error.response?.status === 401) {
         await AsyncStorage.removeItem("authToken");
-        navigation.navigate("LoginScreen" as any);
+        if (isMounted.current) {
+          navigation.navigate("LoginScreen" as any);
+        }
       }
     } finally {
-      if (showFullLoading) setLoading(false);
-      setRefreshing(false);
+      if (showFullLoading) safeSetLoading(false);
+      safeSetRefreshing(false);
     }
   };
 
-
   const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    loadOrders(false); 
+    safeSetRefreshing(true);
+    loadOrders(false);
   }, []);
 
   useEffect(() => {
-
+    console.log("Component mounted");
+    
+    // Set up listeners
     const unsubscribe = navigation.addListener('focus', () => {
+      console.log("Screen focused - loading orders");
       loadOrders();
     });
-
 
     const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () =>
       setKeyboardVisible(true)
@@ -117,8 +147,13 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
       setKeyboardVisible(false)
     );
 
- 
+    // Initial load
+    loadOrders();
+
+    // Cleanup function
     return () => {
+      console.log("Component unmounting");
+      isMounted.current = false;
       unsubscribe();
       keyboardDidShowListener.remove();
       keyboardDidHideListener.remove();
@@ -127,50 +162,67 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
 
   const filters = ["All", "Today", "Tomorrow", "In 3 Days", "This Week"];
 
-
-  const filteredOrders = orders.filter(
-    (order) => {
-      const matchesFilter = () => {
-        if (selectedFilter === "All") return true;
-        
-        const today = new Date();
-        const orderDate = new Date(order.scheduleDate);
-        
-        if (selectedFilter === "Today") {
-          return orderDate.toDateString() === today.toDateString();
-        }
-        
-        if (selectedFilter === "Tomorrow") {
-          const tomorrow = new Date();
-          tomorrow.setDate(today.getDate() + 1);
-          return orderDate.toDateString() === tomorrow.toDateString();
-        }
-        
-        if (selectedFilter === "In 3 Days") {
-          const in3Days = new Date();
-          in3Days.setDate(today.getDate() + 3);
-          return orderDate.toDateString() === in3Days.toDateString();
-        }
-        
-        if (selectedFilter === "This Week") {
-          const startOfWeek = new Date(today);
-          startOfWeek.setDate(today.getDate() - today.getDay());
-          const endOfWeek = new Date(startOfWeek);
-          endOfWeek.setDate(startOfWeek.getDate() + 6);
-          
-          return orderDate >= startOfWeek && orderDate <= endOfWeek;
-        }
-        
-        return false;
-      };
-      
-      return matchesFilter() && (!searchText || order.InvNo.toLowerCase().includes(searchText.toLowerCase()));
+  // Safe implementation with null check
+  const filteredOrders = useMemo(() => {
+    console.log("Computing filtered orders. Orders length:", orders?.length || 0);
+    
+    if (!orders || !Array.isArray(orders)) {
+      console.log("Orders is undefined or not an array");
+      return [];
     }
-  );
+    
+    return orders.filter((order) => {
+      try {
+        const matchesFilter = () => {
+          if (selectedFilter === "All") return true;
+          
+          const today = new Date();
+          const orderDate = new Date(order.scheduleDate);
+          
+          if (selectedFilter === "Today") {
+            return orderDate.toDateString() === today.toDateString();
+          }
+          
+          if (selectedFilter === "Tomorrow") {
+            const tomorrow = new Date();
+            tomorrow.setDate(today.getDate() + 1);
+            return orderDate.toDateString() === tomorrow.toDateString();
+          }
+          
+          if (selectedFilter === "In 3 Days") {
+            const in3Days = new Date();
+            in3Days.setDate(today.getDate() + 3);
+            return orderDate.toDateString() === in3Days.toDateString();
+          }
+          
+          if (selectedFilter === "This Week") {
+            const startOfWeek = new Date(today);
+            startOfWeek.setDate(today.getDate() - today.getDay());
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 6);
+            
+            return orderDate >= startOfWeek && orderDate <= endOfWeek;
+          }
+          
+          return false;
+        };
+        
+        return matchesFilter() && (!searchText || (order.InvNo && order.InvNo.toLowerCase().includes(searchText.toLowerCase())));
+      } catch (error) {
+        console.error("Error filtering order:", error);
+        return false;
+      }
+    });
+  }, [orders, selectedFilter, searchText]);
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString();
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString();
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "Invalid date";
+    }
   };
 
   return (
@@ -188,8 +240,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
             {/* Header */}
             <LinearGradient colors={["#884EDC", "#6E3DD1"]} className="h-20 shadow-md px-4 pt-17 items-center justify-center">
               <View className="flex-row items-center">
-                <Text className="text-white text-lg font-bold mt-[-4]">Total Orders: <Text className="font-bold">{orders.length}</Text></Text>
-               
+                <Text className="text-white text-lg font-bold mt-[-4]">Total Orders: <Text className="font-bold">{(orders && Array.isArray(orders)) ? orders.length : 0}</Text></Text>
               </View>
             </LinearGradient>
 
@@ -250,7 +301,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
 
             <View className="py-[-12%] mb-[60%]">
               {/* Order List with Pull-to-Refresh */}
-              {filteredOrders.length > 0 ? (
+              {filteredOrders && filteredOrders.length > 0 ? (
                 <FlatList
                   data={filteredOrders}
                   className="p-4 mb-10"
@@ -312,7 +363,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                         <Text style={{ fontSize: wp(3.6), color: "#808FA2" }}>
                           Schedule to: {formatDate(item.scheduleDate)}
                         </Text>
-                        
+
                         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                           {/* Customer name */}
                           <Text style={{ fontSize: wp(3.6), color: "#808FA2", marginTop: hp(0.5) }}>
@@ -339,4 +390,3 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
 };
 
 export default ViewOrdersScreen;
-

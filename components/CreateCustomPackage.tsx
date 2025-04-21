@@ -25,15 +25,13 @@ type CreateCustomPackageNavigationProp = StackNavigationProp<
   "CreateCustomPackage"
 >;
 
-
-
 interface CreateCustomPackageProps {
   navigation: CreateCustomPackageNavigationProp;
   route: {
     params: {
       id: string;
-      isCustomPackage:string;
-      isSelectPackage:string;
+      isCustomPackage: string;
+      isSelectPackage: string;
     };
   };
 }
@@ -47,18 +45,16 @@ interface Product {
   selected: boolean;
   unitType: string;
   startValue: number;
-  changeby:number;
+  changeby: number;
+  category:string;
 }
 
-const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation , route}) => {
-  const { id ,isCustomPackage, isSelectPackage} = route.params || {};
+const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation, route }) => {
+  const { id, isCustomPackage, isSelectPackage } = route.params || {};
   const [searchQuery, setSearchQuery] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-
-
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -76,12 +72,12 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation , 
         const response = await axios.get(apiUrl, {
           headers: { Authorization: `Bearer ${storedToken}` },
         });
+
+        console.log(response.data)
       
         if (response.data && response.data.data) {
-     
           setProducts(response.data.data.map((item: any) => ({
             ...item,
-      
             normalPrice: parseFloat(item.normalPrice),
             discountedPrice: parseFloat(item.discountedPrice),
             startValue: parseFloat(item.startValue),
@@ -99,88 +95,55 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation , 
     fetchProducts();
   }, []);
 
-  const filteredProducts = searchQuery
-  ? products.filter(product => 
-      product.displayName.toLowerCase().includes(searchQuery.toLowerCase())
-    ) 
-  : products;
-
-
-
-const toggleProductSelection = (id: number) => {
-  setProducts(
-    products.map(product => 
-      product.id === id 
-        ? { ...product, selected: !product.selected } 
-        : product
-    )
+  const filteredProducts = products
+  .filter(product => 
+    product.category === "Retail" && 
+    (searchQuery 
+      ? product.displayName.toLowerCase().includes(searchQuery.toLowerCase())
+      : true)
   );
-};
 
-
-  const calculatePricePerKg = (product: Product) => {
-    const price = product.discountedPrice ;
-    
-    if (product.unitType.toLowerCase() === 'kg') {
-   
-      return price / product.startValue;
-    } else if (product.unitType.toLowerCase() === 'g') {
-
-      return (price / product.startValue) * 1000;
-    }
- 
-    return price;
+  const toggleProductSelection = (id: number) => {
+    setProducts(
+      products.map(product => 
+        product.id === id 
+          ? { ...product, selected: !product.selected } 
+          : product
+      )
+    );
   };
 
-  
-  const formatPrice = (price: number) => {
-    return price.toFixed(2);
-  };
-  const calculateNormalPricePerKg = (product: Product) => {
-    const pricenoraml =  product.normalPrice;
-    
-    if (product.unitType.toLowerCase() === 'kg') {
-  
-      return pricenoraml / product.startValue;
-    } else if (product.unitType.toLowerCase() === 'g') {
  
-      return (pricenoraml / product.startValue) * 1000;
-    }
-    
- 
-    return pricenoraml;
-  };
 
-
+  // Check if any products are selected
+  const hasSelectedProducts = products.some(product => product.selected);
 
   const goToCart = () => {
     const selectedProducts = products
       .filter(product => product.selected)
       .map(product => {
-        const discountedPricePerKg = calculatePricePerKg(product);
-        const normalPricePerKg = calculateNormalPricePerKg(product);
+        const discountedPricePerKg = product.discountedPrice;
+        const normalPricePerKg = product.normalPrice;
         const cutId = id;
         
         return {
           id: product.id,
           name: product.displayName,
-          price: discountedPricePerKg,
-          pricenoraml: normalPricePerKg,
-          normalPrice:product.normalPrice,
-          discountedPrice:product.discountedPrice,
+          price: product.discountedPrice,
+          pricenoraml: product.normalPrice,
+          normalPrice: product.normalPrice,
+          discountedPrice: product.discountedPrice,
           changeby: product.changeby, 
           unitType: product.unitType,
           startValue: product.startValue,
-          cutId : cutId,
+          cutId: cutId,
           isSelectPackage: isSelectPackage,
-          isCustomPackage:isCustomPackage
+          isCustomPackage: isCustomPackage
         };
       });
   
     if (selectedProducts.length > 0) {
-      navigation.navigate("CratScreen" as any, { selectedProducts ,id, isCustomPackage, isSelectPackage });
-
-
+      navigation.navigate("CratScreen" as any, { selectedProducts, id, isCustomPackage, isSelectPackage });
     } else {
       alert("Please select at least one product");
     }
@@ -219,7 +182,7 @@ const toggleProductSelection = (id: number) => {
           <View className="flex-row items-center h-16 shadow-md bg-white">
             <BackButton navigation={navigation} />
             <Text className="text-lg font-bold text-[#6C3CD1] flex-grow text-center mr-7">
-              Select Order Type
+              Select Custom Items
             </Text>
           </View>
 
@@ -239,7 +202,7 @@ const toggleProductSelection = (id: number) => {
           <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
             {filteredProducts.length > 0 ? (
               filteredProducts.map((product) => {
-                const pricePerKg = calculatePricePerKg(product);
+                const pricePerKg = product.discountedPrice;
                 return (
                   <TouchableOpacity
                     key={product.id}
@@ -251,9 +214,9 @@ const toggleProductSelection = (id: number) => {
                         {product.displayName}
                       </Text>
                       <Text className="text-sm text-gray-600">
-                        Rs.{formatPrice(pricePerKg)} per kg
+                        Rs.{product.discountedPrice} per kg
                         {product.unitType.toLowerCase() === 'g' && (
-                          <Text style={{fontSize: 10}}> (converted from {product.startValue}g)</Text>
+                          <Text style={{fontSize: 10}}> </Text>
                         )}
                       </Text>
                     </View>
@@ -275,25 +238,30 @@ const toggleProductSelection = (id: number) => {
               </View>
             )}
          
-
-          {/* Go to Cart Button */}
-          <View className="py-4 px-6 ">
-            <TouchableOpacity
-              onPress={goToCart}
-            >
-                 <LinearGradient
-                                colors={["#6839CF", "#874DDB"]}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 1 }}
-                                className="py-3 rounded-full items-center"
-                              >
-              <Text className="text-white font-medium text-base">Go to Cart</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
+            {/* Go to Cart Button */}
+            <View className="py-4 px-6 ">
+              <TouchableOpacity
+                onPress={goToCart}
+                disabled={!hasSelectedProducts}
+              >
+                {hasSelectedProducts ? (
+                  <LinearGradient
+                    colors={["#6839CF", "#874DDB"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    className="py-3 rounded-full items-center"
+                  >
+                    <Text className="text-white font-medium text-base">Go to Cart</Text>
+                  </LinearGradient>
+                ) : (
+                  <View className="py-3 rounded-full items-center bg-[#B6B7BC]">
+                    <Text className="text-white font-medium text-base">Go to Cart</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
           </ScrollView>
         </View>
-        
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

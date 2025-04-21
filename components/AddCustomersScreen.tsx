@@ -33,6 +33,18 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
+  const [emailError, setEmailError] = useState<string>("");
+  const [phoneError, setPhoneError] = useState<string>("");
+  const [touchedFields, setTouchedFields] = useState<{[key: string]: boolean}>({
+    email: false,
+    phoneNumber: false,
+    firstName: false,
+    lastName: false
+  });
+  const [firstNameError, setFirstNameError] = useState<string>("");
+const [lastNameError, setLastNameError] = useState<string>("");
+const [buildingTypeError, setBuildingTypeError] = useState<string>("");
+const [titleError, setTitleError] = useState<string>("");
 
 
 
@@ -40,69 +52,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
     { key: "1", value: "House" },
     { key: "2", value: "Apartment" },
   ];
-
-  const handleRegister = async () => {
-    if (!selectedCategory || !firstName || !lastName || !phoneNumber || !email || !buildingType) {
-      Alert.alert("Error", "Please fill in all required fields.");
-      return;
-    }
   
-    if (!validatePhoneNumber(phoneNumber)) {
-      Alert.alert("Error", "Please enter a valid phone number.");
-      return;
-    }
-  
-    if (!validateEmail(email)) {
-      Alert.alert("Error", "Please enter a valid email address.");
-      return;
-    }
-  
-    try {
- 
-      const checkResponse = await axios.post(`${environment.API_BASE_URL}api/customer/check-customer`, {
-        phoneNumber,
-        email,
-      });
-  
-      if (checkResponse.status === 400) {
-        Alert.alert("Error", "Phone number or email already exists.");
-        return;
-      }
-  
-
-      const customerData = {
-        title: selectedCategory,
-        firstName,
-        lastName,
-        phoneNumber,
-        email,
-        buildingType,
-        houseNo,
-        streetName,
-        city,
-        buildingNo,
-        floorNo,
-        unitNo,
-        buildingName,
-      };
-      await AsyncStorage.setItem("pendingCustomerData", JSON.stringify(customerData));
-  
-     
-      const id = new Date().getTime().toString(); 
-  
-
-      await sendOTP();
-      navigation.navigate("OtpScreen", { phoneNumber, id });
-  
-    } catch (error: any) {
-      console.log("Error checking customer:", error);
-      Alert.alert("Error", "Something went wrong. Please try again.");
-    }
-  };
-  
-  
-  
-
   const sendOTP = async () => {
     if (!phoneNumber) {
       Alert.alert('Error', 'Please enter a phone number.');
@@ -162,12 +112,157 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
   };
   
 
-  const phoneRegex = /^\+?[0-9]{1,3}[0-9]{7,10}$/;
+  const phoneRegex = /^\+947\d{8}$/;
+
   const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
 
 
   const validatePhoneNumber = (phone: string) => phoneRegex.test(phone);
   const validateEmail = (email: string) => emailRegex.test(email);
+
+  // Validate email when it changes
+
+
+  useEffect(() => {
+    if (touchedFields.title) {
+      if (!selectedCategory) {
+        setTitleError("Title is required");
+      } else {
+        setTitleError("");
+      }
+    }
+  }, [selectedCategory, touchedFields.title]);
+  
+  useEffect(() => {
+    if (touchedFields.email) {
+      if (!email) {
+        setEmailError("Email is required");
+      } else if (!validateEmail(email)) {
+        setEmailError("Please enter a valid email address");
+      } else {
+        setEmailError("");
+      }
+    }
+  }, [email, touchedFields.email]);
+
+  // Validate phone when it changes
+  useEffect(() => {
+    if (touchedFields.phoneNumber) {
+      if (!phoneNumber) {
+        setPhoneError("Phone number is required");
+      } else if (!validatePhoneNumber(phoneNumber)) {
+        setPhoneError("Please enter a valid phone number (format: +947XXXXXXXX)");
+      } else {
+        setPhoneError("");
+      }
+    }
+  }, [phoneNumber, touchedFields.phoneNumber]);
+
+  useEffect(() => {
+    if (touchedFields.firstName) {
+      if (!firstName) {
+        setFirstNameError("First name is required");
+      } else {
+        setFirstNameError("");
+      }
+    }
+  }, [firstName, touchedFields.firstName]);
+  
+  useEffect(() => {
+    if (touchedFields.lastName) {
+      if (!lastName) {
+        setLastNameError("Last name is required");
+      } else {
+        setLastNameError("");
+      }
+    }
+  }, [lastName, touchedFields.lastName]);
+  
+  useEffect(() => {
+    if (touchedFields.buildingType) {
+      if (!buildingType) {
+        setBuildingTypeError("Building type is required");
+      } else {
+        setBuildingTypeError("");
+      }
+    }
+  }, [buildingType, touchedFields.buildingType]);
+  
+
+  // Mark field as touched
+  const handleFieldTouch = (fieldName: string) => {
+    setTouchedFields(prev => ({
+      ...prev,
+      [fieldName]: true
+    }));
+  };
+
+  
+
+ const handleRegister = async () => {
+  if (!selectedCategory || !firstName || !lastName || !phoneNumber || !email || !buildingType) {
+    Alert.alert("Error", "Please fill in all required fields.");
+    return;
+  }
+
+  if (!validatePhoneNumber(phoneNumber)) {
+    Alert.alert("Error", "Please enter a valid phone number.");
+    return;
+  }
+
+  if (!validateEmail(email)) {
+    Alert.alert("Error", "Please enter a valid email address.");
+    return;
+  }
+
+  try {
+    const checkResponse = await axios.post(`${environment.API_BASE_URL}api/customer/check-customer`, {
+      phoneNumber,
+      email,
+    });
+    
+    // Continue with registration if check passes
+    const customerData = {
+      title: selectedCategory,
+      firstName,
+      lastName,
+      phoneNumber,
+      email,
+      buildingType,
+      houseNo,
+      streetName,
+      city,
+      buildingNo,
+      floorNo,
+      unitNo,
+      buildingName,
+    };
+
+    await AsyncStorage.setItem("pendingCustomerData", JSON.stringify(customerData));
+    const id = new Date().getTime().toString();
+    await sendOTP();
+    navigation.navigate("OtpScreen", { phoneNumber, id });
+  } catch (error: any) {
+    console.log("Error checking customer:", error);
+    
+    // Display "This email address is already registered" when phone number exists
+    if (error.response && error.response.status === 400) {
+      if (error.response.data.existingPhone) {
+        Alert.alert("Error", "This phone Number is already registered.");
+      } else if (error.response.data.existingEmail) {
+        Alert.alert("Error", "This email address is already registered.");
+      } else {
+        Alert.alert("Error", "Your credentials already exists in our system.");
+      }
+    } else {
+      Alert.alert("Error", "Registration failed. Please try again.");
+    }
+  }
+};
+
+
+  
+
 
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
     
@@ -224,47 +319,78 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
                 </View>
 
                 <View className="flex-[2] ml-2">
-                  <Text className="text-gray-700 mb-1">First Name</Text>
-                  <TextInput
-                    className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
-                    placeholder="First Name"
-                    value={firstName}
-                    onChangeText={setFirstName}
-                  />
-                </View>
+  <Text className="text-gray-700 mb-1">First Name</Text>
+  <TextInput
+    className={`bg-[#F6F6F6] border ${firstNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+    placeholder="First Name"
+    value={firstName}
+    onChangeText={(text) => {
+      setFirstName(text);
+      if (touchedFields.firstName && !text) {
+        setFirstNameError("First name is required");
+      } else if (touchedFields.firstName) {
+        setFirstNameError("");
+      }
+    }}
+    onBlur={() => handleFieldTouch("firstName")}
+  />
+  {firstNameError ? (
+    <Text className="text-red-500 text-xs pl-4 pt-1">{firstNameError}</Text>
+  ) : null}
+</View>
               </View>
 
               <View className="mb-4">
-                <Text className="text-gray-700 mb-1">Last Name</Text>
-                <TextInput
-                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
-                  placeholder="Last Name"
-                  value={lastName}
-                  onChangeText={setLastName}
-                />
-              </View>
+  <Text className="text-gray-700 mb-1">Last Name</Text>
+  <TextInput
+    className={`bg-[#F6F6F6] border ${lastNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+    placeholder="Last Name"
+    value={lastName}
+    onChangeText={(text) => {
+      setLastName(text);
+      if (touchedFields.lastName && !text) {
+        setLastNameError("Last name is required");
+      } else if (touchedFields.lastName) {
+        setLastNameError("");
+      }
+    }}
+    onBlur={() => handleFieldTouch("lastName")}
+  />
+  {lastNameError ? (
+    <Text className="text-red-500 text-xs pl-4 pt-1">{lastNameError}</Text>
+  ) : null}
+</View>
 
               <View className="mb-4">
-                <Text className="text-gray-700 mb-1">Phone Number</Text>
-                <TextInput
-                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
-                  placeholder="ex: +9477 XXXXXXX"
-                  keyboardType="phone-pad"
-                  value={phoneNumber}
-                  onChangeText={setPhoneNumber}
-                />
-              </View>
+              <Text className="text-gray-700 mb-1">Phone Number</Text>
+              <TextInput
+                className={`bg-[#F6F6F6] border ${phoneError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+                placeholder="ex: +9477 XXXXXXX"
+                keyboardType="phone-pad"
+                value={phoneNumber}
+                onChangeText={setPhoneNumber}
+                onBlur={() => handleFieldTouch("phoneNumber")}
+              />
+              {phoneError ? (
+                <Text className="text-red-500 text-xs pl-4 pt-1">{phoneError}</Text>
+              ) : null}
+            </View>
+
 
               <View className="mb-4">
-                <Text className="text-gray-700 mb-1">Email Address</Text>
-                <TextInput
-                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
-                  placeholder="Email Address"
-                  keyboardType="email-address"
-                  value={email}
-                  onChangeText={setEmail}
-                />
-              </View>
+              <Text className="text-gray-700 mb-1">Email Address</Text>
+              <TextInput
+                className={`bg-[#F6F6F6] border ${emailError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+                placeholder="Email Address"
+                keyboardType="email-address"
+                value={email}
+                onChangeText={setEmail}
+                onBlur={() => handleFieldTouch("email")}
+              />
+              {emailError ? (
+                <Text className="text-red-500 text-xs pl-4 pt-1">{emailError}</Text>
+              ) : null}
+            </View>
 
               <View className="mb-4">
                 <Text className="text-gray-700 mb-1">Building Type</Text>
@@ -393,11 +519,16 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
                 </>
               )}
 
-              <LinearGradient colors={["#854BDA", "#6E3DD1"]} className="py-3 px-4 rounded-lg items-center mt-6 mb-[15%] mr-[20%] ml-[20%] rounded-3xl h-15">
-                <TouchableOpacity onPress={handleRegister}>
-                  <Text className="text-center text-white font-bold">Register</Text>
-                </TouchableOpacity>
-              </LinearGradient>
+             
+              
+            <LinearGradient 
+              colors={["#854BDA", "#6E3DD1"]} 
+              className="py-3 px-4 rounded-lg items-center mt-6 mb-[15%] mr-[20%] ml-[20%] rounded-3xl h-15"
+            >
+              <TouchableOpacity onPress={handleRegister}>
+                <Text className="text-center text-white font-bold">Register</Text>
+              </TouchableOpacity>
+            </LinearGradient>
             </View>
           </ScrollView>
         </View>

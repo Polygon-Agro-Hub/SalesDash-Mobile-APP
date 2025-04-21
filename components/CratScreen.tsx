@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, SafeAreaView,Image } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -133,41 +133,71 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
 
  
 
+ 
+
+
   const increaseQuantity = (id: number) => {
     setCartItems(
       cartItems.map(item => {
         if (item.id === id) {
-          const increment = item.unitType === 'g' ? 50 : 0.5;
-          const newValue = item.changeby + increment;
+          // Parse the initial changeby value from your data (fixed increment amount)
+          const incrementAmount = typeof item.startValue === 'string' 
+            ? parseFloat(item.startValue) 
+            : item.startValue;
+            
+          // Current quantity value
+          const currentQuantity = typeof item.changeby === 'string' 
+            ? parseFloat(item.changeby) 
+            : item.changeby;
+            
+          // Add the fixed increment to the current quantity
+          const newValue = currentQuantity + incrementAmount;
+          
           return { 
             ...item, 
-            changeby: newValue,
-            quantity: newValue
+            changeby: newValue, // Update the display value
+            quantity: newValue  // Also update quantity
           };
         }
         return item;
       })
     );
   };
-
+  
   const decreaseQuantity = (id: number) => {
     setCartItems(
       cartItems.map(item => {
         if (item.id === id) {
-          const decrement = item.unitType === 'g' ? 50 : 0.5;
-          const minValue = item.unitType === 'g' ? 50 : 0.5;
-          const newValue = Math.max(minValue, item.changeby - decrement);
+          // Parse the initial changeby value from your data (fixed decrement amount)
+          const decrementAmount = typeof item.startValue === 'string' 
+            ? parseFloat(item.startValue) 
+            : item.startValue;
+            
+          // Current quantity value
+          const currentQuantity = typeof item.changeby === 'string' 
+            ? parseFloat(item.changeby) 
+            : item.changeby;
+            
+          // Minimum value is startValue
+          const minValue = typeof item.startValue === 'string' 
+            ? parseFloat(item.startValue) 
+            : item.startValue;
+            
+          // Subtract the fixed decrement from current quantity, but not below minimum
+          const newValue = Math.max(minValue, currentQuantity - decrementAmount);
+          
           return { 
             ...item, 
-            changeby: newValue,
-            quantity: newValue
+            changeby: newValue, // Update the display value
+            quantity: newValue  // Also update quantity 
           };
         }
         return item;
       })
     );
   };
-
+  
+  
   const currentSubtotal = cartItems.reduce((total, item) => {
     if (!item.selected) {
       return total + parseFloat(calculateItemNormalTotal(item));
@@ -247,6 +277,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
             </TouchableOpacity>
           )}
         </View>
+      
 
         <ScrollView className="flex-1 mt-4" showsVerticalScrollIndicator={false}>
           {cartItems.map((item) => (
@@ -300,7 +331,11 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
             className="bg-gray-200 w-6 h-6 rounded-full justify-center items-center"
             onPress={() => decreaseQuantity(item.id)}
           >
-            <Ionicons name="remove" size={16} color="#333" />
+              <Image
+                source={require("../assets/images/minns.png")}
+                className="w-7 h-7 "
+                resizeMode="contain"
+              />
           </TouchableOpacity>
           
           <Text className="mx-2 text-base w-12 text-center">
@@ -311,14 +346,22 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
             className="bg-gray-200 w-6 h-6 rounded-full justify-center items-center"
             onPress={() => increaseQuantity(item.id)}
           >
-            <Ionicons name="add" size={16} color="#333" />
+           
+              <Image
+                source={require("../assets/images/adddd.png")}
+                className="w-7 h-7 "
+                resizeMode="contain"
+              />
           </TouchableOpacity>
         </View>
               </View>
             </View>
           ))}
         </ScrollView>
+      
         
+     
+        <View>
         <View className="py-4 border-t border-gray-200">
           <View className="flex-row justify-between py-2">
             <Text className="text-gray-500">Subtotal</Text>
@@ -327,7 +370,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
           
           <View className="flex-row justify-between py-2">
             <Text className="text-gray-500">Discount</Text>
-            <Text className="font-medium">Rs.{discount.toFixed(2)}</Text>
+            <Text className="font-medium text-[#686868]">Rs.{discount.toFixed(2)}</Text>
           </View>
           
           <View className="flex-row justify-between py-2">
@@ -335,8 +378,10 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
             <Text className="font-bold">Rs.{currentTotal.toFixed(2)}</Text>
           </View>
         </View>
+        </View>
+        </View>
         
-        <View className="py-4 px-6">
+        <View className="py-4 px-6 ">
           <TouchableOpacity
             onPress={handleConfirm}
           >
@@ -350,7 +395,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
             </LinearGradient>
           </TouchableOpacity>
         </View>
-      </View>
+ 
     </SafeAreaView>
   );
 };

@@ -59,6 +59,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
     setLoading(true);
     try {
       const response = await axios.get(`${environment.API_BASE_URL}api/customer/get-customers`);
+      console.log(response.data)
       setCustomers(response.data);
       setFilteredCustomers(response.data); 
       setError(null);
@@ -114,6 +115,8 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   }, []);
   
   const isEmpty = filteredCustomers.length === 0;
+
+
 
   return (
    <KeyboardAvoidingView 
@@ -185,6 +188,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                       onPress={() =>
                         navigation.navigate("ViewCustomerScreen", {
                           name: item.firstName,
+                          title:item.title,
                           number: item.phoneNumber,
                           customerId: item.cusId,
                           id: item.id,
