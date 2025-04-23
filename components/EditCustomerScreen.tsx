@@ -620,7 +620,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                 </>
               )}
 
-              <LinearGradient colors={["#854BDA", "#6E3DD1"]} className="py-3 px-4 rounded-lg items-center mt-6 mb-[15%] mr-[20%] ml-[20%] rounded-3xl h-15">
+              <LinearGradient colors={["#854BDA", "#6E3DD1"]} className="py-3 px-4 rounded-lg items-center mt-6 mb-[15%] mr-[20%] ml-[20%] h-15">
                 <TouchableOpacity onPress={handleRegister}>
                   <Text className="text-center text-white font-bold">Save</Text>
                 </TouchableOpacity>

@@ -274,18 +274,19 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
   >
     {agentStats.daily.completed}/{agentStats.daily.target || '0'}
   </Text>
+  <View>
   <Bar
   progress={agentStats.daily.progress}
-  width={200}
+  width={wp("65%")}
   color="#854BDA"
   unfilledColor="#FFFFFF"  /* Add this line to make unfilled portion white */
   borderWidth={0}
   height={10}
 />
-
+</View>
   <Image
     source={require("../assets/images/star.png")} 
-    className="w-8 h-8 ml-5"
+    className="w-8 absolute right-0 h-8 mr-3"
     resizeMode="contain"
   />
 </View>
