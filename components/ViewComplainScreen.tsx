@@ -10,6 +10,7 @@ import axios from "axios";
 import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import ViewComplainScreenSkeleton from "../components/Skeleton/ViewComplainScreenSkeleton";  // Assuming skeleton loader component
+import { goBack, navigate } from "expo-router/build/global-state/routing";
 
 type ViewComplainScreenNavigationProp = StackNavigationProp<RootStackParamList, "ViewComplainScreen">;
 
@@ -127,13 +128,18 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({ navigation }) =
       ) : (
         <>
           {/* Header */}
-          <LinearGradient colors={["#6839CF", "#854EDC"]} className="h-30 shadow-md px-2 pt-5 mb-4">
+          <LinearGradient colors={["#6839CF", "#854EDC"]} className="h-30 shadow-md px-2 pt-2 mb-4">
             <View className="flex-row items-center justify-between mt-[-4]">
               <View className="mt-[-3]">
-                <BackButton navigation={navigation} />
-              </View>
+        <TouchableOpacity 
+        style = {{ paddingHorizontal: wp(2), paddingVertical: hp(2)}}
+       onPress={() => navigation.navigate("SidebarScreen")}>
+         <View className="w-9 h-9 bg-[#F6F6F680] rounded-full justify-center items-center">
+           <AntDesign name="left" size={20} color="black" />
+         </View>
+       </TouchableOpacity>              </View>
     
-              <Text className="text-white text-lg font-bold flex-1 mx-14 ">Complaint History</Text>
+              <Text className="text-white text-lg font-bold flex-1 mx-14 mt ">Complaint History</Text>
             </View>
           </LinearGradient>
   

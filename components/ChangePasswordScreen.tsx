@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Platform,
   ImageBackground,
   Alert,
+  BackHandler,
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from './types';
@@ -38,7 +39,26 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-
+  useEffect(() => {
+    const backAction = () => {
+      // You can customize this action, like showing a confirmation dialog
+      Alert.alert('Exit', 'Are you sure you want to go back?', [
+        { text: 'Cancel', onPress: () => null, style: 'cancel' },
+        { text: 'OK', onPress: () => navigation.goBack() },
+      ]);
+      return true; // Prevent the default back action (going back immediately)
+    };
+  
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction
+    );
+  
+    return () => {
+      backHandler.remove(); // Clean up the event listener on component unmount
+    };
+  }, []);
+  
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmNewPassword) {
       Alert.alert('Error', 'All fields are required');

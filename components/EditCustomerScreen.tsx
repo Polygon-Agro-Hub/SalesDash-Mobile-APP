@@ -4,13 +4,14 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 //import { Picker } from "@react-native-picker/picker";
 import { LinearGradient } from "expo-linear-gradient";
-import { widthPercentageToDP as wp } from "react-native-responsive-screen";
+import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
 import BackButton from "./BackButton";
 import axios from "axios";
 import environment from "@/environment/environment";
 import DropDownPicker from "react-native-dropdown-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SelectList } from "react-native-dropdown-select-list";
+import { AntDesign } from "@expo/vector-icons";
 
 type EditCustomerScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -23,7 +24,7 @@ interface EditCustomerScreenProps {
 }
 
 const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, route }) => {
-  const { id } = route.params;
+  const { id , customerId,name, title} = route.params;
   console.log(id) 
 
   const [firstName, setFirstName] = useState<string>("");
@@ -376,7 +377,15 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
         <View className="flex-1 bg-white py-4 p-2">
           <View className="p-[-4]">
             <View className="bg-white flex-row items-center h-17 shadow-lg px-1 ">
-              <BackButton navigation={navigation} />
+              {/* <BackButton navigation={navigation} /> */}
+              <TouchableOpacity 
+        style = {{ paddingHorizontal: wp(2), paddingVertical: hp(2)}}
+        onPress={() => navigation.navigate("ViewCustomerScreen" as any, { id: id, customerId:customerId, name: name, title:title })}
+        >
+         <View className="w-9 h-9 bg-[#F6F6F680] rounded-full justify-center items-center">
+           <AntDesign name="left" size={20} color="black" />
+         </View>
+       </TouchableOpacity> 
               <Text style={{ fontSize: 18 }} className="font-bold text-center text-purple-600 flex-grow mr-9">
                 Edit Customer Details 
               </Text>
@@ -385,6 +394,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
 
           <ScrollView style={{ paddingHorizontal: wp(1) }}
           keyboardShouldPersistTaps="handled"
+          className="mb-4"
           >
             <View className="p-3 px-6">
               <View className="mb-4 mt-4 flex-row justify-between">

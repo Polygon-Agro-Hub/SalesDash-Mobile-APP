@@ -64,7 +64,12 @@ function MainTabNavigator() {
       <Tab.Screen name="ReminderScreen" component={ReminderScreen} />
       <Tab.Screen name="CustomersScreen" component={CustomersScreen} />
       <Tab.Screen name="ViewComplainScreen" component={ViewComplainScreen} />
-
+      <Tab.Screen name="SidebarScreen" component={SidebarScreen} />
+      <Tab.Screen name="ViewScreen" component={ViewScreen as any} />
+      <Tab.Screen name="ViewCustomerScreen" component={ViewCustomerScreen as any} />
+      <Tab.Screen name="EditCustomerScreen" component={EditCustomerScreen} />
+      <Tab.Screen name="SelectOrderType" component={SelectOrderType as any} />
+      <Tab.Screen name="OrderConfirmedScreen" component={OrderConfirmedScreen as any} />
     </Tab.Navigator>
   );
 }
@@ -81,27 +86,27 @@ const index = () => {
       <Stack.Screen name="LoginScreen" component={LoginScreen} />
       <Stack.Screen name="ChangePasswordScreen" component={ChangePasswordScreen} />
       {/* <Stack.Screen name="DashboardScreen" component={DashboardScreen} /> */}
-      <Stack.Screen name="ViewScreen" component={ViewScreen as any} />
+      {/* <Stack.Screen name="ViewScreen" component={ViewScreen as any} /> */}
       {/* <Stack.Screen name="CustomersScreen" component={CustomersScreen} /> */}
-      <Stack.Screen name="SidebarScreen" component={SidebarScreen} />
+      {/* <Stack.Screen name="SidebarScreen" component={SidebarScreen} /> */}
       <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
       <Stack.Screen name="AddComplaintScreen" component={AddComplaintScreen} />
       {/* <Stack.Screen name="ViewComplainScreen" component={ViewComplainScreen} /> */}
-      <Stack.Screen name="ViewCustomerScreen" component={ViewCustomerScreen as any} />
+      {/* <Stack.Screen name="ViewCustomerScreen" component={ViewCustomerScreen as any} /> */}
       {/* <Stack.Screen name="ReminderScreen" component={ReminderScreen} /> */}
       <Stack.Screen name="AddCustomersScreen" component={AddCustomersScreen} />
       <Stack.Screen name="OtpScreen" component={OtpScreen} />
       <Stack.Screen name="OtpScreenUp" component={OtpScreenUp} />
-      <Stack.Screen name="OtpSuccesfulScreen" component={OtpSuccesfulScreen} />
-      <Stack.Screen name="EditCustomerScreen" component={EditCustomerScreen} />
+      <Stack.Screen name="OtpSuccesfulScreen" component={OtpSuccesfulScreen as any} />
+      {/* <Stack.Screen name="EditCustomerScreen" component={EditCustomerScreen} /> */}
       <Stack.Screen name="OrderScreen" component={OrderScreen as any} />
       <Stack.Screen name="ScheduleScreen" component={ScheduleScreen as any} />
       <Stack.Screen name="SelectPaymentMethod" component={SelectPaymentMethod as any} />
       <Stack.Screen name="OrderSummeryScreen" component={OrderSummeryScreen as any} />
-      <Stack.Screen name="OrderConfirmedScreen" component={OrderConfirmedScreen} />
+      {/* <Stack.Screen name="OrderConfirmedScreen" component={OrderConfirmedScreen as any} /> */}
       {/* <Stack.Screen name="ViewOrdersScreen" component={ViewOrdersScreen} /> */}
       <Stack.Screen name="View_CancelOrderScreen" component={View_CancelOrderScreen as any} /> 
-      <Stack.Screen name="SelectOrderType" component={SelectOrderType as any} />
+      {/* <Stack.Screen name="SelectOrderType" component={SelectOrderType as any} /> */}
       <Stack.Screen name="CreateCustomPackage" component={CreateCustomPackage as any} />
       <Stack.Screen name="CratScreen" component={CratScreen as any} />
       <Stack.Screen name="Main" component={MainTabNavigator} />

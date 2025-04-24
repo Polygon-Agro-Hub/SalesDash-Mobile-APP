@@ -480,7 +480,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
               <View className="">
               <TouchableOpacity  onPress={handleUpdate} >
 
-                 <LinearGradient colors={["#6839CF", "#874DDB"]} className="py-3  rounded-lg items-center mt-6 mb-[15%] mr-[20%] ml-[20%] rounded-3xl h-15">
+                 <LinearGradient colors={["#6839CF", "#874DDB"]} className="py-3   items-center mt-6 mb-[15%] mr-[20%] ml-[20%] rounded-3xl h-15">
                               
                                   <Text className="text-center text-white text-base font-bold">Update</Text>
                                 

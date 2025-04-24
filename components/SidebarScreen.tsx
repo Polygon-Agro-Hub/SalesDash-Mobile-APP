@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, Image, TouchableOpacity, Alert, ScrollView,KeyboardAvoidingView, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -9,6 +9,7 @@ import axios from "axios";
 import environment from "@/environment/environment";
 import BackButton from "./BackButton";
 import LottieView from "lottie-react-native";
+import { useFocusEffect } from "expo-router";
 
 
 type SidebarScreenNavigationProp = StackNavigationProp<RootStackParamList, "SidebarScreen">;
@@ -22,9 +23,16 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
   const [token, setToken] = useState<string | null>(null);
   const [formData, setFormData] = useState({ firstName: "", lastName:"", empId: "" });
 
-  useEffect(() => {
-    getUserProfile();
-  }, []);
+useFocusEffect(
+  useCallback(() => {
+setComplaintsExpanded(false)
+getUserProfile();
+  }, [])
+);
+
+// useEffect(() => {
+//     getUserProfile();
+//   }, []);
 
   const getUserProfile = async () => {
     try {

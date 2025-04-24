@@ -21,6 +21,7 @@ import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-nat
 import BackButton from "./BackButton";
 import axios from "axios";
 import environment from "@/environment/environment";
+import { AntDesign } from "@expo/vector-icons";
 
 type ViewCustomerScreenNavigationProp = StackNavigationProp<RootStackParamList, "ViewCustomerScreen">;
 type ViewCustomerScreenRouteProp = RouteProp<RootStackParamList, "ViewCustomerScreen">;
@@ -163,7 +164,14 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
         <View className="relative">
           <View className="bg-white flex-row rounded-b-[35px] items-center justify-between h-28 z-50 shadow-lg px-5">
             <View className="mt-[-8%] ml-[-2%]">
-              <BackButton navigation={navigation} />
+              {/* <BackButton navigation={navigation} /> */}
+              <TouchableOpacity 
+        style = {{ paddingHorizontal: wp(2), paddingVertical: hp(2)}}
+       onPress={() => navigation.navigate("CustomersScreen")}>
+         <View className="w-9 h-9 bg-[#F6F6F680] rounded-full justify-center items-center">
+           <AntDesign name="left" size={20} color="black" />
+         </View>
+       </TouchableOpacity> 
             </View> 
 
             <View className="flex-1 justify-center items-center mt-[-3%]">
@@ -177,7 +185,10 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
 
             <TouchableOpacity 
               className="px-6 mt-[-20%] mr-[-10%]"
-              onPress={() => navigation.navigate("EditCustomerScreen", { id })}
+              onPress={() => navigation.navigate("EditCustomerScreen", { id,                   
+                customerId:customerId,
+                name: name,
+                title:title })}
             >
               <MaterialIcons name="edit" size={28} color="#6839CF" />
             </TouchableOpacity>
@@ -195,7 +206,9 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
               </TouchableOpacity>
 
               <TouchableOpacity 
-                onPress={() => navigation.navigate("SelectOrderType" as any, { id })}
+                onPress={() => navigation.navigate("SelectOrderType" as any, { id,    customerId:customerId,
+                  name: name,
+                  title:title  })}
                 
                 className="flex-row bg-[#6B3BCF] px-4 py-2 rounded-full items-center mt-5 mx-4"
               >

@@ -87,7 +87,7 @@ export type RootStackParamList = {
     customerId?: number | string;
    // customerData?: any; // Or define a more specific type for your customer data
   };
-    EditCustomerScreen:{ id: string}; 
+    EditCustomerScreen:{ id: string, customerId:string, name: string,title:string}; 
     OtpScreenUp:{phoneNumber:string , id: string, token:string};      
     OrderScreen: {id: string; isCustomPackage:string; isSelectPackage:string;};
     ScheduleScreen: {totalPrice: Number };
