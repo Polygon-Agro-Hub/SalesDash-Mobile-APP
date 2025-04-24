@@ -25,19 +25,27 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
 
   const handleSignIn = async () => {
+    setError1("")
+    setError2("")
     if (empId.trim() === "") {
       setError1("Employee ID is required");
+      return;
     }
     if (password.trim() === "") {
       // validationErrors.push("Password is required");
       setError2("Password is required")
+      return;
     }
 
     // if (validationErrors.length > 0) {
     //   // setErrors(validationErrors);
     //   return;
     // }
-
+    await AsyncStorage.multiRemove([
+      "authToken",
+      "tokenStoredTime",
+      "tokenExpirationTime",
+    ]);
     setLoading(true); 
 
     try {
@@ -48,13 +56,31 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         console.log(token)
 
     
-        await AsyncStorage.setItem("authToken", token);
-
-        if (passwordUpdate === 0) {
-          navigation.navigate("ChangePasswordScreen");
+        // await AsyncStorage.setItem("authToken", token);
+        if (token) {
+          const timestamp = new Date();
+          const expirationTime = new Date(
+            timestamp.getTime() + 8 * 60 * 60 * 1000
+            // timestamp.getTime() + 2 * 60 * 1000
+          );
+          await AsyncStorage.setItem("authToken", token);
+          await AsyncStorage.multiSet([
+            ["tokenStoredTime", timestamp.toISOString()],
+            ["tokenExpirationTime", expirationTime.toISOString()],
+          ]);
+          if (passwordUpdate === 0) {
+            navigation.navigate("ChangePasswordScreen");
+          } else {
+            navigation.navigate("Main", { screen: "DashboardScreen" });
+          }
         } else {
-          navigation.navigate("Main", { screen: "DashboardScreen" });
+          Alert.alert("Sorry","Something went wrong, please try again later..");
         }
+        // if (passwordUpdate === 0) {
+        //   navigation.navigate("ChangePasswordScreen");
+        // } else {
+        //   navigation.navigate("Main", { screen: "DashboardScreen" });
+        // }
       }
     } catch (err) {
       console.log(err)

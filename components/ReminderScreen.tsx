@@ -68,6 +68,7 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
   const highestNotificationId = useRef(0);
 
   const fetchNotifications = async () => {
+    console.log("Fetching notifications...");
     try {
       setIsLoading(false);
       setError(null);

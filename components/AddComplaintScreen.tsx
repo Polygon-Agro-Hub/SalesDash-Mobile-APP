@@ -51,6 +51,7 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
           const response = await axios.get(
             `${environment.API_BASE_URL}api/complain/get-complain/category/${appName}`
           );
+          console.log("response", response.data);
           if (response.data.status === "success") {
             console.log(response.data.data);
             const mappedCategories = response.data.data

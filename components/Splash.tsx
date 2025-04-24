@@ -12,17 +12,59 @@ interface SplashProps {
 }
 
 const Splash: React.FC<SplashProps> = ({ navigation }) => {
+  // useEffect(() => {
+  //   const checkToken = async () => {
+  //     try {
+  //       // Check if auth token exists
+  //       const authToken = await AsyncStorage.getItem('authToken');
+        
+  //       // Timer to navigate after 5 seconds
+  //       setTimeout(() => {
+  //         // If token exists, navigate to Dashboard, otherwise to Login
+  //         if (authToken) {
+  //           navigation.navigate("Main", { screen: 'DashboardScreen' });
+  //         } else {
+  //           navigation.navigate('LoginScreen');
+  //         }
+  //       }, 5000);
+  //     } catch (error) {
+  //       console.error('Error checking authentication token:', error);
+  //       // If there's an error, navigate to login as fallback
+  //       setTimeout(() => {
+  //         navigation.navigate('LoginScreen');
+  //       }, 5000);
+  //     }
+  //   };
+
+  //   checkToken();
+  // }, [navigation]);
+
+
   useEffect(() => {
     const checkToken = async () => {
       try {
         // Check if auth token exists
         const authToken = await AsyncStorage.getItem('authToken');
-        
+        const expirationTime = await AsyncStorage.getItem("tokenExpirationTime");
+
         // Timer to navigate after 5 seconds
-        setTimeout(() => {
-          // If token exists, navigate to Dashboard, otherwise to Login
-          if (authToken) {
-            navigation.navigate("Main", { screen: 'DashboardScreen' });
+        setTimeout(async() => {
+          if (expirationTime && authToken) {
+            const currentTime = new Date();
+            const tokenExpiry = new Date(expirationTime);
+    
+            if (currentTime < tokenExpiry) {
+              console.log("Token is valid, navigating to Main.");
+              navigation.navigate("Main", { screen: 'DashboardScreen' });
+            } else {
+              console.log("Token expired, clearing storage.");
+              await AsyncStorage.multiRemove([
+                "userToken",
+                "tokenStoredTime",
+                "tokenExpirationTime",
+              ]);
+              navigation.navigate('LoginScreen');
+            }
           } else {
             navigation.navigate('LoginScreen');
           }

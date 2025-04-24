@@ -143,6 +143,46 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     }
   };
 
+  useEffect(() => {
+    const checkTokenExpiration = async () => {
+      try {
+        const expirationTime = await AsyncStorage.getItem(
+          "tokenExpirationTime"
+        );
+        const userToken = await AsyncStorage.getItem("authToken");
+
+        if (expirationTime && userToken) {
+          const currentTime = new Date();
+          const tokenExpiry = new Date(expirationTime);
+
+          if (currentTime < tokenExpiry) {
+            console.log("Token is valid");
+          } else {
+            console.log("Token expired, clearing storage.");
+            await AsyncStorage.multiRemove([
+              "userToken",
+              "tokenStoredTime",
+              "tokenExpirationTime",
+            ]);
+            Alert.alert("Sorry","No authenticated user found, please login again")
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "LoginScreen" }],
+            });   
+           }
+        }
+      } catch (error) {
+        console.error("Error checking token expiration:", error);
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "LoginScreen" }],
+        });     
+       }
+    };
+
+    checkTokenExpiration();
+  }, [navigation]);
+
 
   const fetchPackages = async () => {
     try {
@@ -183,6 +223,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       console.error("Failed to fetch agent stats:", error);
     }
   };
+
 
   if (isLoading) {
     return <DashboardSkeleton />;
@@ -274,10 +315,10 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
   >
     {agentStats.daily.completed}/{agentStats.daily.target || '0'}
   </Text>
-  <View>
+  <View className="mt-2">
   <Bar
   progress={agentStats.daily.progress}
-  width={wp("65%")}
+  width={wp("68%")}
   color="#854BDA"
   unfilledColor="#FFFFFF"  /* Add this line to make unfilled portion white */
   borderWidth={0}
@@ -307,6 +348,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
           <Text className="text-xl font-bold text-[#874CDB] mt-6 ml-6 mb-2">
             Packages
           </Text>
+          <View className="p-2">
           <FlatList
             data={packages}
             renderItem={renderPackage}
@@ -319,6 +361,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
               paddingBottom: 60
             }}
           />
+          </View>
         </ScrollView>
       </View>
     </KeyboardAvoidingView>
