@@ -42,7 +42,6 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
-
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
 
   useEffect(() => {
@@ -55,13 +54,26 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
     };
   }, []);
 
+  // Helper function to sort customers alphabetically by full name
+  const sortCustomersByName = (customerList: Customer[]): Customer[] => {
+    return [...customerList].sort((a, b) => {
+      const nameA = `${a.firstName} ${a.lastName}`.toLowerCase();
+      const nameB = `${b.firstName} ${b.lastName}`.toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
+  };
+
   const fetchCustomers = async () => {
     setLoading(true);
     try {
       const response = await axios.get(`${environment.API_BASE_URL}api/customer/get-customers`);
-      console.log(response.data)
-      setCustomers(response.data);
-      setFilteredCustomers(response.data); 
+      console.log(response.data);
+      
+      // Sort customers alphabetically by name
+      const sortedCustomers = sortCustomersByName(response.data);
+      
+      setCustomers(sortedCustomers);
+      setFilteredCustomers(sortedCustomers);
       setError(null);
     } catch (err) {
       setError("Failed to fetch customers. Please try again.");
@@ -79,7 +91,6 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   const handleSearch = (query: string) => {
     setSearchQuery(query);
   
-   
     const formattedQuery = query.startsWith("+94") ? query.replace("+94", "0") : query;
   
     if (query === "") {
@@ -95,7 +106,8 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
         );
       });
   
-      setFilteredCustomers(filteredData);
+      // Keep the filtered results sorted alphabetically
+      setFilteredCustomers(sortCustomersByName(filteredData));
     }
   };
 
@@ -105,7 +117,6 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
       : phoneNumber;
   };
   
-
   useEffect(() => {
     const delay = setTimeout(() => {
       fetchCustomers();
@@ -116,15 +127,12 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   
   const isEmpty = filteredCustomers.length === 0;
 
-
-
   return (
    <KeyboardAvoidingView 
          behavior={Platform.OS === "ios" ? "padding" : "height"}
          enabled 
          className="flex-1"
        >
-
         
       <View className="bg-white flex-1">
         
@@ -132,7 +140,6 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
         {loading ? (
           <>
             <CustomersScreenSkeleton />
-       
           </>
         ) : (
           <>
@@ -188,7 +195,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                       onPress={() =>
                         navigation.navigate("ViewCustomerScreen", {
                           name: item.firstName,
-                          title:item.title,
+                          title: item.title,
                           number: item.phoneNumber,
                           customerId: item.cusId,
                           id: item.id,
@@ -198,9 +205,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                       <View className="bg-white shadow-md p-4 mb-3 mx-3 flex-row justify-between items-center rounded-lg border border-gray-200">
                         <View>
                           <Text className="text-gray-700 font-semibold">{item.title}.{item.firstName} {item.lastName}</Text>
-                    
                           <Text className="text-gray-500 text-sm">{formatPhoneNumber(item.phoneNumber)}</Text>
-
                         </View>
                         <Text className="text-gray-700 font-bold">#{item.order}</Text>
                       </View>
@@ -212,7 +217,6 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
           </>
         )}
       </View>
-
     </KeyboardAvoidingView>
   );
 };

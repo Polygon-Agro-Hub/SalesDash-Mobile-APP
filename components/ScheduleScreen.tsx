@@ -248,6 +248,11 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
   };
   
   const handleProceed = () => {
+
+    if (!selectedDate && !selectedTimeSlot ) {
+      Alert.alert("Required", "Please select a delivery date & time slot");
+      return;
+    }
     if (!selectedDate) {
       Alert.alert("Required", "Please select a delivery date");
       return;
@@ -302,7 +307,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
             className="flex-row items-center px-4 py-3 bg-gray-100 rounded-full"
             activeOpacity={0.7}
           >
-            <Text className="text-gray-700">One Time</Text>
+            <Text className="text-gray-700 font-semibold">One Time</Text>
           </TouchableOpacity>
         </View>
   
@@ -423,14 +428,21 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
          
           <View className="flex-1">
             <View className="flex-row justify-between">
-              <Text className="text-gray-500">Delivery Fee</Text>
-              <Text className="font-medium">+ Rs.{DELIVERY_FEE.toFixed(2)}</Text>
+              <Text className="text-[#5C5C5C]">Delivery Fee :</Text>
+              <Text className="font-semibold text-[#5C5C5C]">+ Rs.{DELIVERY_FEE.toFixed(2)}</Text>
             </View>
             
-            <View className="flex-row justify-between mt-2">
+            {/* <View className="flex-row justify-between mt-2">
               <Text className="font-semibold text-lg">Full Total</Text>
               <Text className="font-bold text-lg">Rs.{fullTotal.toFixed(2)}</Text>
-            </View>
+            </View> */}
+            <View className="flex-row justify-between mt-2">
+  <Text className="font-semibold text-lg">Full Total :</Text>
+  <Text className="font-bold text-lg">
+    Rs. {fullTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+  </Text>
+</View>
+
           </View>
   
           <TouchableOpacity onPress={handleProceed}>
