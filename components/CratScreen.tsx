@@ -277,8 +277,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
             </TouchableOpacity>
           )}
         </View>
-      
-
+        
         <ScrollView className="flex-1 mt-4" showsVerticalScrollIndicator={false}>
           {cartItems.map((item) => (
             <View key={item.id} className="flex-row items-center py-4 border-b border-gray-200">
@@ -303,99 +302,93 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
               </View>
               
               <View className="flex-row items-center">
-              <View className="flex-row mr-2">
-          <TouchableOpacity 
-            className={`px-2 py-1 rounded-md border border-purple-200 ${
-              item.unitType === 'kg' ? 'bg-purple-100' : 'bg-white'
-            }`}
-            onPress={() => changeUnit(item.id, 'kg')}
-          >
-            <Text className={`text-xs ${
-              item.unitType === 'kg' ? 'text-purple-600' : 'text-gray-600'
-            }`}>kg</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            className={`px-2 py-1 rounded-md border border-purple-200 ml-1 ${
-              item.unitType === 'g' ? 'bg-purple-100' : 'bg-white'
-            }`}
-            onPress={() => changeUnit(item.id, 'g')}
-          >
-            <Text className={`text-xs ${
-              item.unitType === 'g' ? 'text-purple-600' : 'text-gray-600'
-            }`}>g</Text>
-          </TouchableOpacity>
-        </View>
+                <View className="flex-row mr-2">
+                  <TouchableOpacity 
+                    className={`px-2 py-1 rounded-md border border-purple-200 ${
+                      item.unitType === 'kg' ? 'bg-purple-100' : 'bg-white'
+                    }`}
+                    onPress={() => changeUnit(item.id, 'kg')}
+                  >
+                    <Text className={`text-xs ${
+                      item.unitType === 'kg' ? 'text-purple-600' : 'text-gray-600'
+                    }`}>kg</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    className={`px-2 py-1 rounded-md border border-purple-200 ml-1 ${
+                      item.unitType === 'g' ? 'bg-purple-100' : 'bg-white'
+                    }`}
+                    onPress={() => changeUnit(item.id, 'g')}
+                  >
+                    <Text className={`text-xs ${
+                      item.unitType === 'g' ? 'text-purple-600' : 'text-gray-600'
+                    }`}>g</Text>
+                  </TouchableOpacity>
+                </View>
                 <View className="flex-row items-center">
-          <TouchableOpacity 
-            className="bg-gray-200 w-6 h-6 rounded-full justify-center items-center"
-            onPress={() => decreaseQuantity(item.id)}
-          >
-              <Image
-                source={require("../assets/images/minns.png")}
-                className="w-7 h-7 "
-                resizeMode="contain"
-              />
-          </TouchableOpacity>
-          
-          <Text className="mx-2 text-base w-12 text-center">
-            {formatQuantity(item)}
-          </Text>
-          
-          <TouchableOpacity 
-            className="bg-gray-200 w-6 h-6 rounded-full justify-center items-center"
-            onPress={() => increaseQuantity(item.id)}
-          >
-           
-              <Image
-                source={require("../assets/images/adddd.png")}
-                className="w-7 h-7 "
-                resizeMode="contain"
-              />
-          </TouchableOpacity>
-        </View>
+                  <TouchableOpacity 
+                    className="bg-gray-200 w-6 h-6 rounded-full justify-center items-center"
+                    onPress={() => decreaseQuantity(item.id)}
+                  >
+                    <Image
+                      source={require("../assets/images/minns.png")}
+                      className="w-7 h-7"
+                      resizeMode="contain"
+                    />
+                  </TouchableOpacity>
+                  
+                  <Text className="mx-2 text-base w-12 text-center">
+                    {formatQuantity(item)}
+                  </Text>
+                  
+                  <TouchableOpacity 
+                    className="bg-gray-200 w-6 h-6 rounded-full justify-center items-center"
+                    onPress={() => increaseQuantity(item.id)}
+                  >
+                    <Image
+                      source={require("../assets/images/adddd.png")}
+                      className="w-7 h-7"
+                      resizeMode="contain"
+                    />
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           ))}
+          
+          <View className="py-4 border-t border-gray-200">
+            <View className="flex-row justify-between py-2">
+              <Text className="text-gray-500">Subtotal</Text>
+              <Text className="font-medium">Rs.{currentSubtotal.toFixed(2)}</Text>
+            </View>
+            
+            <View className="flex-row justify-between py-2">
+              <Text className="text-gray-500">Discount</Text>
+              <Text className="font-medium text-[#686868]">Rs.{discount.toFixed(2)}</Text>
+            </View>
+            
+            <View className="flex-row justify-between py-2">
+              <Text className="font-semibold">Total</Text>
+              <Text className="font-bold">Rs.{currentTotal.toFixed(2)}</Text>
+            </View>
+          </View>
+          <View className="py-4 border-t border-gray-200"></View>
         </ScrollView>
-      
+       
         
-     
-        <View>
-        <View className="py-4 border-t border-gray-200">
-          <View className="flex-row justify-between py-2">
-            <Text className="text-gray-500">Subtotal</Text>
-            <Text className="font-medium">Rs.{currentSubtotal.toFixed(2)}</Text>
-          </View>
-          
-          <View className="flex-row justify-between py-2">
-            <Text className="text-gray-500">Discount</Text>
-            <Text className="font-medium text-[#686868]">Rs.{discount.toFixed(2)}</Text>
-          </View>
-          
-          <View className="flex-row justify-between py-2">
-            <Text className="font-semibold">Total</Text>
-            <Text className="font-bold">Rs.{currentTotal.toFixed(2)}</Text>
-          </View>
-        </View>
-        </View>
-        </View>
-        
-        <View className="py-4 px-6 ">
-          <TouchableOpacity
-            onPress={handleConfirm}
-          >
+        <View className="py-4 px-6">
+          <TouchableOpacity onPress={handleConfirm}>
             <LinearGradient
-                colors={["#6839CF", "#874DDB"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                className="py-3 rounded-full items-center"
-              >
-            <Text className="text-white font-medium text-base">Confirm</Text>
+              colors={["#6839CF", "#874DDB"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              className="py-3 rounded-full items-center"
+            >
+              <Text className="text-white font-medium text-base">Confirm</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>
- 
+      </View>
     </SafeAreaView>
   );
 };
