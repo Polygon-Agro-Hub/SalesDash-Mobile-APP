@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Platform,
   ImageBackground,
   Alert,
+  BackHandler,
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from './types';
@@ -19,7 +20,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import environment from '@/environment/environment';
 
-// Navigation type
+
 type ChangePasswordScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
   'ChangePasswordScreen'
@@ -33,13 +34,31 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Function to handle password update
+  useEffect(() => {
+    const backAction = () => {
+      // You can customize this action, like showing a confirmation dialog
+      Alert.alert('Exit', 'Are you sure you want to go back?', [
+        { text: 'Cancel', onPress: () => null, style: 'cancel' },
+        { text: 'OK', onPress: () => navigation.goBack() },
+      ]);
+      return true; // Prevent the default back action (going back immediately)
+    };
+  
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction
+    );
+  
+    return () => {
+      backHandler.remove(); // Clean up the event listener on component unmount
+    };
+  }, []);
+  
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmNewPassword) {
       Alert.alert('Error', 'All fields are required');
@@ -54,7 +73,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
     setLoading(true);
 
     try {
-      // Retrieve token from AsyncStorage
+
       const token = await AsyncStorage.getItem('authToken');
       
       if (!token) {
@@ -63,7 +82,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
         return;
       }
 
-      // Make API request to update password
+
       const response = await axios.put(
         `${environment.API_BASE_URL}api/auth/user/update-password`,
         { oldPassword: currentPassword, newPassword },
@@ -118,7 +137,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
             </Text>
   
             {/* Current Password */}
-            <View className="bg-purple-500 rounded-full flex-row items-center px-4 mb-4">
+            <View className="bg-[#FFFFFF66] rounded-full flex-row items-center px-4 mb-4">
               <TextInput
                 placeholder="Current Password"
                 placeholderTextColor="#E5E5E5"
@@ -133,7 +152,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
             </View>
   
             {/* New Password */}
-            <View className="bg-purple-500 rounded-full flex-row items-center px-4 mb-4">
+            <View className="bg-[#FFFFFF66] rounded-full flex-row items-center px-4 mb-4">
               <TextInput
                 placeholder="New Password"
                 placeholderTextColor="#E5E5E5"
@@ -148,7 +167,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
             </View>
   
             {/* Confirm New Password */}
-            <View className="bg-purple-500 rounded-full flex-row items-center px-4 mb-6">
+            <View className="bg-[#FFFFFF66] rounded-full flex-row items-center px-4 mb-6">
               <TextInput
                 placeholder="Confirm New Password"
                 placeholderTextColor="#E5E5E5"

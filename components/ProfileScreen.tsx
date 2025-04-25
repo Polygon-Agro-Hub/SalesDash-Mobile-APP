@@ -10,11 +10,10 @@ import {
   ImageBackground,
   KeyboardAvoidingView,
   Platform,
-  TouchableWithoutFeedback,
+
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
-import { AntDesign } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import environment from "@/environment/environment";
@@ -35,6 +34,19 @@ interface ProfileScreenProps {
   navigation: ProfileScreenNavigationProp;
 }
 
+interface AgentStats {
+  daily: {
+    target: number;
+    completed: number;
+    numOfStars: number;
+    progress: number;
+  };
+  monthly: {
+    totalStars: number;
+  };
+  totalEntries: number;
+}
+
 const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   const [formData, setFormData] = useState({
     employeeId: "",
@@ -42,23 +54,26 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
     lastName: "",
     phoneNumber1: "",
     phoneNumber2: "",
-    nicNumber: "",
-    username: "",
+    nic: "",
     email: "",
-    buildingNo: "",
+    houseNumber: "",
     streetName: "",
     city: "",
     empId: "",
   });
-
-  
-
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [orderCount, setOrderCount] = useState<number>(0);
+  const [customerCount, setCustomerCount] = useState<number>(0);
+  const [points, setPoints] = useState<number>(0);
 
   useEffect(() => {
     getUserProfile();
+    fetchAgentStats();
+    fetchOrderCount();
+    fetchCustomerCount();
   }, []);
+  console.log(formData)
 
   const getUserProfile = async () => {
     try {
@@ -88,25 +103,79 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
     }));
   };
 
-  // const handleUpdate = async () => {
-  //   try {
-  //     if (!token) {
-  //       Alert.alert("Error", "You are not authenticated");
-  //       return;
-  //     }
+  const fetchAgentStats = async () => {
+    try {
+      const storedToken = await AsyncStorage.getItem("authToken");
+      if (!storedToken) return;
+      
+      const response = await axios.get<{ success: boolean; data: AgentStats }>(
+        `${environment.API_BASE_URL}api/orders/get-All-Start`,
+        {
+          headers: { Authorization: `Bearer ${storedToken}` },
+        }
+      );
+      
+      if (response.data.success) {
+        setPoints(response.data.data.monthly.totalStars);
+      }
+    } catch (error) {
+      console.error("Failed to fetch agent stats:", error);
+    }
+  };
 
-  //     await axios.put(
-  //       `${environment.API_BASE_URL}api/auth/user-updateUser`,
-  //       formData,
-  //       { headers: { Authorization: `Bearer ${token}` } }
-  //     );
+  const fetchOrderCount = async () => {
+    try {
+      const token = await AsyncStorage.getItem("authToken");
+      
+      const response = await axios.get(`${environment.API_BASE_URL}api/orders/order-count`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (response.data.success) {
+        const orderData = response.data.data.find(
+          (item: { salesAgentId: number }) => item.salesAgentId === parseInt(formData.empId)
+        );
+        
+        if (orderData) {
+          setOrderCount(orderData.orderCount);
+        } else {
+          setOrderCount(response.data.data[0]?.orderCount || 0);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching order count:", error);
+    }
+  };
 
-  //     Alert.alert("Success", "Profile updated successfully!");
-  //   } catch (error) {
-  //     Alert.alert("Error", "Failed to update profile");
-  //     console.error(error);
-  //   }
-  // };
+  const fetchCustomerCount = async () => {
+    try {
+      const token = await AsyncStorage.getItem("authToken");
+          
+      const response = await axios.get(`${environment.API_BASE_URL}api/customer/cutomer-count`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+          
+      if (response.data.success) {
+        const customerData = response.data.data.find(
+          (item: { salesAgentId: number }) => item.salesAgentId === parseInt(formData.empId)
+        );
+              
+        if (customerData) {
+          setCustomerCount(customerData.customerCount);
+        } else {
+          setCustomerCount(response.data.data[0]?.customerCount || 0);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching customer count:", error);
+    }
+  };
+
+  
 
   const handleUpdate = async () => {
     try {
@@ -115,14 +184,22 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
         return;
       }
   
-      // Remove fields that are not allowed by the backend schema
-      const { empId, nicNumber, username, ...updatedData } = formData;
-  
-      console.log('Form data being sent:', updatedData);  // Log to verify
+      const dataToSend = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phoneNumber1: formData.phoneNumber1,
+        houseNumber: formData.houseNumber,
+        streetName: formData.streetName,
+        city: formData.city,
+        nic: formData.nic
+      };
+      
+      console.log("Sending update data:", dataToSend);
   
       const response = await axios.put(
         `${environment.API_BASE_URL}api/auth/user-updateUser`,
-        updatedData,  // Send only the allowed fields
+        dataToSend,  
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -133,172 +210,289 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   
       Alert.alert("Success", "Profile updated successfully!");
     } catch (error) {
-      if (error instanceof AxiosError) {
-        console.error('Backend error details:', error.response?.data);
-        Alert.alert("Error", `Failed to update profile: ${error.response?.data.message || 'Validation error'}`);
+      if (error instanceof AxiosError && error.response?.data) {
+        // Handle specific validation errors with user-friendly messages
+        const errorData = error.response.data;
+        
+        // Check if there are validation errors
+        if (errorData.errors && Array.isArray(errorData.errors)) {
+          // Process each error to make it user-friendly
+          const userFriendlyErrors = errorData.errors.map((err: string) => {
+            // Check for NIC pattern error
+            if (err.includes("\"NIC\"") && err.includes("pattern")) {
+              return "NIC must be either 12 digits or 9 digits followed by 'V'";
+            }
+            // Check for phone number format
+            else if (err.includes("\"phoneNumber")) {
+              return "Phone number must be in the correct format";
+            }
+            // Check for email format
+            else if (err.includes("\"email\"")) {
+              return "Please enter a valid email address";
+            }
+            // For other fields, extract the field name from the error message
+            else {
+              // Extract field name from error like "\"firstName\" is required"
+              const fieldMatch = err.match(/"([^"]+)"/);
+              const fieldName = fieldMatch ? fieldMatch[1] : "field";
+              
+              // Make field name more readable (camelCase to Title Case with spaces)
+              const readableFieldName = fieldName
+                .replace(/([A-Z])/g, ' $1')
+               
+              return err.includes("required") 
+                ? `${readableFieldName} is required` 
+                : `There's an issue with ${readableFieldName.toLowerCase()}`;
+            }
+          });
+          
+          // Show alert with all user-friendly errors
+          Alert.alert(
+            "Validation Error", 
+            userFriendlyErrors.join("\n"),
+            [{ text: "OK" }]
+          );
+        } else {
+          // Generic error message
+          Alert.alert("Error", errorData.message || "Failed to update profile");
+        }
+        console.error("Update error details:", errorData);
       } else {
-        console.error('Error:', error instanceof Error ? error.message : 'Unknown error');
-        Alert.alert("Error", "Failed to update profile");
+        Alert.alert("Error", "Failed to update profile. Please try again later.");
+        console.error("Update error:", error);
       }
     }
   };
-  
-  
 
   return (
     <View className="flex-1 bg-white">
-     
-       <KeyboardAvoidingView 
+      <KeyboardAvoidingView 
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         enabled 
         className="flex-1"
-        >
-          <ScrollView keyboardShouldPersistTaps="handled">
-            <View className="bg-[#6839CF]">
-              <View className="relative">
-                <ImageBackground
-                  source={require("../assets/images/profilebackground.png")}
-                  resizeMode="cover"
-                  style={{
-                    width: "100%",
-                    height: hp(25),
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                  }}
+      >
+        <ScrollView keyboardShouldPersistTaps="handled">
+          <View className="bg-[#6839CF]">
+            <View className="relative">
+              <ImageBackground
+                source={require("../assets/images/profilebackground.png")}
+                resizeMode="cover"
+                style={{
+                  width: "100%",
+                  height: hp(25),
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                }}
+              />
+            </View>
+            <View className="ml-3"> 
+              <BackButton navigation={navigation} />
+            </View>
+
+            <View
+              className="bg-white rounded-t-3xl pt-6"
+              style={{ marginTop: hp(15), paddingHorizontal: wp(6) }}
+            >
+              <View className="items-center" style={{ marginTop: -hp(12) }}>
+                <TouchableOpacity className="relative">
+                  {profileImage ? (
+                    <Image
+                      source={{ uri: profileImage }}
+                      style={{
+                        width: wp(35),
+                        height: wp(35),
+                        borderRadius: wp(35) / 2,
+                      }}
+                    />
+                  ) : (
+                    <Image
+                      source={require("../assets/images/profile.png")}
+                      style={{
+                        width: wp(34),
+                        height: wp(34),
+                        borderRadius: wp(34) / 2,
+                      }}
+                    />
+                  )}
+                </TouchableOpacity>
+                <Text className="text-black text-2xl font-bold mb-2">
+                  {formData.firstName} {formData.lastName}
+                </Text>
+              </View>
+            </View>
+
+            <View className="bg-white px-7">
+              <View className="p-4">
+                <View className="bg-[#6839CF] flex-row justify-between mt-3 px-4 py-3 rounded-2xl">
+                  <View className="flex-1 items-center">
+                    <Image 
+                      source={require("../assets/images/star.png")} 
+                      style={{ width: 24, height: 24 }} 
+                    />
+                    <Text className="text-white text-sm mt-1">Points</Text>
+                    <Text className="text-white text-lg font-bold">{points}</Text>
+                  </View>
+
+                  <View className="w-[1px] bg-white h-full mx-2" />
+
+                  <View className="flex-1 items-center">
+                    <Image 
+                      source={require("../assets/images/Order Completed.png")} 
+                      style={{ width: 24, height: 24 }} 
+                    />
+                    <Text className="text-white text-sm mt-1">Orders</Text>
+                    <Text className="text-white text-lg font-bold">{orderCount}</Text>
+                  </View>
+
+                  <View className="w-[1px] bg-white h-full mx-2" />
+
+                  <View className="flex-1 items-center">
+                    <Image 
+                      source={require("../assets/images/Batch Assign.png")} 
+                      style={{ width: 24, height: 24 }} 
+                    />
+                    <Text className="text-white text-sm mt-1">Customers</Text>
+                    <Text className="text-white text-lg font-bold">{customerCount}</Text>
+                  </View>
+                </View>
+              </View>
+              <View className="px-5">
+
+              <View className="mb-4">
+                <Text className="text-black mb-1">
+                  Employee ID
+                </Text>
+                <Text
+                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2 text-[#8492A3]"
+                >
+                  {formData.empId}
+                </Text>
+              </View>
+
+              <View className="mb-4">
+              <Text className="text-black mb-1">
+                  First Name
+                </Text>
+                <TextInput
+                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2"
+                  value={formData.firstName}
+                  onChangeText={(text) => handleInputChange("firstName", text)}
+                  placeholder="Enter First Name"
                 />
               </View>
-              <View className="ml-3"> 
-              <BackButton navigation={navigation} />
+
+              <View className="mb-4">
+              <Text className="text-black mb-1">
+                  Last Name
+                </Text>
+                <TextInput
+                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2"
+                  value={formData.lastName}
+                  onChangeText={(text) => handleInputChange("lastName", text)}
+                  placeholder="Enter Last Name"
+                />
               </View>
 
-              <View
-                className="bg-white rounded-t-3xl pt-6"
-                style={{ marginTop: hp(15), paddingHorizontal: wp(6) }}
-              >
-                <View className="items-center" style={{ marginTop: -hp(12) }}>
-                  <TouchableOpacity className="relative">
-                    {profileImage ? (
-                      <Image
-                        source={{ uri: profileImage }}
-                        style={{
-                          width: wp(35),
-                          height: wp(35),
-                       
-                        
-                        }}
-                      />
-                    ) : (
-                      <Image
-                        source={require("../assets/images/profile.png")}
-                        style={{
-                          width: wp(34),
-                          height: wp(34),
-                          borderRadius: wp(1),
-                       
-                        }}
-                      />
-                    )}
-                  </TouchableOpacity>
-                  <Text className="text-black text-2xl font-bold mb-2">
-                    {formData.firstName}
-                  </Text>
-                </View>
+              <View className="mb-4">
+              <Text className="text-black mb-1">
+                  Phone Number - 1
+                </Text>
+                <Text
+                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2 text-[#8492A3]"
+                >
+                  {formData.phoneNumber1}
+                </Text>
               </View>
 
-              <View className="bg-white px-7">
-                <View className="p-4">
-                <View className="bg-[#6839CF] flex-row justify-between mt-3 px-4 py-3 rounded-2xl ">
-                    <View className="flex-1 items-center">
-                    <Image 
-  source={require("../assets/images/star.png")} // Ensure the correct path
-  style={{ width: 24, height: 24 }} 
-/>
-                      <Text className="text-white text-sm mt-1">Points</Text>
-                      <Text className="text-white text-lg font-bold">1000</Text>
-                    </View>
-
-                    <View className="w-[1px] bg-white h-full mx-2" />
-
-                    <View className="flex-1 items-center">
-                    <Image 
-  source={require("../assets/images/Order Completed.png")} // Ensure the correct path
-  style={{ width: 24, height: 24 }} 
-/>
-                      <Text className="text-white text-sm mt-1">Orders</Text>
-                      <Text className="text-white text-lg font-bold">20</Text>
-                    </View>
-
-                    <View className="w-[1px] bg-white h-full mx-2" />
-
-                    <View className="flex-1 items-center">
-                    <Image 
-  source={require("../assets/images/Batch Assign.png")} // Ensure the correct path
-  style={{ width: 24, height: 24 }} 
-/>
-                      <Text className="text-white text-sm mt-1">Customers</Text>
-                      <Text className="text-white text-lg font-bold">100</Text>
-                    </View>
-                  </View>
-                </View>
-
-                <View className="bg-white px-7">
-                  {/* Employee ID Field */}
-                  <View className="mb-4">
-                    <Text className="text-black-500 mb-1 capitalize mt-4">
-                      Employee ID
-                    </Text>
-                    <Text
-                      className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-3xl px-3 py-2 text-gray-500"
-                      style={{ fontSize: wp(4) }}
-                    >
-                      {formData.empId}
-                    </Text>
-                  </View>
-
-                  {/* Other Fields */}
-                  {Object.entries(formData).map(([key, value]) => {
-                    if (key === "empId" || key === "username") return null;
-                    return (
-                      <View className="mb-4" key={key}>
-                        <Text
-                          className="text-black-500 mb-1 capitalize mt-4"
-                          style={{ fontSize: wp(4) }}
-                        >
-                          {key.replace(/([A-Z])/g, " $1")}
-                        </Text>
-                        <TextInput
-                          className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-3xl px-3 py-2"
-                          value={value}
-                          onChangeText={(text) => handleInputChange(key, text)}
-                          editable={key !== "empId"}
-                          placeholder={`Enter ${key.replace(/([A-Z])/g, " $1")}`}
-                          style={{ fontSize: wp(4) }}
-                        />
-                      </View>
-                    );
-                  })}
-                </View>
+              <View className="mb-4">
+              <Text className="text-black mb-1">
+                  Phone Number - 2
+                </Text>
+                <Text
+                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2 text-[#8492A3]"
+                >
+                  {formData.phoneNumber2 || "---"}
+                </Text>
               </View>
 
-              <View className="bg-white px-7">
-      <TouchableOpacity onPress={handleUpdate} style={{ width: wp(60), alignSelf: "center" }}>
-        <LinearGradient
-          colors={["#6839CF", "#874DDB"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          className="py-3 rounded-full items-center mt-6 mb-10 px-4"
-        >
-          <Text className="text-white text-lg font-bold">Update</Text>
-        </LinearGradient>
-      </TouchableOpacity>
-    </View>
-              
+              <View className="mb-4">
+              <Text className="text-black mb-1">
+                  NIC Number
+                </Text>
+                <TextInput
+                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2"
+                  value={formData.nic}
+                  onChangeText={(text) => handleInputChange("nic", text)}
+                  placeholder="Enter NIC Number"
+                />
+              </View>
+
+              <View className="mb-4">
+              <Text className="text-black mb-1">
+                  Email Address
+                </Text>
+                <TextInput
+                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2"
+                  value={formData.email}
+                  onChangeText={(text) => handleInputChange("email", text)}
+                  placeholder="Enter Email Address"
+                  keyboardType="email-address"
+                />
+              </View>
+
+              <View className="mb-4">
+              <Text className="text-black mb-1">
+                  Building / House No
+                </Text>
+                <TextInput
+                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2"
+                  value={formData.houseNumber}
+                  onChangeText={(text) => handleInputChange("houseNumber", text)}
+                  placeholder="Enter Building Number"
+                />
+              </View>
+
+              <View className="mb-4">
+              <Text className="text-black mb-1">
+                  Street Name
+                </Text>
+                <TextInput
+                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2"
+                  value={formData.streetName}
+                  onChangeText={(text) => handleInputChange("streetName", text)}
+                  placeholder="Enter Street Name"
+                />
+              </View>
+
+              <View className="mb-4">
+              <Text className="text-black mb-1">
+                  City
+                </Text>
+                <TextInput
+                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2"
+                  value={formData.city}
+                  onChangeText={(text) => handleInputChange("city", text)}
+                  placeholder="Enter City"
+                />
+              </View>
+              </View>
+              <View className="">
+              <TouchableOpacity  onPress={handleUpdate} >
+
+                 <LinearGradient colors={["#6839CF", "#874DDB"]} className="py-3   items-center mt-6 mb-[15%] mr-[20%] ml-[20%] rounded-3xl h-15">
+                              
+                                  <Text className="text-center text-white text-base font-bold">Update</Text>
+                                
+                              </LinearGradient>
+                              </TouchableOpacity>
+
+            
+              </View>
             </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-    
-
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 };

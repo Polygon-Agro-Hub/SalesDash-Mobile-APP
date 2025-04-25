@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Retail-SalesApp",
-    "slug": "Retail-SalesApp",
+    "name": "SalesDash",
+    "slug": "SalesDash",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -14,13 +14,79 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        },
+        "NSCameraUsageDescription": "This app requires camera access to scan plant QR codes.",
+        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to save plant images.",
+        "NSLocationWhenInUseUsageDescription": "This app uses your location to track plant care reminders based on your location.",
+        "NSLocationAlwaysUsageDescription": "This app uses your location in the background to give accurate care reminders.",
+        "NSMicrophoneUsageDescription": "Microphone access is required to record sounds for plant growth monitoring.",
+        "NSBluetoothPeripheralUsageDescription": "Bluetooth is required to connect to plant sensors.",
+        "UIBackgroundModes": [
+          "location",
+          "audio"
+        ]
+      },
+      "permissions": [
+        "CAMERA",
+        "PHOTO_LIBRARY",
+        "LOCATION",
+        "NOTIFICATIONS",
+        "MICROPHONE",
+        "CALENDAR",
+        "CONTACTS",
+        "MOTION",
+        "BLUETOOTH",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "ACCESS_WIFI_STATE",
+        "CHANGE_WIFI_STATE",
+        "ACCESS_NETWORK_STATE",
+        "CHANGE_NETWORK_STATE",
+        "VIBRATE",
+        "USE_FINGERPRINT",
+        "WRITE_EXTERNAL_STORAGE"
+      ],
+      "bundleIdentifier": "com.salesdash.SalesDash"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.salesdash.SalesDash",
+      "permissions": [
+        "INTERNET",
+        "android.permission.FOREGROUND_SERVICE",
+        "CAMERA",
+        "RECORD_AUDIO",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "VIBRATE",
+        "WAKE_LOCK",
+        "FOREGROUND_SERVICE",
+        "RECEIVE_BOOT_COMPLETED",
+        "USE_FINGERPRINT",
+        "LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "BLUETOOTH",
+        "BLUETOOTH_ADMIN",
+        "ACCESS_WIFI_STATE",
+        "CHANGE_WIFI_STATE",
+        "ACCESS_NETWORK_STATE",
+        "CHANGE_NETWORK_STATE",
+        "SYSTEM_ALERT_WINDOW",
+        "REQUEST_INSTALL_PACKAGES",
+        "NOTIFICATIONS",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -29,10 +95,24 @@
     },
     "plugins": [
       "expo-router",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "741363bc-3af0-4dd8-b58d-0646c74d11a5"
+      }
     }
   }
 }

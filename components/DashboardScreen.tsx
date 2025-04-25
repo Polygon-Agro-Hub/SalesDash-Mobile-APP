@@ -9,13 +9,12 @@ import {
   Platform,
   KeyboardAvoidingView,
   ScrollView,
+  BackHandler,
   RefreshControl
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack"; 
 import { RootStackParamList } from "./types"; 
 import { Bar } from 'react-native-progress';
-
-import Navbar from "./Navbar";
 import { LinearGradient } from "expo-linear-gradient";
 import DashboardSkeleton from "../components/Skeleton/DashboardSkeleton"; 
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -35,6 +34,7 @@ interface DashboardScreenProps {
 interface Package {
   id: number;
   displayName: string;
+  image:string;
   price: string;
   description: string;
   portion: number;
@@ -44,6 +44,7 @@ interface Package {
 interface Package {
   id: number;
   displayName: string;
+  image:string;
   name: string;
   price: string;
   total: string;
@@ -80,15 +81,25 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       totalStars: 0
     }
   });
+
+  useEffect(() => {
+    // Handle hardware back button (Android)
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      // Return true to prevent default behavior (going back)
+      return true;
+    });
   
-  // Add refresh function
+    return () => backHandler.remove();
+  }, []);
+  
+  
   const refreshData = async () => {
     setIsLoading(true);
     await Promise.all([getUserProfile(), fetchPackages(), fetchAgentStats()]);
     setIsLoading(false);
   };
 
-  // Check auth status and load data when screen comes into focus
+
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       refreshData();
@@ -97,12 +108,12 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     return unsubscribe;
   }, [navigation]);
 
-  // Fetch user profile data
+
   const getUserProfile = async () => {
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
       if (!storedToken) {
-        // If no token found, redirect to login
+
         navigation.reset({
           index: 0,
           routes: [{ name: "LoginScreen" }],
@@ -116,9 +127,10 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       });
 
       setFormData(response.data.data);
+      console.log(response.data)
     } catch (error) {
       console.error("Profile fetch error:", error);
-      // Check if error is due to invalid token
+
       if (axios.isAxiosError(error) && error.response?.status === 401) {
         await AsyncStorage.removeItem("authToken");
         navigation.reset({
@@ -131,7 +143,47 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     }
   };
 
-  // Fetch packages
+  useEffect(() => {
+    const checkTokenExpiration = async () => {
+      try {
+        const expirationTime = await AsyncStorage.getItem(
+          "tokenExpirationTime"
+        );
+        const userToken = await AsyncStorage.getItem("authToken");
+
+        if (expirationTime && userToken) {
+          const currentTime = new Date();
+          const tokenExpiry = new Date(expirationTime);
+
+          if (currentTime < tokenExpiry) {
+            console.log("Token is valid");
+          } else {
+            console.log("Token expired, clearing storage.");
+            await AsyncStorage.multiRemove([
+              "userToken",
+              "tokenStoredTime",
+              "tokenExpirationTime",
+            ]);
+            Alert.alert("Sorry","No authenticated user found, please login again")
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "LoginScreen" }],
+            });   
+           }
+        }
+      } catch (error) {
+        console.error("Error checking token expiration:", error);
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "LoginScreen" }],
+        });     
+       }
+    };
+
+    checkTokenExpiration();
+  }, [navigation]);
+
+
   const fetchPackages = async () => {
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
@@ -145,6 +197,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
           headers: { Authorization: `Bearer ${storedToken}` },
         }
       );
+      console.log(response.data)
 
       setPackages(response.data.data);
     } catch (error) {
@@ -152,7 +205,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     }
   };
 
-  // Fetch sales agent stats
+
   const fetchAgentStats = async () => {
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
@@ -171,19 +224,11 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     }
   };
 
+
   if (isLoading) {
     return <DashboardSkeleton />;
   }
 
-  // Add refresh button component
-  const RefreshButton = () => (
-    <TouchableOpacity 
-      onPress={refreshData}
-      className="bg-[#E6DBF766] p-2 rounded-full mr-3"
-    >
-      <Text className="font-bold text-[#6A3AD0]">↻</Text>
-    </TouchableOpacity>
-  );
 
   const renderPackage = ({ item }: { item: Package }) => (
     <View
@@ -196,7 +241,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
         elevation: 10,
       }}
     >
-      <Image source={require("../assets/images/fruits.png")} className="w-20 h-20 mb-3" resizeMode="contain" />
+      <Image  source={{ uri: item.image }} className="w-20 h-20 mb-3 " resizeMode="contain" />
       <Text className="font-bold text-[#6A3AD0]">{item.displayName}</Text>
       <Text className="text-sm font-medium text-gray-500">Rs. {item.total}</Text>
     
@@ -213,7 +258,8 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
           onPress={() => 
             navigation.navigate("ViewScreen", {
               selectedPackageId: item.id,
-              selectedPackageName: item.name,
+              selectedPackageName: item.displayName,
+              selectedPackageImage:item.image,
               selectedPackageTotal: item.total,
               selectedPackageDescription: item.description,
               selectedPackageportion: item.portion,
@@ -254,34 +300,37 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
           </View>
 
           {/* Progress Bar */}
-          <Text className="text-lg text-purple-600 mt-5 font-bold">
-            Your Daily Target
-          </Text>
-          <View className="flex-row bg-[#824AD933] h-14 rounded-xl items-center mt-3 px-6">
-            <Text
-              className="absolute text-purple-600 text-sm font-bold"
-              style={{
-                top: 2,
-                left: "50%", 
-                transform: [{ translateX: -12 }], 
-              }}
-            >
-              {agentStats.daily.completed}/{agentStats.daily.target}
-            </Text>
-            <Bar
-              progress={agentStats.daily.progress}
-              width={200}
-              color="#854BDA"
-              borderWidth={0}
-              height={10}
-            />
-
-            <Image
-              source={require("../assets/images/star.png")} 
-              className="w-8 h-8 ml-5"
-              resizeMode="contain"
-            />
-          </View>
+       {/* Progress Bar */}
+<Text className="text-lg text-purple-600 mt-5 font-bold">
+  Your Daily Target
+</Text>
+<View className="flex-row bg-[#824AD933] h-14 rounded-xl items-center mt-3 px-6">
+  <Text
+    className="absolute text-purple-600 text-sm font-bold"
+    style={{
+      top: 2,
+      left: "50%", 
+      transform: [{ translateX: -12 }], 
+    }}
+  >
+    {agentStats.daily.completed}/{agentStats.daily.target || '0'}
+  </Text>
+  <View className="mt-2">
+  <Bar
+  progress={agentStats.daily.progress}
+  width={wp("68%")}
+  color="#854BDA"
+  unfilledColor="#FFFFFF"  /* Add this line to make unfilled portion white */
+  borderWidth={0}
+  height={10}
+/>
+</View>
+  <Image
+    source={require("../assets/images/star.png")} 
+    className="w-8 absolute right-0 h-8 mr-3"
+    resizeMode="contain"
+  />
+</View>
         </View>
 
         {/* Packages Section with Pull to Refresh */}
@@ -299,6 +348,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
           <Text className="text-xl font-bold text-[#874CDB] mt-6 ml-6 mb-2">
             Packages
           </Text>
+          <View className="p-2">
           <FlatList
             data={packages}
             renderItem={renderPackage}
@@ -311,6 +361,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
               paddingBottom: 60
             }}
           />
+          </View>
         </ScrollView>
       </View>
     </KeyboardAvoidingView>

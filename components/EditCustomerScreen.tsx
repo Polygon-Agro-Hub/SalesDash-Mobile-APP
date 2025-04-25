@@ -2,14 +2,16 @@ import React, { useState, useEffect } from "react";
 import { View, Text, ScrollView, TextInput, TouchableOpacity, Keyboard, Platform, KeyboardAvoidingView, SafeAreaView, Alert } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
-import { Picker } from "@react-native-picker/picker";
+//import { Picker } from "@react-native-picker/picker";
 import { LinearGradient } from "expo-linear-gradient";
-import { widthPercentageToDP as wp } from "react-native-responsive-screen";
+import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
 import BackButton from "./BackButton";
 import axios from "axios";
 import environment from "@/environment/environment";
 import DropDownPicker from "react-native-dropdown-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { SelectList } from "react-native-dropdown-select-list";
+import { AntDesign } from "@expo/vector-icons";
 
 type EditCustomerScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -22,8 +24,8 @@ interface EditCustomerScreenProps {
 }
 
 const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, route }) => {
-  const { id } = route.params;
-  console.log(id) // Get customerId from route params
+  const { id , customerId,name, title} = route.params;
+  console.log(id) 
 
   const [firstName, setFirstName] = useState<string>("");
   const [lastName, setLastName] = useState<string>("");
@@ -32,22 +34,25 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
   const [houseNo, setHouseNo] = useState<string>("");
   const [streetName, setStreetName] = useState<string>("");
   const [city, setCity] = useState<string>("");
-  const [buildingNo, setbuildingNo] = useState<string>("");
-  const [floorNo, setfloorNo] = useState<string>("");
-  const [unitNo, setunitNo] = useState<string>("");
-  const [buildingName, setbuildingName] = useState<string>("");
+  const [buildingNo, setBuildingNo] = useState<string>("");
+  const [floorNo, setFloorNo] = useState<string>("");
+  const [unitNo, setUnitNo] = useState<string>("");
+  const [buildingName, setBuildingName] = useState<string>("");
   const [buildingType, setBuildingType] = useState<string>("");
-
+  const [originalBuildingType, setOriginalBuildingType] = useState<string>("");
+  
   const [originalPhoneNumber, setOriginalPhoneNumber] = useState<string>("");
 
   const [loading, setLoading] = useState(false);
-    const [otpSent, setOtpSent] = useState(false);
-    const [token, setToken] = useState<string>("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [token, setToken] = useState<string>("");
 
-  const buildingOptions = [
-    { key: "1", value: "House" },
-    { key: "2", value: "Apartment" },
-  ];
+  // For building type dropdown picker
+  const [buildingTypeOpen, setBuildingTypeOpen] = useState(false);
+  const [buildingTypeItems, setBuildingTypeItems] = useState([
+    { label: "House", value: "House" },
+    { label: "Apartment", value: "Apartment" },
+  ]);
 
   useEffect(() => {
     const getToken = async () => {
@@ -60,6 +65,11 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
     getToken();
   }, []);
 
+  // Helper function to convert null to empty string
+  const nullToEmptyString = (value: any): string => {
+    return value !== null && value !== undefined ? value : "";
+  };
+
   // Fetch customer data based on customerId
   useEffect(() => {
     const fetchCustomerData = async () => {
@@ -71,29 +81,32 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
           const customerData = response.data.customer;
           const buildingData = response.data.building;
 
-          console.log("Customer Data:", customerData); 
+          console.log("Customer Data:", customerData);
+          console.log("Building Data:", buildingData);
 
-          setSelectedCategory(customerData.title);
-          setFirstName(customerData.firstName);
-          setLastName(customerData.lastName);
-          setPhoneNumber(customerData.phoneNumber);
-          setEmail(customerData.email);
-          setBuildingType(customerData.buildingType);
-          setOriginalPhoneNumber(customerData.phoneNumber);
-          setSelectedCategory(customerData.title);
-
-          if (customerData.buildingType === "House") {
-            setHouseNo(buildingData.houseNo || "");
-            setStreetName(buildingData.streetName || "");
-            setCity(buildingData.city || "");
-          } else if (customerData.buildingType === "Apartment") {
-            setbuildingNo(buildingData.buildingNo || "");
-            setbuildingName(buildingData.buildingName || "");
-            setunitNo(buildingData.unitNo || "");
-            setfloorNo(buildingData.floorNo || "");
-            setHouseNo(buildingData.houseNo || "");
-            setStreetName(buildingData.streetName || "");
-            setCity(buildingData.city || "");
+          setSelectedCategory(customerData.title || "");
+          setFirstName(customerData.firstName || "");
+          setLastName(customerData.lastName || "");
+          setPhoneNumber(customerData.phoneNumber || "");
+          setEmail(customerData.email || "");
+          setBuildingType(customerData.buildingType || "");
+          setOriginalBuildingType(customerData.buildingType || "");
+          setOriginalPhoneNumber(customerData.phoneNumber || "");
+          
+          if (buildingData) {
+            if (customerData.buildingType === "House") {
+              setHouseNo(nullToEmptyString(buildingData.houseNo));
+              setStreetName(nullToEmptyString(buildingData.streetName));
+              setCity(nullToEmptyString(buildingData.city));
+            } else if (customerData.buildingType === "Apartment") {
+              setBuildingNo(nullToEmptyString(buildingData.buildingNo));
+              setBuildingName(nullToEmptyString(buildingData.buildingName));
+              setUnitNo(nullToEmptyString(buildingData.unitNo));
+              setFloorNo(nullToEmptyString(buildingData.floorNo));
+              setHouseNo(nullToEmptyString(buildingData.houseNo));
+              setStreetName(nullToEmptyString(buildingData.streetName));
+              setCity(nullToEmptyString(buildingData.city));
+            }
           }
         } else {
           Alert.alert("Error", "Failed to load customer data.");
@@ -111,14 +124,13 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
   const sendOTP = async () => {
     if (!phoneNumber) {
       Alert.alert('Error', 'Please enter a phone number.');
-      return { status: 400 }; // Return a mock response for error handling
+      return { status: 400 }; 
     }
     console.log("----check----", phoneNumber)
   
     try {
       setLoading(true);
   
-      // Clean phone number, removing any non-numeric characters if needed
       const cleanedPhoneNumber = phoneNumber.replace(/[^\d]/g, "");
   
       const apiUrl = "https://api.getshoutout.com/otpservice/send";
@@ -128,34 +140,31 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
       };
   
       const body = {
-        source: "ShoutDEMO", // Ensure this is a valid source
-        transport: "sms",    // Ensure the transport method is correct
+        source: "ShoutDEMO",
+        transport: "sms",    
         content: {
-          sms: "Your code is {{code}}",  // OTP content message
+          sms: "Your code is {{code}}",  
         },
-        destination: cleanedPhoneNumber, // Use the cleaned phone number
+        destination: cleanedPhoneNumber, 
       };
   
-      console.log("Request body:", body); // Log the request body
+      console.log("Request body:", body); 
   
       const response = await axios.post(apiUrl, body, { headers });
   
-      console.log("API response:", response.data); // Log full API response
+      console.log("API response:", response.data); 
   
-      // Save the referenceId for future tracking
       await AsyncStorage.setItem("referenceId", response.data.referenceId);
   
-      // Handle success response
       if (response.status === 200) {
         setOtpSent(true);
         Alert.alert('Success', 'OTP sent successfully.');
-        return response; // Return the response object
+        return response; 
       } else {
         Alert.alert('Error', 'Failed to send OTP.');
-        return { status: 400 }; // Return a failure response
+        return { status: 400 }; 
       }
     } catch (error) {
-      // Log the error response details for debugging
       if (axios.isAxiosError(error)) {
         console.log('Axios error details:', error.response ? error.response.data : error.message);
         Alert.alert('Error', `Error: ${error.response ? error.response.data.message : error.message}`);
@@ -163,12 +172,13 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
         console.log('Unexpected error:', error);
         Alert.alert('Error', 'An unexpected error occurred.');
       }
-      return { status: 400 }; // Return a failure response on error
+      return { status: 400 }; 
     } finally {
       setLoading(false);
     }
   };
   
+ 
 
   const handleRegister = async () => {
     if (!selectedCategory || !firstName || !lastName || !phoneNumber || !email || !buildingType) {
@@ -176,7 +186,6 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
       return;
     }
   
-    // Validate phone number and email
     if (!validatePhoneNumber(phoneNumber)) {
       alert("Please enter a valid phone number.");
       return;
@@ -187,55 +196,114 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
       return;
     }
   
-    const customerData = {
-      title: selectedCategory,
-      firstName,
-      lastName,
-      phoneNumber,
-      email,
-      buildingType,
-      houseNo,
-      streetName,
-      city,
-      buildingNo,
-      floorNo,
-      unitNo,
-      buildingName,
-    };
-  
     try {
-      // If the phone number has changed, only send OTP and do not update backend yet
+      // Only check phone number if it's changed
       if (phoneNumber !== originalPhoneNumber) {
-        setOtpSent(false);  // Reset OTP sent state
+        try {
+          const checkResponse = await axios.post(
+            `${environment.API_BASE_URL}api/customer/check-customer`,
+            { phoneNumber }, // ONLY sending phoneNumber now
+            {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
   
-        // Send OTP for verification
-        const otpResponse = await sendOTP();  // Send OTP
+          // If server replies 400, phone already registered
+          if (checkResponse.status === 400) {
+            Alert.alert("Error", "This phone number is already registered.");
+            return;
+          }
+        } catch (error) {
+          if (axios.isAxiosError(error)) {
+            if (error.response?.status === 400) {
+              Alert.alert("Error", "This phone number is already registered.");
+              return;
+            } else if (error.response?.status === 404) {
+              console.log("(NOBRIDGE) INFO: Phone number not found, proceeding...");
+              // Valid case — allow to continue.
+            } else {
+              console.error("(NOBRIDGE) ERROR checking phone:", error.response?.data);
+              Alert.alert("Error", "Failed to verify phone number. Please try again.");
+              return;
+            }
+          } else {
+            console.error("(NOBRIDGE) Unknown error checking phone:", error);
+            Alert.alert("Error", "Failed to verify phone number. Please try again.");
+            return;
+          }
+        }
+      }
+  
+      // Create the customer data object
+      const customerData = {
+        title: selectedCategory,
+        firstName,
+        lastName,
+        phoneNumber,
+        email,
+        buildingType,
+      };
+  
+      // Create building data object based on the selected building type
+      let buildingData = {};
+  
+      if (buildingType === "House") {
+        buildingData = {
+          houseNo: houseNo || "",
+          streetName: streetName || "",
+          city: city || ""
+        };
+      } else if (buildingType === "Apartment") {
+        buildingData = {
+          buildingNo: buildingNo || "",
+          buildingName: buildingName || "",
+          unitNo: unitNo || "",
+          floorNo: floorNo || "",
+          houseNo: houseNo || "",
+          streetName: streetName || "",
+          city: city || ""
+        };
+      }
+  
+      // If phone number has changed, send OTP
+      if (phoneNumber !== originalPhoneNumber) {
+        setOtpSent(false);  
+        const otpResponse = await sendOTP();  
         if (otpResponse.status === 200) {
-          // Save customer data temporarily for OTP verification process
-          await AsyncStorage.setItem("pendingCustomerData", JSON.stringify(customerData));
-  
-          // Navigate to OTP screen with the new phone number
-          navigation.navigate("OtpScreenUp", { phoneNumber ,id, token});
-          console.log(id)
+          await AsyncStorage.setItem("pendingCustomerData", JSON.stringify({ customerData, buildingData }));
+          navigation.navigate("OtpScreenUp", { phoneNumber, id, token });
         } else {
           alert("Failed to send OTP. Please try again.");
         }
       } else {
-        // If the phone number hasn't changed, update the data in the backend
+        const dataToSend = {
+          ...customerData,
+          buildingData,
+          originalBuildingType
+        };
+  
         const response = await axios.put(
           `${environment.API_BASE_URL}api/customer/update-customer-data/${id}`,
-          customerData
+          dataToSend,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
         );
   
         if (response.status === 200) {
-          console.log("Customer updated successfully:", response.data);
           Alert.alert("Success", "Customer updated successfully.");
           navigation.goBack();
         } else {
-          console.error("Failed to update customer:", response.data.error);
           Alert.alert("Error", "Failed to update customer. Please try again.");
         }
       }
+  
     } catch (error: unknown) {
       if (error instanceof Error) {
         Alert.alert("Error", `Failed to update customer: ${error.message}`);
@@ -248,15 +316,12 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
   };
   
   
-  
-
   const [open, setOpen] = useState(false);
-const [selectedCategory, setSelectedCategory] = useState("");
-const [items, setItems] = useState([
-  { label: "Mr", value: "Mr" },
-  { label: "Ms", value: "Ms" },
-]);
-
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [items, setItems] = useState([
+    { key: 'Mr', label: "Mr", value: "Mr" },
+    { key: 'Ms', label: "Ms", value: "Ms" },
+  ]);
 
   const phoneRegex = /^\+?[0-9]{1,3}[0-9]{7,10}$/;
   const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
@@ -274,6 +339,33 @@ const [items, setItems] = useState([
       keyboardDidHideListener.remove();
     };
   }, []);
+  
+  // Handle building type change - clear irrelevant fields
+  const handleBuildingTypeChange = (value: string) => {
+    setBuildingType(value);
+    
+    // If building type changed, clear fields from the other type
+    if (value !== originalBuildingType) {
+      if (value === "House") {
+        // Clear apartment fields
+        setBuildingNo("");
+        setBuildingName("");
+        setUnitNo("");
+        setFloorNo("");
+        // Initialize house fields with empty strings if they're not set
+        setHouseNo(houseNo || "");
+        setStreetName(streetName || "");
+        setCity(city || "");
+      } else if (value === "Apartment") {
+        // Initialize apartment fields with empty strings if they're not set
+        setBuildingNo("");
+        setBuildingName("");
+        setUnitNo("");
+        setFloorNo("");
+        // Keep house fields as they may be needed for apartment too
+      }
+    }
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -285,26 +377,35 @@ const [items, setItems] = useState([
         <View className="flex-1 bg-white py-4 p-2">
           <View className="p-[-4]">
             <View className="bg-white flex-row items-center h-17 shadow-lg px-1 ">
-              <BackButton navigation={navigation} />
+              {/* <BackButton navigation={navigation} /> */}
+              <TouchableOpacity 
+        style = {{ paddingHorizontal: wp(2), paddingVertical: hp(2)}}
+        onPress={() => navigation.navigate("ViewCustomerScreen" as any, { id: id, customerId:customerId, name: name, title:title })}
+        >
+         <View className="w-9 h-9 bg-[#F6F6F680] rounded-full justify-center items-center">
+           <AntDesign name="left" size={20} color="black" />
+         </View>
+       </TouchableOpacity> 
               <Text style={{ fontSize: 18 }} className="font-bold text-center text-purple-600 flex-grow mr-9">
                 Edit Customer Details 
-           
               </Text>
             </View>
           </View>
 
           <ScrollView style={{ paddingHorizontal: wp(1) }}
           keyboardShouldPersistTaps="handled"
+          className="mb-4"
           >
             <View className="p-3 px-6">
               <View className="mb-4 mt-4 flex-row justify-between">
                 <View className="flex-[1]">
                   <Text className="text-gray-700 mb-1">Title</Text>
-                  {/* <View className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full py-2 mt-1 justify-center justifyContent-flex-end"> */}
-               
-                  <View className="mb-4">
+                
+                  <View className="mb-2">
   
-                  <DropDownPicker
+              
+
+<DropDownPicker
   open={open}
   value={selectedCategory}
   items={items}
@@ -313,29 +414,26 @@ const [items, setItems] = useState([
   setItems={setItems}
   placeholder="Select Title"
   style={{
-    backgroundColor: "#F6F6F6",
-    borderColor: "#F6F6F6",
-    borderRadius: 9999, // Rounded full
-    paddingVertical: 0, // Minimize vertical padding
-    paddingHorizontal: 7,
-    height: 0, // Reduce picker height
+    backgroundColor: '#F6F6F6',
+    borderColor: '#F6F6F6',
+    borderRadius: 30,
+    minHeight: 40,
   }}
   textStyle={{
-    fontSize: 12, // Reduce placeholder font size
-  
-    textAlignVertical: "center", // Align text properly
+    fontSize: 12,
+    textAlignVertical: "center",
   }}
   dropDownContainerStyle={{
-    backgroundColor: "#ffffff",
+    backgroundColor: '#ffffff',
+    borderColor: '#F6F6F6',
     borderRadius: 10,
-    paddingTop: 6,
-    maxHeight: 100, // Limit dropdown menu height
-    overflow: "hidden",
+    zIndex: 1000,
+  }}
+  listMode="SCROLLVIEW"          // <-- ADD this
+  scrollViewProps={{             // <-- ADD this
+    nestedScrollEnabled: true,
   }}
 />
-
-
-
 
 
                   </View>
@@ -352,7 +450,7 @@ const [items, setItems] = useState([
                 </View>
               </View>
 
-              <View className="mb-4">
+              <View className="mb-4 ">
                 <Text className="text-gray-700 mb-1">Last Name</Text>
                 <TextInput
                   className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
@@ -384,23 +482,50 @@ const [items, setItems] = useState([
                 />
               </View>
 
-              <View className="mb-4">
+              <View className="mb-4 z-10">
                 <Text className="text-gray-700 mb-1">Building Type</Text>
-                <View className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-4 py-2 mt-1 items-center justify-center">
-                  <Picker
-                    selectedValue={buildingType}
-                    onValueChange={(itemValue) => setBuildingType(itemValue)}
-                    style={{
-                      height: 25,
-                      width: "100%",
-                    }}
-                  >
-                    <Picker.Item label="Select Building Type" value="" color="#999" style={{ fontSize: 14 }} />
-                    {buildingOptions.map((option) => (
-                      <Picker.Item key={option.key} label={option.value} value={option.value} />
-                    ))}
-                  </Picker>
-                </View>
+                <DropDownPicker
+                  open={buildingTypeOpen}
+                  value={buildingType}
+                  items={buildingTypeItems}
+                  setOpen={setBuildingTypeOpen}
+                  setValue={(callback) => {
+                    setBuildingType((val) => {
+                      const newValue = callback(val);
+                      handleBuildingTypeChange(newValue);
+                      return newValue;
+                    });
+                  }}
+                  setItems={setBuildingTypeItems}
+                  placeholder="Select Building Type"
+                  style={{
+                    backgroundColor: '#F6F6F6',
+                    borderColor: '#F6F6F6',
+                    borderRadius: 30,
+                    minHeight: 40,
+                  }}
+                  dropDownContainerStyle={{
+                    backgroundColor: '#ffffff',
+                    borderColor: '#F6F6F6',
+                    borderRadius: 10,
+                    zIndex: 1000,
+                  }}
+                  textStyle={{
+                    color: '#333',
+                    fontSize: 14,
+                    paddingLeft: 5,
+                  }}
+                  placeholderStyle={{
+                    color: '#999',
+                    fontSize: 14,
+                  }}
+                  zIndex={3000}
+                  zIndexInverse={1000}
+                  listMode="SCROLLVIEW"        
+  scrollViewProps={{            
+    nestedScrollEnabled: true,
+  }}
+                />
               </View>
 
               {buildingType === "House" && (
@@ -441,9 +566,9 @@ const [items, setItems] = useState([
                    <Text className="text-gray-700 mb-1">Apartment / Building No</Text>
                     <TextInput
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
-                      placeholder="Apartment / Building Name"
+                      placeholder="Apartment / Building No"
                       value={buildingNo}
-                      onChangeText={setbuildingNo}
+                      onChangeText={setBuildingNo}
                     />
                   </View>
 
@@ -453,7 +578,7 @@ const [items, setItems] = useState([
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="Apartment / Building Name"
                       value={buildingName}
-                      onChangeText={setbuildingName}
+                      onChangeText={setBuildingName}
                     />
                   </View>
                   <View className="mb-4">
@@ -462,7 +587,7 @@ const [items, setItems] = useState([
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="ex : Building B"
                       value={unitNo}
-                      onChangeText={setunitNo}
+                      onChangeText={setUnitNo}
                     />
                   </View>
                   <View className="mb-4">
@@ -471,7 +596,7 @@ const [items, setItems] = useState([
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="ex : 3rd Floor"
                       value={floorNo}
-                      onChangeText={setfloorNo}
+                      onChangeText={setFloorNo}
                     />
                   </View>
 
@@ -505,9 +630,8 @@ const [items, setItems] = useState([
                 </>
               )}
 
-              <LinearGradient colors={["#854BDA", "#6E3DD1"]} className="py-3 px-4 rounded-lg items-center mt-6 mb-[15%] mr-[20%] ml-[20%] rounded-3xl h-15">
-                <TouchableOpacity onPress={handleRegister}
-                >
+              <LinearGradient colors={["#854BDA", "#6E3DD1"]} className="py-3 px-4 rounded-lg items-center mt-6 mb-[15%] mr-[20%] ml-[20%] h-15">
+                <TouchableOpacity onPress={handleRegister}>
                   <Text className="text-center text-white font-bold">Save</Text>
                 </TouchableOpacity>
               </LinearGradient>
