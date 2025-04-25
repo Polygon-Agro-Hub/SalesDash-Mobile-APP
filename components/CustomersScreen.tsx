@@ -8,7 +8,8 @@ import {
   Keyboard, 
   KeyboardAvoidingView,    
   Platform, 
-  FlatList 
+  FlatList, 
+  Alert
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
@@ -17,6 +18,7 @@ import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-nat
 import axios from "axios";
 import environment from "@/environment/environment";
 import CustomersScreenSkeleton from "../components/Skeleton/CustomerScreenSkeleton";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 
 type CustomersScreenNavigationProp = StackNavigationProp<RootStackParamList, "CustomersScreen">;
@@ -63,22 +65,61 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
     });
   };
 
+  // const fetchCustomers = async () => {
+  //   setLoading(true);
+  //   try {
+  //     const response = await axios.get(`${environment.API_BASE_URL}api/customer/get-customers`);
+  //     console.log(response.data);
+      
+  //     // Sort customers alphabetically by name
+  //     const sortedCustomers = sortCustomersByName(response.data);
+      
+  //     setCustomers(sortedCustomers);
+  //     setFilteredCustomers(sortedCustomers);
+  //     setError(null);
+  //   } catch (err) {
+  //     setError("Failed to fetch customers. Please try again.");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
   const fetchCustomers = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`${environment.API_BASE_URL}api/customer/get-customers`);
-      console.log(response.data);
+      const storedToken = await AsyncStorage.getItem("authToken");
+      if (!storedToken) {
+        Alert.alert("Error", "No authentication token found");
+        setLoading(false);
+        return;
+      }
       
-      // Sort customers alphabetically by name
-      const sortedCustomers = sortCustomersByName(response.data);
+      const customersUrl = `${environment.API_BASE_URL.replace(/\/$/, '')}/api/customer/get-customers`;
       
-      setCustomers(sortedCustomers);
-      setFilteredCustomers(sortedCustomers);
-      setError(null);
-    } catch (err) {
-      setError("Failed to fetch customers. Please try again.");
-    } finally {
+      setTimeout(async () => {
+        try {
+          const response = await axios.get(customersUrl, {
+            headers: { Authorization: `Bearer ${storedToken}` },
+          });
+          
+          // Sort customers alphabetically by name
+          const sortedCustomers = sortCustomersByName(response.data);
+          
+          setCustomers(sortedCustomers);
+          setFilteredCustomers(sortedCustomers);
+          setError(null);
+        } catch (error) {
+          console.error("Error fetching customers:", error);
+          setError("Failed to fetch customers. Please try again.");
+          Alert.alert("Error", "Failed to fetch customers");
+        } finally {
+          setLoading(false);
+        }
+      }, 2000);
+    } catch (error) {
+      console.error("Error in fetchCustomers:", error);
       setLoading(false);
+      setError("Failed to fetch customers. Please try again.");
+      Alert.alert("Error", "Failed to fetch customers");
     }
   };
 
