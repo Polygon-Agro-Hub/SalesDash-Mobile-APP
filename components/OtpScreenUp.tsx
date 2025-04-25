@@ -1,394 +1,313 @@
 import React, { useState, useRef, useEffect } from "react";
-import { View, Text, TextInput, TouchableOpacity, Image, KeyboardAvoidingView,Platform,Keyboard, Alert, ScrollView } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform, Keyboard, Alert, ScrollView } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import { useNavigation } from "@react-navigation/native";
 import BackButton from "./BackButton";
 import { LinearGradient } from "expo-linear-gradient";
 import {
-    widthPercentageToDP as wp,
-    heightPercentageToDP as hp,
-  } from "react-native-responsive-screen";
-import axios from "axios";
+  widthPercentageToDP as wp,
+  heightPercentageToDP as hp,
+} from "react-native-responsive-screen";
+import axios, { AxiosError } from "axios";
 import environment from "@/environment/environment";
 import { useRoute } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useTranslation } from "react-i18next";
-
-
 
 type OtpScreenUpNavigationProp = StackNavigationProp<RootStackParamList, "OtpScreenUp">;
 
 interface OtpScreenUpProps {
-    navigation: OtpScreenUpNavigationProp;
-  }
+  navigation: OtpScreenUpNavigationProp;
+}
+
+// Type definition for API error responses
+interface ApiErrorResponse {
+  message?: string;
+  error?: string;
+}
 
 const OtpScreenUp: React.FC = () => {
   const navigation = useNavigation<OtpScreenUpNavigationProp>();
-  const [otp, setOtp] = useState<string[]>(["", "", "", "",""]);
+  const [otp, setOtp] = useState<string[]>(["", "", "", "", ""]);
   const inputRefs = useRef<TextInput[]>([]);
   const [timer, setTimer] = useState(60);
   const [resendDisabled, setResendDisabled] = useState(true);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
-  //const [otpCode, setOtpCode] = useState<string>("");
-  const [maskedCode, setMaskedCode] = useState<string>("XXXXX");
- // const [referenceId, setReferenceId] = useState<string | null>(null);
   const [referenceId, setReferenceId] = useState<string | null>(null);
-
-  const [otpCode, setOtpCode] = useState<string>("");
-
-  //const [phoneNumber, setPhoneNumber] = useState('');
- // const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
- // const [referenceId, setReferenceId] = useState<string | null>(null);
-  //const [timer, setTimer] = useState<number>(240);
   const [isVerified, setIsVerified] = useState<boolean>(false);
-  const [disabledResend, setDisabledResend] = useState<boolean>(true);
-  const { t } = useTranslation();
-  const [language, setLanguage] = useState("en");
-  const [isOtpValid, setIsOtpValid] = useState<boolean>(false);
-  const [formData, setFormData] = useState({ username: "", id: "" });
+  const route = useRoute();
+  const { phoneNumber, id } = route.params as { phoneNumber: string, id: string };
 
- 
- // const phoneNumber = route.params?.phoneNumber;
+  console.log("Received phone number:", phoneNumber);
+  console.log("Customer ID:", id);
 
-
- const route = useRoute();
- const { phoneNumber ,id } = route.params as { phoneNumber: string , id: string};
- 
- console.log("Received phone number:", phoneNumber);
-
- useEffect(() => {
-  const fetchReferenceId = async () => {
-    try {
-      const refId = await AsyncStorage.getItem("referenceId");
-      if (refId) {
-        setReferenceId(refId);
+  useEffect(() => {
+    const fetchReferenceId = async () => {
+      try {
+        const refId = await AsyncStorage.getItem("referenceId");
+        if (refId) {
+          setReferenceId(refId);
+        }
+      } catch (error) {
+        console.error("Failed to load referenceId:", error);
       }
+    };
+
+    fetchReferenceId();
+  }, []);
+
+  const [isOtpInvalid, setIsOtpInvalid] = useState(false);
+
+  // Helper to get auth token - add this if you need token-based authentication
+  const getAuthToken = async (): Promise<string | null> => {
+    try {
+      return await AsyncStorage.getItem("authToken");
     } catch (error) {
-      console.error("Failed to load referenceId:", error);
+      console.error("Failed to get auth token:", error);
+      return null;
     }
   };
 
-  fetchReferenceId();
-  }, []);
- 
-
-
-
-
-const [isOtpInvalid, setIsOtpInvalid] = useState(false);
-
-
-
-
-
-
-
-const verifyOTP = async () => {
-  const otpCode = otp.join(""); // Join OTP array into a single string
-  console.log('OTP code:', otpCode);
-
-  if (otpCode.length < 5) {
-    Alert.alert("Error", "Please enter a valid 5-digit OTP.");
-    setIsOtpInvalid(true);
-    return;
-  }
-
-  try {
-    setLoading(true);
-    const referenceId = await AsyncStorage.getItem("referenceId");
-    console.log('Reference ID:', referenceId);
+  const verifyOTP = async () => {
+    const otpCode = otp.join("");
     
-    if (!referenceId) {
-      Alert.alert("Error", "No OTP reference found.");
+    console.log('OTP code:', otpCode);
+    
+    if (otpCode.length < 5) {
+      Alert.alert("Error", "Please enter a valid 5-digit OTP.");
+      setIsOtpInvalid(true);
       return;
     }
-
-    const url = "https://api.getshoutout.com/otpservice/verify";
-    const headers = {
-      Authorization: `Apikey ${environment.SHOUTOUT_API_KEY}`,
-      "Content-Type": "application/json",
-    };
-
-    const body = {
-      code: otpCode,
-      referenceId,
-    };
-
-    const response = await axios.post(url, body, { headers });
-    console.log('OTP verification response:', response.data);
-
-    const { statusCode } = response.data;
-
-    if (statusCode === "1000") {
-      setIsVerified(true);
-      Alert.alert("Success", "OTP verified successfully.");
-
-      // Retrieve stored customer data
-      const customerDataString = await AsyncStorage.getItem("pendingCustomerData");
-      if (!customerDataString) {
-        Alert.alert("Error", "No customer data found.");
+    
+    try {
+      setLoading(true);
+      const referenceId = await AsyncStorage.getItem("referenceId");
+      console.log('Reference ID:', referenceId);
+      
+      if (!referenceId) {
+        Alert.alert("Error", "No OTP reference found.");
         return;
       }
-
-      const customerData = JSON.parse(customerDataString);
-      console.log('Customer Data:', customerData);
-
-      // Check if the customer already exists based on email or phone number
-      const existingCustomerResponse = await axios.get(
-        `${environment.API_BASE_URL}api/customer/get-customer-data/${id}}`
-      );
-
-      if (existingCustomerResponse.status === 200 && existingCustomerResponse.data) {
-        // Customer exists, update their details
-        const updateResponse = await axios.put(
-          `${environment.API_BASE_URL}api/customer/update-customer-data/${id}`,
-          customerData
-        );
-
-
-
-        console.log('Update response:', updateResponse);
-
+      
+      const url = "https://api.getshoutout.com/otpservice/verify";
+      const headers = {
+        Authorization: `Apikey ${environment.SHOUTOUT_API_KEY}`,
+        "Content-Type": "application/json",
+      };
+      
+      const body = {
+        code: otpCode,
+        referenceId,
+      };
+      
+      // Step 1: Verify OTP
+      const response = await axios.post(url, body, { headers });
+      console.log('OTP verification response:', response.data);
+      
+      const { statusCode } = response.data;
+      
+      if (statusCode === "1000") {
+        setIsVerified(true);
         
-
-        if (updateResponse.status === 200) {
-          Alert.alert("Success", "Customer updated successfully.");
-          navigation.navigate("OtpSuccesfulScreen");
-        } else {
-          Alert.alert("Error", `Failed to update customer: ${id}`);
+        // Step 2: Get customer data from AsyncStorage
+        const customerDataString = await AsyncStorage.getItem("pendingCustomerData");
+        if (!customerDataString) {
+          Alert.alert("Error", "No customer data found.");
+          return;
+        }
+        
+        // Parse customer data
+        const parsedData = JSON.parse(customerDataString);
+        console.log('Customer Data (parsed from AsyncStorage):', parsedData);
+        
+        // Make sure the data matches what the backend expects
+        const customerData = parsedData.customerData || {};
+        const buildingData = parsedData.buildingData || {};
+        
+        // For debugging
+        console.log('Customer Data (extracted):', customerData);
+        console.log('Building Data (extracted):', buildingData);
+        
+        // Get auth token if your API requires it
+        const authToken = await getAuthToken();
+        const apiHeaders = {
+          'Content-Type': 'application/json',
+          ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
+        };
+        
+        // Step 3: Attempt to update or create customer
+        try {
+          let endpoint;
+          let method;
+          let data;
+          
+          if (id) {
+            // Update existing customer
+            endpoint = `${environment.API_BASE_URL}api/customer/update-customer-data/${id}`;
+            method = 'put';
+            // Match backend expected format - the backend function expects two separate objects
+            data = {
+              customerData,
+              buildingData
+            };
+            console.log("Updating customer at:", endpoint);
+          } else {
+            // Create new customer
+            endpoint = `${environment.API_BASE_URL}api/customer/add-customer`;
+            method = 'post';
+            // Match backend expected format
+            data = {
+              customerData,
+              buildingData
+            };
+            console.log("Creating customer at:", endpoint);
+          }
+          
+          console.log("Sending data:", data);
+          
+          // Make the API call
+          const customerResponse = await axios({
+            method,
+            url: endpoint,
+            headers: apiHeaders,
+            data
+          });
+          
+          console.log('API response:', customerResponse.data);
+          
+          if (customerResponse.status === 200 || customerResponse.status === 201) {
+            // Extract customer ID from response or use existing ID
+            const customerId = customerResponse.data?.customerId || id;
+            console.log("Customer ID (from response or params):", customerId);
+            
+            if (customerId) {
+              await AsyncStorage.setItem("latestCustomerId", customerId.toString());
+            }
+            
+            Alert.alert(
+              "Success", 
+              id ? "Customer updated successfully." : "Customer created successfully."
+            );
+            
+            // Navigate to success screen
+            navigation.navigate("OtpSuccesfulScreen", {
+              customerId: customerId
+            });
+          } else {
+            throw new Error(customerResponse.data?.message || "Error processing customer data");
+          }
+        } catch (error) {
+          const apiError = error as AxiosError<ApiErrorResponse>;
+          
+          console.error("Customer API error:", apiError);
+          
+          // Extract error details
+          let errorMessage = "Failed to process customer data.";
+          
+          if (apiError.response) {
+            // Server responded with a non-2xx status
+            console.log("API error response:", apiError.response.data);
+            console.log("API error status:", apiError.response.status);
+            
+            // Format error message based on status code
+            if (apiError.response.status === 401) {
+              errorMessage = "Authentication failed. Please login again.";
+              // Optional: Redirect to login
+              // navigation.navigate("Login");
+            } else if (apiError.response.status === 400) {
+              errorMessage = apiError.response.data?.message || 
+                            apiError.response.data?.error || 
+                            "Invalid data provided.";
+            } else {
+              errorMessage = apiError.response.data?.message || 
+                            apiError.response.data?.error || 
+                            `Server error (${apiError.response.status})`;
+            }
+          } else if (apiError.request) {
+            // Request was made but no response received
+            errorMessage = "No response from server. Please check your internet connection.";
+          } else {
+            // Error in setting up the request
+            errorMessage = apiError.message || "An unknown error occurred";
+          }
+          
+          Alert.alert("Error", errorMessage);
         }
       } else {
-        // Customer does not exist, register a new one
-        const saveResponse = await axios.post(
-          `${environment.API_BASE_URL}api/customer/add-customer`,
-          customerData
-        );
-
-        console.log('Save response:', saveResponse);
-
-        if (saveResponse.status === 200) {
-          Alert.alert("Success", "Customer registered successfully.");
-          navigation.navigate("OtpSuccesfulScreen");
-        } else {
-          Alert.alert("Error", `Failed to save customer: ${saveResponse.data.error}`);
-        }
+        setIsOtpInvalid(true);
+        Alert.alert("Error", "Invalid OTP. Please try again.");
       }
-    } else {
-      setIsOtpInvalid(true);
-      Alert.alert("Error", "Invalid OTP. Please try again.");
+    } catch (error) {
+      const otpError = error as Error | AxiosError;
+      console.log('Error during OTP verification:', otpError);
+      
+      let errorMessage = "An error occurred during verification.";
+      
+      if (axios.isAxiosError(otpError) && otpError.response) {
+        errorMessage = otpError.response.data?.message || errorMessage;
+      } else if ('message' in otpError) {
+        errorMessage = otpError.message;
+      }
+      
+      Alert.alert("Error", errorMessage);
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.log('Error during OTP verification:', error);
-    Alert.alert("Error", "An error occurred while verifying OTP.");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
+  const handleResendOtp = async () => {
+    try {
+      setOtp(["", "", "", "", ""]); 
+      setResendDisabled(true);
+      setTimer(60); 
 
+      const apiUrl = "https://api.getshoutout.com/otpservice/send";
+      const headers = {
+        Authorization: `Apikey ${environment.SHOUTOUT_API_KEY}`,
+        "Content-Type": "application/json",
+      };
 
+      const body = {
+        source: "ShoutDEMO",
+        transport: "sms",
+        content: { sms: "Your code is {{code}}" },
+        destination: phoneNumber,
+      };
 
+      const response = await axios.post(apiUrl, body, { headers });
 
-
-
-// const verifyOTP = async () => {
-//   const otpCode = otp.join(""); // Join OTP array into a single string
-//   console.log('OTP code:', otpCode);
-
-//   if (otpCode.length < 5) {
-//     Alert.alert("Error", "Please enter a valid 5-digit OTP.");
-//     setIsOtpInvalid(true);
-//     return;
-//   }
-
-//   try {
-//     setLoading(true);
-//     const referenceId = await AsyncStorage.getItem("referenceId");
-//     console.log('Reference ID:', referenceId);
-
-//     if (!referenceId) {
-//       Alert.alert("Error", "No OTP reference found.");
-//       return;
-//     }
-
-//     const url = "https://api.getshoutout.com/otpservice/verify";
-//     const headers = {
-//       Authorization: `Apikey ${environment.SHOUTOUT_API_KEY}`,
-//       "Content-Type": "application/json",
-//     };
-
-//     const body = {
-//       code: otpCode,
-//       referenceId,
-//     };
-
-//     const response = await axios.post(url, body, { headers });
-//     console.log('OTP verification response:', response.data);
-
-//     const { statusCode } = response.data;
-
-//     if (statusCode === "1000") {
-//       setIsVerified(true);
-//       Alert.alert("Success", "OTP verified successfully.");
-
-//       // Retrieve stored customer data
-//       const customerDataString = await AsyncStorage.getItem("pendingCustomerData");
-//       if (!customerDataString) {
-//         Alert.alert("Error", "No customer data found.");
-//         return;
-//       }
-
-//       const customerData = JSON.parse(customerDataString);
-//       console.log('Customer Data:', customerData);
-
-//       // Add the customer first
-//       try {
-//         const saveResponse = await axios.post(
-//           `${environment.API_BASE_URL}api/customer/add-customer`,
-//           customerData
-//         );
-//         console.log('Add customer response:', saveResponse);
-
-//         if (saveResponse.status === 200 || saveResponse.status === 201) {
-//           Alert.alert("Success", "Customer registered successfully.");
-//         } else {
-//           Alert.alert("Error", `Failed to save customer: ${saveResponse.data.error}`);
-//         }
-//       } catch (addError) {
-//         console.error('Error adding customer:', addError);
-//         Alert.alert("Error", "Failed to add customer.");
-//       }
-
-//       // After adding, check if the customer exists and update if needed
-//       try {
-//         const existingCustomerResponse = await axios.get(
-//           `${environment.API_BASE_URL}api/customer/get-customer-data/${id}`
-//         );
-//         console.log('Existing customer response:', existingCustomerResponse);
-
-//         if (existingCustomerResponse.status === 200 && existingCustomerResponse.data) {
-//           // Customer exists, update their details
-//           const updateResponse = await axios.put(
-//             `${environment.API_BASE_URL}api/customer/update-customer-data/${id}`,
-//             customerData
-//           );
-//           console.log('Update response:', updateResponse);
-
-//           if (updateResponse.status === 200) {
-//             Alert.alert("Success", "Customer updated successfully.");
-//           } else {
-//             Alert.alert("Error", `Failed to update customer: ${id}`);
-//           }
-//         }
-//       } catch (updateError) {
-//         console.error('Error updating customer:', updateError);
-//         Alert.alert("Error", "Failed to update customer.");
-//       }
-
-//       navigation.navigate("OtpSuccesfulScreen");
-//     } else {
-//       setIsOtpInvalid(true);
-//       Alert.alert("Error", "Invalid OTP. Please try again.");
-//     }
-//   } catch (error) {
-//     console.log('Error during OTP verification:', error);
-//     Alert.alert("Error", "An error occurred while verifying OTP.");
-//   } finally {
-//     setLoading(false);
-//   }
-// };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-const handleResendOtp = async () => {
-  try {
-    setOtp(["", "", "", "", ""]); // Clear OTP input
-    setResendDisabled(true);
-    setTimer(60); // Reset timer
-
-    const apiUrl = "https://api.getshoutout.com/otpservice/send";
-    const headers = {
-      Authorization: `Apikey ${environment.SHOUTOUT_API_KEY}`,
-      "Content-Type": "application/json",
-    };
-
-    const body = {
-      source: "ShoutDEMO",
-      transport: "sms",
-      content: { sms: "Your code is {{code}}" },
-      destination: phoneNumber,
-    };
-
-    const response = await axios.post(apiUrl, body, { headers });
-
-    if (response.data.referenceId) {
-      await AsyncStorage.setItem("referenceId", response.data.referenceId);
-      setReferenceId(response.data.referenceId);
-      Alert.alert("Success", "OTP resent successfully.");
-    } else {
-      Alert.alert("Error", "Failed to resend OTP.");
-      setResendDisabled(false); // Allow user to try again
+      if (response.data.referenceId) {
+        await AsyncStorage.setItem("referenceId", response.data.referenceId);
+        setReferenceId(response.data.referenceId);
+        Alert.alert("Success", "OTP resent successfully.");
+      } else {
+        Alert.alert("Error", "Failed to resend OTP.");
+        setResendDisabled(false); 
+      }
+    } catch (error) {
+      const resendError = error as Error | AxiosError;
+      console.error("Error resending OTP:", resendError);
+      
+      let errorMessage = "Failed to resend OTP.";
+      
+      if (axios.isAxiosError(resendError) && resendError.response) {
+        errorMessage = resendError.response.data?.message || errorMessage;
+      } else if ('message' in resendError) {
+        errorMessage = resendError.message;
+      }
+      
+      Alert.alert("Error", errorMessage);
+      setResendDisabled(false); 
     }
-  } catch (error) {
-    Alert.alert("Error", "An error occurred while resending OTP.");
-    setResendDisabled(false); // Allow user to try again
-  }
-};
-
-// Timer Effect
-useEffect(() => {
-  if (timer > 0) {
-    const interval = setInterval(() => setTimer((prev) => prev - 1), 1000);
-    return () => clearInterval(interval);
-  } else {
-    setResendDisabled(false); // Enable resend after timeout
-  }
-}, [timer]);
-
-
-
-// const handleResendOtp = () => {
-//   setOtp(["", "", "", "", ""]);  // Reset OTP fields
-//   setTimer(60);  // Reset timer to 60 seconds
-//   setResendDisabled(true);  // Disable resend button temporarily
-
-//   // Re-enable the resend button after 60 seconds
-//   setTimeout(() => setResendDisabled(false), 60000);
-// };
-
-// useEffect(() => {
-//   if (timer > 0) {
-//     const interval = setInterval(() => setTimer((prev) => prev - 1), 1000);
-//     return () => clearInterval(interval);
-//   } else {
-//     setResendDisabled(false);
-//   }
-// }, [timer]);
-
-
-
-
+  };
 
   useEffect(() => {
     if (timer > 0) {
       const interval = setInterval(() => setTimer((prev) => prev - 1), 1000);
       return () => clearInterval(interval);
     } else {
-      setResendDisabled(false);
+      setResendDisabled(false); 
     }
   }, [timer]);
 
@@ -397,24 +316,15 @@ useEffect(() => {
     newOtp[index] = text;
     setOtp(newOtp);
   
-    // Move to next input field if character entered
     if (text.length === 1 && index < inputRefs.current.length - 1) {
       inputRefs.current[index + 1]?.focus();
     }
   
-    // Check if all fields are filled, then dismiss the keyboard
     if (newOtp.every((digit) => digit.length === 1)) {
       Keyboard.dismiss();
     }
   };
-  
-
-  // const handleResendOtp = () => {
-  //   setOtp(["", "", "", "",""]);
-  //   setTimer(60);
-  //   setResendDisabled(true);
-  // };
-
+ 
   useEffect(() => {
     const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
       setKeyboardVisible(true);
@@ -429,107 +339,97 @@ useEffect(() => {
     };
   }, []);
   
-
   return (
-   
-        <KeyboardAvoidingView 
-                                                    behavior={Platform.OS === "ios" ? "padding" : "height"}
-                                                    enabled 
-                                                    className="flex-1"
-                                                  >
-        
-        <ScrollView 
-              contentContainerStyle={{ flexGrow: 1 }} 
-              keyboardShouldPersistTaps="handled"
-            >     
-                         <View className="flex-1 bg-white px-3 ">
-      {/* Header */}
-      <View className="bg-white flex-row items-center h-17 shadow-lg px-1 mb-8">
-        {/* Back Button */}
-        <BackButton navigation={navigation} />
-        {/* Title */}
-        <Text style={{ fontSize: 18 }} className="font-bold text-center text-[#6C3CD1] flex-grow mr-9 text-xl ">
-          OTP Verification
-        </Text>
-      </View>
-     <View
-      style = {{ paddingHorizontal: wp(5), paddingVertical: hp(1)}}
-     className="flex-1">
-      {/* Illustration */}
-      <View className="flex items-center justify-center w-50 h-40 mb-3 pt-18 mx-12">
-  <Image
-    source={require("../assets/images/4n_hand.png")}
-    className="w-29 h-29 "
-    resizeMode="contain"
-  />
-</View>
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      enabled 
+      className="flex-1"
+    >
+      <ScrollView 
+        contentContainerStyle={{ flexGrow: 1 }} 
+        keyboardShouldPersistTaps="handled"
+      >     
+        <View className="flex-1 bg-white px-3">
+          {/* Header */}
+          <View className="bg-white flex-row items-center h-17 shadow-lg px-1 mb-8">
+            {/* Back Button */}
+            <BackButton navigation={navigation} />
+            {/* Title */}
+            <Text style={{ fontSize: 18 }} className="font-bold text-center text-[#6C3CD1] flex-grow mr-9 text-xl">
+              OTP Verification
+            </Text>
+          </View>
+          <View
+            style={{ paddingHorizontal: wp(5), paddingVertical: hp(1)}}
+            className="flex-1"
+          >
+            {/* Illustration */}
+            <View className="flex items-center justify-center w-50 h-40 mb-3 pt-18 mx-12">
+              <Image
+                source={require("../assets/images/4n_hand.png")}
+                className="w-29 h-29"
+                resizeMode="contain"
+              />
+            </View>
 
-      {/* Instruction Text */}
+            {/* Instruction Text */}
+            <Text className="text-black text-center mt-9 font-bold text-xl">
+              Enter Verification Code
+            </Text>
+            <Text className="text-[#808080] text-center mt-4">
+              We have sent a Verification Code to your Customer's mobile number
+            </Text>
 
-      <Text className="text-black text-center mt-9 font-bold text-xl">
-       Enter Verification Code.
-      </Text>
-      <Text className="text-[#808080] text-center mt-4">
-      We have sent a Verification Code to your Customer’s mobile number
-      </Text>
+            {/* OTP Input Fields */}
+            <View className="flex-row justify-center gap-3 mb-4 mt-1 px-4">
+              {otp.map((digit, index) => (
+                <TextInput
+                  key={index}
+                  ref={(el) => (inputRefs.current[index] = el as TextInput)}
+                  className={`w-12 h-12 text-lg text-center rounded-lg 
+                    ${digit ? " bg-[#874DDB] text-[#FFFFFF]" : " bg-[#E7D7FF] text-pink-900"}`}
+                  keyboardType="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChangeText={(text) => handleOtpChange(text, index)}
+                />
+              ))}
+            </View>
 
-      {/* OTP Input Fields */}
-      <View className="flex-row justify-center gap-3 mb-4 mt-1 px-4 ">
-  {otp.map((digit, index) => (
-    <TextInput
-      key={index}
-      ref={(el) => (inputRefs.current[index] = el as TextInput)}
-      className={`w-12 h-12 text-lg text-center  rounded-lg 
-        ${digit ? " bg-[#874DDB] text-[#FFFFFF]" : " bg-[#E7D7FF] text-pink-900"}`}
-      keyboardType="numeric"
-      maxLength={1}
-      value={digit}
-      onChangeText={(text) => handleOtpChange(text, index)}
-    />
-  ))}
-</View>
+            <View className="justify-center items-center bg-white">
+              {/* Timer */}
+              <Text className="text-black">
+                {timer > 0 ? `00:${timer < 10 ? `0${timer}` : timer}` : "Time expired"}
+              </Text>
 
+              {/* Resend OTP */}
+              <View className="flex-row items-center justify-center mt-3">
+                <Text className="text-black font-semibold">Didn't receive the OTP?</Text>
+                <TouchableOpacity disabled={resendDisabled} onPress={handleResendOtp}>
+                  <Text className={`ml-2 font-semibold ${resendDisabled ? "text-gray-500" : "text-[#874DDB]"}`}>
+                    RESEND OTP
+                  </Text>
+                </TouchableOpacity>
+              </View>
 
-<View className=" justify-center items-center bg-white  ">
-  {/* Timer */}
-  <Text className="text-black ">
-    {timer > 0 ? `00:${timer < 10 ? `0${timer}` : timer}` : "Time expired"}
-  </Text>
-
-  {/* Resend OTP */}
- 
-  <View className="flex-row items-center justify-center mt-3">
-  <Text className="text-black font-semibold">Didn’t receive the OTP ?</Text>
-  <TouchableOpacity disabled={resendDisabled} onPress={handleResendOtp}>
-  <Text className={`ml-2 font-semibold ${resendDisabled ? "text-gray-500" : "text-[#874DDB]"}`}>
-    RESEND OTP
-  </Text>
-</TouchableOpacity>
-
- 
-</View>
-
-
-  {/* Verify Button */}
-  {!isKeyboardVisible &&
-   <LinearGradient
-   colors={["#6839CF", "#874DDB"]}
-   className="py-3 px-14 rounded-lg items-center mt-[10%] mb-[5%] w-[57%] rounded-3xl h-15"
- >
-   <TouchableOpacity onPress={verifyOTP} disabled={loading}>
-     <Text className="text-center text-white font-bold">
-       {loading ? "Verify" : "Verify"}
-     </Text>
-   </TouchableOpacity>
- </LinearGradient>
- }
-      
-</View>
-</View>
-</View> 
-</ScrollView>
+              {/* Verify Button */}
+              {!isKeyboardVisible &&
+                <LinearGradient
+                  colors={["#6839CF", "#874DDB"]}
+                  className="py-3 px-14 rounded-lg items-center mt-[10%] mb-[5%] w-[57%] rounded-3xl h-15"
+                >
+                  <TouchableOpacity onPress={verifyOTP} disabled={loading}>
+                    <Text className="text-center text-white font-bold">
+                      {loading ? "Verifying..." : "Verify"}
+                    </Text>
+                  </TouchableOpacity>
+                </LinearGradient>
+              }
+            </View>
+          </View>
+        </View> 
+      </ScrollView>
     </KeyboardAvoidingView>
-    
   );
 };
 

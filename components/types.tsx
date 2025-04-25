@@ -21,6 +21,12 @@ export interface PackageItem {
   modifiedPlusItems: ModifiedPlusItem[];
   modifiedMinItems: ModifiedMinItem[];
   additionalItems: AdditionalItem[];
+  finalOrderPackageList?: Array<{
+    productId: number;
+    quantity: number;
+    price: number | string;
+    isPacking: number;
+  }>;
 }
 
 interface ModifiedPlusItem {
@@ -55,10 +61,11 @@ export type RootStackParamList = {
     ChangePasswordScreen: undefined;
     DashboardScreen: undefined;
     
-   //ViewScreen: {selectedPackage:string};
+
  ViewScreen: { 
     selectedPackageId: number;
     selectedPackageName: string;
+    selectedPackageImage: string;
     selectedPackageTotal: string;
     selectedPackageDescription:string;
     selectedPackageportion:number;
@@ -71,25 +78,23 @@ export type RootStackParamList = {
     ProfileScreen: undefined;
     AddComplaintScreen: undefined;
     ViewComplainScreen: undefined;
-    ViewCustomerScreen: {number:string,name:string, customerId:string , id: string}; // Update this type
+    ViewCustomerScreen: {number:string,name:string, customerId:string , id: string , title:string}; // Update this type
     ReminderScreen: undefined;
     AddCustomersScreen: undefined;
     OtpScreen:{phoneNumber:string , id: string};
-    OtpSuccesfulScreen:undefined;
-    EditCustomerScreen:{ id: string}; 
+   // OtpSuccesfulScreen:undefined;
+   OtpSuccesfulScreen: {
+    customerId?: number | string;
+   // customerData?: any; // Or define a more specific type for your customer data
+  };
+    EditCustomerScreen:{ id: string, customerId:string, name: string,title:string}; 
     OtpScreenUp:{phoneNumber:string , id: string, token:string};      
-    //OrderScreen:undefined;
     OrderScreen: {id: string; isCustomPackage:string; isSelectPackage:string;};
-   // OrderScreen: { itemId: number | null }; 
     ScheduleScreen: {totalPrice: Number };
-   // SelectPaymentMethod: undefined;
-   // OrderSummeryScreen:undefined;
-    //OrderConfirmedScreen:undefined;
     ViewOrdersScreen:undefined;
     View_CancelOrderScreen:{orderId:number};
     SelectOrderType:undefined;
     CreateCustomPackage :{id: string; isCustomPackage:string; isSelectPackage:string;};
-   // CratScreen:undefined;
    CratScreen: {
     selectedProducts: CartItem[];
     id: string; 
@@ -118,7 +123,7 @@ export type RootStackParamList = {
       isSelectPackage?: number;
       isCustomPackage?: number;
       packageId?: number;
-      orderItems?: PackageItem[]; // Add this line to include orderItems
+      orderItems?: PackageItem[]; 
     };
     OrderConfirmedScreen: {
       orderId: number;

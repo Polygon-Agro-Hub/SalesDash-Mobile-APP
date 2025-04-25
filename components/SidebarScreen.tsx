@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, Image, TouchableOpacity, ActivityIndicator, Alert, ScrollView, Animated, KeyboardAvoidingView, Platform } from "react-native";
-
+import React, { useCallback, useEffect, useState } from "react";
+import { View, Text, Image, TouchableOpacity, Alert, ScrollView,KeyboardAvoidingView, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
@@ -10,6 +9,7 @@ import axios from "axios";
 import environment from "@/environment/environment";
 import BackButton from "./BackButton";
 import LottieView from "lottie-react-native";
+import { useFocusEffect } from "expo-router";
 
 
 type SidebarScreenNavigationProp = StackNavigationProp<RootStackParamList, "SidebarScreen">;
@@ -21,11 +21,18 @@ interface SidebarScreenProps {
 const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
   const [complaintsExpanded, setComplaintsExpanded] = useState(false);
   const [token, setToken] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ firstName: "", empId: "" });
+  const [formData, setFormData] = useState({ firstName: "", lastName:"", empId: "" });
 
-  useEffect(() => {
-    getUserProfile();
-  }, []);
+useFocusEffect(
+  useCallback(() => {
+setComplaintsExpanded(false)
+getUserProfile();
+  }, [])
+);
+
+// useEffect(() => {
+//     getUserProfile();
+//   }, []);
 
   const getUserProfile = async () => {
     try {
@@ -46,13 +53,13 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
   };
   const [loading, setLoading] = useState(false);
 
-//   // Function to handle logout
+
 const handleLogout = async () => {
-  setLoading(true); // Show loading indicator
+  setLoading(true); 
   try {
     await AsyncStorage.removeItem("authToken");
     setTimeout(() => {
-      navigation.replace("LoginScreen"); // Redirect after 5 seconds
+      navigation.replace("LoginScreen"); 
     }, 5000);
   } catch (error) {
     console.error("Error removing authToken:", error);
@@ -90,7 +97,7 @@ const handleLogout = async () => {
          <View className="flex-row items-center p-5">
            <Image source={require("../assets/images/profile.png")} style={{ width: wp(16), height: wp(16), borderRadius: wp(8) }} />
            <View style={{ marginLeft: wp(4) }}>
-             <Text className="text-lg font-bold text-gray-900">{formData.firstName}</Text>
+             <Text className="text-lg font-bold text-gray-900">{formData.firstName} {formData.lastName}</Text>
              <Text className="text-sm text-gray-500 mt-1">{formData.empId}</Text>
           </View>
        </View>
@@ -106,16 +113,16 @@ const handleLogout = async () => {
   {/* Round Icon */}
   <View
     style={{
-      width: hp(5), // Icon size
-      height: hp(5), // Icon size
-      borderRadius: hp(2.5), // Half of the width/height for circular effect
-      backgroundColor: "#F4F9FB", // Background color for the circle
+      width: hp(5), 
+      height: hp(5), 
+      borderRadius: hp(2.5),
+      backgroundColor: "#F4F9FB", 
       justifyContent: "center",
       alignItems: "center",
     }}
   >
    <Image 
-  source={require('../assets/images/Account.png')} // Adjust the path as needed
+  source={require('../assets/images/Account.png')} 
   style={{ width: hp(3), height: hp(3), tintColor: '#8F8F8F' }} 
 />
   </View>
@@ -140,16 +147,16 @@ const handleLogout = async () => {
 >
 <View
     style={{
-      width: hp(5), // Icon size
-      height: hp(5), // Icon size
-      borderRadius: hp(2.5), // Half of the width/height for circular effect
-      backgroundColor: "#F4F9FB", // Background color for the circle
+      width: hp(5), 
+      height: hp(5), 
+      borderRadius: hp(2.5), 
+      backgroundColor: "#F4F9FB", 
       justifyContent: "center",
       alignItems: "center",
     }}
   >
  <Image 
-  source={require('../assets/images/Help.png')} // Adjust the path as needed
+  source={require('../assets/images/Help.png')} 
   style={{ width: hp(3), height: hp(3), tintColor: '#8F8F8F' }} 
 />
   </View>
@@ -171,7 +178,7 @@ const handleLogout = async () => {
 
 
           {complaintsExpanded && (
-            <View style={{ paddingLeft: wp(10) }}>
+            <View style={{ paddingLeft: wp(15) }}>
               <TouchableOpacity onPress={() => navigation.navigate("AddComplaintScreen")}>
                 <Text className="text-sm text-gray-700 font-bold">Report a Complaint</Text>
               </TouchableOpacity>
@@ -185,16 +192,16 @@ const handleLogout = async () => {
 <TouchableOpacity style={{ marginBottom: hp(2),marginTop: hp(1) }} className="flex-row items-center py-3" onPress={() => navigation.navigate("ChangePasswordScreen")}> 
 <View
     style={{
-      width: hp(5), // Icon size
-      height: hp(5), // Icon size
-      borderRadius: hp(2.5), // Half of the width/height for circular effect
-      backgroundColor: "#F4F9FB", // Background color for the circle
+      width: hp(5), 
+      height: hp(5),
+      borderRadius: hp(2.5), 
+      backgroundColor: "#F4F9FB", 
       justifyContent: "center",
       alignItems: "center",
     }}
   >
   <Image 
-  source={require('../assets/images/Password.png')} // Adjust the path as needed
+  source={require('../assets/images/Password.png')} 
   style={{ width: hp(3), height: hp(3), tintColor: '#8F8F8F' }} 
 />
     </View>
@@ -209,16 +216,16 @@ const handleLogout = async () => {
 
 <View
     style={{
-      width: hp(5), // Icon size
-      height: hp(5), // Icon size
-      borderRadius: hp(2.5), // Half of the width/height for circular effect
-      backgroundColor: "#F4F9FB", // Background color for the circle
+      width: hp(5),
+      height: hp(5), 
+      borderRadius: hp(2.5), 
+      backgroundColor: "#F4F9FB", 
       justifyContent: "center",
       alignItems: "center",
     }}
   >
   <Image 
-  source={require('../assets/images/Privacy.png')} // Adjust the path as needed
+  source={require('../assets/images/Privacy.png')}
   style={{ width: hp(3), height: hp(3), tintColor: '#8F8F8F' }} 
 />
   </View>
@@ -231,16 +238,16 @@ const handleLogout = async () => {
 <TouchableOpacity className="flex-row items-center py-3" onPress={() => console.log("Terms & Conditions Pressed")}> 
 <View
     style={{
-      width: hp(5), // Icon size
-      height: hp(5), // Icon size
-      borderRadius: hp(2.5), // Half of the width/height for circular effect
-      backgroundColor: "#F4F9FB", // Background color for the circle
+      width: hp(5),
+      height: hp(5), 
+      borderRadius: hp(2.5),
+      backgroundColor: "#F4F9FB", 
       justifyContent: "center",
       alignItems: "center",
     }}
   >
   <Image 
-  source={require('../assets/images/Terms and Conditions.png')} // Adjust the path as needed
+  source={require('../assets/images/Terms and Conditions.png')} 
   style={{ width: hp(3), height: hp(3), tintColor: '#8F8F8F' }} 
 />
   </View>
@@ -257,10 +264,10 @@ const handleLogout = async () => {
 
           <View
     style={{
-      width: hp(5), // Icon size
-      height: hp(5), // Icon size
-      borderRadius: hp(2.5), // Half of the width/height for circular effect
-      backgroundColor: "#FFF2EE", // Background color for the circle
+      width: hp(5), 
+      height: hp(5),
+      borderRadius: hp(2.5), 
+      backgroundColor: "#FFF2EE",
       justifyContent: "center",
       alignItems: "center",
     }}

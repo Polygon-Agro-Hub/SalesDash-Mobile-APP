@@ -3,7 +3,6 @@ import {
   View,
   Text,
   Image,
-  TouchableOpacity,
   ScrollView,
   ImageBackground,
   Alert,
@@ -18,11 +17,12 @@ import environment from "@/environment/environment";
 import { RouteProp } from "@react-navigation/native";
 
 type ViewScreenNavigationProp = StackNavigationProp<RootStackParamList, "ViewScreen">;
-//type ViewScreenRouteProp = RouteProp<RootStackParamList, "ViewScreen">; 
+
 type RootStackParamList = {
   ViewScreen: {
     selectedPackageId: number;
     selectedPackageName: string;
+    selectedPackageImage: string;
     selectedPackageTotal: string;
     selectedPackageDescription:string;
     selectedPackageportion: string;  
@@ -39,21 +39,12 @@ interface ViewScreenProps {
   navigation: ViewScreenNavigationProp;
   route: ViewScreenRouteProp;
 }
-interface Package {
-  id: number;
-  name: string;
-  total: string; 
-  description:string;
-  portion: number;
-   period :number;
-}
 
 
 
 const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
-  const { selectedPackageId, selectedPackageName, selectedPackageTotal,selectedPackageDescription,selectedPackageportion ,selectedPackageperiod  } = route.params;
+  const { selectedPackageId, selectedPackageName, selectedPackageImage ,selectedPackageTotal,selectedPackageDescription,selectedPackageportion ,selectedPackageperiod  } = route.params;
 
-  const [token, setToken] = useState<string | null>(null);
   const [items, setItems] = useState<{ name: string; quantity: string; quantityType: string;  portion: number; period :number; }[]>([]);
 
   
@@ -107,10 +98,11 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
           <BackButton navigation={navigation} />
         </View>
         <Image
-          source={require("../assets/images/viewPack.png")}
-          className="w-64 h-64 self-center mb-2 mt-[-20%]"
-          resizeMode="contain"
-        />
+  source={{ uri: selectedPackageImage }}
+    className="w-64 h-64 self-center mb-2 mt-[-20%]"
+  resizeMode="contain"
+/>
+
       </ImageBackground>
 
       {/* Scrollable Details Section */}
@@ -134,29 +126,7 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
           </Text>
         </View>
 
-        {/* Person and Duration */}
-        {/* <View className="items-center mb-6">
-          <TouchableOpacity className="bg-[#F5F1FC] flex-row items-center justify-center px-8 py-4 rounded-full">
-            <View className="bg-white rounded-full p-2">
-              <Image
-                source={require("../assets/images/Bell Service.png")}
-                className="w-5 h-5"
-                resizeMode="contain"
-              />
-            </View>
-            <Text className="text-purple-600 text-base font-medium mr-6 ml-1">{selectedPackageportion} person</Text> 
-
-            <View className="bg-white rounded-full p-2 ml-8 mt-[-2]">
-              <Image
-                source={require("../assets/images/Clock.png")}
-                className="w-5 h-5"
-                resizeMode="contain"
-              />
-            </View>
-            <Text className="text-purple-600 text-base font-medium ml-1">{selectedPackageperiod} week</Text>
-          </TouchableOpacity>
-        </View> */}
-
+      
        
         <Text className="text-gray-800 text-lg font-bold p-4">All ({items.length} items)</Text>
         <View style={{ marginBottom: 50, flexShrink: 0 }}>
