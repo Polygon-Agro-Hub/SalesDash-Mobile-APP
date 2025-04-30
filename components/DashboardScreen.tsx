@@ -140,6 +140,11 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
         return;
       }
       Alert.alert("Error", "Failed to fetch user profile");
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "LoginScreen" }],
+      });
+      return;
     }
   };
 
@@ -221,6 +226,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       setAgentStats(response.data.data);
     } catch (error) {
       console.error("Failed to fetch agent stats:", error);
+      
     }
   };
 
