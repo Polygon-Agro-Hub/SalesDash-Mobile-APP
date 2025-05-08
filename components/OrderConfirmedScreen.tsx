@@ -362,76 +362,131 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
         </html>
       `;
    
-      const { uri: pdfUri } = await Print.printToFileAsync({ 
-        html: htmlContent,
-        width: 595, 
-        height: 842,  
-        base64: false
-      });
+  //     const { uri: pdfUri } = await Print.printToFileAsync({ 
+  //       html: htmlContent,
+  //       width: 595, 
+  //       height: 842,  
+  //       base64: false
+  //     });
   
 
-      const downloadDir = FileSystem.documentDirectory + 'Invoices/';
-      const fileName = `Invoice_${invoiceNumber}.pdf`;
-      const localUri = `${downloadDir}${fileName}`;
+  //     const downloadDir = FileSystem.documentDirectory + 'Invoices/';
+  //     const fileName = `Invoice_${invoiceNumber}.pdf`;
+  //     const localUri = `${downloadDir}${fileName}`;
   
      
-      await FileSystem.makeDirectoryAsync(downloadDir, { intermediates: true });
+  //     await FileSystem.makeDirectoryAsync(downloadDir, { intermediates: true });
       
 
-      await FileSystem.moveAsync({
-        from: pdfUri,
-        to: localUri
-      });
+  //     await FileSystem.moveAsync({
+  //       from: pdfUri,
+  //       to: localUri
+  //     });
   
 
-      if (Platform.OS === 'android') {
-        try {
-          const { status } = await MediaLibrary.requestPermissionsAsync();
-          if (status === 'granted') {
-            await MediaLibrary.createAssetAsync(localUri);
-          }
-        } catch (e) {
-          console.log('Error saving to Downloads:', e);
-        }
-      }
+  //     if (Platform.OS === 'android') {
+  //       try {
+  //         const { status } = await MediaLibrary.requestPermissionsAsync();
+  //         if (status === 'granted') {
+  //           await MediaLibrary.createAssetAsync(localUri);
+  //         }
+  //       } catch (e) {
+  //         console.log('Error saving to Downloads:', e);
+  //       }
+  //     }
   
 
-      Alert.alert(
-        'Invoice Ready',
-        'What would you like to do with the invoice?',
-        [
-          {
-            text: 'Download Only',
-            onPress: () => {
-              Alert.alert('Success', `Invoice saved to: ${localUri}`);
-            }
-          },
-          {
-            text: 'Share',
-            onPress: async () => {
-              try {
-                await Sharing.shareAsync(localUri, {
-                  mimeType: 'application/pdf',
-                  dialogTitle: 'Share Invoice',
-                  UTI: 'com.adobe.pdf'
-                });
-              } catch (shareError) {
-                Alert.alert('Error', 'Failed to share invoice');
-              }
-            }
-          },
-          {
-            text: 'Cancel',
-            style: 'cancel'
-          }
-        ]
-      );
+  //     Alert.alert(
+  //       'Invoice Ready',
+  //       'What would you like to do with the invoice?',
+  //       [
+  //         {
+  //           text: 'Download Only',
+  //           onPress: () => {
+  //             Alert.alert('Success', `Invoice saved to: ${localUri}`);
+  //           }
+  //         },
+  //         {
+  //           text: 'Share',
+  //           onPress: async () => {
+  //             try {
+  //               await Sharing.shareAsync(localUri, {
+  //                 mimeType: 'application/pdf',
+  //                 dialogTitle: 'Share Invoice',
+  //                 UTI: 'com.adobe.pdf'
+  //               });
+  //             } catch (shareError) {
+  //               Alert.alert('Error', 'Failed to share invoice');
+  //             }
+  //           }
+  //         },
+  //         {
+  //           text: 'Cancel',
+  //           style: 'cancel'
+  //         }
+  //       ]
+  //     );
   
-    } catch (error) {
-      console.error('Invoice generation error:', error);
-      Alert.alert('Error', 'Failed to generate invoice. Please try again.');
-    }
+  //   } catch (error) {
+  //     console.error('Invoice generation error:', error);
+  //     Alert.alert('Error', 'Failed to generate invoice. Please try again.');
+  //   }
+  // };
+  const { uri: pdfUri } = await Print.printToFileAsync({ 
+    html: htmlContent,
+    width: 595, 
+    height: 842,  
+    base64: false
+  });
+
+  // Create filename
+  const fileName = `Invoice_${invoiceNumber}.pdf`;
+  const tempFilePath = `${FileSystem.cacheDirectory}${fileName}`;
+
+  // Copy to cache directory with proper filename
+  await FileSystem.copyAsync({
+    from: pdfUri,
+    to: tempFilePath
+  });
+
+  // Prepare sharing options
+  const shareOptions = {
+    mimeType: 'application/pdf',
+    dialogTitle: ('Share Invoice'),
+    UTI: 'com.adobe.pdf'
   };
+
+  if (Platform.OS === 'android') {
+    // Android: Show share dialog with option to save to Downloads
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(tempFilePath, shareOptions);
+      Alert.alert(
+        ('Invoice Ready'),
+        ('To save to Downloads, select "Save to device" from the share menu'),
+        [{ text: "OK" }]
+      );
+    } else {
+      Alert.alert(('Error'), ('Sharing is not available on this device'));
+    }
+  } else {
+    // iOS: Show share dialog with option to save to Files
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(tempFilePath, shareOptions);
+      Alert.alert(
+        ('Invoice Ready'),
+        ('Use the "Save to Files" option to save the invoice'),
+        [{ text: "OK" }]
+      );
+    } else {
+      Alert.alert(('Error'), ('Sharing is not available on this device'));
+    }
+  }
+
+} catch (error) {
+  console.error('Invoice generation error:', error);
+  Alert.alert(('Error'), ('Failed to generate invoice. Please try again.'));
+}
+};
 
 
   return (
