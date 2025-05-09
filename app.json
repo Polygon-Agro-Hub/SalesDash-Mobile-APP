@@ -8,6 +8,7 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
+      "image": "./assets/images/favicon.png",
       "resizeMode": "contain",
       "backgroundColor": "#6638CE"
     },
