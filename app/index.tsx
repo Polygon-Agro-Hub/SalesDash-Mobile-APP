@@ -30,6 +30,7 @@ import ViewOrdersScreen from '@/components/ViewOrdersScreen';
 import View_CancelOrderScreen from '@/components/View_CancelOrderScreen'
 import NavigationBar from "@/components/Navbar";
 import SelectOrderType from "@/components/SelectOrderType";
+import SelectOrderTypeNewCustomer from "@/components/SelectOrderTypeNewCustomer"
 import CreateCustomPackage from "@/components/CreateCustomPackage";
 import CratScreen from "@/components/CratScreen"
 
@@ -69,6 +70,7 @@ function MainTabNavigator() {
       <Tab.Screen name="ViewCustomerScreen" component={ViewCustomerScreen as any} />
       <Tab.Screen name="EditCustomerScreen" component={EditCustomerScreen} />
       <Tab.Screen name="SelectOrderType" component={SelectOrderType as any} />
+      <Tab.Screen name="SelectOrderTypeNewCustomer" component={SelectOrderTypeNewCustomer as any} />
       <Tab.Screen name="OrderConfirmedScreen" component={OrderConfirmedScreen as any} />
     </Tab.Navigator>
   );

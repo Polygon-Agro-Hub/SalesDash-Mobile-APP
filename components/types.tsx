@@ -94,6 +94,7 @@ export type RootStackParamList = {
     ViewOrdersScreen:undefined;
     View_CancelOrderScreen:{orderId:number};
     SelectOrderType:undefined;
+    SelectOrderTypeNewCustomer : undefined;
     CreateCustomPackage :{id: string; isCustomPackage:string; isSelectPackage:string;};
    CratScreen: {
     selectedProducts: CartItem[];
