@@ -72,10 +72,11 @@ Successfully Verified!
 
           <LinearGradient
             colors={["#6839CF", "#874DDB"]}
-            className="py-2 px-10 rounded-lg items-center mt-[55%] mb-[5%] mr-[20%] ml-[20%] rounded-3xl h-15"
+            className="py-2 px-10 items-center mt-[55%] mb-[5%] mr-[20%] ml-[20%] rounded-3xl h-15"
           >
-<TouchableOpacity onPress={() => navigation.navigate("SelectOrderType" as any, {
-  id: customerId // Pass customerId as id parameter
+<TouchableOpacity onPress={() => navigation.navigate("Main", {
+  screen: "SelectOrderTypeNewCustomer",
+  params: { id: customerId } // Pass customerId as id parameter
 })}>
   <Text className="text-center text-white font-bold text-lg">Order Now</Text>
 </TouchableOpacity>
