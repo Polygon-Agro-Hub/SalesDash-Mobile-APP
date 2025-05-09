@@ -140,6 +140,11 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
         return;
       }
       Alert.alert("Error", "Failed to fetch user profile");
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "LoginScreen" }],
+      });
+      return;
     }
   };
 
@@ -221,6 +226,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       setAgentStats(response.data.data);
     } catch (error) {
       console.error("Failed to fetch agent stats:", error);
+      
     }
   };
 
@@ -233,12 +239,21 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
   const renderPackage = ({ item }: { item: Package }) => (
     <View
       className="bg-white rounded-xl m-3 p-3 w-[45%] items-center mb-6"
+      // style={{
+      //   shadowColor: "#000",
+      //   shadowOffset: { width: 0, height: 6 },
+      //   shadowOpacity: 0.2,
+      //   shadowRadius: 8,
+      //   elevation: 10,
+      // }}
       style={{
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.2,
         shadowRadius: 8,
         elevation: 10,
+        flexDirection: 'column', // Ensure flex column layout
+        justifyContent: 'space-between', // Distribute space between content
       }}
     >
       <Image  source={{ uri: item.image }} className="w-20 h-20 mb-3 " resizeMode="contain" />
@@ -273,7 +288,58 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       </LinearGradient>
     </View>
   );
-
+  // const renderPackage = ({ item }: { item: Package }) => (
+  //   <View
+  //     className="bg-white rounded-xl m-3 p-3 w-[45%] items-center mb-6"
+      // style={{
+      //   shadowColor: "#000",
+      //   shadowOffset: { width: 0, height: 6 },
+      //   shadowOpacity: 0.2,
+      //   shadowRadius: 8,
+      //   elevation: 10,
+      //   flexDirection: 'column', // Ensure flex column layout
+      //   justifyContent: 'space-between', // Distribute space between content
+      //   height: '90%', // Ensure it takes full height available
+      // }}
+  //   >
+  //     <Image
+  //       source={{ uri: item.image }}
+  //       className="w-20 h-20 mb-3"
+  //       resizeMode="contain"
+  //     />
+  //     <Text className="font-bold text-[#6A3AD0]">{item.displayName}</Text>
+  //     <Text className="text-sm font-medium text-gray-500">Rs. {item.total}</Text>
+  
+  //     {/* This part ensures the button stays at the bottom */}
+  //     <LinearGradient
+  //       colors={["#854BDA", "#6E3DD1"]}
+  //       style={{
+  //         marginTop: 12,
+  //         borderRadius: 16,
+  //         paddingVertical: 6,
+  //         paddingHorizontal: 20,
+  //       }}
+  //     >
+  //       <TouchableOpacity
+  //         onPress={() =>
+  //           navigation.navigate("ViewScreen", {
+  //             selectedPackageId: item.id,
+  //             selectedPackageName: item.displayName,
+  //             selectedPackageImage: item.image,
+  //             selectedPackageTotal: item.total,
+  //             selectedPackageDescription: item.description,
+  //             selectedPackageportion: item.portion,
+  //             selectedPackageperiod: item.period,
+  //           })
+  //         }
+  //         className="items-center"
+  //       >
+  //         <Text className="text-white font-bold text-sm">View</Text>
+  //       </TouchableOpacity>
+  //     </LinearGradient>
+  //   </View>
+  // );
+  
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === "ios" ? "padding" : "height"}

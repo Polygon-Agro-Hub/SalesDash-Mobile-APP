@@ -4,14 +4,12 @@
     "slug": "SalesDash",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#6638CE"
     },
     "ios": {
       "supportsTablet": true,
@@ -109,10 +107,8 @@
     "extra": {
       "router": {
         "origin": false
-      },
-      "eas": {
-        "projectId": "741363bc-3af0-4dd8-b58d-0646c74d11a5"
       }
+      
     }
   }
 }
