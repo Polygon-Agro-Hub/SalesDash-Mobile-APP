@@ -293,15 +293,18 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
         console.log("Order created successfully:", response.data);
         
  
-        navigation.navigate("OrderConfirmedScreen", {
-          orderId: response.data.data.orderId,
-          total: total,
-          subtotal: subtotal,
-          discount:discount,
-          paymentMethod: paymentMethod,
-          customerId: customerId || customerid as string,
-          selectedDate: selectedDate,
-          selectedTimeSlot: selectedTimeSlot,
+        navigation.navigate("Main", {
+          screen: "OrderConfirmedScreen",
+          params: {
+            orderId: response.data.data.orderId,
+            total: total,
+            subtotal: subtotal,
+            discount: discount,
+            paymentMethod: paymentMethod,
+            customerId: customerId || (customerid as string),
+            selectedDate: selectedDate,
+            selectedTimeSlot: selectedTimeSlot,
+          },
         });
       } else {
         Alert.alert("Error", response.data.message || "Failed to create order");
