@@ -59,52 +59,175 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
     };
   }, []);
   
-  const handleChangePassword = async () => {
+  // const handleChangePassword = async () => {
+  //   if (!currentPassword || !newPassword || !confirmNewPassword) {
+  //     Alert.alert('Error', 'All fields are required');
+  //     return;
+  //   }
+
+  //   if (newPassword !== confirmNewPassword) {
+  //     Alert.alert('Error', 'New password and confirm password do not match');
+  //     return;
+  //   }
+
+  //   setLoading(true);
+
+  //   try {
+
+  //     const token = await AsyncStorage.getItem('authToken');
+      
+  //     if (!token) {
+  //       Alert.alert('Error', 'Unauthorized access, please login again');
+  //       navigation.replace('LoginScreen');
+  //       return;
+  //     }
+
+
+  //     const response = await axios.put(
+  //       `${environment.API_BASE_URL}api/auth/user/update-password`,
+  //       { oldPassword: currentPassword, newPassword },
+  //       {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //       }
+  //     );
+
+  //     if (response.status === 200) {
+  //       Alert.alert('Success', 'Password updated successfully', [
+  //         { text: 'OK', onPress: () => navigation.replace('LoginScreen') },
+  //       ]);
+  //     }
+  //   } catch (error) {
+  //     Alert.alert(
+  //       'Error',
+  //       (axios.isAxiosError(error) && error.response?.data?.error) || 'Failed to update password. Please try again.'
+  //     );
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+   const validatePassword = () => {
+    // Check if all fields are filled
     if (!currentPassword || !newPassword || !confirmNewPassword) {
       Alert.alert('Error', 'All fields are required');
-      return;
+      return false;
     }
 
+    // Check if new password has at least 6 characters
+    if (newPassword.length < 6) {
+      Alert.alert('Error', 'The password must have a minimum length of 6-digits');
+      return false;
+    }
+
+    // Check if new password and confirm password match
     if (newPassword !== confirmNewPassword) {
       Alert.alert('Error', 'New password and confirm password do not match');
+      return false;
+    }
+
+    return true;
+  };
+
+
+  // const handleChangePassword = async () => {
+  //   // Validate inputs before proceeding
+  //   if (!validatePassword()) {
+  //     return;
+  //   }
+
+  //   setLoading(true);
+
+  //   try {
+  //     const token = await AsyncStorage.getItem('authToken');
+      
+  //     if (!token) {
+  //       Alert.alert('Error', 'Unauthorized access, please login again');
+  //       navigation.replace('LoginScreen');
+  //       return;
+  //     }
+
+  //     const response = await axios.put(
+  //       `${environment.API_BASE_URL}api/auth/user/update-password`,
+  //       { oldPassword: currentPassword, newPassword },
+  //       {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //       }
+  //     );
+
+  //     const url = `${environment.API_BASE_URL}api/auth/user/update-password`
+  //     console.log(url)
+
+  //     if (response.status === 200) {
+  //       Alert.alert('Success', 'Password updated successfully', [
+  //         { text: 'OK', onPress: () => navigation.replace('LoginScreen') },
+  //       ]);
+  //     }
+  //   } catch (error) {
+  //     // Handle specific error message for current password mismatch
+  //     if (axios.isAxiosError(error) && error.response?.data?.error) {
+  //       Alert.alert('Error', error.response.data.error);
+  //     } else {
+  //       Alert.alert('Error', 'Failed to update password. Please try again.');
+  //     }
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+ const handleChangePassword = async () => {
+  // Validate inputs before proceeding
+  if (!validatePassword()) {
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const token = await AsyncStorage.getItem('authToken');
+    
+    if (!token) {
+      Alert.alert('Error', 'Unauthorized access, please login again');
+      navigation.replace('LoginScreen');
       return;
     }
 
-    setLoading(true);
-
-    try {
-
-      const token = await AsyncStorage.getItem('authToken');
-      
-      if (!token) {
-        Alert.alert('Error', 'Unauthorized access, please login again');
-        navigation.replace('LoginScreen');
-        return;
+    const response = await axios.put(
+      `${environment.API_BASE_URL}api/auth/user/update-password`,
+      { oldPassword: currentPassword, newPassword },
+      {
+        headers: { Authorization: `Bearer ${token}` },
       }
+    );
 
+    const url = `${environment.API_BASE_URL}api/auth/user/update-password`
+    console.log(url)
 
-      const response = await axios.put(
-        `${environment.API_BASE_URL}api/auth/user/update-password`,
-        { oldPassword: currentPassword, newPassword },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      if (response.status === 200) {
-        Alert.alert('Success', 'Password updated successfully', [
-          { text: 'OK', onPress: () => navigation.replace('LoginScreen') },
-        ]);
-      }
-    } catch (error) {
-      Alert.alert(
-        'Error',
-        (axios.isAxiosError(error) && error.response?.data?.error) || 'Failed to update password. Please try again.'
-      );
-    } finally {
-      setLoading(false);
+    if (response.status === 200) {
+      Alert.alert('Success', 'Password updated successfully', [
+        { text: 'OK', onPress: () => navigation.replace('LoginScreen') },
+      ]);
     }
-  };
+  } catch (error) {
+    // Check for password mismatch error specifically
+    if (axios.isAxiosError(error) && error.response?.data?.error) {
+      // Check if backend error message contains password match error
+      const errorMsg = error.response.data.error;
+      if (typeof errorMsg === 'string' && 
+          (errorMsg.includes('Current Password does not match') || 
+           errorMsg.toLowerCase().includes('password') && 
+           errorMsg.toLowerCase().includes('match'))) {
+        Alert.alert('Error', 'Current Password does not match. Please Re-enter');
+      } else {
+        Alert.alert('Error', errorMsg);
+      }
+    } else {
+      Alert.alert('Error', 'Failed to update password. Please try again.');
+    }
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <KeyboardAvoidingView 
@@ -200,3 +323,6 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
 };
 
 export default ChangePasswordScreen;
+
+
+

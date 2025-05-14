@@ -48,10 +48,12 @@ interface ModifiedMinItem {
 }
 
 interface AdditionalItem {
+  id: number | string;
   mpItemId: number;
   quantity: number;
   price: number;
   discount: number;
+
 }
 
 

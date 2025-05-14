@@ -10,6 +10,7 @@ import {
   ImageBackground,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -66,6 +67,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   const [orderCount, setOrderCount] = useState<number>(0);
   const [customerCount, setCustomerCount] = useState<number>(0);
   const [points, setPoints] = useState<number>(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     getUserProfile();
@@ -178,6 +181,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   
 
   const handleUpdate = async () => {
+     if (isSubmitting) return;
+  
+  setIsSubmitting(true);
     try {
       if (!token) {
         Alert.alert("Error", "You are not authenticated");
@@ -261,7 +267,10 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
         Alert.alert("Error", "Failed to update profile. Please try again later.");
         console.error("Update error:", error);
       }
-    }
+    
+     }finally {
+    setIsSubmitting(false); // Stop loading regardless of success/error
+  }
   };
 
   return (
@@ -481,9 +490,12 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
               <TouchableOpacity  onPress={handleUpdate} >
 
                  <LinearGradient colors={["#6839CF", "#874DDB"]} className="py-3   items-center mt-6 mb-[15%] mr-[20%] ml-[20%] rounded-3xl h-15">
+                   {isSubmitting || loading ? (
+                        <ActivityIndicator color="#FFFFFF" />
+                      ) : (
                               
                                   <Text className="text-center text-white text-base font-bold">Update</Text>
-                                
+                      )}
                               </LinearGradient>
                               </TouchableOpacity>
 

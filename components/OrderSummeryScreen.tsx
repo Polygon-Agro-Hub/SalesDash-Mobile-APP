@@ -7,7 +7,8 @@ import {
   Image,
   TouchableOpacity,
   ScrollView,
-  Alert
+  Alert,
+  ActivityIndicator
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RouteProp } from '@react-navigation/native';
@@ -38,12 +39,20 @@ interface ModifiedMinItem {
   additionalPrice: number;
   additionalDiscount: number;
 }
+interface ItemDetails {
+  name: string;
+  displayName: string;
+  price: number;
+  // Add any other properties you need
+}
 
 interface AdditionalItem {
   mpItemId: number;
   quantity: number;
   price: number;
   discount: number;
+  // Add any other properties that might exist
+  [key: string]: any; // This allows for dynamic properties if needed
 }
 
 interface PackageItem {
@@ -92,7 +101,9 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({ navigation, rou
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [additionalItemDetails, setAdditionalItemDetails] = useState<Record<string, ItemDetails>>({});
 
   const {
     items = [],
@@ -113,7 +124,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({ navigation, rou
 
   const safeItems = Array.isArray(items) ? items : [];
 
-const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
+  const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
   
 
   const timeDisplay = selectedTimeSlot || "Not set";
@@ -174,21 +185,26 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
   }, [route.params]);
 
   const handleConfirmOrder = async () => {
-
-    if (!customerId && !customerid) {
-      Alert.alert("Error", "Customer information is missing");
+    // Prevent multiple clicks
+    if (isSubmitting || isSubmitted) {
       return;
     }
     
-    setLoading(true);
+    // Set submitting state to show loading indicator
+    setIsSubmitting(true);
+
+    if (!customerId && !customerid) {
+      Alert.alert("Error", "Customer information is missing");
+      setIsSubmitting(false);
+      return;
+    }
     
     try {
-
       const storedToken = await AsyncStorage.getItem("authToken");
       
       if (!storedToken) {
         Alert.alert("Error", "Authentication token not found. Please log in again.");
-        setLoading(false);
+        setIsSubmitting(false);
         return;
       }
 
@@ -289,10 +305,12 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
       });
       
       if (response.data.success) {
-    
+        // Mark as submitted after successful API call
+        setIsSubmitted(true);
+        setIsSubmitting(false);
+        
         console.log("Order created successfully:", response.data);
         
- 
         navigation.navigate("Main", {
           screen: "OrderConfirmedScreen",
           params: {
@@ -307,10 +325,12 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
           },
         });
       } else {
+        setIsSubmitting(false);
         Alert.alert("Error", response.data.message || "Failed to create order");
       }
     } catch (error: any) {
       console.error("Error creating order:", error);
+      setIsSubmitting(false);
       
       let errorMessage = "Failed to create order";
       if (error.response && error.response.data) {
@@ -320,8 +340,6 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
       }
       
       Alert.alert("Error", errorMessage);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -366,6 +384,58 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
   
   const customerInfo = getCustomerInfo();
 
+const fetchAdditionalItemDetails = async () => {
+  if (isSelectPackage !== 1 || !safeOrderItems.length) return;
+  
+  const packageItem = safeOrderItems[0];
+  if (!packageItem.additionalItems || !packageItem.additionalItems.length) return;
+  
+  try {
+    const storedToken = await AsyncStorage.getItem("authToken");
+    if (!storedToken) return;
+    
+    // Create a new object to store the details
+    const details: Record<string, ItemDetails> = {};
+    
+    // Fetch details for each additional item
+    for (const item of packageItem.additionalItems) {
+      const response = await axios.get(
+        `${environment.API_BASE_URL}api/packages/marketplace-item/${item.id}`,
+        {
+          headers: { Authorization: `Bearer ${storedToken}` },
+        }
+      );
+      
+      if (response.data && response.data.data) {
+        // Convert the item.id to string when using as an index
+        const itemIdKey = item.id.toString();
+        
+        details[itemIdKey] = {
+          name: response.data.data.name || `Item ${item.id}`,
+          displayName: response.data.data.displayName || `Item ${item.id}`,
+          price: response.data.data.discountedPrice
+          // Add other properties as needed
+        };
+        
+        console.log(response.data);
+        console.log("Display Name:", response.data.data.displayName);
+      }
+    }
+    
+    // Now this should match your state type
+    setAdditionalItemDetails(details);
+  } catch (error) {
+    console.error("Error fetching additional item details:", error);
+  }
+};
+
+useEffect(() => {
+  if (isSelectPackage === 1 && safeOrderItems.length > 0) {
+    fetchAdditionalItemDetails();
+  }
+}, [isSelectPackage, safeOrderItems]);
+  
+
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -397,14 +467,40 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
                 <View>
                   <View className="flex-row justify-between">
                     <Text className="text-base font-semibold">Delivery - One Time</Text>
-                    <TouchableOpacity 
-                      onPress={() => navigation.navigate("ScheduleScreen" as any, { 
-                        totalPrice: total,
-                        customerId, 
-                        items,
-                        subtotal,
-                        discount
-                      })}
+                <TouchableOpacity 
+  onPress={() => {
+    console.log("Navigating to ScheduleScreen with data:", {
+      total,
+      customerId,
+      items,
+      subtotal,
+      discount,
+      selectedDate,
+      timeDisplay,
+      isCustomPackage,
+      isSelectPackage,
+      customerid,
+      orderItems
+    });
+
+    navigation.navigate("ScheduleScreen" as any, {
+      total,
+     
+      items,
+      subtotal,
+      discount,
+      selectedDate,
+      timeDisplay,
+      isCustomPackage,
+      isSelectPackage,
+     customerId,  // This is the numeric ID (7)
+  customerid: customerid.toString() || customerId.toString(),
+      orderItems
+    });
+  }}
+
+
+
                       className="border border-[#6C3CD1] px-3 rounded-full ml-12">
                       <Text className="text-[#6C3CD1] font-medium">Edit</Text>
                     </TouchableOpacity>
@@ -458,39 +554,263 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
 )}
           </View>
   
-          {/* Payment Summary */}
-          <View className="bg-white border border-gray-300 rounded-lg p-4 mt-3 shadow-sm">
-            <View className="flex-row justify-between">
-              <Text className="text-black font-medium">Payment Summary</Text>
-              <TouchableOpacity 
-                onPress={() => navigation.navigate("CratScreen" as any, { 
-                  screen: "OrderScreen",
-                  params: { customerId ,items } 
-                })}
-                className="border border-[#6C3CD1] px-3 rounded-full">
-                <Text className="text-[#6C3CD1] font-medium">Edit</Text>
-              </TouchableOpacity>
-            </View>
-            <View className="flex-row justify-between">
-              <Text className="text-[#8492A3] font-medium">Subtotal</Text>
-              <Text className="text-black font-medium mr-12">
-                Rs.{subTotalDeliveryPlus.toFixed(2)}
-              </Text>
-            </View>
-            <View className="flex-row justify-between">
-              <Text className="text-[#8492A3]">Discount</Text>
-              <Text className="text-gray-500 mr-12">
-                Rs.{discount.toFixed(2)}
-              </Text>
-            </View>
-            <View className="flex-row justify-between mt-2">
-              <Text className="text-black font-semibold">Grand Total</Text>
-              <Text className="text-black font-semibold mr-12">
-                Rs.{totalDeliveryPlus.toFixed(2)}
-              </Text>
-            </View>
-          </View>
+       
   
+
+ 
+
+
+<View className="bg-white border border-gray-300 rounded-lg p-4 mt-3 shadow-sm">
+  <View className="flex-row justify-between">
+    <Text className="text-black font-medium">Payment Summary</Text>
+ 
+  
+<TouchableOpacity 
+  onPress={() => {
+    // Create detailed logging objects based on the route being taken
+    if (isCustomPackage === 1) {
+      // For Custom Package - CratScreen
+      const customPackageData = {
+        route: "CratScreen (Custom Package)",
+        ids: {
+          customerId: customerId,
+          customerid: customerid,
+          resolvedId: customerId || customerid
+        },
+        items: safeItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          normalPrice: item.normalPrice || item.price,
+          discountedPrice: item.discountedPrice || item.price,
+          quantity: item.quantity,
+          unitType: item.unitType || 'kg',
+          startValue: item.startValue || 0.1,
+          changeby: item.quantity
+        })),
+        packageDetails: {
+          isCustomPackage: 1,
+          isSelectPackage: 0
+        },
+        finances: {
+          subtotal,
+          discount,
+          total,
+          fullTotal
+        },
+        scheduling: {
+          selectedDate,
+          timeDisplay,
+          selectedTimeSlot
+        },
+        paymentMethod
+      };
+      
+      console.log("========== NAVIGATION DATA LOG ==========");
+      console.log(JSON.stringify(customPackageData, null, 2));
+      console.log("=========================================");
+      
+      navigation.navigate("CratScreen" as any, { 
+        id: customerId || customerid,
+        customerId: customerId || customerid,
+        items: safeItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          normalPrice: item.normalPrice || item.price,
+          discountedPrice: item.discountedPrice || item.price,
+          quantity: item.quantity,
+          selected: true, // Mark as selected
+          unitType: item.unitType || 'kg',
+          startValue: item.startValue || 0.1,
+          changeby: item.quantity
+        })),
+        selectedProducts: safeItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          normalPrice: item.normalPrice || item.price,
+          discountedPrice: item.discountedPrice || item.price,
+          quantity: item.quantity,
+          selected: true, // Mark as selected
+          unitType: item.unitType || 'kg',
+          startValue: item.startValue || 0.1,
+          changeby: item.quantity
+        })),
+        isCustomPackage: 1,
+        isSelectPackage: 0,
+        subtotal,
+        discount,
+        total,
+        fullTotal,
+        selectedDate,
+        timeDisplay,
+        selectedTimeSlot,
+        paymentMethod,
+        fromOrderSummary: true
+      });
+    } 
+    
+   else if (isSelectPackage === 1) {
+  // For package orders, navigate to OrderScreen with all required data
+  const packageData = {
+    id: customerId || customerid,
+    isSelectPackage: 1,
+    isCustomPackage: 0,
+    // Pass the complete orderItems array
+    orderItems: safeOrderItems,
+    // Pass package details if available
+    selectedPackage: safeOrderItems[0]?.packageId ? { 
+      id: safeOrderItems[0].packageId,
+      displayName: "", // Add if available
+      price: safeOrderItems[0].packageTotal.toString(),
+      total: safeOrderItems[0].packageTotal
+    } : null,
+    // Pass all items with proper structure
+    packageItems: safeOrderItems[0]?.finalOrderPackageList?.map(item => ({
+      id: item.productId,
+      mpItemId: item.productId,
+      name: '', // You'll need to get this from your data
+      quantity: item.quantity.toString(),
+      quantityType: 'kg', // Or get from your data
+      price: typeof item.price === 'string' ? parseFloat(item.price) : item.price
+    })) || [],
+    // Pass original package items for comparison
+    originalPackageItems: safeOrderItems[0]?.finalOrderPackageList?.map(item => ({
+      id: item.productId,
+      mpItemId: item.productId,
+      name: '', // You'll need to get this from your data
+      quantity: item.quantity.toString(),
+      quantityType: 'kg',
+      price: typeof item.price === 'string' ? parseFloat(item.price) : item.price
+    })) || [],
+    // Pass additional items if any
+    additionalItems: safeOrderItems[0]?.additionalItems?.map(item => ({
+     
+      id: item.id,
+      name: additionalItemDetails[item.id.toString()]?.displayName || 'Unknown Item',
+      quantity: item.quantity.toString(),
+      quantityType: 'kg',
+    //  price: additionalItemDetails[item.id.toLocaleString()]?.price,
+    price: item.quantity * additionalItemDetails[item.id.toLocaleString()]?.price,
+      discount: item.discount.toString(),
+      cropId: item.id || 0
+    })) || [],
+    // Pass financial data
+    subtotal,
+    discount,
+    total,
+    fullTotal,
+    // Pass schedule data
+    selectedDate,
+    selectedTimeSlot,
+    timeDisplay,
+    paymentMethod,
+    // Flag to indicate this is an edit
+    isEdit: true
+  };
+
+  console.log("Navigating to OrderScreen with package data:", JSON.stringify(packageData, null, 2));
+  
+  navigation.navigate("OrderScreen" as any, packageData);
+} else {
+      // For Regular Items - CratScreen
+      const regularItemsData = {
+        route: "CratScreen (Regular Items)",
+        ids: {
+          customerId: customerId,
+          customerid: customerid,
+          resolvedId: customerId || customerid
+        },
+        selectedProducts: safeItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          normalPrice: item.normalPrice || item.price,
+          discountedPrice: item.discountedPrice || item.price,
+          quantity: item.quantity,
+          unitType: item.unitType || 'kg',
+          startValue: item.startValue || 0.1,
+          changeby: item.quantity
+        })),
+        packageDetails: {
+          isCustomPackage: 0,
+          isSelectPackage: 0
+        },
+        finances: {
+          subtotal,
+          discount,
+          total,
+          fullTotal
+        },
+        scheduling: {
+          selectedDate,
+          timeDisplay,
+          selectedTimeSlot
+        },
+        paymentMethod
+      };
+      
+      console.log("========== NAVIGATION DATA LOG ==========");
+      console.log(JSON.stringify(regularItemsData, null, 2));
+      console.log("=========================================");
+      
+      navigation.navigate("CratScreen" as any, { 
+        id: customerId || customerid,
+        customerId: customerId || customerid,
+        items: safeItems,
+        selectedProducts: safeItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          normalPrice: item.normalPrice || item.price,
+          discountedPrice: item.discountedPrice || item.price,
+          quantity: item.quantity,
+          selected: true, // Mark as selected
+          unitType: item.unitType || 'kg',
+          startValue: item.startValue || 0.1,
+          changeby: item.quantity
+        })),
+        isCustomPackage: 0,
+        isSelectPackage: 0,
+        subtotal,
+        discount,
+        total,
+        fullTotal,
+        selectedDate,
+        timeDisplay,
+        selectedTimeSlot,
+        paymentMethod,
+        fromOrderSummary: true
+      });
+    }
+  }}
+  className="border border-[#6C3CD1] px-3 rounded-full"
+>
+      <Text className="text-[#6C3CD1] font-medium">Edit</Text>
+    </TouchableOpacity>
+  </View>
+  
+  {/* Rest of the payment summary remains the same */}
+  <View className="flex-row justify-between">
+    <Text className="text-[#8492A3] font-medium">Subtotal</Text>
+    <Text className="text-black font-medium mr-12">
+      Rs.{subTotalDeliveryPlus.toFixed(2)}
+    </Text>
+  </View>
+  <View className="flex-row justify-between">
+    <Text className="text-[#8492A3]">Discount</Text>
+    <Text className="text-gray-500 mr-12">
+      Rs.{discount.toFixed(2)}
+    </Text>
+  </View>
+  <View className="flex-row justify-between mt-2">
+    <Text className="text-black font-semibold">Grand Total</Text>
+    <Text className="text-black font-semibold mr-12">
+      Rs.{totalDeliveryPlus.toFixed(2)}
+    </Text>
+  </View>
+</View>
           {/* Payment Method */}
           <View className="bg-white border border-gray-300 rounded-lg p-4 mt-3 shadow-sm">
             <View className="flex-row justify-between">
@@ -502,9 +822,18 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
                   discount, 
                   total,
                   fullTotal,
-                  selectedDate,
+                 
+     
+     
+      selectedDate,
+      timeDisplay,
+      isCustomPackage,
+      isSelectPackage,
+               
                   selectedTimeSlot,
-                  customerId 
+                  customerId,  // This is the numeric ID (7)
+  customerid: customerid.toString() || customerId.toString(),
+             
                 })}
                 className="border border-[#6C3CD1] px-3 rounded-full">
                 <Text className="text-[#6C3CD1] font-medium">Edit</Text>
@@ -514,16 +843,24 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
           </View>
         </View>
   
-        {/* Confirm Button */}
-        <TouchableOpacity onPress={handleConfirmOrder}>
-        <LinearGradient 
-          colors={["#6839CF", "#874DDB"]} 
-          className="py-3 px-4 rounded-lg items-center mt-[10%] mb-[10%] mr-[25%] ml-[25%] rounded-3xl h-15"
+        {/* Confirm Button with ActivityIndicator */}
+        <TouchableOpacity 
+          onPress={handleConfirmOrder}
+          disabled={isSubmitting || isSubmitted}
+          style={{ opacity: isSubmitted ? 0.6 : 1 }}
         >
-      
-            <Text className="text-center text-white font-bold">Confirm</Text>
-     
-        </LinearGradient>
+          <LinearGradient 
+            colors={["#6839CF", "#874DDB"]} 
+            className="py-3 px-4 rounded-lg items-center mt-[10%] mb-[10%] mr-[25%] ml-[25%] rounded-3xl h-15"
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text className="text-center text-white font-bold">
+                {isSubmitted ? "Order Confirmed" : "Confirm"}
+              </Text>
+            )}
+          </LinearGradient>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>

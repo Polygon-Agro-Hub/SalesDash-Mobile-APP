@@ -121,7 +121,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       {/* Form Section */}
 
       <View className="flex-1 bg-white px-9 py-8 rounded-t-3xl shadow-lg -mt-8">
-        <Text className="text-center text-xl font-bold text-purple-500 mb-6 mt-[12%]">Welcome to Sign in</Text>
+        <Text className="text-center text-xl font-bold text-[#6C3CD1] mb-6 mt-[6%]">Welcome to Sign in</Text>
 
         {error1.length > 0 && (
           <View className="-mb-3">

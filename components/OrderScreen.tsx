@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity, Image, TextInput, Modal,Keyboard, Platform, KeyboardAvoidingView, Alert } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
@@ -9,11 +9,15 @@ import { LinearGradient } from "expo-linear-gradient";
 import environment from "@/environment/environment";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { RouteProp } from "@react-navigation/native";
+import { RouteProp, useFocusEffect } from "@react-navigation/native";
+import { BackHandler } from 'react-native';
+
 
 
 type OrderScreenNavigationProp = StackNavigationProp<RootStackParamList, "OrderScreen">;
 type OrderScreenRouteProp = RouteProp<RootStackParamList, "OrderScreen">;
+
+
 
 
 
@@ -25,6 +29,19 @@ interface OrderScreenProps {
       id: string; 
       isCustomPackage:string;
        isSelectPackage:string;
+       selectedPackage: string,
+    packageItems: string,
+    originalPackageItems: string,
+    additionalItems: string,
+    subtotal: string,
+    discount: string,
+    total: string,
+    fullTotal: string,
+    selectedDate: string,
+    selectedTimeSlot: string,
+    timeDisplay: string,
+    paymentMethod: string,
+    isEdit:boolean
     };
   };
 }
@@ -95,10 +112,71 @@ interface DropdownItem {
 }
 
 
+interface ExtendedOrderScreenParams {
+  id: string;
+  isCustomPackage: string | number;
+  isSelectPackage: string | number;
+  selectedPackage?: boolean;
+  packageItems?: Array<{
+    id: number;
+    name: string;
+    quantity: string;
+    quantityType: string;
+    mpItemId?: number;
+    price?: number;
+  }>;
+  originalPackageItems?: Array<{
+    mpItemId: number;
+    name: string;
+    quantity: string;
+    quantityType: string;
+    price?: number;
+  }>;
+  additionalItems?: Array<{
+    id: string;
+    name: string;
+    quantity: string;
+    quantityType: string;
+    price: number;
+    cropId: number;
+    discount: string;
+ 
+  }>;
+  subtotal?: string | number;
+  discount?: string;
+  total?: string | number;
+  fullTotal?: string | number;
+  selectedDate?: string;
+  selectedTimeSlot?: string;
+  timeDisplay?: string;
+  paymentMethod?: string;
+  isEdit?: boolean;
+}
+
+
+
 
 
 const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
-  const { id ,isCustomPackage, isSelectPackage} = route.params || {};
+  const { 
+    id, 
+    isCustomPackage, 
+    isSelectPackage,
+    selectedPackage: routeSelectedPackage,
+    packageItems: routePackageItems,
+    originalPackageItems: routeOriginalPackageItems,
+    additionalItems: routeAdditionalItems,
+    subtotal: routeSubtotal,
+    discount: routeDiscount,
+    total: routeTotal,
+    fullTotal: routeFullTotal,
+    selectedDate: routeSelectedDate,
+    selectedTimeSlot: routeSelectedTimeSlot,
+    timeDisplay: routeTimeDisplay,
+    paymentMethod: routePaymentMethod,
+    isEdit
+  } = route.params || {};
+  //const { id ,isCustomPackage, isSelectPackage} = route.params || {};
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalVisible1, setModalVisible1] = useState(false);
@@ -161,6 +239,17 @@ const [finaldiscount, setFinaldiscount] = useState("0.00");
     mpItemId?: number;
     price?: number 
   }[]>([]);
+
+
+  useEffect(() => {
+    if (selectedPackage && !isEdit) {
+      // Only fetch from API if we're not editing (coming from OrderConfirmScreen)
+      fetchItemsForPackage(selectedPackage.id).then((items) => {
+        setPackageItems(items);
+        setOriginalPackageItems(items); // Store the original items for comparison
+      });
+    }
+  }, [selectedPackage]);
   
   // Make sure to set this when fetching items
   useEffect(() => {
@@ -171,6 +260,8 @@ const [finaldiscount, setFinaldiscount] = useState("0.00");
       });
     }
   }, [selectedPackage]);
+
+  
   
 
   interface ModifiedPlusItem {
@@ -206,6 +297,149 @@ const [finaldiscount, setFinaldiscount] = useState("0.00");
 
   const customerid = id;
 
+// Save state to AsyncStorage
+  const isFirstRenderRef = useRef(true);
+  // Reference to track if data has been loaded from storage
+  const dataLoaded = useRef(false);
+
+  // Save state to AsyncStorage whenever it changes
+  const saveStateToStorage = async () => {
+    if (isFirstRenderRef.current) return;
+    
+    try {
+      const orderData = {
+        selectedPackage,
+        totalPrice,
+        additionalItems,
+        packageItems,
+        originalPackageItems,
+        packageItemsCount,
+        totalDiscount,
+        selectedDelivery,
+        // Add other important state variables you want to persist
+      };
+      
+      await AsyncStorage.setItem(`orderScreen-${id}`, JSON.stringify(orderData));
+    } catch (error) {
+      console.error('Error saving order data:', error);
+    }
+  };
+
+  // Load state from AsyncStorage
+  const loadStateFromStorage = async () => {
+    try {
+      const savedData = await AsyncStorage.getItem(`orderScreen-${id}`);
+      
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        
+        // Restore all saved state
+        setSelectedPackage(parsedData.selectedPackage);
+        setTotalPrice(parsedData.totalPrice);
+        setAdditionalItems(parsedData.additionalItems);
+        setPackageItems(parsedData.packageItems);
+        setOriginalPackageItems(parsedData.originalPackageItems);
+        setPackageItemsCount(parsedData.packageItemsCount);
+        setTotalDiscount(parsedData.totalDiscount);
+        setSelectedDelivery(parsedData.selectedDelivery);
+        // Restore other important state variables
+        
+        dataLoaded.current = true;
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error('Error loading order data:', error);
+    }
+  };
+
+  // This effect runs whenever key state changes to save it
+  useEffect(() => {
+    if (!isFirstRenderRef.current) {
+      saveStateToStorage();
+    }
+  }, [
+    selectedPackage,
+    totalPrice,
+    additionalItems,
+    packageItems,
+    packageItemsCount,
+    totalDiscount,
+    selectedDelivery
+    // Add other dependencies that should trigger saving
+  ]);
+
+  // This effect runs on initial mount to load saved state
+  useEffect(() => {
+    const initialLoadData = async () => {
+      // First check if we have route params from navigation (this takes priority)
+      if (isEdit) {
+        // We're coming back from OrderConfirmScreen with edit data
+        console.log("Loading data from navigation params");
+        
+        if (routeSelectedPackage) {
+          setSelectedPackage(routeSelectedPackage  as any );
+        }
+        
+        if (routePackageItems) {
+          setPackageItems(routePackageItems  as any );
+        }
+        
+        if (routeOriginalPackageItems) {
+          setOriginalPackageItems(routeOriginalPackageItems  as any);
+        }
+        
+        if (routeAdditionalItems) {
+          setAdditionalItems(routeAdditionalItems  as any);
+        }
+        
+        // Set other data from route params
+        if (routeDiscount) setTotalDiscount(routeDiscount);
+        if (routeTotal) setTotalPrice(parseFloat(routeTotal.toString()));
+        
+        // Mark data as loaded
+        dataLoaded.current = true;
+        setLoading(false);
+      } 
+      // If no route params, try to load from AsyncStorage
+      else {
+        await loadStateFromStorage();
+        
+        // If no saved data was loaded, proceed with normal data fetching
+        if (!dataLoaded.current) {
+          fetchInitialData();
+        }
+      }
+      
+      isFirstRenderRef.current = false;
+    };
+    
+    initialLoadData();
+    
+    // Handle back button presses
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      saveStateToStorage();
+      return false; // Let the default back action proceed
+    });
+    
+    return () => {
+      backHandler.remove();
+    };
+  }, []);
+
+  // Use useFocusEffect to handle screen focus events
+  useFocusEffect(
+    useCallback(() => {
+      // This runs when the screen comes into focus
+      if (!isFirstRenderRef.current && !dataLoaded.current) {
+        loadStateFromStorage();
+      }
+      
+      return () => {
+        // This runs when the screen goes out of focus
+        saveStateToStorage();
+      };
+    }, [id])
+  );
 
   const prepareOrderItems = async () => {
     // Create separate arrays for tracking modifications and final items
@@ -1340,6 +1574,18 @@ const saveUpdatedItem = () => {
     }}
   />
 
+    {/* No Package Selected Image */}
+  {!selectedPackage && (
+    <View className="items-center justify-center mt-[50%]">
+      <Image 
+        source={require("../assets/images/nopackage.png")} 
+        className="w-48 h-48 mb-4" 
+        resizeMode="contain"
+      />
+   
+    </View>
+  )}
+
   {selectedPackage && (
     <View className="mt-6 px-3 mb-20">
       <View className="flex-row justify-between items-center border-b border-gray-200 py-3">
@@ -1726,4 +1972,8 @@ const saveUpdatedItem = () => {
 };
 
 export default OrderScreen;
+
+function fetchInitialData() {
+  throw new Error("Function not implemented.");
+}
   

@@ -156,7 +156,7 @@ const verifyOTP = async () => {
         // Save customer ID to AsyncStorage if needed for later use
         await AsyncStorage.setItem("latestCustomerId", customerId.toString());
         
-        Alert.alert("Success", "Customer registered successfully.");
+       // Alert.alert("Success", "Customer registered successfully.");
         
         // Navigate to the success screen with the customer ID
         navigation.navigate("OtpSuccesfulScreen" as any , { 
@@ -349,16 +349,18 @@ useEffect(() => {
 
   {/* Verify Button */}
   {!isKeyboardVisible &&
+  <TouchableOpacity onPress={verifyOTP} disabled={loading}>
    <LinearGradient
    colors={["#6839CF", "#874DDB"]}
    className="py-3 px-14 rounded-lg items-center mt-[10%] mb-[5%] w-[57%] rounded-3xl h-15"
  >
-   <TouchableOpacity onPress={verifyOTP} disabled={loading}>
+   
      <Text className="text-center text-white font-bold">
        {loading ? "Verify" : "Verify"}
      </Text>
+      </LinearGradient>
    </TouchableOpacity>
- </LinearGradient>
+
  }
       
 </View>

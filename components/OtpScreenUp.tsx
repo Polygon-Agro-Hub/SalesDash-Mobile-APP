@@ -414,16 +414,18 @@ const OtpScreenUp: React.FC = () => {
 
               {/* Verify Button */}
               {!isKeyboardVisible &&
+               <TouchableOpacity onPress={verifyOTP} disabled={loading}>
                 <LinearGradient
                   colors={["#6839CF", "#874DDB"]}
                   className="py-3 px-14 rounded-lg items-center mt-[10%] mb-[5%] w-[57%] rounded-3xl h-15"
                 >
-                  <TouchableOpacity onPress={verifyOTP} disabled={loading}>
+                 
                     <Text className="text-center text-white font-bold">
                       {loading ? "Verifying..." : "Verify"}
                     </Text>
+                         </LinearGradient>
                   </TouchableOpacity>
-                </LinearGradient>
+           
               }
             </View>
           </View>

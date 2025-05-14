@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Keyboard, Platform, KeyboardAvoidingView, SafeAreaView, Alert } from "react-native";
+import { View, Text, ScrollView, TextInput, TouchableOpacity, Keyboard, Platform, KeyboardAvoidingView, SafeAreaView, Alert, ActivityIndicator } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import { LinearGradient } from "expo-linear-gradient";
@@ -45,7 +45,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
 const [lastNameError, setLastNameError] = useState<string>("");
 const [buildingTypeError, setBuildingTypeError] = useState<string>("");
 const [titleError, setTitleError] = useState<string>("");
-
+const [isSubmitting, setIsSubmitting] = useState(false);
 
 
   const buildingOptions = [
@@ -200,6 +200,11 @@ const [titleError, setTitleError] = useState<string>("");
   
 
  const handleRegister = async () => {
+
+    if (isSubmitting) return;
+  
+  setIsSubmitting(true);
+
   if (!selectedCategory || !firstName || !lastName || !phoneNumber || !email || !buildingType) {
     Alert.alert("Error", "Please fill in all required fields.");
     return;
@@ -257,6 +262,8 @@ const [titleError, setTitleError] = useState<string>("");
     } else {
       Alert.alert("Error", "Registration failed. Please try again.");
     }
+  }finally {
+    setIsSubmitting(false); // Stop loading regardless of success/error
   }
 };
 
@@ -520,16 +527,21 @@ const [titleError, setTitleError] = useState<string>("");
               )}
 
              
-<TouchableOpacity onPress={handleRegister}>
-            <LinearGradient 
-              colors={["#854BDA", "#6E3DD1"]} 
-              className="py-3 px-4 items-center mt-6 mb-[15%] mr-[20%] ml-[20%] rounded-3xl h-15"
-            >
-             
-                <Text className="text-center text-white font-bold">Register</Text>
-           
-            </LinearGradient>
-            </TouchableOpacity>
+<TouchableOpacity 
+  onPress={handleRegister}
+  disabled={isSubmitting || loading}
+>
+  <LinearGradient 
+    colors={["#854BDA", "#6E3DD1"]} 
+    className="py-3 px-4 items-center mt-6 mb-[15%] mr-[20%] ml-[20%] rounded-3xl h-15"
+  >
+    {isSubmitting || loading ? (
+      <ActivityIndicator color="#FFFFFF" />
+    ) : (
+      <Text className="text-center text-white font-bold">Register</Text>
+    )}
+  </LinearGradient>
+</TouchableOpacity>
             </View>
           </ScrollView>
         </View>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Keyboard, Platform, KeyboardAvoidingView, SafeAreaView, Alert } from "react-native";
+import { View, Text, ScrollView, TextInput, TouchableOpacity, Keyboard, Platform, KeyboardAvoidingView, SafeAreaView, Alert, ActivityIndicator } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 //import { Picker } from "@react-native-picker/picker";
@@ -42,6 +42,8 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
   const [originalBuildingType, setOriginalBuildingType] = useState<string>("");
   
   const [originalPhoneNumber, setOriginalPhoneNumber] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
@@ -195,6 +197,8 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
       alert("Please enter a valid email address.");
       return;
     }
+
+    setIsSubmitting(true); 
   
     try {
       // Only check phone number if it's changed
@@ -232,6 +236,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
           } else {
             console.error("(NOBRIDGE) Unknown error checking phone:", error);
             Alert.alert("Error", "Failed to verify phone number. Please try again.");
+            setIsSubmitting(false);
             return;
           }
         }
@@ -312,7 +317,9 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
         Alert.alert("Error", "An unknown error occurred");
         console.error("An unknown error occurred", error);
       }
-    }
+    } finally {
+    setIsSubmitting(false); // Always reset submitting state when done
+  }
   };
   
   
@@ -630,11 +637,21 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                 </>
               )}
 
-              <LinearGradient colors={["#854BDA", "#6E3DD1"]} className="py-3 px-4 rounded-lg items-center mt-6 mb-[15%] mr-[20%] ml-[20%] h-15">
-                <TouchableOpacity onPress={handleRegister}>
-                  <Text className="text-center text-white font-bold">Save</Text>
-                </TouchableOpacity>
-              </LinearGradient>
+ <TouchableOpacity 
+  onPress={handleRegister}
+  disabled={isSubmitting}
+>
+  <LinearGradient 
+    colors={["#854BDA", "#6E3DD1"]} 
+    className="py-3 px-4 rounded-lg items-center mt-6 mb-[15%] mr-[20%] ml-[20%] h-15 rounded-full"
+  >
+    {isSubmitting ? (
+      <ActivityIndicator color="#FFFFFF" />
+    ) : (
+      <Text className="text-center text-white font-bold">Save</Text>
+    )}
+  </LinearGradient>
+</TouchableOpacity>
             </View>
           </ScrollView>
         </View>

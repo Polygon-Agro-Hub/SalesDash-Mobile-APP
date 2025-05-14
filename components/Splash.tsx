@@ -68,13 +68,13 @@ const Splash: React.FC<SplashProps> = ({ navigation }) => {
           } else {
             navigation.navigate('LoginScreen');
           }
-        }, 5000);
+        }, 3000);
       } catch (error) {
         console.error('Error checking authentication token:', error);
         // If there's an error, navigate to login as fallback
         setTimeout(() => {
           navigation.navigate('LoginScreen');
-        }, 5000);
+        }, 3000);
       }
     };
 
