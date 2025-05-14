@@ -8,6 +8,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  SafeAreaView,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack"; 
 import BackButton from "./BackButton";
@@ -81,71 +82,72 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
     }
   };
 
-  return (
-        <KeyboardAvoidingView 
-                                   behavior={Platform.OS === "ios" ? "padding" : "height"}
-                                   enabled 
-                                   className="flex-1"
-                                   >
-    <View className="flex-1 bg-gray-100">
-      {/* Top Section with Background Image */}
-      <ImageBackground
-        source={require("../assets/images/Union.png")}
-        className="h-64 rounded-b-3xl shadow-lg bg-[#E6DBF766]"
-        resizeMode="cover"
-      >
-        <View className="ml-2">
-          <BackButton navigation={navigation} />
-        </View>
-        <Image
-  source={{ uri: selectedPackageImage }}
-    className="w-64 h-64 self-center mb-2 mt-[-20%]"
-  resizeMode="contain"
-/>
+ return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+      <View style={{ flex: 1 }}>
+        {/* Top Section with Background Image */}
+        <ImageBackground
+          source={require("../assets/images/Union.png")}
+          style={{ height: 220 }}
+          className="rounded-b-3xl shadow-lg bg-[#E6DBF766]"
+          resizeMode="cover"
+        >
+          <View className="ml-2">
+            <BackButton navigation={navigation} />
+          </View>
+          <Image
+            source={{ uri: selectedPackageImage }}
+            className="w-64 h-64 self-center mb-2 mt-[-20%]"
+            resizeMode="contain"
+          />
+        </ImageBackground>
 
-      </ImageBackground>
+        {/* Content Section */}
+        <View style={{ flex: 1, marginTop: -28 , marginBottom: 50 }}>
+          <ScrollView
+            contentContainerStyle={{ 
+              flexGrow: 1,
+              paddingHorizontal: 24,
+              paddingTop: 24,
+              paddingBottom: 40,
+              backgroundColor: 'white',
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+            }}
+            showsVerticalScrollIndicator={true}
+          >
+            {/* Title and Price */}
+            <View className="flex-row justify-between items-center mb-4">
+              <Text className="text-xl font-bold text-purple-600">{selectedPackageName}</Text>
+              <Text className="text-lg font-bold text-gray-800">Rs. {selectedPackageTotal}</Text>
+            </View>
 
-      {/* Scrollable Details Section */}
-      <ScrollView className="flex-1 bg-white rounded-t-3xl -mt-7 px-6 pt-6 shadow-lg"
-      keyboardShouldPersistTaps="handled"
-      >
-        {/* Title and Price */}
-        <View className="flex-row justify-between items-center mb-4">
-          <Text className="text-xl font-bold text-purple-600">{selectedPackageName}</Text>
-          <Text className="text-lg font-bold text-gray-800">Rs.  {selectedPackageTotal}</Text>
-        </View>
+            {/* Description */}
+            <View className="flex-row items-start mb-6">
+              {/* Vertical Line */}
+              <View className="bg-purple-600 w-1 mr-3" style={{ height: '100%' }}></View>
+              
+              {/* Paragraph Text */}
+              <Text className="text-gray-600 text-sm leading-6 mr-2">
+                {selectedPackageDescription}
+              </Text>
+            </View>
 
-        {/* Description */}
-        <View className="flex-row items-start mb-6">
-          {/* Vertical Line */}
-          <View className="bg-purple-600 w-1 mr-3" style={{ height: "100%" }}></View>
-          
-          {/* Paragraph Text */}
-          <Text className="text-gray-600 text-sm leading-6 mr-2">
-         { selectedPackageDescription}
-          </Text>
-        </View>
-
-      
-       
-        <Text className="text-gray-800 text-lg font-bold p-4">All ({items.length} items)</Text>
-        <View style={{ marginBottom: 50, flexShrink: 0 }}>
-          {items.map((item, index) => {
-            console.log("Rendering item:", item);  
-            return (
+            {/* Items List */}
+            <Text className="text-gray-800 text-lg font-bold p-4">All ({items.length} items)</Text>
+            {items.map((item, index) => (
               <View key={index} className="flex-row justify-between items-center border-b border-gray-200 py-3 px-4">
                 <Text className="text-gray-700 text-sm">{item.name}</Text>
                 <Text className="text-gray-500 text-sm">{item.quantity}{item.quantityType}</Text>
               </View>
-            );
-          })}
+            ))}
+            
+            {/* Add some bottom padding for scrolling */}
+            <View style={{ height: 20 }} />
+          </ScrollView>
         </View>
-
-      </ScrollView>
-
-
-    </View>
-    </KeyboardAvoidingView>
+      </View>
+    </SafeAreaView>
   );
 };
 
