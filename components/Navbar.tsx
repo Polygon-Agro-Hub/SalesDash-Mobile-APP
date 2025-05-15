@@ -120,24 +120,119 @@ const NavigationBar = ({
   }
   );
   if (isKeyboardVisible) return null;
-  return (
-    <View className="absolute bottom-0 flex-row justify-between items-center bg-white w-full p-4 rounded-t-3xl shadow-lg shadow-black/10" >
 
-   {tabs.map((tab, index) => {
-  const isFocused = currentTabName === tab.name;
-  console.log("currentTabName", currentTabName);
-  return (
-    <Animated.View
-      style={{
-        transform: [{ scale: scales[index] }],
-        alignItems: "center",
-        justifyContent: "center",
-        height: 40,
-      }}
+
+//   return (
+//     <View className="absolute bottom-0 flex-row justify-between items-center bg-white w-full p-4 rounded-t-3xl shadow-lg shadow-black/10" >
+
+//    {tabs.map((tab, index) => {
+//   const isFocused = currentTabName === tab.name;
+//   console.log("currentTabName", currentTabName);
+//   return (
+//     <Animated.View
+//       style={{
+//         transform: [{ scale: scales[index] }],
+//         alignItems: "center",
+//         justifyContent: "center",
+//         height: 40,
+//       }}
    
-      key={index} 
-    >
-      <TouchableOpacity
+//       key={index} 
+//     >
+//       <TouchableOpacity
+//         onPress={() => handleTabPress(tab.name, index)}
+   
+//         style={{
+//           backgroundColor: isFocused ? "#854BDA" : "#FFFFFF", 
+//           padding: 8, 
+//           borderRadius: 9999, 
+//           alignItems: "center",
+//           justifyContent: "center",
+          
+//         }}
+//       >
+//         <View>
+          
+//         </View>
+//         <Image
+//              className={`${
+//               isFocused
+//                 ? " bg-[#854BDA] rounded-full   "
+//                 : "items-center justify-center"
+//             }`}
+//           source={isFocused ? tab.icon :tab.focusedIcon}
+//           style={{ width: 20, height: 20}}
+//         />
+
+//       </TouchableOpacity>
+//       <Text
+//     className={`${
+//       isFocused? "text-purple-600" : "text-gray-600"
+//     } text-sm font-medium`}
+//   >
+//    {tab.tabName}
+//   </Text>
+//     </Animated.View>
+//   );
+// })}
+
+//     </View>
+  
+//   );
+
+return (
+  <View className="absolute bottom-0 flex-row justify-between items-center bg-white w-full p-4 rounded-t-3xl" 
+    style={{
+      shadowColor: "#000",
+    
+      shadowOpacity: 0.5,
+      shadowRadius: 10,
+      elevation: 15, 
+      borderTopWidth: 2,
+      borderTopColor: 'rgba(6, 6, 6, 0.1)',
+    }}
+      // style={{
+      //   shadowColor: "#000",
+      //   shadowOffset: { width: 0, height: 6 },
+      //   shadowOpacity: 0.2,
+      //   shadowRadius: 10,
+      //   elevation: 10,
+       
+      // //  justifyContent: 'space-between', // Distribute space between content
+      // }}
+      
+  >
+    {tabs.map((tab, index) => {
+      const isFocused = currentTabName === tab.name;
+      return (
+        <Animated.View
+          style={{
+            transform: [{ scale: scales[index] }],
+            alignItems: "center",
+            justifyContent: "center",
+            height: 40,
+          }}
+          key={index} 
+        >
+          {/* <TouchableOpacity
+            onPress={() => handleTabPress(tab.name, index)}
+            style={{
+              backgroundColor: isFocused ? "#854BDA" : "#FFFFFF",
+              padding: 8,
+              borderRadius: 9999,
+              alignItems: "center",
+              justifyContent: "center",
+              shadowColor: isFocused ? "black" : "transparent",
+              shadowOffset: {
+                width: 0,
+                height: 2,
+              },
+              shadowOpacity: 0.5,
+              shadowRadius: 4,
+              elevation: isFocused ? 6 : 0,
+            }}
+          > */}
+            <TouchableOpacity
         onPress={() => handleTabPress(tab.name, index)}
    
         style={{
@@ -146,36 +241,31 @@ const NavigationBar = ({
           borderRadius: 9999, 
           alignItems: "center",
           justifyContent: "center",
+          
         }}
       >
-        <View>
-          
-        </View>
-        <Image
-             className={`${
-              isFocused
-                ? " bg-[#854BDA] rounded-full   "
-                : "items-center justify-center"
-            }`}
-          source={isFocused ? tab.icon :tab.focusedIcon}
-          style={{ width: 20, height: 20}}
-        />
-
-      </TouchableOpacity>
-      <Text
-    className={`${
-      isFocused? "text-purple-600" : "text-gray-600"
-    } text-sm font-medium`}
-  >
-   {tab.tabName}
-  </Text>
-    </Animated.View>
-  );
-})}
-
-    </View>
-  
-  );
+            <Image
+              className={`${
+                isFocused
+                  ? "bg-[#854BDA] rounded-full"
+                  : "items-center justify-center"
+              }`}
+              source={isFocused ? tab.icon : tab.focusedIcon}
+              style={{ width: 20, height: 20 }}
+            />
+          </TouchableOpacity>
+          <Text
+            className={`${
+              isFocused ? "text-purple-600" : "text-gray-600"
+            } text-sm font-medium`}
+          >
+            {tab.tabName}
+          </Text>
+        </Animated.View>
+      );
+    })}
+  </View>
+);
 };
 
 export default NavigationBar;

@@ -22,6 +22,7 @@ import BackButton from "./BackButton";
 import axios from "axios";
 import environment from "@/environment/environment";
 import { AntDesign } from "@expo/vector-icons";
+import LottieView from "lottie-react-native";
 
 type ViewCustomerScreenNavigationProp = StackNavigationProp<RootStackParamList, "ViewCustomerScreen">;
 type ViewCustomerScreenRouteProp = RouteProp<RootStackParamList, "ViewCustomerScreen">;
@@ -84,7 +85,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
           `${environment.API_BASE_URL}api/orders/get-order-bycustomerId/${id}`
         );
 
-        console.log(response.data)
+       // console.log(response.data)
         if (response.data.success) {
           setOrders(response.data.data);
         } else {
@@ -152,6 +153,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
     
     return matchesStatus && matchesSearch;
   });
+
+    const isEmpty = filteredOrders.length === 0;
 
   return (
     <KeyboardAvoidingView 
@@ -277,7 +280,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
           <View className="flex-1 justify-center items-center px-4">
             <Text className="text-red-500 text-center">{error}</Text>
             <TouchableOpacity 
-              className="mt-4 bg-[#6B3BCF] px-4 py-2 rounded-full"
+              className="mt-4 bg-white px-4 py-2 rounded-full"
               onPress={() => {
                 setLoading(true);
                 setError(null);
@@ -286,7 +289,18 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
               <Text className="text-white font-semibold">Retry</Text>
             </TouchableOpacity>
           </View>
-        ) : filteredOrders.length > 0 ? (
+        ) : 
+        
+        isEmpty ? (
+          <View className="flex-1 justify-center items-center px-4 mt-[40%]">
+            <LottieView
+                      source={require("../assets/images/NoComplaints.json")}
+                      style={{ width: wp(50), height: hp(50) }}
+                      autoPlay
+                      loop
+                    />
+          </View>
+        )  : (filteredOrders.length > 0 ? (
           <FlatList
             data={filteredOrders}
             keyExtractor={(item) => item.orderId.toString()}
@@ -330,7 +344,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
                 </View>
               </TouchableOpacity>
             )}
-            contentContainerStyle={{ paddingBottom: 16 }}
+            contentContainerStyle={{ paddingBottom: 70 }}
           />
         ) : (
           <View className="flex-1 justify-center items-center">
@@ -338,7 +352,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
               {searchText ? "No matching orders found" : "No orders found for this status"}
             </Text>
           </View>
-        )}
+        ))}
       </View>
       </View>
     </KeyboardAvoidingView>

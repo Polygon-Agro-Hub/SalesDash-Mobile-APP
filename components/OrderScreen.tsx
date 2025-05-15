@@ -374,7 +374,7 @@ const [finaldiscount, setFinaldiscount] = useState("0.00");
       // First check if we have route params from navigation (this takes priority)
       if (isEdit) {
         // We're coming back from OrderConfirmScreen with edit data
-        console.log("Loading data from navigation params");
+     //   console.log("Loading data from navigation params");
         
         if (routeSelectedPackage) {
           setSelectedPackage(routeSelectedPackage  as any );
@@ -723,7 +723,7 @@ useEffect(() => {
   
      
   
-        setChangeBy(parseFloat(itemDetails.changeby)); // Set the changeby value from the response
+        setChangeBy(parseFloat(itemDetails.changeby)); 
   
         return itemDetails;
       } else {
@@ -1455,9 +1455,9 @@ const saveUpdatedItem = () => {
         const basePrice = Number(editingItem.price) / Number(parseFloat(editingItem.quantity));
         const calculatedPrice = Number(basePrice) * Number(parsedNewItemQuantity);
         
-        console.log("Updating item with ID:", editingItem.id);
-        console.log("New quantity:", parsedNewItemQuantity);
-        console.log("New calculated price:", calculatedPrice);
+        // console.log("Updating item with ID:", editingItem.id);
+        // console.log("New quantity:", parsedNewItemQuantity);
+        // console.log("New calculated price:", calculatedPrice);
         
         // Find the original item to get its price
         const originalItem = additionalItems.find(item => 

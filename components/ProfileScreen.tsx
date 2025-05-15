@@ -61,6 +61,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
     streetName: "",
     city: "",
     empId: "",
+    image:""
   });
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -76,7 +77,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
     fetchOrderCount();
     fetchCustomerCount();
   }, []);
-  console.log(formData)
+ 
 
   const getUserProfile = async () => {
     try {
@@ -201,7 +202,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
         nic: formData.nic
       };
       
-      console.log("Sending update data:", dataToSend);
+    
   
       const response = await axios.put(
         `${environment.API_BASE_URL}api/auth/user-updateUser`,
@@ -269,7 +270,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
       }
     
      }finally {
-    setIsSubmitting(false); // Stop loading regardless of success/error
+    setIsSubmitting(false); 
   }
   };
 
@@ -304,32 +305,34 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
               style={{ marginTop: hp(15), paddingHorizontal: wp(6) }}
             >
               <View className="items-center" style={{ marginTop: -hp(12) }}>
-                <TouchableOpacity className="relative">
-                  {profileImage ? (
-                    <Image
-                      source={{ uri: profileImage }}
-                      style={{
-                        width: wp(35),
-                        height: wp(35),
-                        borderRadius: wp(35) / 2,
-                      }}
-                    />
-                  ) : (
-                    <Image
-                      source={require("../assets/images/profile.png")}
-                      style={{
-                        width: wp(34),
-                        height: wp(34),
-                        borderRadius: wp(34) / 2,
-                      }}
-                    />
-                  )}
-                </TouchableOpacity>
-                <Text className="text-black text-2xl font-bold mb-2">
-                  {formData.firstName} {formData.lastName}
-                </Text>
-              </View>
-            </View>
+  <TouchableOpacity className="relative">
+    {formData.image ? (
+      <Image
+        source={{ uri: formData.image }}
+        style={{
+          width: wp(35),
+          height: wp(35),
+          borderRadius: wp(35) / 2,
+        }}
+        onError={(e) => console.log("Image load error:", e.nativeEvent.error)}
+        defaultSource={require("../assets/images/profile.png")}
+      />
+    ) : (
+      <Image
+        source={require("../assets/images/profile.png")}
+        style={{
+          width: wp(34),
+          height: wp(34),
+          borderRadius: wp(34) / 2,
+        }}
+      />
+    )}
+  </TouchableOpacity>
+  <Text className="text-black text-2xl font-bold mb-2">
+    {formData.firstName} {formData.lastName}
+  </Text>
+</View>
+</View>
 
             <View className="bg-white px-7">
               <View className="p-4">

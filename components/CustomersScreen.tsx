@@ -35,6 +35,7 @@ interface Customer {
   order: number;
   cusId: string;
   title: string;
+  orderCount:number;
 }
 
 const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
@@ -94,6 +95,8 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
       }
       
       const customersUrl = `${environment.API_BASE_URL.replace(/\/$/, '')}/api/customer/get-customers`;
+
+      
       
       setTimeout(async () => {
         try {
@@ -103,6 +106,8 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
           
           // Sort customers alphabetically by name
           const sortedCustomers = sortCustomersByName(response.data);
+
+          console.log("--------------------------",sortedCustomers)
           
           setCustomers(sortedCustomers);
           setFilteredCustomers(sortedCustomers);
@@ -205,13 +210,22 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
             </View>
 
             {/* Floating Button */}
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={{ zIndex: 1000 }}
               className="absolute bottom-20 right-6 bg-[#7743D4] w-14 h-14 rounded-full items-center justify-center shadow-lg mb-1"
               onPress={() => navigation.navigate("AddCustomersScreen")}
             >
               <Image source={require("../assets/images/plus.png")} className="w-6 h-6" resizeMode="contain" />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
+            {!isKeyboardVisible && (
+              <TouchableOpacity
+                style={{ zIndex: 1000 }}
+                className="absolute bottom-20 right-6 bg-[#7743D4] w-14 h-14 rounded-full items-center justify-center shadow-lg mb-1"
+                onPress={() => navigation.navigate("AddCustomersScreen")}
+              >
+                <Image source={require("../assets/images/plus.png")} className="w-6 h-6" resizeMode="contain" />
+              </TouchableOpacity>
+            )}
 
             <View style={{ paddingHorizontal: wp(6), paddingVertical: hp(2) }} className="flex-1">
               {error ? (
@@ -219,7 +233,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                   <Text className="text-red-500 text-center mt-4">{error}</Text>
                 </View>
               ) : isEmpty ? (
-                <View className="flex-1 justify-center items-center px-4">
+                <View className="flex-1 justify-center items-center px-4 mt-[-20%]">
                   <Image source={require("../assets/images/searchr.png")} style={{ width: wp("60%"), height: hp("30%"), resizeMode: "contain" }} />
                 </View>
               ) : (
@@ -248,7 +262,8 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                           <Text className="text-gray-700 font-semibold">{item.title}.{item.firstName} {item.lastName}</Text>
                           <Text className="text-gray-500 text-sm">{formatPhoneNumber(item.phoneNumber)}</Text>
                         </View>
-                        <Text className="text-gray-700 font-bold">#{item.order}</Text>
+                        {/* <Text className="text-gray-700 font-bold">#{item.orderCount}</Text> */}
+                        <Text className="text-gray-700 font-semibold">#{item.orderCount < 10 ? `0${item.orderCount}` : item.orderCount}</Text>
                       </View>
                     </TouchableOpacity>
                   )}

@@ -21,6 +21,7 @@ import OrderScreenSkeleton from '../components/Skeleton/OrderScreenSkeleton';
 import axios from "axios";
 import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import LottieView from "lottie-react-native";
 
 type ViewOrdersScreenNavigationProp = StackNavigationProp<RootStackParamList, "ViewOrdersScreen">;
 
@@ -65,7 +66,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
   const [orders, setOrders] = useState<Order[]>([]);
   const isMounted = useRef(true);
 
-  // Function to safely update state only if component is mounted
+
   const safeSetOrders = (data: Order[]) => {
     if (isMounted.current) {
       setOrders(data);
@@ -225,6 +226,8 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
     }
   };
 
+   const isEmpty = filteredOrders.length === 0;
+
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -300,87 +303,94 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
             </View>
 
             <View className="py-[-12%] mb-[60%]">
-              {/* Order List with Pull-to-Refresh */}
-              {filteredOrders && filteredOrders.length > 0 ? (
-                <FlatList
-                  data={filteredOrders}
-                  className="p-4 mb-10"
-                  keyExtractor={(item) => item.orderId.toString()}
-                  refreshControl={
-                    <RefreshControl
-                      refreshing={refreshing}
-                      onRefresh={onRefresh}
-                      colors={["#884EDC"]}
-                      tintColor="#884EDC"
-                    />
-                  }
-                  renderItem={({ item }) => (
-                    <TouchableOpacity 
-                      onPress={() => navigation.navigate("View_CancelOrderScreen" as any, { orderId: item.orderId })} 
-                      activeOpacity={0.7}
-                    >
-                      <View style={{
-                        backgroundColor: "white",
-                        borderRadius: wp(4),
-                        padding: wp(4),
-                        marginBottom: hp(2),
-                        borderWidth: 1,
-                        borderColor: "#EAEAEA",
-                        marginHorizontal: wp(4),
-                        shadowColor: "#0000001A",
-                        shadowOpacity: 0.2,
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowRadius: 5,
-                        elevation: 5,
-                      }}>
-                        {/* Order number and status */}
-                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                          <Text style={{ fontSize: wp(4.5), fontWeight: "600", color: "#393939" }}>Order: {item.InvNo}</Text>
-                          <View style={{
-                            paddingHorizontal: wp(3),
-                            paddingVertical: hp(0.5),
-                            borderRadius: wp(5),
-                            backgroundColor:
-                              item.orderStatus === "Ordered" ? "#CCFBF1" :
-                              item.orderStatus === "On the way" ? "#FFFD99" :
-                              item.orderStatus === "Processing" ? "#CFE1FF" : 
-                              item.orderStatus === "Cancelled" ? "#FCE7F3" : "#EAEAEA",
-                          }}>
-                            <Text style={{
-                              fontSize: wp(3),
-                              fontWeight: "600",
-                              color:
-                                item.orderStatus === "Ordered" ? "#0D9488" :
-                                item.orderStatus === "On the way" ? "#A6A100" :
-                                item.orderStatus === "Processing" ? "#3B82F6" : 
-                                item.orderStatus === "Cancelled" ? "#BE185D" : "#393939",
-                            }}>
-                              {item.orderStatus}
-                            </Text>
-                          </View>
-                        </View>
+      
+              
+{isEmpty ? (
+  <View className="flex-1 justify-center items-center px-4 mt-[60%]">
+    <LottieView
+              source={require("../assets/images/NoComplaints.json")}
+              style={{ width: wp(50), height: hp(50) }}
+              autoPlay
+              loop
+            />
+  </View>
+) : (
+  <FlatList
+    data={filteredOrders}
+    className="p-4 mb-10"
+    keyExtractor={(item) => item.orderId.toString()}
+    refreshControl={
+      <RefreshControl
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        colors={["#884EDC"]}
+        tintColor="#884EDC"
+      />
+    } 
+    renderItem={({ item }) => (
+      <TouchableOpacity 
+        onPress={() => navigation.navigate("View_CancelOrderScreen" as any, { orderId: item.orderId })} 
+        activeOpacity={0.7}
+      >
+        <View style={{
+          backgroundColor: "white",
+          borderRadius: wp(4),
+          padding: wp(4),
+          marginBottom: hp(2),
+          borderWidth: 1,
+          borderColor: "#EAEAEA",
+          marginHorizontal: wp(4),
+          shadowColor: "#0000001A",
+          shadowOpacity: 0.2,
+          shadowOffset: { width: 0, height: 2 },
+          shadowRadius: 5,
+          elevation: 5,
+        }}>
+          {/* Order number and status */}
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <Text style={{ fontSize: wp(4.5), fontWeight: "600", color: "#393939" }}>Order: {item.InvNo}</Text>
+            <View style={{
+              paddingHorizontal: wp(3),
+              paddingVertical: hp(0.5),
+              borderRadius: wp(5),
+              backgroundColor:
+                item.orderStatus === "Ordered" ? "#CCFBF1" :
+                item.orderStatus === "On the way" ? "#FFFD99" :
+                item.orderStatus === "Processing" ? "#CFE1FF" : 
+                item.orderStatus === "Cancelled" ? "#FCE7F3" : "#EAEAEA",
+            }}>
+              <Text style={{
+                fontSize: wp(3),
+                fontWeight: "600",
+                color:
+                  item.orderStatus === "Ordered" ? "#0D9488" :
+                  item.orderStatus === "On the way" ? "#A6A100" :
+                  item.orderStatus === "Processing" ? "#3B82F6" : 
+                  item.orderStatus === "Cancelled" ? "#BE185D" : "#393939",
+              }}>
+                {item.orderStatus}
+              </Text>
+            </View>
+          </View>
 
-                        <Text style={{ fontSize: wp(3.6), color: "#808FA2" }}>
-                          Schedule to: {formatDate(item.scheduleDate)}
-                        </Text>
+          <Text style={{ fontSize: wp(3.6), color: "#808FA2" }}>
+            Schedule to: {formatDate(item.scheduleDate)}
+          </Text>
 
-                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                          {/* Customer name */}
-                          <Text style={{ fontSize: wp(3.6), color: "#808FA2", marginTop: hp(0.5) }}>
-                            Within : {item.scheduleTimeSlot}
-                          </Text>
-                          <Text style={{ fontSize: wp(3.6), color: "#FF4C4C" }}> {item.reportStatus}</Text>
-                        </View>
-                      </View>
-                    </TouchableOpacity>
-                  )}
-                  contentContainerStyle={{ paddingBottom: hp(5) }}
-                />
-              ) : (
-                <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-                  <Text style={{ fontSize: wp(4), color: "#6B7280", textAlign: "center" }}>No orders found.</Text>
-                </View>
-              )}
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            {/* Customer name */}
+            <Text style={{ fontSize: wp(3.6), color: "#808FA2", marginTop: hp(0.5) }}>
+              Within : {item.scheduleTimeSlot}
+            </Text>
+            <Text style={{ fontSize: wp(3.6), color: "#FF4C4C" }}> {item.reportStatus}</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    )}
+    contentContainerStyle={{ paddingBottom: hp(5) }}
+  />
+)}
+           
             </View>
           </>
         )}

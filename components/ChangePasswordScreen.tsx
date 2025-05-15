@@ -39,72 +39,8 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const backAction = () => {
-      // You can customize this action, like showing a confirmation dialog
-      Alert.alert('Exit', 'Are you sure you want to go back?', [
-        { text: 'Cancel', onPress: () => null, style: 'cancel' },
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
-      return true; // Prevent the default back action (going back immediately)
-    };
-  
-    const backHandler = BackHandler.addEventListener(
-      'hardwareBackPress',
-      backAction
-    );
-  
-    return () => {
-      backHandler.remove(); // Clean up the event listener on component unmount
-    };
-  }, []);
-  
-  // const handleChangePassword = async () => {
-  //   if (!currentPassword || !newPassword || !confirmNewPassword) {
-  //     Alert.alert('Error', 'All fields are required');
-  //     return;
-  //   }
-
-  //   if (newPassword !== confirmNewPassword) {
-  //     Alert.alert('Error', 'New password and confirm password do not match');
-  //     return;
-  //   }
-
-  //   setLoading(true);
-
-  //   try {
-
-  //     const token = await AsyncStorage.getItem('authToken');
-      
-  //     if (!token) {
-  //       Alert.alert('Error', 'Unauthorized access, please login again');
-  //       navigation.replace('LoginScreen');
-  //       return;
-  //     }
 
 
-  //     const response = await axios.put(
-  //       `${environment.API_BASE_URL}api/auth/user/update-password`,
-  //       { oldPassword: currentPassword, newPassword },
-  //       {
-  //         headers: { Authorization: `Bearer ${token}` },
-  //       }
-  //     );
-
-  //     if (response.status === 200) {
-  //       Alert.alert('Success', 'Password updated successfully', [
-  //         { text: 'OK', onPress: () => navigation.replace('LoginScreen') },
-  //       ]);
-  //     }
-  //   } catch (error) {
-  //     Alert.alert(
-  //       'Error',
-  //       (axios.isAxiosError(error) && error.response?.data?.error) || 'Failed to update password. Please try again.'
-  //     );
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 
    const validatePassword = () => {
     // Check if all fields are filled
@@ -129,50 +65,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
   };
 
 
-  // const handleChangePassword = async () => {
-  //   // Validate inputs before proceeding
-  //   if (!validatePassword()) {
-  //     return;
-  //   }
-
-  //   setLoading(true);
-
-  //   try {
-  //     const token = await AsyncStorage.getItem('authToken');
-      
-  //     if (!token) {
-  //       Alert.alert('Error', 'Unauthorized access, please login again');
-  //       navigation.replace('LoginScreen');
-  //       return;
-  //     }
-
-  //     const response = await axios.put(
-  //       `${environment.API_BASE_URL}api/auth/user/update-password`,
-  //       { oldPassword: currentPassword, newPassword },
-  //       {
-  //         headers: { Authorization: `Bearer ${token}` },
-  //       }
-  //     );
-
-  //     const url = `${environment.API_BASE_URL}api/auth/user/update-password`
-  //     console.log(url)
-
-  //     if (response.status === 200) {
-  //       Alert.alert('Success', 'Password updated successfully', [
-  //         { text: 'OK', onPress: () => navigation.replace('LoginScreen') },
-  //       ]);
-  //     }
-  //   } catch (error) {
-  //     // Handle specific error message for current password mismatch
-  //     if (axios.isAxiosError(error) && error.response?.data?.error) {
-  //       Alert.alert('Error', error.response.data.error);
-  //     } else {
-  //       Alert.alert('Error', 'Failed to update password. Please try again.');
-  //     }
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
+  
 
  const handleChangePassword = async () => {
   // Validate inputs before proceeding
@@ -200,7 +93,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
     );
 
     const url = `${environment.API_BASE_URL}api/auth/user/update-password`
-    console.log(url)
+   // console.log(url)
 
     if (response.status === 200) {
       Alert.alert('Success', 'Password updated successfully', [

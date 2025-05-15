@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -24,6 +24,8 @@ import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from "react-native-responsive-screen";
+import { useFocusEffect } from "expo-router";
+
 
 type DashboardScreenNavigationProp = StackNavigationProp<RootStackParamList, "DashboardScreen">;
 
@@ -68,7 +70,7 @@ interface AgentStats {
 const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [token, setToken] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ firstName: "" });
+  const [formData, setFormData] = useState({ firstName: "" , image:""});
   const [packages, setPackages] = useState<Package[]>([]);
   const [agentStats, setAgentStats] = useState<AgentStats>({
     daily: {
@@ -82,15 +84,17 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     }
   });
 
-  useEffect(() => {
-    // Handle hardware back button (Android)
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-      // Return true to prevent default behavior (going back)
-      return true;
-    });
+  // useEffect(() => {
+  //   // Handle hardware back button (Android)
+  //   const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+  //     // Return true to prevent default behavior (going back)
+  //     return true;
+  //   });
   
-    return () => backHandler.remove();
-  }, []);
+  //   return () => backHandler.remove();
+  // }, []);
+
+
   
   
   const refreshData = async () => {
@@ -127,7 +131,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       });
 
       setFormData(response.data.data);
-      console.log(response.data)
+     // console.log("''''''",response.data)
     } catch (error) {
       console.error("Profile fetch error:", error);
 
@@ -147,6 +151,8 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       return;
     }
   };
+
+  
 
   useEffect(() => {
     const checkTokenExpiration = async () => {
@@ -202,7 +208,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
           headers: { Authorization: `Bearer ${storedToken}` },
         }
       );
-      console.log(response.data)
+  console.log(response.data)
 
       setPackages(response.data.data);
     } catch (error) {
@@ -230,6 +236,15 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     }
   };
 
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => true;
+      BackHandler.addEventListener("hardwareBackPress", onBackPress);
+      return () =>
+        BackHandler.removeEventListener("hardwareBackPress", onBackPress);
+    }, [])
+  );
+  
 
   if (isLoading) {
     return <DashboardSkeleton />;
@@ -260,16 +275,8 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       <Text className="font-bold text-[#6A3AD0] text-center">{item.displayName}</Text>
       <Text className="text-sm font-medium text-gray-500">Rs. {item.total}</Text>
     
-      <LinearGradient
-        colors={["#854BDA", "#6E3DD1"]}
-        style={{
-          marginTop: 12,
-          borderRadius: 16,
-          paddingVertical: 6,
-          paddingHorizontal: 20,
-        }}
-      >
-        <TouchableOpacity
+
+     <TouchableOpacity
           onPress={() => 
             navigation.navigate("ViewScreen", {
               selectedPackageId: item.id,
@@ -283,9 +290,20 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
           }
           className="items-center"
         >
+      <LinearGradient
+        colors={["#854BDA", "#6E3DD1"]}
+        style={{
+          marginTop: 12,
+          borderRadius: 16,
+          paddingVertical: 6,
+          paddingHorizontal: 20,
+        }}
+      >
+       
           <Text className="text-white font-bold text-sm">View</Text>
-        </TouchableOpacity>
+       
       </LinearGradient>
+       </TouchableOpacity>
     </View>
   );
   // const renderPackage = ({ item }: { item: Package }) => (
@@ -352,7 +370,20 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
           <View className="flex-row justify-between items-center">
             <View className="flex-row items-center">
               <TouchableOpacity onPress={() => navigation.navigate("SidebarScreen")}>
-                <Image source={require("../assets/images/profile.png")} className="w-12 h-12 rounded-full" />
+                {/* <Image source={require("../assets/images/profile.png")} className="w-12 h-12 rounded-full" /> */}
+                {formData.image ? (
+  <Image
+    source={{ uri: formData.image }}  
+    className="w-12 h-12 rounded-full"
+    resizeMode="cover"
+  />
+) : (
+  <Image
+    source={require("../assets/images/profile.png")}  
+    className="w-12 h-12 rounded-full"
+    resizeMode="cover"
+  />
+)}
               </TouchableOpacity>
               <Text className="ml-3 text-lg font-bold text-gray-800">Hello, {formData.firstName}</Text>
             </View>
@@ -365,7 +396,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
             </View>
           </View>
 
-          {/* Progress Bar */}
+       
        {/* Progress Bar */}
 <Text className="text-lg text-purple-600 mt-5 font-bold">
   Your Daily Target

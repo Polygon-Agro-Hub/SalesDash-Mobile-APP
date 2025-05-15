@@ -670,16 +670,16 @@ useEffect(() => {
     packageItems: safeOrderItems[0]?.finalOrderPackageList?.map(item => ({
       id: item.productId,
       mpItemId: item.productId,
-      name: '', // You'll need to get this from your data
+      name: '', 
       quantity: item.quantity.toString(),
-      quantityType: 'kg', // Or get from your data
+      quantityType: 'kg', 
       price: typeof item.price === 'string' ? parseFloat(item.price) : item.price
     })) || [],
     // Pass original package items for comparison
     originalPackageItems: safeOrderItems[0]?.finalOrderPackageList?.map(item => ({
       id: item.productId,
       mpItemId: item.productId,
-      name: '', // You'll need to get this from your data
+      name: '',
       quantity: item.quantity.toString(),
       quantityType: 'kg',
       price: typeof item.price === 'string' ? parseFloat(item.price) : item.price
@@ -817,23 +817,33 @@ useEffect(() => {
               <Text className="text-black font-medium">Payment Method</Text>
               <TouchableOpacity 
                 onPress={() => navigation.navigate("SelectPaymentMethod" as any, {
-                  items,
-                  subtotal,
-                  discount, 
-                  total,
-                  fullTotal,
-                 
+  //                 items,
+  //                 subtotal,
+  //                 discount, 
+  //                 total,
+  //                 fullTotal,
+   
+  //     selectedDate,
+  //     timeDisplay,
+  //     isCustomPackage,
+  //     isSelectPackage,
+               
+  //                 selectedTimeSlot,
+  //                 customerId,  // This is the numeric ID (7)
+  // customerid: customerid.toString() || customerId.toString(),
+               total,
      
-     
+      items,
+      subtotal,
+      discount,
       selectedDate,
       timeDisplay,
       isCustomPackage,
+      selectedTimeSlot,
       isSelectPackage,
-               
-                  selectedTimeSlot,
-                  customerId,  // This is the numeric ID (7)
+     customerId,  // This is the numeric ID (7)
   customerid: customerid.toString() || customerId.toString(),
-             
+      orderItems
                 })}
                 className="border border-[#6C3CD1] px-3 rounded-full">
                 <Text className="text-[#6C3CD1] font-medium">Edit</Text>

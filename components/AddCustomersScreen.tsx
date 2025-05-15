@@ -199,34 +199,236 @@ const [isSubmitting, setIsSubmitting] = useState(false);
 
   
 
- const handleRegister = async () => {
+//  const handleRegister = async () => {
 
-    if (isSubmitting) return;
+//     if (isSubmitting) return;
+  
+//   setIsSubmitting(true);
+
+//   if (!selectedCategory || !firstName || !lastName || !phoneNumber || !email || !buildingType) {
+//     Alert.alert("Error", "Please fill in all required fields.");
+//     return;
+//   }
+
+//    if (buildingType === "House") {
+//     if (!houseNo || !streetName || !city) {
+//       Alert.alert("Error", "Please fill in all required house fields ");
+//       return;
+//     }
+//   } else if (buildingType === "Apartment") {
+//     if (!buildingNo || !buildingName || !unitNo || !floorNo || !houseNo || !streetName || !city) {
+//       Alert.alert("Error", "Please fill in all required apartment fields ");
+//       return;
+//     }
+//   }
+
+//   if (!validatePhoneNumber(phoneNumber)) {
+//     Alert.alert("Error", "Please enter a valid phone number.");
+//     return;
+//   }
+
+//   if (!validateEmail(email)) {
+//     Alert.alert("Error", "Please enter a valid email address.");
+//     return;
+//   }
+
+//   try {
+//     const checkResponse = await axios.post(`${environment.API_BASE_URL}api/customer/check-customer`, {
+//       phoneNumber,
+//       email,
+//     });
+    
+//     // Continue with registration if check passes
+//     const customerData = {
+//       title: selectedCategory,
+//       firstName,
+//       lastName,
+//       phoneNumber,
+//       email,
+//       buildingType,
+//       houseNo,
+//       streetName,
+//       city,
+//       buildingNo,
+//       floorNo,
+//       unitNo,
+//       buildingName,
+//     };
+
+//     await AsyncStorage.setItem("pendingCustomerData", JSON.stringify(customerData));
+//     const id = new Date().getTime().toString();
+//     await sendOTP();
+//     navigation.navigate("OtpScreen", { phoneNumber, id });
+//   } catch (error: any) {
+//     console.log("Error checking customer:", error);
+    
+//     // Display "This email address is already registered" when phone number exists
+//     if (error.response && error.response.status === 400) {
+//       if (error.response.data.existingPhone) {
+//         Alert.alert("Error", "This phone Number is already registered.");
+//       } else if (error.response.data.existingEmail) {
+//         Alert.alert("Error", "This email address is already registered.");
+//       } else {
+//         Alert.alert("Error", "Your credentials already exists in our system.");
+//       }
+//     } else {
+//       Alert.alert("Error", "Registration failed. Please try again.");
+//     }
+//   }finally {
+//     setIsSubmitting(false); // Stop loading regardless of success/error
+//   }
+// };
+
+// const handleRegister = async () => {
+//   if (isSubmitting) return;
+  
+//   setIsSubmitting(true);
+
+//   // Mark all fields as touched to show errors
+//   setTouchedFields({
+//     ...touchedFields,
+//     firstName: true,
+//     lastName: true,
+//     phoneNumber: true,
+//     email: true,
+//     buildingType: true
+//   });
+
+//   // Validate required fields
+//   if (!selectedCategory || !firstName || !lastName || !phoneNumber || !email || !buildingType) {
+//     Alert.alert("Error", "Please fill in all required fields.");
+//     setIsSubmitting(false);
+//     return;
+//   }
+
+//   // Validate building-specific fields
+//   if (buildingType === "House") {
+//     if (!houseNo || !streetName || !city) {
+//       Alert.alert("Error", "Please fill in all required house fields");
+//       setIsSubmitting(false);
+//       return;
+//     }
+//   } else if (buildingType === "Apartment") {
+//     if (!buildingNo || !buildingName || !unitNo || !floorNo || !houseNo || !streetName || !city) {
+//       Alert.alert("Error", "Please fill in all required apartment fields");
+//       setIsSubmitting(false);
+//       return;
+//     }
+//   }
+
+//   // Validate phone and email formats
+//   if (!validatePhoneNumber(phoneNumber)) {
+//     Alert.alert("Error", "Please enter a valid phone number.");
+//     setIsSubmitting(false);
+//     return;
+//   }
+
+//   if (!validateEmail(email)) {
+//     Alert.alert("Error", "Please enter a valid email address.");
+//     setIsSubmitting(false);
+//     return;
+//   }
+
+//   try {
+//     const checkResponse = await axios.post(`${environment.API_BASE_URL}api/customer/check-customer`, {
+//       phoneNumber,
+//       email,
+//     });
+    
+//     const customerData = {
+//       title: selectedCategory,
+//       firstName,
+//       lastName,
+//       phoneNumber,
+//       email,
+//       buildingType,
+//       houseNo,
+//       streetName,
+//       city,
+//       buildingNo,
+//       floorNo,
+//       unitNo,
+//       buildingName,
+//     };
+
+//     await AsyncStorage.setItem("pendingCustomerData", JSON.stringify(customerData));
+//     const id = new Date().getTime().toString();
+//     await sendOTP();
+//     navigation.navigate("OtpScreen", { phoneNumber, id });
+//   } catch (error: any) {
+//     console.log("Error checking customer:", error);
+    
+//     if (error.response && error.response.status === 400) {
+//       if (error.response.data.existingPhone) {
+//         Alert.alert("Error", "This phone Number is already registered.");
+//       } else if (error.response.data.existingEmail) {
+//         Alert.alert("Error", "This email address is already registered.");
+//       } else {
+//         Alert.alert("Error", "Your credentials already exists in our system.");
+//       }
+//     } else {
+//       Alert.alert("Error", "Registration failed. Please try again.");
+//     }
+//   } finally {
+//     setIsSubmitting(false);
+//   }
+// };
+
+const handleRegister = async () => {
+  if (isSubmitting) return;
   
   setIsSubmitting(true);
-
+  // Mark all fields as touched to show errors
+  setTouchedFields({
+    ...touchedFields,
+    firstName: true,
+    lastName: true,
+    phoneNumber: true,
+    email: true,
+    buildingType: true
+  });
+  
+  // Validate required fields
   if (!selectedCategory || !firstName || !lastName || !phoneNumber || !email || !buildingType) {
     Alert.alert("Error", "Please fill in all required fields.");
+    setIsSubmitting(false);
     return;
   }
-
+  
+  // Validate building-specific fields
+  if (buildingType === "House") {
+    if (!houseNo || !streetName || !city) {
+      Alert.alert("Error", "Please fill in all required house fields");
+      setIsSubmitting(false);
+      return;
+    }
+  } else if (buildingType === "Apartment") {
+    if (!buildingNo || !buildingName || !unitNo || !floorNo || !houseNo || !streetName || !city) {
+      Alert.alert("Error", "Please fill in all required apartment fields");
+      setIsSubmitting(false);
+      return;
+    }
+  }
+  
+  // Validate phone and email formats
   if (!validatePhoneNumber(phoneNumber)) {
     Alert.alert("Error", "Please enter a valid phone number.");
+    setIsSubmitting(false);
     return;
   }
-
+  
   if (!validateEmail(email)) {
     Alert.alert("Error", "Please enter a valid email address.");
+    setIsSubmitting(false);
     return;
   }
-
+  
   try {
     const checkResponse = await axios.post(`${environment.API_BASE_URL}api/customer/check-customer`, {
       phoneNumber,
       email,
     });
     
-    // Continue with registration if check passes
     const customerData = {
       title: selectedCategory,
       firstName,
@@ -242,7 +444,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
       unitNo,
       buildingName,
     };
-
+    
     await AsyncStorage.setItem("pendingCustomerData", JSON.stringify(customerData));
     const id = new Date().getTime().toString();
     await sendOTP();
@@ -250,23 +452,51 @@ const [isSubmitting, setIsSubmitting] = useState(false);
   } catch (error: any) {
     console.log("Error checking customer:", error);
     
-    // Display "This email address is already registered" when phone number exists
     if (error.response && error.response.status === 400) {
-      if (error.response.data.existingPhone) {
-        Alert.alert("Error", "This phone Number is already registered.");
-      } else if (error.response.data.existingEmail) {
-        Alert.alert("Error", "This email address is already registered.");
+      if (error.response.data.message && 
+          error.response.data.message.includes("Phone number or email already exists")) {
+        
+        // Make two separate checks to determine which credential is duplicated
+        try {
+          // First, check just the phone number
+          const phoneCheckResponse = await axios.post(`${environment.API_BASE_URL}api/customer/check-customer`, {
+            phoneNumber,
+            email: `temp_${new Date().getTime()}@example.com`, // Use a temporary unique email
+          });
+          
+          // If we get here, the phone number is unique, so email must be duplicated
+          Alert.alert(
+            "Email Already Exists",
+            "This email is already registered. Please sign in or use a different email."
+          );
+        } catch (phoneCheckError: any) { // Add type annotation here
+          // If this check fails, it means the phone number is duplicated
+          // But we should verify the error is the same duplicate error
+          if (phoneCheckError?.response?.status === 400 && 
+              phoneCheckError?.response?.data?.message?.includes("Phone number or email already exists")) {
+            
+            Alert.alert(
+              "Phone Number Already Exists",
+              "This phone number is already registered. Please sign in or use a different phone number."
+            );
+          } else {
+            // Some other error with our check
+            Alert.alert(
+              "Account Already Exists",
+              "An account with this phone number or email already exists. Please sign in instead."
+            );
+          }
+        }
       } else {
-        Alert.alert("Error", "Your credentials already exists in our system.");
+        Alert.alert("Error", "Registration failed. Please try again.");
       }
     } else {
       Alert.alert("Error", "Registration failed. Please try again.");
     }
-  }finally {
-    setIsSubmitting(false); // Stop loading regardless of success/error
+  } finally {
+    setIsSubmitting(false);
   }
 };
-
 
   
 
@@ -309,6 +539,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
   data={[
     { key: 'Mr', value: 'Mr' },
     { key: 'Ms', value: 'Ms' },
+     { key: 'Mrs', value: 'Mrs' }
   ]} 
   boxStyles={{
     backgroundColor: '#F6F6F6',
@@ -527,6 +758,21 @@ const [isSubmitting, setIsSubmitting] = useState(false);
               )}
 
              
+{/* <TouchableOpacity 
+  onPress={handleRegister}
+  disabled={isSubmitting || loading}
+>
+  <LinearGradient 
+    colors={["#854BDA", "#6E3DD1"]} 
+    className="py-3 px-4 items-center mt-6 mb-[15%] mr-[20%] ml-[20%] rounded-3xl h-15"
+  >
+    {isSubmitting || loading ? (
+      <ActivityIndicator color="#FFFFFF" />
+    ) : (
+      <Text className="text-center text-white font-bold">Register</Text>
+    )}
+  </LinearGradient>
+</TouchableOpacity> */}
 <TouchableOpacity 
   onPress={handleRegister}
   disabled={isSubmitting || loading}

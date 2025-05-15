@@ -1,5 +1,5 @@
-import React from "react";
-import { View, Text, Image, KeyboardAvoidingView, Platform, TouchableOpacity } from "react-native";
+import React, { useCallback } from "react";
+import { View, Text, Image, KeyboardAvoidingView, Platform, TouchableOpacity, BackHandler } from "react-native";
 import BackButton from "./BackButton";
 import { LinearGradient } from "expo-linear-gradient";
 import {
@@ -9,7 +9,7 @@ import {
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import { ScrollView } from "react-native-gesture-handler";
-import { RouteProp } from '@react-navigation/native';
+import { RouteProp, useFocusEffect } from '@react-navigation/native';
 
 type OtpSuccesfulScreenNavigationProp = StackNavigationProp<RootStackParamList, "OtpSuccesfulScreen">;
 
@@ -22,7 +22,16 @@ const OtpSuccesfulScreen: React.FC<OtpSuccesfulScreenProps> = ({ route, navigati
 
   const { customerId} = route.params || {};
   
-  console.log("Received customer ID:", customerId);
+  //console.log("Received customer ID:", customerId);
+
+  useFocusEffect(
+      useCallback(() => {
+        const onBackPress = () => true;
+        BackHandler.addEventListener("hardwareBackPress", onBackPress);
+        return () =>
+          BackHandler.removeEventListener("hardwareBackPress", onBackPress);
+      }, [])
+    );
 
 
   return (
@@ -41,19 +50,23 @@ const OtpSuccesfulScreen: React.FC<OtpSuccesfulScreenProps> = ({ route, navigati
         {/* Header */}
         <View className="bg-white flex-row items-center h-17 shadow-lg px-1">
           {/* Back Button */}
-          <BackButton navigation={navigation} />
+          {/* <BackButton navigation={navigation} /> */}
           {/* Title */}
         
         </View>
 
-        {/* Main Content */}
-        <View style={{ paddingHorizontal: wp(5), paddingVertical: hp(1) }} className="flex-1">
-          {/* Illustration */}
+     
+        <View style={{ paddingHorizontal: wp(5), paddingVertical: hp(1) }} className="flex-1 mt-6">
+        
           <View className="flex items-center justify-center w-50 h-40 mb-10 pt-24 mx-12">
             <Image
               source={require("../assets/images/sucsse.png")}
-              className="w-30 h-30"
-              resizeMode="contain"
+             style={{
+               width: 170,
+               height: 170,
+               alignSelf: 'center',
+             }}
+             resizeMode="contain"
             />
           </View>
 
@@ -76,7 +89,7 @@ Successfully Verified!
           >
 <TouchableOpacity onPress={() => navigation.navigate("Main", {
   screen: "SelectOrderTypeNewCustomer",
-  params: { id: customerId } // Pass customerId as id parameter
+  params: { id: customerId } 
 })}>
   <Text className="text-center text-white font-bold text-lg">Order Now</Text>
 </TouchableOpacity>

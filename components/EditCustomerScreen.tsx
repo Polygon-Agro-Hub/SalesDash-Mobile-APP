@@ -154,7 +154,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
   
       const response = await axios.post(apiUrl, body, { headers });
   
-      console.log("API response:", response.data); 
+     // console.log("API response:", response.data); 
   
       await AsyncStorage.setItem("referenceId", response.data.referenceId);
   
@@ -328,6 +328,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
   const [items, setItems] = useState([
     { key: 'Mr', label: "Mr", value: "Mr" },
     { key: 'Ms', label: "Ms", value: "Ms" },
+     { key: 'Mrs', label: "Mrs", value: "Mrs" },
   ]);
 
   const phoneRegex = /^\+?[0-9]{1,3}[0-9]{7,10}$/;
@@ -436,8 +437,8 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
     borderRadius: 10,
     zIndex: 1000,
   }}
-  listMode="SCROLLVIEW"          // <-- ADD this
-  scrollViewProps={{             // <-- ADD this
+  listMode="SCROLLVIEW"          
+  scrollViewProps={{            
     nestedScrollEnabled: true,
   }}
 />
