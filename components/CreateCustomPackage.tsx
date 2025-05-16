@@ -47,6 +47,7 @@ interface Product {
   startValue: number;
   changeby: number;
   category:string;
+  tags:string;
 }
 
 const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation, route }) => {
@@ -95,13 +96,22 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation, r
     fetchProducts();
   }, []);
 
+  // const filteredProducts = products
+  // .filter(product => 
+  //   product.category === "Retail" && 
+  //   (searchQuery 
+  //     ? product.displayName.toLowerCase().includes(searchQuery.toLowerCase())
+  //     : true)
+  // );
+
   const filteredProducts = products
-  .filter(product => 
-    product.category === "Retail" && 
-    (searchQuery 
-      ? product.displayName.toLowerCase().includes(searchQuery.toLowerCase())
-      : true)
-  );
+    .filter(product => 
+      product.category === "Retail" &&
+      (searchQuery
+        ? product.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (product.tags && product.tags.toLowerCase().includes(searchQuery.toLowerCase()))
+        : true)
+    );
 
   const toggleProductSelection = (id: number) => {
     setProducts(
@@ -199,44 +209,49 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation, r
           </View>
 
           {/* Product List */}
-          <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+          <ScrollView className="flex-1 px-2" showsVerticalScrollIndicator={false}>
             {filteredProducts.length > 0 ? (
-              filteredProducts.map((product) => {
-                const pricePerKg = product.discountedPrice;
-                return (
-                  <TouchableOpacity
-                    key={product.id}
-                    className="flex-row items-center justify-between py-3 border-b border-gray-100"
-                    onPress={() => toggleProductSelection(product.id)}
+            filteredProducts.map((product) => (
+              <TouchableOpacity
+                key={product.id}
+                className="flex-row py-3 border-b border-gray-100"
+                onPress={() => toggleProductSelection(product.id)}
+              >
+                {/* Product info with flex-1 to ensure it takes available space but doesn't overflow */}
+                <View className="flex-1 pr-3">
+                  <Text 
+                    className="text-base font-medium text-gray-800" 
+                    numberOfLines={2} // Optional: limit to 2 lines if preferred
                   >
-                    <View>
-                      <Text className="text-base font-medium text-gray-800">
-                        {product.displayName}
-                      </Text>
-                      <Text className="text-sm text-gray-600">
-                        Rs.{product.discountedPrice} per kg
-                        {product.unitType.toLowerCase() === 'g' && (
-                          <Text style={{fontSize: 10}}> </Text>
-                        )}
-                      </Text>
-                    </View>
-                    <View
-                      className={`w-6 h-6 rounded border ${
-                        product.selected ? "bg-black border-black" : "border-gray-400"
-                      } justify-center items-center`}
-                    >
-                      {product.selected && (
-                        <Ionicons name="checkmark" size={16} color="white" />
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                );
-              })
-            ) : (
-              <View className="py-8 items-center justify-center">
-                <Text className="text-gray-500">No products found</Text>
-              </View>
-            )}
+                    {product.displayName}
+                  </Text>
+                  <Text className="text-sm text-gray-600">
+                    Rs.{product.discountedPrice} per kg
+                  </Text>
+                </View>
+                
+                {/* Checkbox with fixed width to ensure it's always visible */}
+                <View className="justify-center w-8">
+                  <View
+                    className={`w-6 h-6 rounded border ${
+                      product.selected ? "bg-black border-black" : "border-gray-400"
+                    } justify-center items-center`}
+                  >
+                    {product.selected && (
+                      <Ionicons name="checkmark" size={16} color="white" />
+                    )}
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))
+          ) : (
+            <View className="py-8 items-center justify-center">
+              <Text className="text-gray-500">No products found</Text>
+            </View>
+          )}
+           
+           </ScrollView>
+           
          
             {/* Go to Cart Button */}
             <View className="py-4 px-6 ">
@@ -260,7 +275,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation, r
                 )}
               </TouchableOpacity>
             </View>
-          </ScrollView>
+        
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

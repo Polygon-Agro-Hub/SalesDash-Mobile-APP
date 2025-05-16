@@ -59,15 +59,25 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
 
 
-  useEffect(() => {
+   useEffect(() => {
     if (route.params?.selectedProducts) {
-      const initializedItems = route.params.selectedProducts.map(item => ({
-        ...item,
-        selected: false,
-        changeby: 1, 
-        quantity: 1,
-        unitType: 'kg' 
-      }));
+      const initializedItems = route.params.selectedProducts.map(item => {
+        // Parse startValue as number
+        const startValueNum = typeof item.startValue === 'string' 
+          ? parseFloat(item.startValue) 
+          : item.startValue || 1;
+          
+        // Make sure unitType is lowercase to match component state
+        const unitType = item.unitType?.toLowerCase() === 'g' ? 'g' : 'kg';
+        
+        return {
+          ...item,
+          selected: false,
+          changeby: startValueNum, 
+          quantity: startValueNum,
+          unitType: unitType 
+        };
+      });
       setCartItems(initializedItems);
     }
   }, [route.params]);
@@ -76,9 +86,6 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     const hasSelectedItems = cartItems.some(item => item.selected);
     setIsSelectionMode(hasSelectedItems);
   }, [cartItems]);
-
-
- 
 
   const toggleItemSelection = (id: number) => {
     setCartItems(
@@ -91,14 +98,17 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
   };
 
   const deleteSelectedItems = () => {
+    // First, delete the selected items
     setCartItems(cartItems.filter(item => !item.selected));
+    
+    // Automatically clear selection mode after deletion
+    setIsSelectionMode(false);
   };
 
   const calculateItemTotal = (item: CartItem) => {
     if (item.unitType === 'kg') {
       return (item.discountedPrice * item.changeby).toFixed(2);
     } else {
-
       return ((item.discountedPrice / 1000) * item.changeby).toFixed(2);
     }
   };
@@ -107,7 +117,6 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     if (item.unitType === 'kg') {
       return (item.normalPrice * item.changeby).toFixed(2);
     } else {
-
       return ((item.normalPrice / 1000) * item.changeby).toFixed(2);
     }
   };
@@ -116,8 +125,15 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     setCartItems(
       cartItems.map(item => {
         if (item.id === id && item.unitType !== newUnit) {
-    
-          const newValue = newUnit === 'kg' ? item.changeby / 1000 : item.changeby * 1000;
+          // Convert the value based on unit change
+          let newValue;
+          if (newUnit === 'kg') {
+            // Converting from g to kg
+            newValue = item.changeby / 1000;
+          } else {
+            // Converting from kg to g
+            newValue = item.changeby * 1000;
+          }
           
           return { 
             ...item, 
@@ -131,26 +147,28 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     );
   };
 
- 
-
- 
-
-
   const increaseQuantity = (id: number) => {
     setCartItems(
       cartItems.map(item => {
         if (item.id === id) {
-          // Parse the initial changeby value from your data (fixed increment amount)
-          const incrementAmount = typeof item.startValue === 'string' 
+          // Get base startValue in kg
+          const baseIncrementAmount = typeof item.startValue === 'string' 
             ? parseFloat(item.startValue) 
             : item.startValue;
+          
+          // Adjust increment based on current unit type
+          let incrementAmount = baseIncrementAmount;
+          if (item.unitType === 'g') {
+            // If in grams, the increment should be the kg value * 1000
+            incrementAmount = baseIncrementAmount * 1000;
+          }
             
           // Current quantity value
           const currentQuantity = typeof item.changeby === 'string' 
             ? parseFloat(item.changeby) 
             : item.changeby;
             
-          // Add the fixed increment to the current quantity
+          // Add the adjusted increment to the current quantity
           const newValue = currentQuantity + incrementAmount;
           
           return { 
@@ -168,22 +186,30 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     setCartItems(
       cartItems.map(item => {
         if (item.id === id) {
-          // Parse the initial changeby value from your data (fixed decrement amount)
-          const decrementAmount = typeof item.startValue === 'string' 
+          // Get base startValue in kg
+          const baseDecrementAmount = typeof item.startValue === 'string' 
             ? parseFloat(item.startValue) 
             : item.startValue;
+          
+          // Adjust decrement based on current unit type
+          let decrementAmount = baseDecrementAmount;
+          if (item.unitType === 'g') {
+            // If in grams, the decrement should be the kg value * 1000
+            decrementAmount = baseDecrementAmount * 1000;
+          }
             
           // Current quantity value
           const currentQuantity = typeof item.changeby === 'string' 
             ? parseFloat(item.changeby) 
             : item.changeby;
+          
+          // Minimum value is adjusted based on unit type
+          let minValue = baseDecrementAmount;
+          if (item.unitType === 'g') {
+            minValue = baseDecrementAmount * 1000;
+          }
             
-          // Minimum value is startValue
-          const minValue = typeof item.startValue === 'string' 
-            ? parseFloat(item.startValue) 
-            : item.startValue;
-            
-          // Subtract the fixed decrement from current quantity, but not below minimum
+          // Subtract the adjusted decrement from current quantity, but not below minimum
           const newValue = Math.max(minValue, currentQuantity - decrementAmount);
           
           return { 
@@ -197,31 +223,24 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     );
   };
   
-  
+  // Calculate totals including ALL items, regardless of selection state
   const currentSubtotal = cartItems.reduce((total, item) => {
-    if (!item.selected) {
-      return total + parseFloat(calculateItemNormalTotal(item));
-    }
-    return total;
+    // Include all items in totals, even if selected
+    return total + parseFloat(calculateItemNormalTotal(item));
   }, 0);
   
   const currentTotal = cartItems.reduce((total, item) => {
-    if (!item.selected) {
-      return total + parseFloat(calculateItemTotal(item));
-    }
-    return total;
+    // Include all items in totals, even if selected
+    return total + parseFloat(calculateItemTotal(item));
   }, 0);
 
   const discount = currentSubtotal - currentTotal;
-
- 
 
   const handleConfirm = () => {
     const nonSelectedItems = cartItems.filter(item => !item.selected);
     
     if (nonSelectedItems.length > 0) {
       const itemsToPass = nonSelectedItems.map(item => {
-   
         const weightInKg = item.unitType === 'g' ? item.changeby / 1000 : item.changeby;
         
         return {
@@ -301,11 +320,13 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
                 </Text>
               </View>
               
-              <View className="flex-row items-center">
-                <View className="flex-row mr-2">
+              <View className="flex-row items-center mt-[-5%]">
+                {/* <View className="flex-row mr-2  "
+            
+                >
                   <TouchableOpacity 
-                    className={`px-2 py-1 rounded-md border border-purple-200 ${
-                      item.unitType === 'kg' ? 'bg-purple-100' : 'bg-white'
+                    className={`px-2 py-1 rounded-md border  ${
+                      item.unitType === 'kg' ? 'bg-purple-100 border-[#3E206D]' : 'bg-white border-[#A3A3A3]'
                     }`}
                     onPress={() => changeUnit(item.id, 'kg')}
                   >
@@ -316,7 +337,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
                   
                   <TouchableOpacity 
                     className={`px-2 py-1 rounded-md border border-purple-200 ml-1 ${
-                      item.unitType === 'g' ? 'bg-purple-100' : 'bg-white'
+                      item.unitType === 'g' ? 'bg-purple-100 border-[#3E206D]' : 'bg-white r-[#A3A3A3]'
                     }`}
                     onPress={() => changeUnit(item.id, 'g')}
                   >
@@ -324,7 +345,62 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
                       item.unitType === 'g' ? 'text-purple-600' : 'text-gray-600'
                     }`}>g</Text>
                   </TouchableOpacity>
-                </View>
+                </View> */}
+                <View className="flex-row mr-2 item-center justify-center  ">
+      {/* KG Button */}
+      <TouchableOpacity
+        className={` w-8 h-8 rounded-md border shadow-xl items-center justify-center ${
+          item.unitType === 'kg' 
+            ? 'bg-purple-100 border-[#3E206D]' 
+            : 'bg-white border-[#A3A3A3]'
+        }`}
+        style={{
+          shadowColor: "#000",
+    
+      shadowOpacity: 0.5,
+      shadowRadius: 10,
+      elevation: 10, 
+      
+     
+         //  borderBottomWidth: 2,
+        }}
+        onPress={() => changeUnit(item.id, 'kg')}
+      >
+        <Text 
+          className={`text-base mt-[-3] ${
+            item.unitType === 'kg' ? 'text-purple-600' : 'text-gray-600'
+          }`}
+        >
+          kg
+        </Text>
+      </TouchableOpacity>
+      
+      {/* G Button */}
+      <TouchableOpacity
+        className={`w-8 h-8 rounded-md border ml-2 shadow-xl items-center  justify-center ${
+          item.unitType === 'g' 
+            ? 'bg-purple-100 border-[#3E206D]' 
+            : 'bg-white border-[#A3A3A3]'
+        }`}
+        style={{
+          shadowColor: "#000",
+    
+      shadowOpacity: 0.5,
+      shadowRadius: 10,
+      elevation: 10, 
+     
+        }}
+        onPress={() => changeUnit(item.id, 'g')}
+      >
+        <Text 
+          className={`text-base mt-[-5] ${
+            item.unitType === 'g' ? 'text-purple-600' : 'text-gray-600'
+          }`}
+        >
+          g
+        </Text>
+      </TouchableOpacity>
+    </View>
                 <View className="flex-row items-center">
                   <TouchableOpacity 
                     className="bg-gray-200 w-6 h-6 rounded-full justify-center items-center"
@@ -359,7 +435,10 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
           <View className="py-4 border-t border-gray-200">
             <View className="flex-row justify-between py-2">
               <Text className="text-gray-500">Subtotal</Text>
-              <Text className="font-medium">Rs.{currentSubtotal.toFixed(2)}</Text>
+              <Text className="font-medium">Rs.
+
+                 {currentSubtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </Text>
             </View>
             
             <View className="flex-row justify-between py-2">
@@ -369,7 +448,10 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
             
             <View className="flex-row justify-between py-2">
               <Text className="font-semibold">Total</Text>
-              <Text className="font-bold">Rs.{currentTotal.toFixed(2)}</Text>
+              <Text className="font-bold">Rs.
+ {currentTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+
+              </Text>
             </View>
           </View>
           <View className="py-4 border-t border-gray-200"></View>

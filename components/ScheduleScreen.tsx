@@ -689,63 +689,311 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
     setShowDatePicker(true);
   };
   
-  const handleDateChange = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(Platform.OS === 'ios');
+  // const handleDateChange = (event: any, selectedDate?: Date) => {
+  //   setShowDatePicker(Platform.OS === 'ios');
     
-    if (selectedDate) {
-      // Validate selected date is at least 2 days from today
-      const today = new Date();
-      const minSelectableDate = new Date(today);
-      minSelectableDate.setDate(today.getDate() + 2);
+  //   if (selectedDate) {
+  //     // Validate selected date is at least 2 days from today
+  //     const today = new Date();
+  //     const minSelectableDate = new Date(today);
+  //     minSelectableDate.setDate(today.getDate() + 2);
       
-      if (selectedDate >= minSelectableDate) {
-        setDate(selectedDate);
+  //     if (selectedDate >= minSelectableDate) {
+  //       setDate(selectedDate);
         
-        const day = selectedDate.getDate();
-        const month = selectedDate.toLocaleString('en-US', { month: 'short' });
-        const year = selectedDate.getFullYear();
-        const formattedDate = `${day} ${month} ${year}`;
+  //       const day = selectedDate.getDate();
+  //       const month = selectedDate.toLocaleString('en-US', { month: 'short' });
+  //       const year = selectedDate.getFullYear();
+  //       const formattedDate = `${day} ${month} ${year}`;
         
-        setSelectedDate(formattedDate);
-        setIsDateSelected(true);
-      } else {
-        // Alert user if they somehow selected an invalid date
-        Alert.alert(
-          "Invalid Date", 
-          "Please select a date at least 2 days from today."
-        );
+  //       setSelectedDate(formattedDate);
+  //       setIsDateSelected(true);
+  //     } else {
+  //       // Alert user if they somehow selected an invalid date
+  //       Alert.alert(
+  //         "Invalid Date", 
+  //         "Please select a date at least 2 days from today."
+  //       );
         
-        // Reset to minimum date
-        setDate(minimumDate);
-      }
-    }
-  };
+  //       // Reset to minimum date
+  //       setDate(minimumDate);
+  //     }
+  //   }
+  // };
   
-  const handleIOSDateConfirm = () => {
-    // Validate selected date is at least 2 days from today for iOS
-    const today = new Date();
-    const minSelectableDate = new Date(today);
-    minSelectableDate.setDate(today.getDate() + 2);
+  // const handleIOSDateConfirm = () => {
+  //   // Validate selected date is at least 2 days from today for iOS
+  //   const today = new Date();
+  //   const minSelectableDate = new Date(today);
+  //   minSelectableDate.setDate(today.getDate() + 2);
     
-    if (date >= minSelectableDate) {
-      const day = date.getDate();
-      const month = date.toLocaleString('en-US', { month: 'short' });
-      const year = date.getFullYear();
+  //   if (date >= minSelectableDate) {
+  //     const day = date.getDate();
+  //     const month = date.toLocaleString('en-US', { month: 'short' });
+  //     const year = date.getFullYear();
+  //     const formattedDate = `${day} ${month} ${year}`;
+      
+  //     setSelectedDate(formattedDate);
+  //     setIsDateSelected(true);
+  //     setShowDatePicker(false);
+  //   } else {
+  //     Alert.alert(
+  //       "Invalid Date", 
+  //       "Please select a date at least 2 days from today."
+  //     );
+      
+  //     // Reset to minimum date
+  //     setDate(minimumDate);
+  //   }
+  // };
+//   const getSelectableDates = () => {
+//   const minDate = new Date();
+//   minDate.setDate(minDate.getDate() + 2); // Add 3 days to current date for minimum
+  
+//   const maxDate = new Date(minDate);
+//   maxDate.setDate(minDate.getDate() + 3); // Add 2 more days (total 5 days from today)
+  
+//   return { minDate, maxDate };
+// };
+
+// // Set selectable date range
+// const { minDate, maxDate } = getSelectableDates();
+
+// // Modify the date change handlers to enforce this range
+// const handleDateChange = (event: any, selectedDate?: Date) => {
+//   setShowDatePicker(Platform.OS === 'ios');
+  
+//   if (selectedDate) {
+//     // Validate selected date is within the allowed range
+//     if (selectedDate > minDate && selectedDate <= maxDate) {
+//       setDate(selectedDate);
+      
+//       const day = selectedDate.getDate();
+//       const month = selectedDate.toLocaleString('en-US', { month: 'short' });
+//       const year = selectedDate.getFullYear();
+//       const formattedDate = `${day} ${month} ${year}`;
+      
+//       setSelectedDate(formattedDate);
+//       setIsDateSelected(true);
+//     } else {
+//       // Alert user if they select an invalid date
+//       const minDay = minDate.getDate();
+//       const minMonth = minDate.toLocaleString('en-US', { month: 'short' });
+//       const maxDay = maxDate.getDate();
+//       const maxMonth = maxDate.toLocaleString('en-US', { month: 'short' });
+      
+//       Alert.alert(
+//         "Invalid Date", 
+//         `Please select a date between ${minDay} ${minMonth} and ${maxDay} ${maxMonth}`
+//       );
+      
+//       // Reset to minimum date
+//       setDate(minDate);
+//     }
+//   }
+// };
+
+// const handleIOSDateConfirm = () => {
+//   // Validate selected date is within range for iOS
+//   if (date > minDate && date <= maxDate) {
+//     const day = date.getDate();
+//     const month = date.toLocaleString('en-US', { month: 'short' });
+//     const year = date.getFullYear();
+//     const formattedDate = `${day} ${month} ${year}`;
+    
+//     setSelectedDate(formattedDate);
+//     setIsDateSelected(true);
+//     setShowDatePicker(false);
+//   } else {
+//     const minDay = minDate.getDate();
+//     const minMonth = minDate.toLocaleString('en-US', { month: 'short' });
+//     const maxDay = maxDate.getDate();
+//     const maxMonth = maxDate.toLocaleString('en-US', { month: 'short' });
+    
+//     Alert.alert(
+//       "Invalid Date", 
+//       `Please select a date between ${minDay} ${minMonth} and ${maxDay} ${maxMonth}`
+//     );
+    
+//     // Reset to minimum date
+//     setDate(minDate);
+//   }
+// };
+
+// const getSelectableDates = () => {
+//   const today = new Date();
+  
+ 
+//   const minDate = new Date(today);
+//   minDate.setDate(today.getDate() + 2);
+  
+ 
+//   const maxDate = new Date(minDate);
+//   maxDate.setDate(minDate.getDate() + 3);
+  
+//   return { minDate, maxDate };
+// };
+
+// // Set selectable date range
+// const { minDate, maxDate } = getSelectableDates();
+
+
+// const handleDateChange = (event: any, selectedDate?: Date) => {
+//   setShowDatePicker(Platform.OS === 'ios');
+  
+//   if (selectedDate) {
+   
+//     if (selectedDate > minDate && selectedDate <= maxDate) {
+//       setDate(selectedDate);
+      
+//       const day = selectedDate.getDate();
+//       const month = selectedDate.toLocaleString('en-US', { month: 'short' });
+//       const year = selectedDate.getFullYear();
+//       const formattedDate = `${day} ${month} ${year}`;
+      
+//       setSelectedDate(formattedDate);
+//       setIsDateSelected(true);
+//     } else {
+//       // Alert user if they select an invalid date
+//       const minDay = minDate.getDate();
+//       const minMonth = minDate.toLocaleString('en-US', { month: 'short' });
+//       const maxDay = maxDate.getDate();
+//       const maxMonth = maxDate.toLocaleString('en-US', { month: 'short' });
+      
+//       Alert.alert(
+//         "Invalid Date", 
+//         `Please select a date between ${minDay} ${minMonth} and ${maxDay} ${maxMonth}`
+//       );
+      
+//       // Reset to minimum date
+//       setDate(minDate);
+//     }
+//   }
+// };
+
+// const handleIOSDateConfirm = () => {
+//   // Validate selected date is within range for iOS
+//   // Changed from > to >= for minDate to allow selecting the minimum date
+//   if (date >= minDate && date <= maxDate) {
+//     const day = date.getDate();
+//     const month = date.toLocaleString('en-US', { month: 'short' });
+//     const year = date.getFullYear();
+//     const formattedDate = `${day} ${month} ${year}`;
+    
+//     setSelectedDate(formattedDate);
+//     setIsDateSelected(true);
+//     setShowDatePicker(false);
+//   } else {
+//     const minDay = minDate.getDate();
+//     const minMonth = minDate.toLocaleString('en-US', { month: 'short' });
+//     const maxDay = maxDate.getDate();
+//     const maxMonth = maxDate.toLocaleString('en-US', { month: 'short' });
+    
+//     Alert.alert(
+//       "Invalid Date", 
+//       `Please select a date between ${minDay} ${minMonth} and ${maxDay} ${maxMonth}`
+//     );
+    
+//     // Reset to minimum date
+//     setDate(minDate);
+//   }
+// };
+
+const getSelectableDates = () => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Reset hours for accurate comparison
+  
+  // Minimum date is today + 3 days (May 19 if today is May 16)
+  const minDate = new Date(today);
+  minDate.setDate(today.getDate() + 3);
+  
+  // Maximum date is minDate + 2 days (May 21)
+  const maxDate = new Date(minDate);
+  maxDate.setDate(minDate.getDate() + 2);
+  
+  return { minDate, maxDate };
+};
+
+// Set selectable date range
+const { minDate, maxDate } = getSelectableDates();
+
+// Modify the date change handlers to enforce this range
+const handleDateChange = (event: any, selectedDate?: Date) => {
+  setShowDatePicker(Platform.OS === 'ios');
+  
+  if (selectedDate) {
+    // Ensure date comparison is accurate by resetting time
+    const selectedWithoutTime = new Date(selectedDate);
+    selectedWithoutTime.setHours(0, 0, 0, 0);
+    
+    // For debugging
+    console.log(`Selected date: ${selectedWithoutTime.toDateString()}`);
+    console.log(`Min date: ${minDate.toDateString()}`);
+    console.log(`Max date: ${maxDate.toDateString()}`);
+    console.log(`Is >= min: ${selectedWithoutTime >= minDate}`);
+    console.log(`Is <= max: ${selectedWithoutTime <= maxDate}`);
+    
+    // Validate selected date is within the allowed range using comparison of timestamps
+    if (selectedWithoutTime.getTime() >= minDate.getTime() && 
+        selectedWithoutTime.getTime() <= maxDate.getTime()) {
+      setDate(selectedDate);
+      
+      const day = selectedDate.getDate();
+      const month = selectedDate.toLocaleString('en-US', { month: 'short' });
+      const year = selectedDate.getFullYear();
       const formattedDate = `${day} ${month} ${year}`;
       
       setSelectedDate(formattedDate);
       setIsDateSelected(true);
-      setShowDatePicker(false);
     } else {
+      // Alert user if they select an invalid date
+      const minDay = minDate.getDate();
+      const minMonth = minDate.toLocaleString('en-US', { month: 'short' });
+      const maxDay = maxDate.getDate();
+      const maxMonth = maxDate.toLocaleString('en-US', { month: 'short' });
+      
       Alert.alert(
         "Invalid Date", 
-        "Please select a date at least 2 days from today."
+        `Please select a date between ${minDay} ${minMonth} and ${maxDay} ${maxMonth} (inclusive)`
       );
       
-      // Reset to minimum date
-      setDate(minimumDate);
+      // Reset to minimum date as fallback
+      setDate(minDate);
     }
-  };
+  }
+};
+
+const handleIOSDateConfirm = () => {
+  // Ensure date comparison is accurate by resetting time
+  const dateWithoutTime = new Date(date);
+  dateWithoutTime.setHours(0, 0, 0, 0);
+  
+  // Validate selected date is within range for iOS using timestamp comparison
+  if (dateWithoutTime.getTime() >= minDate.getTime() && 
+      dateWithoutTime.getTime() <= maxDate.getTime()) {
+    const day = date.getDate();
+    const month = date.toLocaleString('en-US', { month: 'short' });
+    const year = date.getFullYear();
+    const formattedDate = `${day} ${month} ${year}`;
+    
+    setSelectedDate(formattedDate);
+    setIsDateSelected(true);
+    setShowDatePicker(false);
+  } else {
+    const minDay = minDate.getDate();
+    const minMonth = minDate.toLocaleString('en-US', { month: 'short' });
+    const maxDay = maxDate.getDate();
+    const maxMonth = maxDate.toLocaleString('en-US', { month: 'short' });
+    
+    Alert.alert(
+      "Invalid Date", 
+      `Please select a date between ${minDay} ${minMonth} and ${maxDay} ${maxMonth} (inclusive)`
+    );
+    
+    // Reset to minimum date
+    setDate(minDate);
+  }
+};
   
   const handleTimeSlotSelection = (val: string) => {
     if (val !== selectedTimeSlot) {
@@ -874,7 +1122,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
             mode="date"
             display="default"
             onChange={handleDateChange}
-            minimumDate={minimumDate} // Set minimum date to 2 days from today
+            minimumDate={minimumDate} 
+            maximumDate={maxDate}
           />
         )}
   
@@ -900,6 +1149,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
                   onChange={handleDateChange}
                   minimumDate={minimumDate} // Set minimum date to 2 days from today
                   style={{ height: 200, marginTop: -10 }}
+                  maximumDate={maxDate}
                 />
                 
                 <View className="flex-row justify-between mt-2">

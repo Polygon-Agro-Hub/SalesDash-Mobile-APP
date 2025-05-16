@@ -792,27 +792,27 @@ useEffect(() => {
   </View>
   
   {/* Rest of the payment summary remains the same */}
-  <View className="flex-row justify-between">
+  <View className="flex-row justify-between mt-3">
     <Text className="text-[#8492A3] font-medium">Subtotal</Text>
-    <Text className="text-black font-medium mr-12">
+    <Text className="text-black font-medium mr-14">
       Rs.{subTotalDeliveryPlus.toFixed(2)}
     </Text>
   </View>
-  <View className="flex-row justify-between">
+  <View className="flex-row justify-between mt-2">
     <Text className="text-[#8492A3]">Discount</Text>
-    <Text className="text-gray-500 mr-12">
+    <Text className="text-gray-500 mr-14">
       Rs.{discount.toFixed(2)}
     </Text>
   </View>
   <View className="flex-row justify-between mt-2">
     <Text className="text-black font-semibold">Grand Total</Text>
-    <Text className="text-black font-semibold mr-12">
+    <Text className="text-black font-semibold mr-14">
       Rs.{totalDeliveryPlus.toFixed(2)}
     </Text>
   </View>
 </View>
           {/* Payment Method */}
-          <View className="bg-white border border-gray-300 rounded-lg p-4 mt-3 shadow-sm">
+          {/* <View className="bg-white border border-gray-300 rounded-lg p-4 mt-3 shadow-sm">
             <View className="flex-row justify-between">
               <Text className="text-black font-medium">Payment Method</Text>
               <TouchableOpacity 
@@ -843,7 +843,8 @@ useEffect(() => {
       isSelectPackage,
      customerId,  // This is the numeric ID (7)
   customerid: customerid.toString() || customerId.toString(),
-      orderItems
+      orderItems,
+      selectedMethod :paymentMethod
                 })}
                 className="border border-[#6C3CD1] px-3 rounded-full">
                 <Text className="text-[#6C3CD1] font-medium">Edit</Text>
@@ -851,7 +852,37 @@ useEffect(() => {
             </View>
             <Text className="text-[#8492A3] mt-1">{paymentMethod || "Not selected"}</Text>
           </View>
-        </View>
+        </View> */}
+
+        <View className="bg-white border border-gray-300 rounded-lg p-4 mt-3 shadow-sm">
+  <View className="flex-row justify-between">
+    <Text className="text-black font-medium">Payment Method</Text>
+    <TouchableOpacity
+      onPress={() => navigation.navigate("SelectPaymentMethod" as any, {
+        // Pass all the data needed for a complete round trip
+        items,
+        subtotal,
+        discount,
+        total,
+        fullTotal,
+        selectedDate,
+        timeDisplay,
+        isCustomPackage,
+        isSelectPackage,
+        selectedTimeSlot,
+        customerId,
+        customerid: customerid?.toString() || customerId?.toString(),
+        orderItems,
+        selectedMethod: paymentMethod 
+      })}
+      className="border border-[#6C3CD1] px-3 rounded-full"
+    >
+      <Text className="text-[#6C3CD1] font-medium">Edit</Text>
+    </TouchableOpacity>
+  </View>
+  <Text className="text-[#8492A3] mt-1">{paymentMethod || "Not selected"}</Text>
+</View>
+</View>
   
         {/* Confirm Button with ActivityIndicator */}
         <TouchableOpacity 
