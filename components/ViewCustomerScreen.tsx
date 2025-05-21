@@ -107,7 +107,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
     Linking.openURL(phoneNumber).catch((err) => console.error("Error opening dialer", err));
   };
 
-  const filters = ["Ordered", "Processing", "On the way", "Cancelled"];
+  const filters = ["Ordered", "Processing", "On the way", "Delivered", "Cancelled"];
 
 
   const formatScheduleDate = (dateString: string) => {
@@ -319,6 +319,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
                       item.orderStatus === "Ordered" ? "bg-[#E0E0E0]" 
                       : item.orderStatus === "On the way" ? "bg-[#FFFD99]" 
                       : item.orderStatus === "Processing" ? "bg-[#CFE1FF]"
+                        : item.orderStatus === "Delivered" ? "bg-[#CCFBF1]"
                       : item.orderStatus === "Cancelled" ? "bg-[#FFE4E1]"
                       : "bg-[#EAEAEA]"
                     }`}>
@@ -326,6 +327,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
                         item.orderStatus === "Ordered" ? "text-[#3F3F3F]"
                         : item.orderStatus === "On the way" ? "text-[#A6A100]"
                         : item.orderStatus === "Processing" ? "text-[#3B82F6]"
+                        : item.orderStatus === "Delivered" ? "bg-[#0D9488]"
                         : item.orderStatus === "Cancelled" ? "text-[#FF0000]"
                         : "text-[#393939]"
                       }`}>

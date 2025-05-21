@@ -50,6 +50,7 @@ interface Order {
   fullSubTotal: string | null;
   fullDiscount: string | null;
   deleteStatus: string | null;
+  title: string | null ;
   firstName: string;
   lastName: string;
   phoneNumber: string;
@@ -289,8 +290,9 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
                 <h3>Purchase Invoice</h3>
                 <div class="section">
                     <p class="bold">AgroWorld (Pvt) Ltd.</p>
-                    <p>Address: No. 1 Colombo 2</p>
-                    <p>Contact: 077123457</p>
+                    <p>Address: No. 1 Colombo 2No 46/42, Nawam Mawatha, Colombo 02
+</p>
+                    <p>Contact: +94 770111999</p>
                     <p>Invoice Number: <strong>${order?.InvNo}</strong></p>
                     <p>Date: <strong>${new Date().toLocaleDateString()}</strong></p>
                 </div>
@@ -304,7 +306,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
   
                 <div class="section">
                     <h3>Receiver Details</h3>
-                    <p><span class="bold">Receiver's Name:</span> ${order?.firstName}  ${order?.lastName}</p>
+                    <p><span class="bold">Receiver's Name:</span> ${order?.title}  ${order?.firstName}  ${order?.lastName}</p>
                     <p><span class="bold">Phone Number:</span> ${order?.phoneNumber}</p>
                     <p><span class="bold">Building Type:</span> ${order?.buildingType}</p>
                     <p><span class="bold">Address:</span> ${order?.fullAddress}</p>
@@ -330,19 +332,23 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
                     <table>
                         <tr>
                             <th>Description</th>
-                            <th>Amount</th>
+                            <th>Amount (Rs.)</th>
                         </tr>
                         <tr>
                             <td>Subtotal</td>
-                            <td>${subtotal.toFixed(2)}</td>
+                            <td>${(subtotal ).toFixed(2)}</td>
                         </tr>
                         <tr>
                             <td>Discount</td>
                             <td>${discount.toFixed(2)}</td>
                         </tr>
+                         <tr>
+                            <td>Delivery Fee</td>
+                            <td>350.00</td>
+                        </tr>
                         <tr>
                             <td><strong>Grand Total</strong></td>
-                            <td><strong>${total.toFixed(2)}</strong></td>
+                           <td><strong>${(total + 350).toFixed(2)}</strong></td>
                         </tr>
                     </table>
                 </div>
