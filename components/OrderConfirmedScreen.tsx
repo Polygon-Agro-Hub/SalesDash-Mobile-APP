@@ -94,6 +94,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
   
     return () => backHandler.remove();
   }, []);
+  
 
   
 
@@ -290,7 +291,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
                 <h3>Purchase Invoice</h3>
                 <div class="section">
                     <p class="bold">AgroWorld (Pvt) Ltd.</p>
-                    <p>Address: No. 1 Colombo 2No 46/42, Nawam Mawatha, Colombo 02
+                    <p>Address: No 46/42, Nawam Mawatha, Colombo 02
 </p>
                     <p>Contact: +94 770111999</p>
                     <p>Invoice Number: <strong>${order?.InvNo}</strong></p>

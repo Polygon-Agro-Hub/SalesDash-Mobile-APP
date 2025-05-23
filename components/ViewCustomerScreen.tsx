@@ -54,6 +54,7 @@ type ViewCustomerScreenProps = {
   navigation: ViewCustomerScreenNavigationProp;
 };
 
+
 const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigation }) => {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [searchText, setSearchText] = useState("");
@@ -63,7 +64,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
   const [error, setError] = useState<string | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
 
-  const { name, number, id, customerId,title } = route.params;
+  const { name, number, id, customerId, title } = route.params;
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
@@ -85,7 +86,6 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
           `${environment.API_BASE_URL}api/orders/get-order-bycustomerId/${id}`
         );
 
-       // console.log(response.data)
         if (response.data.success) {
           setOrders(response.data.data);
         } else {
@@ -102,13 +102,19 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
     fetchOrders();
   }, [id]);
 
+  // Clear search error when search text changes
+  useEffect(() => {
+    if (searchText.trim() === "") {
+      setSearchError(null);
+    }
+  }, [searchText]);
+
   const handleGetACall = () => {
     const phoneNumber = `tel:${number}`;
     Linking.openURL(phoneNumber).catch((err) => console.error("Error opening dialer", err));
   };
 
   const filters = ["Ordered", "Processing", "On the way", "Delivered", "Cancelled"];
-
 
   const formatScheduleDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -118,19 +124,9 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
     return `${year}/${month}/${day}`;
   };
 
- 
-
-  // Filter orders based on status and search text
-  // const filteredOrders = orders.filter(order => {
-  //   const matchesStatus = selectedFilter === "All" || order.orderStatus === selectedFilter;
-  //   const matchesSearch = !searchText || 
-  //     (order.InvNo && order.InvNo.toLowerCase().includes(searchText.toLowerCase()));
-    
-  //   return matchesStatus && matchesSearch;
-  // });
-
   const handleSearch = () => {
     if (searchText.trim() === "") {
+      setSearchError(null);
       return;
     }
     
@@ -146,6 +142,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
       setSearchError(null);
     }
   };
+
   const filteredOrders = orders.filter(order => {
     const matchesStatus = selectedFilter === "All" || order.orderStatus === selectedFilter;
     const matchesSearch = !searchText || 
@@ -154,7 +151,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
     return matchesStatus && matchesSearch;
   });
 
-    const isEmpty = filteredOrders.length === 0;
+  const isEmpty = filteredOrders.length === 0;
 
   return (
     <KeyboardAvoidingView 
@@ -242,9 +239,20 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
           
           {/* Search Error Message */}
           {searchError && (
-            <View className="bg-red-50 px-4 py-2 mt-2 rounded-lg border border-red-200">
+            <View >
+              <View className="bg-red-50 px-4 py-2 mt-2 rounded-lg border border-red-200">
               <Text className="text-red-600 text-center">{searchError}</Text>
-            </View>
+              </View>
+             <View className=" justify-center items-center mt-[-20]">
+            <LottieView
+                      source={require("../assets/images/NoComplaints.json")}
+                      style={{ width: wp(50), height: hp(50) }}
+                      autoPlay
+                      loop
+                    />
+          </View>
+          </View>
+        
           )}
         </View>
 <View className="mt-4">

@@ -354,18 +354,20 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
               paddingVertical: hp(0.5),
               borderRadius: wp(5),
               backgroundColor:
-                item.orderStatus === "Ordered" ? "#CCFBF1" :
+                item.orderStatus === "Ordered" ? "#EAEAEA" :
                 item.orderStatus === "On the way" ? "#FFFD99" :
                 item.orderStatus === "Processing" ? "#CFE1FF" : 
+                 item.orderStatus === "Delivered" ? "#CCFBF1" : 
                 item.orderStatus === "Cancelled" ? "#FCE7F3" : "#EAEAEA",
             }}>
               <Text style={{
                 fontSize: wp(3),
                 fontWeight: "600",
                 color:
-                  item.orderStatus === "Ordered" ? "#0D9488" :
+                  item.orderStatus === "Ordered" ? "#393939" :
                   item.orderStatus === "On the way" ? "#A6A100" :
                   item.orderStatus === "Processing" ? "#3B82F6" : 
+                   item.orderStatus === "Delivered" ? "#0D9488" : 
                   item.orderStatus === "Cancelled" ? "#BE185D" : "#393939",
               }}>
                 {item.orderStatus}

@@ -222,6 +222,8 @@ const [finaldiscount, setFinaldiscount] = useState("0.00");
    const [selectedDelivery, setSelectedDelivery] = useState("");
    const [cropId, setCropid] = useState<number>(0);
    const [selectedItems, setSelectedItems] = useState<Set<string | number>>(new Set());
+   const [shouldSelectFetchedPackage, setShouldSelectFetchedPackage] = useState(false);
+   
   
    const [originalPackageItems, setOriginalPackageItems] = useState<{
     //id: number;
@@ -255,7 +257,7 @@ const [finaldiscount, setFinaldiscount] = useState("0.00");
   useEffect(() => {
     if (selectedPackage) {
       fetchItemsForPackage(selectedPackage.id).then((items) => {
-        setPackageItems(items);
+     //   setPackageItems(items);
         setOriginalPackageItems(items); // Store the original items for comparison
       });
     }
@@ -297,149 +299,186 @@ const [finaldiscount, setFinaldiscount] = useState("0.00");
 
   const customerid = id;
 
-// Save state to AsyncStorage
-  const isFirstRenderRef = useRef(true);
-  // Reference to track if data has been loaded from storage
-  const dataLoaded = useRef(false);
 
-  // Save state to AsyncStorage whenever it changes
-  const saveStateToStorage = async () => {
-    if (isFirstRenderRef.current) return;
+const isFirstRenderRef = useRef(true);
+// Reference to track if data has been loaded from storage
+const dataLoaded = useRef(false);
+
+// Save state to AsyncStorage whenever it changes
+const saveStateToStorage = async () => {
+  if (isFirstRenderRef.current) return;
+  
+  try {
+    const orderData = {
+      selectedPackage,
+      totalPrice,
+      additionalItems,
+      packageItems,
+      originalPackageItems,
+      packageItemsCount,
+      totalDiscount,
+      selectedDelivery,
+      // Add other important state variables you want to persist
+    };
     
-    try {
-      const orderData = {
-        selectedPackage,
-        totalPrice,
-        additionalItems,
-        packageItems,
-        originalPackageItems,
-        packageItemsCount,
-        totalDiscount,
-        selectedDelivery,
-        // Add other important state variables you want to persist
-      };
-      
-      await AsyncStorage.setItem(`orderScreen-${id}`, JSON.stringify(orderData));
-    } catch (error) {
-      console.error('Error saving order data:', error);
-    }
-  };
+    await AsyncStorage.setItem(`orderScreen-${id}`, JSON.stringify(orderData));
+  } catch (error) {
+    console.error('Error saving order data:', error);
+  }
+};
 
-  // Load state from AsyncStorage
-  const loadStateFromStorage = async () => {
-    try {
-      const savedData = await AsyncStorage.getItem(`orderScreen-${id}`);
+// Load state from AsyncStorage
+const loadStateFromStorage = async () => {
+  try {
+    const savedData = await AsyncStorage.getItem(`orderScreen-${id}`);
+    
+    if (savedData) {
+      const parsedData = JSON.parse(savedData);
       
-      if (savedData) {
-        const parsedData = JSON.parse(savedData);
-        
-        // Restore all saved state
-        setSelectedPackage(parsedData.selectedPackage);
-        setTotalPrice(parsedData.totalPrice);
-        setAdditionalItems(parsedData.additionalItems);
-        setPackageItems(parsedData.packageItems);
-        setOriginalPackageItems(parsedData.originalPackageItems);
-        setPackageItemsCount(parsedData.packageItemsCount);
-        setTotalDiscount(parsedData.totalDiscount);
-        setSelectedDelivery(parsedData.selectedDelivery);
-        // Restore other important state variables
-        
-        dataLoaded.current = true;
-        setLoading(false);
+      // Restore all saved state
+      setSelectedPackage(parsedData.selectedPackage);
+      setTotalPrice(parsedData.totalPrice);
+      setAdditionalItems(parsedData.additionalItems);
+      setPackageItems(parsedData.packageItems);
+      setOriginalPackageItems(parsedData.originalPackageItems);
+      setPackageItemsCount(parsedData.packageItemsCount);
+      setTotalDiscount(parsedData.totalDiscount);
+      setSelectedDelivery(parsedData.selectedDelivery);
+      
+      dataLoaded.current = true;
+      setLoading(false);
+    }
+  } catch (error) {
+    console.error('Error loading order data:', error);
+  }
+};
+
+
+
+// This effect runs on initial mount to load saved state
+useEffect(() => {
+  const initialLoadData = async () => {
+    // First check if we have route params from navigation (this takes priority)
+    if (isEdit) {
+      // We're coming back from OrderConfirmScreen with edit data
+      console.log("Loading data from navigation params - EDIT MODE");
+      
+      // CLEAR ASYNCSTORAGE FIRST - IMPORTANT!
+      try {
+        await AsyncStorage.removeItem(`orderScreen-${id}`);
+        console.log("AsyncStorage cleared for edit mode");
+      } catch (error) {
+        console.error('Error clearing storage:', error);
       }
-    } catch (error) {
-      console.error('Error loading order data:', error);
+      
+      if (routeSelectedPackage) {
+        setSelectedPackage(routeSelectedPackage as any);
+        setShouldSelectFetchedPackage(true);
+      }
+      
+      if (routePackageItems) {
+        console.log("Setting packageItems to CURRENT quantities:", routePackageItems);
+        setPackageItems(routePackageItems as any);
+      }
+      
+      
+      if (routeOriginalPackageItems) {
+        console.log("Setting originalPackageItems for reference:", routeOriginalPackageItems);
+        setOriginalPackageItems(routeOriginalPackageItems as any);
+      }
+      
+      if (routeAdditionalItems) {
+        setAdditionalItems(routeAdditionalItems as any);
+      }
+      
+      // Set other data from route params
+      if (routeDiscount) setTotalDiscount(routeDiscount);
+      if (routeTotal) setTotalPrice(parseFloat(routeTotal.toString()));
+      
+      // Mark data as loaded
+      dataLoaded.current = true;
+      setLoading(false);
+    } 
+    // If no route params, try to load from AsyncStorage
+    else {
+      await loadStateFromStorage();
+      
+      // If no saved data was loaded, proceed with normal data fetching
+      if (!dataLoaded.current) {
+        fetchInitialData();
+      }
     }
+    
+    // ONLY set isFirstRenderRef to false after ALL data is loaded
+    // This prevents the save effect from triggering during initial load
+    setTimeout(() => {
+      isFirstRenderRef.current = false;
+    }, 2000); // Wait 2 seconds before enabling saves
   };
-
-  // This effect runs whenever key state changes to save it
-  useEffect(() => {
+  
+  initialLoadData();
+  
+  // Handle back button presses
+  const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
     if (!isFirstRenderRef.current) {
       saveStateToStorage();
     }
-  }, [
-    selectedPackage,
-    totalPrice,
-    additionalItems,
-    packageItems,
-    packageItemsCount,
-    totalDiscount,
-    selectedDelivery
-    // Add other dependencies that should trigger saving
-  ]);
+    return false; // Let the default back action proceed
+  });
+  
+  return () => {
+    backHandler.remove();
+  };
+}, []);
 
-  // This effect runs on initial mount to load saved state
-  useEffect(() => {
-    const initialLoadData = async () => {
-      // First check if we have route params from navigation (this takes priority)
-      if (isEdit) {
-        // We're coming back from OrderConfirmScreen with edit data
-     //   console.log("Loading data from navigation params");
-        
-        if (routeSelectedPackage) {
-          setSelectedPackage(routeSelectedPackage  as any );
-        }
-        
-        if (routePackageItems) {
-          setPackageItems(routePackageItems  as any );
-        }
-        
-        if (routeOriginalPackageItems) {
-          setOriginalPackageItems(routeOriginalPackageItems  as any);
-        }
-        
-        if (routeAdditionalItems) {
-          setAdditionalItems(routeAdditionalItems  as any);
-        }
-        
-        // Set other data from route params
-        if (routeDiscount) setTotalDiscount(routeDiscount);
-        if (routeTotal) setTotalPrice(parseFloat(routeTotal.toString()));
-        
-        // Mark data as loaded
-        dataLoaded.current = true;
-        setLoading(false);
-      } 
-      // If no route params, try to load from AsyncStorage
-      else {
-        await loadStateFromStorage();
-        
-        // If no saved data was loaded, proceed with normal data fetching
-        if (!dataLoaded.current) {
-          fetchInitialData();
-        }
-      }
-      
-      isFirstRenderRef.current = false;
-    };
-    
-    initialLoadData();
-    
-    // Handle back button presses
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+// REMOVE OR COMMENT OUT this useEffect that automatically saves on state changes
+// This is what's causing your edit data to be overwritten!
+/*
+useEffect(() => {
+  if (!isFirstRenderRef.current) {
+    saveStateToStorage();
+  }
+}, [
+  selectedPackage,
+  totalPrice,
+  additionalItems,
+  packageItems,
+  packageItemsCount,
+  totalDiscount,
+  selectedDelivery
+]);
+*/
+
+// INSTEAD, manually save only when user makes actual changes
+// Add this function to call when user modifies quantities or items
+const handleUserChange = (callback: () => void) => {
+  callback(); // Execute the change
+  
+  // Save after user makes a change (not during initial load)
+  if (!isFirstRenderRef.current) {
+    setTimeout(() => {
       saveStateToStorage();
-      return false; // Let the default back action proceed
-    });
+    }, 500);
+  }
+};
+
+// Use useFocusEffect to handle screen focus events
+useFocusEffect(
+  useCallback(() => {
+    // This runs when the screen comes into focus
+    if (!isFirstRenderRef.current && !dataLoaded.current) {
+      loadStateFromStorage();
+    }
     
     return () => {
-      backHandler.remove();
-    };
-  }, []);
-
-  // Use useFocusEffect to handle screen focus events
-  useFocusEffect(
-    useCallback(() => {
-      // This runs when the screen comes into focus
-      if (!isFirstRenderRef.current && !dataLoaded.current) {
-        loadStateFromStorage();
-      }
-      
-      return () => {
-        // This runs when the screen goes out of focus
+      // This runs when the screen goes out of focus
+      if (!isFirstRenderRef.current) {
         saveStateToStorage();
-      };
-    }, [id])
-  );
+      }
+    };
+  }, [id])
+);
+
 
   // const prepareOrderItems = async () => {
   //   // Create separate arrays for tracking modifications and final items
@@ -1209,7 +1248,7 @@ function calculateTotalPriceAdd(quantity: number, itemDetails: ItemDetails | nul
   }
   
   // Calculate prices
-  const totalDiscountedPrice = pricePerUnit * quantity;
+  const totalDiscountedPrice = pricePerUnit * quantity ;
   const totalNormalPrice = normalPricePerUnit * quantity;
   
   // Calculate discount
@@ -1397,40 +1436,164 @@ function calculateTotalPriceAdd(quantity: number, itemDetails: ItemDetails | nul
   //   }
   // };
 
-  const addItem = () => {
+//   const addItem = () => {
+//   // Validate crop selection
+//   const selectedCrop = crops.find((crop) => crop.displayName === newItemName);
+//   if (!selectedCrop) {
+//     Alert.alert("Error", "Selected crop not found.");
+//     return;
+//   }
+  
+//   // Get the crop ID if available, otherwise generate a unique ID
+//   const itemId = selectedCrop.id ? String(selectedCrop.id) : String(Date.now());
+  
+//   const parsedQuantity = parseFloat(newItemQuantity || "0");
+  
+//   if (itemDetails) {
+//     // Adjust item details based on current unit if needed
+//     let adjustedItemDetails = {...itemDetails};
+    
+//     // If the unit is g, and the stored prices are per kg, adjust the prices
+//     if (selectedUnit === 'g') {
+//       const discountedPricePerG = parseFloat(itemDetails.discountedPrice as any) / 1000;
+//       const normalPricePerG = parseFloat(itemDetails.normalPrice as any) / 1000;
+      
+//       adjustedItemDetails = {
+//         ...itemDetails,
+//         discountedPrice: discountedPricePerG.toString(),
+//         normalPrice: normalPricePerG.toString()
+//       };
+//     }
+    
+//     // Calculate price and discount for the item with adjusted values
+//     const calculatedPriceResult = calculateTotalPriceAdd(parsedQuantity, adjustedItemDetails, counter);
+//     const calculatedPrice = calculatedPriceResult.price;
+//     const totalDiscount = calculatedPriceResult.discount;
+    
+//     const newItem = {
+//       id: itemId,
+//       name: newItemName ?? "",
+//       quantity: `${String(newItemQuantity)} ${selectedUnit}`,
+//       quantityType: selectedUnit || "unit",
+//       price: calculatedPrice,
+//       cropId: selectedCrop.cropId,
+//       discount: totalDiscount
+//     };
+    
+//     console.log("New item to add:", newItem);
+//     console.log("Item discount:", totalDiscount);
+    
+//     // Create a variable to track what the new discount should be
+//     let updatedDiscount;
+    
+//     // Logic for handling the updated items and total discount
+//     if (parsedQuantity === 0) {
+//       // Remove item if quantity is 0
+//       const itemToRemove = additionalItems.find(item => item.id === itemId);
+//       if (itemToRemove) {
+//         const discountToRemove = parseFloat(itemToRemove.discount || "0");
+//         // Remove from additionalItems array
+//         setAdditionalItems(prev => prev.filter(item => item.id !== itemId));
+//         // Calculate the new discount total
+//         const currentTotal = parseFloat(discount || "0");
+//         updatedDiscount = Math.max(0, currentTotal - discountToRemove).toFixed(2);
+//         // Update the discount state
+//         setDiscount(updatedDiscount);
+//         console.log(`Removing discount: ${discountToRemove}, New total: ${updatedDiscount}`);
+//       }
+//     } else {
+//       // Check if item with this ID already exists
+//       const existingItemIndex = additionalItems.findIndex((item) => item.id === itemId);
+      
+//       if (existingItemIndex !== -1) {
+//         // Get existing item's discount before updating
+//         const existingItem = additionalItems[existingItemIndex];
+//         const oldDiscount = parseFloat(existingItem.discount || "0");
+//         const newDiscount = parseFloat(totalDiscount);
+        
+//         // Update the item in additionalItems array
+//         const updatedItems = [...additionalItems];
+//         updatedItems[existingItemIndex] = {
+//           ...existingItem,
+//           quantity: `${parsedQuantity} ${selectedUnit}`,
+//           price: calculatedPrice,
+//           discount: totalDiscount
+//         };
+//         setAdditionalItems(updatedItems);
+        
+//         // Calculate the new discount total
+//         const currentTotal = parseFloat(discount || "0");
+//         updatedDiscount = (currentTotal - oldDiscount + newDiscount).toFixed(2);
+//         // Update the discount state
+//         setDiscount(updatedDiscount);
+//         console.log(`Updating discount: ${oldDiscount} → ${newDiscount}, New total: ${updatedDiscount}`);
+//       } else {
+//         // Add new item to additionalItems array
+//         setAdditionalItems(prev => [...prev, newItem]);
+        
+//         // Calculate the new discount total
+//         const itemDiscount = parseFloat(totalDiscount || "0");
+//         const currentTotal = parseFloat(discount || "0");
+//         updatedDiscount = (currentTotal + itemDiscount).toFixed(2);
+//         // Update the discount state
+//         setDiscount(updatedDiscount);
+//         setAdding(itemDiscount);
+//         console.log(`Current total: ${currentTotal}, Adding: ${itemDiscount}, New total: ${updatedDiscount}`);
+//       }
+      
+//       // Update total price
+//       setTotalPrice(prevTotal => (Number(prevTotal) || 0) + calculatedPrice);
+//     }
+    
+//     // Reset states after adding item
+//     setCounter(0);
+//     setModalVisible(false);
+//     setNewItemName("");
+//     setNewItemQuantity("");
+//     setPricePerKg("");
+//     setNewPrice1("");
+//     setFinaldiscount("0.00"); 
+//     setModalVisible1(false);
+    
+//     // Log the updated discount value we just calculated - this will be accurate
+//     console.log("Updated total discount:", updatedDiscount);
+//   } else {
+//     Alert.alert("Error", "Item details are missing.");
+//   }
+// };
+const addItem = () => {
   // Validate crop selection
   const selectedCrop = crops.find((crop) => crop.displayName === newItemName);
   if (!selectedCrop) {
     Alert.alert("Error", "Selected crop not found.");
     return;
   }
-  
+
   // Get the crop ID if available, otherwise generate a unique ID
   const itemId = selectedCrop.id ? String(selectedCrop.id) : String(Date.now());
   
   const parsedQuantity = parseFloat(newItemQuantity || "0");
   
   if (itemDetails) {
-    // Adjust item details based on current unit if needed
-    let adjustedItemDetails = {...itemDetails};
+    // Calculate price based on the selected unit
+    let calculatedPrice: number;
+    let totalDiscount: string;
     
-    // If the unit is g, and the stored prices are per kg, adjust the prices
     if (selectedUnit === 'g') {
-      const discountedPricePerG = parseFloat(itemDetails.discountedPrice as any) / 1000;
-      const normalPricePerG = parseFloat(itemDetails.normalPrice as any) / 1000;
+      // For grams, calculate price per gram
+      const pricePerGram = parseFloat(itemDetails.discountedPrice || "0") / 1000;
+      const normalPricePerGram = parseFloat(itemDetails.normalPrice || "0") / 1000;
       
-      adjustedItemDetails = {
-        ...itemDetails,
-        discountedPrice: discountedPricePerG.toString(),
-        normalPrice: normalPricePerG.toString()
-      };
+      calculatedPrice = pricePerGram * parsedQuantity;
+      const normalPriceTotal = normalPricePerGram * parsedQuantity;
+      totalDiscount = (normalPriceTotal - calculatedPrice).toFixed(2);
+    } else {
+      // For kg, use prices as is
+      calculatedPrice = parseFloat(itemDetails.discountedPrice || "0") * parsedQuantity;
+      const normalPriceTotal = parseFloat(itemDetails.normalPrice || "0") * parsedQuantity;
+      totalDiscount = (normalPriceTotal - calculatedPrice).toFixed(2);
     }
-    
-    // Calculate price and discount for the item with adjusted values
-    const calculatedPriceResult = calculateTotalPriceAdd(parsedQuantity, adjustedItemDetails, counter);
-    const calculatedPrice = calculatedPriceResult.price;
-    const totalDiscount = calculatedPriceResult.discount;
-    
+
     const newItem = {
       id: itemId,
       name: newItemName ?? "",
@@ -2594,7 +2757,7 @@ const handleUnitChange = (newUnit: string) => {
   {/* Package Selection */}
   <Text className="text-gray-700 text-base mb-2">Package</Text>
   
-  <SelectList
+  {/* <SelectList
     setSelected={async (val: string) => {
       const selectedPkg = packages.find(pkg => pkg.id.toString() === val);
       if (selectedPkg) {
@@ -2619,7 +2782,42 @@ const handleUnitChange = (newUnit: string) => {
       borderRadius: 40,
       padding: 10
     }}
-  />
+  /> */}
+
+  <SelectList     
+  setSelected={async (val: string) => {       
+    const selectedPkg = packages.find(pkg => pkg.id.toString() === val);       
+    if (selectedPkg) {         
+      setSelectedPackage(selectedPkg);         
+      setTotalPrice(Number(selectedPkg.total) || 0);                  
+      const items = await fetchItemsForPackage(selectedPkg.id);         
+      setPackageItems(items);         
+      setPackageItemsCount(items.length);
+      
+      // Use handleUserChange to save the state after user selection
+      handleUserChange(() => {});
+    }     
+  }}     
+  data={packages.map(pkg => ({       
+    key: pkg.id.toString(),       
+    value: pkg.displayName || "Unnamed Package"     
+  }))}     
+  save="key"     
+  search={true}     
+  placeholder="Select Package"
+  // Set the default selected value if we have a selected package
+  defaultOption={selectedPackage ? {
+    key: selectedPackage.id.toString(),
+    value: selectedPackage.displayName || "Unnamed Package"
+  } : undefined}
+  boxStyles={{       
+    borderColor: "#F6F6F6",       
+    backgroundColor: "#F6F6F6",       
+    borderRadius: 40,       
+    padding: 10     
+  }}   
+/>
+
 
     {/* No Package Selected Image */}
   {!selectedPackage && (

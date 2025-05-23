@@ -19,6 +19,7 @@ import axios from "axios";
 import environment from "@/environment/environment";
 import CustomersScreenSkeleton from "../components/Skeleton/CustomerScreenSkeleton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useIsFocused } from "@react-navigation/native";
 
 
 type CustomersScreenNavigationProp = StackNavigationProp<RootStackParamList, "CustomersScreen">;
@@ -47,6 +48,17 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
 
+  // Add focus listener to clear search when screen comes into focus
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      // Clear search when returning to this screen
+      setSearchQuery("");
+      setFilteredCustomers(customers);
+    });
+
+    return unsubscribe;
+  }, [navigation, customers]);
+
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
     const keyboardDidHideListener = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false));
@@ -66,24 +78,6 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
     });
   };
 
-  // const fetchCustomers = async () => {
-  //   setLoading(true);
-  //   try {
-  //     const response = await axios.get(`${environment.API_BASE_URL}api/customer/get-customers`);
-  //     console.log(response.data);
-      
-  //     // Sort customers alphabetically by name
-  //     const sortedCustomers = sortCustomersByName(response.data);
-      
-  //     setCustomers(sortedCustomers);
-  //     setFilteredCustomers(sortedCustomers);
-  //     setError(null);
-  //   } catch (err) {
-  //     setError("Failed to fetch customers. Please try again.");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
   const fetchCustomers = async () => {
     setLoading(true);
     try {
@@ -95,8 +89,6 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
       }
       
       const customersUrl = `${environment.API_BASE_URL.replace(/\/$/, '')}/api/customer/get-customers`;
-
-      
       
       setTimeout(async () => {
         try {
