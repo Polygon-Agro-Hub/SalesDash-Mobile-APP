@@ -60,7 +60,7 @@ const OtpSuccesfulScreen: React.FC<OtpSuccesfulScreenProps> = ({ route, navigati
         
           <View className="flex items-center justify-center w-50 h-40 mb-10 pt-24 mx-12">
             <Image
-              source={require("../assets/images/sucsse.png")}
+              source={require("../assets/images/sucsse.webp")}
              style={{
                width: 170,
                height: 170,

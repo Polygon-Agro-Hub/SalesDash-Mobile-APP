@@ -397,7 +397,7 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({ navigation }) =
             {isEmpty ? (
               <View className="flex-1 justify-center items-center px-4">
                 <Image
-                  source={require("../assets/images/searchr.png")}
+                  source={require("../assets/images/searchr.webp")}
                   style={{ width: wp("60%"), height: hp("30%"), resizeMode: "contain" }}
                 />
                 <Text className="text-black text-i text-center mt-4">You have no previous complaints</Text>

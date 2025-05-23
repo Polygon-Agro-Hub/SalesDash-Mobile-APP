@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { View, Text, TextInput, TouchableOpacity, Image, KeyboardAvoidingView,Platform,Keyboard, Alert, ScrollView } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Image, KeyboardAvoidingView,Platform,Keyboard, Alert, ScrollView, TextInputKeyPressEventData, NativeSyntheticEvent } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import { useNavigation } from "@react-navigation/native";
@@ -257,35 +257,76 @@ useEffect(() => {
   // };
 
 
-  const handleOtpChange = (text: string, index: number) => {
-  const newOtp = [...otp];
+//   const handleOtpChange = (text: string, index: number) => {
+//   const newOtp = [...otp];
   
+//   // Only allow numeric input
+//   if (text && !/^\d+$/.test(text)) {
+//     return;
+//   }
+
+//   newOtp[index] = text;
+//   setOtp(newOtp);
+
+//   // Move to next input when a digit is entered
+//   if (text.length === 1 && index < inputRefs.current.length - 1) {
+//     inputRefs.current[index + 1]?.focus();
+//   }
+
+//   // Submit automatically when last digit is entered
+//   if (newOtp.every((digit) => digit.length === 1)) {
+//     Keyboard.dismiss();
+//     verifyOTP(); // Optional: auto-submit when all digits are entered
+//   }
+// };
+
+const handleOtpChange = (text: string, index: number) => {
   // Only allow numeric input
   if (text && !/^\d+$/.test(text)) {
     return;
   }
 
-  newOtp[index] = text;
-  setOtp(newOtp);
+  // Update the OTP code
+  const updatedOtp = [...otp];
+  updatedOtp[index] = text;
+  setOtp(updatedOtp);
 
-  // Move to next input when a digit is entered
+  // Check if OTP is valid (all digits filled)
+  const isValid = updatedOtp.every(digit => digit.length === 1);
+  setIsOtpInvalid(isValid);
+
+  // Move to next input field if text is entered
   if (text.length === 1 && index < inputRefs.current.length - 1) {
     inputRefs.current[index + 1]?.focus();
   }
 
-  // Submit automatically when last digit is entered
-  if (newOtp.every((digit) => digit.length === 1)) {
+  // Dismiss keyboard and submit when last digit is entered
+  if (index === otp.length - 1 && text.length === 1) {
     Keyboard.dismiss();
-    verifyOTP(); // Optional: auto-submit when all digits are entered
+    if (isValid) {
+      verifyOTP(); // Optional: auto-submit when all digits are entered
+    }
   }
 };
 
-const handleKeyPress = ({ nativeEvent }: { nativeEvent: { key: string } }, index: number) => {
-  if (nativeEvent.key === 'Backspace' && !otp[index] && index > 0) {
-    // Move focus to previous input on backspace when current is empty
+const handleKeyPress = ({ nativeEvent: { key } }: NativeSyntheticEvent<TextInputKeyPressEventData>, index: number) => {
+  // Handle backspace to move to previous input
+  if (key === 'Backspace' && !otp[index] && index > 0) {
     inputRefs.current[index - 1]?.focus();
   }
 };
+
+  // const verifyOTP = (code: string) => {
+  //   // Implement OTP verification logic here
+  //   console.log("Verifying OTP:", code);
+  // };
+
+// const handleKeyPress = ({ nativeEvent }: { nativeEvent: { key: string } }, index: number) => {
+//   if (nativeEvent.key === 'Backspace' && !otp[index] && index > 0) {
+//     // Move focus to previous input on backspace when current is empty
+//     inputRefs.current[index - 1]?.focus();
+//   }
+// };
  
 
   useEffect(() => {
@@ -331,7 +372,7 @@ const handleKeyPress = ({ nativeEvent }: { nativeEvent: { key: string } }, index
       {/* Illustration */}
       <View className="flex items-center justify-center w-50 h-40 mb-3 pt-18 mx-12">
 <Image
-  source={require("../assets/images/4n_hand.png")}
+  source={require("../assets/images/4n_hand.webp")}
   style={{
     width: 170,
     height: 170,
@@ -368,21 +409,24 @@ const handleKeyPress = ({ nativeEvent }: { nativeEvent: { key: string } }, index
   ))}
 </View> */}
 <View className="flex-row justify-center gap-3 mb-4 mt-1 px-4 ">
-  {otp.map((digit, index) => (
-    <TextInput
-      key={index}
-      ref={(el) => (inputRefs.current[index] = el as TextInput)}
-      className={`w-12 h-12 text-lg text-center rounded-lg 
-        ${digit ? "bg-[#874DDB] text-[#FFFFFF]" : "bg-[#E7D7FF] text-pink-900"}`}
-      keyboardType="numeric"
-      maxLength={1}
-      value={digit}
-      onChangeText={(text) => handleOtpChange(text, index)}
-      onKeyPress={(e) => handleKeyPress(e, index)}
-      cursorColor={digit ? "#FFFFFF" : "#FFFFFF"}
-      selectionColor={digit ? "#FFFFFF" : "#874DDB"}
-    />
-  ))}
+{otp.map((digit, index) => (
+  <TextInput
+    ref={(el) => (inputRefs.current[index] = el as TextInput)}
+    className={`w-12 h-12 text-lg text-center rounded-lg border-2 ${
+      digit 
+        ? "bg-[#874DDB] text-white border-[#874DDB]" 
+        : "bg-[#E7D7FF] text-pink-900 border-[#E7D7FF]"
+    }`}
+    keyboardType="numeric"
+    maxLength={1}
+    value={digit}
+    onChangeText={(text) => handleOtpChange(text, index)}
+    onKeyPress={(e) => handleKeyPress(e, index)}
+    cursorColor="#FFFFFF"
+    selectionColor={digit ? "#FFFFFF" : "#874DDB"}
+    key={`otp-input-${index}`}
+  />
+))}
 </View>
 
 

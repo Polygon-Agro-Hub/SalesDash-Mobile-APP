@@ -744,7 +744,7 @@ useEffect(() => {
             <View className="flex-row items-center">
               
               <View className="flex-row items-center space-x-2 flex-1">
-                <Image source={require("../assets/images/delivery.png")} className="w-10 h-10" />
+                <Image source={require("../assets/images/delivery.webp")} className="w-10 h-10" />
                 
                 <View>
                   <View className="flex-row justify-between">

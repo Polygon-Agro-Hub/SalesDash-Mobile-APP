@@ -257,7 +257,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                 value={searchText}
                 style={{ fontStyle: 'italic' }}
               />
-              <Image source={require("../assets/images/search.png")} className="w-6 h-6" resizeMode="contain" />
+              <Image source={require("../assets/images/search.webp")} className="w-6 h-6" resizeMode="contain" />
             </View>
 
             {/* Horizontal Scrollable Filters */}

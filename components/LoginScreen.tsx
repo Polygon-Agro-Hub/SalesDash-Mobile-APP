@@ -114,7 +114,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     <View className="flex-1 bg-white">
       <View className="h-96">
       <LinearGradient colors={["#854BDA", "#6E3DD1"]} className="flex-1 items-center justify-center">
-        <Image source={require("../assets/images/lgooo.png")} className="w-auto h-[60%]" resizeMode="contain" />
+        <Image source={require("../assets/images/lgooo.webp")} className="w-auto h-[60%]" resizeMode="contain" />
       </LinearGradient>
       </View>
 

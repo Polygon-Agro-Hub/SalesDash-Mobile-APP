@@ -323,7 +323,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, r
 
         <View className="flex items-center justify-center mt-3">
           <Image
-            source={require("../assets/images/payment.png")}
+            source={require("../assets/images/payment.webp")}
             className="w-84 h-60"
             resizeMode="contain"
           />
@@ -344,7 +344,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, r
             {selectedMethod === "Online Payment" && (
               <View className="w-7 h-7 bg-white rounded-full flex items-center justify-center">
                 <Image 
-                  source={require("../assets/images/DonePurple.png")} 
+                  source={require("../assets/images/DonePurple.webp")} 
                   className="w-5 h-5"
                   resizeMode="contain"
                 />
@@ -365,7 +365,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, r
             {selectedMethod === "Pay By Cash" && (
               <View className="w-7 h-7 bg-white rounded-full flex items-center justify-center">
                 <Image 
-                  source={require("../assets/images/DonePurple.png")} 
+                  source={require("../assets/images/DonePurple.webp")} 
                   className="w-5 h-5"
                   resizeMode="contain"
                 />

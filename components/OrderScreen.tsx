@@ -2823,7 +2823,7 @@ const handleUnitChange = (newUnit: string) => {
   {!selectedPackage && (
     <View className="items-center justify-center mt-[50%]">
       <Image 
-        source={require("../assets/images/nopackage.png")} 
+        source={require("../assets/images/nopackage.webp")} 
         className="w-48 h-48 mb-4" 
         resizeMode="contain"
       />
@@ -2842,7 +2842,7 @@ const handleUnitChange = (newUnit: string) => {
           className="ml-3 flex-row items-center"
           onPress={() => setModalVisible1(true)}
         >
-          <Image source={require("../assets/images/Add.png")} className="w-5 h-5 mr-2" />
+          <Image source={require("../assets/images/Add.webp")} className="w-5 h-5 mr-2" />
           <Text className="text-[#6839CF] font-semibold">Add More</Text>
         </TouchableOpacity>
 
@@ -2860,7 +2860,7 @@ const handleUnitChange = (newUnit: string) => {
               className="ml-3"
               onPress={() => handleItemClick(item)}
             >
-              <Image source={require("../assets/images/Edit.png")} className="w-4 h-4" />
+              <Image source={require("../assets/images/Edit.webp")} className="w-4 h-4" />
             </TouchableOpacity>
           </View>
         </View>
@@ -2874,7 +2874,7 @@ const handleUnitChange = (newUnit: string) => {
               className="flex-row items-center"
               onPress={deleteSelectedItems}
             >
-              <Image source={require("../assets/images/trash.png")} className="w-5 h-5 mr-1" />
+              <Image source={require("../assets/images/trash.webp")} className="w-5 h-5 mr-1" />
               <Text className="text-red-500"></Text>
             </TouchableOpacity>
           )}
@@ -2903,7 +2903,7 @@ const handleUnitChange = (newUnit: string) => {
               className="ml-3"
               onPress={() => handleEditItemClick(item)}
             >
-              <Image source={require("../assets/images/Edit.png")} className="w-4 h-4" />
+              <Image source={require("../assets/images/Edit.webp")} className="w-4 h-4" />
             </TouchableOpacity>
           </View>
         </View>

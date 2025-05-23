@@ -495,7 +495,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
                     onPress={() => decreaseQuantity(item.id)}
                   >
                     <Image
-                      source={require("../assets/images/minns.png")}
+                      source={require("../assets/images/minns.webp")}
                       className="w-7 h-7"
                       resizeMode="contain"
                     />
@@ -510,7 +510,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
                     onPress={() => increaseQuantity(item.id)}
                   >
                     <Image
-                      source={require("../assets/images/adddd.png")}
+                      source={require("../assets/images/adddd.webp")}
                       className="w-7 h-7"
                       resizeMode="contain"
                     />

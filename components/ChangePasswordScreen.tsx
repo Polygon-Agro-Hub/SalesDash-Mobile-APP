@@ -134,12 +134,12 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
       >
         {/* Top Section with Background Vector Image */}
         <ImageBackground
-          source={require('../assets/images/g16.png')}
+          source={require('../assets/images/g16.webp')}
           className="h-64 items-center"
           resizeMode="cover"
         >
           <Image
-            source={require('../assets/images/updatepsw.png')}
+            source={require('../assets/images/updatepsw.webp')}
             className="w-64 h-64"
             resizeMode="contain"
           />

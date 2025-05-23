@@ -201,7 +201,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
                 onPress={handleGetACall} 
                 className="flex-row bg-[#6B3BCF] px-4 py-2 rounded-full items-center mt-5 mx-4"
               >
-                <Image source={require("../assets/images/call.png")} className="w-5 h-5 mr-2" />
+                <Image source={require("../assets/images/call.webp")} className="w-5 h-5 mr-2" />
                 <Text className="text-white font-bold">Get a Call</Text>
               </TouchableOpacity>
 
@@ -212,7 +212,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
                 
                 className="flex-row bg-[#6B3BCF] px-4 py-2 rounded-full items-center mt-5 mx-4"
               >
-                <Image source={require("../assets/images/newOrder.png")} className="w-5 h-5 mr-2" />
+                <Image source={require("../assets/images/newOrder.webp")} className="w-5 h-5 mr-2" />
                 <Text className="text-white font-bold">New Order</Text>
               </TouchableOpacity>
             </View>
@@ -233,7 +233,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
               returnKeyType="search"
             />
             <TouchableOpacity onPress={handleSearch}>
-              <Image source={require("../assets/images/search.png")} className="w-8 h-8" />
+              <Image source={require("../assets/images/search.webp")} className="w-8 h-8" />
             </TouchableOpacity>
           </View>
           

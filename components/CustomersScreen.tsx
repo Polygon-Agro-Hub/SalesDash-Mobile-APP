@@ -198,7 +198,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                 className="flex-1 text-sm text-gray-700" 
                 style={{ fontStyle: 'italic' }}
               />
-              <Image source={require("../assets/images/search.png")} className="w-6 h-6" resizeMode="contain" />
+              <Image source={require("../assets/images/search.webp")} className="w-6 h-6" resizeMode="contain" />
             </View>
 
             {/* Floating Button */}
@@ -215,7 +215,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                 className="absolute bottom-20 right-6 bg-[#7743D4] w-14 h-14 rounded-full items-center justify-center shadow-lg mb-1"
                 onPress={() => navigation.navigate("AddCustomersScreen")}
               >
-                <Image source={require("../assets/images/plus.png")} className="w-6 h-6" resizeMode="contain" />
+                <Image source={require("../assets/images/plus.webp")} className="w-6 h-6" resizeMode="contain" />
               </TouchableOpacity>
             )}
 
@@ -226,7 +226,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                 </View>
               ) : isEmpty ? (
                 <View className="flex-1 justify-center items-center px-4 mt-[-20%]">
-                  <Image source={require("../assets/images/searchr.png")} style={{ width: wp("60%"), height: hp("30%"), resizeMode: "contain" }} />
+                  <Image source={require("../assets/images/searchr.webp")} style={{ width: wp("60%"), height: hp("30%"), resizeMode: "contain" }} />
                 </View>
               ) : (
                 <FlatList
