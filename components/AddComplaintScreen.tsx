@@ -150,7 +150,7 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
               <BackButton navigation={navigation} />
               <ScrollView className="px-8 py-4" keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 100 }}>
                 <View className="items-center mb-6">
-                  <Image source={require("../assets/images/complain11.png")} className="w-20 h-20" />
+                  <Image source={require("../assets/images/complain11.webp")} className="w-20 h-20" />
                   <Text className="text-xl font-bold text-gray-900 mt-2">
                     Tell us the <Text className="text-[#6839CF]">problem</Text>
                   </Text>

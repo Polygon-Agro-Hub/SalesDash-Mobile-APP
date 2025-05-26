@@ -10,6 +10,7 @@ import {
   ImageBackground,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -60,12 +61,15 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
     streetName: "",
     city: "",
     empId: "",
+    image:""
   });
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [orderCount, setOrderCount] = useState<number>(0);
   const [customerCount, setCustomerCount] = useState<number>(0);
   const [points, setPoints] = useState<number>(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     getUserProfile();
@@ -73,7 +77,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
     fetchOrderCount();
     fetchCustomerCount();
   }, []);
-  console.log(formData)
+ 
 
   const getUserProfile = async () => {
     try {
@@ -178,6 +182,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   
 
   const handleUpdate = async () => {
+     if (isSubmitting) return;
+  
+  setIsSubmitting(true);
     try {
       if (!token) {
         Alert.alert("Error", "You are not authenticated");
@@ -195,7 +202,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
         nic: formData.nic
       };
       
-      console.log("Sending update data:", dataToSend);
+    
   
       const response = await axios.put(
         `${environment.API_BASE_URL}api/auth/user-updateUser`,
@@ -261,7 +268,10 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
         Alert.alert("Error", "Failed to update profile. Please try again later.");
         console.error("Update error:", error);
       }
-    }
+    
+     }finally {
+    setIsSubmitting(false); 
+  }
   };
 
   return (
@@ -275,7 +285,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
           <View className="bg-[#6839CF]">
             <View className="relative">
               <ImageBackground
-                source={require("../assets/images/profilebackground.png")}
+                source={require("../assets/images/profilebackground.webp")}
                 resizeMode="cover"
                 style={{
                   width: "100%",
@@ -295,39 +305,41 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
               style={{ marginTop: hp(15), paddingHorizontal: wp(6) }}
             >
               <View className="items-center" style={{ marginTop: -hp(12) }}>
-                <TouchableOpacity className="relative">
-                  {profileImage ? (
-                    <Image
-                      source={{ uri: profileImage }}
-                      style={{
-                        width: wp(35),
-                        height: wp(35),
-                        borderRadius: wp(35) / 2,
-                      }}
-                    />
-                  ) : (
-                    <Image
-                      source={require("../assets/images/profile.png")}
-                      style={{
-                        width: wp(34),
-                        height: wp(34),
-                        borderRadius: wp(34) / 2,
-                      }}
-                    />
-                  )}
-                </TouchableOpacity>
-                <Text className="text-black text-2xl font-bold mb-2">
-                  {formData.firstName} {formData.lastName}
-                </Text>
-              </View>
-            </View>
+  <TouchableOpacity className="relative">
+    {formData.image ? (
+      <Image
+        source={{ uri: formData.image }}
+        style={{
+          width: wp(35),
+          height: wp(35),
+          borderRadius: wp(35) / 2,
+        }}
+        onError={(e) => console.log("Image load error:", e.nativeEvent.error)}
+        defaultSource={require("../assets/images/profile.webp")}
+      />
+    ) : (
+      <Image
+        source={require("../assets/images/profile.webp")}
+        style={{
+          width: wp(34),
+          height: wp(34),
+          borderRadius: wp(34) / 2,
+        }}
+      />
+    )}
+  </TouchableOpacity>
+  <Text className="text-black text-2xl font-bold mb-2">
+    {formData.firstName} {formData.lastName}
+  </Text>
+</View>
+</View>
 
             <View className="bg-white px-7">
               <View className="p-4">
                 <View className="bg-[#6839CF] flex-row justify-between mt-3 px-4 py-3 rounded-2xl">
                   <View className="flex-1 items-center">
                     <Image 
-                      source={require("../assets/images/star.png")} 
+                      source={require("../assets/images/star.webp")} 
                       style={{ width: 24, height: 24 }} 
                     />
                     <Text className="text-white text-sm mt-1">Points</Text>
@@ -338,7 +350,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
 
                   <View className="flex-1 items-center">
                     <Image 
-                      source={require("../assets/images/Order Completed.png")} 
+                      source={require("../assets/images/Order Completed.webp")} 
                       style={{ width: 24, height: 24 }} 
                     />
                     <Text className="text-white text-sm mt-1">Orders</Text>
@@ -349,7 +361,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
 
                   <View className="flex-1 items-center">
                     <Image 
-                      source={require("../assets/images/Batch Assign.png")} 
+                      source={require("../assets/images/Batch Assign.webp")} 
                       style={{ width: 24, height: 24 }} 
                     />
                     <Text className="text-white text-sm mt-1">Customers</Text>
@@ -481,9 +493,12 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
               <TouchableOpacity  onPress={handleUpdate} >
 
                  <LinearGradient colors={["#6839CF", "#874DDB"]} className="py-3   items-center mt-6 mb-[15%] mr-[20%] ml-[20%] rounded-3xl h-15">
+                   {isSubmitting || loading ? (
+                        <ActivityIndicator color="#FFFFFF" />
+                      ) : (
                               
                                   <Text className="text-center text-white text-base font-bold">Update</Text>
-                                
+                      )}
                               </LinearGradient>
                               </TouchableOpacity>
 

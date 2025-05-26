@@ -22,6 +22,7 @@ import BackButton from "./BackButton";
 import axios from "axios";
 import environment from "@/environment/environment";
 import { AntDesign } from "@expo/vector-icons";
+import LottieView from "lottie-react-native";
 
 type ViewCustomerScreenNavigationProp = StackNavigationProp<RootStackParamList, "ViewCustomerScreen">;
 type ViewCustomerScreenRouteProp = RouteProp<RootStackParamList, "ViewCustomerScreen">;
@@ -53,6 +54,7 @@ type ViewCustomerScreenProps = {
   navigation: ViewCustomerScreenNavigationProp;
 };
 
+
 const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigation }) => {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [searchText, setSearchText] = useState("");
@@ -62,7 +64,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
   const [error, setError] = useState<string | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
 
-  const { name, number, id, customerId,title } = route.params;
+  const { name, number, id, customerId, title } = route.params;
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
@@ -84,7 +86,6 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
           `${environment.API_BASE_URL}api/orders/get-order-bycustomerId/${id}`
         );
 
-        console.log(response.data)
         if (response.data.success) {
           setOrders(response.data.data);
         } else {
@@ -101,13 +102,19 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
     fetchOrders();
   }, [id]);
 
+  // Clear search error when search text changes
+  useEffect(() => {
+    if (searchText.trim() === "") {
+      setSearchError(null);
+    }
+  }, [searchText]);
+
   const handleGetACall = () => {
     const phoneNumber = `tel:${number}`;
     Linking.openURL(phoneNumber).catch((err) => console.error("Error opening dialer", err));
   };
 
-  const filters = ["Ordered", "Processing", "On the way", "Cancelled"];
-
+  const filters = ["Ordered", "Processing", "On the way", "Delivered", "Cancelled"];
 
   const formatScheduleDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -117,19 +124,9 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
     return `${year}/${month}/${day}`;
   };
 
- 
-
-  // Filter orders based on status and search text
-  // const filteredOrders = orders.filter(order => {
-  //   const matchesStatus = selectedFilter === "All" || order.orderStatus === selectedFilter;
-  //   const matchesSearch = !searchText || 
-  //     (order.InvNo && order.InvNo.toLowerCase().includes(searchText.toLowerCase()));
-    
-  //   return matchesStatus && matchesSearch;
-  // });
-
   const handleSearch = () => {
     if (searchText.trim() === "") {
+      setSearchError(null);
       return;
     }
     
@@ -145,6 +142,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
       setSearchError(null);
     }
   };
+
   const filteredOrders = orders.filter(order => {
     const matchesStatus = selectedFilter === "All" || order.orderStatus === selectedFilter;
     const matchesSearch = !searchText || 
@@ -152,6 +150,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
     
     return matchesStatus && matchesSearch;
   });
+
+  const isEmpty = filteredOrders.length === 0;
 
   return (
     <KeyboardAvoidingView 
@@ -201,7 +201,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
                 onPress={handleGetACall} 
                 className="flex-row bg-[#6B3BCF] px-4 py-2 rounded-full items-center mt-5 mx-4"
               >
-                <Image source={require("../assets/images/call.png")} className="w-5 h-5 mr-2" />
+                <Image source={require("../assets/images/call.webp")} className="w-5 h-5 mr-2" />
                 <Text className="text-white font-bold">Get a Call</Text>
               </TouchableOpacity>
 
@@ -212,7 +212,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
                 
                 className="flex-row bg-[#6B3BCF] px-4 py-2 rounded-full items-center mt-5 mx-4"
               >
-                <Image source={require("../assets/images/newOrder.png")} className="w-5 h-5 mr-2" />
+                <Image source={require("../assets/images/newOrder.webp")} className="w-5 h-5 mr-2" />
                 <Text className="text-white font-bold">New Order</Text>
               </TouchableOpacity>
             </View>
@@ -233,15 +233,26 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
               returnKeyType="search"
             />
             <TouchableOpacity onPress={handleSearch}>
-              <Image source={require("../assets/images/search.png")} className="w-8 h-8" />
+              <Image source={require("../assets/images/search.webp")} className="w-8 h-8" />
             </TouchableOpacity>
           </View>
           
           {/* Search Error Message */}
           {searchError && (
-            <View className="bg-red-50 px-4 py-2 mt-2 rounded-lg border border-red-200">
+            <View >
+              <View className="bg-red-50 px-4 py-2 mt-2 rounded-lg border border-red-200">
               <Text className="text-red-600 text-center">{searchError}</Text>
-            </View>
+              </View>
+             <View className=" justify-center items-center mt-[-20]">
+            <LottieView
+                      source={require("../assets/images/NoComplaints.json")}
+                      style={{ width: wp(50), height: hp(50) }}
+                      autoPlay
+                      loop
+                    />
+          </View>
+          </View>
+        
           )}
         </View>
 <View className="mt-4">
@@ -277,7 +288,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
           <View className="flex-1 justify-center items-center px-4">
             <Text className="text-red-500 text-center">{error}</Text>
             <TouchableOpacity 
-              className="mt-4 bg-[#6B3BCF] px-4 py-2 rounded-full"
+              className="mt-4 bg-white px-4 py-2 rounded-full"
               onPress={() => {
                 setLoading(true);
                 setError(null);
@@ -286,7 +297,18 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
               <Text className="text-white font-semibold">Retry</Text>
             </TouchableOpacity>
           </View>
-        ) : filteredOrders.length > 0 ? (
+        ) : 
+        
+        isEmpty ? (
+          <View className="flex-1 justify-center items-center px-4 mt-[40%]">
+            <LottieView
+                      source={require("../assets/images/NoComplaints.json")}
+                      style={{ width: wp(50), height: hp(50) }}
+                      autoPlay
+                      loop
+                    />
+          </View>
+        )  : (filteredOrders.length > 0 ? (
           <FlatList
             data={filteredOrders}
             keyExtractor={(item) => item.orderId.toString()}
@@ -305,6 +327,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
                       item.orderStatus === "Ordered" ? "bg-[#E0E0E0]" 
                       : item.orderStatus === "On the way" ? "bg-[#FFFD99]" 
                       : item.orderStatus === "Processing" ? "bg-[#CFE1FF]"
+                        : item.orderStatus === "Delivered" ? "bg-[#CCFBF1]"
                       : item.orderStatus === "Cancelled" ? "bg-[#FFE4E1]"
                       : "bg-[#EAEAEA]"
                     }`}>
@@ -312,6 +335,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
                         item.orderStatus === "Ordered" ? "text-[#3F3F3F]"
                         : item.orderStatus === "On the way" ? "text-[#A6A100]"
                         : item.orderStatus === "Processing" ? "text-[#3B82F6]"
+                        : item.orderStatus === "Delivered" ? "bg-[#0D9488]"
                         : item.orderStatus === "Cancelled" ? "text-[#FF0000]"
                         : "text-[#393939]"
                       }`}>
@@ -330,7 +354,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
                 </View>
               </TouchableOpacity>
             )}
-            contentContainerStyle={{ paddingBottom: 16 }}
+            contentContainerStyle={{ paddingBottom: 70 }}
           />
         ) : (
           <View className="flex-1 justify-center items-center">
@@ -338,7 +362,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
               {searchText ? "No matching orders found" : "No orders found for this status"}
             </Text>
           </View>
-        )}
+        ))}
       </View>
       </View>
     </KeyboardAvoidingView>
