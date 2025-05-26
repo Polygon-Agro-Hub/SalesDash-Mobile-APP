@@ -191,9 +191,16 @@ const OtpScreenUp: React.FC = () => {
             );
             
             // Navigate to success screen
-            navigation.navigate("OtpSuccesfulScreen", {
-              customerId: customerId
-            });
+            // navigation.navigate("OtpSuccesfulScreen", {
+            //   customerId: customerId
+            // });
+            navigation.navigate("Main" as any, {
+  screen: "OtpSuccesfulScreen" as any,
+  params: {
+    customerId: customerId,
+ //   customerData: customerData, // You can pass the original data as well if needed
+  }
+});
           } else {
             throw new Error(customerResponse.data?.message || "Error processing customer data");
           }
@@ -311,19 +318,50 @@ const OtpScreenUp: React.FC = () => {
     }
   }, [timer]);
 
-  const handleOtpChange = (text: string, index: number) => {
+  // const handleOtpChange = (text: string, index: number) => {
+  //   const newOtp = [...otp];
+  //   newOtp[index] = text;
+  //   setOtp(newOtp);
+  
+  //   if (text.length === 1 && index < inputRefs.current.length - 1) {
+  //     inputRefs.current[index + 1]?.focus();
+  //   }
+  
+  //   if (newOtp.every((digit) => digit.length === 1)) {
+  //     Keyboard.dismiss();
+  //   }
+  // };
+
+   const handleOtpChange = (text: string, index: number) => {
     const newOtp = [...otp];
+    
+    // Only allow numeric input
+    if (text && !/^\d+$/.test(text)) {
+      return;
+    }
+  
     newOtp[index] = text;
     setOtp(newOtp);
   
+    // Move to next input when a digit is entered
     if (text.length === 1 && index < inputRefs.current.length - 1) {
       inputRefs.current[index + 1]?.focus();
     }
   
+    // Submit automatically when last digit is entered
     if (newOtp.every((digit) => digit.length === 1)) {
       Keyboard.dismiss();
+      verifyOTP(); // Optional: auto-submit when all digits are entered
     }
   };
+  
+  const handleKeyPress = ({ nativeEvent }: { nativeEvent: { key: string } }, index: number) => {
+    if (nativeEvent.key === 'Backspace' && !otp[index] && index > 0) {
+      // Move focus to previous input on backspace when current is empty
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+   
  
   useEffect(() => {
     const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
@@ -352,7 +390,7 @@ const OtpScreenUp: React.FC = () => {
         <View className="flex-1 bg-white px-3">
           {/* Header */}
           <View className="bg-white flex-row items-center h-17 shadow-lg px-1 mb-8">
-            {/* Back Button */}
+          
             <BackButton navigation={navigation} />
             {/* Title */}
             <Text style={{ fontSize: 18 }} className="font-bold text-center text-[#6C3CD1] flex-grow mr-9 text-xl">
@@ -365,11 +403,15 @@ const OtpScreenUp: React.FC = () => {
           >
             {/* Illustration */}
             <View className="flex items-center justify-center w-50 h-40 mb-3 pt-18 mx-12">
-              <Image
-                source={require("../assets/images/4n_hand.png")}
-                className="w-29 h-29"
-                resizeMode="contain"
-              />
+           <Image
+             source={require("../assets/images/4n_hand.webp")}
+             style={{
+               width: 170,
+               height: 170,
+               alignSelf: 'center',
+             }}
+             resizeMode="contain"
+           />
             </View>
 
             {/* Instruction Text */}
@@ -381,7 +423,7 @@ const OtpScreenUp: React.FC = () => {
             </Text>
 
             {/* OTP Input Fields */}
-            <View className="flex-row justify-center gap-3 mb-4 mt-1 px-4">
+            {/* <View className="flex-row justify-center gap-3 mb-4 mt-1 px-4">
               {otp.map((digit, index) => (
                 <TextInput
                   key={index}
@@ -392,6 +434,25 @@ const OtpScreenUp: React.FC = () => {
                   maxLength={1}
                   value={digit}
                   onChangeText={(text) => handleOtpChange(text, index)}
+                  cursorColor={digit ? "#FFFFFF" : "#FFFFFF"}
+                  selectionColor={digit ? "#FFFFFF" : "#874DDB"}
+                />
+              ))}
+            </View> */}
+            <View className="flex-row justify-center gap-3 mb-4 mt-1 px-4 ">
+              {otp.map((digit, index) => (
+                <TextInput
+                  key={index}
+                  ref={(el) => (inputRefs.current[index] = el as TextInput)}
+                  className={`w-12 h-12 text-lg text-center rounded-lg 
+                    ${digit ? "bg-[#874DDB] text-[#FFFFFF]" : "bg-[#E7D7FF] text-pink-900"}`}
+                  keyboardType="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChangeText={(text) => handleOtpChange(text, index)}
+                  onKeyPress={(e) => handleKeyPress(e, index)}
+                  cursorColor={digit ? "#FFFFFF" : "#FFFFFF"}
+                  selectionColor={digit ? "#FFFFFF" : "#874DDB"}
                 />
               ))}
             </View>
@@ -414,16 +475,18 @@ const OtpScreenUp: React.FC = () => {
 
               {/* Verify Button */}
               {!isKeyboardVisible &&
+               <TouchableOpacity onPress={verifyOTP} disabled={loading}>
                 <LinearGradient
                   colors={["#6839CF", "#874DDB"]}
                   className="py-3 px-14 rounded-lg items-center mt-[10%] mb-[5%] w-[57%] rounded-3xl h-15"
                 >
-                  <TouchableOpacity onPress={verifyOTP} disabled={loading}>
+                 
                     <Text className="text-center text-white font-bold">
                       {loading ? "Verifying..." : "Verify"}
                     </Text>
+                         </LinearGradient>
                   </TouchableOpacity>
-                </LinearGradient>
+           
               }
             </View>
           </View>

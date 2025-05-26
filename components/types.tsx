@@ -12,6 +12,7 @@ export interface CartItem {
 }
 
 export interface PackageItem {
+  originalPackageDetails: any;
   packageId: number;
   isModifiedPlus: boolean;
   isModifiedMin: boolean;
@@ -22,6 +23,10 @@ export interface PackageItem {
   modifiedMinItems: ModifiedMinItem[];
   additionalItems: AdditionalItem[];
   finalOrderPackageList?: Array<{
+    packageDetailId: any;
+    itemId: any;
+    id: any;
+    productName: string;
     productId: number;
     quantity: number;
     price: number | string;
@@ -48,10 +53,12 @@ interface ModifiedMinItem {
 }
 
 interface AdditionalItem {
+  id: number | string;
   mpItemId: number;
   quantity: number;
   price: number;
   discount: number;
+
 }
 
 

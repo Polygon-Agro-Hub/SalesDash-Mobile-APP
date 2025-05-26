@@ -50,6 +50,7 @@ interface Order {
   fullSubTotal: string | null;
   fullDiscount: string | null;
   deleteStatus: string | null;
+  title: string | null ;
   firstName: string;
   lastName: string;
   phoneNumber: string;
@@ -93,6 +94,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
   
     return () => backHandler.remove();
   }, []);
+  
 
   
 
@@ -162,26 +164,81 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
   }, []);
 
 
+  // const convertImageToBase64 = async () => {
+  //   try {
+  //     const asset = Asset.fromModule(require("../assets/images/Watermark.webp"));
+  //     await asset.downloadAsync();
+  
+  //     if (!asset.localUri) {
+  //       console.warn("Asset local URI not found");
+  //       return "";
+  //     }
+  
+  //     const base64 = await FileSystem.readAsStringAsync(asset.localUri, {
+  //       encoding: FileSystem.EncodingType.Base64,
+  //     });
+  
+  //     return `data:image/png;base64,${base64}`;
+  //   } catch (error) {
+  //     console.error("Error converting image to base64:", error);
+  //     return "";
+  //   }
+  // };
+
   const convertImageToBase64 = async () => {
-    try {
-      const asset = Asset.fromModule(require("../assets/images/Watermark.png"));
+  try {
+    // Method 1: Try using Asset.fromModule with better error handling
+    const asset = Asset.fromModule(require("../assets/images/Watermark.webp"));
+    
+    // Ensure asset is downloaded
+    if (!asset.downloaded) {
       await asset.downloadAsync();
-  
-      if (!asset.localUri) {
-        console.warn("Asset local URI not found");
-        return "";
-      }
-  
-      const base64 = await FileSystem.readAsStringAsync(asset.localUri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-  
-      return `data:image/png;base64,${base64}`;
-    } catch (error) {
-      console.error("Error converting image to base64:", error);
-      return "";
     }
-  };
+    
+    // Check if localUri exists
+    if (!asset.localUri) {
+      console.warn("Asset local URI not found, falling back to alternative method");
+      return await convertImageAlternative();
+    }
+
+    const base64 = await FileSystem.readAsStringAsync(asset.localUri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+
+    return `data:image/webp;base64,${base64}`;
+  } catch (error) {
+    console.error("Error converting image to base64:", error);
+    return await convertImageAlternative();
+  }
+};
+
+// Alternative method using expo-asset and file system
+const convertImageAlternative = async () => {
+  try {
+    // For production builds, try to access the bundled resource directly
+    const assetInfo = require("../assets/images/Watermark.webp");
+    
+    // If it's a number (resource ID), use expo-asset
+    if (typeof assetInfo === 'number') {
+      const asset = Asset.fromModule(assetInfo);
+      await asset.downloadAsync();
+      
+      if (asset.localUri) {
+        const base64 = await FileSystem.readAsStringAsync(asset.localUri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        return `data:image/webp;base64,${base64}`;
+      }
+    }
+    
+    // Fallback: return empty string or default watermark
+    console.warn("Unable to load watermark image");
+    return "";
+  } catch (error) {
+    console.error("Alternative watermark conversion failed:", error);
+    return "";
+  }
+};
   
   
 
@@ -289,8 +346,9 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
                 <h3>Purchase Invoice</h3>
                 <div class="section">
                     <p class="bold">AgroWorld (Pvt) Ltd.</p>
-                    <p>Address: No. 1 Colombo 2</p>
-                    <p>Contact: 077123457</p>
+                    <p>Address: No 46/42, Nawam Mawatha, Colombo 02
+</p>
+                    <p>Contact: +94 770111999</p>
                     <p>Invoice Number: <strong>${order?.InvNo}</strong></p>
                     <p>Date: <strong>${new Date().toLocaleDateString()}</strong></p>
                 </div>
@@ -304,7 +362,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
   
                 <div class="section">
                     <h3>Receiver Details</h3>
-                    <p><span class="bold">Receiver's Name:</span> ${order?.firstName}  ${order?.lastName}</p>
+                    <p><span class="bold">Receiver's Name:</span> ${order?.title}  ${order?.firstName}  ${order?.lastName}</p>
                     <p><span class="bold">Phone Number:</span> ${order?.phoneNumber}</p>
                     <p><span class="bold">Building Type:</span> ${order?.buildingType}</p>
                     <p><span class="bold">Address:</span> ${order?.fullAddress}</p>
@@ -330,19 +388,23 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
                     <table>
                         <tr>
                             <th>Description</th>
-                            <th>Amount</th>
+                            <th>Amount (Rs.)</th>
                         </tr>
                         <tr>
                             <td>Subtotal</td>
-                            <td>${subtotal.toFixed(2)}</td>
+                            <td>${(subtotal ).toFixed(2)}</td>
                         </tr>
                         <tr>
                             <td>Discount</td>
                             <td>${discount.toFixed(2)}</td>
                         </tr>
+                         <tr>
+                            <td>Delivery Fee</td>
+                            <td>350.00</td>
+                        </tr>
                         <tr>
                             <td><strong>Grand Total</strong></td>
-                            <td><strong>${total.toFixed(2)}</strong></td>
+                           <td><strong>${(total + 350).toFixed(2)}</strong></td>
                         </tr>
                     </table>
                 </div>
@@ -515,7 +577,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
             {/* Illustration */}
             <View className="flex items-center justify-center mt-5">
               <Image 
-                source={require("../assets/images/confirmed.png")} 
+                source={require("../assets/images/confirmed.webp")} 
                 style={{ width: wp(80), height: hp(40) }} 
                 resizeMode="contain" 
               />

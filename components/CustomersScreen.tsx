@@ -19,6 +19,7 @@ import axios from "axios";
 import environment from "@/environment/environment";
 import CustomersScreenSkeleton from "../components/Skeleton/CustomerScreenSkeleton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useIsFocused } from "@react-navigation/native";
 
 
 type CustomersScreenNavigationProp = StackNavigationProp<RootStackParamList, "CustomersScreen">;
@@ -35,6 +36,7 @@ interface Customer {
   order: number;
   cusId: string;
   title: string;
+  orderCount:number;
 }
 
 const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
@@ -45,6 +47,17 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
+
+  // Add focus listener to clear search when screen comes into focus
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      // Clear search when returning to this screen
+      setSearchQuery("");
+      setFilteredCustomers(customers);
+    });
+
+    return unsubscribe;
+  }, [navigation, customers]);
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
@@ -65,24 +78,6 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
     });
   };
 
-  // const fetchCustomers = async () => {
-  //   setLoading(true);
-  //   try {
-  //     const response = await axios.get(`${environment.API_BASE_URL}api/customer/get-customers`);
-  //     console.log(response.data);
-      
-  //     // Sort customers alphabetically by name
-  //     const sortedCustomers = sortCustomersByName(response.data);
-      
-  //     setCustomers(sortedCustomers);
-  //     setFilteredCustomers(sortedCustomers);
-  //     setError(null);
-  //   } catch (err) {
-  //     setError("Failed to fetch customers. Please try again.");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
   const fetchCustomers = async () => {
     setLoading(true);
     try {
@@ -103,6 +98,8 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
           
           // Sort customers alphabetically by name
           const sortedCustomers = sortCustomersByName(response.data);
+
+          console.log("--------------------------",sortedCustomers)
           
           setCustomers(sortedCustomers);
           setFilteredCustomers(sortedCustomers);
@@ -201,17 +198,26 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                 className="flex-1 text-sm text-gray-700" 
                 style={{ fontStyle: 'italic' }}
               />
-              <Image source={require("../assets/images/search.png")} className="w-6 h-6" resizeMode="contain" />
+              <Image source={require("../assets/images/search.webp")} className="w-6 h-6" resizeMode="contain" />
             </View>
 
             {/* Floating Button */}
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={{ zIndex: 1000 }}
               className="absolute bottom-20 right-6 bg-[#7743D4] w-14 h-14 rounded-full items-center justify-center shadow-lg mb-1"
               onPress={() => navigation.navigate("AddCustomersScreen")}
             >
               <Image source={require("../assets/images/plus.png")} className="w-6 h-6" resizeMode="contain" />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
+            {!isKeyboardVisible && (
+              <TouchableOpacity
+                style={{ zIndex: 1000 }}
+                className="absolute bottom-20 right-6 bg-[#7743D4] w-14 h-14 rounded-full items-center justify-center shadow-lg mb-1"
+                onPress={() => navigation.navigate("AddCustomersScreen")}
+              >
+                <Image source={require("../assets/images/plus.webp")} className="w-6 h-6" resizeMode="contain" />
+              </TouchableOpacity>
+            )}
 
             <View style={{ paddingHorizontal: wp(6), paddingVertical: hp(2) }} className="flex-1">
               {error ? (
@@ -219,8 +225,8 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                   <Text className="text-red-500 text-center mt-4">{error}</Text>
                 </View>
               ) : isEmpty ? (
-                <View className="flex-1 justify-center items-center px-4">
-                  <Image source={require("../assets/images/searchr.png")} style={{ width: wp("60%"), height: hp("30%"), resizeMode: "contain" }} />
+                <View className="flex-1 justify-center items-center px-4 mt-[-20%]">
+                  <Image source={require("../assets/images/searchr.webp")} style={{ width: wp("60%"), height: hp("30%"), resizeMode: "contain" }} />
                 </View>
               ) : (
                 <FlatList
@@ -248,7 +254,8 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                           <Text className="text-gray-700 font-semibold">{item.title}.{item.firstName} {item.lastName}</Text>
                           <Text className="text-gray-500 text-sm">{formatPhoneNumber(item.phoneNumber)}</Text>
                         </View>
-                        <Text className="text-gray-700 font-bold">#{item.order}</Text>
+                        {/* <Text className="text-gray-700 font-bold">#{item.orderCount}</Text> */}
+                        <Text className="text-gray-700 font-semibold">#{item.orderCount < 10 ? `0${item.orderCount}` : item.orderCount}</Text>
                       </View>
                     </TouchableOpacity>
                   )}

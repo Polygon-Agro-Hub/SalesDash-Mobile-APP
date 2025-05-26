@@ -7,7 +7,8 @@ import {
   Image,
   TouchableOpacity,
   ScrollView,
-  Alert
+  Alert,
+  ActivityIndicator
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RouteProp } from '@react-navigation/native';
@@ -30,6 +31,15 @@ interface ModifiedPlusItem {
   additionalDiscount: number;
 }
 
+interface ItemDetails {
+  name: string;
+  displayName: string;
+  price: number;
+  mpItemId?: number | null; // Add this property
+  quantityType?: string; // Also add quantityType for better data handling
+  unitType?: string; // Add unitType property
+}
+
 interface ModifiedMinItem {
   packageDetailsId: number;
   originalQuantity: number;
@@ -38,12 +48,20 @@ interface ModifiedMinItem {
   additionalPrice: number;
   additionalDiscount: number;
 }
+// type ItemDetails = {
+//   name: string;
+//   displayName: string;
+//   price: number;
+//   mpItemId?: number | null; // Add this property
+// };
 
 interface AdditionalItem {
   mpItemId: number;
   quantity: number;
   price: number;
   discount: number;
+  // Add any other properties that might exist
+  [key: string]: any; // This allows for dynamic properties if needed
 }
 
 interface PackageItem {
@@ -92,8 +110,11 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({ navigation, rou
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [additionalItemDetails, setAdditionalItemDetails] = useState<Record<string, ItemDetails>>({});
+const [packageItemDetails, setPackageItemDetails] = useState<Record<string, ItemDetails>>({});
+const [packageDisplayName, setPackageDisplayName] = useState<string>("");
   const {
     items = [],
     subtotal = 0,
@@ -113,7 +134,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({ navigation, rou
 
   const safeItems = Array.isArray(items) ? items : [];
 
-const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
+  const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
   
 
   const timeDisplay = selectedTimeSlot || "Not set";
@@ -174,21 +195,26 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
   }, [route.params]);
 
   const handleConfirmOrder = async () => {
-
-    if (!customerId && !customerid) {
-      Alert.alert("Error", "Customer information is missing");
+    // Prevent multiple clicks
+    if (isSubmitting || isSubmitted) {
       return;
     }
     
-    setLoading(true);
+    // Set submitting state to show loading indicator
+    setIsSubmitting(true);
+
+    if (!customerId && !customerid) {
+      Alert.alert("Error", "Customer information is missing");
+      setIsSubmitting(false);
+      return;
+    }
     
     try {
-
       const storedToken = await AsyncStorage.getItem("authToken");
       
       if (!storedToken) {
         Alert.alert("Error", "Authentication token not found. Please log in again.");
-        setLoading(false);
+        setIsSubmitting(false);
         return;
       }
 
@@ -289,10 +315,12 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
       });
       
       if (response.data.success) {
-    
+        // Mark as submitted after successful API call
+        setIsSubmitted(true);
+        setIsSubmitting(false);
+        
         console.log("Order created successfully:", response.data);
         
- 
         navigation.navigate("Main", {
           screen: "OrderConfirmedScreen",
           params: {
@@ -307,10 +335,12 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
           },
         });
       } else {
+        setIsSubmitting(false);
         Alert.alert("Error", response.data.message || "Failed to create order");
       }
     } catch (error: any) {
       console.error("Error creating order:", error);
+      setIsSubmitting(false);
       
       let errorMessage = "Failed to create order";
       if (error.response && error.response.data) {
@@ -320,8 +350,6 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
       }
       
       Alert.alert("Error", errorMessage);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -366,6 +394,330 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
   
   const customerInfo = getCustomerInfo();
 
+// const fetchAdditionalItemDetails = async () => {
+//   if (isSelectPackage !== 1 || !safeOrderItems.length) return;
+  
+//   const packageItem = safeOrderItems[0];
+//   if (!packageItem.additionalItems || !packageItem.additionalItems.length) return;
+  
+//   try {
+//     const storedToken = await AsyncStorage.getItem("authToken");
+//     if (!storedToken) return;
+    
+//     // Create a new object to store the details
+//     const details: Record<string, ItemDetails> = {};
+    
+//     // Fetch details for each additional item
+//     for (const item of packageItem.additionalItems) {
+//       const response = await axios.get(
+//         `${environment.API_BASE_URL}api/packages/marketplace-item/${item.id}`,
+//         {
+//           headers: { Authorization: `Bearer ${storedToken}` },
+//         }
+//       );
+      
+//       if (response.data && response.data.data) {
+//         // Convert the item.id to string when using as an index
+//         const itemIdKey = item.id.toString();
+        
+//         details[itemIdKey] = {
+//           name: response.data.data.name || `Item ${item.id}`,
+//           displayName: response.data.data.displayName || `Item ${item.id}`,
+//           price: response.data.data.discountedPrice
+//           // Add other properties as needed
+//         };
+        
+//         console.log(response.data);
+//         console.log("Display Name:", response.data.data.displayName);
+//       }
+//     }
+    
+//     // Now this should match your state type
+//     setAdditionalItemDetails(details);
+//   } catch (error) {
+//     console.error("Error fetching additional item details:", error);
+//   }
+// };
+
+// useEffect(() => {
+//   if (isSelectPackage === 1 && safeOrderItems.length > 0) {
+//     fetchAdditionalItemDetails();
+//   }
+// }, [isSelectPackage, safeOrderItems]);
+
+// const fetchItemDetails = async () => {
+//   if (isSelectPackage !== 1 || !safeOrderItems.length) return;
+  
+//   const packageItem = safeOrderItems[0];
+  
+//   try {
+//     const storedToken = await AsyncStorage.getItem("authToken");
+//     if (!storedToken) return;
+    
+//     // Create objects to store the details
+//     const additionalDetails: Record<string, ItemDetails> = {};
+//     const packageItemDetails: Record<string, ItemDetails> = {};
+//     let packageDisplayName = "";
+    
+//     // First, fetch the package details to get the display name
+//     if (packageItem.packageId) {
+//       try {
+//         const packageResponse = await axios.get(
+//           `${environment.API_BASE_URL}api/packages/marketplace-package/${packageItem.packageId}`,
+//           {
+//             headers: { Authorization: `Bearer ${storedToken}` },
+//           }
+//         );
+        
+//         if (packageResponse.data && packageResponse.data.data) {
+//           packageDisplayName = packageResponse.data.data.displayName || packageResponse.data.data.name || `Package ${packageItem.packageId}`;
+//           console.log(`Package ${packageItem.packageId} Details:`, packageResponse.data.data);
+//           console.log("Package Display Name:", packageDisplayName);
+//         }
+//       } catch (error) {
+//         console.error(`Error fetching package ${packageItem.packageId} details:`, error);
+//         packageDisplayName = `Package ${packageItem.packageId}`;
+//       }
+//     }
+    
+//     // Fetch details for package items from finalOrderPackageList
+//     if (packageItem.finalOrderPackageList && packageItem.finalOrderPackageList.length > 0) {
+//       for (const item of packageItem.finalOrderPackageList) {
+//         try {
+//           const response = await axios.get(
+//             `${environment.API_BASE_URL}api/packages/marketplace-item/${item.productId}`,
+//             {
+//               headers: { Authorization: `Bearer ${storedToken}` },
+//             }
+//           );
+          
+//           if (response.data && response.data.data) {
+//             const itemIdKey = item.productId.toString();
+            
+//             packageItemDetails[itemIdKey] = {
+//               name: response.data.data.name || `Item ${item.productId}`,
+//               displayName: response.data.data.displayName || `Item ${item.productId}`,
+//               price: response.data.data.discountedPrice
+//             };
+            
+//             console.log(`Package Item ${item.productId} Details:`, response.data.data);
+//           }
+//         } catch (error) {
+//           console.error(`Error fetching package item ${item.productId} details:`, error);
+//           // Set fallback data if API call fails
+//           const itemIdKey = item.productId.toString();
+//           packageItemDetails[itemIdKey] = {
+//             name: `Item ${item.productId}`,
+//             displayName: `Item ${item.productId}`,
+//             price: 0
+//           };
+//         }
+//       }
+//     }
+    
+//     // Fetch details for additional items (your existing logic)
+//     if (packageItem.additionalItems && packageItem.additionalItems.length > 0) {
+//       for (const item of packageItem.additionalItems) {
+//         try {
+//           const response = await axios.get(
+//             `${environment.API_BASE_URL}api/packages/marketplace-item/${item.id}`,
+//             {
+//               headers: { Authorization: `Bearer ${storedToken}` },
+//             }
+//           );
+          
+//           if (response.data && response.data.data) {
+//             const itemIdKey = item.id.toString();
+            
+//             additionalDetails[itemIdKey] = {
+//               name: response.data.data.name || `Item ${item.id}`,
+//               displayName: response.data.data.displayName || `Item ${item.id}`,
+//               price: response.data.data.discountedPrice
+//             };
+            
+//             console.log(`Additional Item ${item.id} Details:`, response.data.data);
+//           }
+//         } catch (error) {
+//           console.error(`Error fetching additional item ${item.id} details:`, error);
+//           // Set fallback data if API call fails
+//           const itemIdKey = item.id.toString();
+//           additionalDetails[itemIdKey] = {
+//             name: `Item ${item.id}`,
+//             displayName: `Item ${item.id}`,
+//             price: 0
+//           };
+//         }
+//       }
+//     }
+    
+//     // Update state variables
+//     setAdditionalItemDetails(additionalDetails);
+//     setPackageItemDetails(packageItemDetails);
+//     setPackageDisplayName(packageDisplayName); // You'll need to add this state
+    
+//   } catch (error) {
+//     console.error("Error fetching item details:", error);
+//   }
+// };
+
+
+// // Updated useEffect
+// useEffect(() => {
+//   if (isSelectPackage === 1 && safeOrderItems.length > 0) {
+//     fetchItemDetails();
+//   }
+// }, [isSelectPackage, safeOrderItems]);
+  
+
+const fetchItemDetails = async () => {
+  if (isSelectPackage !== 1 || !safeOrderItems.length) return;
+  
+  const packageItem = safeOrderItems[0];
+  
+  try {
+    const storedToken = await AsyncStorage.getItem("authToken");
+    if (!storedToken) return;
+    
+    // Create objects to store the details
+    const additionalDetails: Record<string, ItemDetails> = {};
+    const packageItemDetails: Record<string, ItemDetails> = {};
+    let packageDisplayName = "";
+    
+    // First, fetch the package details to get the display name
+    if (packageItem.packageId) {
+      try {
+        const response = await axios.get(
+          `${environment.API_BASE_URL}api/packages/marketplace-package/${packageItem.packageId}`,
+          {
+            headers: { Authorization: `Bearer ${storedToken}` },
+          }
+        );
+        
+        if (response.data && response.data.data) {
+          packageDisplayName = response.data.data.displayName  ;
+          console.log(`Package ${packageItem.packageId} Details:`, response.data.data);
+          console.log("99999999999999999999999999999999999999Package Display Name:", packageDisplayName);
+        }
+
+        
+      } catch (error) {
+       console.error(`Error fetching package ${packageItem.packageId} details:`, error);
+        packageDisplayName = `Package ${packageItem.packageId}`;
+      }
+    }
+    
+    // Fetch details for package items from finalOrderPackageList
+    // Use the new endpoint that fetches by packageId and item.id
+ // Fetch details for package items from finalOrderPackageList
+if (packageItem.finalOrderPackageList && packageItem.finalOrderPackageList.length > 0) {
+  console.log("finalOrderPackageList structure:", JSON.stringify(packageItem.finalOrderPackageList, null, 2));
+  
+  for (const item of packageItem.finalOrderPackageList) {
+    try {
+      const productId = item.productId;
+      
+      if (!productId) {
+        console.error("No productId found for item:", item);
+        continue;
+      }
+      
+      console.log(`Fetching details for packageId: ${packageItem.packageId}, productId: ${productId}`);
+      
+      // Use the endpoint that searches by productId (mpItemId)
+      const response = await axios.get(
+        `${environment.API_BASE_URL}api/packages/package-item-by-product/${packageItem.packageId}/${productId}`,
+        {
+          headers: { Authorization: `Bearer ${storedToken}` },
+        }
+      );
+      
+      console.log("API Response:", response.data);
+      
+      if (response.data && response.data.data) {
+        // Use the packagedetails table ID as the key (response.data.data.id)
+        const itemIdKey = response.data.data.id.toString();
+        
+        packageItemDetails[itemIdKey] = {
+          name: response.data.data.name || response.data.data.displayName || `Item ${response.data.data.id}`,
+          displayName: response.data.data.displayName || response.data.data.name || `Item ${response.data.data.id}`,
+          price: response.data.data.discountedPrice || response.data.data.normalPrice || 0,
+          mpItemId: response.data.data.mpItemId // Store the marketplace item ID for reference
+        };
+        
+        console.log(`Package Item ${response.data.data.id} Details:`, response.data.data);
+      }
+    } catch (error) {
+      console.error(`Error fetching package item ${item.productId} details:`, error);
+     
+     
+      
+      // Set fallback data if API call fails
+      // Use productId as the key since we don't have the packagedetails ID
+      const itemIdKey = item.productId.toString();
+      packageItemDetails[itemIdKey] = {
+        name: `Item ${item.productId}`,
+        displayName: `Item ${item.productId}`,
+        price: 0,
+        mpItemId: item.productId
+      };
+    }
+  }
+}
+    
+    // Fetch details for additional items (keep existing logic for marketplace items)
+    if (packageItem.additionalItems && packageItem.additionalItems.length > 0) {
+      for (const item of packageItem.additionalItems) {
+        try {
+          const response = await axios.get(
+            `${environment.API_BASE_URL}api/packages/marketplace-item/${item.id}`,
+            {
+              headers: { Authorization: `Bearer ${storedToken}` },
+            }
+          );
+          
+          if (response.data && response.data.data) {
+            const itemIdKey = item.id.toString();
+            
+            additionalDetails[itemIdKey] = {
+              name: response.data.data.name || response.data.data.displayName || `Item ${item.id}`,
+              displayName: response.data.data.displayName || response.data.data.name || `Item ${item.id}`,
+              price: response.data.data.discountedPrice || response.data.data.normalPrice || 0
+            };
+            
+            console.log(`Additional Item ${item.id} Details:`, response.data.data);
+          }
+        } catch (error) {
+          console.error(`Error fetching additional item ${item.id} details:`, error);
+          // Set fallback data if API call fails
+          const itemIdKey = item.id.toString();
+          additionalDetails[itemIdKey] = {
+            name: `Item ${item.id}`,
+            displayName: `Item ${item.id}`,
+            price: 0
+          };
+        }
+      }
+    }
+    
+    // Update state variables
+    setAdditionalItemDetails(additionalDetails);
+    setPackageItemDetails(packageItemDetails);
+    setPackageDisplayName(packageDisplayName);
+    
+  } catch (error) {
+    console.error("Error fetching item details:", error);
+  }
+};
+
+// Updated useEffect remains the same
+useEffect(() => {
+  if (isSelectPackage === 1 && safeOrderItems.length > 0) {
+    fetchItemDetails();
+  }
+}, [isSelectPackage, safeOrderItems]);
+
+
+
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -392,19 +744,45 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
             <View className="flex-row items-center">
               
               <View className="flex-row items-center space-x-2 flex-1">
-                <Image source={require("../assets/images/delivery.png")} className="w-10 h-10" />
+                <Image source={require("../assets/images/delivery.webp")} className="w-10 h-10" />
                 
                 <View>
                   <View className="flex-row justify-between">
                     <Text className="text-base font-semibold">Delivery - One Time</Text>
-                    <TouchableOpacity 
-                      onPress={() => navigation.navigate("ScheduleScreen" as any, { 
-                        totalPrice: total,
-                        customerId, 
-                        items,
-                        subtotal,
-                        discount
-                      })}
+                <TouchableOpacity 
+  onPress={() => {
+    console.log("Navigating to ScheduleScreen with data:", {
+      total,
+      customerId,
+      items,
+      subtotal,
+      discount,
+      selectedDate,
+      timeDisplay,
+      isCustomPackage,
+      isSelectPackage,
+      customerid,
+      orderItems
+    });
+
+    navigation.navigate("ScheduleScreen" as any, {
+      total,
+     
+      items,
+      subtotal,
+      discount,
+      selectedDate,
+      timeDisplay,
+      isCustomPackage,
+      isSelectPackage,
+     customerId,  // This is the numeric ID (7)
+  customerid: customerid.toString() || customerId.toString(),
+      orderItems
+    });
+  }}
+
+
+
                       className="border border-[#6C3CD1] px-3 rounded-full ml-12">
                       <Text className="text-[#6C3CD1] font-medium">Edit</Text>
                     </TouchableOpacity>
@@ -458,53 +836,340 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
 )}
           </View>
   
-          {/* Payment Summary */}
-          <View className="bg-white border border-gray-300 rounded-lg p-4 mt-3 shadow-sm">
-            <View className="flex-row justify-between">
-              <Text className="text-black font-medium">Payment Summary</Text>
-              <TouchableOpacity 
-                onPress={() => navigation.navigate("CratScreen" as any, { 
-                  screen: "OrderScreen",
-                  params: { customerId ,items } 
-                })}
-                className="border border-[#6C3CD1] px-3 rounded-full">
-                <Text className="text-[#6C3CD1] font-medium">Edit</Text>
-              </TouchableOpacity>
-            </View>
-            <View className="flex-row justify-between">
-              <Text className="text-[#8492A3] font-medium">Subtotal</Text>
-              <Text className="text-black font-medium mr-12">
-                Rs.{subTotalDeliveryPlus.toFixed(2)}
-              </Text>
-            </View>
-            <View className="flex-row justify-between">
-              <Text className="text-[#8492A3]">Discount</Text>
-              <Text className="text-gray-500 mr-12">
-                Rs.{discount.toFixed(2)}
-              </Text>
-            </View>
-            <View className="flex-row justify-between mt-2">
-              <Text className="text-black font-semibold">Grand Total</Text>
-              <Text className="text-black font-semibold mr-12">
-                Rs.{totalDeliveryPlus.toFixed(2)}
-              </Text>
-            </View>
-          </View>
+       
   
+
+ 
+
+
+<View className="bg-white border border-gray-300 rounded-lg p-4 mt-3 shadow-sm">
+  <View className="flex-row justify-between">
+    <Text className="text-black font-medium">Payment Summary</Text>
+ 
+  
+<TouchableOpacity 
+  onPress={() => {
+    // Create detailed logging objects based on the route being taken
+    if (isCustomPackage === 1) {
+      // For Custom Package - CratScreen
+      const customPackageData = {
+        route: "CratScreen (Custom Package)",
+        ids: {
+          customerId: customerId,
+          customerid: customerid,
+          resolvedId: customerId || customerid
+        },
+        items: safeItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          normalPrice: item.normalPrice || item.price,
+          discountedPrice: item.discountedPrice || item.price,
+          quantity: item.quantity,
+          unitType: item.unitType || 'kg',
+          startValue: item.startValue || 0.1,
+          changeby: item.quantity
+        })),
+        packageDetails: {
+          isCustomPackage: 1,
+          isSelectPackage: 0
+        },
+        finances: {
+          subtotal,
+          discount,
+          total,
+          fullTotal
+        },
+        scheduling: {
+          selectedDate,
+          timeDisplay,
+          selectedTimeSlot
+        },
+        paymentMethod
+      };
+      
+      console.log("========== NAVIGATION DATA LOG ==========");
+      console.log(JSON.stringify(customPackageData, null, 2));
+      console.log("=========================================");
+      
+      navigation.navigate("CratScreen" as any, { 
+        id: customerId || customerid,
+        customerId: customerId || customerid,
+        items: safeItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          normalPrice: item.normalPrice || item.price,
+          discountedPrice: item.discountedPrice || item.price,
+          quantity: item.quantity,
+          selected: true, // Mark as selected
+          unitType: item.unitType || 'kg',
+          startValue: item.startValue || 0.1,
+          changeby: item.quantity
+        })),
+        selectedProducts: safeItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          normalPrice: item.normalPrice || item.price,
+          discountedPrice: item.discountedPrice || item.price,
+          quantity: item.quantity,
+          selected: true, // Mark as selected
+          unitType: item.unitType || 'kg',
+          startValue: item.startValue || 0.1,
+          changeby: item.quantity
+        })),
+        isCustomPackage: 1,
+        isSelectPackage: 0,
+        subtotal,
+        discount,
+        total,
+        fullTotal,
+        selectedDate,
+        timeDisplay,
+        selectedTimeSlot,
+        paymentMethod,
+        fromOrderSummary: true
+      });
+    } 
+    
+ else if (isSelectPackage === 1) {
+  // For package orders, navigate to OrderScreen with all required data
+  // Get the current order data
+  const currentOrderItem = safeOrderItems[0];
+
+  // Build original package items from package details (not from finalOrderPackageList)
+  const originalPackageItems = currentOrderItem?.originalPackageDetails?.map((item: {
+    productId: any;
+    productName: any;
+    originalQuantity: { toString: () => any; };
+    originalPrice: any;
+    price: any;
+  }) => ({
+    id: item.productId,
+    mpItemId: item.productId,
+    name: item.productName || packageItemDetails[item.productId.toString()]?.displayName || 'Unknown Item',
+    quantity: item.originalQuantity.toString(),
+    quantityType: 'kg',
+    price: item.originalPrice || item.price
+  })) || [];
+
+  // Build current/modified package items from finalOrderPackageList with fetched names
+  // We need to find the packageItemDetails by matching the mpItemId with productId
+  const currentPackageItems = currentOrderItem?.finalOrderPackageList?.map(item => {
+    // Find the package item details by matching mpItemId with productId
+    let packageDetail = null;
+    let packageDetailKey = null;
+    
+    // Search through packageItemDetails to find the one with matching mpItemId
+    for (const [key, details] of Object.entries(packageItemDetails)) {
+      if (details.mpItemId === item.productId) {
+        packageDetail = details;
+        packageDetailKey = key; // This will be the database ID (152, 153)
+        break;
+      }
+    }
+    
+    console.log(`Mapping item with productId ${item.productId}:`, {
+      packageDetailKey,
+      packageDetail,
+      originalItem: item
+    });
+    
+    return {
+      id: packageDetailKey || item.productId, // Use database ID if found, otherwise productId
+      mpItemId: item.productId, // This is the marketplace item ID
+      name: packageDetail?.displayName ,
+      quantity: item.quantity.toString(),
+      quantityType: packageDetail?.quantityType || packageDetail?.unitType || 'kg', // Use the correct quantityType from DB
+      unitType: packageDetail?.unitType || 'kg', // Add unitType field
+      price: typeof item.price === 'string' ? parseFloat(item.price) : item.price
+    };
+  }) || [];
+
+  console.log("Final currentPackageItems:", currentPackageItems);
+
+  const packageData = {
+    id: customerId || customerid,
+    isSelectPackage: 1,
+    isCustomPackage: 0,
+    orderItems: safeOrderItems,
+    packageId: currentOrderItem.packageId,
+    selectedPackage: currentOrderItem?.packageId ? {
+      id: currentOrderItem.packageId,
+      displayName: packageDisplayName, // Now uses fetched package display name
+      price: currentOrderItem.packageTotal.toString(),
+      total: currentOrderItem.packageTotal
+    } : null,
+
+    // Pass CURRENT modified items (what user should see for editing) - now with names
+    packageItems: currentPackageItems,
+
+    // Pass ORIGINAL unmodified items (for comparison/reset purposes)
+    originalPackageItems: originalPackageItems,
+
+    // Pass additional items if any
+    additionalItems: currentOrderItem?.additionalItems?.map(item => ({
+      id: item.id,
+      name: additionalItemDetails[item.id.toString()]?.displayName || 'Unknown Item',
+      quantity: item.quantity.toString(),
+      quantityType: 'kg',
+      price: item.quantity * (additionalItemDetails[item.id.toString()]?.price || 0),
+      discount: item.discount.toString(),
+      cropId: item.id || 0
+    })) || [],
+
+    // Pass financial data
+    subtotal,
+    discount,
+    total,
+    fullTotal,
+
+    // Pass schedule data
+    selectedDate,
+    selectedTimeSlot,
+    timeDisplay,
+    paymentMethod,
+
+    // Flag to indicate this is an edit
+    isEdit: true
+  };
+
+  console.log("Navigating to OrderScreen with package data:", JSON.stringify(packageData, null, 2));
+
+  navigation.navigate("OrderScreen" as any, packageData);
+}else {
+      // For Regular Items - CratScreen
+      const regularItemsData = {
+        route: "CratScreen (Regular Items)",
+        ids: {
+          customerId: customerId,
+          customerid: customerid,
+          resolvedId: customerId || customerid
+        },
+        selectedProducts: safeItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          normalPrice: item.normalPrice || item.price,
+          discountedPrice: item.discountedPrice || item.price,
+          quantity: item.quantity,
+          unitType: item.unitType || 'kg',
+          startValue: item.startValue || 0.1,
+          changeby: item.quantity
+        })),
+        packageDetails: {
+          isCustomPackage: 0,
+          isSelectPackage: 0
+        },
+        finances: {
+          subtotal,
+          discount,
+          total,
+          fullTotal
+        },
+        scheduling: {
+          selectedDate,
+          timeDisplay,
+          selectedTimeSlot
+        },
+        paymentMethod
+      };
+      
+      console.log("========== NAVIGATION DATA LOG ==========");
+      console.log(JSON.stringify(regularItemsData, null, 2));
+      console.log("=========================================");
+      
+      navigation.navigate("CratScreen" as any, { 
+        id: customerId || customerid,
+        customerId: customerId || customerid,
+        items: safeItems,
+        selectedProducts: safeItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          normalPrice: item.normalPrice || item.price,
+          discountedPrice: item.discountedPrice || item.price,
+          quantity: item.quantity,
+          selected: true, // Mark as selected
+          unitType: item.unitType || 'kg',
+          startValue: item.startValue || 0.1,
+          changeby: item.quantity
+        })),
+        isCustomPackage: 0,
+        isSelectPackage: 0,
+        subtotal,
+        discount,
+        total,
+        fullTotal,
+        selectedDate,
+        timeDisplay,
+        selectedTimeSlot,
+        paymentMethod,
+        fromOrderSummary: true
+      });
+    }
+  }}
+  className="border border-[#6C3CD1] px-3 rounded-full"
+>
+      <Text className="text-[#6C3CD1] font-medium">Edit</Text>
+    </TouchableOpacity>
+  </View>
+  
+  {/* Rest of the payment summary remains the same */}
+  <View className="flex-row justify-between mt-3">
+    <Text className="text-[#8492A3] font-medium">Subtotal</Text>
+    <Text className="text-black font-medium mr-14">
+      Rs.{subTotalDeliveryPlus.toFixed(2)}
+    </Text>
+  </View>
+  <View className="flex-row justify-between mt-2">
+    <Text className="text-[#8492A3]">Discount</Text>
+    <Text className="text-gray-500 mr-14">
+      Rs.{discount.toFixed(2)}
+    </Text>
+  </View>
+  <View className="flex-row justify-between mt-2">
+    <Text className="text-black font-semibold">Grand Total</Text>
+    <Text className="text-black font-semibold mr-14">
+      Rs.{totalDeliveryPlus.toFixed(2)}
+    </Text>
+  </View>
+</View>
           {/* Payment Method */}
-          <View className="bg-white border border-gray-300 rounded-lg p-4 mt-3 shadow-sm">
+          {/* <View className="bg-white border border-gray-300 rounded-lg p-4 mt-3 shadow-sm">
             <View className="flex-row justify-between">
               <Text className="text-black font-medium">Payment Method</Text>
               <TouchableOpacity 
                 onPress={() => navigation.navigate("SelectPaymentMethod" as any, {
-                  items,
-                  subtotal,
-                  discount, 
-                  total,
-                  fullTotal,
-                  selectedDate,
-                  selectedTimeSlot,
-                  customerId 
+  //                 items,
+  //                 subtotal,
+  //                 discount, 
+  //                 total,
+  //                 fullTotal,
+   
+  //     selectedDate,
+  //     timeDisplay,
+  //     isCustomPackage,
+  //     isSelectPackage,
+               
+  //                 selectedTimeSlot,
+  //                 customerId,  // This is the numeric ID (7)
+  // customerid: customerid.toString() || customerId.toString(),
+               total,
+     
+      items,
+      subtotal,
+      discount,
+      selectedDate,
+      timeDisplay,
+      isCustomPackage,
+      selectedTimeSlot,
+      isSelectPackage,
+     customerId,  // This is the numeric ID (7)
+  customerid: customerid.toString() || customerId.toString(),
+      orderItems,
+      selectedMethod :paymentMethod
                 })}
                 className="border border-[#6C3CD1] px-3 rounded-full">
                 <Text className="text-[#6C3CD1] font-medium">Edit</Text>
@@ -512,18 +1177,56 @@ const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
             </View>
             <Text className="text-[#8492A3] mt-1">{paymentMethod || "Not selected"}</Text>
           </View>
-        </View>
+        </View> */}
+
+        <View className="bg-white border border-gray-300 rounded-lg p-4 mt-3 shadow-sm">
+  <View className="flex-row justify-between">
+    <Text className="text-black font-medium">Payment Method</Text>
+    <TouchableOpacity
+      onPress={() => navigation.navigate("SelectPaymentMethod" as any, {
+        // Pass all the data needed for a complete round trip
+        items,
+        subtotal,
+        discount,
+        total,
+        fullTotal,
+        selectedDate,
+        timeDisplay,
+        isCustomPackage,
+        isSelectPackage,
+        selectedTimeSlot,
+        customerId,
+        customerid: customerid?.toString() || customerId?.toString(),
+        orderItems,
+        selectedMethod: paymentMethod 
+      })}
+      className="border border-[#6C3CD1] px-3 rounded-full"
+    >
+      <Text className="text-[#6C3CD1] font-medium">Edit</Text>
+    </TouchableOpacity>
+  </View>
+  <Text className="text-[#8492A3] mt-1">{paymentMethod || "Not selected"}</Text>
+</View>
+</View>
   
-        {/* Confirm Button */}
-        <TouchableOpacity onPress={handleConfirmOrder}>
-        <LinearGradient 
-          colors={["#6839CF", "#874DDB"]} 
-          className="py-3 px-4 rounded-lg items-center mt-[10%] mb-[10%] mr-[25%] ml-[25%] rounded-3xl h-15"
+        {/* Confirm Button with ActivityIndicator */}
+        <TouchableOpacity 
+          onPress={handleConfirmOrder}
+          disabled={isSubmitting || isSubmitted}
+          style={{ opacity: isSubmitted ? 0.6 : 1 }}
         >
-      
-            <Text className="text-center text-white font-bold">Confirm</Text>
-     
-        </LinearGradient>
+          <LinearGradient 
+            colors={["#6839CF", "#874DDB"]} 
+            className="py-3 px-4 rounded-lg items-center mt-[10%] mb-[10%] mr-[25%] ml-[25%] rounded-3xl h-15"
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text className="text-center text-white font-bold">
+                {isSubmitted ? "Order Confirmed" : "Confirm"}
+              </Text>
+            )}
+          </LinearGradient>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>

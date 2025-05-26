@@ -72,6 +72,7 @@ function MainTabNavigator() {
       <Tab.Screen name="SelectOrderType" component={SelectOrderType as any} />
       <Tab.Screen name="SelectOrderTypeNewCustomer" component={SelectOrderTypeNewCustomer as any} />
       <Tab.Screen name="OrderConfirmedScreen" component={OrderConfirmedScreen as any} />
+      <Tab.Screen name="OtpSuccesfulScreen" component={OtpSuccesfulScreen as any} />
     </Tab.Navigator>
   );
 }
@@ -99,7 +100,7 @@ const index = () => {
       <Stack.Screen name="AddCustomersScreen" component={AddCustomersScreen} />
       <Stack.Screen name="OtpScreen" component={OtpScreen} />
       <Stack.Screen name="OtpScreenUp" component={OtpScreenUp} />
-      <Stack.Screen name="OtpSuccesfulScreen" component={OtpSuccesfulScreen as any} />
+      {/* <Stack.Screen name="OtpSuccesfulScreen" component={OtpSuccesfulScreen as any} /> */}
       {/* <Stack.Screen name="EditCustomerScreen" component={EditCustomerScreen} /> */}
       <Stack.Screen name="OrderScreen" component={OrderScreen as any} />
       <Stack.Screen name="ScheduleScreen" component={ScheduleScreen as any} />

@@ -68,13 +68,13 @@ const Splash: React.FC<SplashProps> = ({ navigation }) => {
           } else {
             navigation.navigate('LoginScreen');
           }
-        }, 5000);
+        }, 3000);
       } catch (error) {
         console.error('Error checking authentication token:', error);
         // If there's an error, navigate to login as fallback
         setTimeout(() => {
           navigation.navigate('LoginScreen');
-        }, 5000);
+        }, 3000);
       }
     };
 
@@ -90,14 +90,14 @@ const Splash: React.FC<SplashProps> = ({ navigation }) => {
       />
       {/* Background Image */}
       <Image
-        source={require('../assets/images/splash.png')}
+        source={require('../assets/images/splash.webp')}
         className="absolute w-full h-full"
         resizeMode="cover"
       />
       {/* Logo and App Name */}
       <View className="flex-1 justify-center items-center">
         <Image
-          source={require('../assets/images/lgooo.png')}
+          source={require('../assets/images/lgooo.webp')}
           className="w-60 h-60"
           resizeMode="contain"
         />

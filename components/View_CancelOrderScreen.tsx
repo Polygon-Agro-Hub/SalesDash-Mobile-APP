@@ -479,13 +479,13 @@ const isTimelineItemActive = (status: string) => {
 { order.orderStatus !== "Cancelled" && (
   <TouchableOpacity 
     onPress={handleReportStatus}
-    className="mx-5 mb-3 rounded-full px-8"
+    className="mx-5 mb-3 rounded-full px-14"
   >
     <LinearGradient
       colors={["#6839CF", "#874DDB"]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
-      className="py-3 rounded-lg items-center"
+      className="py-3 rounded-full items-center"
     >
       <Text className="text-white text-center font-semibold">Report Status</Text>
     </LinearGradient>
@@ -496,14 +496,14 @@ const isTimelineItemActive = (status: string) => {
             <TouchableOpacity 
               onPress={handleCancelOrder}
               disabled={isCancelDisabled()}
-              className={`mx-5 mb-5 px-8 rounded-full ${isCancelDisabled() ? "opacity-70" : ""}`}
+              className={`mx-5 mb-5 px-14 rounded-full ${isCancelDisabled() ? "opacity-70" : ""}`}
             >
               {isCancelDisabled() ? (
-                <View className="bg-[#D9D9D9] py-3 rounded-lg items-center">
+                <View className="bg-[#D9D9D9] py-3 rounded-full items-center">
                   <Text className="text-black text-center font-semibold">Cancel Order</Text>
                 </View>
               ) : (
-                <View className="bg-[#000000] py-3 rounded-lg items-center">
+                <View className="bg-[#000000] py-3 rounded-full items-center">
                   <Text className="text-white text-center font-semibold">Cancel Order</Text>
                 </View>
               )}

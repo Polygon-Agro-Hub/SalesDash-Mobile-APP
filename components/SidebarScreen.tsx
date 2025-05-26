@@ -21,7 +21,7 @@ interface SidebarScreenProps {
 const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
   const [complaintsExpanded, setComplaintsExpanded] = useState(false);
   const [token, setToken] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ firstName: "", lastName:"", empId: "" });
+  const [formData, setFormData] = useState({ firstName: "", lastName:"", empId: "", image:"" });
 
 useFocusEffect(
   useCallback(() => {
@@ -95,7 +95,20 @@ const handleLogout = async () => {
          <BackButton navigation={navigation} />
 
          <View className="flex-row items-center p-5">
-           <Image source={require("../assets/images/profile.png")} style={{ width: wp(16), height: wp(16), borderRadius: wp(8) }} />
+           {/* <Image source={require("../assets/images/profile.png")} style={{ width: wp(16), height: wp(16), borderRadius: wp(8) }} />*/}
+               {formData.image ? (
+             <Image
+               source={{ uri: formData.image }}  // ← Use the URI from formData
+               className="w-16 h-16 rounded-full"
+               resizeMode="cover"
+             />
+           ) : (
+             <Image
+               source={require("../assets/images/profile.webp")}  // Fallback image
+               className="w-16 h-16 rounded-full"
+               resizeMode="cover"
+             />
+           )} 
            <View style={{ marginLeft: wp(4) }}>
              <Text className="text-lg font-bold text-gray-900">{formData.firstName} {formData.lastName}</Text>
              <Text className="text-sm text-gray-500 mt-1">{formData.empId}</Text>
@@ -122,7 +135,7 @@ const handleLogout = async () => {
     }}
   >
    <Image 
-  source={require('../assets/images/Account.png')} 
+  source={require('../assets/images/Account.webp')} 
   style={{ width: hp(3), height: hp(3), tintColor: '#8F8F8F' }} 
 />
   </View>
@@ -156,7 +169,7 @@ const handleLogout = async () => {
     }}
   >
  <Image 
-  source={require('../assets/images/Help.png')} 
+  source={require('../assets/images/Help.webp')} 
   style={{ width: hp(3), height: hp(3), tintColor: '#8F8F8F' }} 
 />
   </View>
@@ -201,7 +214,7 @@ const handleLogout = async () => {
     }}
   >
   <Image 
-  source={require('../assets/images/Password.png')} 
+  source={require('../assets/images/Password.webp')} 
   style={{ width: hp(3), height: hp(3), tintColor: '#8F8F8F' }} 
 />
     </View>
@@ -225,7 +238,7 @@ const handleLogout = async () => {
     }}
   >
   <Image 
-  source={require('../assets/images/Privacy.png')}
+  source={require('../assets/images/Privacy.webp')}
   style={{ width: hp(3), height: hp(3), tintColor: '#8F8F8F' }} 
 />
   </View>
@@ -247,7 +260,7 @@ const handleLogout = async () => {
     }}
   >
   <Image 
-  source={require('../assets/images/Terms and Conditions.png')} 
+  source={require('../assets/images/Terms and Conditions.webp')} 
   style={{ width: hp(3), height: hp(3), tintColor: '#8F8F8F' }} 
 />
   </View>
