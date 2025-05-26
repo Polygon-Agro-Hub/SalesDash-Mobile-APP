@@ -13,14 +13,14 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 
 
-const DashboardIcon = require("../assets/images/Home1.png");
-const DashboardIconFocus = require("../assets/images/hut1.png");
-const ViewOrdersIcon= require("../assets/images/Bullet List1.png");
-const ViewOrdersIconFocus= require("../assets/images/list-items.png");
-const ReminderIcon = require("../assets/images/Notification1.png");
-const ReminderIconFocus = require("../assets/images/bell.png");
-const CustomersIcon = require("../assets/images/user.png");
-const CustomersIconFocus = require("../assets/images/user1.png");
+const DashboardIcon = require("../assets/images/Home1.webp");
+const DashboardIconFocus = require("../assets/images/hut1.webp");
+const ViewOrdersIcon= require("../assets/images/Bullet List1.webp");
+const ViewOrdersIconFocus= require("../assets/images/list-items.webp");
+const ReminderIcon = require("../assets/images/Notification1.webp");
+const ReminderIconFocus = require("../assets/images/bell.webp");
+const CustomersIcon = require("../assets/images/user.webp");
+const CustomersIconFocus = require("../assets/images/user1.webp");
 
 const NavigationBar = ({
   navigation,

@@ -379,7 +379,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
   />
 ) : (
   <Image
-    source={require("../assets/images/profile.png")}  
+    source={require("../assets/images/profile.webp")}  
     className="w-12 h-12 rounded-full"
     resizeMode="cover"
   />
@@ -390,7 +390,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
             <View className="flex-row items-center">
              
               <View className="flex-row items-center bg-[#E6DBF766] py-1 px-3 rounded-full">
-                <Image source={require("../assets/images/star.png")} className="w-6 h-6" resizeMode="contain" />
+                <Image source={require("../assets/images/star.webp")} className="w-6 h-6" resizeMode="contain" />
                 <Text className="ml-2 font-bold text-gray-700">{agentStats.monthly.totalStars}</Text>
               </View>
             </View>
@@ -423,7 +423,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
 />
 </View>
   <Image
-    source={require("../assets/images/star.png")} 
+    source={require("../assets/images/star.webp")} 
     className="w-8 absolute right-0 h-8 mr-3"
     resizeMode="contain"
   />

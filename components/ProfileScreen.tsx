@@ -285,7 +285,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
           <View className="bg-[#6839CF]">
             <View className="relative">
               <ImageBackground
-                source={require("../assets/images/profilebackground.png")}
+                source={require("../assets/images/profilebackground.webp")}
                 resizeMode="cover"
                 style={{
                   width: "100%",
@@ -315,11 +315,11 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
           borderRadius: wp(35) / 2,
         }}
         onError={(e) => console.log("Image load error:", e.nativeEvent.error)}
-        defaultSource={require("../assets/images/profile.png")}
+        defaultSource={require("../assets/images/profile.webp")}
       />
     ) : (
       <Image
-        source={require("../assets/images/profile.png")}
+        source={require("../assets/images/profile.webp")}
         style={{
           width: wp(34),
           height: wp(34),
@@ -339,7 +339,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                 <View className="bg-[#6839CF] flex-row justify-between mt-3 px-4 py-3 rounded-2xl">
                   <View className="flex-1 items-center">
                     <Image 
-                      source={require("../assets/images/star.png")} 
+                      source={require("../assets/images/star.webp")} 
                       style={{ width: 24, height: 24 }} 
                     />
                     <Text className="text-white text-sm mt-1">Points</Text>
@@ -350,7 +350,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
 
                   <View className="flex-1 items-center">
                     <Image 
-                      source={require("../assets/images/Order Completed.png")} 
+                      source={require("../assets/images/Order Completed.webp")} 
                       style={{ width: 24, height: 24 }} 
                     />
                     <Text className="text-white text-sm mt-1">Orders</Text>
@@ -361,7 +361,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
 
                   <View className="flex-1 items-center">
                     <Image 
-                      source={require("../assets/images/Batch Assign.png")} 
+                      source={require("../assets/images/Batch Assign.webp")} 
                       style={{ width: 24, height: 24 }} 
                     />
                     <Text className="text-white text-sm mt-1">Customers</Text>

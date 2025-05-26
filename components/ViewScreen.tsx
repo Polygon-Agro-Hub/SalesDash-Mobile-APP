@@ -87,7 +87,7 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
       <View style={{ flex: 1 }}>
         {/* Top Section with Background Image */}
         <ImageBackground
-          source={require("../assets/images/Union.png")}
+          source={require("../assets/images/Union.webp")}
           style={{ height: 220 }}
           className="rounded-b-3xl shadow-lg bg-[#E6DBF766]"
           resizeMode="cover"

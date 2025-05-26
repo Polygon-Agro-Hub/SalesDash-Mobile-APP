@@ -104,7 +104,7 @@ const handleLogout = async () => {
              />
            ) : (
              <Image
-               source={require("../assets/images/profile.png")}  // Fallback image
+               source={require("../assets/images/profile.webp")}  // Fallback image
                className="w-16 h-16 rounded-full"
                resizeMode="cover"
              />
@@ -135,7 +135,7 @@ const handleLogout = async () => {
     }}
   >
    <Image 
-  source={require('../assets/images/Account.png')} 
+  source={require('../assets/images/Account.webp')} 
   style={{ width: hp(3), height: hp(3), tintColor: '#8F8F8F' }} 
 />
   </View>
@@ -169,7 +169,7 @@ const handleLogout = async () => {
     }}
   >
  <Image 
-  source={require('../assets/images/Help.png')} 
+  source={require('../assets/images/Help.webp')} 
   style={{ width: hp(3), height: hp(3), tintColor: '#8F8F8F' }} 
 />
   </View>
@@ -214,7 +214,7 @@ const handleLogout = async () => {
     }}
   >
   <Image 
-  source={require('../assets/images/Password.png')} 
+  source={require('../assets/images/Password.webp')} 
   style={{ width: hp(3), height: hp(3), tintColor: '#8F8F8F' }} 
 />
     </View>
@@ -238,7 +238,7 @@ const handleLogout = async () => {
     }}
   >
   <Image 
-  source={require('../assets/images/Privacy.png')}
+  source={require('../assets/images/Privacy.webp')}
   style={{ width: hp(3), height: hp(3), tintColor: '#8F8F8F' }} 
 />
   </View>
@@ -260,7 +260,7 @@ const handleLogout = async () => {
     }}
   >
   <Image 
-  source={require('../assets/images/Terms and Conditions.png')} 
+  source={require('../assets/images/Terms and Conditions.webp')} 
   style={{ width: hp(3), height: hp(3), tintColor: '#8F8F8F' }} 
 />
   </View>

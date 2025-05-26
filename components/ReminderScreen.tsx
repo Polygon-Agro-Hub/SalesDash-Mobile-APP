@@ -209,13 +209,13 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
   const getNotificationIcon = (title: string) => {
     switch(title) {
       case 'Payment Reminder':
-        return require("../assets/images/payment-method.png");
+        return require("../assets/images/payment-method.webp");
       case 'Order is Processing':
-        return require("../assets/images/time-management.png");
+        return require("../assets/images/time-management.webp");
       case 'Order is Out for Delivery':
-        return require("../assets/images/fast-shipping.png");
+        return require("../assets/images/fast-shipping.webp");
       default:
-        return require("../assets/images/notification.png");
+        return require("../assets/images/notification.webp");
     }
   };
 
@@ -255,7 +255,7 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
             {isEmpty ? (
               <View className="flex-1 justify-center items-center px-4 ">
                 <Image 
-                  source={require("../assets/images/notification.png")} 
+                  source={require("../assets/images/notification.webp")} 
                   style={{ width: wp("50%"), height: hp("20%"), resizeMode: "contain" }} 
                 />
                 <Text className="text-black text-center mt-4 font-bold text-1xl">
@@ -311,7 +311,7 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
                   >
                     <View className="flex-row">
                       <Image 
-                        source={require("../assets/images/cancel.png")} 
+                        source={require("../assets/images/cancel.webp")} 
                         style={{ width: 24, height: 24, marginRight: 6 }} 
                       />
                       <Text className="items-center ml-4 text-bold">

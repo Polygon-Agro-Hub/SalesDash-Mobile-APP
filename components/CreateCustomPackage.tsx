@@ -153,7 +153,9 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation, r
       });
   
     if (selectedProducts.length > 0) {
+      console.log("navitate-------------",selectedProducts, id, isCustomPackage, isSelectPackage)
       navigation.navigate("CratScreen" as any, { selectedProducts, id, isCustomPackage, isSelectPackage });
+      
     } else {
       alert("Please select at least one product");
     }

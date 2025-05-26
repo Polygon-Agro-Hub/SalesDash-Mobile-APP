@@ -404,7 +404,7 @@ const OtpScreenUp: React.FC = () => {
             {/* Illustration */}
             <View className="flex items-center justify-center w-50 h-40 mb-3 pt-18 mx-12">
            <Image
-             source={require("../assets/images/4n_hand.png")}
+             source={require("../assets/images/4n_hand.webp")}
              style={{
                width: 170,
                height: 170,

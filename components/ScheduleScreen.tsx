@@ -907,15 +907,13 @@ const getSelectableDates = () => {
   const minDate = new Date(today);
   minDate.setDate(today.getDate() + 3);
   
-  // Maximum date is minDate + 2 days (May 21)
-  const maxDate = new Date(minDate);
-  maxDate.setDate(minDate.getDate() + 2);
+ 
   
-  return { minDate, maxDate };
+  return { minDate };
 };
 
 // Set selectable date range
-const { minDate, maxDate } = getSelectableDates();
+const { minDate } = getSelectableDates();
 
 // Modify the date change handlers to enforce this range
 const handleDateChange = (event: any, selectedDate?: Date) => {
@@ -929,13 +927,13 @@ const handleDateChange = (event: any, selectedDate?: Date) => {
     // For debugging
     console.log(`Selected date: ${selectedWithoutTime.toDateString()}`);
     console.log(`Min date: ${minDate.toDateString()}`);
-    console.log(`Max date: ${maxDate.toDateString()}`);
+ //   console.log(`Max date: ${maxDate.toDateString()}`);
     console.log(`Is >= min: ${selectedWithoutTime >= minDate}`);
-    console.log(`Is <= max: ${selectedWithoutTime <= maxDate}`);
+  //  console.log(`Is <= max: ${selectedWithoutTime <= maxDate}`);
     
     // Validate selected date is within the allowed range using comparison of timestamps
-    if (selectedWithoutTime.getTime() >= minDate.getTime() && 
-        selectedWithoutTime.getTime() <= maxDate.getTime()) {
+    if (selectedWithoutTime.getTime() >= minDate.getTime() 
+        ) {
       setDate(selectedDate);
       
       const day = selectedDate.getDate();
@@ -949,12 +947,11 @@ const handleDateChange = (event: any, selectedDate?: Date) => {
       // Alert user if they select an invalid date
       const minDay = minDate.getDate();
       const minMonth = minDate.toLocaleString('en-US', { month: 'short' });
-      const maxDay = maxDate.getDate();
-      const maxMonth = maxDate.toLocaleString('en-US', { month: 'short' });
+    
       
       Alert.alert(
         "Invalid Date", 
-        `Please select a date between ${minDay} ${minMonth} and ${maxDay} ${maxMonth} (inclusive)`
+        `Please select a date between ${minDay} ${minMonth} (inclusive)`
       );
       
       // Reset to minimum date as fallback
@@ -969,8 +966,7 @@ const handleIOSDateConfirm = () => {
   dateWithoutTime.setHours(0, 0, 0, 0);
   
   // Validate selected date is within range for iOS using timestamp comparison
-  if (dateWithoutTime.getTime() >= minDate.getTime() && 
-      dateWithoutTime.getTime() <= maxDate.getTime()) {
+  if (dateWithoutTime.getTime() >= minDate.getTime() ) {
     const day = date.getDate();
     const month = date.toLocaleString('en-US', { month: 'short' });
     const year = date.getFullYear();
@@ -982,12 +978,11 @@ const handleIOSDateConfirm = () => {
   } else {
     const minDay = minDate.getDate();
     const minMonth = minDate.toLocaleString('en-US', { month: 'short' });
-    const maxDay = maxDate.getDate();
-    const maxMonth = maxDate.toLocaleString('en-US', { month: 'short' });
+   
     
     Alert.alert(
       "Invalid Date", 
-      `Please select a date between ${minDay} ${minMonth} and ${maxDay} ${maxMonth} (inclusive)`
+      `Please select a date between ${minDay} ${minMonth}  (inclusive)`
     );
     
     // Reset to minimum date
@@ -1080,7 +1075,7 @@ const handleIOSDateConfirm = () => {
             <Text className="flex-1 text-[#7F7F7F]">
               {selectedDate || "Select Date"}
             </Text>
-            <Image source={require("../assets/images/Calendar.png")} className="w-8 h-8" resizeMode="contain" />
+            <Image source={require("../assets/images/Calendar.webp")} className="w-8 h-8" resizeMode="contain" />
           </TouchableOpacity>
   
           <Text className="text-[#000000] mt-4 mb-2">Schedule Time Slot</Text>
@@ -1123,7 +1118,7 @@ const handleIOSDateConfirm = () => {
             display="default"
             onChange={handleDateChange}
             minimumDate={minimumDate} 
-            maximumDate={maxDate}
+         
           />
         )}
   
@@ -1149,7 +1144,7 @@ const handleIOSDateConfirm = () => {
                   onChange={handleDateChange}
                   minimumDate={minimumDate} // Set minimum date to 2 days from today
                   style={{ height: 200, marginTop: -10 }}
-                  maximumDate={maxDate}
+                
                 />
                 
                 <View className="flex-row justify-between mt-2">
@@ -1205,7 +1200,7 @@ const handleIOSDateConfirm = () => {
             >
               <Text className="text-white font-semibold mr-2">Proceed</Text>
               <Image
-                source={require("../assets/images/Done.png")}
+                source={require("../assets/images/Done.webp")}
                 className="w-5 h-5"
                 resizeMode="contain"
               />
