@@ -1,76 +1,48 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, Image, TextInput, Modal,Keyboard, Platform, KeyboardAvoidingView, Alert, ActivityIndicator } from "react-native";
-import { StackNavigationProp } from "@react-navigation/stack";
-import { RootStackParamList } from "./types";
-import { SelectList } from "react-native-dropdown-select-list";
-import BackButton from "./BackButton";
-import DropDownPicker from "react-native-dropdown-picker";
-import { LinearGradient } from "expo-linear-gradient"; 
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  SafeAreaView,
+  ScrollView,
+  ActivityIndicator,
+  StatusBar,
+  Modal,
+  TextInput,
+  Keyboard,
+  Image,
+  Alert
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import DropDownPicker from 'react-native-dropdown-picker';
+import BackButton from './BackButton';
+import { LinearGradient } from 'expo-linear-gradient';
 import environment from "@/environment/environment";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { RouteProp, useFocusEffect } from "@react-navigation/native";
-import { BackHandler } from 'react-native';
-
-
-
-type OrderScreenNavigationProp = StackNavigationProp<RootStackParamList, "OrderScreen">;
-type OrderScreenRouteProp = RouteProp<RootStackParamList, "OrderScreen">;
-
-
-
-
-
-interface OrderScreenProps {
-  navigation: OrderScreenNavigationProp;
-
-  route: {
-    params: {
-      id: string; 
-      isCustomPackage:string;
-       isSelectPackage:string;
-       selectedPackage: string,
-    packageItems: string,
-    originalPackageItems: string,
-    additionalItems: string,
-    subtotal: string,
-    discount: string,
-    total: string,
-    fullTotal: string,
-    selectedDate: string,
-    selectedTimeSlot: string,
-    timeDisplay: string,
-    paymentMethod: string,
-    isEdit:boolean
-    };
-  };
-}
-interface ModifiedPlusItem {
-  packageDetailsId: number;
-  originalQuantity: number;
-  modifiedQuantity: number;
-  originalPrice: number;
-  additionalPrice: number;
-  additionalDiscount: number;
-}
-
-interface ModifiedMinItem {
-  packageDetailsId: number;
-  originalQuantity: number;
-  modifiedQuantity: number;
-  originalPrice: number;
-  additionalPrice: number;
-  additionalDiscount: number;
-}
 
 interface AdditionalItem {
-  mpItemId: number;
+  id: number;
+  name: string;
   quantity: number;
-  price: number;
-  discount: number;
+  unit: string;
+  pricePerKg: number;
+  totalAmount: number;
+  checked: boolean;
 }
 
-interface Crop {
+interface Package {
+    id: number;
+    packageId: number; 
+    displayName: string;
+    price: string;
+    description: string;
+    portion: string;
+    period: string;
+    total: number;
+  }
+
+  interface Crop {
   id:number;
   cropId: number;
   displayName: string;
@@ -81,15 +53,6 @@ interface Crop {
   discountedPrice: string;
   promo: number;
 }
-interface ItemDetails {
-  startValue?: string;
-  changeby?: string;
-  discountedPrice?: string;
-  normalPrice?: string;
-  displayName?: string;
-  unitType?:string
-}
-
 interface CropItem {
   category: string;
   changeby: string;
@@ -104,749 +67,52 @@ interface CropItem {
   varietyId: number;
 }
 
-// Define dropdown item interface
-interface DropdownItem {
-  label: string;
-  value: string;
-  key: number;
-}
+const OrderScreen = () => {
+  const [loading, setLoading] = useState<boolean>(false);
+  const [showAddModal, setShowAddModal] = useState<boolean>(false);
+  const [selectedProduct, setSelectedProduct] = useState<string>('Kiwi');
+  const [quantity, setQuantity] = useState<number>(1);
+  const [pricePerKg, setPricePerKg] = useState<number>(100);
+  const [additionalItems, setAdditionalItems] = useState<AdditionalItem[]>([]);
+  
+  // Package dropdown states
+ const [packageOpen, setPackageOpen] = useState<boolean>(false);
+  const [packageValue, setPackageValue] = useState<string>('');
+  const [packageItems, setPackageItems] = useState<{label: string, value: string}[]>([]);
+  const [unitOpen, setUnitOpen] = useState<boolean>(false);
+const [selectedUnit, setSelectedUnit] = useState<string>('g');
+//const [loading, setLoading] = useState(false);
+  const [isConfirmed, setIsConfirmed] = useState(false); 
 
+  // Product dropdown states (for modal)
+const [productOpen, setProductOpen] = useState<boolean>(false);
+const [productValue, setProductValue] = useState<string>('kiwi');
+const [productItems, setProductItems] = useState<{
+  price: string;label: string, value: string
+}[]>([]);
+  
+  const orderData = {
+    packageName: packageItems.find(item => item.value === packageValue)?.label || "Fruity Pack",
+    items: [
+      { category: "Herbs", count: "03" },
+      { category: "Up Country Fruits", count: "04" },
+      { category: "Up Country Vegetables", count: "10" },
+      { category: "Low Country Fruits", count: "02" },
+      { category: "Low Country Vegetables", count: "03" },
+      { category: "Yams", count: "02" },
+    ],
+    total: "1,800.00",
+    itemCount: 24
+  };
 
-interface ExtendedOrderScreenParams {
-  id: string;
-  isCustomPackage: string | number;
-  isSelectPackage: string | number;
-  selectedPackage?: boolean;
-  packageItems?: Array<{
-    id: number;
-    name: string;
-    quantity: string;
-    quantityType: string;
-    mpItemId?: number;
-    price?: number;
-  }>;
-  originalPackageItems?: Array<{
-    mpItemId: number;
-    name: string;
-    quantity: string;
-    quantityType: string;
-    price?: number;
-  }>;
-  additionalItems?: Array<{
-    id: string;
-    name: string;
-    quantity: string;
-    quantityType: string;
-    price: number;
-    cropId: number;
-    discount: string;
- 
-  }>;
-  subtotal?: string | number;
-  discount?: string;
-  total?: string | number;
-  fullTotal?: string | number;
-  selectedDate?: string;
-  selectedTimeSlot?: string;
-  timeDisplay?: string;
-  paymentMethod?: string;
-  isEdit?: boolean;
-}
-
-
-
-
-
-const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
-  const { 
-    id, 
-    isCustomPackage, 
-    isSelectPackage,
-    selectedPackage: routeSelectedPackage,
-    packageItems: routePackageItems,
-    originalPackageItems: routeOriginalPackageItems,
-    additionalItems: routeAdditionalItems,
-    subtotal: routeSubtotal,
-    discount: routeDiscount,
-    total: routeTotal,
-    fullTotal: routeFullTotal,
-    selectedDate: routeSelectedDate,
-    selectedTimeSlot: routeSelectedTimeSlot,
-    timeDisplay: routeTimeDisplay,
-    paymentMethod: routePaymentMethod,
-    isEdit
-  } = route.params || {};
-  //const { id ,isCustomPackage, isSelectPackage} = route.params || {};
-  const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [modalVisible1, setModalVisible1] = useState(false);
-  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
-  const [selectedUnit, setSelectedUnit] = useState("kg");
-  const [newItemQuantity, setNewItemQuantity] = useState("");
-  const [totalPrice, setTotalPrice] = useState<number>(0);
-  const [token, setToken] = useState<string | null>(null);
-  const [packages, setPackages] = useState<Package[]>([]);
-  const [additionalItems, setAdditionalItems] = useState<{ id: string;name: string; quantity: string; quantityType: string; price: number; cropId:number ; discount:string}[]>([]);
-  const [packageItemsCount, setPackageItemsCount] = useState<number>(0); 
-  const [loading, setLoading] = useState<boolean>(true);
-  const [newItemName, setNewItemName] = useState<string>('');
-  const [changeBy, setChangeBy] = useState(0.5); 
-  const [unitType, setUnitType] = useState('kg'); 
-  const [crops, setCrops] = useState<Crop[]>([]);
+  const products = ['Kiwi', 'Apple', 'Mango', 'Orange', 'Banana'];
+    const [token, setToken] = useState<string | null>(null);
+    const [packages, setPackages] = useState<Package[]>([]);
+     const [crops, setCrops] = useState<Crop[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [totalDiscount, setTotalDiscount] = useState('');
-  const [editingItem, setEditingItem] = useState<{ id: number;name: string; quantity: string; quantityType: string; mpItemId?: number ;price: number; cropId:number } | null>(null);const [productOpen, setProductOpen] = useState<boolean>(false);  // State for controlling dropdown open/close
-  const [itemDetails, setItemDetails] = useState<{
-  id?: number;
-  mpItemId?: string;
-  changeby?: string;
-  startValue?: string;
-  unitType?: string;
-  discountedPrice?: string;
-  normalPrice?: string;
-  displayName?: string;
-  } | null>(null);
-//const { id  } = route.params;
-const [isModifiedPlus, setIsModifiedPlus] = useState(false);
-const [isModifiedMin, setIsModifiedMin] = useState(false);
-const [pricePerKg, setPricePerKg] = useState<string>("0.00");
-const [editingItemOriginalPrice, setEditingItemOriginalPrice] = useState<number | null>(null);
-const [currentItemPrice, setCurrentItemPrice] = useState<number>(0);
-const [newPrice1, setNewPrice1] = useState("0.00");
-const [ adding , setAdding] = useState(0);
-const [discount, setDiscount] = useState("0.00");
-const [finaldiscount, setFinaldiscount] = useState("0.00");
-
- const [editingItemType, setEditingItemType] = useState<'package' | 'additional'>('package');
-
-   const [selectedDelivery, setSelectedDelivery] = useState("");
-   const [cropId, setCropid] = useState<number>(0);
-   const [selectedItems, setSelectedItems] = useState<Set<string | number>>(new Set());
-   const [shouldSelectFetchedPackage, setShouldSelectFetchedPackage] = useState(false);
-   
-  
-   const [originalPackageItems, setOriginalPackageItems] = useState<{
-    //id: number;
-    mpItemId: number;
-    name: string;
-    quantity: string;
-    quantityType: string;
-    price?: number 
-  }[]>([]);
-  const [packageItems, setPackageItems] = useState<{ 
-    id:number;
-    name: string; 
-    quantity: string; 
-    quantityType: string; 
-    mpItemId?: number;
-    price?: number 
-  }[]>([]);
 
 
-  useEffect(() => {
-    if (selectedPackage && !isEdit) {
-      // Only fetch from API if we're not editing (coming from OrderConfirmScreen)
-      fetchItemsForPackage(selectedPackage.id).then((items) => {
-        setPackageItems(items);
-        setOriginalPackageItems(items); // Store the original items for comparison
-      });
-    }
-  }, [selectedPackage]);
-  
-  // Make sure to set this when fetching items
-  useEffect(() => {
-    if (selectedPackage) {
-      fetchItemsForPackage(selectedPackage.id).then((items) => {
-     //   setPackageItems(items);
-        setOriginalPackageItems(items); // Store the original items for comparison
-      });
-    }
-  }, [selectedPackage]);
-
-  
-  
-
-  interface ModifiedPlusItem {
-    packageDetailsId: number; // Remove the undefined type
-    originalQuantity: number;
-    modifiedQuantity: number;
-    originalPrice: number;
-    additionalPrice: number;
-    additionalDiscount: number;
-  }
-  
-  interface ModifiedMinItem {
-    packageDetailsId: number; // Remove the undefined type
-    originalQuantity: number;
-    modifiedQuantity: number;
-    originalPrice: number;
-    additionalPrice: number;
-    additionalDiscount: number;
-  }
-  
-  // Update the Package interface to include packageId
-  interface Package {
-    id: number;
-    packageId: number; // Add this property
-    displayName: string;
-    price: string;
-    description: string;
-    portion: string;
-    period: string;
-    total: number;
-  }
-
-
-  const customerid = id;
-
-
-const isFirstRenderRef = useRef(true);
-// Reference to track if data has been loaded from storage
-const dataLoaded = useRef(false);
-
-// Save state to AsyncStorage whenever it changes
-const saveStateToStorage = async () => {
-  if (isFirstRenderRef.current) return;
-  
-  try {
-    const orderData = {
-      selectedPackage,
-      totalPrice,
-      additionalItems,
-      packageItems,
-      originalPackageItems,
-      packageItemsCount,
-      totalDiscount,
-      selectedDelivery,
-      // Add other important state variables you want to persist
-    };
-    
-    await AsyncStorage.setItem(`orderScreen-${id}`, JSON.stringify(orderData));
-  } catch (error) {
-    console.error('Error saving order data:', error);
-  }
-};
-
-// Load state from AsyncStorage
-const loadStateFromStorage = async () => {
-  try {
-    const savedData = await AsyncStorage.getItem(`orderScreen-${id}`);
-    
-    if (savedData) {
-      const parsedData = JSON.parse(savedData);
-      
-      // Restore all saved state
-      setSelectedPackage(parsedData.selectedPackage);
-      setTotalPrice(parsedData.totalPrice);
-      setAdditionalItems(parsedData.additionalItems);
-      setPackageItems(parsedData.packageItems);
-      setOriginalPackageItems(parsedData.originalPackageItems);
-      setPackageItemsCount(parsedData.packageItemsCount);
-      setTotalDiscount(parsedData.totalDiscount);
-      setSelectedDelivery(parsedData.selectedDelivery);
-      
-      dataLoaded.current = true;
-      setLoading(false);
-    }
-  } catch (error) {
-    console.error('Error loading order data:', error);
-  }
-};
-
-
-
-// This effect runs on initial mount to load saved state
-useEffect(() => {
-  const initialLoadData = async () => {
-    // First check if we have route params from navigation (this takes priority)
-    if (isEdit) {
-      // We're coming back from OrderConfirmScreen with edit data
-      console.log("Loading data from navigation params - EDIT MODE");
-      
-      // CLEAR ASYNCSTORAGE FIRST - IMPORTANT!
-      try {
-        await AsyncStorage.removeItem(`orderScreen-${id}`);
-        console.log("AsyncStorage cleared for edit mode");
-      } catch (error) {
-        console.error('Error clearing storage:', error);
-      }
-      
-      if (routeSelectedPackage) {
-        setSelectedPackage(routeSelectedPackage as any);
-        setShouldSelectFetchedPackage(true);
-      }
-      
-      if (routePackageItems) {
-        console.log("Setting packageItems to CURRENT quantities:", routePackageItems);
-        setPackageItems(routePackageItems as any);
-      }
-      
-      
-      if (routeOriginalPackageItems) {
-        console.log("Setting originalPackageItems for reference:", routeOriginalPackageItems);
-        setOriginalPackageItems(routeOriginalPackageItems as any);
-      }
-      
-      if (routeAdditionalItems) {
-        setAdditionalItems(routeAdditionalItems as any);
-      }
-      
-      // Set other data from route params
-      if (routeDiscount) setTotalDiscount(routeDiscount);
-      if (routeTotal) setTotalPrice(parseFloat(routeTotal.toString()));
-      
-      // Mark data as loaded
-      dataLoaded.current = true;
-      setLoading(false);
-    } 
-    // If no route params, try to load from AsyncStorage
-    else {
-      await loadStateFromStorage();
-      
-      // If no saved data was loaded, proceed with normal data fetching
-      if (!dataLoaded.current) {
-        fetchInitialData();
-      }
-    }
-    
-    // ONLY set isFirstRenderRef to false after ALL data is loaded
-    // This prevents the save effect from triggering during initial load
-    setTimeout(() => {
-      isFirstRenderRef.current = false;
-    }, 2000); // Wait 2 seconds before enabling saves
-  };
-  
-  initialLoadData();
-  
-  // Handle back button presses
-  const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-    if (!isFirstRenderRef.current) {
-      saveStateToStorage();
-    }
-    return false; // Let the default back action proceed
-  });
-  
-  return () => {
-    backHandler.remove();
-  };
-}, []);
-
-// REMOVE OR COMMENT OUT this useEffect that automatically saves on state changes
-// This is what's causing your edit data to be overwritten!
-/*
-useEffect(() => {
-  if (!isFirstRenderRef.current) {
-    saveStateToStorage();
-  }
-}, [
-  selectedPackage,
-  totalPrice,
-  additionalItems,
-  packageItems,
-  packageItemsCount,
-  totalDiscount,
-  selectedDelivery
-]);
-*/
-
-// INSTEAD, manually save only when user makes actual changes
-// Add this function to call when user modifies quantities or items
-const handleUserChange = (callback: () => void) => {
-  callback(); // Execute the change
-  
-  // Save after user makes a change (not during initial load)
-  if (!isFirstRenderRef.current) {
-    setTimeout(() => {
-      saveStateToStorage();
-    }, 500);
-  }
-};
-
-// Use useFocusEffect to handle screen focus events
-useFocusEffect(
-  useCallback(() => {
-    // This runs when the screen comes into focus
-    if (!isFirstRenderRef.current && !dataLoaded.current) {
-      loadStateFromStorage();
-    }
-    
-    return () => {
-      // This runs when the screen goes out of focus
-      if (!isFirstRenderRef.current) {
-        saveStateToStorage();
-      }
-    };
-  }, [id])
-);
-
-
-  // const prepareOrderItems = async () => {
-  //   // Create separate arrays for tracking modifications and final items
-  //   const modifiedPlusItems = [];
-  //   const modifiedMinItems = [];
-  //   const finalOrderPackageList = [];
-    
-  //   // First, process all package items to ensure their modifications are calculated
-  //   // before handling any additional items
-  //   for (const item of packageItems) {
-  //     const originalItem = originalPackageItems.find(original => original.mpItemId === item.mpItemId);
-      
-  //     if (!originalItem) continue;
-      
-  //     const originalQuantity = parseFloat(originalItem.quantity);
-  //     const modifiedQuantity = parseFloat(item.quantity);
-  //     const originalPrice = item.price;
-      
-  //     // Fetch marketplace item details
-  //     const marketplaceItemDetails = await fetchMarketplaceItemDetails(item.mpItemId ?? 0);
-      
-  //     if (!marketplaceItemDetails) {
-  //       console.error(`Marketplace item not found for mpItemId: ${item.mpItemId}`);
-  //       continue;
-  //     }
-      
-  //     // Get prices from marketplace item details
-  //     const normalPrice = parseFloat(marketplaceItemDetails.normalPrice?.toString().replace(/,/g, '') || "0");
-  //     const discountedPrice = parseFloat(marketplaceItemDetails.discountedPrice?.toString().replace(/,/g, '') || "0");
-      
-  //     // Use the fetched prices
-  //     const pricePerUnit = discountedPrice;
-  //     const pricePerUnitNormal = normalPrice;
-      
-  //     // Store original values in local variables to avoid state interference
-  //     const localOriginalPrice = Number(originalPrice ?? 0);
-      
-      
-  //     // Handle item based on quantity changes
-  //     if (modifiedQuantity === originalQuantity) {
-  //       // Unchanged items - add to final list with original values
-  //       finalOrderPackageList.push({
-  //         productId: item.mpItemId,
-  //         quantity: originalQuantity,
-  //         price: originalPrice,
-  //         isPacking: 0,
-  //       });
-  //     } 
-  //     else if (modifiedQuantity > originalQuantity) {
-  //       // Handle quantity increase
-  //       const additionalQuantity = modifiedQuantity - originalQuantity;
-  //       const additionalPrice = pricePerUnit * additionalQuantity;
-  //       const additionalPriceNormal = pricePerUnitNormal * additionalQuantity;
-  //       const discount = additionalPriceNormal - additionalPrice;
-        
-  //       // Store modification in the array immediately to avoid later changes
-  //       const modifiedPlusItem = {
-  //         packageDetailsId: item.id || 0,
-  //         originalQuantity,
-  //         modifiedQuantity: additionalQuantity,
-  //         originalPrice: localOriginalPrice,
-  //         additionalPrice,
-  //         additionalDiscount: discount
-  //       };
-        
-  //       modifiedPlusItems.push(modifiedPlusItem);
-        
-  //       const totalPrice = additionalPrice + localOriginalPrice;
-        
-  //       // Add to final order list with updated price
-  //       finalOrderPackageList.push({
-  //         productId: item.mpItemId,
-  //         quantity: modifiedQuantity,
-  //         price: totalPrice,
-  //         isPacking: 0,
-  //       });
-  //     } 
-  //     else if (modifiedQuantity < originalQuantity) {
-  //       // Handle quantity decrease
-  //       const reducedQuantity = originalQuantity - modifiedQuantity;
-  //       const reducedPrice = pricePerUnit * reducedQuantity;
-  //       const reducedPriceNormal = pricePerUnitNormal * reducedQuantity;
-  //       const discount = reducedPriceNormal - reducedPrice;
-        
-  //       // Store modification immediately
-  //       const modifiedMinItem = {
-  //         packageDetailsId: item.id || 0,
-  //         originalQuantity,
-  //         modifiedQuantity: reducedQuantity,
-  //         originalPrice: originalPrice,
-  //         additionalPrice: reducedPrice,
-  //         additionalDiscount: discount
-  //       };
-        
-  //       modifiedMinItems.push(modifiedMinItem);
-        
-  //       finalOrderPackageList.push({
-  //         productId: item.mpItemId,
-  //         quantity: modifiedQuantity,
-  //         price: (originalPrice ?? 0) - reducedPrice,
-  //         isPacking: 0,
-  //       });
-  //     }
-  //   }
-    
-  //   // Now process additional items completely separately
-  //   // const finalAdditionalItems = additionalItems.map(item => {
-  //   //   const quantityStr = typeof item.quantity === 'string' ? 
-  //   //     item.quantity.split(' ')[0] : 
-  //   //     String(item.quantity);
-      
-  //   //   const quantity = parseFloat(quantityStr);
-  //   //   const itemPrice = parseFloat(item.price?.toString().replace(/,/g, '') || "0");
-  //   //   const itemDiscount = parseFloat(item.discount?.toString().replace(/,/g, '') || "0");
-      
-  //   //   return {
-  //   //     id: item.id,
-  //   //     quantity: quantity,
-  //   //     unitType: selectedUnit,
-  //   //     total: itemPrice + itemDiscount, // Don't add discount to total
-  //   //     subtotal: itemPrice,
-  //   //     discount: itemDiscount // Use the item's own discount
-  //   //   };
-  //   // });
-
-  //   const finalAdditionalItems = additionalItems.map(item => {
-  //     const quantityStr = typeof item.quantity === 'string' ? 
-  //       item.quantity.split(' ')[0] : 
-  //       String(item.quantity);
-      
-  //     let quantity = parseFloat(quantityStr);
-  //     let unitType = selectedUnit;
-      
-  //     // Convert grams to kilograms if needed
-  //     if (selectedUnit === "g") {
-  //       quantity = quantity / 1000; // Convert grams to kilograms
-  //       unitType = "Kg"; // Change unit to Kg
-  //     }
-      
-  //     const itemPrice = parseFloat(item.price?.toString().replace(/,/g, '') || "0");
-  //     const itemDiscount = parseFloat(item.discount?.toString().replace(/,/g, '') || "0");
-      
-  //     return {
-  //       id: item.id,
-  //       quantity: quantity,
-  //       unitType: unitType,
-  //       total: itemPrice + itemDiscount, // Don't add discount to total
-  //       subtotal: itemPrice,
-  //       discount: itemDiscount // Use the item's own discount
-  //     };
-  //   });
-    
-  //   // Create a deep copy of the arrays to avoid reference issues
-  //   const finalModifiedPlusItems = [...modifiedPlusItems];
-  //   const finalModifiedMinItems = [...modifiedMinItems];
-    
-  //   // Create the final order items object using the copies
-  //   const orderItems = [
-  //     {
-  //       packageId: selectedPackage?.id || 0,
-  //       isModifiedPlus: finalModifiedPlusItems.length > 0,
-  //       isModifiedMin: finalModifiedMinItems.length > 0,
-  //       isAdditionalItems: additionalItems.length > 0,
-  //       packageTotal: parseFloat(totalPrice?.toString() || "0"),
-  //       packageDiscount: parseFloat(discount || "0"),
-  //       modifiedPlusItems: finalModifiedPlusItems.length > 0 ? finalModifiedPlusItems : undefined,
-  //       modifiedMinItems: finalModifiedMinItems.length > 0 ? finalModifiedMinItems : undefined,
-  //       additionalItems: finalAdditionalItems.length > 0 ? finalAdditionalItems : undefined,
-  //       finalOrderPackageList: finalOrderPackageList
-  //     }
-  //   ];
-    
-  //   console.log(orderItems);
-  //   return orderItems;
-  // };
-
-const prepareOrderItems = async () => {
-  // Create separate arrays for tracking modifications and final items
-  const modifiedPlusItems = [];
-  const modifiedMinItems = [];
-  const finalOrderPackageList = [];
-  
-  // First, process all package items to ensure their modifications are calculated
-  // before handling any additional items
-  for (const item of packageItems) {
-    const originalItem = originalPackageItems.find(original => original.mpItemId === item.mpItemId);
-    
-    if (!originalItem) continue;
-    
-    // Handle unit conversion for quantities
-    let originalQuantity = parseFloat(originalItem.quantity);
-    let modifiedQuantity = parseFloat(item.quantity);
-    
-    // Convert grams to kilograms if needed
-    if (item.quantityType === "g") {
-      originalQuantity = originalQuantity / 1000;
-      modifiedQuantity = modifiedQuantity / 1000;
-    }
-    
-    const originalPrice = item.price;
-    
-    // Fetch marketplace item details
-    const marketplaceItemDetails = await fetchMarketplaceItemDetails(item.mpItemId ?? 0);
-    
-    if (!marketplaceItemDetails) {
-      console.error(`Marketplace item not found for mpItemId: ${item.mpItemId}`);
-      continue;
-    }
-    
-    // Get prices from marketplace item details
-    const normalPrice = parseFloat(marketplaceItemDetails.normalPrice?.toString().replace(/,/g, '') || "0");
-    const discountedPrice = parseFloat(marketplaceItemDetails.discountedPrice?.toString().replace(/,/g, '') || "0");
-    
-    // Use the fetched prices
-    const pricePerUnit = discountedPrice;
-    const pricePerUnitNormal = normalPrice;
-    
-    // Store original values in local variables to avoid state interference
-    const localOriginalPrice = Number(originalPrice ?? 0);
-    
-    // Handle item based on quantity changes
-    if (modifiedQuantity === originalQuantity) {
-      // Unchanged items - add to final list with original values
-      finalOrderPackageList.push({
-        productId: item.mpItemId,
-        quantity: originalQuantity,
-        price: originalPrice,
-        isPacking: 0,
-      });
-    } 
-    else if (modifiedQuantity > originalQuantity) {
-      // Handle quantity increase
-      const additionalQuantity = modifiedQuantity - originalQuantity;
-      const additionalPrice = pricePerUnit * additionalQuantity;
-      const additionalPriceNormal = pricePerUnitNormal * additionalQuantity;
-      const discount = additionalPriceNormal - additionalPrice;
-      
-      // Store modification in the array immediately to avoid later changes
-      const modifiedPlusItem = {
-        packageDetailsId: item.id || 0,
-        originalQuantity,
-        modifiedQuantity: additionalQuantity,
-        originalPrice: localOriginalPrice,
-        additionalPrice,
-        additionalDiscount: discount
-      };
-      
-      modifiedPlusItems.push(modifiedPlusItem);
-      
-      const totalPrice = additionalPrice + localOriginalPrice;
-      
-      // Add to final order list with updated price
-      finalOrderPackageList.push({
-        productId: item.mpItemId,
-        quantity: modifiedQuantity,
-        price: totalPrice,
-        isPacking: 0,
-      });
-    } 
-    else if (modifiedQuantity < originalQuantity) {
-      // Handle quantity decrease
-      const reducedQuantity = originalQuantity - modifiedQuantity;
-      const reducedPrice = pricePerUnit * reducedQuantity;
-      const reducedPriceNormal = pricePerUnitNormal * reducedQuantity;
-      const discount = reducedPriceNormal - reducedPrice;
-      
-      // Store modification immediately
-      const modifiedMinItem = {
-        packageDetailsId: item.id || 0,
-        originalQuantity,
-        modifiedQuantity: reducedQuantity,
-        originalPrice: originalPrice,
-        additionalPrice: reducedPrice,
-        additionalDiscount: discount
-      };
-      
-      modifiedMinItems.push(modifiedMinItem);
-      
-      finalOrderPackageList.push({
-        productId: item.mpItemId,
-        quantity: modifiedQuantity,
-        price: (originalPrice ?? 0) - reducedPrice,
-        isPacking: 0,
-      });
-    }
-  }
-  
-  // Process additional items with unit conversion
-    const finalAdditionalItems = additionalItems.map(item => {
-      const quantityStr = typeof item.quantity === 'string' ? 
-        item.quantity.split(' ')[0] : 
-        String(item.quantity);
-      
-      let quantity = parseFloat(quantityStr);
-      let unitType = item.quantityType;
-      
-      // Convert grams to kilograms if needed
-      if (item.quantityType === "g") {
-        quantity = quantity / 1000; // Convert grams to kilograms
-        unitType = "Kg"; // Change unit to Kg
-      }
-      
-      const itemPrice = parseFloat(item.price?.toString().replace(/,/g, '') || "0");
-      const itemDiscount = parseFloat(item.discount?.toString().replace(/,/g, '') || "0");
-      
-      return {
-        id: item.id,
-        quantity: quantity,
-        unitType: unitType,
-        total: itemPrice + itemDiscount, // Don't add discount to total
-        subtotal: itemPrice,
-        discount: itemDiscount // Use the item's own discount
-      };
-    });
-  
-  // Create a deep copy of the arrays to avoid reference issues
-  const finalModifiedPlusItems = [...modifiedPlusItems];
-  const finalModifiedMinItems = [...modifiedMinItems];
-  
-  // Create the final order items object using the copies
-  const orderItems = [
-    {
-      packageId: selectedPackage?.id || 0,
-      isModifiedPlus: finalModifiedPlusItems.length > 0,
-      isModifiedMin: finalModifiedMinItems.length > 0,
-      isAdditionalItems: additionalItems.length > 0,
-      packageTotal: parseFloat(totalPrice?.toString() || "0"),
-      packageDiscount: parseFloat(discount || "0"),
-      modifiedPlusItems: finalModifiedPlusItems.length > 0 ? finalModifiedPlusItems : undefined,
-      modifiedMinItems: finalModifiedMinItems.length > 0 ? finalModifiedMinItems : undefined,
-      additionalItems: finalAdditionalItems.length > 0 ? finalAdditionalItems : undefined,
-      finalOrderPackageList: finalOrderPackageList
-    }
-  ];
-  
-  console.log(orderItems);
-  return orderItems;
-};
-
-
-
-const [clickCount, setClickCount] = useState<number>(1); // Default value is 1 (or whatever makes sense)
-
-  const [open, setOpen] = useState(false);
-  
-  const [units, setUnits] = useState([
-    { label: "Kg", value: "Kg" },
-    { label: "g", value: "g" },
-  ]);
-
-  const [counter, setCounter] = useState(0);
-  
-    
-    const handleClick1 = () => {
-        // Counter state is incremented
-        setCounter(counter + 1);
-    };
-
-   
-    const handleClick2 = () => {
-        // Counter state is decremented
-        setCounter(counter - 1);
-    };
-
- 
-
-  
-const fetchPackages = async () => {
+  const fetchPackages = async () => {
   try {
     const storedToken = await AsyncStorage.getItem("authToken");
     if (!storedToken) {
@@ -863,7 +129,16 @@ const fetchPackages = async () => {
       }
     );
     
-    setPackages(response.data.data); 
+    console.log("packagedata", response.data);
+    setPackages(response.data.data);
+    
+    // Transform packages for dropdown
+    const dropdownItems = response.data.data.map(pkg => ({
+      label: pkg.displayName,
+      value: pkg.id.toString() // Convert ID to string as DropDownPicker expects string values
+    }));
+    
+    setPackageItems(dropdownItems);
   
   } catch (error) {
     Alert.alert("Error", "Failed to fetch packages");
@@ -876,142 +151,9 @@ useEffect(() => {
 
   });
 }, []);
-  
-  
-  
-  
-  
-
-  
-  
-  const fetchItemsForPackage = async (packageId: number): Promise<{ 
-    id: number;
-    mpItemId: number;
-    name: string;
-    quantity: string;
-    quantityType: string;
-    price: number;
-  }[]> => {
-    try {
-      const storedToken = await AsyncStorage.getItem("authToken");
-      if (!storedToken) {
-        Alert.alert("Error", "No authentication token found");
-        return []; 
-      }
-  
-      const response = await axios.get<{ 
-        data: { 
-          id: number;
-          mpItemId: number;
-          name: string;
-          quantity: string;
-          quantityType: string;
-          price: number;
-        }[] 
-      }>(
-        `${environment.API_BASE_URL}api/packages/${packageId}/items`,
-        {
-          headers: { Authorization: `Bearer ${storedToken}` },
-        }
-      );
-  
-      if (response.data && response.data.data) {
-       // console.log("Package items fetched:", response.data.data);
-    
-        setPackageItemsCount(response.data.data.length);
-        return response.data.data; 
-        
-      } else {
- 
-        return [];
-      }
-    } catch (error) {
-      console.error("Error fetching items:", error);
-      Alert.alert("Error", "Failed to fetch items for the package");
-      return []; 
-    }
-  };
-  
 
 
-  const fetchMarketplaceItemDetails = async (mpItemId: number) => {
-    try {
-      const storedToken = await AsyncStorage.getItem("authToken");
-      if (!storedToken) {
-        Alert.alert("Error", "No authentication token found");
-        return null;
-      }
-  
-  
-      const response = await axios.get(
-        `${environment.API_BASE_URL}api/packages/marketplace-item/${mpItemId}`,
-        {
-          headers: { Authorization: `Bearer ${storedToken}` },
-        }
-      );
-  
-      if (response.data && response.data.data) {
-        const itemDetails = response.data.data;
-       // console.log("=======",response.data)
-  
-     
-  
-        setChangeBy(parseFloat(itemDetails.changeby)); 
-  
-        return itemDetails;
-      } else {
-        console.log("No details found for this item.");
-        return null;
-      }
-    } catch (error) {
-      console.error("Error fetching item details:", error);
-      Alert.alert("Error", "Failed to fetch item details");
-      return null;
-    }
-  };
-  
-
-
-  const handleCropSelect = (selectedCropName: string) => {
-    const selectedCrop = crops.find(crop => crop.displayName === selectedCropName);
-    
-    if (selectedCrop) {
-      // Reset counter when selecting a new crop
-      setCounter(0);
-      
-      // Get basic values from the selected crop
-      const normalPrice = Number(selectedCrop.normalPrice) || 0;
-      const discountedPrice = parseFloat(selectedCrop.discountedPrice ?? "0.00");
-  
-      
-      // Set item details
-      setItemDetails({
-        changeby: selectedCrop.changeby,
-        startValue: selectedCrop.startValue,
-        unitType: selectedCrop.unitType,
-        discountedPrice: selectedCrop.discountedPrice,
-        normalPrice: selectedCrop.normalPrice,
-        displayName: selectedCrop.displayName,
-      });
-
-      const total = parseFloat(selectedCrop.discountedPrice) * parseFloat(selectedCrop.startValue);
-      
-      setNewItemQuantity(selectedCrop.startValue);
-      setUnits([{ label: selectedCrop.unitType, value: selectedCrop.unitType }]);
-    setSelectedUnit(selectedCrop.unitType); // This line was missing
-
-      setPricePerKg(discountedPrice.toFixed(2));
-      setNewPrice1(total.toFixed(2));
-      
-      // Calculate initial discount
-      const discount = (normalPrice*parseFloat(selectedCrop.startValue) ) - (discountedPrice* parseFloat(selectedCrop.startValue));
-      const discountfinal = discount.toFixed(2)
-      setFinaldiscount(discountfinal);
-    }
-  };
-
-
-
+///get all cropsss
 
 const fetchCrops = async () => {
   try {
@@ -1031,12 +173,26 @@ const fetchCrops = async () => {
       headers: { Authorization: `Bearer ${storedToken}` },
     });
     
-   //console.log("product", response.data);
-    
     if (response.status === 200 && response.data && Array.isArray(response.data.data)) {
-      // Filter only Retail items
-      const retailItems = response.data.data.filter((item: CropItem) => item.category === "Retail");
-      setCrops(retailItems); // Update crops list with only retail items
+      // Filter only Retail items and transform for dropdown
+      const retailItems = response.data.data
+        .filter((item: CropItem) => item.category === "Retail")
+        .map((item: { displayName: any; varietyId: { toString: () => any; }; unitType: any; discountedPrice: any; normalPrice: any; }) => ({
+          label: item.displayName,
+          value: item.varietyId.toString(),
+          unitType: item.unitType,
+          price: item.discountedPrice || item.normalPrice
+        }));
+      
+      setCrops(retailItems);
+      setProductItems(retailItems);
+      
+      // Set default selected product if none selected
+      if (!productValue && retailItems.length > 0) {
+        setProductValue(retailItems[0].value);
+        setSelectedProduct(retailItems[0].label);
+        setPricePerKg(parseFloat(retailItems[0].price) || 100);
+      }
     } else {
       setError("Unexpected response format");
     }
@@ -1058,2191 +214,424 @@ useEffect(() => {
 
   }
 }, [productOpen]);
-  
-  
-  
-const fetchCropDetails = async (cropId: number) => {
-  try {
-    const storedToken = await AsyncStorage.getItem("authToken");
-    if (!storedToken) {
-      throw new Error("No authentication token found");
-    }
 
-    const apiUrl = `${environment.API_BASE_URL}api/packages/crops/${cropId}`;  // Adjust to the correct endpoint for crop details
-    const response = await axios.get(apiUrl, {
-      headers: { Authorization: `Bearer ${storedToken}` },
-    });
-
-    if (response.status === 200 && response.data) {
-    // console.log("CROP datata", response.data)
-      return response.data;  // Return the crop details
-      
-    } else {
-      throw new Error("Unexpected response format");
-    }
-  } catch (error: any) {
-    console.error("Error fetching crop details:", error);
-    throw error;
-  }
-};
-
-  useEffect(() => {
-    if (editingItem) {
-      setNewItemQuantity(editingItem.quantity);
-      setSelectedUnit(editingItem.quantityType);
-      
-    }
-  }, [editingItem]);
-
-
-  
-  
-  
-  
-
-
-
-  //+++++++ ADDD
-
-
-  
-
- // Function to handle quantity increases
-// const updateQuantityAdd = (changeBy: number, isIncrement: boolean) => {
-//   // Increment counter for tracking clicks
-//   const newCounterValue = counter + 1;
-//   setCounter(newCounterValue);
-  
-//   // Update the quantity
-//   const currentValue = parseFloat(newItemQuantity || "0");
-//   const newValue = currentValue + changeBy;
-//   setNewItemQuantity(newValue.toString());
-  
-//   // Recalculate prices
-//   if (itemDetails) {
-//     // Validate inputs
-//     if (!newItemName || typeof newItemName !== "string" || !newItemName.trim()) {
-//       Alert.alert("Error", "Please select a product.");
-//       return;
-//     }
-    
-//     if (newValue <= 0) {
-//       Alert.alert("Error", "Quantity must be greater than zero.");
-//       return;
-//     }
-    
-//     // Calculate new prices
-//     calculateTotalPriceAdd(newValue, itemDetails, newCounterValue);
-//   }
-// };
-
-
-
-// Unified price calculation function
-// Unified price calculation function
-// function calculateTotalPriceAdd(quantity: number, itemDetails: ItemDetails | null, counterValue: number) {
-//   if (itemDetails === null) {
-//     throw new Error("Item details are missing");
-//   }
-  
-//   // Get needed values from itemDetails
-//   const startValue = parseFloat(itemDetails.startValue ?? "1.00");
-//   const changeBy = parseFloat(itemDetails.changeby ?? "0.50");
-//   const discountedPrice = parseFloat(itemDetails.discountedPrice ?? "0.00");
-//   const normalPrice = parseFloat(itemDetails.normalPrice ?? "0.00");
-  
-//   // Calculate discounted price
-//   const additionalPrice = discountedPrice * changeBy * counterValue;
-//   const totalDiscountedPrice = discountedPrice * startValue + additionalPrice;
-  
-//   // Calculate normal price (without discount)
-//   const normalAdditionalPrice = normalPrice * changeBy * counterValue;
-//   const totalNormalPrice = normalPrice * startValue + normalAdditionalPrice;
-  
-//   // Calculate total discount amount for this item
-//   const totalDiscount = (totalNormalPrice - totalDiscountedPrice).toFixed(2);
-  
-//   // Update state values
-//   setNewPrice1(totalDiscountedPrice.toFixed(2));
-//   setFinaldiscount(totalDiscount);
-  
-//   // Return calculated discounted price and discount amount
-//   return {
-//     price: totalDiscountedPrice,
-//     discount: totalDiscount
-//   };
-// }
-
-
-// function calculateTotalPriceAdd(quantity: number, itemDetails: ItemDetails | null, counterValue: number) {
-//   if (itemDetails === null) {
-//     throw new Error("Item details are missing");
-//   }
-  
-//   // Get needed values from itemDetails
-//   const startValue = parseFloat(itemDetails.startValue ?? "1.00");
-//   const changeBy = parseFloat(itemDetails.changeby ?? "0.50");
-//   const discountedPrice = parseFloat(itemDetails.discountedPrice ?? "0.00");
-//   const normalPrice = parseFloat(itemDetails.normalPrice ?? "0.00");
-  
-//   // Log the values being used for calculation
-//   console.log("Calculation with:", {
-//     quantity,
-//     startValue,
-//     changeBy,
-//     discountedPrice,
-//     normalPrice,
-//     selectedUnit,
-//     counterValue
-//   });
-  
-//   // Base quantity is what comes from startValue
-//   const baseQuantity = startValue;
-//   // Additional quantity is what comes from user interactions via counter
-//   const additionalQuantity = changeBy * counterValue;
-//   // Total quantity to be charged (base + additions)
-//   const totalChargingQuantity = baseQuantity + additionalQuantity;
-  
-//   // Calculate the price based on the displayed quantity and price per unit
-//   const totalDiscountedPrice = discountedPrice * quantity;
-//   const totalNormalPrice = normalPrice * quantity;
-  
-//   // Calculate total discount amount for this item
-//   const totalDiscount = Math.max(0, totalNormalPrice - totalDiscountedPrice).toFixed(2);
-  
-//   // Update state values
-//   setNewPrice1(totalDiscountedPrice.toFixed(2));
-//   setFinaldiscount(totalDiscount);
-  
-//   console.log("Calculated prices:", {
-//     totalDiscountedPrice: totalDiscountedPrice.toFixed(2),
-//     totalNormalPrice: totalNormalPrice.toFixed(2),
-//     totalDiscount
-//   });
-  
-//   // Return calculated discounted price and discount amount
-//   return {
-//     price: totalDiscountedPrice,
-//     discount: totalDiscount
-//   };
-// }
-
-function calculateTotalPriceAdd(quantity: number, itemDetails: ItemDetails | null, counterValue: number) {
-  if (itemDetails === null) {
-    throw new Error("Item details are missing");
-  }
-  
-  // Get needed values from itemDetails
-  const startValue = parseFloat(itemDetails.startValue ?? "1.00");
-  const changeBy = parseFloat(itemDetails.changeby ?? "0.50");
-  const discountedPrice = parseFloat(itemDetails.discountedPrice ?? "0.00");
-  const normalPrice = parseFloat(itemDetails.normalPrice ?? "0.00");
-  
-  // Adjust prices based on selected unit
-  let pricePerUnit = discountedPrice;
-  let normalPricePerUnit = normalPrice;
-  
-  if (selectedUnit === 'g') {
-    pricePerUnit = discountedPrice / 1000;
-    normalPricePerUnit = normalPrice / 1000;
-  }
-  
-  // Calculate prices
-  const totalDiscountedPrice = pricePerUnit * quantity ;
-  const totalNormalPrice = normalPricePerUnit * quantity;
-  
-  // Calculate discount
-  const totalDiscount = (totalNormalPrice - totalDiscountedPrice).toFixed(2);
-  
-  // Update state
-  setNewPrice1(totalDiscountedPrice.toFixed(2));
-  setFinaldiscount(totalDiscount);
-  
-  return {
-    price: totalDiscountedPrice,
-    discount: totalDiscount
-  };
-}
-
-// Add a separate function to recalculate total discount from all items
-// This can be used to verify/fix the total discount at any time
-
-  
-  const handleItemEdit = (item: any) => {
-    setEditingItem(item);
-  
-    
-    if (item.quantity) {
-   
-      const numericPart = item.quantity.toString().split(' ')[0];
-      setNewItemQuantity(numericPart);
-    } else {
-      setNewItemQuantity(""); 
-    }
-  
-  
-    if (item.quantityType) {
-      setSelectedUnit(item.quantityType);
-    }
-  
-
-    if ('mpItemId' in item && item.mpItemId !== undefined && item.mpItemId !== null && typeof item.mpItemId === 'number') {
-  
-  
-      fetchMarketplaceItemDetails(item.mpItemId)
-        .then(details => {
-          if (details) {
-          
-            setItemDetails({
-              changeby: details.changeby,
-              startValue: details.startValue,
-              unitType: details.unitType,
-              discountedPrice: details.discountedPrice,
-              normalPrice: details.normalPrice,
-              displayName: details.displayName
-            });
-  
-            // If you need to update the unitType state as well
-            if (details.unitType) {
-              setUnitType(details.unitType);
-            }
-          }
-        })
-        .catch(error => {
-          console.error("Error fetching item details on click:", error);
-        })
-        .finally(() => {
-      
-        });
-    } else {
-      console.log("Invalid mpItemId:", item.mpItemId);
-    }
-  
-
-    setModalVisible(true);
-  };
-  
- 
-
-
-  // const addItem = () => {
-  //   // Existing validation code...
-  //   const selectedCrop = crops.find((crop) => crop.displayName === newItemName);
-  //   if (!selectedCrop) {
-  //     Alert.alert("Error", "Selected crop not found.");
-  //     return;
-  //   }
-    
-  //   // Get the crop ID if available, otherwise generate a unique ID
-  //   const itemId = selectedCrop.id ? String(selectedCrop.id) : String(Date.now());
-    
-  //   const parsedQuantity = parseFloat(newItemQuantity);
-    
-  //   if (itemDetails) {
-  //     // Calculate price and discount for the item
-  //     const calculatedPriceResult = calculateTotalPriceAdd(parsedQuantity, itemDetails, counter);
-  //     const calculatedPrice = calculatedPriceResult.price;
-  //     const totalDiscount = calculatedPriceResult.discount;
-      
-  //     const newItem = {
-  //       id: itemId,
-  //       name: newItemName ?? "",
-  //       quantity: `${String(newItemQuantity)} ${selectedUnit}`,
-  //       quantityType: selectedUnit || "unit",
-  //       price: calculatedPrice,
-  //       cropId: selectedCrop.cropId,
-  //       discount: totalDiscount
-  //     };
-      
-  //     console.log("''''''''", newItem);
-  //     console.log("lllllll", totalDiscount);
-      
-  //     // Create a variable to track what the new discount should be
-  //     let updatedDiscount;
-      
-  //     // Logic for handling the updated items and total discount
-  //     if (parsedQuantity === 0) {
-  //       // Remove item if quantity is 0
-  //       const itemToRemove = additionalItems.find(item => item.id === itemId);
-  //       if (itemToRemove) {
-  //         const discountToRemove = parseFloat(itemToRemove.discount || "0");
-  //         // Remove from additionalItems array
-  //         setAdditionalItems(prev => prev.filter(item => item.id !== itemId));
-  //         // Calculate the new discount total
-  //         const currentTotal = parseFloat(discount || "0");
-  //         updatedDiscount = Math.max(0, currentTotal - discountToRemove).toFixed(2);
-  //         // Update the discount state
-  //         setDiscount(updatedDiscount);
-  //         console.log(`Removing discount: ${discountToRemove}, New total: ${updatedDiscount}`);
-  //       }
-  //     } else {
-  //       // Check if item with this ID already exists
-  //       const existingItemIndex = additionalItems.findIndex((item) => item.id === itemId);
-        
-  //       if (existingItemIndex !== -1) {
-  //         // Get existing item's discount before updating
-  //         const existingItem = additionalItems[existingItemIndex];
-  //         const oldDiscount = parseFloat(existingItem.discount || "0");
-  //         const newDiscount = parseFloat(totalDiscount);
-          
-  //         // Update the item in additionalItems array
-  //         const updatedItems = [...additionalItems];
-  //         updatedItems[existingItemIndex] = {
-  //           ...existingItem,
-  //           quantity: `${parsedQuantity} ${selectedUnit}`,
-  //           price: calculatedPrice,
-  //           discount: totalDiscount
-  //         };
-  //         setAdditionalItems(updatedItems);
-          
-  //         // Calculate the new discount total
-  //         const currentTotal = parseFloat(discount || "0");
-  //         updatedDiscount = (currentTotal - oldDiscount + newDiscount).toFixed(2);
-  //         // Update the discount state
-  //         setDiscount(updatedDiscount);
-  //         console.log(`Updating discount: ${oldDiscount} → ${newDiscount}, New total: ${updatedDiscount}`);
-  //       } else {
-  //         // Add new item to additionalItems array
-  //         setAdditionalItems(prev => [...prev, newItem]);
-          
-  //         // Calculate the new discount total
-  //         const itemDiscount = parseFloat(totalDiscount || "0");
-  //         const currentTotal = parseFloat(discount || "0");
-  //         updatedDiscount = (currentTotal + itemDiscount).toFixed(2);
-  //         // Update the discount state
-  //         setDiscount(updatedDiscount);
-  //         setAdding(itemDiscount)
-  //         console.log(`Current total: ${currentTotal}, Adding: ${itemDiscount}, New total: ${updatedDiscount}`);
-  //       }
-        
-  //       // Update total price
-  //       setTotalPrice(prevTotal => (Number(prevTotal) || 0) + calculatedPrice);
-  //     }
-      
-  //     // Reset states after adding item
-  //     setCounter(0);
-  //     setModalVisible(false);
-  //     setNewItemName("");
-  //     setNewItemQuantity("");
-  //     setPricePerKg("");
-  //     setNewPrice1("");
-  //     setFinaldiscount("0.00"); 
-  //     setModalVisible1(false);
-      
-  //     // Log the updated discount value we just calculated - this will be accurate
-  //     console.log("Updated total discount:", updatedDiscount);
-  //   } else {
-  //     Alert.alert("Error", "Item details are missing.");
-  //   }
-  // };
-
-//   const addItem = () => {
-//   // Validate crop selection
-//   const selectedCrop = crops.find((crop) => crop.displayName === newItemName);
-//   if (!selectedCrop) {
-//     Alert.alert("Error", "Selected crop not found.");
-//     return;
-//   }
-  
-//   // Get the crop ID if available, otherwise generate a unique ID
-//   const itemId = selectedCrop.id ? String(selectedCrop.id) : String(Date.now());
-  
-//   const parsedQuantity = parseFloat(newItemQuantity || "0");
-  
-//   if (itemDetails) {
-//     // Adjust item details based on current unit if needed
-//     let adjustedItemDetails = {...itemDetails};
-    
-//     // If the unit is g, and the stored prices are per kg, adjust the prices
-//     if (selectedUnit === 'g') {
-//       const discountedPricePerG = parseFloat(itemDetails.discountedPrice as any) / 1000;
-//       const normalPricePerG = parseFloat(itemDetails.normalPrice as any) / 1000;
-      
-//       adjustedItemDetails = {
-//         ...itemDetails,
-//         discountedPrice: discountedPricePerG.toString(),
-//         normalPrice: normalPricePerG.toString()
-//       };
-//     }
-    
-//     // Calculate price and discount for the item with adjusted values
-//     const calculatedPriceResult = calculateTotalPriceAdd(parsedQuantity, adjustedItemDetails, counter);
-//     const calculatedPrice = calculatedPriceResult.price;
-//     const totalDiscount = calculatedPriceResult.discount;
-    
-//     const newItem = {
-//       id: itemId,
-//       name: newItemName ?? "",
-//       quantity: `${String(newItemQuantity)} ${selectedUnit}`,
-//       quantityType: selectedUnit || "unit",
-//       price: calculatedPrice,
-//       cropId: selectedCrop.cropId,
-//       discount: totalDiscount
-//     };
-    
-//     console.log("New item to add:", newItem);
-//     console.log("Item discount:", totalDiscount);
-    
-//     // Create a variable to track what the new discount should be
-//     let updatedDiscount;
-    
-//     // Logic for handling the updated items and total discount
-//     if (parsedQuantity === 0) {
-//       // Remove item if quantity is 0
-//       const itemToRemove = additionalItems.find(item => item.id === itemId);
-//       if (itemToRemove) {
-//         const discountToRemove = parseFloat(itemToRemove.discount || "0");
-//         // Remove from additionalItems array
-//         setAdditionalItems(prev => prev.filter(item => item.id !== itemId));
-//         // Calculate the new discount total
-//         const currentTotal = parseFloat(discount || "0");
-//         updatedDiscount = Math.max(0, currentTotal - discountToRemove).toFixed(2);
-//         // Update the discount state
-//         setDiscount(updatedDiscount);
-//         console.log(`Removing discount: ${discountToRemove}, New total: ${updatedDiscount}`);
-//       }
-//     } else {
-//       // Check if item with this ID already exists
-//       const existingItemIndex = additionalItems.findIndex((item) => item.id === itemId);
-      
-//       if (existingItemIndex !== -1) {
-//         // Get existing item's discount before updating
-//         const existingItem = additionalItems[existingItemIndex];
-//         const oldDiscount = parseFloat(existingItem.discount || "0");
-//         const newDiscount = parseFloat(totalDiscount);
-        
-//         // Update the item in additionalItems array
-//         const updatedItems = [...additionalItems];
-//         updatedItems[existingItemIndex] = {
-//           ...existingItem,
-//           quantity: `${parsedQuantity} ${selectedUnit}`,
-//           price: calculatedPrice,
-//           discount: totalDiscount
-//         };
-//         setAdditionalItems(updatedItems);
-        
-//         // Calculate the new discount total
-//         const currentTotal = parseFloat(discount || "0");
-//         updatedDiscount = (currentTotal - oldDiscount + newDiscount).toFixed(2);
-//         // Update the discount state
-//         setDiscount(updatedDiscount);
-//         console.log(`Updating discount: ${oldDiscount} → ${newDiscount}, New total: ${updatedDiscount}`);
-//       } else {
-//         // Add new item to additionalItems array
-//         setAdditionalItems(prev => [...prev, newItem]);
-        
-//         // Calculate the new discount total
-//         const itemDiscount = parseFloat(totalDiscount || "0");
-//         const currentTotal = parseFloat(discount || "0");
-//         updatedDiscount = (currentTotal + itemDiscount).toFixed(2);
-//         // Update the discount state
-//         setDiscount(updatedDiscount);
-//         setAdding(itemDiscount);
-//         console.log(`Current total: ${currentTotal}, Adding: ${itemDiscount}, New total: ${updatedDiscount}`);
-//       }
-      
-//       // Update total price
-//       setTotalPrice(prevTotal => (Number(prevTotal) || 0) + calculatedPrice);
-//     }
-    
-//     // Reset states after adding item
-//     setCounter(0);
-//     setModalVisible(false);
-//     setNewItemName("");
-//     setNewItemQuantity("");
-//     setPricePerKg("");
-//     setNewPrice1("");
-//     setFinaldiscount("0.00"); 
-//     setModalVisible1(false);
-    
-//     // Log the updated discount value we just calculated - this will be accurate
-//     console.log("Updated total discount:", updatedDiscount);
-//   } else {
-//     Alert.alert("Error", "Item details are missing.");
-//   }
-// };
-const addItem = () => {
-  // Validate crop selection
-  const selectedCrop = crops.find((crop) => crop.displayName === newItemName);
-  if (!selectedCrop) {
-    Alert.alert("Error", "Selected crop not found.");
-    return;
-  }
-
-  // Get the crop ID if available, otherwise generate a unique ID
-  const itemId = selectedCrop.id ? String(selectedCrop.id) : String(Date.now());
-  
-  const parsedQuantity = parseFloat(newItemQuantity || "0");
-  
-  if (itemDetails) {
-    // Calculate price based on the selected unit
-    let calculatedPrice: number;
-    let totalDiscount: string;
-    
-    if (selectedUnit === 'g') {
-      // For grams, calculate price per gram
-      const pricePerGram = parseFloat(itemDetails.discountedPrice || "0") / 1000;
-      const normalPricePerGram = parseFloat(itemDetails.normalPrice || "0") / 1000;
-      
-      calculatedPrice = pricePerGram * parsedQuantity;
-      const normalPriceTotal = normalPricePerGram * parsedQuantity;
-      totalDiscount = (normalPriceTotal - calculatedPrice).toFixed(2);
-    } else {
-      // For kg, use prices as is
-      calculatedPrice = parseFloat(itemDetails.discountedPrice || "0") * parsedQuantity;
-      const normalPriceTotal = parseFloat(itemDetails.normalPrice || "0") * parsedQuantity;
-      totalDiscount = (normalPriceTotal - calculatedPrice).toFixed(2);
-    }
-
-    const newItem = {
-      id: itemId,
-      name: newItemName ?? "",
-      quantity: `${String(newItemQuantity)} ${selectedUnit}`,
-      quantityType: selectedUnit || "unit",
-      price: calculatedPrice,
-      cropId: selectedCrop.cropId,
-      discount: totalDiscount
-    };
-    
-    console.log("New item to add:", newItem);
-    console.log("Item discount:", totalDiscount);
-    
-    // Create a variable to track what the new discount should be
-    let updatedDiscount;
-    
-    // Logic for handling the updated items and total discount
-    if (parsedQuantity === 0) {
-      // Remove item if quantity is 0
-      const itemToRemove = additionalItems.find(item => item.id === itemId);
-      if (itemToRemove) {
-        const discountToRemove = parseFloat(itemToRemove.discount || "0");
-        // Remove from additionalItems array
-        setAdditionalItems(prev => prev.filter(item => item.id !== itemId));
-        // Calculate the new discount total
-        const currentTotal = parseFloat(discount || "0");
-        updatedDiscount = Math.max(0, currentTotal - discountToRemove).toFixed(2);
-        // Update the discount state
-        setDiscount(updatedDiscount);
-        console.log(`Removing discount: ${discountToRemove}, New total: ${updatedDiscount}`);
-      }
-    } else {
-      // Check if item with this ID already exists
-      const existingItemIndex = additionalItems.findIndex((item) => item.id === itemId);
-      
-      if (existingItemIndex !== -1) {
-        // Get existing item's discount before updating
-        const existingItem = additionalItems[existingItemIndex];
-        const oldDiscount = parseFloat(existingItem.discount || "0");
-        const newDiscount = parseFloat(totalDiscount);
-        
-        // Update the item in additionalItems array
-        const updatedItems = [...additionalItems];
-        updatedItems[existingItemIndex] = {
-          ...existingItem,
-          quantity: `${parsedQuantity} ${selectedUnit}`,
-          price: calculatedPrice,
-          discount: totalDiscount
-        };
-        setAdditionalItems(updatedItems);
-        
-        // Calculate the new discount total
-        const currentTotal = parseFloat(discount || "0");
-        updatedDiscount = (currentTotal - oldDiscount + newDiscount).toFixed(2);
-        // Update the discount state
-        setDiscount(updatedDiscount);
-        console.log(`Updating discount: ${oldDiscount} → ${newDiscount}, New total: ${updatedDiscount}`);
-      } else {
-        // Add new item to additionalItems array
-        setAdditionalItems(prev => [...prev, newItem]);
-        
-        // Calculate the new discount total
-        const itemDiscount = parseFloat(totalDiscount || "0");
-        const currentTotal = parseFloat(discount || "0");
-        updatedDiscount = (currentTotal + itemDiscount).toFixed(2);
-        // Update the discount state
-        setDiscount(updatedDiscount);
-        setAdding(itemDiscount);
-        console.log(`Current total: ${currentTotal}, Adding: ${itemDiscount}, New total: ${updatedDiscount}`);
-      }
-      
-      // Update total price
-      setTotalPrice(prevTotal => (Number(prevTotal) || 0) + calculatedPrice);
-    }
-    
-    // Reset states after adding item
-    setCounter(0);
-    setModalVisible(false);
-    setNewItemName("");
-    setNewItemQuantity("");
-    setPricePerKg("");
-    setNewPrice1("");
-    setFinaldiscount("0.00"); 
-    setModalVisible1(false);
-    
-    // Log the updated discount value we just calculated - this will be accurate
-    console.log("Updated total discount:", updatedDiscount);
-  } else {
-    Alert.alert("Error", "Item details are missing.");
-  }
-};
-  
-  // Add this function to verify the total discount whenever needed
-  const verifyTotalDiscount = () => {
-    let calculatedTotal = 0;
-    for (const item of additionalItems) {
-      calculatedTotal += parseFloat(item.discount || "0");
-    }
-    
-    const formattedTotal = calculatedTotal.toFixed(2);
-    console.log("Calculated total from items:", formattedTotal);
-    console.log("Current discount state:", discount);
-    
-    // If there's a mismatch, fix it
-    if (formattedTotal !== discount) {
-      console.log("Mismatch detected! Fixing discount...");
-      setDiscount(formattedTotal);
-    }
-
-    console.log("//////////",discount)
-    
-    return formattedTotal;
-  };
-  
-  // You can call this in a useEffect to keep the discount in sync
-  useEffect(() => {
-    verifyTotalDiscount();
-  }, [additionalItems]);
-  
-  // Add a function to recalculate the total discount from all items
-  // This can be called at any time to ensure the total is correct
-  const recalculateTotalDiscount = () => {
-    let total = 0;
-    additionalItems.forEach(item => {
-      total += parseFloat(item.discount || "0");
-    });
-    
-    const formattedTotal = total.toFixed(2);
-    setDiscount(formattedTotal);
-    console.log("Recalculated total discount:", formattedTotal);
-    return formattedTotal;
-  };
-
-
-const toggleItemSelection = (itemId: string | number) => {
-  setSelectedItems(prev => {
-    const newSelection = new Set(prev);
-    if (newSelection.has(itemId)) {
-      newSelection.delete(itemId);
-    } else {
-      newSelection.add(itemId);
-    }
-    return newSelection;
-  });
-};
-
-// Function to delete selected items
-const deleteSelectedItems = () => {
-  // Filter out selected items
-  const updatedItems = additionalItems.filter(item => !selectedItems.has(item.id));
-  
-  // Calculate price difference
-  const priceDifference = additionalItems
-    .filter(item => selectedItems.has(item.id))
-    .reduce((total, item) => total + Number(item.price || 0), 0);
-  
-  // Update state
-  setAdditionalItems(updatedItems);
-  setTotalPrice(prevTotal => (Number(prevTotal) || 0) - priceDifference);
-  
-  // Clear selection
-  setSelectedItems(new Set());
-};
-  
-  
-
-  const handleItemClick = (item: any) => {
-    setEditingItem(item);
-    setEditingItemType('package'); 
-    setCounter(0);
-    
-    if (item.quantity) {
-      const numericPart = item.quantity.toString().split(' ')[0];
-      setNewItemQuantity(numericPart);
-    } else {
-      setNewItemQuantity("");
-    }
-  
-    if (item.quantityType) {
-      setSelectedUnit(item.quantityType);
-    }
-  
-    if ('mpItemId' in item && item.mpItemId !== undefined) {
-      fetchMarketplaceItemDetails(item.mpItemId)
-        .then(details => {
-          if (details) {
-            setItemDetails({
-              changeby: details.changeby,
-              startValue: details.startValue,
-              unitType: details.unitType,
-              discountedPrice: details.discountedPrice,
-              normalPrice: details.normalPrice,
-              displayName: details.displayName
-            });
-            if (details.unitType) {
-              setUnitType(details.unitType);
-            }
-          }
-        })
-        .catch(error => console.error("Error:", error));
-    }
-    setModalVisible(true);
-  };
-
-
- 
-  
-  // const handleEditItemClick = (item: any) => {
-  //   console.log("Editing item:", item); // Add this to debug
-    
-  //   setEditingItem(item);
-  //   setEditingItemType('additional'); 
-  //   setCounter(0);
-    
-  //   // Store the ID explicitly for reference
-  //   const itemId = item.id;
-  //   console.log("Editing item with ID:", itemId);
-    
-  //   if (item.quantity) {
-  //     const numericPart = item.quantity.toString().split(' ')[0];
-  //     setNewItemQuantity(numericPart);
-  //   } else {
-  //     setNewItemQuantity("");
-  //   }
-  
-  //   if (item.quantityType) {
-  //     setSelectedUnit(item.quantityType);
-  //   }
-  
-  //   // Store original price
-  //   setEditingItemOriginalPrice(item.price);
-    
-  //   // Since cropId is undefined, we need to look up the crop details by name
-  //   const selectedCrop = crops.find((crop) => crop.displayName === item.name);
-    
-  //   if (selectedCrop) {
-  //     setLoading(true);
-      
-  //     // Try to use the display name to find the right crop
-  //     fetchCropDetails(selectedCrop.id)
-  //       .then(details => {
-  //         if (details) {
-  //           setItemDetails({
-  //             changeby: details.changeby,
-  //             startValue: details.startValue,
-  //             unitType: details.unitType,
-  //             discountedPrice: details.discountedPrice,
-  //             normalPrice: details.normalPrice,
-  //             displayName: details.displayName
-  //           });
-            
-  //           if (details.unitType) {
-  //             setUnitType(details.unitType);
-  //           }
-  //         }
-  //       })
-  //       .catch(error => console.error("Error fetching crop details:", error))
-  //       .finally(() => setLoading(false));
-  //   } else {
-  //     // If we can't find the crop, use the item's own data
-  //     console.log("Could not find crop for:", item.name);
-      
-  //     // Set some reasonable defaults based on the item itself
-  //     setItemDetails({
-  //       changeby: "0.5",
-  //       startValue: "1.0",
-  //       unitType: item.quantityType || "Kg",
-  //       discountedPrice: String(item.price / parseFloat(newItemQuantity)),
-  //       normalPrice: String(item.price / parseFloat(newItemQuantity)),
-  //       displayName: item.name
-  //     });
-  //   }
-    
-  //   setModalVisible(true);
-  // };
-
-  const handleEditItemClick = (item: any) => {
-  console.log("Editing item:", item);
-  
-  setEditingItem(item);
-  setEditingItemType('additional');
-  setCounter(0);
-  
-  // Store the ID explicitly for reference
-  const itemId = item.id;
-  console.log("Editing item with ID:", itemId);
-  
-  // Parse quantity and unit from item.quantity (e.g., "500 g")
-  let numericQuantity = "";
-  let unit = "Kg"; // Default
-  
-  if (item.quantity) {
-    const parts = item.quantity.toString().split(' ');
-    numericQuantity = parts[0];
-    if (parts.length > 1) {
-      unit = parts[1]; // Extract the unit part
-    }
-  }
-  
-  setNewItemQuantity(numericQuantity);
-  setSelectedUnit(unit);
-  
-  // Store original price
-  setEditingItemOriginalPrice(item.price);
-  
-  // Find the crop by name
-  const selectedCrop = crops.find((crop) => crop.displayName === item.name);
-  
-  if (selectedCrop) {
+  const handleConfirm = () => {
     setLoading(true);
-    
-    // Try to use the display name to find the right crop
-    fetchCropDetails(selectedCrop.id)
-      .then(details => {
-        if (details) {
-          // Store the original details
-          const originalDetails = {
-            changeby: details.changeby,
-            startValue: details.startValue,
-            unitType: details.unitType,
-            discountedPrice: details.discountedPrice,
-            normalPrice: details.normalPrice,
-            displayName: details.displayName
-          };
-          
-          // Check if the current unit matches the original unit type
-          if (unit !== details.unitType) {
-            // If units don't match, adjust the prices accordingly
-            let adjustedDiscountedPrice = parseFloat(details.discountedPrice);
-            let adjustedNormalPrice = parseFloat(details.normalPrice);
-            
-            // Adjust prices based on the current unit
-            if (unit === 'g' && details.unitType === 'Kg') {
-              // Convert prices from per kg to per g
-              adjustedDiscountedPrice = adjustedDiscountedPrice / 1000;
-              adjustedNormalPrice = adjustedNormalPrice / 1000;
-            } else if (unit === 'Kg' && details.unitType === 'g') {
-              // Convert prices from per g to per kg
-              adjustedDiscountedPrice = adjustedDiscountedPrice * 1000;
-              adjustedNormalPrice = adjustedNormalPrice * 1000;
-            }
-            
-            // Update the details with adjusted prices
-            setItemDetails({
-              ...originalDetails,
-              discountedPrice: adjustedDiscountedPrice.toString(),
-              normalPrice: adjustedNormalPrice.toString()
-            });
-          } else {
-            // Units match, no need for adjustment
-            setItemDetails(originalDetails);
-          }
-          
-          // Set unit type
-          setUnitType(details.unitType);
-          
-          // Calculate total price with correct unit
-          calculateTotalPriceAdd(
-            parseFloat(numericQuantity), 
-            itemDetails, 
-            counter
-          );
-        }
-      })
-      .catch(error => console.error("Error fetching crop details:", error))
-      .finally(() => setLoading(false));
-  } else {
-    // If we can't find the crop, use the item's own data
-    console.log("Could not find crop for:", item.name);
-    
-    // Calculate price per unit based on the current quantity and total price
-    const quantity = parseFloat(numericQuantity);
-    const pricePerUnit = quantity > 0 ? item.price / quantity : 0;
-    
-    // Set some reasonable defaults based on the item itself
-    setItemDetails({
-      changeby: "0.5",
-      startValue: "1.0",
-      unitType: unit,
-      discountedPrice: pricePerUnit.toString(),
-      normalPrice: pricePerUnit.toString(),
-      displayName: item.name
-    });
-    
-    // Calculate total price
-    if (quantity > 0) {
-      setNewPrice1(item.price.toString());
-      setFinaldiscount(item.discount || "0.00");
-    }
-  }
-  
-  setModalVisible(true);
-};
-
-  // function calculateTotalPrice(newQuantity: number, itemDetails: ItemDetails | null, clickCount: number) {
-  //   if (itemDetails === null) {
-  //     throw new Error("Item details are missing");
-  //   }
-  
-  //   const startValue = parseFloat(itemDetails.startValue ?? "1.00");
-  //   const changeBy = parseFloat(itemDetails.changeby ?? "0.50");
-  //   const discountedPrice = parseFloat(itemDetails.discountedPrice ?? "0.00");
-  
-
-  //   const newPrice = (discountedPrice) * changeBy * clickCount;
- 
-  
-  //   return newPrice;
-  // }
-
-  function calculateTotalPrice(newQuantity: number, itemDetails: ItemDetails | null, clickCount: number, quantityType: string) {
-  if (itemDetails === null) {
-    throw new Error("Item details are missing");
-  }
-    
-  const startValue = parseFloat(itemDetails.startValue ?? "1.00");
-  const changeBy = parseFloat(itemDetails.changeby ?? "0.50");
-  const discountedPrice = parseFloat(itemDetails.discountedPrice ?? "0.00");
-  
-  let adjustedPrice = discountedPrice;
-  
-  // If the unit is in grams, adjust the price accordingly (divide by 1000)
-  if (quantityType === 'g') {
-    adjustedPrice = discountedPrice / 1000;
-  }
-  
-  const newPrice = adjustedPrice * changeBy * clickCount;
-  
-  return newPrice;
-}
-  
-
-//   const updateQuantity = (changeBy: number, isIncrement: boolean) => {
-  
-//     setCounter((prevCounter) => {
-//         const newCounter = prevCounter + 1;
-     
-//         return newCounter; 
-//     });
-
-  
-//     const currentValue = parseFloat(newItemQuantity || "0");
-//     const newValue = currentValue + changeBy; 
-//     setNewItemQuantity(newValue.toString());
-  
-   
-  
-    
-//     if (itemDetails) {
-     
-//       const updatedItemPrice = calculateTotalPrice(newValue, itemDetails, counter + 1,unitType); 
-
-//     }
-// };
-
-
-// useEffect(() => {
-
-// }, [counter]); 
-  
-  
-
-  
-
-// const updateQuantity2 = (changeBy: number, isIncrement: boolean) => {
-//   const currentValue = parseFloat(newItemQuantity || "0");
-  
-//   // Only decrease if the current value is greater than the change amount
-//   if (currentValue >= changeBy) {
-//     setCounter((prevCounter) => {
-//       const newCounter = prevCounter - 1;
- 
-//       return newCounter;
-//     });
-    
- 
-//     const newValue = currentValue - changeBy;
-//     setNewItemQuantity(newValue.toString());
-    
-//     // Recalculate the total price after changing quantity
-//     if (itemDetails) {
-//       const updatedItemPrice = calculateTotalPrice(newValue, itemDetails, counter - 1,unitType);
- 
-//     }
-//   } else {
-//     // If trying to decrease below 0, set to 0 but don't change counter or price
-//     if (currentValue > 0) {
-//       setNewItemQuantity("0");
-//       setCounter((prevCounter) => {
-//         const newCounter = prevCounter - 1;
-    
-//         return newCounter;
-//       });
-      
-//       // Recalculate price when setting to exactly 0
-//       if (itemDetails) {
-//         const updatedItemPrice = calculateTotalPrice(0, itemDetails, counter - 1,unitType);
-    
-//       }
-//     }
- 
-//   }
-// };
-
-
-const getChangeByValue = (unitType: string, baseChangeBy: number = 0.5) => {
-  // If the item is measured in grams, use a larger increment (500g instead of 0.5kg)
-  if (unitType === 'g') {
-    return baseChangeBy * 1000; // Convert kg increment to g increment (0.5kg = 500g)
-  }
-  // For kg or any other unit type, use the base increment
-  return baseChangeBy;
-};
-
-// Updated function to increase quantity with appropriate unit increments
-const updateQuantity = (baseChangeBy: number, isIncrement: boolean) => {
-  // Get the appropriate change-by value based on the current unit
-  const actualChangeBy = getChangeByValue(selectedUnit || unitType, baseChangeBy);
-  
-  // Increment counter
-  const newCounter = counter + 1;
-  setCounter(newCounter);
-  
-  // Update quantity
-  const currentValue = parseFloat(newItemQuantity || "0");
-  const newValue = currentValue + actualChangeBy;
-  setNewItemQuantity(newValue.toString());
-  
-  // Update price
-  if (itemDetails) {
-    const updatedItemPrice = calculateTotalPrice(newValue, itemDetails, newCounter, selectedUnit || unitType);
-    
-    // Store the price in a state variable for later use when saving
-    setCurrentItemPrice(updatedItemPrice);
-    
-    console.log(`Increased quantity by ${actualChangeBy} ${selectedUnit || unitType}, new value: ${newValue}, new price: ${updatedItemPrice}`);
-  }
-
-};
-
-// Updated function to decrease quantity with appropriate unit increments
-const updateQuantity2 = (baseChangeBy: number, isIncrement: boolean) => {
-  // Get the appropriate change-by value based on the current unit
-  const actualChangeBy = getChangeByValue(selectedUnit || unitType, baseChangeBy);
-  
-  const currentValue = parseFloat(newItemQuantity || "0");
-  
-  // Only decrease if the current value is greater than the change amount
-  if (currentValue >= actualChangeBy) {
-    // Decrement counter (ensure it doesn't go below 0)
-    const newCounter = Math.max(0, counter - 1);
-    setCounter(newCounter);
-    
-    // Update quantity
-    const newValue = currentValue - actualChangeBy;
-    setNewItemQuantity(newValue.toString());
-    
-    // Update price
-    if (itemDetails) {
-      const updatedItemPrice = calculateTotalPrice(newValue, itemDetails, newCounter, selectedUnit || unitType);
-      
-      // Store the price in a state variable for later use when saving
-      setCurrentItemPrice(updatedItemPrice);
-      
-      console.log(`Decreased quantity by ${actualChangeBy} ${selectedUnit || unitType}, new value: ${newValue}, new price: ${updatedItemPrice}`);
-    }
-  } else {
-    // If trying to decrease below 0, set to 0
-    if (currentValue > 0) {
-      setNewItemQuantity("0");
-      
-      // Reset counter
-      const newCounter = Math.max(0, counter - 1);
-      setCounter(newCounter);
-      
-      // Update price to 0
-      if (itemDetails) {
-        const updatedItemPrice = calculateTotalPrice(0, itemDetails, newCounter, selectedUnit || unitType);
-        
-        // Store the price in a state variable for later use when saving
-        setCurrentItemPrice(updatedItemPrice);
-        
-        console.log(`Reset quantity to 0 ${selectedUnit || unitType}, price: ${updatedItemPrice}`);
-      }
-    }
-  }
-};
-
-// const getChangeByValue = (unitType: string, baseChangeBy: number = 0.5) => {
-//   // If the item is measured in grams, use a larger increment (500g instead of 0.5kg)
-//   if (unitType === 'g') {
-//     return baseChangeBy * 1000; // Convert kg increment to g increment (0.5kg = 500g)
-//   }
-//   // For kg or any other unit type, use the base increment
-//   return baseChangeBy;
-// };
-
-
-// const updateQuantityAdd = (baseChangeBy: number, isIncrement: boolean) => {
-//   // Get current value
-//   const currentValue = parseFloat(newItemQuantity || "0");
-  
-//   // Calculate new value based on increment or decrement
-//   let newValue;
-//   if (isIncrement) {
-//     newValue = currentValue + baseChangeBy;
-//     // Increment counter for tracking clicks
-//     setCounter(counter + 1);
-//   } else {
-//     // Don't go below zero
-//     newValue = Math.max(0, currentValue - baseChangeBy);
-//     // Only decrement counter if we actually decreased the value
-//     if (newValue < currentValue) {
-//       setCounter(counter - 1);
-//     }
-//   }
-  
-//   // Update the quantity
-//   setNewItemQuantity(newValue.toString());
-  
-//   // Recalculate prices if we have item details
-//   if (itemDetails) {
-//     // Adjust item details based on current unit if needed
-//     let adjustedItemDetails = {...itemDetails};
-    
-//     // If the unit is g, and the stored prices are per kg, adjust the prices
-//     if (selectedUnit === 'g') {
-//       const discountedPricePerG = parseFloat(itemDetails.discountedPrice as any) / 1000;
-//       const normalPricePerG = parseFloat(itemDetails.normalPrice as any) / 1000;
-      
-//       adjustedItemDetails = {
-//         ...itemDetails,
-//         discountedPrice: discountedPricePerG.toString(),
-//         normalPrice: normalPricePerG.toString()
-//       };
-//     }
-    
-//     // Calculate with adjusted values
-//     calculateTotalPriceAdd(newValue, adjustedItemDetails, counter);
-//   }
-// };
-
-// Function to handle quantity increases in add modal
-const updateQuantityAdd = (baseChangeBy: number, isIncrement: boolean) => {
-  // Get appropriate change by value based on current unit
-  const actualChangeBy = getChangeByValue(selectedUnit || unitType, baseChangeBy);
-  
-  // Get current value
-  const currentValue = parseFloat(newItemQuantity || "0");
-  const newValue = currentValue + actualChangeBy;
-  
-  // Update the quantity
-  setNewItemQuantity(newValue.toString());
-  
-  // Recalculate prices
-  if (itemDetails) {
-    calculateTotalPriceAdd(newValue, itemDetails, counter + 1);
-  }
-};
-
-// Function to handle quantity decreases in add modal
-const updateQuantity2Add = (baseChangeBy: number, isIncrement: boolean) => {
-  // Get appropriate change by value based on current unit
-  const actualChangeBy = getChangeByValue(selectedUnit || unitType, baseChangeBy);
-  
-  const currentValue = parseFloat(newItemQuantity || "0");
-  
-  // Only proceed if we're not already at 0
-  if (currentValue <= 0) {
-    setNewItemQuantity("0");
-    return;
-  }
-  
-  // Calculate new value ensuring it doesn't go below 0
-  const newValue = Math.max(0, currentValue - actualChangeBy);
-  
-  // Update the quantity
-  setNewItemQuantity(newValue.toString());
-  
-  // Recalculate prices
-  if (itemDetails) {
-    calculateTotalPriceAdd(newValue, itemDetails, counter - 1);
-  }
-};
-
-// Function to handle quantity decreases
-// const updateQuantity2Add = (changeBy: number, isIncrement: boolean) => {
-//   // Get current value
-//   const currentValue = parseFloat(newItemQuantity || "0");
-  
-//   // Only proceed if we're not already at 0
-//   if (currentValue <= 0) {
-//     setNewItemQuantity("0");
-//     return; // Exit the function if already at 0
-//   }
-  
-//   // Calculate new value ensuring it doesn't go below 0
-//   const newValue = Math.max(0, currentValue - changeBy);
-  
-//   // Only update counter and recalculate if we actually changed the value
-//   if (newValue < currentValue) {
-//     // Decrement counter for tracking clicks
-//     const newCounterValue = counter - 1;
-//     setCounter(newCounterValue);
-    
-//     // Update the quantity
-//     setNewItemQuantity(newValue.toString());
-    
-//     // Recalculate prices
-//     if (itemDetails) {
-//       calculateTotalPriceAdd(newValue, itemDetails, newCounterValue);
-//     }
-//   }
-// };
-
-
-// const updateQuantity2Add = (baseChangeBy: number, isIncrement: boolean) => {
-//   // Get current value
-//   const currentValue = parseFloat(newItemQuantity || "0");
-  
-//   // Only proceed if we're not already at 0
-//   if (currentValue <= 0) {
-//     setNewItemQuantity("0");
-//     return; // Exit the function if already at 0
-//   }
-  
-//   // Calculate new value ensuring it doesn't go below 0
-//   const newValue = Math.max(0, currentValue - baseChangeBy);
-  
-//   // Only update counter and recalculate if we actually changed the value
-//   if (newValue < currentValue) {
-//     // Decrement counter for tracking clicks
-//     const newCounterValue = counter - 1;
-//     setCounter(newCounterValue);
-    
-//     // Update the quantity
-//     setNewItemQuantity(newValue.toString());
-    
-//     // Recalculate prices
-//     if (itemDetails) {
-//       // Adjust item details based on current unit if needed
-//       let adjustedItemDetails = {...itemDetails};
-      
-//       // If the unit is g, and the stored prices are per kg, adjust the prices
-//       if (selectedUnit === 'g') {
-//         const discountedPricePerG = parseFloat(itemDetails.discountedPrice as any) / 1000;
-//         const normalPricePerG = parseFloat(itemDetails.normalPrice as any) / 1000;
-        
-//         adjustedItemDetails = {
-//           ...itemDetails,
-//           discountedPrice: discountedPricePerG.toString(),
-//           normalPrice: normalPricePerG.toString()
-//         };
-//       }
-      
-//       // Calculate with adjusted values
-//       calculateTotalPriceAdd(newValue, adjustedItemDetails, newCounterValue);
-//     }
-//   }
-// };
-
-
-// const saveUpdatedItem = () => {
-//   const parsedNewItemQuantity = parseFloat(newItemQuantity || "0");
-  
-//   if (editingItem) {
-//     console.log("Saving edited item:", editingItem);
-    
-//     if (editingItemType === 'package') {
-//       // Calculate price difference for package item
-//       const originalQuantity = parseFloat(editingItem.quantity);
-      
-//       // Fix TypeScript errors by ensuring discountedPrice is a number
-//       const discountedPrice = itemDetails?.discountedPrice ?? 0;
-      
-//       // Ensure these are all numbers by using Number() conversion
-//       const originalItemPrice = Number(discountedPrice) * Number(originalQuantity);
-//       const newItemPrice = Number(discountedPrice) * Number(parsedNewItemQuantity);
-//       const priceDifference = Number(newItemPrice) - Number(originalItemPrice);
-      
-//       // Update package item
-//       const updatedItems = packageItems.map(item =>
-//         item.name === editingItem.name
-//           ? {
-//               ...item,
-//               quantity: String(parsedNewItemQuantity),
-//               quantityType: selectedUnit || "",
-//             }
-//           : item
-//       );
-      
-//       setPackageItems(updatedItems);
-      
-//       // Update total price for package item changes
-//       if (priceDifference !== 0) {
-//         setTotalPrice(prevTotal => Number(prevTotal) + priceDifference);
-//       }
-      
-//     } else {
-//       // Update additional item with correct price calculation
-//       if (itemDetails) {
-//         // Calculate the new price for the edited item
-//         const basePrice = Number(editingItem.price) / Number(parseFloat(editingItem.quantity));
-//         const calculatedPrice = Number(basePrice) * Number(parsedNewItemQuantity);
-        
-//         // console.log("Updating item with ID:", editingItem.id);
-//         // console.log("New quantity:", parsedNewItemQuantity);
-//         // console.log("New calculated price:", calculatedPrice);
-        
-//         // Find the original item to get its price
-//         const originalItem = additionalItems.find(item => 
-//           String(item.id) === String(editingItem.id)
-//         );
-//         const originalPrice = originalItem ? Number(originalItem.price) : 0;
-        
-//         console.log("Original price:", originalPrice);
-        
-//         // Update the item in the array - use ID for reliable matching
-//         const updatedItems = additionalItems.map(item => {
-//           // Convert both IDs to the same type (string) before comparison
-//           if (String(item.id) === String(editingItem.id)) {
-//             console.log("Found item to update:", item);
-//             return {
-//               ...item,
-//               quantity: `${String(parsedNewItemQuantity)} ${selectedUnit}`,
-//               quantityType: selectedUnit || "",
-//               price: calculatedPrice
-//             };
-//           }
-//           return item;
-//         });
-        
-//         // Update state
-//         setAdditionalItems(updatedItems);
-        
-//         // Adjust total price by removing old price and adding new price
-//         const priceDifference = Number(calculatedPrice) - Number(originalPrice);
-//         setTotalPrice(prevTotal => Number(prevTotal) + priceDifference);
-        
-//         console.log("Updated items:", updatedItems);
-//       }
-//     }
-//   } else if (itemDetails) {
-//     // Handle adding new items (not editing)
-//     const updatedTotalPrice = calculateTotalPrice(parsedNewItemQuantity, itemDetails, counter,unitType);
-//     setTotalPrice(prevTotal => Number(prevTotal) + Number(updatedTotalPrice));
-//   }
-  
-//   setCounter(0);
-//   setModalVisible(false);
-// };
-
-const saveUpdatedItem = () => {
-  const parsedNewItemQuantity = parseFloat(newItemQuantity || "0");
-  
-  if (editingItem) {
-    console.log("Saving edited item:", editingItem);
-    
-    if (editingItemType === 'package') {
-      // For package items
-      // Extract the original quantity and unit from the editing item
-      const originalQuantity = parseFloat(editingItem.quantity);
-      const originalUnit = editingItem.quantityType || "";
-      
-      // Calculate equivalent quantities for price calculation
-      let originalQuantityInKg = originalQuantity;
-      let newQuantityInKg = parsedNewItemQuantity;
-      
-      // Convert original quantity to kg equivalent if needed
-      if (originalUnit === 'g') {
-        originalQuantityInKg = originalQuantity / 1000;
-      }
-      
-      // Convert new quantity to kg equivalent if needed
-      if (selectedUnit === 'g') {
-        newQuantityInKg = parsedNewItemQuantity / 1000;
-      }
-      
-      // Fix TypeScript errors by ensuring discountedPrice is a number
-      const discountedPrice = itemDetails?.discountedPrice ?? 0;
-      
-      // Calculate prices based on equivalent kg quantities
-      const originalItemPrice = Number(discountedPrice) * originalQuantityInKg;
-      const newItemPrice = Number(discountedPrice) * newQuantityInKg;
-      const priceDifference = Number(newItemPrice) - Number(originalItemPrice);
-      
-      console.log(`Original: ${originalQuantity}${originalUnit} = ${originalItemPrice}`);
-      console.log(`New: ${parsedNewItemQuantity}${selectedUnit} = ${newItemPrice}`);
-      console.log(`Price difference: ${priceDifference}`);
-      
-      // Update package item
-      const updatedItems = packageItems.map(item =>
-        item.name === editingItem.name
-          ? {
-              ...item,
-              quantity: String(parsedNewItemQuantity),
-              quantityType: selectedUnit || "",
-            }
-          : item
-      );
-      
-      setPackageItems(updatedItems);
-      
-      // Update total price for package item changes
-      if (priceDifference !== 0) {
-        setTotalPrice(prevTotal => Number(prevTotal) + priceDifference);
-      }
-      
-    } else {
-      // For additional items
-      if (itemDetails) {
-        // Extract the original quantity and unit information
-        const originalQuantityInfo = editingItem.quantity.split(' ');
-        const originalQuantityValue = parseFloat(originalQuantityInfo[0]);
-        const originalUnit = editingItem.quantityType || originalQuantityInfo[1] || "";
-        
-        // Standardize quantities to kg equivalent for price calculation
-        let originalQuantityInKg = originalQuantityValue;
-        let newQuantityInKg = parsedNewItemQuantity;
-        
-        // Convert original quantity to kg equivalent if needed
-        if (originalUnit === 'g') {
-          originalQuantityInKg = originalQuantityValue / 1000;
-        }
-        
-        // Convert new quantity to kg equivalent if needed
-        if (selectedUnit === 'g') {
-          newQuantityInKg = parsedNewItemQuantity / 1000;
-        }
-        
-        // Find the original item to get its price
-        const originalItem = additionalItems.find(item => 
-          String(item.id) === String(editingItem.id)
-        );
-        const originalPrice = originalItem ? Number(originalItem.price) : 0;
-        
-        // Calculate the base price per kg
-        const basePricePerKg = originalPrice / originalQuantityInKg;
-        
-        // Calculate the new price based on the equivalent kg quantity
-        const calculatedPrice = basePricePerKg * newQuantityInKg;
-        
-        console.log(`Original: ${originalQuantityValue}${originalUnit} = ${originalPrice}`);
-        console.log(`Base price per kg: ${basePricePerKg}`);
-        console.log(`New: ${parsedNewItemQuantity}${selectedUnit} = ${calculatedPrice}`);
-        
-        // Update the item in the array - use ID for reliable matching
-        const updatedItems = additionalItems.map(item => {
-          // Convert both IDs to the same type (string) before comparison
-          if (String(item.id) === String(editingItem.id)) {
-            console.log("Found item to update:", item);
-            return {
-              ...item,
-              quantity: `${String(parsedNewItemQuantity)} ${selectedUnit}`,
-              quantityType: selectedUnit || "",
-              price: calculatedPrice
-            };
-          }
-          return item;
-        });
-        
-        // Update state
-        setAdditionalItems(updatedItems);
-        
-        // Adjust total price by removing old price and adding new price
-        const priceDifference = Number(calculatedPrice) - Number(originalPrice);
-        setTotalPrice(prevTotal => Number(prevTotal) + priceDifference);
-        
-        console.log("Updated items:", updatedItems);
-      }
-    }
-  } else if (itemDetails) {
-    // Handle adding new items (not editing)
-    // For new items, properly calculate the price based on the selected unit
-    let quantityInKg = parsedNewItemQuantity;
-    
-    // Convert to kg equivalent if in grams
-    if (unitType === 'g') {
-      quantityInKg = parsedNewItemQuantity / 1000;
-    }
-    
-    const discountedPrice = Number(itemDetails.discountedPrice || 0);
-    const updatedTotalPrice = discountedPrice * quantityInKg;
-    
-    setTotalPrice(prevTotal => Number(prevTotal) + Number(updatedTotalPrice));
-  }
-  
-  setCounter(0);
-  setModalVisible(false);
-};
-  
-  const navigateToNextScreen = async () => {
-    try {
-
-      const orderItems = await prepareOrderItems();
-      
-
-      navigation.navigate('ScheduleScreen' as any, { orderItems ,  isCustomPackage, isSelectPackage, customerid });
-      
-   
-    } catch (error) {
-      console.error("Error preparing order items:", error);
-    }
-  };
-  
-   const [isLoading, setIsLoading] = useState(false);
-  
-  const handlePress = async () => {
-    // Set loading to true when button is pressed
-    setIsLoading(true);
-    
-    try {
-      // Call your existing navigation function
-      await navigateToNextScreen();
-    } catch (error) {
-      console.error("Error during navigation:", error);
-    } finally {
-      // Set loading back to false when complete
-      setIsLoading(false);
-    }
+    setTimeout(() => {
+      setLoading(false);
+      console.log('Order confirmed!');
+    }, 1500);
   };
 
-  const conversionFactors = {
-  'kg': {
-    'g': 1000
-  },
-  'g': {
-    'kg': 0.001
-  }
-};
+  const handleBack = () => {
+    console.log('Navigate back');
+  };
 
-  
-  
-  
-//  const handleUnitChange = (newUnit: string) => {
-//   console.log(`Changing unit from ${selectedUnit} to ${newUnit}`);
-  
-//   if (selectedUnit && newUnit && selectedUnit !== newUnit) {
-//     const currentQuantity = parseFloat(newItemQuantity);
-    
-//     if (!isNaN(currentQuantity)) {
-//       let convertedQuantity = currentQuantity;
-//       let pricePerUnit = parseFloat(pricePerKg);
-      
-//       // Convert between kg and g
-//       if (selectedUnit === 'Kg' && newUnit === 'g') {
-//         convertedQuantity = currentQuantity * 1000;
-//         pricePerUnit = pricePerUnit / 1000; // Price per gram
-//       } 
-//       else if (selectedUnit === 'g' && newUnit === 'Kg') {
-//         convertedQuantity = currentQuantity / 1000;
-//         pricePerUnit = pricePerUnit * 1000; // Price per kg
-//       }
-      
-//       // Update states
-//       setNewItemQuantity(convertedQuantity.toString());
-//       setPricePerKg(pricePerUnit.toFixed(2));
-      
-//       // Recalculate total price
-//       const newPrice = convertedQuantity * pricePerUnit;
-//       setNewPrice1(newPrice.toFixed(2));
-      
-//       // Recalculate discount (if needed)
-//       if (itemDetails?.normalPrice) {
-//         const normalPricePerUnit = parseFloat(itemDetails.normalPrice);
-//         const discountPerUnit = normalPricePerUnit - pricePerUnit;
-//         const totalDiscount = discountPerUnit * convertedQuantity;
-//         setFinaldiscount(totalDiscount.toFixed(2));
-//       }
-//     }
-//   }
-  
-//   setSelectedUnit(newUnit);
-// };
+  const handleAddMore = () => {
+    setShowAddModal(true);
+  };
 
-const handleUnitChange = (newUnit: string) => {
-  console.log(`Changing unit from ${selectedUnit} to ${newUnit}`);
+  const handleSaveItem = () => {
+  const selectedProductData = productItems.find(item => item.value === productValue);
   
-  if (!itemDetails) {
-    console.error("Item details are missing for unit conversion");
+  if (!selectedProductData) {
+    Alert.alert("Error", "Please select a product");
     return;
   }
 
-  if (selectedUnit && newUnit && selectedUnit !== newUnit) {
-    const currentQuantity = parseFloat(newItemQuantity || "0");
-    
-    if (!isNaN(currentQuantity)) {
-      let convertedQuantity: number;
-      
-      // Convert quantity between kg and g
-      if (selectedUnit === 'Kg' && newUnit === 'g') {
-        convertedQuantity = currentQuantity * 1000;
-      } 
-      else if (selectedUnit === 'g' && newUnit === 'Kg') {
-        convertedQuantity = currentQuantity / 1000;
-      }
-      else {
-        convertedQuantity = currentQuantity; // No conversion needed
-      }
-      
-      // Update quantity state
-      setNewItemQuantity(convertedQuantity.toString());
-      
-      // Adjust the discounted price and normal price based on unit change
-      let adjustedDiscountedPrice = parseFloat(itemDetails.discountedPrice || "0");
-      let adjustedNormalPrice = parseFloat(itemDetails.normalPrice || "0");
-      
-      // These prices are per kg, so adjust for g if needed
-      if (newUnit === 'g') {
-        adjustedDiscountedPrice = adjustedDiscountedPrice / 1000;
-        adjustedNormalPrice = adjustedNormalPrice / 1000;
-      } else if (newUnit === 'Kg' && selectedUnit === 'g') {
-        // No need to adjust as prices are already per kg
-      }
-      
-      // Create a temporary adjusted itemDetails for price calculation
-      const adjustedItemDetails = {
-        ...itemDetails,
-        discountedPrice: adjustedDiscountedPrice.toString(),
-        normalPrice: adjustedNormalPrice.toString()
-      };
-      
-      // Recalculate total price with the adjusted values
-      calculateTotalPriceAdd(convertedQuantity, adjustedItemDetails, counter);
-    }
-  }
-  
-  // Update the selected unit
-  setSelectedUnit(newUnit);
+  const unit = selectedUnit === 'Kg' ? 'Kg' : 'g';
+  const quantityInKg = unit === 'Kg' ? quantity : quantity / 1000;
+  const totalAmount = quantityInKg * pricePerKg;
+
+  const newItem: AdditionalItem = {
+    id: Date.now(),
+    name: selectedProductData.label,
+    quantity: quantity,
+    unit: unit,
+    pricePerKg: pricePerKg,
+    totalAmount: totalAmount,
+    checked: true
+  };
+
+  setAdditionalItems([...additionalItems, newItem]);
+  setShowAddModal(false);
+  setQuantity(1);
+  setPricePerKg(parseFloat(selectedProductData.price) || 100);
 };
-  
 
+  const handleGoBack = () => {
+    setShowAddModal(false);
+  };
 
-  
-  useEffect(() => {
-      const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
-      const keyboardDidHideListener = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false));
-      return () => {
-        keyboardDidShowListener.remove();
-        keyboardDidHideListener.remove();
-      };
-    }, []);
-  
+  const toggleItemCheck = (id: number) => {
+    setAdditionalItems(items => 
+      items.map(item => 
+        item.id === id ? { ...item, checked: !item.checked } : item
+      )
+    );
+  };
 
-  
+  const removeItem = (id: number) => {
+    setAdditionalItems(items => items.filter(item => item.id !== id));
+  };
+
+  const incrementQuantity = () => {
+    setQuantity(prev => prev + 1);
+  };
+
+  const decrementQuantity = () => {
+    setQuantity(prev => prev > 1 ? prev - 1 : 1);
+  };
+
+  function updateQuantity2(arg0: number, arg1: boolean): void {
+    throw new Error('Function not implemented.');
+  }
 
   return (
-    <View className="flex-1 bg-white">
-    <KeyboardAvoidingView 
-                               behavior={Platform.OS === "ios" ? "padding" : "height"}
-                               enabled 
-                               className="flex-1"
-                             >
+    <SafeAreaView className="flex-1 bg-white">
+      <StatusBar barStyle="dark-content" backgroundColor="white" />
       
       {/* Header */}
-      <View className="flex-row items-center h-16 shadow-md px-4 bg-white">
-        <BackButton navigation={navigation} />
-        <Text className="text-lg font-bold text-[#6C3CD1] flex-grow text-center mr-7">Order Details</Text>
+      <View className="flex-row items-center justify-between  bg-white">
+       <BackButton navigation={navigator} />
+        <Text className="text-lg font-semibold text-purple-600">Order Details</Text>
+        <View className="w-6" />
       </View>
-      <ScrollView showsVerticalScrollIndicator={false} className="px-6 mt-4" keyboardShouldPersistTaps="handled">
-  {/* Package Selection */}
-  <Text className="text-gray-700 text-base mb-2">Package</Text>
-  
-  {/* <SelectList
-    setSelected={async (val: string) => {
-      const selectedPkg = packages.find(pkg => pkg.id.toString() === val);
-      if (selectedPkg) {
-        setSelectedPackage(selectedPkg);
-        setTotalPrice(Number(selectedPkg.total) || 0);
-        
-        const items = await fetchItemsForPackage(selectedPkg.id);
-        setPackageItems(items);
-        setPackageItemsCount(items.length);
-      }
-    }}
-    data={packages.map(pkg => ({
-      key: pkg.id.toString(),
-      value: pkg.displayName || "Unnamed Package"
-    }))}
-    save="key"
-    search={true}
-    placeholder="Select Package"
-    boxStyles={{
-      borderColor: "#F6F6F6",
-      backgroundColor: "#F6F6F6",
-      borderRadius: 40,
-      padding: 10
-    }}
-  /> */}
 
-  <SelectList     
-  setSelected={async (val: string) => {       
-    const selectedPkg = packages.find(pkg => pkg.id.toString() === val);       
-    if (selectedPkg) {         
-      setSelectedPackage(selectedPkg);         
-      setTotalPrice(Number(selectedPkg.total) || 0);                  
-      const items = await fetchItemsForPackage(selectedPkg.id);         
-      setPackageItems(items);         
-      setPackageItemsCount(items.length);
-      
-      // Use handleUserChange to save the state after user selection
-      handleUserChange(() => {});
-    }     
-  }}     
-  data={packages.map(pkg => ({       
-    key: pkg.id.toString(),       
-    value: pkg.displayName || "Unnamed Package"     
-  }))}     
-  save="key"     
-  search={true}     
-  placeholder="Select Package"
-  // Set the default selected value if we have a selected package
-  defaultOption={selectedPackage ? {
-    key: selectedPackage.id.toString(),
-    value: selectedPackage.displayName || "Unnamed Package"
-  } : undefined}
-  boxStyles={{       
-    borderColor: "#F6F6F6",       
-    backgroundColor: "#F6F6F6",       
-    borderRadius: 40,       
-    padding: 10     
-  }}   
-/>
-
-
-    {/* No Package Selected Image */}
-  {!selectedPackage && (
-    <View className="items-center justify-center mt-[50%]">
-      <Image 
-        source={require("../assets/images/nopackage.webp")} 
-        className="w-48 h-48 mb-4" 
-        resizeMode="contain"
-      />
-   
-    </View>
-  )}
-
-  {selectedPackage && (
-    <View className="mt-6 px-3 mb-20">
-      <View className="flex-row justify-between items-center border-b border-gray-200 py-3">
-        <Text className="font-bold text-gray-800">
-          Package ({packageItemsCount} items)
-        </Text>
-        
-        <TouchableOpacity
-          className="ml-3 flex-row items-center"
-          onPress={() => setModalVisible1(true)}
-        >
-          <Image source={require("../assets/images/Add.webp")} className="w-5 h-5 mr-2" />
-          <Text className="text-[#6839CF] font-semibold">Add More</Text>
-        </TouchableOpacity>
-
-      </View>
-      
-      {/* Render package items */}
-      {packageItems.map((item, index) => (
-        <View key={index} className="flex-row justify-between items-center border-b border-gray-200 py-3">
-          <Text className="text-gray-700 text-base">{item.name}</Text>
-          <View className="flex-row items-center">
-            <Text className="text-gray-600 text-base">
-              {item.quantity} {item.quantityType}
-            </Text>
-            <TouchableOpacity
-              className="ml-3"
-              onPress={() => handleItemClick(item)}
-            >
-              <Image source={require("../assets/images/Edit.webp")} className="w-4 h-4" />
-            </TouchableOpacity>
-          </View>
-        </View>
-      ))}
-      
-      {additionalItems.length > 0 && (
-        <View className="flex-row justify-between items-center mt-5 border-b border-gray-200 py-3">
-          <Text className="font-bold text-gray-800">Additional ({additionalItems.length} items)</Text>
-          {selectedItems.size > 0 && (
-            <TouchableOpacity
-              className="flex-row items-center"
-              onPress={deleteSelectedItems}
-            >
-              <Image source={require("../assets/images/trash.webp")} className="w-5 h-5 mr-1" />
-              <Text className="text-red-500"></Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
-
-      {/* Render Additional Items with checkboxes */}
-      {additionalItems.map((item, index) => (
-        <View key={index} className="flex-row justify-between items-center border-b border-gray-200 py-3">
-          <View className="flex-row items-center">
-            <TouchableOpacity 
-              onPress={() => toggleItemSelection(item.id)}
-              className="mr-2"
-            >
-              <View className={`w-5 h-5 border rounded-sm  flex items-center justify-center ${selectedItems.has(item.id) ? 'bg-black border-black' : 'border-gray-400'}`}>
-                {selectedItems.has(item.id) && (
-                  <Text className="text-white text-xs">✓</Text>
-                )}
-              </View>
-            </TouchableOpacity>
-            <Text className="text-gray-700 text-base">{item.name}</Text>
-          </View>
-          <View className="flex-row items-center">
-            <Text className="text-gray-600 text-base">{item.quantity}</Text>
-            <TouchableOpacity
-              className="ml-3"
-              onPress={() => handleEditItemClick(item)}
-            >
-              <Image source={require("../assets/images/Edit.webp")} className="w-4 h-4" />
-            </TouchableOpacity>
-          </View>
-        </View>
-      ))}
-    </View>
-  )}
-</ScrollView>
-  
-  
-{/* Edit Item Modal */}
-<Modal visible={modalVisible} transparent animationType="slide">
-  <View className="flex-1 justify-center items-center bg-[#00000066] bg-opacity-10">
-    <View className="bg-white p-6 rounded-xl w-4/5">
-      <Text className="text-gray-700 mb-2">Product</Text>
-      <TextInput
-        className="bg-gray-100 p-3 rounded-full mb-3 text-gray-700"
-        value={editingItem?.name}
-        editable={false}
-      />
-      
-      {/* Quantity and Unit Selector */}
-      <View>
-        <Text className="text-gray-700 mb-2">Quantity</Text>
-        <View className="flex-row items-center space-x-2">
-          {/* Quantity Control with +/- buttons */}
-          <View className="flex-row items-center bg-gray-100 rounded-full flex-1">
-            <TouchableOpacity 
-              className="w-10 h-10 flex items-center justify-center"
-              onPress={() => updateQuantity2(parseFloat(itemDetails?.changeby || "0.5"), false)} // Decrease quantity
-            >
-              <Text className="text-gray-700 text-xl font-bold">-</Text>
-            </TouchableOpacity>
-            
-            <Text className="flex-1 text-center text-gray-700">
-              {newItemQuantity || "0"}
-            </Text>
-            
-            <TouchableOpacity 
-              className="w-10 h-10 flex items-center justify-center"
-              onPress={() => updateQuantity(parseFloat(itemDetails?.changeby || "0.5"), true)} // Increase quantity
-            >
-              <Text className="text-gray-700 text-xl font-bold">+</Text>
-            </TouchableOpacity>
-          </View>
-          
-          {/* Unit dropdown */}
+      <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
+        {/* Package Selection */}
+        <View className="mb-6" style={{ zIndex: 3000 }}>
+          <Text className=" font-medium text-gray-700 mb-2 rounded-full">Package</Text>
           <DropDownPicker
-            open={open}
-            setOpen={setOpen}
-            value={selectedUnit}
-            setValue={setSelectedUnit}
-            onSelectItem={(item) => handleUnitChange(item.value as any)}
-            items={[
-              { label: "Kg", value: "Kg" },
-              { label: "g", value: "g" }
-            ]}
-            dropDownDirection="BOTTOM"
-            containerStyle={{ width: 100 }}
+           open={packageOpen}
+  value={packageValue}
+  items={packageItems}
+  setOpen={setPackageOpen}
+  setValue={setPackageValue}
+  setItems={setPackageItems}
+  placeholder="Select a package"
+  placeholderStyle={{ color: '#9CA3AF' }}
             style={{
-              backgroundColor: "#F6F6F6",
-              borderColor: "#F6F6F6",
-              borderRadius: 50,
-              paddingHorizontal: 10,
+              backgroundColor: '#F3F4F6',
+              borderColor: '#F3F4F6',
+              borderRadius: 8,
+              minHeight: 48,
             }}
-            dropDownContainerStyle={{
-              backgroundColor: "#FFFFFF",
-              borderColor: "#FFFFFF",
-            }}
-          />
-        </View>
-      </View>
-      
-      {/* Buttons */}
-      <View className="justify-between mt-4">
-        <TouchableOpacity
-          className="bg-gray-300 py-3 rounded-full items-center justify-center"
-          onPress={() => setModalVisible(false)}
-        >
-          <Text className="text-gray-700 font-semibold text-center">Go Back</Text>
-        </TouchableOpacity>
-      </View>
-      <View className="justify-between mt-4">
-        <TouchableOpacity
-          className="bg-purple-700 py-3 rounded-full items-center justify-center"
-          onPress={saveUpdatedItem}
-        >
-          <Text className="text-white font-semibold text-center">Save</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  </View>
-</Modal>
-
-      
- {/* Edit Modal */}
-      
-     <Modal visible={modalVisible1} transparent animationType="slide">
-  <TouchableOpacity
-    activeOpacity={1}
-    onPress={Keyboard.dismiss}
-    className="flex-1 justify-center items-center bg-[#00000066]"
-  >
-    <View className="bg-white p-6 rounded-xl w-4/5">
-      <Text className="text-gray-700 mb-2">Product</Text>
-
-      <View  className="">
-        
-              <DropDownPicker
-          open={productOpen}
-          setOpen={setProductOpen}
-          value={newItemName}
-          setValue={setNewItemName}
-          onSelectItem={(item) => {
-            // Check if item and item.value exist and are not undefined
-            if (item && typeof item.value === 'string') {
-              handleCropSelect(item.value);
-            }
-          }}
-          items={crops.map(crop => ({
-            label: crop.displayName,  
-            value: crop.displayName,  
- 
-            key: crop.cropId
-          }))}
-                   searchable={true}
-          searchPlaceholder="Search product..."
-          setItems={setCrops}
-          dropDownContainerStyle={{
-            borderColor: "#F6F6F6",
-            borderWidth: 1,
-            backgroundColor: "#F6F6F6",
-            maxHeight: 200,
-            minHeight: 150,
-          }}
-          style={{
-            borderWidth: 1,
-            borderColor: "#F6F6F6",
-            backgroundColor: "#F6F6F6",
-            borderRadius: 30,
-            paddingHorizontal: 12,
-            paddingVertical: 12,
-          }}
-          textStyle={{
-            fontSize: 14,
-          }}
-          zIndex={80000}
-                  listMode="SCROLLVIEW"
-        />
-      </View>
-
-
-
-      <View className="mb-4">
-  <Text className="text-gray-700 mb-2 mt-2">Price per 1kg</Text>
-  <View className="bg-gray-100 rounded-full px-4 py-3">
-    <Text className="text-gray-700">Rs. {itemDetails?.discountedPrice}</Text>
-  </View>
-</View>
-
-
-
-      <View>
-        <Text className="text-gray-700 mb-2">Quantity</Text>
-        <View className="flex-row items-center space-x-2">
-          <View className="flex-row items-center bg-gray-100 rounded-full flex-1">
-            <TouchableOpacity 
-              className="w-10 h-10 flex items-center justify-center"
+            textStyle={{
+              fontSize: 14,
              
-              onPress={() => updateQuantity2Add(parseFloat(itemDetails?.changeby || "0.5"), false)} // Decrease quantity on "-" button
-            >
-              <Text className="text-gray-700 text-xl font-bold">-</Text>
-            </TouchableOpacity>
-            
-            <Text className="flex-1 text-center text-gray-700">
-              {newItemQuantity || "0"}
-            </Text>
-            
-            <TouchableOpacity 
-              className="w-10 h-10 flex items-center justify-center"
-           
-              onPress={() => updateQuantityAdd(parseFloat(itemDetails?.changeby || "0.5"), true)} // Increase quantity on "+" button
-            >
-              <Text className="text-gray-700 text-xl font-bold">+</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={{ zIndex: 1000 }}>
-             <DropDownPicker
-            open={open}
-            setOpen={setOpen}
-            value={selectedUnit}
-            setValue={setSelectedUnit}
-            onSelectItem={(item) => {
-              handleUnitChange(item.value as any);
-            }}
-            items={[
-              { label: "Kg", value: "Kg" },
-              { label: "g", value: "g" }
-            ]}
-            dropDownDirection="BOTTOM"
-            containerStyle={{ width: 100 }}
-            style={{
-              backgroundColor: "#F6F6F6",
-              borderColor: "#F6F6F6",
-              borderRadius: 50,
-              paddingHorizontal: 10,
+              color: '#111827',
             }}
             dropDownContainerStyle={{
-              backgroundColor: "#FFFFFF",
-              borderColor: "#FFFFFF",
+              backgroundColor: '#FFFFFF',
+              borderColor: '#E5E7EB',
+              borderRadius: 8,
             }}
+            arrowIconStyle={{
+              width: 20,
+              height: 20,
+            }}
+            tickIconStyle={{
+              width: 20,
+              height: 20,
+            }}
+            labelStyle={{
+              fontWeight: '500',
+              color: '#111827',
+            }}
+          
+            searchable={false}
+            listMode="SCROLLVIEW"
           />
+        </View>
+
+        {/* Package Items */}
+        <View className="mb-8">
+          <View className="flex-row items-center justify-between mb-4">
+            <Text className="text-base font-semibold text-gray-900">
+              Package ({orderData.itemCount} items)
+            </Text>
+            <TouchableOpacity 
+              onPress={handleAddMore}
+              className="flex-row items-center gap-1"
+            >
+              <Ionicons name="add" size={16} color="#7C3AED" />
+              <Text className="text-purple-600 text-sm font-medium">Add More</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View className="bg-white   border-[#3F3F3F]">
+            {orderData.items.map((item, index) => (
+              <View 
+                key={index} 
+                className={`flex-row justify-between items-center py-2 px-4 ${
+                  index !== orderData.items.length - 1 ? "border-b border-[#CDCDCD]" : ""
+                }`}
+              >
+                <Text className="text-gray-800 font-medium flex-1">{item.category}</Text>
+                <View className="bg-gray-50 px-2 py-1 rounded min-w-[32px] items-center">
+                  <Text className="text-gray-600 font-medium text-sm">
+                    {item.count}
+                  </Text>
+                </View>
+              </View>
+            ))}
           </View>
         </View>
-      </View>
 
-      <View className="mb-4">
-  <Text className="text-gray-700 mb-2 mt-2">Total Amount</Text>
-  <View className="bg-gray-100 rounded-full px-4 py-3">
-    <Text className="text-gray-700">Rs.{newPrice1} </Text>
+        {/* Additional Items */}
+        {additionalItems.length > 0 && (
+          <View className="mb-8">
+            <View className="flex-row items-center justify-between mb-4">
+              <Text className="text-base font-semibold text-gray-900">
+                Additional ({additionalItems.filter(item => item.checked).length.toString().padStart(2, '0')} items)
+              </Text>
+              <TouchableOpacity>
+               <Image source={require("../assets/images/trash.webp")} className="w-5 h-5 mr-1" />
+              </TouchableOpacity>
+            </View>
 
-    
-  </View>
-
-  
-</View>
-
-<View className="mb-4">
-<Text className="text-[#7340D3] text-center">
-  You received a discount of Rs.{finaldiscount} for this product
-</Text>
-
- 
-</View>
-
-
-
-      <View className="justify-between mt-4">
-        <TouchableOpacity
-          className="bg-gray-300 py-3 px-6 rounded-full items-center justify-center"
-       
-          onPress={() => {
-      // Reset all state when going back, just like in the Add button
-      setNewItemName('');
-      setNewItemQuantity('');
-      setPricePerKg('0.00');
-      setNewPrice1('0.00');
-      setFinaldiscount('0.00');
-      setCounter(0);
-      setSelectedUnit('kg'); // Reset to default unit
-      setModalVisible1(false);
-    }}
-        >
-          <Text className="text-gray-700 font-semibold text-center">Go Back</Text>
-        </TouchableOpacity>
-      </View>
-      <View className="justify-between mt-4">
-        <TouchableOpacity
-          className="bg-purple-700 py-3 px-6 rounded-full items-center justify-center"
-          onPress={() => {
-            addItem();
-            setCounter(0);
-            setModalVisible1(false);
-          }}
-        >
-          <Text className="text-white font-semibold text-center">Add</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  </TouchableOpacity>
-</Modal>
-
-
-
-
-
-  
-      {/* Conditionally Render Navbar */}
-      {selectedPackage && !isKeyboardVisible && (
-          <View className={`bg-white flex-row justify-between items-center p-4 rounded-t-3xl shadow-lg ${!selectedPackage ? 'mb-20' : ''}`}
-          style={{
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: -4 },
-            shadowOpacity: 0.2,
-            shadowRadius: 8,
-            elevation: 10,
-            marginTop: -10,
-          }}
-          >
-
-            
-
-<Text className="text-lg font-semibold text-gray-800">
-  Total  :  </Text>
-  <Text className="text-lg font-semibold text-[#5C5C5C] mr-[19]">
-    Rs. {Number(totalPrice).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-  </Text>
-
-
-  
-  {/* <LinearGradient colors={["#854BDA", "#6E3DD1"]} className="py-3 px-6 rounded-full">
-    <TouchableOpacity 
-      onPress={navigateToNextScreen}
-    >
-      <Text className="text-white font-semibold">Confirm</Text>
-    </TouchableOpacity>
-  </LinearGradient> */}
-   <TouchableOpacity onPress={handlePress} disabled={isLoading}>
-      <LinearGradient 
-        colors={["#6839CF", "#874DDB"]} 
-        className="py-3 px-6 rounded-full"
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-      >
-        <View className="w-14 flex-row justify-center items-center" style={{ minHeight: 20 }}>
-          {isLoading ? (
-            <ActivityIndicator color="#FFFFFF" size="small" />
-          ) : (
-            <Text className="text-white font-semibold">
-              Confirm
-            </Text>
-          )}
-        </View>
-      </LinearGradient>
-    </TouchableOpacity>
-
-
+            <View className="bg-white rounded-lg border border-white">
+              {additionalItems.map((item, index) => (
+                <View 
+                  key={item.id} 
+                  className={`flex-row items-center py-4 px-4 ${
+                    index !== additionalItems.length - 1 ? "border-b border-[#CDCDCD]" : ""
+                  }`}
+                >
+                  <TouchableOpacity 
+                    onPress={() => toggleItemCheck(item.id)}
+                    className="mr-3"
+                  >
+                    <View className={`w-5 h-5 rounded border-2 items-center justify-center ${
+                      item.checked ? 'bg-purple-600 border-purple-600' : 'border-gray-300'
+                    }`}>
+                      {item.checked && (
+                        <Ionicons name="checkmark" size={12} color="white" />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                  <View className="flex-1">
+                    <Text className="text-gray-800 font-medium">{item.name}</Text>
+                  </View>
+                  <View className="flex-row items-center gap-2">
+                    <Text className="text-gray-600 text-sm">{item.quantity}{item.unit}</Text>
+                    <TouchableOpacity>
+                       <Image source={require("../assets/images/Edit.webp")} className="w-4 h-4" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </View>
           </View>
         )}
-   
-    </KeyboardAvoidingView>
-  </View>
+      </ScrollView>
+
+    
+
+      <View className={`bg-white flex-row justify-between items-center p-4 rounded-t-3xl shadow-lg  ''}`}
+                style={{
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: -4 },
+                  shadowOpacity: 0.2,
+                  shadowRadius: 8,
+                  elevation: 10,
+                  marginTop: -10,
+                }}
+                >
+      
+                  
   
+      <Text className="text-lg font-semibold text-gray-800">
+        Total  :  </Text>
+        <Text className="text-lg font-semibold text-[#5C5C5C] mr-[19]">
+          Rs. 18000
+        </Text>
+      
+      
+
+         <TouchableOpacity >
+            <LinearGradient 
+              colors={["#6839CF", "#874DDB"]} 
+              className="py-3 px-6 rounded-full"
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <View className="w-14 flex-row justify-center items-center" style={{ minHeight: 20 }}>
+                {loading ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <Text className="text-white font-semibold">
+                    Confirm
+                  </Text>
+                )}
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+      
+      
+                </View>
+
+      {/* Add More Modal */}
+<Modal
+  visible={showAddModal}
+  animationType="slide"
+  presentationStyle="pageSheet"
+  onRequestClose={handleGoBack}
+>
+    <View className="flex-1 justify-center items-center bg-[#00000066] bg-opacity-10">
+      <View className="bg-white p-6 rounded-xl w-4/5">
+        
+        {/* Product Section */}
+        <View className="mb-6" style={{ zIndex: 80000 }}>
+          <Text className="text-gray-700 font-medium mb-3">Product</Text>
+          <DropDownPicker
+            open={productOpen}
+            setOpen={setProductOpen}
+            value={productValue}
+            setValue={setProductValue}
+            onSelectItem={(item) => {
+              // Check if item and item.value exist and are not undefined
+              if (item && typeof item.value === 'string' && item.label) {
+                setSelectedProduct(item.label);
+                // Update price based on selected product if needed
+                // setPricePerKg(getProductPrice(item.value));
+              }
+            }}
+            items={productItems}
+            searchable={true}
+            searchPlaceholder="Search product..."
+            setItems={setProductItems}
+            dropDownContainerStyle={{
+              borderColor: "#F6F6F6",
+              borderWidth: 1,
+              backgroundColor: "#F6F6F6",
+              maxHeight: 200,
+              minHeight: 150,
+            }}
+            style={{
+              borderWidth: 1,
+              borderColor: "#F6F6F6",
+              backgroundColor: "#F6F6F6",
+              borderRadius: 15,
+              paddingHorizontal: 12,
+              paddingVertical: 12,
+              minHeight: 52,
+            }}
+            textStyle={{
+              fontSize: 16,
+              fontWeight: '500',
+              color: '#111827',
+            }}
+            zIndex={80000}
+            listMode="SCROLLVIEW"
+          />
+        </View>
+
+        {/* Price per kg Section */}
+        <View className="mb-6">
+          <Text className="text-gray-700 font-medium mb-3">Price per 1kg</Text>
+          <View className="bg-gray-50 rounded-xl px-4 py-4">
+            <Text className="text-gray-900 font-medium text-base">Rs.{pricePerKg || '100.00'}</Text>
+          </View>
+        </View>
+
+     
+
+       <View className="mb-6">
+          <Text className="text-gray-700 font-medium mb-3">Quantity</Text>
+          <View className="flex-row items-center space-x-2">
+            {/* Quantity Control with +/- buttons */}
+            <View className="flex-row items-center bg-gray-100 rounded-full flex-1">
+              <TouchableOpacity 
+                className="w-10 h-10 flex items-center justify-center"
+                onPress={decrementQuantity}
+              >
+                <Text className="text-gray-700 text-xl font-bold">-</Text>
+              </TouchableOpacity>
+              
+              <Text className="flex-1 text-center text-gray-700">
+                {quantity || "0"}
+              </Text>
+              
+              <TouchableOpacity 
+                className="w-10 h-10 flex items-center justify-center"
+                onPress={incrementQuantity}
+              >
+                <Text className="text-gray-700 text-xl font-bold">+</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {/* Unit dropdown */}
+            <DropDownPicker
+              open={unitOpen}
+              setOpen={setUnitOpen}
+              value={selectedUnit}
+              setValue={setSelectedUnit}
+              onSelectItem={(item) => {
+                if (item && item.value) {
+                  setSelectedUnit(item.value);
+                }
+              }}
+              items={[
+                { label: "Kg", value: "Kg" },
+                { label: "g", value: "g" }
+              ]}
+              dropDownDirection="BOTTOM"
+              containerStyle={{ width: 100 }}
+              style={{
+                backgroundColor: "#F6F6F6",
+                borderColor: "#F6F6F6",
+                borderRadius: 50,
+                paddingHorizontal: 10,
+              }}
+              dropDownContainerStyle={{
+                backgroundColor: "#FFFFFF",
+                borderColor: "#FFFFFF",
+              }}
+              zIndex={70000}
+            />
+          </View>
+        </View>
+
+
+        {/* Total Amount Section */}
+        <View className="mb-6">
+          <Text className="text-gray-700 font-medium mb-3">Total Amount</Text>
+          <View className="bg-gray-50 rounded-xl px-4 py-4">
+            <Text className="text-gray-900 font-bold text-lg">Rs.{((quantity || 500) * (pricePerKg || 100) / 1000).toFixed(2)}</Text>
+          </View>
+        </View>
+
+        {/* Discount Message */}
+        <View className="mb-8">
+          <Text className="text-purple-600 text-center text-sm font-medium">
+            You received a discount of Rs.5.00 for this product
+          </Text>
+        </View>
+
+        {/* Action Buttons */}
+        <View className="gap-3">
+          <TouchableOpacity 
+            onPress={handleGoBack}
+            className="bg-gray-200 py-4 rounded-full items-center"
+          >
+            <Text className="text-gray-700 font-semibold text-base">Go Back</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            onPress={handleSaveItem}
+            className="bg-purple-600 py-4 rounded-full items-center"
+          >
+            <Text className="text-white font-semibold text-base">Save</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+
+</Modal>
+    </SafeAreaView>
   );
 };
 
 export default OrderScreen;
-
-function fetchInitialData() {
-  throw new Error("Function not implemented.");
-}
-  
