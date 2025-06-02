@@ -73,7 +73,9 @@ export type RootStackParamList = {
     selectedPackageId: number;
     selectedPackageName: string;
     selectedPackageImage: string;
-    selectedPackageTotal: string;
+    selectedPackageproductPrice: string;
+    selectedPackagepackingFee: string;
+    selectedPackageserviceFee: string;
     selectedPackageDescription:string;
     selectedPackageportion:number;
     selectedPackageperiod:number;

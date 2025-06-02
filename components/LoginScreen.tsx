@@ -7,6 +7,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import axios  from "axios"; 
 import AsyncStorage from "@react-native-async-storage/async-storage"; 
 import environment from "@/environment/environment";
+import { Keyboard } from "react-native";
 
 // Navigation type
 type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, "LoginScreen">;
@@ -25,6 +26,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
 
   const handleSignIn = async () => {
+    Keyboard.dismiss()
     setError1("")
     setError2("")
     if (empId.trim() === "") {
