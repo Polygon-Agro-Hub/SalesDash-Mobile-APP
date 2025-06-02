@@ -11,6 +11,7 @@ import {
   ImageBackground,
   Alert,
   BackHandler,
+  Keyboard,
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from './types';
@@ -68,6 +69,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
   
 
  const handleChangePassword = async () => {
+  Keyboard.dismiss()
   // Validate inputs before proceeding
   if (!validatePassword()) {
     return;
