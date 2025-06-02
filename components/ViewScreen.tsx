@@ -47,7 +47,7 @@ interface ViewScreenProps {
 
 const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
   const { selectedPackageId, selectedPackageName, selectedPackageImage , selectedPackageproductPrice, selectedPackagepackingFee,  selectedPackageserviceFee ,selectedPackageDescription,selectedPackageportion ,selectedPackageperiod  } = route.params;
-
+//hit
   const [items, setItems] = useState<{ name: string; qty: string}[]>([]);
   let selectedPackageTotal = (
     parseFloat(selectedPackageproductPrice || '0') +
