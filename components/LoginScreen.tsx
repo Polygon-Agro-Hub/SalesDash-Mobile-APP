@@ -25,6 +25,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [error2, setError2] = useState("")
   const [loading, setLoading] = useState(false);
 
+
+
+  ///text 
+
   const handleSignIn = async () => {
     Keyboard.dismiss()
     setError1("")
