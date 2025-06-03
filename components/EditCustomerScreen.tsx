@@ -321,7 +321,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
     setIsSubmitting(false); // Always reset submitting state when done
   }
   };
-  
+  ////
   
   const [open, setOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("");
