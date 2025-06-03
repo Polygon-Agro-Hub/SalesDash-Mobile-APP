@@ -144,7 +144,7 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
             {items.map((item, index) => (
               <View key={index} className="flex-row justify-between items-center border-b border-gray-200 py-3 px-4">
                 <Text className="text-gray-700 text-sm">{item.name}</Text>
-                <Text className="text-gray-500 text-sm">{item.qty}{item.qty}</Text>
+                <Text className="text-gray-500 text-sm">{item.qty}</Text>
               </View>
             ))}
             
