@@ -52,6 +52,7 @@ interface CartItem {
   price: number;
   normalPrice: number;
   discountedPrice: number;
+  discount: number;
   quantity: number;
   selected: boolean;
   unitType: string;
@@ -66,8 +67,8 @@ interface CratScreenProps {
     params?: {
       id?: string;
       customerId?: any;
-      isCustomPackage?: number | string;
-      isSelectPackage?: number | string;
+      isPackage?: number | string;
+
       selectedProducts?: any[];
       items?: any[];
       fromOrderSummary?: boolean;
@@ -90,8 +91,8 @@ interface CratScreenProps {
     params?: {
       id?: string;
       customerId?: any;
-      isCustomPackage?: number | string;
-      isSelectPackage?: number | string;
+      isPackage?: number | string;
+   
       selectedProducts?: any[];
       items?: any[];
       fromOrderSummary?: boolean;
@@ -108,10 +109,12 @@ interface CratScreenProps {
 }
 
 const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
-  const { id, isCustomPackage, isSelectPackage } = route.params || {};
+  const { id, isPackage } = route.params || {};
   const fromOrderSummary = (route.params as any)?.fromOrderSummary;
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
+
+  console.log("============",isPackage)
 
   useEffect(() => {
     if (route.params?.selectedProducts) {
@@ -192,9 +195,12 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
       return ((item.discountedPrice / 1000) * item.changeby).toFixed(2);
     }
   };
+
+ 
   
   const calculateItemNormalTotal = (item: CartItem) => {
     if (item.unitType === 'kg') {
+      console.log("-----------",item.discount)
       return (item.normalPrice * item.changeby).toFixed(2);
     } else {
       return ((item.normalPrice / 1000) * item.changeby).toFixed(2);
@@ -309,12 +315,11 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     return total + parseFloat(calculateItemNormalTotal(item));
   }, 0);
   
-  const currentTotal = cartItems.reduce((total, item) => {
-    // Include all items in totals, even if selected
+ const currentTotal = cartItems.reduce((total, item) => {
     return total + parseFloat(calculateItemTotal(item));
-  }, 0);
+}, 0) + 180;
 
-  const discount = currentSubtotal - currentTotal;
+  const discount = currentSubtotal - (currentTotal - 180);
 
   const handleConfirm = () => {
     const nonSelectedItems = cartItems.filter(item => !item.selected);
@@ -326,16 +331,17 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
         
         return {
           id: item.id,
-          name: item.name,
-          price: item.price,
-          normalPrice: item.normalPrice,
-          discountedPrice: item.discountedPrice,
-          quantity: weightInKg,  // Always pass quantity in kg
+          //name: item.name,
+          price: item.discountedPrice * weightInKg ,
+          discount:item.discount * weightInKg,
+         // normalPrice: item.normalPrice,
+         // discountedPrice: item.discountedPrice,
+          qty: weightInKg,  // Always pass quantity in kg
           unitType: 'kg',        // Always pass unitType as kg
-          startValue: item.startValue,
-          changeby: weightInKg,  // Always pass changeby in kg
-          isSelectPackage: isSelectPackage,
-          isCustomPackage: isCustomPackage
+         // startValue: item.startValue,
+         // changeby: weightInKg,  // Always pass changeby in kg
+          isPackage: isPackage,
+      
         };
       });
 
@@ -343,14 +349,15 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
       const navigationTarget = (route.params as any)?.returnTo || (fromOrderSummary ? 'OrderSummaryScreen' : 'ScheduleScreen');
       
       if (navigationTarget === 'ScheduleScreen') {
+        
         navigation.navigate('ScheduleScreen' as any, {
           items: itemsToPass,
           total: currentTotal,
           subtotal: currentSubtotal,
           discount: discount,
           id: id,
-          isSelectPackage: isSelectPackage,
-          isCustomPackage: isCustomPackage,
+          isPackage: isPackage,
+      
           // Pass through any existing order summary data
           selectedDate: route.params?.selectedDate,
           timeDisplay: route.params?.timeDisplay,
@@ -366,8 +373,8 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
           subtotal: currentSubtotal,
           discount: discount,
           id: id,
-          isSelectPackage: isSelectPackage,
-          isCustomPackage: isCustomPackage,
+          isPackage: isPackage,
+   
           // Pass through scheduling data if available
           selectedDate: route.params?.selectedDate,
           timeDisplay: route.params?.timeDisplay,
@@ -381,8 +388,8 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
           subtotal: currentSubtotal,
           discount: discount,
           id: id,
-          isSelectPackage: isSelectPackage,
-          isCustomPackage: isCustomPackage
+          isPackage: isPackage
+       
         });
       }
     } else {
@@ -531,6 +538,11 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
             <View className="flex-row justify-between py-2">
               <Text className="text-gray-500">Discount</Text>
               <Text className="font-medium text-[#686868]">Rs.{discount.toFixed(2)}</Text>
+            </View>
+
+             <View className="flex-row justify-between py-2">
+              <Text className="text-gray-500">Service Fee</Text>
+              <Text className="font-medium text-[#686868]">Rs.180.00</Text>
             </View>
             
             <View className="flex-row justify-between py-2">

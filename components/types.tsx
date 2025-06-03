@@ -2,6 +2,8 @@ export interface CartItem {
   id: number;
   name: string;
   price: number;
+  discount:  number;
+  qty: string;
   normalPrice: number;
   discountedPrice: number;
   quantity: number;
@@ -67,6 +69,8 @@ export type RootStackParamList = {
     LoginScreen: undefined;
     ChangePasswordScreen: undefined;
     DashboardScreen: undefined;
+
+   
     
 
  ViewScreen: { 
@@ -130,10 +134,15 @@ export type RootStackParamList = {
       paymentMethod?: string;
       customerId?: string | number;
       customerid?: string | number;
-      isSelectPackage?: number;
-      isCustomPackage?: number;
+      isPackage?: number;
+ 
       packageId?: number;
       orderItems?: PackageItem[]; 
+      orderData?: {  // Add this new property
+      additionalItems?: AdditionalItem[];
+      // Add any other properties that might exist in orderData
+      [key: string]: any;
+    };
     };
     OrderConfirmedScreen: {
       orderId: number;

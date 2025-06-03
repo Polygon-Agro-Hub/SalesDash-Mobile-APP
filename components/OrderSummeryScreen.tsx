@@ -35,6 +35,7 @@ interface ItemDetails {
   name: string;
   displayName: string;
   price: number;
+  discount?:number;
   mpItemId?: number | null; // Add this property
   quantityType?: string; // Also add quantityType for better data handling
   unitType?: string; // Add unitType property
@@ -126,8 +127,8 @@ const [packageDisplayName, setPackageDisplayName] = useState<string>("");
     paymentMethod = "",
     customerId = "",
     customerid = "",
-    isSelectPackage = 0,
-    isCustomPackage = 0,
+    isPackage = 0,
+
     orderItems = [] 
   } = route.params || {};
   
@@ -194,164 +195,244 @@ const [packageDisplayName, setPackageDisplayName] = useState<string>("");
     }
   }, [route.params]);
 
-  const handleConfirmOrder = async () => {
-    // Prevent multiple clicks
-    if (isSubmitting || isSubmitted) {
-      return;
-    }
-    
-    // Set submitting state to show loading indicator
-    setIsSubmitting(true);
+ 
 
-    if (!customerId && !customerid) {
-      Alert.alert("Error", "Customer information is missing");
+// const handleConfirmOrder = async () => {
+//     // Prevent multiple clicks
+//     if (isSubmitting || isSubmitted) {
+//       return;
+//     }
+    
+//     // Set submitting state to show loading indicator
+//     setIsSubmitting(true);
+
+//     if (!customerId && !customerid) {
+//       Alert.alert("Error", "Customer information is missing");
+//       setIsSubmitting(false);
+//       return;
+//     }
+    
+//     try {
+//       const storedToken = await AsyncStorage.getItem("authToken");
+      
+//       if (!storedToken) {
+//         Alert.alert("Error", "Authentication token not found. Please log in again.");
+//         setIsSubmitting(false);
+//         return;
+//       }
+
+//       // Prepare the order payload in the required format
+//       const orderData = {
+//         userId: customerId || customerid,
+//         isPackage: isPackage || 0,
+//         total: fullTotal + discount,
+//         fullTotal: fullTotal , // Assuming fullTotal is subtotal
+//         discount: discount,
+//         sheduleDate: selectedDate,
+//         sheduleTime: selectedTimeSlot,
+//         paymentMethod: paymentMethod,
+//         isPaid: 1, // Assuming 1 means paid
+//         status: 'confirmed',
+//         items: isPackage === 0 
+//           ? safeItems.map(item => ({
+//               productId: item.id,
+//               qty: item.qty === 'g' ? Number(item.qty) / 1000 : item.qty, // Convert g to kg
+//               unit: item.unitType === 'g' ? 'g' : 'kg',
+//               price: item.price,
+//               discount: item.discount
+//             }))
+//           : [] // Handle package items differently
+//       };
+
+//       const orderPayload = {
+//         orderData: orderData,
+        
+//       };
+
+//       console.log("Sending order data to API:", JSON.stringify(orderPayload, null, 2));
+      
+//       const apiUrl = `${environment.API_BASE_URL}api/orders/create-order`;
+//       const response = await axios.post(apiUrl, orderPayload, {
+//         headers: { 
+//           Authorization: `Bearer ${storedToken}`,
+//           'Content-Type': 'application/json'
+//         }
+//       });
+      
+//       if (response.data.success) {
+//         setIsSubmitted(true);
+//         setIsSubmitting(false);
+        
+//         console.log("Order created successfully:", response.data);
+        
+//         navigation.navigate("Main", {
+//           screen: "OrderConfirmedScreen",
+//           params: {
+//             orderId: response.data.data.orderId,
+//             total: total,
+//             subtotal: fullTotal, // Using fullTotal as subtotal
+//             discount: discount,
+//             paymentMethod: paymentMethod,
+//             userId: customerId || (customerid as string),
+//             selectedDate: selectedDate,
+//             selectedTimeSlot: selectedTimeSlot,
+//           },
+//         });
+//       } else {
+//         setIsSubmitting(false);
+//         Alert.alert("Error", response.data.message || "Failed to create order");
+//       }
+//     } catch (error: any) {
+//       console.error("Error creating order:", error);
+//       setIsSubmitting(false);
+      
+//       let errorMessage = "Failed to create order";
+//       if (error.response && error.response.data) {
+//         errorMessage = error.response.data.message || errorMessage;
+//       } else if (error instanceof Error) {
+//         errorMessage = error.message;
+//       }
+      
+//       Alert.alert("Error", errorMessage);
+//     }
+//   };
+
+
+const handleConfirmOrder = async () => {
+  if (isSubmitting || isSubmitted) {
+    return;
+  }
+
+  setIsSubmitting(true);
+
+  if (!customerId && !customerid) {
+    Alert.alert("Error", "Customer information is missing");
+    setIsSubmitting(false);
+    return;
+  }
+
+  try {
+    const storedToken = await AsyncStorage.getItem("authToken");
+
+    if (!storedToken) {
+      Alert.alert("Error", "Authentication token not found. Please log in again.");
       setIsSubmitting(false);
       return;
     }
-    
-    try {
-      const storedToken = await AsyncStorage.getItem("authToken");
-      
-      if (!storedToken) {
-        Alert.alert("Error", "Authentication token not found. Please log in again.");
-        setIsSubmitting(false);
-        return;
-      }
 
-      const subT = fullTotal + discount;
-      console.log("...........",fullTotal)
+    let orderPayload;
 
-      let orderPayload: any = {
-        customerId: customerId || customerid,
-        scheduleDate: selectedDate,
-        selectedTimeSlot: selectedTimeSlot,
-        paymentMethod: paymentMethod,
-        fullTotal: subT,
+    if (isPackage === 0) {
+      // Regular order with items
+      const orderData = {
+        userId: customerId || customerid,
+        isPackage: 0,
+        total: total + discount,
+        fullTotal: total,
         discount: discount,
-        subtotal: fullTotal 
+        sheduleDate: selectedDate,
+        sheduleTime: selectedTimeSlot,
+        paymentMethod: paymentMethod,
+        isPaid: 0,
+        status: 'confirmed',
+        items: safeItems.map(item => ({
+          productId: item.id,
+          qty: item.qty === 'g' ? Number(item.qty) / 1000 : item.qty,
+          unit: item.unitType === 'g' ? 'g' : 'kg',
+          price: item.price,
+          discount: item.discount
+        }))
       };
-      
 
-      if (isSelectPackage === 1) {
-        orderPayload.isSelectPackage = 1;
-        orderPayload.isCustomPackage = 0;
-        
-        if (safeOrderItems.length > 0) {
-          const packageItem = safeOrderItems[0]; 
+      orderPayload = {
+        orderData: orderData
+      };
+    } else {
+      // Package order - use additionalItems from route.params
+      const currentPackageItem = safeOrderItems[0] || {};
+      
+      // Get additional items from either orderData.additionalItems or directly from route.params
+      const additionalItems = currentPackageItem.additionalItems || 
+                            (route.params?.orderData?.additionalItems || []);
 
-          const packageSub = packageItem.packageTotal + packageItem.packageDiscount;
-          
-          orderPayload.packageId = packageItem.packageId;
-          orderPayload.isModifiedPlus = packageItem.isModifiedPlus;
-          orderPayload.isModifiedMin = packageItem.isModifiedMin;
-          orderPayload.isAdditionalItems = packageItem.isAdditionalItems;
-          orderPayload.packageTotal = packageSub ;
-          orderPayload.packageDiscount = packageItem.packageDiscount;
-          orderPayload.packageSubTotal = packageItem.packageTotal;
-          
-          // Add modifiedPlusItems if present
-          if (packageItem.modifiedPlusItems && packageItem.modifiedPlusItems.length > 0) {
-            orderPayload.modifiedPlusItems = packageItem.modifiedPlusItems;
-          }
-          
-          // Add modifiedMinItems if present
-          if (packageItem.modifiedMinItems && packageItem.modifiedMinItems.length > 0) {
-            orderPayload.modifiedMinItems = packageItem.modifiedMinItems;
-          }
-          
-          // Add additionalItems if present
-          if (packageItem.additionalItems && packageItem.additionalItems.length > 0) {
-            orderPayload.additionalItems = packageItem.additionalItems;
-          }
-      
-          // Add finalOrderPackageList if present
-          if (packageItem.finalOrderPackageList && packageItem.finalOrderPackageList.length > 0) {
-            orderPayload.finalOrderPackageList = packageItem.finalOrderPackageList;
-          }
-        }
-      }
-   
-      else if (isCustomPackage === 1) {
-        orderPayload.isSelectPackage = 0;
-        orderPayload.isCustomPackage = 1;
-        
+      // Create items array for the package order
+      const packageItems = additionalItems.map((item: any) => ({
+        productId: item.productId || item.id,
+        qty: item.qty || item.quantity,
+        unit: item.unit || 'kg',
+        price: item.price,
+        discount: item.discount
+      }));
 
-        orderPayload.items = safeItems.map(item => ({
-          id: item.id,
-          name: item.name,
-          quantity: item.quantity,
-          unitType: item.unitType || "kg",
-          price: item.price,
-          normalPrice: item.normalPrice,
-          discountedPrice: item.discountedPrice
-        }));
-      } else {
+      const packageOrderData = {
+        userId: customerId || customerid,
+        isPackage: 1,
+        packageId: currentPackageItem.packageId || route.params?.packageId,
+        total: fullTotal + discount,
+        fullTotal: fullTotal,
+        discount: discount,
+        sheduleDate: selectedDate,
+        sheduleTime: selectedTimeSlot,
+        transactionId: null,
+        paymentMethod: paymentMethod,
+        isPaid: 1,
+        status: 'confirmed',
+        items: packageItems
+      };
 
-        orderPayload.isSelectPackage = 0;
-        orderPayload.isCustomPackage = 0;
-        
-
-        orderPayload.items = safeItems.map(item => ({
-          itemId: item.id,
-          name: item.name,
-          quantity: item.quantity,
-          unitType: item.unitType || "kg",
-          price: item.price,
-          discount: (item.normalPrice && item.discountedPrice) 
-            ? item.normalPrice - item.discountedPrice 
-            : 0
-        }));
-      }
-      
-      console.log("Sending order data to API:", JSON.stringify(orderPayload, null, 2));
-      
-
-      const apiUrl = `${environment.API_BASE_URL}api/orders/create-order`;
-      const response = await axios.post(apiUrl, orderPayload, {
-        headers: { 
-          Authorization: `Bearer ${storedToken}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (response.data.success) {
-        // Mark as submitted after successful API call
-        setIsSubmitted(true);
-        setIsSubmitting(false);
-        
-        console.log("Order created successfully:", response.data);
-        
-        navigation.navigate("Main", {
-          screen: "OrderConfirmedScreen",
-          params: {
-            orderId: response.data.data.orderId,
-            total: total,
-            subtotal: subtotal,
-            discount: discount,
-            paymentMethod: paymentMethod,
-            customerId: customerId || (customerid as string),
-            selectedDate: selectedDate,
-            selectedTimeSlot: selectedTimeSlot,
-          },
-        });
-      } else {
-        setIsSubmitting(false);
-        Alert.alert("Error", response.data.message || "Failed to create order");
-      }
-    } catch (error: any) {
-      console.error("Error creating order:", error);
-      setIsSubmitting(false);
-      
-      let errorMessage = "Failed to create order";
-      if (error.response && error.response.data) {
-        errorMessage = error.response.data.message || errorMessage;
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-      
-      Alert.alert("Error", errorMessage);
+      orderPayload = {
+        orderData: packageOrderData
+      };
     }
-  };
+
+    console.log("Sending order data to API:", JSON.stringify(orderPayload, null, 2));
+
+    const apiUrl = `${environment.API_BASE_URL}api/orders/create-order`;
+    const response = await axios.post(apiUrl, orderPayload, {
+      headers: {
+        Authorization: `Bearer ${storedToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (response.data.success) {
+      setIsSubmitted(true);
+      setIsSubmitting(false);
+
+      console.log("Order created successfully:", response.data);
+
+      navigation.navigate("Main", {
+        screen: "OrderConfirmedScreen",
+        params: {
+          orderId: response.data.data.orderId,
+          total: total,
+          subtotal: fullTotal,
+          discount: discount,
+          paymentMethod: paymentMethod,
+          userId: customerId || (customerid as string),
+          selectedDate: selectedDate,
+          selectedTimeSlot: selectedTimeSlot,
+        },
+      });
+    } else {
+      setIsSubmitting(false);
+      Alert.alert("Error", response.data.message || "Failed to create order");
+    }
+  } catch (error: any) {
+    console.error("Error creating order:", error);
+    setIsSubmitting(false);
+
+    let errorMessage = "Failed to create order";
+    if (error.response && error.response.data) {
+      errorMessage = error.response.data.message || errorMessage;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+
+    Alert.alert("Error", errorMessage);
+  }
+};
+
 
   const getCustomerInfo = () => {
     if (loading) {
@@ -394,183 +475,10 @@ const [packageDisplayName, setPackageDisplayName] = useState<string>("");
   
   const customerInfo = getCustomerInfo();
 
-// const fetchAdditionalItemDetails = async () => {
-//   if (isSelectPackage !== 1 || !safeOrderItems.length) return;
-  
-//   const packageItem = safeOrderItems[0];
-//   if (!packageItem.additionalItems || !packageItem.additionalItems.length) return;
-  
-//   try {
-//     const storedToken = await AsyncStorage.getItem("authToken");
-//     if (!storedToken) return;
-    
-//     // Create a new object to store the details
-//     const details: Record<string, ItemDetails> = {};
-    
-//     // Fetch details for each additional item
-//     for (const item of packageItem.additionalItems) {
-//       const response = await axios.get(
-//         `${environment.API_BASE_URL}api/packages/marketplace-item/${item.id}`,
-//         {
-//           headers: { Authorization: `Bearer ${storedToken}` },
-//         }
-//       );
-      
-//       if (response.data && response.data.data) {
-//         // Convert the item.id to string when using as an index
-//         const itemIdKey = item.id.toString();
-        
-//         details[itemIdKey] = {
-//           name: response.data.data.name || `Item ${item.id}`,
-//           displayName: response.data.data.displayName || `Item ${item.id}`,
-//           price: response.data.data.discountedPrice
-//           // Add other properties as needed
-//         };
-        
-//         console.log(response.data);
-//         console.log("Display Name:", response.data.data.displayName);
-//       }
-//     }
-    
-//     // Now this should match your state type
-//     setAdditionalItemDetails(details);
-//   } catch (error) {
-//     console.error("Error fetching additional item details:", error);
-//   }
-// };
 
-// useEffect(() => {
-//   if (isSelectPackage === 1 && safeOrderItems.length > 0) {
-//     fetchAdditionalItemDetails();
-//   }
-// }, [isSelectPackage, safeOrderItems]);
-
-// const fetchItemDetails = async () => {
-//   if (isSelectPackage !== 1 || !safeOrderItems.length) return;
-  
-//   const packageItem = safeOrderItems[0];
-  
-//   try {
-//     const storedToken = await AsyncStorage.getItem("authToken");
-//     if (!storedToken) return;
-    
-//     // Create objects to store the details
-//     const additionalDetails: Record<string, ItemDetails> = {};
-//     const packageItemDetails: Record<string, ItemDetails> = {};
-//     let packageDisplayName = "";
-    
-//     // First, fetch the package details to get the display name
-//     if (packageItem.packageId) {
-//       try {
-//         const packageResponse = await axios.get(
-//           `${environment.API_BASE_URL}api/packages/marketplace-package/${packageItem.packageId}`,
-//           {
-//             headers: { Authorization: `Bearer ${storedToken}` },
-//           }
-//         );
-        
-//         if (packageResponse.data && packageResponse.data.data) {
-//           packageDisplayName = packageResponse.data.data.displayName || packageResponse.data.data.name || `Package ${packageItem.packageId}`;
-//           console.log(`Package ${packageItem.packageId} Details:`, packageResponse.data.data);
-//           console.log("Package Display Name:", packageDisplayName);
-//         }
-//       } catch (error) {
-//         console.error(`Error fetching package ${packageItem.packageId} details:`, error);
-//         packageDisplayName = `Package ${packageItem.packageId}`;
-//       }
-//     }
-    
-//     // Fetch details for package items from finalOrderPackageList
-//     if (packageItem.finalOrderPackageList && packageItem.finalOrderPackageList.length > 0) {
-//       for (const item of packageItem.finalOrderPackageList) {
-//         try {
-//           const response = await axios.get(
-//             `${environment.API_BASE_URL}api/packages/marketplace-item/${item.productId}`,
-//             {
-//               headers: { Authorization: `Bearer ${storedToken}` },
-//             }
-//           );
-          
-//           if (response.data && response.data.data) {
-//             const itemIdKey = item.productId.toString();
-            
-//             packageItemDetails[itemIdKey] = {
-//               name: response.data.data.name || `Item ${item.productId}`,
-//               displayName: response.data.data.displayName || `Item ${item.productId}`,
-//               price: response.data.data.discountedPrice
-//             };
-            
-//             console.log(`Package Item ${item.productId} Details:`, response.data.data);
-//           }
-//         } catch (error) {
-//           console.error(`Error fetching package item ${item.productId} details:`, error);
-//           // Set fallback data if API call fails
-//           const itemIdKey = item.productId.toString();
-//           packageItemDetails[itemIdKey] = {
-//             name: `Item ${item.productId}`,
-//             displayName: `Item ${item.productId}`,
-//             price: 0
-//           };
-//         }
-//       }
-//     }
-    
-//     // Fetch details for additional items (your existing logic)
-//     if (packageItem.additionalItems && packageItem.additionalItems.length > 0) {
-//       for (const item of packageItem.additionalItems) {
-//         try {
-//           const response = await axios.get(
-//             `${environment.API_BASE_URL}api/packages/marketplace-item/${item.id}`,
-//             {
-//               headers: { Authorization: `Bearer ${storedToken}` },
-//             }
-//           );
-          
-//           if (response.data && response.data.data) {
-//             const itemIdKey = item.id.toString();
-            
-//             additionalDetails[itemIdKey] = {
-//               name: response.data.data.name || `Item ${item.id}`,
-//               displayName: response.data.data.displayName || `Item ${item.id}`,
-//               price: response.data.data.discountedPrice
-//             };
-            
-//             console.log(`Additional Item ${item.id} Details:`, response.data.data);
-//           }
-//         } catch (error) {
-//           console.error(`Error fetching additional item ${item.id} details:`, error);
-//           // Set fallback data if API call fails
-//           const itemIdKey = item.id.toString();
-//           additionalDetails[itemIdKey] = {
-//             name: `Item ${item.id}`,
-//             displayName: `Item ${item.id}`,
-//             price: 0
-//           };
-//         }
-//       }
-//     }
-    
-//     // Update state variables
-//     setAdditionalItemDetails(additionalDetails);
-//     setPackageItemDetails(packageItemDetails);
-//     setPackageDisplayName(packageDisplayName); // You'll need to add this state
-    
-//   } catch (error) {
-//     console.error("Error fetching item details:", error);
-//   }
-// };
-
-
-// // Updated useEffect
-// useEffect(() => {
-//   if (isSelectPackage === 1 && safeOrderItems.length > 0) {
-//     fetchItemDetails();
-//   }
-// }, [isSelectPackage, safeOrderItems]);
-  
 
 const fetchItemDetails = async () => {
-  if (isSelectPackage !== 1 || !safeOrderItems.length) return;
+  if (isPackage !== 1 || !safeOrderItems.length) return;
   
   const packageItem = safeOrderItems[0];
   
@@ -711,10 +619,10 @@ if (packageItem.finalOrderPackageList && packageItem.finalOrderPackageList.lengt
 
 // Updated useEffect remains the same
 useEffect(() => {
-  if (isSelectPackage === 1 && safeOrderItems.length > 0) {
+  if (isPackage === 1 && safeOrderItems.length > 0) {
     fetchItemDetails();
   }
-}, [isSelectPackage, safeOrderItems]);
+}, [isPackage, safeOrderItems]);
 
 
 
@@ -759,8 +667,8 @@ useEffect(() => {
       discount,
       selectedDate,
       timeDisplay,
-      isCustomPackage,
-      isSelectPackage,
+      isPackage,
+     
       customerid,
       orderItems
     });
@@ -773,8 +681,8 @@ useEffect(() => {
       discount,
       selectedDate,
       timeDisplay,
-      isCustomPackage,
-      isSelectPackage,
+      isPackage,
+    
      customerId,  // This is the numeric ID (7)
   customerid: customerid.toString() || customerId.toString(),
       orderItems
@@ -850,7 +758,7 @@ useEffect(() => {
 <TouchableOpacity 
   onPress={() => {
     // Create detailed logging objects based on the route being taken
-    if (isCustomPackage === 1) {
+    if (isPackage === 0) {
       // For Custom Package - CratScreen
       const customPackageData = {
         route: "CratScreen (Custom Package)",
@@ -871,8 +779,8 @@ useEffect(() => {
           changeby: item.quantity
         })),
         packageDetails: {
-          isCustomPackage: 1,
-          isSelectPackage: 0
+        
+          isPackage: 0
         },
         finances: {
           subtotal,
@@ -933,7 +841,7 @@ useEffect(() => {
       });
     } 
     
- else if (isSelectPackage === 1) {
+ else if (isPackage === 1) {
   // For package orders, navigate to OrderScreen with all required data
   // Get the current order data
   const currentOrderItem = safeOrderItems[0];
@@ -1192,8 +1100,8 @@ useEffect(() => {
         fullTotal,
         selectedDate,
         timeDisplay,
-        isCustomPackage,
-        isSelectPackage,
+        isPackage,
+   
         selectedTimeSlot,
         customerId,
         customerid: customerid?.toString() || customerId?.toString(),
