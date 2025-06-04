@@ -24,17 +24,29 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
+import { RouteProp } from '@react-navigation/native';
 
 type OrderScreenNavigationProp = StackNavigationProp<RootStackParamList, "OrderScreen">;
+type OrderScreenRouteProp = RouteProp<RootStackParamList, "OrderScreen">;
 
-interface OrderScreenProps {
-  navigation: OrderScreenNavigationProp;
-  route: {
-    params: {
-      id: string; 
-      isCustomPackage:string;
-    };
-  };
+// interface OrderScreenProps {
+//   navigation: OrderScreenNavigationProp;
+//   route: {
+//     params: {
+//       id: string; 
+//       isPackage:string;
+//     };
+//   };
+// }
+
+interface ProductItem {
+  label: string;
+  discount: string;
+  value: string; // This is varietyId
+  id: number;    // Add this for marketplaceitems.id
+  price: string;
+  discountedPrice?: string;
+  unitType?: string;
 }
 
 interface AdditionalItem {
@@ -50,13 +62,6 @@ interface AdditionalItem {
 }
 
 
-interface ProductItem {
-  label: string;
-  value: string;
-  price: string;
-  discountedPrice?: string; // Make this optional
-  unitType?: string;
-}
 
 interface Package {
     id: number;
@@ -98,7 +103,49 @@ interface CropItem {
   varietyId: number;
 }
 
+interface OrderScreenProps {
+  navigation: OrderScreenNavigationProp;
+  route: {
+    params: {
+      id: string;
+      isPackage: string;
+      isSelectPackage?: number;
+      isCustomPackage?: number;
+      packageId?: number;
+      packageItems?: Array<{
+        id: number;
+        name: string;
+        quantity: string;
+        quantityType: string;
+        price: number;
+      }>;
+      additionalItems?: Array<{
+        mpItemId: any;
+        productId: any;
+        id: number;
+        name: string;
+        quantity: string;
+        quantityType: string;
+        price: number;
+        discount: string;
+        cropId: number;
+      }>;
+      orderItems?: any[]; // Add this
+      subtotal?: number;
+      discount?: number;
+      total?: number;
+      fullTotal?: number;
+      selectedDate?: string;
+      selectedTimeSlot?: string;
+      timeDisplay?: string;
+      paymentMethod?: string;
+      isEdit?: boolean;
+    };
+  };
+}
+
 const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
+   const { id, isPackage } = route.params || {};
   const [loading, setLoading] = useState<boolean>(false);
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [selectedProduct, setSelectedProduct] = useState<string>('');
@@ -112,14 +159,14 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
   const [newItemQuantity, setNewItemQuantity] = useState<number>(1);
   const [editUnitOpen, setEditUnitOpen] = useState<boolean>(false);
   const [editSelectedUnit, setEditSelectedUnit] = useState<string>('g');
-  const [showDeleteButton, setShowDeleteButton] = useState(false);
+
   // Package dropdown states
   const [packageOpen, setPackageOpen] = useState<boolean>(false);
   const [packageValue, setPackageValue] = useState<string>('');
   const [packageItems, setPackageItems] = useState<{label: string, value: string}[]>([]);
   const [unitOpen, setUnitOpen] = useState<boolean>(false);
   const [selectedUnit, setSelectedUnit] = useState<string>('g');
-  const [isConfirmed, setIsConfirmed] = useState(false); 
+
   const [items, setItems] = useState<{ name: string; qty: string}[]>([]);
 const [selectedItems, setSelectedItems] = useState<number[]>([]);
   // Product dropdown states (for modal)
@@ -149,6 +196,199 @@ const [open, setOpen] = useState(false); // For edit modal dropdown
   normalPrice?: string;
   displayName?: string;
   } | null>(null);
+
+
+
+  // In OrderScreen.tsx, update the useEffect for handling initial data:
+useEffect(() => {
+  if (route.params?.isEdit && route.params?.packageId) {
+    // Set the package value from route params
+    setPackageValue(route.params.packageId.toString());
+    
+    // Initialize package items if they exist
+    if (route.params.packageItems) {
+      const mappedPackageItems = route.params.packageItems.map(item => ({
+        name: item.name,
+        qty: item.quantity
+      }));
+      setItems(mappedPackageItems);
+    }
+    
+    // FIXED: Initialize additional items with correct productId and price handling
+    if (route.params.additionalItems) {
+      const mappedAdditionalItems = route.params.additionalItems.map((item, index) => {
+        // Use the actual productId from the item
+        const productId = item.productId || item.mpItemId || item.cropId;
+        
+        // Parse quantity correctly
+        const quantity = parseInt(item.quantity) || 1;
+        const unit = item.quantityType === 'kg' ? 'Kg' : 'g';
+        
+        // Calculate price per kg correctly
+        const totalPrice = Number(item.price) || 0;
+        const quantityInKg = unit === 'Kg' ? quantity : quantity / 1000;
+        const pricePerKg = quantityInKg > 0 ? totalPrice / quantityInKg : 0;
+        
+        // Handle discount properly
+        const discountAmount = parseFloat(item.discount) || 0;
+        const discountedPricePerKg = pricePerKg - (discountAmount / quantityInKg);
+        
+        return {
+          id: productId, // Use the actual productId as the ID
+          name: item.name,
+          quantity: quantity,
+          unit: unit,
+          pricePerKg: pricePerKg,
+          discountedPricePerKg: Math.max(0, discountedPricePerKg), // Ensure it's not negative
+          discount: discountAmount,
+          totalAmount: totalPrice - discountAmount, // Total after discount
+          selected: false
+        };
+      });
+      setAdditionalItems(mappedAdditionalItems);
+    }
+    
+    // Find and set the selected package
+    if (route.params.packageId && packages.length > 0) {
+      const selectedPkg = packages.find(pkg => pkg.id === route.params.packageId);
+      if (selectedPkg) {
+        setSelectedPackage(selectedPkg);
+        const packingFee = parseFloat(selectedPkg.packingFee) || 0;
+        const productPrice = parseFloat(selectedPkg.productPrice) || 0;
+        const serviceFee = parseFloat(selectedPkg.serviceFee) || 0;
+        setPackageTotal((packingFee + productPrice + serviceFee).toString());
+      }
+    }
+  }
+}, [route.params, packages]);
+
+// 2. Fix the handleConfirm function to properly map productId:
+const handleConfirm = async () => {
+  setLoading(true);
+  
+  try {
+    const orderData = {
+      userId: id,
+      isPackage: isPackage === "1" ? 1 : 0,
+      packageId: packageValue ? parseInt(packageValue) : null,
+      total: parseFloat(calculateGrandTotal()),
+      fullTotal: parseFloat(calculateGrandTotal()),
+      discount: additionalItems.reduce((sum, item) => sum + item.discount, 0),
+      additionalItems: additionalItems.map(item => {
+        // FIXED: Use the item.id which now contains the correct productId
+        return {
+          productId: item.id, // This now contains the correct productId
+          qty: item.quantity,
+          unit: item.unit.toLowerCase(),
+          price: item.discountedPricePerKg * (item.unit === 'Kg' ? item.quantity : item.quantity / 1000),
+          discount: item.discount
+        };
+      })
+    };
+
+    navigation.navigate("ScheduleScreen" as any, { 
+      orderData,
+      customerid: id,
+      isPackage
+    });
+    
+  } catch (error) {
+    console.error("Error confirming order:", error);
+    Alert.alert("Error", "Failed to process order");
+  } finally {
+    setLoading(false);
+  }
+};
+
+// 3. Fix the handleSaveItem function for proper ID generation:
+const handleSaveItem = () => {
+  const selectedProductData = productItems.find(item => item.value === productValue);
+  
+  if (!selectedProductData) {
+    Alert.alert("Error", "Please select a product");
+    return;
+  }
+
+  const unit = selectedUnit === 'Kg' ? 'Kg' : 'g';
+  const quantityInKg = unit === 'Kg' ? quantity : quantity / 1000;
+  
+  // Get both normal and discounted prices
+  const normalPrice = parseFloat(selectedProductData.price);
+  const discountedPrice = selectedProductData.discountedPrice 
+    ? parseFloat(selectedProductData.discountedPrice) 
+    : normalPrice;
+  const discountPerKg = normalPrice - discountedPrice;
+  const totalDiscountForQuantity = discountPerKg * quantityInKg;
+  
+  const totalAmount = quantityInKg * discountedPrice;
+ 
+  const newItem: AdditionalItem = {
+    // FIXED: Use the actual product ID from selectedProductData
+    id: selectedProductData.id || Date.now(), // Use product ID or timestamp as fallback
+    name: selectedProductData.label,
+    quantity: quantity,
+    unit: unit,
+    pricePerKg: normalPrice,
+    discountedPricePerKg: discountedPrice,
+    discount: totalDiscountForQuantity,
+    totalAmount: totalAmount,
+    selected: false
+  };
+
+  setAdditionalItems([...additionalItems, newItem]);
+  
+  setShowAddModal(false);
+  setQuantity(1);
+  setSelectedUnit('g');
+  setPricePerKg(discountedPrice);
+};
+
+  // Fetch package items when packageValue changes
+  useEffect(() => {
+    if (packageValue) {
+      const packageId = parseInt(packageValue, 10);
+      if (!isNaN(packageId)) {
+        fetchItemsForPackage(packageId);
+      }
+    }
+  }, [packageValue]);
+
+  // Modify fetchItemsForPackage to handle pre-selected package
+  const fetchItemsForPackage = async (packageId: number) => {
+    try {
+      const storedToken = await AsyncStorage.getItem("authToken");
+      if (!storedToken) {
+        Alert.alert("Error", "No authentication token found");
+        return;
+      }
+
+      const response = await axios.get<{ data: { name: string; qty: string }[] }>(
+        `${environment.API_BASE_URL}api/packages/${packageId}/items`,
+        { headers: { Authorization: `Bearer ${storedToken}` } }
+      );
+
+      if (response.data && Array.isArray(response.data.data)) {
+        setItems(response.data.data);
+        
+        // Find and set the selected package
+        const selectedPkg = packages.find(pkg => pkg.id === packageId);
+        if (selectedPkg) {
+          setSelectedPackage(selectedPkg);
+          
+          // Calculate total from all package fees
+          const packingFee = parseFloat(selectedPkg.packingFee) || 0;
+          const productPrice = parseFloat(selectedPkg.productPrice) || 0;
+          const serviceFee = parseFloat(selectedPkg.serviceFee) || 0;
+          const calculatedTotal = packingFee + productPrice + serviceFee;
+          
+          setPackageTotal(calculatedTotal.toString());
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching items:", error);
+      Alert.alert("Error", "Failed to fetch items for the package");
+    }
+  };
 
   const fetchPackages = async () => {
     try {
@@ -188,66 +428,14 @@ const [open, setOpen] = useState(false); // For edit modal dropdown
     fetchPackages();
   }, []);
 
-  // Modified fetchItemsForPackage function
-  const fetchItemsForPackage = async (packageId: number) => {
-  try {
-    const storedToken = await AsyncStorage.getItem("authToken");
-    if (!storedToken) {
-      Alert.alert("Error", "No authentication token found");
-      return;
-    }
 
-    const response = await axios.get<{ data: { name: string; qty: string }[] }>(
-      `${environment.API_BASE_URL}api/packages/${packageId}/items`,
-      {
-        headers: { Authorization: `Bearer ${storedToken}` },
-      }
-    );
+  console.log("ispackage--------", isPackage)
 
-    if (response.data && Array.isArray(response.data.data)) {
-      setItems(response.data.data);  
-      console.log("Items state updated:", response.data.data);
-      
-      // Find and set the selected package
-      const selectedPkg = packages.find(pkg => pkg.id === packageId);
-      if (selectedPkg) {
-        setSelectedPackage(selectedPkg);
-        
-        // Calculate total from all package fees instead of using the total field
-        const packingFee = parseFloat(selectedPkg.packingFee) || 0;
-        const productPrice = parseFloat(selectedPkg.productPrice) || 0;
-        const serviceFee = parseFloat(selectedPkg.serviceFee) || 0;
-        const calculatedTotal = packingFee + productPrice + serviceFee;
-        
-        setPackageTotal(calculatedTotal.toString());
-        
-        console.log('Package selected:', {
-          name: selectedPkg.displayName,
-          packingFee,
-          productPrice,
-          serviceFee,
-          calculatedTotal
-        });
-      } else {
-        console.log("Package not found in packages array");
-        setSelectedPackage(null);
-        setPackageTotal('0.00');
-      }
-    } else {
-      console.log("No items found for this package or unexpected response format");
-      setItems([]);
-      setSelectedPackage(null);
-      setPackageTotal('0.00');
-    }
-  } catch (error) {
-    console.error("Error fetching items:", error);
-    setError("Failed to fetch items for the package");
-    Alert.alert("Error", "Failed to fetch items for the package");
-    setItems([]);
-    setSelectedPackage(null);
-    setPackageTotal('0.00');
-  }
-};
+  useEffect(() => {
+  console.log("Route params received:", route.params);
+}, [route.params]);
+
+ 
 
   // Handle package selection change - IMPROVED VERSION
   const handlePackageChange = (value: string | null) => {
@@ -289,57 +477,30 @@ const [open, setOpen] = useState(false); // For edit modal dropdown
     }
   }, [packages, packageValue]);
 
-  const fetchCrops = async () => {
+
+
+const fetchCrops = async () => {
   try {
     setLoading(true);
-    setError(null);
-    
-    const storedToken = await AsyncStorage.getItem("authToken");
-    if (!storedToken) {
-      setError("No authentication token found");
-      setLoading(false);
-      return;
-    }
-    
-    const apiUrl = `${environment.API_BASE_URL}api/packages/crops/all`;
-    
-    const response = await axios.get(apiUrl, {
-      headers: { Authorization: `Bearer ${storedToken}` },
+    const response = await axios.get(`${environment.API_BASE_URL}api/packages/crops/all`, {
+      headers: { Authorization: `Bearer ${token}` },
     });
-    
-    if (response.status === 200 && response.data && Array.isArray(response.data.data)) {
-      // Filter only Retail items and transform for dropdown
-      const retailItems = response.data.data
-        .filter((item: CropItem) => item.category === "Retail")
-        .map((item: CropItem) => ({
-          label: item.displayName,
-          value: item.varietyId.toString(),
-          unitType: item.unitType,
-          price: item.normalPrice, // Use normalPrice here
-          discountedPrice: item.discountedPrice, // Use discountedPrice here
-          discount: (parseFloat(item.normalPrice) - parseFloat(item.discountedPrice)).toFixed(2) // Calculate discount amount
-        }));
-      
-      setProductItems(retailItems);
-      
-      // Set default selected product if none selected
-      if (!productValue && retailItems.length > 0) {
-        setProductValue(retailItems[0].value);
-        setSelectedProduct(retailItems[0].label);
-        const priceToUse = retailItems[0].discountedPrice || retailItems[0].price;
-        setPricePerKg(parseFloat(priceToUse) || 100);
-        setDiscountprice(retailItems[0].discount); // Set the calculated discount
-      }
-    } else {
-      setError("Unexpected response format");
-    }
-  } catch (error: any) {
+
+    const retailItems = response.data.data
+      .filter((item: CropItem) => item.category === "Retail")
+      .map((item: CropItem) => ({
+        label: item.displayName,
+        value: item.varietyId.toString(),
+        id: item.id, // Add marketplaceitems.id here
+        unitType: item.unitType,
+        price: item.normalPrice,
+        discountedPrice: item.discountedPrice,
+        discount: (parseFloat(item.normalPrice) - parseFloat(item.discountedPrice)).toFixed(2)
+      }));
+
+    setProductItems(retailItems);
+  } catch (error) {
     console.error("Error fetching crops:", error);
-    if (axios.isAxiosError(error)) {
-      setError(`Request failed: ${error.response?.status} - ${error.response?.data?.message || error.message}`);
-    } else {
-      setError(error.message || "An unknown error occurred");
-    }
   } finally {
     setLoading(false);
   }
@@ -351,13 +512,48 @@ const [open, setOpen] = useState(false); // For edit modal dropdown
     }
   }, [productOpen]);
 
-  const handleConfirm = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      console.log('Order confirmed!');
-    }, 1500);
-  };
+ 
+
+
+
+// In your OrderScreen's handleConfirm function:
+// const handleConfirm = async () => {
+//   setLoading(true);
+  
+//   try {
+//     const orderData = {
+//       userId: id,
+//       isPackage: isPackage === "1" ? 1 : 0,
+//       packageId: packageValue ? parseInt(packageValue) : null,
+//       total: parseFloat(calculateGrandTotal()),
+//       fullTotal: parseFloat(calculateGrandTotal()),
+//       discount: additionalItems.reduce((sum, item) => sum + item.discount, 0),
+//       additionalItems: additionalItems.map(item => {
+//         const product = productItems.find(p => p.label === item.name);
+//         return {
+//           productId: product ? product.id : 0, // Now using marketplaceitems.id
+//           qty: item.quantity,
+//           unit: item.unit.toLowerCase(),
+//           price: item.discountedPricePerKg * item.quantity,
+//           discount: item.discount
+//         };
+//       })
+//     };
+
+//     navigation.navigate("ScheduleScreen" as any, { 
+//       orderData ,
+//       customerid: id,
+//       isPackage
+//     });
+    
+//   } catch (error) {
+//     console.error("Error confirming order:", error);
+//     Alert.alert("Error", "Failed to process order");
+//   } finally {
+//     setLoading(false);
+//   }
+// };
+
 
   const handleBack = () => {
     console.log('Navigate back');
@@ -367,48 +563,95 @@ const [open, setOpen] = useState(false); // For edit modal dropdown
     setShowAddModal(true);
   };
 
- const handleSaveItem = () => {
+ 
+const calculateDiscountForQuantity = () => {
   const selectedProductData = productItems.find(item => item.value === productValue);
+  if (!selectedProductData) return 0;
   
-  if (!selectedProductData) {
-    Alert.alert("Error", "Please select a product");
-    return;
-  }
-
-  const unit = selectedUnit === 'Kg' ? 'Kg' : 'g';
-  const quantityInKg = unit === 'Kg' ? quantity : quantity / 1000;
-  
-  // Get both normal and discounted prices
   const normalPrice = parseFloat(selectedProductData.price);
   const discountedPrice = selectedProductData.discountedPrice 
     ? parseFloat(selectedProductData.discountedPrice) 
     : normalPrice;
-  const discountAmount = normalPrice - discountedPrice;
   
-  const totalAmount = quantityInKg * discountedPrice;
- 
-  const newItem: AdditionalItem = {
-    id: Date.now(),
-    name: selectedProductData.label,
-    quantity: quantity,
-    unit: unit,
-    pricePerKg: normalPrice,
-    discountedPricePerKg: discountedPrice,
-    discount: discountAmount,
-    totalAmount: totalAmount,
-    selected: false
-  };
-
-  setAdditionalItems([...additionalItems, newItem]);
-
-  console.log("===========",selectedProductData)
-  setShowAddModal(false);
-  setQuantity(1);
-  setPricePerKg(discountedPrice);
+  const discountPerKg = normalPrice - discountedPrice;
+  const quantityInKg = selectedUnit === 'Kg' ? quantity : quantity / 1000;
+  
+  return (discountPerKg * quantityInKg).toFixed(2);
 };
+
+
+ const calculateGrandTotal = () => {
+  let packageTotalAmount = 0;
+  
+  if (selectedPackage) {
+    const packingFee = parseFloat(selectedPackage.packingFee) || 0;
+    const productPrice = parseFloat(selectedPackage.productPrice) || 0;
+    const serviceFee = parseFloat(selectedPackage.serviceFee) || 0;
+    packageTotalAmount = packingFee + productPrice + serviceFee;
+  }
+  
+  const additionalItemsTotal = additionalItems
+    .filter(item => !selectedItems.includes(item.id)) // Exclude selected items
+    .reduce((total, item) => {
+      const quantityInKg = item.unit === 'Kg' ? item.quantity : item.quantity / 1000;
+      const itemTotal = quantityInKg * item.discountedPricePerKg;
+      return total + itemTotal;
+    }, 0);
+  
+  return (packageTotalAmount + additionalItemsTotal).toFixed(2);
+};
+
+// Update the handleSaveItem function
+// const handleSaveItem = () => {
+//   const selectedProductData = productItems.find(item => item.value === productValue);
+  
+//   if (!selectedProductData) {
+//     Alert.alert("Error", "Please select a product");
+//     return;
+//   }
+
+//   const unit = selectedUnit === 'Kg' ? 'Kg' : 'g';
+//   const quantityInKg = unit === 'Kg' ? quantity : quantity / 1000;
+  
+//   // Get both normal and discounted prices
+//   const normalPrice = parseFloat(selectedProductData.price);
+//   const discountedPrice = selectedProductData.discountedPrice 
+//     ? parseFloat(selectedProductData.discountedPrice) 
+//     : normalPrice;
+//   const discountPerKg = normalPrice - discountedPrice;
+//   const totalDiscountForQuantity = discountPerKg * quantityInKg;
+  
+//   const totalAmount = quantityInKg * discountedPrice;
+ 
+//   const newItem: AdditionalItem = {
+//     id: parseInt(id),
+//     name: selectedProductData.label,
+//     quantity: quantity,
+//     unit: unit,
+//     pricePerKg: normalPrice,
+//     discountedPricePerKg: discountedPrice,
+//     discount: totalDiscountForQuantity, // Store total discount for this quantity
+//     totalAmount: totalAmount,
+//     selected: false
+//   };
+
+//   setAdditionalItems([...additionalItems, newItem]);
+
+//   console.log("===========", selectedProductData);
+//   console.log("Total discount for quantity:", totalDiscountForQuantity);
+  
+//   setShowAddModal(false);
+//   setQuantity(1);
+//   setSelectedUnit('g');
+//   setPricePerKg(discountedPrice);
+// };
+
+
+
   const handleGoBack = () => {
     setShowAddModal(false);
   };
+  console.log("dissssssssssssssss",discountprice)
 
  const toggleItemSelection = (id: number) => {
   setSelectedItems(prev => {
@@ -438,49 +681,47 @@ const deleteSelectedItems = () => {
     setQuantity(prev => prev > 1 ? prev - 1 : 1);
   };
 
-  // Edit Modal Functions
-  const handleEditItem = (item: AdditionalItem) => {
-    setEditingItem(item);
-    setNewItemQuantity(item.quantity);
-    setEditSelectedUnit(item.unit);
-    setModalVisible(true);
-  };
 
-  const updateQuantity = (changeBy: number, increase: boolean) => {
-    if (increase) {
-      setNewItemQuantity(prev => prev + changeBy);
-    } else {
-      setNewItemQuantity(prev => Math.max(changeBy, prev - changeBy));
-    }
-  };
 
   const handleUnitChange = (unit: string) => {
     setEditSelectedUnit(unit);
   };
 
-  const saveUpdatedItem = () => {
-    if (!editingItem) return;
+const saveUpdatedItem = () => {
+  if (!editingItem) return;
 
-    const unit = editSelectedUnit;
-    const quantityInKg = unit === 'Kg' ? newItemQuantity : newItemQuantity / 1000;
-    const totalAmount = quantityInKg * editingItem.pricePerKg;
+  const unit = editSelectedUnit;
+  const quantityInKg = unit === 'Kg' ? newItemQuantity : newItemQuantity / 1000;
+  
+  // Calculate using discounted price
+  const totalAmount = quantityInKg * editingItem.discountedPricePerKg;
+  const discountAmount = (editingItem.pricePerKg - editingItem.discountedPricePerKg) * quantityInKg;
 
-    const updatedItem: AdditionalItem = {
-      ...editingItem,
-      quantity: newItemQuantity,
-      unit: unit,
-      totalAmount: totalAmount
-    };
-
-    setAdditionalItems(items => 
-      items.map(item => 
-        item.id === editingItem.id ? updatedItem : item
-      )
-    );
-
-    setModalVisible(false);
-    setEditingItem(null);
+  const updatedItem: AdditionalItem = {
+    ...editingItem,
+    quantity: newItemQuantity,
+    unit: unit,
+    totalAmount: totalAmount,
+    discount: discountAmount
   };
+
+  setAdditionalItems(items => 
+    items.map(item => 
+      item.id === editingItem.id ? updatedItem : item
+    )
+  );
+
+  setModalVisible(false);
+  setEditingItem(null);
+};
+
+const updateQuantity = (changeBy: number, increase: boolean) => {
+  if (increase) {
+    setNewItemQuantity(prev => prev + changeBy);
+  } else {
+    setNewItemQuantity(prev => Math.max(changeBy, prev - changeBy));
+  }
+};
 
   // Calculate total items count
   const getTotalItemsCount = () => {
@@ -490,28 +731,12 @@ const deleteSelectedItems = () => {
     }, 0);
   };
 
-  // Calculate grand total - ADD SAFETY CHECKS
- const calculateGrandTotal = () => {
-  let packageTotalAmount = 0;
-  
-  if (selectedPackage) {
-    const packingFee = parseFloat(selectedPackage.packingFee) || 0;
-    const productPrice = parseFloat(selectedPackage.productPrice) || 0;
-    const serviceFee = parseFloat(selectedPackage.serviceFee) || 0;
-    packageTotalAmount = packingFee + productPrice + serviceFee;
-  }
-  
-  const additionalItemsTotal = additionalItems
-    .filter(item => !selectedItems.includes(item.id)) // Exclude selected items
-    .reduce((total, item) => {
-      const quantityInKg = item.unit === 'Kg' ? item.quantity : item.quantity / 1000;
-      const itemTotal = quantityInKg * item.pricePerKg;
-      return total + itemTotal;
-    }, 0);
-  
-  return (packageTotalAmount + additionalItemsTotal).toFixed(2);
+const handleEditItem = (item: AdditionalItem) => {
+  setEditingItem(item);
+  setNewItemQuantity(item.quantity);
+  setEditSelectedUnit(item.unit);
+  setModalVisible(true);
 };
-
 
 
   useEffect(() => {
@@ -741,164 +966,165 @@ const deleteSelectedItems = () => {
       </View>
 
       {/* Add More Modal */}
-      <Modal
-        visible={showAddModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={handleGoBack}
-      >
-        <View className="flex-1 justify-center items-center bg-[#00000066] bg-opacity-10">
-          <View className="bg-white p-6 rounded-xl w-4/5">
-            
-            {/* Product Section */}
-            <View className="mb-6" style={{ zIndex: 80000 }}>
-              <Text className="text-gray-700  mb-3">Product</Text>
-              <DropDownPicker
-                open={productOpen}
-                setOpen={setProductOpen}
-                value={productValue}
-                setValue={setProductValue}
-                onSelectItem={(item) => {
-                  if (item && typeof item.value === 'string' && item.label) {
-                    setSelectedProduct(item.label);
-                    // Update price based on selected product
-                    const selectedItem = productItems.find(p => p.value === item.value);
-                    if (selectedItem) {
-                      setPricePerKg(parseFloat(selectedItem.price) || 100);
-                    }
-                  }
-                }}
-                items={productItems}
-                searchable={true}
-                searchPlaceholder="Search product..."
-                setItems={setProductItems}
-                dropDownContainerStyle={{
-                  borderColor: "#F6F6F6",
-                  borderWidth: 1,
-                  backgroundColor: "#F6F6F6",
-                  maxHeight: 200,
-                  minHeight: 150,
-                }}
-                style={{
-                  borderWidth: 1,
-                  borderColor: "#F6F6F6",
-                  backgroundColor: "#F6F6F6",
-                  borderRadius: 15,
-                  paddingHorizontal: 12,
-                  paddingVertical: 12,
-                  minHeight: 52,
-                }}
-                textStyle={{
-                  fontSize: 14,
-                  
-                  color: '#111827',
-                }}
-                zIndex={80000}
-                listMode="SCROLLVIEW"
-              />
-            </View>
+   <Modal
+  visible={showAddModal}
+  animationType="slide"
+  presentationStyle="pageSheet"
+  onRequestClose={handleGoBack}
+>
+  <View className="flex-1 justify-center items-center bg-[#00000066] bg-opacity-10">
+    <View className="bg-white p-6 rounded-xl w-4/5">
+      
+      {/* Product Section */}
+      <View className="mb-6" style={{ zIndex: 80000 }}>
+        <Text className="text-gray-700  mb-3">Product</Text>
+        <DropDownPicker
+          open={productOpen}
+          setOpen={setProductOpen}
+          value={productValue}
+          setValue={setProductValue}
+          onSelectItem={(item) => {
+            if (item && typeof item.value === 'string' && item.label) {
+              setSelectedProduct(item.label);
+              // Update price based on selected product
+              const selectedItem = productItems.find(p => p.value === item.value);
+              if (selectedItem) {
+                const discountedPrice = selectedItem.discountedPrice 
+                  ? parseFloat(selectedItem.discountedPrice) 
+                  : parseFloat(selectedItem.price);
+                setPricePerKg(discountedPrice);
+              }
+            }
+          }}
+          items={productItems}
+          searchable={true}
+          searchPlaceholder="Search product..."
+          setItems={setProductItems}
+          dropDownContainerStyle={{
+            borderColor: "#F6F6F6",
+            borderWidth: 1,
+            backgroundColor: "#F6F6F6",
+            maxHeight: 200,
+            minHeight: 150,
+          }}
+          style={{
+            borderWidth: 1,
+            borderColor: "#F6F6F6",
+            backgroundColor: "#F6F6F6",
+            borderRadius: 15,
+            paddingHorizontal: 12,
+            paddingVertical: 12,
+            minHeight: 52,
+          }}
+          textStyle={{
+            fontSize: 14,
+            color: '#111827',
+          }}
+          zIndex={80000}
+          listMode="SCROLLVIEW"
+        />
+      </View>
 
-            {/* Price per kg Section */}
-            <View className="mb-6">
-              <Text className="text-gray-700  mb-3">Price per 1kg</Text>
-              <View className="bg-gray-50 rounded-xl px-4 py-4">
-                <Text className="text-gray-900  ">Rs.{pricePerKg || '100.00'}</Text>
-              </View>
-            </View>
-
-            <View className="mb-6">
-              <Text className="text-gray-700  mb-3">Quantity</Text>
-              <View className="flex-row items-center space-x-2">
-                {/* Quantity Control with +/- buttons */}
-                <View className="flex-row items-center bg-gray-100 rounded-full flex-1">
-                  <TouchableOpacity 
-                    className="w-10 h-10 flex items-center justify-center"
-                    onPress={decrementQuantity}
-                  >
-                    <Text className="text-gray-700 text-xl font-bold">-</Text>
-                  </TouchableOpacity>
-                  
-                  <Text className="flex-1 text-center text-gray-700">
-                    {quantity || "0"}
-                  </Text>
-                  
-                  <TouchableOpacity 
-                    className="w-10 h-10 flex items-center justify-center"
-                    onPress={incrementQuantity}
-                  >
-                    <Text className="text-gray-700 text-xl font-bold">+</Text>
-                  </TouchableOpacity>
-                </View>
-                
-                {/* Unit dropdown */}
-                <DropDownPicker
-                  open={unitOpen}
-                  setOpen={setUnitOpen}
-                  value={selectedUnit}
-                  setValue={setSelectedUnit}
-                  onSelectItem={(item) => {
-                    if (item && item.value) {
-                      setSelectedUnit(item.value);
-                    }
-                  }}
-                  items={[
-                    { label: "Kg", value: "Kg" },
-                    { label: "g", value: "g" }
-                  ]}
-                  dropDownDirection="BOTTOM"
-                  containerStyle={{ width: 100 }}
-                  style={{
-                    backgroundColor: "#F6F6F6",
-                    borderColor: "#F6F6F6",
-                    borderRadius: 50,
-                    paddingHorizontal: 10,
-                  }}
-                  dropDownContainerStyle={{
-                    backgroundColor: "#FFFFFF",
-                    borderColor: "#FFFFFF",
-                  }}
-                  zIndex={70000}
-                />
-              </View>
-            </View>
-
-            {/* Total Amount Section */}
-            <View className="mb-6">
-              <Text className="text-gray-700  mb-3">Total Amount</Text>
-              <View className="bg-gray-50 rounded-xl px-4 py-4">
-                <Text className="text-gray-900  ">
-                  Rs.{((selectedUnit === 'Kg' ? quantity : quantity / 1000) * pricePerKg).toFixed(2)}
-                </Text>
-              </View>
-            </View>
-
-            {/* Discount Message */}
-          {/* Discount Message */}
-<View className="mb-8">
-  <Text className="text-purple-600 text-center text-sm font-medium">
-    You received a discount of Rs {discountprice} for this product
-  </Text>
-</View>
-
-            {/* Action Buttons */}
-            <View className="gap-3">
-              <TouchableOpacity 
-                onPress={handleGoBack}
-                className="bg-gray-200 py-4 rounded-full items-center"
-              >
-                <Text className="text-gray-700 font-semibold text-base">Go Back</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                onPress={handleSaveItem}
-                className="bg-purple-600 py-4 rounded-full items-center"
-              >
-                <Text className="text-white font-semibold text-base">Save</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+      {/* Price per kg Section - Show discounted price */}
+      <View className="mb-6">
+        <Text className="text-gray-700  mb-3">Price per 1kg</Text>
+        <View className="bg-gray-50 rounded-xl px-4 py-4">
+          <Text className="text-gray-900">Rs.{pricePerKg || '100.00'}</Text>
         </View>
-      </Modal>
+      </View>
+
+      <View className="mb-6">
+        <Text className="text-gray-700  mb-3">Quantity</Text>
+        <View className="flex-row items-center space-x-2">
+          {/* Quantity Control with +/- buttons */}
+          <View className="flex-row items-center bg-gray-100 rounded-full flex-1">
+            <TouchableOpacity 
+              className="w-10 h-10 flex items-center justify-center"
+              onPress={decrementQuantity}
+            >
+              <Text className="text-gray-700 text-xl font-bold">-</Text>
+            </TouchableOpacity>
+            
+            <Text className="flex-1 text-center text-gray-700">
+              {quantity || "0"}
+            </Text>
+            
+            <TouchableOpacity 
+              className="w-10 h-10 flex items-center justify-center"
+              onPress={incrementQuantity}
+            >
+              <Text className="text-gray-700 text-xl font-bold">+</Text>
+            </TouchableOpacity>
+          </View>
+          
+          {/* Unit dropdown */}
+          <DropDownPicker
+            open={unitOpen}
+            setOpen={setUnitOpen}
+            value={selectedUnit}
+            setValue={setSelectedUnit}
+            onSelectItem={(item) => {
+              if (item && item.value) {
+                setSelectedUnit(item.value);
+              }
+            }}
+            items={[
+              { label: "Kg", value: "Kg" },
+              { label: "g", value: "g" }
+            ]}
+            dropDownDirection="BOTTOM"
+            containerStyle={{ width: 100 }}
+            style={{
+              backgroundColor: "#F6F6F6",
+              borderColor: "#F6F6F6",
+              borderRadius: 50,
+              paddingHorizontal: 10,
+            }}
+            dropDownContainerStyle={{
+              backgroundColor: "#FFFFFF",
+              borderColor: "#FFFFFF",
+            }}
+            zIndex={70000}
+          />
+        </View>
+      </View>
+
+      {/* Total Amount Section - Show discounted total */}
+      <View className="mb-6">
+        <Text className="text-gray-700  mb-3">Total Amount</Text>
+        <View className="bg-gray-50 rounded-xl px-4 py-4">
+          <Text className="text-gray-900">
+            Rs.{((selectedUnit === 'Kg' ? quantity : quantity / 1000) * pricePerKg).toFixed(2)}
+          </Text>
+        </View>
+      </View>
+
+      {/* Dynamic Discount Message */}
+      <View className="mb-8">
+        <Text className="text-purple-600 text-center text-sm font-medium">
+          You received a discount of Rs.{calculateDiscountForQuantity()} for this product
+        </Text>
+      </View>
+
+      {/* Action Buttons */}
+      <View className="gap-3">
+        <TouchableOpacity 
+          onPress={handleGoBack}
+          className="bg-gray-200 py-4 rounded-full items-center"
+        >
+          <Text className="text-gray-700 font-semibold text-base">Go Back</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          onPress={handleSaveItem}
+          className="bg-purple-600 py-4 rounded-full items-center"
+        >
+          <Text className="text-white font-semibold text-base">Save</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+</Modal>
 
       {/* Edit Item Modal */}
 {/* Edit Item Modal */}
@@ -967,10 +1193,10 @@ const deleteSelectedItems = () => {
       <View className="mb-6 mt-4">
         <Text className="text-gray-700 font-medium mb-3">Total Amount</Text>
         <View className="bg-gray-50 rounded-xl px-4 py-4">
-          <Text className="text-gray-900 font-bold text-lg">
+          <Text className="text-gray-900  ">
             Rs.{(
               (editSelectedUnit === 'Kg' ? newItemQuantity : newItemQuantity / 1000) * 
-              (editingItem?.pricePerKg || 0)
+              (editingItem?.discountedPricePerKg || 0)
             ).toFixed(2)}
           </Text>
         </View>

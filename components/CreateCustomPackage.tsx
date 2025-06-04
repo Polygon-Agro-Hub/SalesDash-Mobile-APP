@@ -30,8 +30,8 @@ interface CreateCustomPackageProps {
   route: {
     params: {
       id: string;
-      isCustomPackage: string;
-      isSelectPackage: string;
+      isPackage: string;
+   
     };
   };
 }
@@ -51,7 +51,7 @@ interface Product {
 }
 
 const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation, route }) => {
-  const { id, isCustomPackage, isSelectPackage } = route.params || {};
+  const { id, isPackage } = route.params || {};
   const [searchQuery, setSearchQuery] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -142,19 +142,20 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation, r
           price: product.discountedPrice,
           pricenoraml: product.normalPrice,
           normalPrice: product.normalPrice,
+          discount:product.normalPrice - product.discountedPrice,
           discountedPrice: product.discountedPrice,
           changeby: product.changeby, 
           unitType: product.unitType,
           startValue: product.startValue,
           cutId: cutId,
-          isSelectPackage: isSelectPackage,
-          isCustomPackage: isCustomPackage
+          isPackage: isPackage,
+      
         };
       });
   
     if (selectedProducts.length > 0) {
-      console.log("navitate-------------",selectedProducts, id, isCustomPackage, isSelectPackage)
-      navigation.navigate("CratScreen" as any, { selectedProducts, id, isCustomPackage, isSelectPackage });
+      console.log("navitate-------------",selectedProducts, id, isPackage)
+      navigation.navigate("CratScreen" as any, { selectedProducts, id, isPackage });
       
     } else {
       alert("Please select at least one product");
