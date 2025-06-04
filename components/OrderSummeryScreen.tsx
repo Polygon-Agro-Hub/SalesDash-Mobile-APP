@@ -327,8 +327,8 @@ const handleConfirmOrder = async () => {
       const orderData = {
         userId: customerId || customerid,
         isPackage: 0,
-        total: total + discount,
-        fullTotal: total,
+        total: fullTotal + discount,
+        fullTotal: fullTotal,
         discount: discount,
         sheduleDate: selectedDate,
         sheduleTime: selectedTimeSlot,
@@ -760,88 +760,85 @@ useEffect(() => {
 <TouchableOpacity 
   onPress={() => {
     // Create detailed logging objects based on the route being taken
-    if (isPackage === 0) {
-      // For Custom Package - CratScreen
-      const customPackageData = {
-        route: "CratScreen (Custom Package)",
-        ids: {
-          customerId: customerId,
-          customerid: customerid,
-          resolvedId: customerId || customerid
-        },
-        items: safeItems.map(item => ({
-          id: item.id,
-          name: item.name,
-          price: item.price,
-          normalPrice: item.normalPrice || item.price,
-          discountedPrice: item.discountedPrice || item.price,
-          quantity: item.quantity,
-          unitType: item.unitType || 'kg',
-          startValue: item.startValue || 0.1,
-          changeby: item.quantity
-        })),
-        packageDetails: {
-        
-          isPackage: 0
-        },
-        finances: {
-          subtotal,
-          discount,
-          total,
-          fullTotal
-        },
-        scheduling: {
-          selectedDate,
-          timeDisplay,
-          selectedTimeSlot
-        },
-        paymentMethod
-      };
-      
-      console.log("========== NAVIGATION DATA LOG ==========");
-      console.log(JSON.stringify(customPackageData, null, 2));
-      console.log("=========================================");
-      
-      navigation.navigate("CratScreen" as any, { 
-        id: customerId || customerid,
-        customerId: customerId || customerid,
-        items: safeItems.map(item => ({
-          id: item.id,
-          name: item.name,
-          price: item.price,
-          normalPrice: item.normalPrice || item.price,
-          discountedPrice: item.discountedPrice || item.price,
-          quantity: item.qty,
-          selected: true, // Mark as selected
-          unitType: item.unitType || 'kg',
-          startValue: item.startValue || 0.1,
-          changeby: item.quantity
-        })),
-        selectedProducts: safeItems.map(item => ({
-          id: item.id,
-          name: item.name,
-          price: item.price,
-          normalPrice: item.normalPrice || item.price,
-          discountedPrice: item.discountedPrice || item.price,
-          quantity: item.qty,
-          selected: true, // Mark as selected
-          unitType: item.unitType || 'kg',
-          startValue: item.startValue || 0.1,
-          changeby: item.quantity
-        })),
-        isPackage: 0,
-      
-        subtotal,
-        discount,
-        total,
-        fullTotal,
-        selectedDate,
-        timeDisplay,
-        selectedTimeSlot,
-        paymentMethod,
-        fromOrderSummary: true
-      });
-    } 
+   if (isPackage === 0) {
+  // For Regular Items - CratScreen
+  const regularItemsData = {
+    route: "CratScreen (Regular Items)",
+    ids: {
+      customerId: customerId,
+      customerid: customerid,
+      resolvedId: customerId || customerid
+    },
+    selectedProducts: safeItems.map(item => ({
+      id: item.id,
+      name: item.name || `Item ${item.id}`, // Ensure name exists
+      price: item.price,
+      normalPrice: item.normalPrice || item.price + (item.discount || 0), // Calculate normal price
+      discountedPrice: item.price, // discountedPrice is the actual price
+      discount: item.discount || 0,
+      quantity: item.qty, // Use qty from the item
+      selected: false, // Start unselected for editing
+      unitType: item.unitType || 'kg', // Default to kg
+      startValue: item.startValue || 0.5, // Default increment value
+      changeby: item.unitType === 'g' ? Number(item.qty) * 1000 : item.qty // Convert to grams if needed
+    })),
+    finances: {
+      subtotal,
+      discount,
+      total,
+      fullTotal
+    },
+    scheduling: {
+      selectedDate,
+      timeDisplay,
+      selectedTimeSlot
+    },
+    paymentMethod
+  };
+  
+  console.log("Navigation data to CratScreen:", JSON.stringify(regularItemsData, null, 2));
+  
+  navigation.navigate("CratScreen" as any, { 
+    id: customerId || customerid,
+    customerId: customerId || customerid,
+    isPackage: 0,
+    items: safeItems.map(item => ({
+      id: item.id,
+      name: item.name || `Item ${item.id}`,
+      price: item.price,
+      normalPrice: item.normalPrice || item.price + (item.discount || 0),
+      discountedPrice: item.price,
+      discount: item.discount || 0,
+      qty: item.qty,
+      unitType: item.unitType || 'kg',
+      startValue: item.startValue || 0.5,
+      quantity: item.qty
+    })),
+    selectedProducts: safeItems.map(item => ({
+      id: item.id,
+      name: item.name || `Item ${item.id}`,
+      price: item.price,
+      normalPrice: item.normalPrice || item.price + (item.discount || 0),
+      discountedPrice: item.price,
+      discount: item.discount || 0,
+      quantity: item.qty,
+      selected: false,
+      unitType: item.unitType || 'kg',
+      startValue: item.startValue || 0.5,
+      changeby: item.unitType === 'g' ? Number(item.qty) * 1000 : item.qty
+    })),
+   // isPackage: 0,
+    subtotal,
+    discount,
+    total,
+    fullTotal,
+    selectedDate,
+    timeDisplay,
+    selectedTimeSlot,
+    paymentMethod,
+    fromOrderSummary: true
+  });
+}
 else if (isPackage === 1) {
   const currentOrderItem = safeOrderItems[0] || {};
   const additionalItems = route.params?.orderData?.additionalItems || [];
@@ -849,7 +846,7 @@ else if (isPackage === 1) {
   // Create proper mapping for package items
   const packageItems = currentOrderItem.finalOrderPackageList?.map(item => ({
     id: item.productId,
-    name: packageItemDetails[item.productId.toString()]?.displayName,
+    name: packageItemDetails[item.productId.toString()]?.displayName || `Item ${item.productId}`,
     quantity: item.quantity.toString(),
     quantityType: 'kg',
     price: typeof item.price === 'string' ? parseFloat(item.price) : item.price,
@@ -860,7 +857,17 @@ else if (isPackage === 1) {
   const mappedAdditionalItems = additionalItems.map(item => {
     const itemDetail = additionalItemDetails[item.productId.toString()];
     const totalPrice = Number(item.price) || 0;
-    const discount = Number(item.discount) || 0;
+    const totalDiscount = Number(item.discount) || 0;
+    const quantity = parseFloat(item.qty) || 1;
+    const unit = item.unit || 'kg';
+    
+    // Convert quantity to kg for price calculation
+    const quantityInKg = unit === 'kg' ? quantity : quantity / 1000;
+    
+    // Calculate price per kg from total price
+    const pricePerKg = quantityInKg > 0 ? totalPrice / quantityInKg : 0;
+    const discountPerKg = quantityInKg > 0 ? totalDiscount / quantityInKg : 0;
+    const normalPricePerKg = pricePerKg + discountPerKg;
     
     return {
       productId: item.productId, // Keep the original productId
@@ -868,18 +875,20 @@ else if (isPackage === 1) {
       cropId: item.productId,    // Crop ID for reference
       name: itemDetail?.displayName || `Item ${item.productId}`,
       quantity: item.qty.toString(),
-      quantityType: item.unit || 'kg',
-      price: totalPrice, // This should be the total price for the quantity
-      discount: discount, // This should be the total discount amount
-      // Add additional fields that might be needed
-      normalPrice: totalPrice + discount, // Calculate original price
-      discountedPrice: totalPrice // Price after discount
+      quantityType: unit,
+      // Now passing per-kg prices instead of total prices
+      pricePerKg: normalPricePerKg, // Normal price per kg
+      discountedPricePerKg: pricePerKg, // Discounted price per kg
+      totalPrice: totalPrice, // Keep total price for reference
+      discount: totalDiscount, // Total discount amount
+      normalPrice: totalPrice + totalDiscount, // Total original price
+      discountedPrice: totalPrice // Total price after discount
     };
   });
 
   const navigationData = {
     id: customerId || customerid,
-    isPackage: "1",
+    isPackage: 1,
     orderItems: safeOrderItems,
     packageId: currentOrderItem.packageId || route.params?.packageId,
     packageItems: packageItems,
@@ -918,10 +927,10 @@ else if (isPackage === 1) {
           startValue: item.startValue || 0.1,
           changeby: item.quantity
         })),
-        packageDetails: {
-          isCustomPackage: 0,
-          isSelectPackage: 0
-        },
+        // packageDetails: {
+        //   isCustomPackage: 0,
+        //   isSelectPackage: 0
+        // },
         finances: {
           subtotal,
           discount,
@@ -956,8 +965,7 @@ else if (isPackage === 1) {
           startValue: item.startValue || 0.1,
           changeby: item.quantity
         })),
-        isCustomPackage: 0,
-        isSelectPackage: 0,
+    
         subtotal,
         discount,
         total,

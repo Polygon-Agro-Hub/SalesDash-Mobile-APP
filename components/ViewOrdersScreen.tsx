@@ -33,12 +33,12 @@ interface Order {
   orderId: number;
   customerId: number;
   deliveryType: string;
-  scheduleDate: string;
-  scheduleTimeSlot: string;
+  sheduleDate: string;
+  sheduleTime: string;
   weeklyDate: string;
   paymentMethod: string;
   paymentStatus: number;
-  orderStatus: string;
+  status: string;
   createdAt: string;
   InvNo: string;
   reportStatus: string;
@@ -103,6 +103,8 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
+
+      console.log("data",response.data)
       
       if (response.data.success && response.data.data) {
         safeSetOrders(response.data.data);
@@ -178,7 +180,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
           if (selectedFilter === "All") return true;
           
           const today = new Date();
-          const orderDate = new Date(order.scheduleDate);
+          const orderDate = new Date(order.sheduleDate);
           
           if (selectedFilter === "Today") {
             return orderDate.toDateString() === today.toDateString();
@@ -354,35 +356,35 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
               paddingVertical: hp(0.5),
               borderRadius: wp(5),
               backgroundColor:
-                item.orderStatus === "Ordered" ? "#EAEAEA" :
-                item.orderStatus === "On the way" ? "#FFFD99" :
-                item.orderStatus === "Processing" ? "#CFE1FF" : 
-                 item.orderStatus === "Delivered" ? "#CCFBF1" : 
-                item.orderStatus === "Cancelled" ? "#FCE7F3" : "#EAEAEA",
+                item.status === "Ordered" ? "#EAEAEA" :
+                item.status === "On the way" ? "#FFFD99" :
+                item.status === "Processing" ? "#CFE1FF" : 
+                 item.status === "Delivered" ? "#CCFBF1" : 
+                item.status === "Cancelled" ? "#FCE7F3" : "#EAEAEA",
             }}>
               <Text style={{
                 fontSize: wp(3),
                 fontWeight: "600",
                 color:
-                  item.orderStatus === "Ordered" ? "#393939" :
-                  item.orderStatus === "On the way" ? "#A6A100" :
-                  item.orderStatus === "Processing" ? "#3B82F6" : 
-                   item.orderStatus === "Delivered" ? "#0D9488" : 
-                  item.orderStatus === "Cancelled" ? "#BE185D" : "#393939",
+                  item.status === "Ordered" ? "#393939" :
+                  item.status === "On the way" ? "#A6A100" :
+                  item.status === "Processing" ? "#3B82F6" : 
+                   item.status === "Delivered" ? "#0D9488" : 
+                  item.status === "Cancelled" ? "#BE185D" : "#393939",
               }}>
-                {item.orderStatus}
+                {item.status}
               </Text>
             </View>
           </View>
 
           <Text style={{ fontSize: wp(3.6), color: "#808FA2" }}>
-            Schedule to: {formatDate(item.scheduleDate)}
+            Schedule to: {formatDate(item.sheduleDate)}
           </Text>
 
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
             {/* Customer name */}
             <Text style={{ fontSize: wp(3.6), color: "#808FA2", marginTop: hp(0.5) }}>
-              Within : {item.scheduleTimeSlot}
+              Within : {item.sheduleTime}
             </Text>
             <Text style={{ fontSize: wp(3.6), color: "#FF4C4C" }}> {item.reportStatus}</Text>
           </View>
