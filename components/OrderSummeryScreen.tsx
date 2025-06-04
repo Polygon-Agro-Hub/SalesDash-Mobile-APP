@@ -585,6 +585,8 @@ if (packageItem.finalOrderPackageList && packageItem.finalOrderPackageList.lengt
           
           if (response.data && response.data.data) {
             const itemIdKey = item.id.toString();
+
+            console.log("daatatta-------",response.data)
             
             additionalDetails[itemIdKey] = {
               name: response.data.data.name || response.data.data.displayName || `Item ${item.id}`,
@@ -809,7 +811,7 @@ useEffect(() => {
           price: item.price,
           normalPrice: item.normalPrice || item.price,
           discountedPrice: item.discountedPrice || item.price,
-          quantity: item.quantity,
+          quantity: item.qty,
           selected: true, // Mark as selected
           unitType: item.unitType || 'kg',
           startValue: item.startValue || 0.1,
@@ -821,14 +823,14 @@ useEffect(() => {
           price: item.price,
           normalPrice: item.normalPrice || item.price,
           discountedPrice: item.discountedPrice || item.price,
-          quantity: item.quantity,
+          quantity: item.qty,
           selected: true, // Mark as selected
           unitType: item.unitType || 'kg',
           startValue: item.startValue || 0.1,
           changeby: item.quantity
         })),
-        isCustomPackage: 1,
-        isSelectPackage: 0,
+        isPackage: 0,
+      
         subtotal,
         discount,
         total,
@@ -840,112 +842,62 @@ useEffect(() => {
         fromOrderSummary: true
       });
     } 
-    
- else if (isPackage === 1) {
-  // For package orders, navigate to OrderScreen with all required data
-  // Get the current order data
-  const currentOrderItem = safeOrderItems[0];
-
-  // Build original package items from package details (not from finalOrderPackageList)
-  const originalPackageItems = currentOrderItem?.originalPackageDetails?.map((item: {
-    productId: any;
-    productName: any;
-    originalQuantity: { toString: () => any; };
-    originalPrice: any;
-    price: any;
-  }) => ({
+else if (isPackage === 1) {
+  const currentOrderItem = safeOrderItems[0] || {};
+  const additionalItems = route.params?.orderData?.additionalItems || [];
+  
+  // Create proper mapping for package items
+  const packageItems = currentOrderItem.finalOrderPackageList?.map(item => ({
     id: item.productId,
-    mpItemId: item.productId,
-    name: item.productName || packageItemDetails[item.productId.toString()]?.displayName || 'Unknown Item',
-    quantity: item.originalQuantity.toString(),
+    name: packageItemDetails[item.productId.toString()]?.displayName,
+    quantity: item.quantity.toString(),
     quantityType: 'kg',
-    price: item.originalPrice || item.price
+    price: typeof item.price === 'string' ? parseFloat(item.price) : item.price,
+    discount: item.discount || 0
   })) || [];
-
-  // Build current/modified package items from finalOrderPackageList with fetched names
-  // We need to find the packageItemDetails by matching the mpItemId with productId
-  const currentPackageItems = currentOrderItem?.finalOrderPackageList?.map(item => {
-    // Find the package item details by matching mpItemId with productId
-    let packageDetail = null;
-    let packageDetailKey = null;
-    
-    // Search through packageItemDetails to find the one with matching mpItemId
-    for (const [key, details] of Object.entries(packageItemDetails)) {
-      if (details.mpItemId === item.productId) {
-        packageDetail = details;
-        packageDetailKey = key; // This will be the database ID (152, 153)
-        break;
-      }
-    }
-    
-    console.log(`Mapping item with productId ${item.productId}:`, {
-      packageDetailKey,
-      packageDetail,
-      originalItem: item
-    });
+  
+  // FIXED: Map additional items with proper structure and correct price calculation
+  const mappedAdditionalItems = additionalItems.map(item => {
+    const itemDetail = additionalItemDetails[item.productId.toString()];
+    const totalPrice = Number(item.price) || 0;
+    const discount = Number(item.discount) || 0;
     
     return {
-      id: packageDetailKey || item.productId, // Use database ID if found, otherwise productId
-      mpItemId: item.productId, // This is the marketplace item ID
-      name: packageDetail?.displayName ,
-      quantity: item.quantity.toString(),
-      quantityType: packageDetail?.quantityType || packageDetail?.unitType || 'kg', // Use the correct quantityType from DB
-      unitType: packageDetail?.unitType || 'kg', // Add unitType field
-      price: typeof item.price === 'string' ? parseFloat(item.price) : item.price
+      productId: item.productId, // Keep the original productId
+      mpItemId: item.productId,  // Marketplace item ID
+      cropId: item.productId,    // Crop ID for reference
+      name: itemDetail?.displayName || `Item ${item.productId}`,
+      quantity: item.qty.toString(),
+      quantityType: item.unit || 'kg',
+      price: totalPrice, // This should be the total price for the quantity
+      discount: discount, // This should be the total discount amount
+      // Add additional fields that might be needed
+      normalPrice: totalPrice + discount, // Calculate original price
+      discountedPrice: totalPrice // Price after discount
     };
-  }) || [];
+  });
 
-  console.log("Final currentPackageItems:", currentPackageItems);
-
-  const packageData = {
+  const navigationData = {
     id: customerId || customerid,
-    isSelectPackage: 1,
-    isCustomPackage: 0,
+    isPackage: "1",
     orderItems: safeOrderItems,
-    packageId: currentOrderItem.packageId,
-    selectedPackage: currentOrderItem?.packageId ? {
-      id: currentOrderItem.packageId,
-      displayName: packageDisplayName, // Now uses fetched package display name
-      price: currentOrderItem.packageTotal.toString(),
-      total: currentOrderItem.packageTotal
-    } : null,
-
-    // Pass CURRENT modified items (what user should see for editing) - now with names
-    packageItems: currentPackageItems,
-
-    // Pass ORIGINAL unmodified items (for comparison/reset purposes)
-    originalPackageItems: originalPackageItems,
-
-    // Pass additional items if any
-    additionalItems: currentOrderItem?.additionalItems?.map(item => ({
-      id: item.id,
-      name: additionalItemDetails[item.id.toString()]?.displayName || 'Unknown Item',
-      quantity: item.quantity.toString(),
-      quantityType: 'kg',
-      price: item.quantity * (additionalItemDetails[item.id.toString()]?.price || 0),
-      discount: item.discount.toString(),
-      cropId: item.id || 0
-    })) || [],
-
-    // Pass financial data
+    packageId: currentOrderItem.packageId || route.params?.packageId,
+    packageItems: packageItems,
+    additionalItems: mappedAdditionalItems,
     subtotal,
     discount,
     total,
     fullTotal,
-
-    // Pass schedule data
     selectedDate,
     selectedTimeSlot,
     timeDisplay,
     paymentMethod,
-
-    // Flag to indicate this is an edit
-    isEdit: true
+    isEdit: true,
+    orderData: route.params?.orderData
   };
 
-  console.log("Navigating to OrderScreen with package data:", JSON.stringify(packageData, null, 2));
-
-  navigation.navigate("OrderScreen" as any, packageData);
+  console.log("Fixed navigation data for OrderScreen:", JSON.stringify(navigationData, null, 2));
+  navigation.navigate("OrderScreen" as any, navigationData);
 }else {
       // For Regular Items - CratScreen
       const regularItemsData = {

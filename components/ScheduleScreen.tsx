@@ -869,6 +869,10 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
     console.log("Schedule Time (24hr):", scheduleTime);
     console.log("Time Slot:", selectedTimeSlot);
   };
+  useEffect(() => {
+  console.log('Route params:', route.params);
+}, []);
+
   
   return (
     <KeyboardAvoidingView 

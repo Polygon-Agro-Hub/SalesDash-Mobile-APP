@@ -25,6 +25,7 @@ export interface PackageItem {
   modifiedMinItems: ModifiedMinItem[];
   additionalItems: AdditionalItem[];
   finalOrderPackageList?: Array<{
+    discount: number;
     packageDetailId: any;
     itemId: any;
     id: any;
@@ -55,6 +56,9 @@ interface ModifiedMinItem {
 }
 
 interface AdditionalItem {
+  unit: any;
+  qty: any;
+  productId: any;
   id: number | string;
   mpItemId: number;
   quantity: number;
