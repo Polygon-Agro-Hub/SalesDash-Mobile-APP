@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Keyboard,
 
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -73,8 +74,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
 
   useEffect(() => {
     getUserProfile();
-    fetchAgentStats();
-    fetchOrderCount();
+    // fetchAgentStats();
+    // fetchOrderCount();
     fetchCustomerCount();
   }, []);
  
@@ -167,9 +168,10 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
         const customerData = response.data.data.find(
           (item: { salesAgentId: number }) => item.salesAgentId === parseInt(formData.empId)
         );
-              
+              console.log("cus",response.data)
         if (customerData) {
           setCustomerCount(customerData.customerCount);
+          
         } else {
           setCustomerCount(response.data.data[0]?.customerCount || 0);
         }
@@ -182,6 +184,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   
 
   const handleUpdate = async () => {
+    Keyboard.dismiss()
      if (isSubmitting) return;
   
   setIsSubmitting(true);
@@ -194,12 +197,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
       const dataToSend = {
         firstName: formData.firstName,
         lastName: formData.lastName,
-        email: formData.email,
-        phoneNumber1: formData.phoneNumber1,
         houseNumber: formData.houseNumber,
         streetName: formData.streetName,
         city: formData.city,
-        nic: formData.nic
       };
       
     
@@ -432,25 +432,36 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
               <Text className="text-black mb-1">
                   NIC Number
                 </Text>
-                <TextInput
+                {/* <TextInput
                   className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2"
                   value={formData.nic}
                   onChangeText={(text) => handleInputChange("nic", text)}
                   placeholder="Enter NIC Number"
-                />
+                  maxLength={12}
+                /> */}
+                 <Text
+                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2 text-[#8492A3]"
+                >
+                  {formData.nic}
+                </Text>
               </View>
 
               <View className="mb-4">
               <Text className="text-black mb-1">
                   Email Address
                 </Text>
-                <TextInput
+                {/* <TextInput
                   className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2"
                   value={formData.email}
                   onChangeText={(text) => handleInputChange("email", text)}
                   placeholder="Enter Email Address"
                   keyboardType="email-address"
-                />
+                /> */}
+                         <Text
+                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2 text-[#8492A3]"
+                >
+                  {formData.email}
+                </Text>
               </View>
 
               <View className="mb-4">

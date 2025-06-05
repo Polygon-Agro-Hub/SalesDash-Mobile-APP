@@ -24,7 +24,9 @@ type RootStackParamList = {
     selectedPackageId: number;
     selectedPackageName: string;
     selectedPackageImage: string;
-    selectedPackageTotal: string;
+    selectedPackageproductPrice: string;
+     selectedPackagepackingFee: string;
+      selectedPackageserviceFee: string;
     selectedPackageDescription:string;
     selectedPackageportion: string;  
     selectedPackageperiod: string;
@@ -44,10 +46,14 @@ interface ViewScreenProps {
 
 
 const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
-  const { selectedPackageId, selectedPackageName, selectedPackageImage ,selectedPackageTotal,selectedPackageDescription,selectedPackageportion ,selectedPackageperiod  } = route.params;
+  const { selectedPackageId, selectedPackageName, selectedPackageImage , selectedPackageproductPrice, selectedPackagepackingFee,  selectedPackageserviceFee ,selectedPackageDescription,selectedPackageportion ,selectedPackageperiod  } = route.params;
 
-  const [items, setItems] = useState<{ name: string; quantity: string; quantityType: string;  portion: number; period :number; }[]>([]);
-
+  const [items, setItems] = useState<{ name: string; qty: string}[]>([]);
+  let selectedPackageTotal = (
+    parseFloat(selectedPackageproductPrice || '0') +
+    parseFloat( selectedPackagepackingFee || '0') +
+    parseFloat(selectedPackageserviceFee || '0')
+  ).toFixed(2);
   
   useEffect(() => {
     if (selectedPackageId) {
@@ -63,7 +69,7 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
         return;
       }
 
-      const response = await axios.get<{ data: { name: string; quantity: string, quantityType: string, portion: number; period :number }[] }>(
+      const response = await axios.get<{ data: { name: string; qty: string}[] }>(
         `${environment.API_BASE_URL}api/packages/${packageId}/items`,
         {
           headers: { Authorization: `Bearer ${storedToken}` },
@@ -138,7 +144,7 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
             {items.map((item, index) => (
               <View key={index} className="flex-row justify-between items-center border-b border-gray-200 py-3 px-4">
                 <Text className="text-gray-700 text-sm">{item.name}</Text>
-                <Text className="text-gray-500 text-sm">{item.quantity}{item.quantityType}</Text>
+                <Text className="text-gray-500 text-sm">{item.qty}</Text>
               </View>
             ))}
             

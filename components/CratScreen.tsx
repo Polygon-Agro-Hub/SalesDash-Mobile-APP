@@ -52,6 +52,7 @@ interface CartItem {
   price: number;
   normalPrice: number;
   discountedPrice: number;
+  discount: number;
   quantity: number;
   selected: boolean;
   unitType: string;
@@ -66,8 +67,8 @@ interface CratScreenProps {
     params?: {
       id?: string;
       customerId?: any;
-      isCustomPackage?: number | string;
-      isSelectPackage?: number | string;
+      isPackage?: number | string;
+
       selectedProducts?: any[];
       items?: any[];
       fromOrderSummary?: boolean;
@@ -90,8 +91,8 @@ interface CratScreenProps {
     params?: {
       id?: string;
       customerId?: any;
-      isCustomPackage?: number | string;
-      isSelectPackage?: number | string;
+      isPackage?: number | string;
+   
       selectedProducts?: any[];
       items?: any[];
       fromOrderSummary?: boolean;
@@ -108,59 +109,75 @@ interface CratScreenProps {
 }
 
 const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
-  const { id, isCustomPackage, isSelectPackage } = route.params || {};
+  const { id, isPackage } = route.params || {};
   const fromOrderSummary = (route.params as any)?.fromOrderSummary;
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
 
+  console.log("============",isPackage)
+
   useEffect(() => {
-    if (route.params?.selectedProducts) {
-      const initializedItems = route.params.selectedProducts.map(item => {
-        // Parse startValue as number for increment/decrement operations
-        const startValueNum = typeof item.startValue === 'string' 
-          ? parseFloat(item.startValue) 
-          : item.startValue || 0.5;
-          
-        // Make sure unitType is lowercase to match component state
-        // Default to kg if not specified
-        const unitType = item.unitType?.toLowerCase() === 'g' ? 'g' : 'kg';
+  if (route.params?.selectedProducts) {
+    const initializedItems = route.params.selectedProducts.map(item => {
+      // Parse startValue as number for increment/decrement operations
+      const startValueNum = typeof item.startValue === 'string' 
+        ? parseFloat(item.startValue) 
+        : item.startValue || 0.5;
         
-        // Use the actual quantity from the item, not startValue
-        // This is the current quantity that should be displayed
-        const currentQuantity = typeof item.quantity === 'string' 
-          ? parseFloat(item.quantity) 
-          : item.quantity || startValueNum;
-        
-        // Calculate initial changeby value based on unitType
-        // If coming from order summary, use the actual quantity
-        let initialChangeby;
-        if (fromOrderSummary) {
-          // Use the actual quantity passed from order summary
-          initialChangeby = unitType === 'g' 
-            ? currentQuantity * 1000  // If in grams, convert from kg
-            : currentQuantity;        // If in kg, use as is
-        } else {
-          // For new items, use startValue
-          initialChangeby = unitType === 'g' 
-            ? startValueNum * 1000  // If in grams, convert from kg
-            : startValueNum;        // If in kg, use as is
-        }
-        
-        return {
-          ...item,
-          // If coming from order summary, don't select items (for editing)
-          // Otherwise, use the item's selected state or default to false
-          selected: fromOrderSummary ? false : (item.selected || false),
-          changeby: initialChangeby, 
-          quantity: initialChangeby,
-          unitType: unitType,
-          startValue: startValueNum // Keep original startValue for increment/decrement
-        };
-      });
+      // Make sure unitType is lowercase to match component state
+      const unitType = item.unitType?.toLowerCase() === 'g' ? 'g' : 'kg';
       
-      setCartItems(initializedItems);
-    }
-  }, [route.params, fromOrderSummary]);
+      // Use the actual quantity from the item
+      const currentQuantity = typeof item.quantity === 'string' 
+        ? parseFloat(item.quantity) 
+        : item.quantity || startValueNum;
+      
+      // Calculate initial changeby value based on unitType
+      let initialChangeby;
+      if (fromOrderSummary) {
+        // Use the actual quantity passed from order summary
+        initialChangeby = unitType === 'g' 
+          ? currentQuantity * 1000  // If in grams, convert from kg
+          : currentQuantity;        // If in kg, use as is
+      } else {
+        // For new items, use startValue
+        initialChangeby = unitType === 'g' 
+          ? startValueNum * 1000  // If in grams, convert from kg
+          : startValueNum;        // If in kg, use as is
+      }
+
+      // Calculate price per kg from the total price and quantity
+      const pricePerKg = currentQuantity > 0 ? item.discountedPrice / currentQuantity : 0;
+      const normalPricePerKg = currentQuantity > 0 ? item.normalPrice / currentQuantity : 0;
+      
+      // FIXED: Calculate discount per kg from the original discount value
+      const discountPerKg = currentQuantity > 0 ? item.discount / currentQuantity : 0;
+      
+      return {
+        ...item,
+        // Fix name display - use name or fallback to a proper display name
+        name: item.name || `Product ${item.id}`,
+        // Store per-kg prices for calculations
+        pricePerKg: pricePerKg,
+        normalPricePerKg: normalPricePerKg,
+        discountPerKg: discountPerKg, // Now correctly calculated
+        // Use discountedPrice as the per-kg price for display
+        price: pricePerKg,
+        normalPrice: normalPricePerKg,
+        discountedPrice: pricePerKg,
+        // IMPORTANT: Keep the original discount value
+        discount: discountPerKg, // This should be per kg discount
+        selected: fromOrderSummary ? false : (item.selected || false),
+        changeby: initialChangeby, 
+        quantity: initialChangeby,
+        unitType: unitType,
+        startValue: startValueNum
+      };
+    });
+    
+    setCartItems(initializedItems);
+  }
+}, [route.params, fromOrderSummary]);
 
   useEffect(() => {
     const hasSelectedItems = cartItems.some(item => item.selected);
@@ -192,9 +209,12 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
       return ((item.discountedPrice / 1000) * item.changeby).toFixed(2);
     }
   };
+
+ 
   
   const calculateItemNormalTotal = (item: CartItem) => {
     if (item.unitType === 'kg') {
+      console.log("-----------",item.discount)
       return (item.normalPrice * item.changeby).toFixed(2);
     } else {
       return ((item.normalPrice / 1000) * item.changeby).toFixed(2);
@@ -309,12 +329,11 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     return total + parseFloat(calculateItemNormalTotal(item));
   }, 0);
   
-  const currentTotal = cartItems.reduce((total, item) => {
-    // Include all items in totals, even if selected
+ const currentTotal = cartItems.reduce((total, item) => {
     return total + parseFloat(calculateItemTotal(item));
-  }, 0);
+}, 0) + 180;
 
-  const discount = currentSubtotal - currentTotal;
+  const discount = currentSubtotal - (currentTotal - 180);
 
   const handleConfirm = () => {
     const nonSelectedItems = cartItems.filter(item => !item.selected);
@@ -327,15 +346,16 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
         return {
           id: item.id,
           name: item.name,
-          price: item.price,
-          normalPrice: item.normalPrice,
-          discountedPrice: item.discountedPrice,
-          quantity: weightInKg,  // Always pass quantity in kg
+          price: item.discountedPrice * weightInKg ,
+          discount:item.discount * weightInKg,
+         // normalPrice: item.normalPrice,
+         // discountedPrice: item.discountedPrice,
+          qty: weightInKg,  // Always pass quantity in kg
           unitType: 'kg',        // Always pass unitType as kg
-          startValue: item.startValue,
-          changeby: weightInKg,  // Always pass changeby in kg
-          isSelectPackage: isSelectPackage,
-          isCustomPackage: isCustomPackage
+         // startValue: item.startValue,
+         // changeby: weightInKg,  // Always pass changeby in kg
+          isPackage: isPackage,
+      
         };
       });
 
@@ -343,14 +363,15 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
       const navigationTarget = (route.params as any)?.returnTo || (fromOrderSummary ? 'OrderSummaryScreen' : 'ScheduleScreen');
       
       if (navigationTarget === 'ScheduleScreen') {
+        
         navigation.navigate('ScheduleScreen' as any, {
           items: itemsToPass,
           total: currentTotal,
           subtotal: currentSubtotal,
           discount: discount,
           id: id,
-          isSelectPackage: isSelectPackage,
-          isCustomPackage: isCustomPackage,
+          isPackage: isPackage,
+      
           // Pass through any existing order summary data
           selectedDate: route.params?.selectedDate,
           timeDisplay: route.params?.timeDisplay,
@@ -366,8 +387,8 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
           subtotal: currentSubtotal,
           discount: discount,
           id: id,
-          isSelectPackage: isSelectPackage,
-          isCustomPackage: isCustomPackage,
+          isPackage: isPackage,
+   
           // Pass through scheduling data if available
           selectedDate: route.params?.selectedDate,
           timeDisplay: route.params?.timeDisplay,
@@ -381,8 +402,8 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
           subtotal: currentSubtotal,
           discount: discount,
           id: id,
-          isSelectPackage: isSelectPackage,
-          isCustomPackage: isCustomPackage
+          isPackage: isPackage
+       
         });
       }
     } else {
@@ -531,6 +552,11 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
             <View className="flex-row justify-between py-2">
               <Text className="text-gray-500">Discount</Text>
               <Text className="font-medium text-[#686868]">Rs.{discount.toFixed(2)}</Text>
+            </View>
+
+             <View className="flex-row justify-between py-2">
+              <Text className="text-gray-500">Service Fee</Text>
+              <Text className="font-medium text-[#686868]">Rs.180.00</Text>
             </View>
             
             <View className="flex-row justify-between py-2">

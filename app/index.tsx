@@ -65,7 +65,7 @@ function MainTabNavigator() {
       <Tab.Screen name="ReminderScreen" component={ReminderScreen} />
       <Tab.Screen name="CustomersScreen" component={CustomersScreen} />
       <Tab.Screen name="ViewComplainScreen" component={ViewComplainScreen} />
-      <Tab.Screen name="SidebarScreen" component={SidebarScreen} />
+      {/* <Tab.Screen name="SidebarScreen" component={SidebarScreen} /> */}
       <Tab.Screen name="ViewScreen" component={ViewScreen as any} />
       <Tab.Screen name="ViewCustomerScreen" component={ViewCustomerScreen as any} />
       <Tab.Screen name="EditCustomerScreen" component={EditCustomerScreen} />
@@ -73,6 +73,8 @@ function MainTabNavigator() {
       <Tab.Screen name="SelectOrderTypeNewCustomer" component={SelectOrderTypeNewCustomer as any} />
       <Tab.Screen name="OrderConfirmedScreen" component={OrderConfirmedScreen as any} />
       <Tab.Screen name="OtpSuccesfulScreen" component={OtpSuccesfulScreen as any} />
+            <Tab.Screen name="AddComplaintScreen" component={AddComplaintScreen} />
+
     </Tab.Navigator>
   );
 }
@@ -91,9 +93,9 @@ const index = () => {
       {/* <Stack.Screen name="DashboardScreen" component={DashboardScreen} /> */}
       {/* <Stack.Screen name="ViewScreen" component={ViewScreen as any} /> */}
       {/* <Stack.Screen name="CustomersScreen" component={CustomersScreen} /> */}
-      {/* <Stack.Screen name="SidebarScreen" component={SidebarScreen} /> */}
+      <Stack.Screen name="SidebarScreen" component={SidebarScreen} />
       <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
-      <Stack.Screen name="AddComplaintScreen" component={AddComplaintScreen} />
+      {/* <Stack.Screen name="AddComplaintScreen" component={AddComplaintScreen} /> */}
       {/* <Stack.Screen name="ViewComplainScreen" component={ViewComplainScreen} /> */}
       {/* <Stack.Screen name="ViewCustomerScreen" component={ViewCustomerScreen as any} /> */}
       {/* <Stack.Screen name="ReminderScreen" component={ReminderScreen} /> */}

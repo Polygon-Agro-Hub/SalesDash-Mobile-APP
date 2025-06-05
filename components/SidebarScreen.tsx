@@ -192,11 +192,11 @@ const handleLogout = async () => {
 
           {complaintsExpanded && (
             <View style={{ paddingLeft: wp(15) }}>
-              <TouchableOpacity onPress={() => navigation.navigate("AddComplaintScreen")}>
-                <Text className="text-sm text-gray-700 font-bold">Report a Complaint</Text>
+              <TouchableOpacity onPress={() => navigation.navigate("Main",{screen:"AddComplaintScreen"})}>
+                <Text className="text-base text-gray-700 font-bold mb-2">Report a Complaint</Text>
               </TouchableOpacity>
               <TouchableOpacity style={{ marginTop: hp(1), marginBottom: hp(1) }} onPress={() => navigation.navigate("Main",{screen:"ViewComplainScreen"})}>
-  <Text className="text-sm text-gray-700 font-bold">View Complaint History</Text>
+  <Text className="text-base text-gray-700 font-bold">View Complaint History</Text>
 </TouchableOpacity>
 
             </View>
@@ -270,12 +270,13 @@ const handleLogout = async () => {
   <Ionicons name="chevron-forward-outline" size={hp(2.5)} color="#8F8F8F" style={{ marginRight: wp(2) }} />
 </TouchableOpacity>
 
-<View className="mb-8">
+<View className="mb-8 ">
           <View className="border-b border-gray-200 my-5" />
 
           <TouchableOpacity className="flex-row items-center" onPress={handleLogout}> 
 
           <View
+          className="mt-4"
     style={{
       width: hp(5), 
       height: hp(5),
