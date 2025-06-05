@@ -87,16 +87,16 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     },
   });
 
-  // const refreshData = async () => {
-  //   setIsLoading(true);
-  //   await Promise.all([getUserProfile(), fetchPackages(), fetchAgentStats()]);
-  //   setIsLoading(false);
-  // };
   const refreshData = async () => {
     setIsLoading(true);
-    await Promise.all([getUserProfile(), fetchPackages()]);
+    await Promise.all([getUserProfile(), fetchPackages(), fetchAgentStats()]);
     setIsLoading(false);
   };
+  // const refreshData = async () => {
+  //   setIsLoading(true);
+  //   await Promise.all([getUserProfile(), fetchPackages()]);
+  //   setIsLoading(false);
+  // };
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
@@ -203,7 +203,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
           headers: { Authorization: `Bearer ${storedToken}` },
         }
       );
-      console.log(response.data);
+    //  console.log(response.data);
 
       setPackages(response.data.data);
     } catch (error) {
@@ -211,24 +211,25 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     }
   };
 
-  // const fetchAgentStats = async () => {
-  //   try {
-  //     const storedToken = await AsyncStorage.getItem("authToken");
-  //     if (!storedToken) return;
+  const fetchAgentStats = async () => {
+    try {
+      const storedToken = await AsyncStorage.getItem("authToken");
+      if (!storedToken) return;
 
-  //     const response = await axios.get<{ data: AgentStats }>(
-  //       `${environment.API_BASE_URL}api/orders/sales-agent`,
-  //       {
-  //         headers: { Authorization: `Bearer ${storedToken}` },
-  //       }
-  //     );
+      const response = await axios.get<{ data: AgentStats }>(
+        `${environment.API_BASE_URL}api/orders/sales-agent`,
+        {
+          headers: { Authorization: `Bearer ${storedToken}` },
+        }
+      );
+      console.log("dkc",response.data)
 
-  //     setAgentStats(response.data.data);
-  //   } catch (error) {
-  //     console.error("Failed to fetch agent stats:", error);
+      setAgentStats(response.data.data);
+    } catch (error) {
+      console.error("Failed to fetch agent stats:", error);
 
-  //   }
-  // };
+    }
+  };
 
   useFocusEffect(
     useCallback(() => {

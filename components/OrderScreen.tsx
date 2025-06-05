@@ -350,39 +350,85 @@ const fetchProductPrices = useCallback(async (productIds: number[]) => {
 
 
   // Handle confirm function
-  const handleConfirm = useCallback(async () => {
-    setLoading(true);
+  // const handleConfirm = useCallback(async () => {
+  //   setLoading(true);
     
-    try {
-      const orderData = {
-        userId: route.params?.id,
-        isPackage: isPackage === "1" ? 1 : 0,
-        packageId: packageValue ? parseInt(packageValue) : null,
-        total: parseFloat(calculateGrandTotal()),
-        fullTotal: parseFloat(calculateGrandTotal()),
-        discount: additionalItems.reduce((sum, item) => sum + item.discount, 0),
-        additionalItems: additionalItems.map(item => ({
-          productId: item.id, // This now contains the correct productId
-          qty: item.quantity,
-          unit: item.unit.toLowerCase(),
-          price: item.discountedPricePerKg * (item.unit === 'Kg' ? item.quantity : item.quantity / 1000),
-          discount: item.discount
-        }))
-      };
+  //   try {
+  //     const orderData = {
+  //       userId: route.params?.id,
+  //       isPackage: isPackage === "1" ? 1 : 0,
+  //       packageId: packageValue ? parseInt(packageValue) : null,
+  //       total: parseFloat(calculateGrandTotal()),
+  //       fullTotal: parseFloat(calculateGrandTotal()),
+  //       discount: additionalItems.reduce((sum, item) => sum + item.discount, 0),
+  //       additionalItems: additionalItems.map(item => ({
+  //         productId: item.id, // This now contains the correct productId
+  //         qty: item.quantity,
+  //         unit: item.unit.toLowerCase(),
+  //         price: item.discountedPricePerKg * (item.unit === 'Kg' ? item.quantity : item.quantity / 1000),
+  //         discount: item.discount
+  //       }))
+  //     };
 
-      navigation.navigate("ScheduleScreen" as any, { 
-        orderData,
-        customerid: route.params?.id,
-        isPackage
-      });
+  //     navigation.navigate("ScheduleScreen" as any, { 
+  //       orderData,
+  //       customerid: route.params?.id,
+  //       isPackage
+  //     });
       
-    } catch (error) {
-      console.error("Error confirming order:", error);
-      Alert.alert("Error", "Failed to process order");
-    } finally {
-      setLoading(false);
+  //   } catch (error) {
+  //     console.error("Error confirming order:", error);
+  //     Alert.alert("Error", "Failed to process order");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }, [isPackage, packageValue,  additionalItems, navigation, route.params?.id]);
+
+
+  const handleConfirm = useCallback(async () => {
+  setLoading(true);
+  
+  try {
+    // Calculate package total if a package is selected
+    let packageTotalAmount = 0;
+    if (packageValue && selectedPackage) {
+      const packingFee = parseFloat(selectedPackage.packingFee) || 0;
+      const productPrice = parseFloat(selectedPackage.productPrice) || 0;
+      const serviceFee = parseFloat(selectedPackage.serviceFee) || 0;
+      packageTotalAmount = packingFee + productPrice + serviceFee;
     }
-  }, [isPackage, packageValue,  additionalItems, navigation, route.params?.id]);
+
+    const orderData = {
+      userId: route.params?.id,
+      isPackage: isPackage === "1" ? 1 : 0,
+      packageId: packageValue ? parseInt(packageValue) : null,
+      total: packageTotalAmount + additionalItems.reduce((sum, item) => sum + item.totalAmount, 0),
+      fullTotal: packageTotalAmount + additionalItems.reduce((sum, item) => sum + item.totalAmount, 0),
+      discount: additionalItems.reduce((sum, item) => sum + item.discount, 0),
+      additionalItems: additionalItems.map(item => ({
+        productId: item.id,
+        qty: item.quantity,
+        unit: item.unit.toLowerCase(),
+        price: item.discountedPricePerKg * (item.unit === 'Kg' ? item.quantity : item.quantity / 1000),
+        discount: item.discount
+      }))
+    };
+
+    console.log("orderData--------", orderData);
+    
+    navigation.navigate("ScheduleScreen" as any, { 
+      orderData,
+      customerid: route.params?.id,
+      isPackage
+    });
+    
+  } catch (error) {
+    console.error("Error confirming order:", error);
+    Alert.alert("Error", "Failed to process order");
+  } finally {
+    setLoading(false);
+  }
+}, [isPackage, packageValue, additionalItems, navigation, route.params?.id, selectedPackage]);
 
   // Updated handleSaveItem function with dynamic quantity initialization
   const handleSaveItem = useCallback(() => {
@@ -1007,13 +1053,19 @@ useEffect(() => {
     }}
   >
 
-    <Text className="text-lg font-semibold text-gray-800">
-      Grand Total:
+    <Text className="text-lg font-semibold text-gray-800 ml-2">
+      Total:
     </Text>
 
-    <Text className="text-lg font-semibold text-purple-600">
-      Rs. {calculateGrandTotal()}
-    </Text>
+<Text className="text-base font-semibold text-[#5C5C5C] mr-10">
+  Rs. {Number(calculateGrandTotal()).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}
+</Text>
+
+
+
 
     <TouchableOpacity onPress={handleConfirm}>
       <LinearGradient 

@@ -378,7 +378,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, r
         <TouchableOpacity onPress={handleProceed}>
         <LinearGradient 
           colors={["#6839CF", "#874DDB"]} 
-          className="py-3 px-4 rounded-lg items-center mb-[22%] mr-[25%] ml-[25%] rounded-3xl h-15"
+          className="py-3 px-4  items-center mb-[22%] mr-[25%] ml-[25%] rounded-3xl h-15"
         >
           
             <Text className="text-center text-white font-bold">Proceed</Text>
