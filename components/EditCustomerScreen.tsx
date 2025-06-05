@@ -644,7 +644,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
 >
   <LinearGradient 
     colors={["#854BDA", "#6E3DD1"]} 
-    className="py-3 px-4 rounded-lg items-center mt-6 mb-[15%] mr-[20%] ml-[20%] h-15 rounded-full"
+    className="py-3 px-4  items-center mt-6 mb-[15%] mr-[20%] ml-[20%] h-15 rounded-full"
   >
     {isSubmitting ? (
       <ActivityIndicator color="#FFFFFF" />

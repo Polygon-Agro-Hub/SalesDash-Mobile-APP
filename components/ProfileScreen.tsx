@@ -74,8 +74,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
 
   useEffect(() => {
     getUserProfile();
-    // fetchAgentStats();
-    // fetchOrderCount();
+     fetchAgentStats();
+   fetchOrderCount();
     fetchCustomerCount();
   }, []);
  
@@ -129,58 +129,63 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   };
 
   const fetchOrderCount = async () => {
-    try {
-      const token = await AsyncStorage.getItem("authToken");
+  try {
+    const token = await AsyncStorage.getItem("authToken");
+    
+    const response = await axios.get(`${environment.API_BASE_URL}api/orders/order-count`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    
+    console.log("Order count response:", response.data);
+    
+    if (response.data.success) {
+      const orderData = response.data.data;
       
-      const response = await axios.get(`${environment.API_BASE_URL}api/orders/order-count`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      // Since backend returns a single object with orderCount
+      if (orderData && orderData.orderCount !== undefined) {
+        setOrderCount(orderData.orderCount);
+      } else if (Array.isArray(orderData) && orderData.length > 0) {
+        // Fallback: if it's an array, take the first item
+        setOrderCount(orderData[0].orderCount || 0);
+      } else {
+        setOrderCount(0);
+      }
+    }
+  } catch (error) {
+    console.error("Error fetching order count:", error);
+    setOrderCount(0); 
+  }
+};
+
+const fetchCustomerCount = async () => {
+  try {
+    const token = await AsyncStorage.getItem("authToken");
+    
+    const response = await axios.get(`${environment.API_BASE_URL}api/customer/cutomer-count`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    
+    console.log("cus", response.data);
+    
+    if (response.data.success) {
+      const customerData = response.data.data;
       
-      if (response.data.success) {
-        const orderData = response.data.data.find(
-          (item: { salesAgentId: number }) => item.salesAgentId === parseInt(formData.empId)
-        );
-        
-        if (orderData) {
-          setOrderCount(orderData.orderCount);
-        } else {
-          setOrderCount(response.data.data[0]?.orderCount || 0);
-        }
+      // Since the API returns a single object directly, just get the customerCount
+      if (customerData && customerData.customerCount !== undefined) {
+        setCustomerCount(customerData.customerCount);
+      } else {
+        setCustomerCount(0);
       }
-    } catch (error) {
-      console.error("Error fetching order count:", error);
     }
-  };
-
-  const fetchCustomerCount = async () => {
-    try {
-      const token = await AsyncStorage.getItem("authToken");
-          
-      const response = await axios.get(`${environment.API_BASE_URL}api/customer/cutomer-count`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-          
-      if (response.data.success) {
-        const customerData = response.data.data.find(
-          (item: { salesAgentId: number }) => item.salesAgentId === parseInt(formData.empId)
-        );
-              console.log("cus",response.data)
-        if (customerData) {
-          setCustomerCount(customerData.customerCount);
-          
-        } else {
-          setCustomerCount(response.data.data[0]?.customerCount || 0);
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching customer count:", error);
-    }
-  };
-
+  } catch (error) {
+    console.error("Error fetching customer count:", error);
+    setCustomerCount(0); // Set to 0 on error
+  }
+};
   
 
   const handleUpdate = async () => {

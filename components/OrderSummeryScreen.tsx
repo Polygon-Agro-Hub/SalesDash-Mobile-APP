@@ -140,8 +140,10 @@ const [packageDisplayName, setPackageDisplayName] = useState<string>("");
 
   const timeDisplay = selectedTimeSlot || "Not set";
 
-  const subTotalDeliveryPlus = 350 + subtotal;
+ 
   const totalDeliveryPlus = 350 + total;
+
+   const subTotalDeliveryPlus = totalDeliveryPlus + discount;
 
   useEffect(() => {
     const fetchCustomerData = async () => {
@@ -413,7 +415,8 @@ const handleConfirmOrder = async () => {
           selectedDate: selectedDate,
           selectedTimeSlot: selectedTimeSlot,
         },
-      });
+      }
+    );
     } else {
       setIsSubmitting(false);
       Alert.alert("Error", response.data.message || "Failed to create order");
@@ -1085,7 +1088,7 @@ else if (isPackage === 1) {
         >
           <LinearGradient 
             colors={["#6839CF", "#874DDB"]} 
-            className="py-3 px-4 rounded-lg items-center mt-[10%] mb-[10%] mr-[25%] ml-[25%] rounded-3xl h-15"
+            className="py-3 px-4  items-center mt-[10%] mb-[10%] mr-[25%] ml-[25%] rounded-3xl h-15"
           >
             {isSubmitting ? (
               <ActivityIndicator color="#FFFFFF" />
