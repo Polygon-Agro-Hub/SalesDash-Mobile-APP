@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -24,7 +24,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
-import { RouteProp } from '@react-navigation/native';
+import { RouteProp, useFocusEffect } from '@react-navigation/native';
 
 type OrderScreenNavigationProp = StackNavigationProp<RootStackParamList, "OrderScreen">;
 type OrderScreenRouteProp = RouteProp<RootStackParamList, "OrderScreen">;
@@ -40,6 +40,8 @@ type OrderScreenRouteProp = RouteProp<RootStackParamList, "OrderScreen">;
 // }
 
 interface ProductItem {
+  changeby(changeby: any): unknown;
+  startValue: ProductItem | undefined;
   label: string;
   discount: string;
   value: string; // This is varietyId
@@ -120,6 +122,9 @@ interface OrderScreenProps {
         price: number;
       }>;
       additionalItems?: Array<{
+        pricePerKg(pricePerKg: any): any;
+        discountedPricePerKg(discountedPricePerKg: any): any;
+        totalPrice: number;
         mpItemId: any;
         productId: any;
         id: number;
@@ -198,160 +203,230 @@ const [open, setOpen] = useState(false); // For edit modal dropdown
   } | null>(null);
 
 
+useFocusEffect(
+  useCallback(() => {
 
-  // In OrderScreen.tsx, update the useEffect for handling initial data:
+    setSelectedItems([]); 
+    setSelectedProduct("");
+  
+  }, [])
+);
+
 useEffect(() => {
-  if (route.params?.isEdit && route.params?.packageId) {
-    // Set the package value from route params
-    setPackageValue(route.params.packageId.toString());
-    
-    // Initialize package items if they exist
-    if (route.params.packageItems) {
-      const mappedPackageItems = route.params.packageItems.map(item => ({
-        name: item.name,
-        qty: item.quantity
-      }));
-      setItems(mappedPackageItems);
-    }
-    
-    // FIXED: Initialize additional items with correct productId and price handling
-    if (route.params.additionalItems) {
-      const mappedAdditionalItems = route.params.additionalItems.map((item, index) => {
-        // Use the actual productId from the item
-        const productId = item.productId || item.mpItemId || item.cropId;
-        
-        // Parse quantity correctly
-        const quantity = parseInt(item.quantity) || 1;
-        const unit = item.quantityType === 'kg' ? 'Kg' : 'g';
-        
-        // Calculate price per kg correctly
-        const totalPrice = Number(item.price) || 0;
-        const quantityInKg = unit === 'Kg' ? quantity : quantity / 1000;
-        const pricePerKg = quantityInKg > 0 ? totalPrice / quantityInKg : 0;
-        
-        // Handle discount properly
-        const discountAmount = parseFloat(item.discount) || 0;
-        const discountedPricePerKg = pricePerKg - (discountAmount / quantityInKg);
-        
-        return {
-          id: productId, // Use the actual productId as the ID
-          name: item.name,
-          quantity: quantity,
-          unit: unit,
-          pricePerKg: pricePerKg,
-          discountedPricePerKg: Math.max(0, discountedPricePerKg), // Ensure it's not negative
-          discount: discountAmount,
-          totalAmount: totalPrice - discountAmount, // Total after discount
-          selected: false
-        };
+  if (showAddModal) {
+    // Reset all form fields when modal opens
+    setProductValue("null");
+    setSelectedProduct('');
+    setPricePerKg(0);
+    setQuantity(0);
+    setSelectedUnit('Kg');
+    setProductOpen(false);
+    setUnitOpen(false);
+  }
+}, [showAddModal]);
+
+
+   // In OrderScreen.tsx, update the useEffect for handling initial data:
+const fetchProductPrices = useCallback(async (productIds: number[]) => {
+    try {
+      const storedToken = await AsyncStorage.getItem("authToken");
+      if (!storedToken || productIds.length === 0) return {};
+      
+      const response = await axios.get(`${environment.API_BASE_URL}api/packages/crops/all`, {
+        headers: { Authorization: `Bearer ${storedToken}` },
       });
-      setAdditionalItems(mappedAdditionalItems);
+
+      const productPrices: Record<string, { normalPrice: number; discountedPrice: number; displayName: string }> = {};
+      
+      response.data.data.forEach((item: any) => {
+        if (productIds.includes(item.id)) {
+          productPrices[item.id.toString()] = {
+            normalPrice: parseFloat(item.normalPrice) || 0,
+            discountedPrice: parseFloat(item.discountedPrice) || parseFloat(item.normalPrice) || 0,
+            displayName: item.displayName || `Item ${item.id}`
+          };
+        }
+      });
+      
+      return productPrices;
+    } catch (error) {
+      console.error("Error fetching product prices:", error);
+      return {};
     }
-    
-    // Find and set the selected package
-    if (route.params.packageId && packages.length > 0) {
-      const selectedPkg = packages.find(pkg => pkg.id === route.params.packageId);
-      if (selectedPkg) {
-        setSelectedPackage(selectedPkg);
-        const packingFee = parseFloat(selectedPkg.packingFee) || 0;
-        const productPrice = parseFloat(selectedPkg.productPrice) || 0;
-        const serviceFee = parseFloat(selectedPkg.serviceFee) || 0;
-        setPackageTotal((packingFee + productPrice + serviceFee).toString());
+  }, []);
+
+  // Separate useEffect for initializing additional items
+  useEffect(() => {
+    const initializeAdditionalItems = async () => {
+      if (route.params?.isEdit && route.params?.additionalItems) {
+        const productIds = route.params.additionalItems.map(item => item.productId).filter(Boolean);
+        const productPrices = await fetchProductPrices(productIds);
+        
+        const mappedAdditionalItems = route.params.additionalItems.map((item, index) => {
+          const productId = item.productId || item.mpItemId || item.cropId;
+          const quantity = parseInt(item.quantity) || 1;
+          const unit = item.quantityType === 'kg' ? 'Kg' : 'g';
+          const quantityInKg = unit === 'Kg' ? quantity : quantity / 1000;
+          
+          // Get correct prices from API or fallback to passed data
+          const productPrice = productPrices[productId.toString()];
+          let pricePerKg, discountedPricePerKg, discountAmount, displayName;
+          
+          if (productPrice) {
+            // Use API prices (most accurate)
+            pricePerKg = productPrice.normalPrice;
+            discountedPricePerKg = productPrice.discountedPrice;
+            discountAmount = (pricePerKg - discountedPricePerKg) * quantityInKg;
+            displayName = productPrice.displayName;
+          } else if (item.pricePerKg && item.discountedPricePerKg) {
+            // Use per-kg prices if provided
+            pricePerKg = Number(item.pricePerKg) || 0;
+            discountedPricePerKg = Number(item.discountedPricePerKg) || 0;
+            discountAmount = (pricePerKg - discountedPricePerKg) * quantityInKg;
+            displayName = item.name;
+          } else {
+            // Fallback: calculate from total prices
+            const totalPrice = Number(item.price || item.totalPrice) || 0;
+            const totalDiscount = parseFloat(item.discount) || 0;
+            
+            discountedPricePerKg = quantityInKg > 0 ? totalPrice / quantityInKg : 0;
+            const discountPerKg = quantityInKg > 0 ? totalDiscount / quantityInKg : 0;
+            pricePerKg = discountedPricePerKg + discountPerKg;
+            discountAmount = totalDiscount;
+            displayName = item.name;
+          }
+          
+          const totalAmount = quantityInKg * discountedPricePerKg;
+          
+          return {
+            id: productId,
+            name: displayName,
+            quantity: quantity,
+            unit: unit,
+            pricePerKg: pricePerKg,
+            discountedPricePerKg: Math.max(0, discountedPricePerKg),
+            discount: discountAmount,
+            totalAmount: totalAmount,
+            selected: false
+          };
+        });
+        
+        setAdditionalItems(mappedAdditionalItems);
+      }
+    };
+
+    initializeAdditionalItems();
+  }, [route.params?.isEdit, route.params?.additionalItems, fetchProductPrices]);
+
+  // Main useEffect for handling initial data
+  useEffect(() => {
+    if (route.params?.isEdit && route.params?.packageId) {
+      // Set the package value from route params
+      setPackageValue(route.params.packageId.toString());
+      
+      // Initialize package items if they exist
+      if (route.params.packageItems) {
+        const mappedPackageItems = route.params.packageItems.map(item => ({
+          name: item.name,
+          qty: item.quantity
+        }));
+        setItems(mappedPackageItems);
+      }
+      
+      // Find and set the selected package
+      if (route.params.packageId && packages.length > 0) {
+        const selectedPkg = packages.find(pkg => pkg.id === route.params.packageId);
+        if (selectedPkg) {
+          setSelectedPackage(selectedPkg);
+          const packingFee = parseFloat(selectedPkg.packingFee) || 0;
+          const productPrice = parseFloat(selectedPkg.productPrice) || 0;
+          const serviceFee = parseFloat(selectedPkg.serviceFee) || 0;
+          setPackageTotal((packingFee + productPrice + serviceFee).toString());
+        }
       }
     }
-  }
-}, [route.params, packages]);
+  }, [route.params?.isEdit, route.params?.packageId, route.params?.packageItems, packages]);
 
-// 2. Fix the handleConfirm function to properly map productId:
-const handleConfirm = async () => {
-  setLoading(true);
-  
-  try {
-    const orderData = {
-      userId: id,
-      isPackage: isPackage === "1" ? 1 : 0,
-      packageId: packageValue ? parseInt(packageValue) : null,
-      total: parseFloat(calculateGrandTotal()),
-      fullTotal: parseFloat(calculateGrandTotal()),
-      discount: additionalItems.reduce((sum, item) => sum + item.discount, 0),
-      additionalItems: additionalItems.map(item => {
-        // FIXED: Use the item.id which now contains the correct productId
-        return {
+
+
+  // Handle confirm function
+  const handleConfirm = useCallback(async () => {
+    setLoading(true);
+    
+    try {
+      const orderData = {
+        userId: route.params?.id,
+        isPackage: isPackage === "1" ? 1 : 0,
+        packageId: packageValue ? parseInt(packageValue) : null,
+        total: parseFloat(calculateGrandTotal()),
+        fullTotal: parseFloat(calculateGrandTotal()),
+        discount: additionalItems.reduce((sum, item) => sum + item.discount, 0),
+        additionalItems: additionalItems.map(item => ({
           productId: item.id, // This now contains the correct productId
           qty: item.quantity,
           unit: item.unit.toLowerCase(),
           price: item.discountedPricePerKg * (item.unit === 'Kg' ? item.quantity : item.quantity / 1000),
           discount: item.discount
-        };
-      })
+        }))
+      };
+
+      navigation.navigate("ScheduleScreen" as any, { 
+        orderData,
+        customerid: route.params?.id,
+        isPackage
+      });
+      
+    } catch (error) {
+      console.error("Error confirming order:", error);
+      Alert.alert("Error", "Failed to process order");
+    } finally {
+      setLoading(false);
+    }
+  }, [isPackage, packageValue,  additionalItems, navigation, route.params?.id]);
+
+  // Updated handleSaveItem function with dynamic quantity initialization
+  const handleSaveItem = useCallback(() => {
+    const selectedProductData = productItems.find(item => item.value === productValue);
+    
+    if (!selectedProductData) {
+      Alert.alert("Error", "Please select a product");
+      return;
+    }
+
+    const unit = selectedUnit === 'Kg' ? 'Kg' : 'g';
+    const quantityInKg = unit === 'Kg' ? quantity : quantity / 1000;
+    
+    // Get both normal and discounted prices
+    const normalPrice = parseFloat(selectedProductData.price);
+    const discountedPrice = selectedProductData.discountedPrice 
+      ? parseFloat(selectedProductData.discountedPrice) 
+      : normalPrice;
+    const discountPerKg = normalPrice - discountedPrice;
+    const totalDiscountForQuantity = discountPerKg * quantityInKg;
+    
+    const totalAmount = quantityInKg * discountedPrice;
+   
+    const newItem = {
+      id: selectedProductData.id || Date.now(), // Use product ID or timestamp as fallback
+      name: selectedProductData.label,
+      quantity: quantity,
+      unit: unit,
+      pricePerKg: normalPrice,
+      discountedPricePerKg: discountedPrice,
+      discount: totalDiscountForQuantity,
+      totalAmount: totalAmount,
+      selected: false
     };
 
-    navigation.navigate("ScheduleScreen" as any, { 
-      orderData,
-      customerid: id,
-      isPackage
-    });
+    setAdditionalItems(prev => [...prev, newItem]);
     
-  } catch (error) {
-    console.error("Error confirming order:", error);
-    Alert.alert("Error", "Failed to process order");
-  } finally {
-    setLoading(false);
-  }
-};
+    setShowAddModal(false);
+    setQuantity(1);
+    setSelectedUnit('g');
+    setPricePerKg(discountedPrice);
+  }, [productItems, productValue, selectedUnit, quantity, selectedProduct]);
 
-// 3. Fix the handleSaveItem function for proper ID generation:
-const handleSaveItem = () => {
-  const selectedProductData = productItems.find(item => item.value === productValue);
-  
-  if (!selectedProductData) {
-    Alert.alert("Error", "Please select a product");
-    return;
-  }
-
-  const unit = selectedUnit === 'Kg' ? 'Kg' : 'g';
-  const quantityInKg = unit === 'Kg' ? quantity : quantity / 1000;
-  
-  // Get both normal and discounted prices
-  const normalPrice = parseFloat(selectedProductData.price);
-  const discountedPrice = selectedProductData.discountedPrice 
-    ? parseFloat(selectedProductData.discountedPrice) 
-    : normalPrice;
-  const discountPerKg = normalPrice - discountedPrice;
-  const totalDiscountForQuantity = discountPerKg * quantityInKg;
-  
-  const totalAmount = quantityInKg * discountedPrice;
  
-  const newItem: AdditionalItem = {
-    // FIXED: Use the actual product ID from selectedProductData
-    id: selectedProductData.id || Date.now(), // Use product ID or timestamp as fallback
-    name: selectedProductData.label,
-    quantity: quantity,
-    unit: unit,
-    pricePerKg: normalPrice,
-    discountedPricePerKg: discountedPrice,
-    discount: totalDiscountForQuantity,
-    totalAmount: totalAmount,
-    selected: false
-  };
-
-  setAdditionalItems([...additionalItems, newItem]);
-  
-  setShowAddModal(false);
-  setQuantity(1);
-  setSelectedUnit('g');
-  setPricePerKg(discountedPrice);
-};
-
-  // Fetch package items when packageValue changes
-  useEffect(() => {
-    if (packageValue) {
-      const packageId = parseInt(packageValue, 10);
-      if (!isNaN(packageId)) {
-        fetchItemsForPackage(packageId);
-      }
-    }
-  }, [packageValue]);
 
   // Modify fetchItemsForPackage to handle pre-selected package
   const fetchItemsForPackage = async (packageId: number) => {
@@ -495,7 +570,10 @@ const fetchCrops = async () => {
         unitType: item.unitType,
         price: item.normalPrice,
         discountedPrice: item.discountedPrice,
-        discount: (parseFloat(item.normalPrice) - parseFloat(item.discountedPrice)).toFixed(2)
+        discount: (parseFloat(item.normalPrice) - parseFloat(item.discountedPrice)).toFixed(2),
+        // Add new fields for dynamic quantity handling
+        changeby: item.changeby || '1',
+        startValue: item.startValue || '1',
       }));
 
     setProductItems(retailItems);
@@ -516,51 +594,19 @@ const fetchCrops = async () => {
 
 
 
-// In your OrderScreen's handleConfirm function:
-// const handleConfirm = async () => {
-//   setLoading(true);
-  
-//   try {
-//     const orderData = {
-//       userId: id,
-//       isPackage: isPackage === "1" ? 1 : 0,
-//       packageId: packageValue ? parseInt(packageValue) : null,
-//       total: parseFloat(calculateGrandTotal()),
-//       fullTotal: parseFloat(calculateGrandTotal()),
-//       discount: additionalItems.reduce((sum, item) => sum + item.discount, 0),
-//       additionalItems: additionalItems.map(item => {
-//         const product = productItems.find(p => p.label === item.name);
-//         return {
-//           productId: product ? product.id : 0, // Now using marketplaceitems.id
-//           qty: item.quantity,
-//           unit: item.unit.toLowerCase(),
-//           price: item.discountedPricePerKg * item.quantity,
-//           discount: item.discount
-//         };
-//       })
-//     };
-
-//     navigation.navigate("ScheduleScreen" as any, { 
-//       orderData ,
-//       customerid: id,
-//       isPackage
-//     });
-    
-//   } catch (error) {
-//     console.error("Error confirming order:", error);
-//     Alert.alert("Error", "Failed to process order");
-//   } finally {
-//     setLoading(false);
-//   }
-// };
-
-
   const handleBack = () => {
     console.log('Navigate back');
   };
 
   const handleAddMore = () => {
     setShowAddModal(true);
+    // Reset quantity to startValue when opening modal
+    const selectedProductData = productItems.find(item => item.value === productValue);
+    if (selectedProductData && selectedProductData.startValue) {
+      setQuantity(Number(selectedProductData.startValue));
+    } else {
+      setQuantity(1);
+    }
   };
 
  
@@ -601,50 +647,7 @@ const calculateDiscountForQuantity = () => {
   return (packageTotalAmount + additionalItemsTotal).toFixed(2);
 };
 
-// Update the handleSaveItem function
-// const handleSaveItem = () => {
-//   const selectedProductData = productItems.find(item => item.value === productValue);
-  
-//   if (!selectedProductData) {
-//     Alert.alert("Error", "Please select a product");
-//     return;
-//   }
 
-//   const unit = selectedUnit === 'Kg' ? 'Kg' : 'g';
-//   const quantityInKg = unit === 'Kg' ? quantity : quantity / 1000;
-  
-//   // Get both normal and discounted prices
-//   const normalPrice = parseFloat(selectedProductData.price);
-//   const discountedPrice = selectedProductData.discountedPrice 
-//     ? parseFloat(selectedProductData.discountedPrice) 
-//     : normalPrice;
-//   const discountPerKg = normalPrice - discountedPrice;
-//   const totalDiscountForQuantity = discountPerKg * quantityInKg;
-  
-//   const totalAmount = quantityInKg * discountedPrice;
- 
-//   const newItem: AdditionalItem = {
-//     id: parseInt(id),
-//     name: selectedProductData.label,
-//     quantity: quantity,
-//     unit: unit,
-//     pricePerKg: normalPrice,
-//     discountedPricePerKg: discountedPrice,
-//     discount: totalDiscountForQuantity, // Store total discount for this quantity
-//     totalAmount: totalAmount,
-//     selected: false
-//   };
-
-//   setAdditionalItems([...additionalItems, newItem]);
-
-//   console.log("===========", selectedProductData);
-//   console.log("Total discount for quantity:", totalDiscountForQuantity);
-  
-//   setShowAddModal(false);
-//   setQuantity(1);
-//   setSelectedUnit('g');
-//   setPricePerKg(discountedPrice);
-// };
 
 
 
@@ -673,12 +676,30 @@ const deleteSelectedItems = () => {
     setAdditionalItems(items => items.filter(item => item.id !== id));
   };
 
+  // Updated increment function with dynamic changeBy value
   const incrementQuantity = () => {
-    setQuantity(prev => prev + 1);
+    const selectedProductData = productItems.find(item => item.value === productValue);
+    const changeBy = selectedProductData?.changeby ? Number(selectedProductData.changeby) : 1;
+    
+    // Adjust changeBy based on unit type
+    const adjustedChangeBy = selectedUnit === 'Kg' ? changeBy : changeBy * 1000;
+    
+    setQuantity(prev => prev + adjustedChangeBy);
   };
 
+  // Updated decrement function with dynamic changeBy value
   const decrementQuantity = () => {
-    setQuantity(prev => prev > 1 ? prev - 1 : 1);
+    const selectedProductData = productItems.find(item => item.value === productValue);
+    const changeBy = selectedProductData?.changeby ? Number(selectedProductData.changeby) : 1;
+    
+    // Adjust changeBy based on unit type
+    const adjustedChangeBy = selectedUnit === 'Kg' ? changeBy : changeBy * 1000;
+    const startValue = selectedProductData?.startValue ? Number(selectedProductData.startValue) : 1;
+    
+    // Adjust startValue based on unit type
+    const adjustedStartValue = selectedUnit === 'Kg' ? startValue : startValue * 1000;
+    
+    setQuantity(prev => prev > adjustedStartValue ? prev - adjustedChangeBy : adjustedStartValue);
   };
 
 
@@ -715,11 +736,23 @@ const saveUpdatedItem = () => {
   setEditingItem(null);
 };
 
+// Updated updateQuantity function for edit modal with dynamic values
 const updateQuantity = (changeBy: number, increase: boolean) => {
+  if (!editingItem) return;
+  
+  // Get the product data to access changeby and startValue
+  const productData = productItems.find(item => item.id === editingItem.id);
+  const dynamicChangeBy = productData?.changeby ? Number(productData.changeby) : changeBy;
+  const startValue = productData?.startValue ? Number(productData.startValue) : 1;
+  
+  // Adjust values based on unit type
+  const adjustedChangeBy = editSelectedUnit === 'Kg' ? dynamicChangeBy : dynamicChangeBy * 1000;
+  const adjustedStartValue = editSelectedUnit === 'Kg' ? startValue : startValue * 1000;
+  
   if (increase) {
-    setNewItemQuantity(prev => prev + changeBy);
+    setNewItemQuantity(prev => prev + adjustedChangeBy);
   } else {
-    setNewItemQuantity(prev => Math.max(changeBy, prev - changeBy));
+    setNewItemQuantity(prev => Math.max(adjustedStartValue, prev - adjustedChangeBy));
   }
 };
 
@@ -737,6 +770,37 @@ const handleEditItem = (item: AdditionalItem) => {
   setEditSelectedUnit(item.unit);
   setModalVisible(true);
 };
+
+// Updated effect to set initial quantity based on product selection
+useEffect(() => {
+  if (productValue) {
+    const selectedProductData = productItems.find(item => item.value === productValue);
+    if (selectedProductData) {
+      const startValue = selectedProductData.startValue ? Number(selectedProductData.startValue) : 1;
+      // Adjust startValue based on current unit
+      const adjustedStartValue = selectedUnit === 'Kg' ? startValue : startValue * 1000;
+      setQuantity(adjustedStartValue);
+      
+      const discountedPrice = selectedProductData.discountedPrice 
+        ? parseFloat(selectedProductData.discountedPrice) 
+        : parseFloat(selectedProductData.price);
+      setPricePerKg(discountedPrice);
+    }
+  }
+}, [productValue, selectedUnit, productItems]);
+
+// Updated effect to handle unit changes
+useEffect(() => {
+  if (productValue) {
+    const selectedProductData = productItems.find(item => item.value === productValue);
+    if (selectedProductData) {
+      const startValue = selectedProductData.startValue ? Number(selectedProductData.startValue) : 1;
+      // Adjust startValue based on current unit
+      const adjustedStartValue = selectedUnit === 'Kg' ? startValue : startValue * 1000;
+      setQuantity(adjustedStartValue);
+    }
+  }
+}, [selectedUnit]);
 
 
   useEffect(() => {
@@ -758,13 +822,13 @@ const handleEditItem = (item: AdditionalItem) => {
       <StatusBar barStyle="dark-content" backgroundColor="white" />
       
       {/* Header */}
-      <View className="flex-row items-center justify-between bg-white">
+      <View className="flex-row items-center justify-between bg-white p-2">
        <BackButton navigation={navigation} />
         <Text className="text-lg font-semibold text-purple-600">Order Details</Text>
         <View className="w-6" />
       </View>
 
-      <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
+      <ScrollView className="flex-1 px-7" showsVerticalScrollIndicator={false}>
         {/* Package Selection */}
         <View className="mb-6" style={{ zIndex: 3000 }}>
           <Text className="font-medium text-gray-700 mb-2 rounded-full">Package</Text>
@@ -777,11 +841,11 @@ const handleEditItem = (item: AdditionalItem) => {
             setItems={setPackageItems}
             onChangeValue={handlePackageChange}
             placeholder="Select a package"
-            placeholderStyle={{ color: '#9CA3AF' }}
+            placeholderStyle={{ color: '#000000' }}
             style={{
-              backgroundColor: '#F3F4F6',
-              borderColor: '#F3F4F6',
-              borderRadius: 8,
+              backgroundColor: '#F6F6F6',
+              borderColor: '#F6F6F6',
+              borderRadius: 20,
               minHeight: 48,
             }}
             textStyle={{
@@ -927,43 +991,52 @@ const handleEditItem = (item: AdditionalItem) => {
  
       </ScrollView>
 
-      {/* Bottom Total Section */}
-      <View className={`bg-white flex-row justify-between items-center p-4 rounded-t-3xl shadow-lg`}
-        style={{
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.2,
-          shadowRadius: 8,
-          elevation: 10,
-          marginTop: -10,
-        }}
-      >
-        <Text className="text-lg font-semibold text-gray-800">
+ 
+
+{/* Bottom Total Section - Only show when a package is selected */}
+{/* Bottom Total Section - Only show when a package is selected */}
+{packageValue && (
+  <View className={`bg-white flex-row justify-between items-center p-4 rounded-t-3xl shadow-lg`}
+    style={{
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: -4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+      elevation: 10,
+      marginTop: -10,
+    }}
+  >
+
+    <Text className="text-lg font-semibold text-gray-800">
       Grand Total:
     </Text>
+
     <Text className="text-lg font-semibold text-purple-600">
       Rs. {calculateGrandTotal()}
     </Text>
 
-        <TouchableOpacity onPress={handleConfirm}>
-          <LinearGradient 
-            colors={["#6839CF", "#874DDB"]} 
-            className="py-3 px-6 rounded-full"
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-          >
-            <View className="w-14 flex-row justify-center items-center" style={{ minHeight: 20 }}>
-              {loading ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              ) : (
-                <Text className="text-white font-semibold">
-                  Confirm
-                </Text>
-              )}
+    <TouchableOpacity onPress={handleConfirm}>
+      <LinearGradient 
+        colors={["#6839CF", "#874DDB"]} 
+        className="py-3 px-6 rounded-full"
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+      >
+        <View className="w-14 flex-row justify-center items-center" style={{ minHeight: 20 }}>
+          {loading ? (
+            <ActivityIndicator color="#FFFFFF" size="small" />
+          ) : (
+            <View>
+            <Text className="text-white font-semibold">
+              Confirm
+            </Text>
             </View>
-          </LinearGradient>
-        </TouchableOpacity>
-      </View>
+          )}
+        </View>
+      </LinearGradient>
+    </TouchableOpacity>
+  </View>
+)}
 
       {/* Add More Modal */}
    <Modal
@@ -1029,7 +1102,7 @@ const handleEditItem = (item: AdditionalItem) => {
       <View className="mb-6">
         <Text className="text-gray-700  mb-3">Price per 1kg</Text>
         <View className="bg-gray-50 rounded-xl px-4 py-4">
-          <Text className="text-gray-900">Rs.{pricePerKg || '100.00'}</Text>
+          <Text className="text-gray-900">Rs.{pricePerKg || '0.00'}</Text>
         </View>
       </View>
 

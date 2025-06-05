@@ -45,7 +45,7 @@ interface Order {
   paymentStatus: number;
   orderStatus: string;
   createdAt: string;
-  InvNo: string;
+  invoiceNumber: string;
   fullTotal: string | null;
   fullSubTotal: string | null;
   fullDiscount: string | null;
@@ -250,7 +250,7 @@ const convertImageAlternative = async () => {
       const watermarkBase64 = await convertImageToBase64();
       
 
-      const invoiceNumber = order?.InvNo || `INV-${Date.now()}`;
+      const invoiceNumber = order?.invoiceNumber || `INV-${Date.now()}`;
   
 
       let itemsRows = '';
@@ -349,7 +349,7 @@ const convertImageAlternative = async () => {
                     <p>Address: No 46/42, Nawam Mawatha, Colombo 02
 </p>
                     <p>Contact: +94 770111999</p>
-                    <p>Invoice Number: <strong>${order?.InvNo}</strong></p>
+                    <p>Invoice Number: <strong>${order?.invoiceNumber}</strong></p>
                     <p>Date: <strong>${new Date().toLocaleDateString()}</strong></p>
                 </div>
   
@@ -567,7 +567,7 @@ const convertImageAlternative = async () => {
                 Order is Confirmed!
               </Text>
               <Text style={{ fontSize: 18 }} className="text-[#3F3F3F] text-center mt-2">
-                Order No: {order?.InvNo}
+                Order No: {order?.invoiceNumber}
               </Text>
               <Text style={{ fontSize: 16 }} className="text-[#747474] text-center mt-5">
                 Order Confirmation message and Payment Gateway Link has been sent to your Customer

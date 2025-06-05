@@ -117,53 +117,67 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
   console.log("============",isPackage)
 
   useEffect(() => {
-    if (route.params?.selectedProducts) {
-      const initializedItems = route.params.selectedProducts.map(item => {
-        // Parse startValue as number for increment/decrement operations
-        const startValueNum = typeof item.startValue === 'string' 
-          ? parseFloat(item.startValue) 
-          : item.startValue || 0.5;
-          
-        // Make sure unitType is lowercase to match component state
-        // Default to kg if not specified
-        const unitType = item.unitType?.toLowerCase() === 'g' ? 'g' : 'kg';
+  if (route.params?.selectedProducts) {
+    const initializedItems = route.params.selectedProducts.map(item => {
+      // Parse startValue as number for increment/decrement operations
+      const startValueNum = typeof item.startValue === 'string' 
+        ? parseFloat(item.startValue) 
+        : item.startValue || 0.5;
         
-        // Use the actual quantity from the item, not startValue
-        // This is the current quantity that should be displayed
-        const currentQuantity = typeof item.quantity === 'string' 
-          ? parseFloat(item.quantity) 
-          : item.quantity || startValueNum;
-        
-        // Calculate initial changeby value based on unitType
-        // If coming from order summary, use the actual quantity
-        let initialChangeby;
-        if (fromOrderSummary) {
-          // Use the actual quantity passed from order summary
-          initialChangeby = unitType === 'g' 
-            ? currentQuantity * 1000  // If in grams, convert from kg
-            : currentQuantity;        // If in kg, use as is
-        } else {
-          // For new items, use startValue
-          initialChangeby = unitType === 'g' 
-            ? startValueNum * 1000  // If in grams, convert from kg
-            : startValueNum;        // If in kg, use as is
-        }
-        
-        return {
-          ...item,
-          // If coming from order summary, don't select items (for editing)
-          // Otherwise, use the item's selected state or default to false
-          selected: fromOrderSummary ? false : (item.selected || false),
-          changeby: initialChangeby, 
-          quantity: initialChangeby,
-          unitType: unitType,
-          startValue: startValueNum // Keep original startValue for increment/decrement
-        };
-      });
+      // Make sure unitType is lowercase to match component state
+      const unitType = item.unitType?.toLowerCase() === 'g' ? 'g' : 'kg';
       
-      setCartItems(initializedItems);
-    }
-  }, [route.params, fromOrderSummary]);
+      // Use the actual quantity from the item
+      const currentQuantity = typeof item.quantity === 'string' 
+        ? parseFloat(item.quantity) 
+        : item.quantity || startValueNum;
+      
+      // Calculate initial changeby value based on unitType
+      let initialChangeby;
+      if (fromOrderSummary) {
+        // Use the actual quantity passed from order summary
+        initialChangeby = unitType === 'g' 
+          ? currentQuantity * 1000  // If in grams, convert from kg
+          : currentQuantity;        // If in kg, use as is
+      } else {
+        // For new items, use startValue
+        initialChangeby = unitType === 'g' 
+          ? startValueNum * 1000  // If in grams, convert from kg
+          : startValueNum;        // If in kg, use as is
+      }
+
+      // Calculate price per kg from the total price and quantity
+      const pricePerKg = currentQuantity > 0 ? item.discountedPrice / currentQuantity : 0;
+      const normalPricePerKg = currentQuantity > 0 ? item.normalPrice / currentQuantity : 0;
+      
+      // FIXED: Calculate discount per kg from the original discount value
+      const discountPerKg = currentQuantity > 0 ? item.discount / currentQuantity : 0;
+      
+      return {
+        ...item,
+        // Fix name display - use name or fallback to a proper display name
+        name: item.name || `Product ${item.id}`,
+        // Store per-kg prices for calculations
+        pricePerKg: pricePerKg,
+        normalPricePerKg: normalPricePerKg,
+        discountPerKg: discountPerKg, // Now correctly calculated
+        // Use discountedPrice as the per-kg price for display
+        price: pricePerKg,
+        normalPrice: normalPricePerKg,
+        discountedPrice: pricePerKg,
+        // IMPORTANT: Keep the original discount value
+        discount: discountPerKg, // This should be per kg discount
+        selected: fromOrderSummary ? false : (item.selected || false),
+        changeby: initialChangeby, 
+        quantity: initialChangeby,
+        unitType: unitType,
+        startValue: startValueNum
+      };
+    });
+    
+    setCartItems(initializedItems);
+  }
+}, [route.params, fromOrderSummary]);
 
   useEffect(() => {
     const hasSelectedItems = cartItems.some(item => item.selected);
@@ -331,7 +345,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
         
         return {
           id: item.id,
-          //name: item.name,
+          name: item.name,
           price: item.discountedPrice * weightInKg ,
           discount:item.discount * weightInKg,
          // normalPrice: item.normalPrice,
