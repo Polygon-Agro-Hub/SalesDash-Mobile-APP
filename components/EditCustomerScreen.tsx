@@ -311,7 +311,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
   
     } catch (error: unknown) {
       if (error instanceof Error) {
-        Alert.alert("Error", `Failed to update customer: ${error.message}`);
+      //  Alert.alert("Error", `Failed to update customer: ${error.message}`);
         console.error(error);
       } else {
         Alert.alert("Error", "An unknown error occurred");

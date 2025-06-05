@@ -931,7 +931,8 @@ useEffect(() => {
                 onPress={handleAddMore}
                 className="flex-row items-center gap-1"
               >
-                <Ionicons name="add" size={16} color="#7C3AED" />
+                {/* <Ionicons name="add" size={16} color="#7C3AED" /> */}
+                 <Image source={require("../assets/images/Add.webp")} className="w-5 h-5 " />
                 <Text className="text-purple-600 text-sm font-medium">Add More</Text>
               </TouchableOpacity>
             </View>

@@ -257,10 +257,30 @@ const isTimelineItemActive = (status: string) => {
   return itemIndex <= currentIndex;
 };
 
+    // const handleGetACall = () => {
+    //   const phoneNumber = `tel:${order?.phoneNumber}`;
+    //   Linking.openURL(phoneNumber).catch((err) => console.error("Error opening dialer", err));
+    // };
+
     const handleGetACall = () => {
-      const phoneNumber = `tel:${order?.phoneNumber}`;
-      Linking.openURL(phoneNumber).catch((err) => console.error("Error opening dialer", err));
-    };
+    let phoneNumber = order?.phoneNumber || '';
+    
+    // Ensure phone number has +94 country code
+    if (phoneNumber) {
+        // Remove any existing country code formats
+        phoneNumber = phoneNumber.replace(/^\+?94/, ''); // Remove +94 or 94 if exists
+        phoneNumber = phoneNumber.replace(/^0/, ''); // Remove leading 0 if exists
+        
+        // Clean up any spaces, dashes, or parentheses
+        phoneNumber = phoneNumber.replace(/[\s\-\(\)]/g, '');
+        
+        // Add +94 country code
+        phoneNumber = `+94${phoneNumber}`;
+    }
+    
+    const telUrl = `tel:${phoneNumber}`;
+    Linking.openURL(telUrl).catch((err) => console.error("Error opening dialer", err));
+};
 
     const handleCancelOrder = () => {
       if (isCancelDisabled()) {
