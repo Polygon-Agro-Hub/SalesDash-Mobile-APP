@@ -22,12 +22,11 @@ import { Asset } from "expo-asset";
 import * as FileSystem from "expo-file-system";
 import axios from "axios";
 import environment from "@/environment/environment";
-
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as MediaLibrary from 'expo-media-library';
 
 type OrderConfirmedScreenNavigationProp = StackNavigationProp<RootStackParamList, "OrderConfirmedScreen">;
 type OrderConfirmedScreenRouteProp = RouteProp<RootStackParamList, "OrderConfirmedScreen">;
-
 
 interface OrderConfirmedScreenProps {
   navigation: OrderConfirmedScreenNavigationProp;
@@ -36,7 +35,7 @@ interface OrderConfirmedScreenProps {
 
 interface Order {
   orderId: number;
-  customerId: number;
+  userId: number;
   deliveryType: string;
   scheduleDate: string;
   scheduleTimeSlot: string;
@@ -50,7 +49,7 @@ interface Order {
   fullSubTotal: string | null;
   fullDiscount: string | null;
   deleteStatus: string | null;
-  title: string | null ;
+  title: string | null;
   firstName: string;
   lastName: string;
   phoneNumber: string;
@@ -58,13 +57,37 @@ interface Order {
   fullAddress: string;
 }
 
-const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation, route }) => {
- 
-    const [order, setOrder] = useState<Order | null>(null);
-  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
-   const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+interface CustomerData {
+  title?: string;
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
+  buildingType?: string;
+  buildingDetails?: {
+    buildingNo?: string;
+    unitNo?: string;
+    buildingName?: string;
+    floorNo?: string;
+    houseNo?: string;
+    streetName?: string;
+    city?: string;
+  };
+}
 
+interface City {
+  id: number;
+  city: string;
+  charge: string;
+  createdAt?: string;
+}
+
+const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation, route }) => {
+  const [order, setOrder] = useState<Order | null>(null);
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [deliveryFee, setDeliveryFee] = useState<number>(0);
+  const [customerData, setCustomerData] = useState<CustomerData | null>(null);
 
   const { 
     orderId = "N/A", 
@@ -78,11 +101,11 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
     items = []
   } = route.params || {};
 
+  console.log("vhalkdz", order?.invoiceNumber);
+  console.log("kacsbhm", customerId);
 
   useEffect(() => {
-
     const handleBackPress = () => {
-   
       return true;
     };
  
@@ -91,12 +114,8 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
       handleBackPress
     );
   
-  
     return () => backHandler.remove();
   }, []);
-  
-
-  
 
   useEffect(() => {
     let isMounted = true;
@@ -105,6 +124,8 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
     const fetchOrderDetails = async () => {
       try {
         setLoading(true);
+        console.log("orderid", orderId);
+        
         const response = await axios.get(
           `${environment.API_BASE_URL}api/orders/get-order/${orderId}`,
           { timeout: 30000 } 
@@ -129,10 +150,8 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
         }
       }
     };
-    
 
     fetchOrderDetails();
-    
 
     timeoutId = setTimeout(() => {
       if (isMounted) {
@@ -141,7 +160,6 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
       }
     }, 10000);
     
-    // Cleanup function
     return () => {
       isMounted = false;
       if (timeoutId) {
@@ -150,8 +168,84 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
     };
   }, [orderId]);
 
- 
+  // Fetch customer data and delivery fee after order is loaded
+  useEffect(() => {
+    const fetchCustomerDataAndDeliveryFee = async () => {
+      if (!order?.userId) {
+        console.log("No userId found in order data");
+        return;
+      }
 
+      try {
+        console.log("Fetching customer data for userId:", order.userId);
+        
+        const storedToken = await AsyncStorage.getItem("authToken");
+        if (!storedToken) {
+          console.log("No authentication token found");
+          setError("No authentication token found");
+          return;
+        }
+        
+        // Fetch customer data using userId from order
+        const customerResponse = await axios.get(
+          `${environment.API_BASE_URL}api/orders/get-customer-data/${order.userId}`,
+          {
+            headers: { Authorization: `Bearer ${storedToken}` },
+          }
+        );
+        
+        console.log("Customer API response:", customerResponse.data);
+        
+        if (customerResponse.data && customerResponse.data.success) {
+          console.log("Customer data received:", customerResponse.data.data);
+          setCustomerData(customerResponse.data.data);
+          
+          // Extract city from customer data
+          const customerCity = customerResponse.data.data.buildingDetails?.city;
+          console.log("Customer city:", customerCity);
+          
+          if (customerCity) {
+            // Fetch cities to get delivery charge
+            const cityResponse = await axios.get<{ data: City[] }>(
+              `${environment.API_BASE_URL}api/customer/get-city`,
+              { headers: { Authorization: `Bearer ${storedToken}` }}
+            );
+            
+            console.log("Cities API response:", cityResponse.data);
+            
+            if (cityResponse.data && cityResponse.data.data) {
+              const cityData = cityResponse.data.data.find(c => c.city === customerCity);
+              if (cityData) {
+                const fee = parseFloat(cityData.charge) || 0;
+                setDeliveryFee(fee);
+                console.log(`Setting delivery fee to ${fee} for city ${customerCity}`);
+              } else {
+                console.log(`City ${customerCity} not found in cities list`);
+              }
+            }
+          }
+        } else {
+          const errorMsg = customerResponse.data?.message || "Failed to fetch customer data";
+          console.log("Customer API error:", errorMsg);
+          setError(errorMsg);
+        }
+      } catch (error: any) {
+        console.error("Error fetching customer data:", error);
+        if (axios.isAxiosError(error)) {
+          const errorMsg = error.response?.data?.message || error.message;
+          console.log("Axios error details:", errorMsg);
+          setError(errorMsg);
+        } else {
+          setError("Failed to fetch customer data");
+        }
+      }
+    };
+
+    // Only fetch customer data when order is available
+    if (order && order.userId) {
+      fetchCustomerDataAndDeliveryFee();
+    }
+  }, [order]); // Dependency on order object
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
@@ -163,95 +257,58 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
     };
   }, []);
 
-
-  // const convertImageToBase64 = async () => {
-  //   try {
-  //     const asset = Asset.fromModule(require("../assets/images/Watermark.webp"));
-  //     await asset.downloadAsync();
-  
-  //     if (!asset.localUri) {
-  //       console.warn("Asset local URI not found");
-  //       return "";
-  //     }
-  
-  //     const base64 = await FileSystem.readAsStringAsync(asset.localUri, {
-  //       encoding: FileSystem.EncodingType.Base64,
-  //     });
-  
-  //     return `data:image/png;base64,${base64}`;
-  //   } catch (error) {
-  //     console.error("Error converting image to base64:", error);
-  //     return "";
-  //   }
-  // };
-
   const convertImageToBase64 = async () => {
-  try {
-    // Method 1: Try using Asset.fromModule with better error handling
-    const asset = Asset.fromModule(require("../assets/images/Watermark.webp"));
-    
-    // Ensure asset is downloaded
-    if (!asset.downloaded) {
-      await asset.downloadAsync();
-    }
-    
-    // Check if localUri exists
-    if (!asset.localUri) {
-      console.warn("Asset local URI not found, falling back to alternative method");
+    try {
+      const asset = Asset.fromModule(require("../assets/images/Watermark.webp"));
+      
+      if (!asset.downloaded) {
+        await asset.downloadAsync();
+      }
+      
+      if (!asset.localUri) {
+        console.warn("Asset local URI not found, falling back to alternative method");
+        return await convertImageAlternative();
+      }
+
+      const base64 = await FileSystem.readAsStringAsync(asset.localUri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      return `data:image/webp;base64,${base64}`;
+    } catch (error) {
+      console.error("Error converting image to base64:", error);
       return await convertImageAlternative();
     }
+  };
 
-    const base64 = await FileSystem.readAsStringAsync(asset.localUri, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
-
-    return `data:image/webp;base64,${base64}`;
-  } catch (error) {
-    console.error("Error converting image to base64:", error);
-    return await convertImageAlternative();
-  }
-};
-
-// Alternative method using expo-asset and file system
-const convertImageAlternative = async () => {
-  try {
-    // For production builds, try to access the bundled resource directly
-    const assetInfo = require("../assets/images/Watermark.webp");
-    
-    // If it's a number (resource ID), use expo-asset
-    if (typeof assetInfo === 'number') {
-      const asset = Asset.fromModule(assetInfo);
-      await asset.downloadAsync();
+  const convertImageAlternative = async () => {
+    try {
+      const assetInfo = require("../assets/images/Watermark.webp");
       
-      if (asset.localUri) {
-        const base64 = await FileSystem.readAsStringAsync(asset.localUri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-        return `data:image/webp;base64,${base64}`;
+      if (typeof assetInfo === 'number') {
+        const asset = Asset.fromModule(assetInfo);
+        await asset.downloadAsync();
+        
+        if (asset.localUri) {
+          const base64 = await FileSystem.readAsStringAsync(asset.localUri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          return `data:image/webp;base64,${base64}`;
+        }
       }
+      
+      console.warn("Unable to load watermark image");
+      return "";
+    } catch (error) {
+      console.error("Alternative watermark conversion failed:", error);
+      return "";
     }
-    
-    // Fallback: return empty string or default watermark
-    console.warn("Unable to load watermark image");
-    return "";
-  } catch (error) {
-    console.error("Alternative watermark conversion failed:", error);
-    return "";
-  }
-};
-  
-  
-
-  
+  };
 
   const handleDownloadAndShareInvoice = async () => {
     try {
-    
       const watermarkBase64 = await convertImageToBase64();
-      
-
       const invoiceNumber = order?.invoiceNumber || `INV-${Date.now()}`;
-  
 
       let itemsRows = '';
       if (items && items.length > 0) {
@@ -267,7 +324,6 @@ const convertImageAlternative = async () => {
             </tr>`;
         });
       }
-  
 
       const htmlContent = `
         <!DOCTYPE html>
@@ -346,8 +402,7 @@ const convertImageAlternative = async () => {
                 <h3>Purchase Invoice</h3>
                 <div class="section">
                     <p class="bold">AgroWorld (Pvt) Ltd.</p>
-                    <p>Address: No 46/42, Nawam Mawatha, Colombo 02
-</p>
+                    <p>Address: No 46/42, Nawam Mawatha, Colombo 02</p>
                     <p>Contact: +94 770111999</p>
                     <p>Invoice Number: <strong>${order?.invoiceNumber}</strong></p>
                     <p>Date: <strong>${new Date().toLocaleDateString()}</strong></p>
@@ -392,7 +447,7 @@ const convertImageAlternative = async () => {
                         </tr>
                         <tr>
                             <td>Subtotal</td>
-                            <td>${(subtotal ).toFixed(2)}</td>
+                            <td>${(total+ discount).toFixed(2)}</td>
                         </tr>
                         <tr>
                             <td>Discount</td>
@@ -400,11 +455,11 @@ const convertImageAlternative = async () => {
                         </tr>
                          <tr>
                             <td>Delivery Fee</td>
-                            <td>350.00</td>
+                            <td>${deliveryFee.toFixed(2)}</td>
                         </tr>
                         <tr>
                             <td><strong>Grand Total</strong></td>
-                           <td><strong>${(total + 350).toFixed(2)}</strong></td>
+                           <td><strong>${(total + deliveryFee).toFixed(2)}</strong></td>
                         </tr>
                     </table>
                 </div>
@@ -423,133 +478,57 @@ const convertImageAlternative = async () => {
         </body>
         </html>
       `;
-   
-  //     const { uri: pdfUri } = await Print.printToFileAsync({ 
-  //       html: htmlContent,
-  //       width: 595, 
-  //       height: 842,  
-  //       base64: false
-  //     });
-  
 
-  //     const downloadDir = FileSystem.documentDirectory + 'Invoices/';
-  //     const fileName = `Invoice_${invoiceNumber}.pdf`;
-  //     const localUri = `${downloadDir}${fileName}`;
-  
-     
-  //     await FileSystem.makeDirectoryAsync(downloadDir, { intermediates: true });
-      
+      const { uri: pdfUri } = await Print.printToFileAsync({ 
+        html: htmlContent,
+        width: 595, 
+        height: 842,  
+        base64: false
+      });
 
-  //     await FileSystem.moveAsync({
-  //       from: pdfUri,
-  //       to: localUri
-  //     });
-  
+      const fileName = `Invoice_${invoiceNumber}.pdf`;
+      const tempFilePath = `${FileSystem.cacheDirectory}${fileName}`;
 
-  //     if (Platform.OS === 'android') {
-  //       try {
-  //         const { status } = await MediaLibrary.requestPermissionsAsync();
-  //         if (status === 'granted') {
-  //           await MediaLibrary.createAssetAsync(localUri);
-  //         }
-  //       } catch (e) {
-  //         console.log('Error saving to Downloads:', e);
-  //       }
-  //     }
-  
+      await FileSystem.copyAsync({
+        from: pdfUri,
+        to: tempFilePath
+      });
 
-  //     Alert.alert(
-  //       'Invoice Ready',
-  //       'What would you like to do with the invoice?',
-  //       [
-  //         {
-  //           text: 'Download Only',
-  //           onPress: () => {
-  //             Alert.alert('Success', `Invoice saved to: ${localUri}`);
-  //           }
-  //         },
-  //         {
-  //           text: 'Share',
-  //           onPress: async () => {
-  //             try {
-  //               await Sharing.shareAsync(localUri, {
-  //                 mimeType: 'application/pdf',
-  //                 dialogTitle: 'Share Invoice',
-  //                 UTI: 'com.adobe.pdf'
-  //               });
-  //             } catch (shareError) {
-  //               Alert.alert('Error', 'Failed to share invoice');
-  //             }
-  //           }
-  //         },
-  //         {
-  //           text: 'Cancel',
-  //           style: 'cancel'
-  //         }
-  //       ]
-  //     );
-  
-  //   } catch (error) {
-  //     console.error('Invoice generation error:', error);
-  //     Alert.alert('Error', 'Failed to generate invoice. Please try again.');
-  //   }
-  // };
-  const { uri: pdfUri } = await Print.printToFileAsync({ 
-    html: htmlContent,
-    width: 595, 
-    height: 842,  
-    base64: false
-  });
+      const shareOptions = {
+        mimeType: 'application/pdf',
+        dialogTitle: ('Share Invoice'),
+        UTI: 'com.adobe.pdf'
+      };
 
-  // Create filename
-  const fileName = `Invoice_${invoiceNumber}.pdf`;
-  const tempFilePath = `${FileSystem.cacheDirectory}${fileName}`;
+      if (Platform.OS === 'android') {
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(tempFilePath, shareOptions);
+          Alert.alert(
+            ('Invoice Ready'),
+            ('To save to Downloads, select "Save to device" from the share menu'),
+            [{ text: "OK" }]
+          );
+        } else {
+          Alert.alert(('Error'), ('Sharing is not available on this device'));
+        }
+      } else {
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(tempFilePath, shareOptions);
+          Alert.alert(
+            ('Invoice Ready'),
+            ('Use the "Save to Files" option to save the invoice'),
+            [{ text: "OK" }]
+          );
+        } else {
+          Alert.alert(('Error'), ('Sharing is not available on this device'));
+        }
+      }
 
-  // Copy to cache directory with proper filename
-  await FileSystem.copyAsync({
-    from: pdfUri,
-    to: tempFilePath
-  });
-
-  // Prepare sharing options
-  const shareOptions = {
-    mimeType: 'application/pdf',
-    dialogTitle: ('Share Invoice'),
-    UTI: 'com.adobe.pdf'
+    } catch (error) {
+      console.error('Invoice generation error:', error);
+      Alert.alert(('Error'), ('Failed to generate invoice. Please try again.'));
+    }
   };
-
-  if (Platform.OS === 'android') {
-    // Android: Show share dialog with option to save to Downloads
-    if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(tempFilePath, shareOptions);
-      Alert.alert(
-        ('Invoice Ready'),
-        ('To save to Downloads, select "Save to device" from the share menu'),
-        [{ text: "OK" }]
-      );
-    } else {
-      Alert.alert(('Error'), ('Sharing is not available on this device'));
-    }
-  } else {
-    // iOS: Show share dialog with option to save to Files
-    if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(tempFilePath, shareOptions);
-      Alert.alert(
-        ('Invoice Ready'),
-        ('Use the "Save to Files" option to save the invoice'),
-        [{ text: "OK" }]
-      );
-    } else {
-      Alert.alert(('Error'), ('Sharing is not available on this device'));
-    }
-  }
-
-} catch (error) {
-  console.error('Invoice generation error:', error);
-  Alert.alert(('Error'), ('Failed to generate invoice. Please try again.'));
-}
-};
-
 
   return (
     <KeyboardAvoidingView 
@@ -574,7 +553,6 @@ const convertImageAlternative = async () => {
               </Text>
             </View>
 
-            {/* Illustration */}
             <View className="flex items-center justify-center mt-5">
               <Image 
                 source={require("../assets/images/confirmed.webp")} 
@@ -583,18 +561,17 @@ const convertImageAlternative = async () => {
               />
             </View>
 
-
-<TouchableOpacity 
-  onPress={handleDownloadAndShareInvoice} 
-  style={{ marginHorizontal: wp(20), marginTop: hp(7) }}
->
-  <LinearGradient 
-    colors={["#6839CF", "#874DDB"]} 
-    style={{ paddingVertical: 12, paddingHorizontal: 16, borderRadius: 30, alignItems: "center" }}
-  >
-    <Text style={{ color: "white", fontWeight: "bold" }}>Download Invoice</Text>
-  </LinearGradient>
-</TouchableOpacity>
+            <TouchableOpacity 
+              onPress={handleDownloadAndShareInvoice} 
+              style={{ marginHorizontal: wp(20), marginTop: hp(7) }}
+            >
+              <LinearGradient 
+                colors={["#6839CF", "#874DDB"]} 
+                style={{ paddingVertical: 12, paddingHorizontal: 16, borderRadius: 30, alignItems: "center" }}
+              >
+                <Text style={{ color: "white", fontWeight: "bold" }}>Download Invoice</Text>
+              </LinearGradient>
+            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>

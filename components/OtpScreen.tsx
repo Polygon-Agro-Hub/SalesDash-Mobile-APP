@@ -79,12 +79,124 @@ const getUserProfile = async () => {
 
 
 
+// const verifyOTP = async () => {
+//   const otpCode = otp.join("");
+  
+//   if (otpCode.length !== 5) {
+//    // Alert.alert("Error", "Please enter a valid 5-digit OTP.");
+//     setIsOtpInvalid(true);
+//     return;
+//   }
+
+//   try {
+//     setLoading(true);
+//     const referenceId = await AsyncStorage.getItem("referenceId");
+//     console.log("Reference ID:", referenceId);
+      
+//     const token = await getUserProfile();
+//     if (!referenceId || !token) {
+//       Alert.alert("Error", "Missing OTP reference or authentication token.");
+//       return;
+//     }
+    
+//     const otpVerificationUrl = "https://api.getshoutout.com/otpservice/verify";
+//     const otpHeaders = {
+//       Authorization: `Apikey ${environment.SHOUTOUT_API_KEY}`,
+//       "Content-Type": "application/json",
+//     };
+    
+//     const otpBody = {
+//       code: otpCode,
+//       referenceId,
+//     };
+    
+//     const otpResponse = await axios.post(otpVerificationUrl, otpBody, { headers: otpHeaders });
+//     const { statusCode } = otpResponse.data;
+    
+//     if (statusCode === "1000") {
+//       setIsVerified(true);
+//       Alert.alert("Success", "OTP verified successfully.");
+      
+//       const customerDataString = await AsyncStorage.getItem("pendingCustomerData");
+//       console.log("Stored customer data:", customerDataString);
+      
+//       if (!customerDataString) {
+//         Alert.alert("Error", "No customer data found.");
+//         return;
+//       }
+      
+//       let customerData;
+//       try {
+//         customerData = JSON.parse(customerDataString);
+//         console.log("Parsed customer data:", customerData);
+//       } catch (e) {
+//         console.error("Error parsing customer data:", e);
+//         Alert.alert("Error", "Failed to parse customer data.");
+//         return;
+//       }
+      
+//       const saveCustomerUrl = `${environment.API_BASE_URL}api/customer/add-customer`;
+      
+//       const saveResponse = await axios.post(
+//         saveCustomerUrl,
+//         customerData,
+//         {
+//           headers: {
+//             Authorization: `Bearer ${token}`,
+//             "Content-Type": "application/json",
+//           },
+//         }
+//       );
+//       console.log("API Response:", saveResponse.data);
+      
+//       if (saveResponse.status === 200) {
+//         // Extract the customer ID from the response
+//         const customerId = saveResponse.data.customerId;
+//         console.log("New customer ID:", customerId);
+        
+//         // Save customer ID to AsyncStorage if needed for later use
+//         await AsyncStorage.setItem("latestCustomerId", customerId.toString());
+        
+//        // Alert.alert("Success", "Customer registered successfully.");
+        
+//         // Navigate to the success screen with the customer ID
+//   navigation.navigate("Main" as any, {
+//   screen: "OtpSuccesfulScreen" as any,
+//   params: {
+//     customerId: customerId,
+//     customerData: customerData, // You can pass the original data as well if needed
+//   }
+// });
+
+//       } else {
+//         Alert.alert("Error", `Failed to save customer: ${saveResponse.data.error}`);
+//       }
+//     } else {
+//       setIsOtpInvalid(true);
+//       Alert.alert("Error", "Invalid OTP. Please try again.");
+//     }
+//   } catch (error) {
+//     console.error("Full error:", error);
+//     console.error("Response data:");
+    
+//     Alert.alert("Error", "An error occurred while verifying OTP.");
+//   } finally {
+//     setLoading(false);
+//   }
+// };
+
+
 const verifyOTP = async () => {
   const otpCode = otp.join("");
   
   if (otpCode.length !== 5) {
-   // Alert.alert("Error", "Please enter a valid 5-digit OTP.");
     setIsOtpInvalid(true);
+    return;
+  }
+
+  // Check if timer has expired
+  if (timer <= 0) {
+    Alert.alert("Error", "OTP has expired. Please request a new one.");
     return;
   }
 
@@ -150,23 +262,18 @@ const verifyOTP = async () => {
       console.log("API Response:", saveResponse.data);
       
       if (saveResponse.status === 200) {
-        // Extract the customer ID from the response
         const customerId = saveResponse.data.customerId;
         console.log("New customer ID:", customerId);
         
-        // Save customer ID to AsyncStorage if needed for later use
         await AsyncStorage.setItem("latestCustomerId", customerId.toString());
         
-       // Alert.alert("Success", "Customer registered successfully.");
-        
-        // Navigate to the success screen with the customer ID
-  navigation.navigate("Main" as any, {
-  screen: "OtpSuccesfulScreen" as any,
-  params: {
-    customerId: customerId,
-    customerData: customerData, // You can pass the original data as well if needed
-  }
-});
+        navigation.navigate("Main" as any, {
+          screen: "OtpSuccesfulScreen" as any,
+          params: {
+            customerId: customerId,
+            customerData: customerData,
+          }
+        });
 
       } else {
         Alert.alert("Error", `Failed to save customer: ${saveResponse.data.error}`);
@@ -280,6 +387,36 @@ useEffect(() => {
 //   }
 // };
 
+// const handleOtpChange = (text: string, index: number) => {
+//   // Only allow numeric input
+//   if (text && !/^\d+$/.test(text)) {
+//     return;
+//   }
+
+//   // Update the OTP code
+//   const updatedOtp = [...otp];
+//   updatedOtp[index] = text;
+//   setOtp(updatedOtp);
+
+//   // Check if OTP is valid (all digits filled)
+//   const isValid = updatedOtp.every(digit => digit.length === 1);
+//   setIsOtpInvalid(isValid);
+
+//   // Move to next input field if text is entered
+//   if (text.length === 1 && index < inputRefs.current.length - 1) {
+//     inputRefs.current[index + 1]?.focus();
+//   }
+
+//   // Dismiss keyboard and submit when last digit is entered
+//   if (index === otp.length - 1 && text.length === 1) {
+//     Keyboard.dismiss();
+//     if (isValid) {
+//       verifyOTP(); // Optional: auto-submit when all digits are entered
+//     }
+//   }
+// };
+
+
 const handleOtpChange = (text: string, index: number) => {
   // Only allow numeric input
   if (text && !/^\d+$/.test(text)) {
@@ -293,7 +430,7 @@ const handleOtpChange = (text: string, index: number) => {
 
   // Check if OTP is valid (all digits filled)
   const isValid = updatedOtp.every(digit => digit.length === 1);
-  setIsOtpInvalid(isValid);
+  setIsOtpInvalid(!isValid);
 
   // Move to next input field if text is entered
   if (text.length === 1 && index < inputRefs.current.length - 1) {
@@ -303,8 +440,9 @@ const handleOtpChange = (text: string, index: number) => {
   // Dismiss keyboard and submit when last digit is entered
   if (index === otp.length - 1 && text.length === 1) {
     Keyboard.dismiss();
-    if (isValid) {
-      verifyOTP(); // Optional: auto-submit when all digits are entered
+    // Only auto-submit if timer hasn't expired and OTP is valid
+    if (isValid && timer > 0) {
+      verifyOTP();
     }
   }
 };
@@ -465,6 +603,24 @@ const handleKeyPress = ({ nativeEvent: { key } }: NativeSyntheticEvent<TextInput
    </TouchableOpacity>
 
  }
+
+ {/* Verify Button */}
+{/* {!isKeyboardVisible &&
+  <TouchableOpacity 
+    onPress={verifyOTP} 
+    disabled={loading || timer <= 0}
+    style={{ opacity: (loading || timer <= 0) ? 0.5 : 1 }}
+  >
+    <LinearGradient
+      colors={["#6839CF", "#874DDB"]}
+      className="py-3 px-14 items-center mt-[10%] mb-[5%] w-[57%] rounded-3xl h-15"
+    >
+      <Text className="text-center text-white font-bold">
+        {loading ? "Verifying..." : timer <= 0 ? "OTP Expired" : "Verify"}
+      </Text>
+    </LinearGradient>
+  </TouchableOpacity>
+} */}
       
 </View>
 </View>

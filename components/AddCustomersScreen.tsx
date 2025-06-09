@@ -9,12 +9,22 @@ import axios from "axios";
 import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SelectList } from "react-native-dropdown-select-list";
+import DropDownPicker from "react-native-dropdown-picker";
 
 type AddCustomersScreenNavigationProp = StackNavigationProp<RootStackParamList, "AddCustomersScreen">;
 
 interface AddCustomersScreenProps {
   navigation: AddCustomersScreenNavigationProp;
 }
+
+
+interface City {
+  id: number;
+ city:string;
+ charge:string;
+  createdAt?: string;
+}
+
 
 const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) => {
   const [firstName, setFirstName] = useState<string>("");
@@ -46,7 +56,10 @@ const [lastNameError, setLastNameError] = useState<string>("");
 const [buildingTypeError, setBuildingTypeError] = useState<string>("");
 const [titleError, setTitleError] = useState<string>("");
 const [isSubmitting, setIsSubmitting] = useState(false);
-
+const [token, setToken] = useState<string | null>(null);
+  const [cities, setCities] = useState<City[]>([]);
+  const [openCityDropdown, setOpenCityDropdown] = useState(false);
+const [cityItems, setCityItems] = useState<{label: string, value: string}[]>([]);
 
   const buildingOptions = [
     { key: "1", value: "House" },
@@ -197,182 +210,39 @@ const [isSubmitting, setIsSubmitting] = useState(false);
     }));
   };
 
-  
 
-//  const handleRegister = async () => {
+ const fetchCity = async () => {
+  try {
+    const storedToken = await AsyncStorage.getItem("authToken");
+    if (!storedToken) return;
 
-//     if (isSubmitting) return;
-  
-//   setIsSubmitting(true);
+    setToken(storedToken);
 
-//   if (!selectedCategory || !firstName || !lastName || !phoneNumber || !email || !buildingType) {
-//     Alert.alert("Error", "Please fill in all required fields.");
-//     return;
-//   }
-
-//    if (buildingType === "House") {
-//     if (!houseNo || !streetName || !city) {
-//       Alert.alert("Error", "Please fill in all required house fields ");
-//       return;
-//     }
-//   } else if (buildingType === "Apartment") {
-//     if (!buildingNo || !buildingName || !unitNo || !floorNo || !houseNo || !streetName || !city) {
-//       Alert.alert("Error", "Please fill in all required apartment fields ");
-//       return;
-//     }
-//   }
-
-//   if (!validatePhoneNumber(phoneNumber)) {
-//     Alert.alert("Error", "Please enter a valid phone number.");
-//     return;
-//   }
-
-//   if (!validateEmail(email)) {
-//     Alert.alert("Error", "Please enter a valid email address.");
-//     return;
-//   }
-
-//   try {
-//     const checkResponse = await axios.post(`${environment.API_BASE_URL}api/customer/check-customer`, {
-//       phoneNumber,
-//       email,
-//     });
+    const response = await axios.get<{ data: City[] }>(
+      `${environment.API_BASE_URL}api/customer/get-city`,
+      {
+        headers: { Authorization: `Bearer ${storedToken}` },
+      }
+    );
     
-//     // Continue with registration if check passes
-//     const customerData = {
-//       title: selectedCategory,
-//       firstName,
-//       lastName,
-//       phoneNumber,
-//       email,
-//       buildingType,
-//       houseNo,
-//       streetName,
-//       city,
-//       buildingNo,
-//       floorNo,
-//       unitNo,
-//       buildingName,
-//     };
+    if (response.data && response.data.data) {
+      const formattedCities = response.data.data.map(city => ({
+        label: city.city,
+        value: city.city
+      }));
+      setCityItems(formattedCities);
+    }
+  } catch (error) {
+    console.error("City fetch error:", error);
+  }
+};
 
-//     await AsyncStorage.setItem("pendingCustomerData", JSON.stringify(customerData));
-//     const id = new Date().getTime().toString();
-//     await sendOTP();
-//     navigation.navigate("OtpScreen", { phoneNumber, id });
-//   } catch (error: any) {
-//     console.log("Error checking customer:", error);
-    
-//     // Display "This email address is already registered" when phone number exists
-//     if (error.response && error.response.status === 400) {
-//       if (error.response.data.existingPhone) {
-//         Alert.alert("Error", "This phone Number is already registered.");
-//       } else if (error.response.data.existingEmail) {
-//         Alert.alert("Error", "This email address is already registered.");
-//       } else {
-//         Alert.alert("Error", "Your credentials already exists in our system.");
-//       }
-//     } else {
-//       Alert.alert("Error", "Registration failed. Please try again.");
-//     }
-//   }finally {
-//     setIsSubmitting(false); // Stop loading regardless of success/error
-//   }
-// };
+      useEffect(() => {
+        fetchCity()
+      }, []);
+     
 
-// const handleRegister = async () => {
-//   if (isSubmitting) return;
-  
-//   setIsSubmitting(true);
 
-//   // Mark all fields as touched to show errors
-//   setTouchedFields({
-//     ...touchedFields,
-//     firstName: true,
-//     lastName: true,
-//     phoneNumber: true,
-//     email: true,
-//     buildingType: true
-//   });
-
-//   // Validate required fields
-//   if (!selectedCategory || !firstName || !lastName || !phoneNumber || !email || !buildingType) {
-//     Alert.alert("Error", "Please fill in all required fields.");
-//     setIsSubmitting(false);
-//     return;
-//   }
-
-//   // Validate building-specific fields
-//   if (buildingType === "House") {
-//     if (!houseNo || !streetName || !city) {
-//       Alert.alert("Error", "Please fill in all required house fields");
-//       setIsSubmitting(false);
-//       return;
-//     }
-//   } else if (buildingType === "Apartment") {
-//     if (!buildingNo || !buildingName || !unitNo || !floorNo || !houseNo || !streetName || !city) {
-//       Alert.alert("Error", "Please fill in all required apartment fields");
-//       setIsSubmitting(false);
-//       return;
-//     }
-//   }
-
-//   // Validate phone and email formats
-//   if (!validatePhoneNumber(phoneNumber)) {
-//     Alert.alert("Error", "Please enter a valid phone number.");
-//     setIsSubmitting(false);
-//     return;
-//   }
-
-//   if (!validateEmail(email)) {
-//     Alert.alert("Error", "Please enter a valid email address.");
-//     setIsSubmitting(false);
-//     return;
-//   }
-
-//   try {
-//     const checkResponse = await axios.post(`${environment.API_BASE_URL}api/customer/check-customer`, {
-//       phoneNumber,
-//       email,
-//     });
-    
-//     const customerData = {
-//       title: selectedCategory,
-//       firstName,
-//       lastName,
-//       phoneNumber,
-//       email,
-//       buildingType,
-//       houseNo,
-//       streetName,
-//       city,
-//       buildingNo,
-//       floorNo,
-//       unitNo,
-//       buildingName,
-//     };
-
-//     await AsyncStorage.setItem("pendingCustomerData", JSON.stringify(customerData));
-//     const id = new Date().getTime().toString();
-//     await sendOTP();
-//     navigation.navigate("OtpScreen", { phoneNumber, id });
-//   } catch (error: any) {
-//     console.log("Error checking customer:", error);
-    
-//     if (error.response && error.response.status === 400) {
-//       if (error.response.data.existingPhone) {
-//         Alert.alert("Error", "This phone Number is already registered.");
-//       } else if (error.response.data.existingEmail) {
-//         Alert.alert("Error", "This email address is already registered.");
-//       } else {
-//         Alert.alert("Error", "Your credentials already exists in our system.");
-//       }
-//     } else {
-//       Alert.alert("Error", "Registration failed. Please try again.");
-//     }
-//   } finally {
-//     setIsSubmitting(false);
-//   }
-// };
 
 const handleRegister = async () => {
   if (isSubmitting) return;
@@ -675,15 +545,47 @@ const handleRegister = async () => {
                       onChangeText={setStreetName}
                     />
                   </View>
-                  <View className="mb-4">
-                    <Text className="text-gray-700 mb-1">City</Text>
-                    <TextInput
-                      className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
-                      placeholder="City"
-                      value={city}
-                      onChangeText={setCity}
-                    />
-                  </View>
+             <View className="mb-4 z-10">
+  <Text className="text-gray-700 mb-1">City</Text>
+  <DropDownPicker
+    open={openCityDropdown}
+    value={city}
+    items={cityItems}
+    setOpen={setOpenCityDropdown}
+    setValue={setCity}
+    setItems={setCityItems}
+    placeholder="Select City"
+    style={{
+      backgroundColor: '#F6F6F6',
+      borderColor: '#F6F6F6',
+      borderRadius: 30,
+    }}
+    dropDownContainerStyle={{
+      backgroundColor: '#F6F6F6',
+      borderColor: '#F6F6F6',
+    }}
+    textStyle={{
+      fontSize: 14,
+      color: 'black',
+      marginLeft:15
+    }}
+   placeholderStyle={{
+  color: 'gray',
+  marginLeft: 15,
+}}
+
+    listItemLabelStyle={{
+      color: 'black',
+    }}
+    showTickIcon={true}
+    activityIndicatorColor="#6E3DD1"
+    searchable={true}
+    modalProps={{
+      animationType: "fade",
+    }}
+    listMode="MODAL"
+  />
+</View>
                 </>
               )}
 
@@ -745,15 +647,46 @@ const handleRegister = async () => {
                       onChangeText={setStreetName}
                     />
                   </View>
-                  <View className="mb-4">
-                    <Text className="text-gray-700 mb-1">City</Text>
-                    <TextInput
-                      className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
-                      placeholder="City"
-                      value={city}
-                      onChangeText={setCity}
-                    />
-                  </View>
+              <View className="mb-4 z-10">
+  <Text className="text-gray-700 mb-1">City</Text>
+  <DropDownPicker
+    open={openCityDropdown}
+    value={city}
+    items={cityItems}
+    setOpen={setOpenCityDropdown}
+    setValue={setCity}
+    setItems={setCityItems}
+    placeholder="Select City"
+    style={{
+      backgroundColor: '#F6F6F6',
+      borderColor: '#F6F6F6',
+      borderRadius: 30,
+    }}
+    dropDownContainerStyle={{
+      backgroundColor: '#F6F6F6',
+      borderColor: '#F6F6F6',
+    }}
+    textStyle={{
+      fontSize: 14,
+      color: 'black',
+      marginLeft:15
+    }}
+    placeholderStyle={{
+      color: 'gray',
+      marginLeft:15
+    }}
+    listItemLabelStyle={{
+      color: 'black',
+    }}
+    showTickIcon={true}
+    activityIndicatorColor="#6E3DD1"
+    searchable={true}
+    modalProps={{
+      animationType: "fade",
+    }}
+    listMode="MODAL"
+  />
+</View>
                 </>
               )}
 

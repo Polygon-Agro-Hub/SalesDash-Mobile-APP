@@ -477,6 +477,10 @@ import { RootStackParamList } from "./types";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
 import { LinearGradient } from "expo-linear-gradient";
 import DateTimePicker from '@react-native-community/datetimepicker'; 
+import environment from "@/environment/environment";
+import DropDownPicker from "react-native-dropdown-picker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
 
 type ScheduleScreenNavigationProp = StackNavigationProp<RootStackParamList, "ScheduleScreen">;
 type ScheduleScreenRouteProp = RouteProp<RootStackParamList, "ScheduleScreen">;
@@ -488,6 +492,31 @@ interface AdditionalItem {
   price: number;
   quantity: number;
 }
+
+interface City {
+  id: number;
+ city:string;
+ charge:string;
+  createdAt?: string;
+}
+
+interface CustomerData {
+  title?: string;
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
+  buildingType?: string;
+  buildingDetails?: {
+    buildingNo?: string;
+    unitNo?: string;
+    buildingName?: string;
+    floorNo?: string;
+    houseNo?: string;
+    streetName?: string;
+    city?: string;
+  };
+}
+
 
 interface OrderData {
   userId: number;
@@ -509,6 +538,7 @@ interface ScheduleScreenProps {
   navigation: ScheduleScreenNavigationProp;
   route: {
     params: {
+      packageId: number | null | undefined;
       // Original cart items structure
       items?: Array<{
         id: number;
@@ -600,7 +630,14 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
   const [items, setItems] = useState<CartItem[]>(() => {
     return processInitialData(originalItems, orderItems);
   });
-  
+
+      const [openCityDropdown, setOpenCityDropdown] = useState(false);
+    const [cityItems, setCityItems] = useState<{label: string, value: string}[]>([]);
+ const [token, setToken] = useState<string>("");
+   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
+   const [loading, setLoading] = useState(true);
+   const [error, setError] = useState("");
+
   // Updated state initialization to handle orderData
   const [total, setTotal] = useState(() => {
     if (orderData) {
@@ -627,6 +664,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
   const [selectedDate, setSelectedDate] = useState<string | null>(previousSelectedDate || null);
   const [isDateSelected, setIsDateSelected] = useState(!!previousSelectedDate);
   const [showDatePicker, setShowDatePicker] = useState(false);
+    const [deliveryFee, setDeliveryFee] = useState<number>(0);
   const [date, setDate] = useState(() => {
     if (previousSelectedDate) {
       const parts = previousSelectedDate.split(' ');
@@ -663,8 +701,92 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
 
   const minimumDate = getMinimumSelectableDate();
 
-  const DELIVERY_FEE = 350;
-  const fullTotal = total + DELIVERY_FEE;
+
+
+   useEffect(() => {
+    const fetchCustomerData = async () => {
+      try {
+        setLoading(true);
+        
+        const customerIdi = route.params?.customerid || customerId;
+
+        console.log("fbkad",customerIdi)
+        
+        if (!customerIdi) {
+          console.log("No customer ID found in route params");
+          setError("No customer ID found");
+          setLoading(false);
+          return;
+        }
+        
+        const storedToken = await AsyncStorage.getItem("authToken");
+        
+        if (!storedToken) {
+          console.log("No authentication token found");
+          setError("No authentication token found");
+          setLoading(false);
+          return;
+        }
+        
+        // Fetch customer data
+        const apiUrl = `${environment.API_BASE_URL}api/orders/get-customer-data/${customerIdi}`;
+        const response = await axios.get(apiUrl, {
+          headers: { Authorization: `Bearer ${storedToken}` },
+        });
+        
+        console.log("Full API response:", response.data);
+        
+        if (response.data && response.data.success) {
+          console.log("Customer data received:", response.data.data);
+          setCustomerData(response.data.data);
+          
+          // Fetch cities to get delivery charge
+          const cityResponse = await axios.get<{ data: City[] }>(
+            `${environment.API_BASE_URL}api/customer/get-city`,
+            { headers: { Authorization: `Bearer ${storedToken}` }}
+          );
+          
+          if (cityResponse.data && cityResponse.data.data) {
+            const customerCity = response.data.data.buildingDetails?.city;
+            if (customerCity) {
+              const cityData = cityResponse.data.data.find(c => c.city === customerCity);
+              if (cityData) {
+                const fee = parseFloat(cityData.charge) || 0;
+                setDeliveryFee(fee);
+                console.log(`Setting delivery fee to ${fee} for city ${customerCity}`);
+              }
+            }
+          }
+        } else {
+          const errorMsg = response.data?.message || "Failed to fetch customer data";
+          console.log("API error:", errorMsg);
+          setError(errorMsg);
+        }
+      } catch (error: any) {
+        console.error("Error fetching customer data:", error);
+        if (axios.isAxiosError(error)) {
+          const errorMsg = error.response?.data?.message || error.message;
+          console.log("Axios error details:", errorMsg);
+          setError(errorMsg);
+        } else {
+          setError("Failed to fetch customer data");
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (customerid || customerId) {
+      console.log("Fetching data for customer ID:", route.params?.customerid || customerId);
+      fetchCustomerData();
+    } else {
+      console.log("No customer ID in route params");
+    }
+  }, [route.params]);
+
+  const fullTotal = total + deliveryFee;
+
+
   
   const timeSlots = [
     { key: "Within 8-12 AM", value: "Within 8-12 AM" },
@@ -818,60 +940,111 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
     }
   };
   
-  const handleProceed = () => {
-    if (!selectedDate && !selectedTimeSlot) {
-      Alert.alert("Required", "Please select a delivery date & time slot");
-      return;
-    }
-    if (!selectedDate) {
-      Alert.alert("Required", "Please select a delivery date");
-      return;
-    }
+//   const handleProceed = () => {
+//     if (!selectedDate && !selectedTimeSlot) {
+//       Alert.alert("Required", "Please select a delivery date & time slot");
+//       return;
+//     }
+//     if (!selectedDate) {
+//       Alert.alert("Required", "Please select a delivery date");
+//       return;
+//     }
   
-    if (!selectedTimeSlot) {
-      Alert.alert("Required", "Please select a time slot");
-      return;
-    }
+//     if (!selectedTimeSlot) {
+//       Alert.alert("Required", "Please select a time slot");
+//       return;
+//     }
 
-    // Convert selected time slot to 24-hour format
-    const scheduleTime = convertTimeSlotTo24Hour(selectedTimeSlot);
+//     // Convert selected time slot to 24-hour format
+//     const scheduleTime = convertTimeSlotTo24Hour(selectedTimeSlot);
     
-    // Prepare the data to pass to SelectPaymentMethod
-    const packageId = orderItems && orderItems.length > 0 ? orderItems[0].packageId : 
-                     (orderData ? orderData.packageId : undefined);
+//     // Prepare the data to pass to SelectPaymentMethod
+//     const packageId = orderItems && orderItems.length > 0 ? orderItems[0].packageId : 
+//                      (orderData ? orderData.packageId : undefined);
     
-    const navigationParams = {
-      items: items,
-      subtotal: subtotal,
-      discount: discount,
-      total: total,
-      fullTotal: fullTotal,
-      selectedDate: selectedDate,
-      selectedTimeSlot: selectedTimeSlot,
-      customerId: customerId,
-      isPackage: isPackage,
-      packageId: packageId,
-      customerid: customerid,
-      orderItems: orderItems,
+//     const navigationParams = {
+//       items: items,
+//       subtotal: subtotal,
+//       discount: discount,
+//       total: total,
+//       fullTotal: fullTotal,
+//       selectedDate: selectedDate,
+//       selectedTimeSlot: selectedTimeSlot,
+//       customerId: customerId,
+//       isPackage: isPackage,
+//       packageId: packageId,
+//       customerid: customerid,
+//       orderItems: orderItems,
       
-      // Add the formatted schedule data
-      sheduleDate: selectedDate, // Using the same format as your requirement
-      sheduleTime: scheduleTime, // 24-hour format time
+//       // Add the formatted schedule data
+//       sheduleDate: selectedDate, // Using the same format as your requirement
+//       sheduleTime: scheduleTime, // 24-hour format time
       
-      // Include orderData if it exists (for the first navigation flow)
-      ...(orderData && { orderData: orderData })
-    };
+//       // Include orderData if it exists (for the first navigation flow)
+//       ...(orderData && { orderData: orderData })
+//     };
     
-    navigation.navigate("SelectPaymentMethod" as any, navigationParams);
+//     navigation.navigate("SelectPaymentMethod" as any, navigationParams);
     
-    console.log("Data passed to payment:", navigationParams);
-    console.log("Schedule Date:", selectedDate);
-    console.log("Schedule Time (24hr):", scheduleTime);
-    console.log("Time Slot:", selectedTimeSlot);
+//     console.log("Data passed to payment:", navigationParams);
+//     console.log("Schedule Date:", selectedDate);
+//     console.log("Schedule Time (24hr):", scheduleTime);
+//     console.log("Time Slot:", selectedTimeSlot);
+//   };
+//   useEffect(() => {
+//   console.log('Route params:', route.params);
+// }, []);
+
+const handleProceed = () => {
+  if (!selectedDate && !selectedTimeSlot) {
+    Alert.alert("Required", "Please select a delivery date & time slot");
+    return;
+  }
+  if (!selectedDate) {
+    Alert.alert("Required", "Please select a delivery date");
+    return;
+  }
+
+  if (!selectedTimeSlot) {
+    Alert.alert("Required", "Please select a time slot");
+    return;
+  }
+
+  // Convert selected time slot to 24-hour format
+  const scheduleTime = convertTimeSlotTo24Hour(selectedTimeSlot);
+  
+  // Get packageId from the correct source
+  const packageId = route.params?.packageId || 
+                   (orderItems && orderItems.length > 0 ? orderItems[0].packageId : 
+                   (orderData ? orderData.packageId : undefined));
+  
+  // Prepare the data to pass to SelectPaymentMethod
+  const navigationParams = {
+    items: items,
+    subtotal: subtotal,
+    discount: discount,
+    total: total,
+    fullTotal: fullTotal,
+    selectedDate: selectedDate,
+    selectedTimeSlot: selectedTimeSlot,
+    customerId: customerId,
+    isPackage: isPackage,
+    packageId: packageId, // Now correctly passing packageId
+    customerid: customerid,
+    orderItems: orderItems,
+    
+    // Add the formatted schedule data
+    sheduleDate: selectedDate,
+    sheduleTime: scheduleTime,
+    
+    // Include orderData if it exists
+    ...(orderData && { orderData: orderData })
   };
-  useEffect(() => {
-  console.log('Route params:', route.params);
-}, []);
+  
+  navigation.navigate("SelectPaymentMethod" as any, navigationParams);
+  
+  console.log("Data passed to payment:", navigationParams);
+};
 
   
   return (
@@ -1015,7 +1188,9 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
           <View className="flex-1">
             <View className="flex-row justify-between">
               <Text className="text-[#5C5C5C]">Delivery Fee :</Text>
-              <Text className="font-semibold text-[#5C5C5C]">+ Rs.{DELIVERY_FEE.toFixed(2)}</Text>
+               <Text className="font-semibold text-[#5C5C5C]">
+        + Rs.{deliveryFee.toFixed(2)}
+      </Text>
             </View>
             
             <View className="flex-row justify-between mt-2">
