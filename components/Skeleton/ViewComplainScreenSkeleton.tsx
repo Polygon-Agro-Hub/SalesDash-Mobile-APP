@@ -9,7 +9,7 @@ const ComplaintHistorySkeleton = () => {
       {/* Header Skeleton */}
       <ContentLoader speed={1.5} width={wp(100)} height={hp(8)} backgroundColor="#e0e0e0" foregroundColor="#f5f5f5">
         <Circle cx={wp(6)} cy={hp(4)} r={hp(2.5)} />
-        <Rect x="25%" y="30%" rx="6" ry="6" width="50%" height="18" />
+        <Rect x="27%" y="30%" rx="6" ry="6" width="50%" height="18" />
       </ContentLoader>
 
       {/* Complaints List Skeleton */}

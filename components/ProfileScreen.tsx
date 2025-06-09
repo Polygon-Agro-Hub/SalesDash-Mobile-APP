@@ -11,7 +11,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Keyboard,
 
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -71,11 +70,22 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   const [points, setPoints] = useState<number>(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(false);
+   const [agentStats, setAgentStats] = useState<AgentStats>({
+      daily: {
+        target: 10,
+        completed: 0,
+        numOfStars: 0,
+        progress: 0
+      },
+      monthly: {
+        totalStars: 0
+      }
+    } as any);
 
   useEffect(() => {
     getUserProfile();
-     fetchAgentStats();
-   fetchOrderCount();
+    fetchAgentStats();
+    fetchOrderCount();
     fetchCustomerCount();
   }, []);
  
@@ -108,27 +118,47 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
     }));
   };
 
+  // const fetchAgentStats = async () => {
+  //   try {
+  //     const storedToken = await AsyncStorage.getItem("authToken");
+  //     if (!storedToken) return;
+      
+  //     const response = await axios.get<{ success: boolean; data: AgentStats }>(
+  //       `${environment.API_BASE_URL}api/orders/get-All-Start`,
+  //       {
+  //         headers: { Authorization: `Bearer ${storedToken}` },
+  //       }
+  //     );
+      
+  //     if (response.data.success) {
+  //       setPoints(response.data.data.monthly.totalStars);
+  //     }
+  //   } catch (error) {
+  //     console.error("Failed to fetch agent stats:", error);
+  //   }
+  // };
+
+
   const fetchAgentStats = async () => {
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
       if (!storedToken) return;
-      
-      const response = await axios.get<{ success: boolean; data: AgentStats }>(
-        `${environment.API_BASE_URL}api/orders/get-All-Start`,
+
+      const response = await axios.get<{ data: AgentStats }>(
+        `${environment.API_BASE_URL}api/orders/sales-agent`,
         {
           headers: { Authorization: `Bearer ${storedToken}` },
         }
       );
-      
-      if (response.data.success) {
-        setPoints(response.data.data.monthly.totalStars);
-      }
+
+      setAgentStats(response.data.data);
     } catch (error) {
       console.error("Failed to fetch agent stats:", error);
+      
     }
   };
 
-  const fetchOrderCount = async () => {
+const fetchOrderCount = async () => {
   try {
     const token = await AsyncStorage.getItem("authToken");
     
@@ -138,24 +168,32 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
       },
     });
     
-    console.log("Order count response:", response.data);
+    // Debug: Log the response structure
+    console.log("Order count response:", JSON.stringify(response.data, null, 2));
     
     if (response.data.success) {
+      // Since your backend returns a single object, not an array
       const orderData = response.data.data;
       
-      // Since backend returns a single object with orderCount
-      if (orderData && orderData.orderCount !== undefined) {
-        setOrderCount(orderData.orderCount);
-      } else if (Array.isArray(orderData) && orderData.length > 0) {
-        // Fallback: if it's an array, take the first item
-        setOrderCount(orderData[0].orderCount || 0);
+      if (orderData && typeof orderData === 'object') {
+        // If the object has orderCount property, use it directly
+        if (orderData.orderCount !== undefined) {
+          setOrderCount(orderData.orderCount);
+        } else {
+          console.error("orderCount property not found in response");
+          setOrderCount(0);
+        }
       } else {
+        console.error("Invalid data structure:", orderData);
         setOrderCount(0);
       }
+    } else {
+      console.error("API returned success: false");
+      setOrderCount(0);
     }
   } catch (error) {
     console.error("Error fetching order count:", error);
-    setOrderCount(0); 
+    setOrderCount(0);
   }
 };
 
@@ -169,27 +207,65 @@ const fetchCustomerCount = async () => {
       },
     });
     
-    console.log("cus", response.data);
+    // Debug: Log the entire response to understand the structure
+    console.log("Full response:", JSON.stringify(response.data, null, 2));
     
     if (response.data.success) {
-      const customerData = response.data.data;
+      // Try different possible structures
+      let dataArray;
       
-      // Since the API returns a single object directly, just get the customerCount
-      if (customerData && customerData.customerCount !== undefined) {
-        setCustomerCount(customerData.customerCount);
+      if (Array.isArray(response.data.data)) {
+        dataArray = response.data.data;
+      } else if (Array.isArray(response.data)) {
+        dataArray = response.data;
+      } else if (response.data.data && typeof response.data.data === 'object') {
+        // If data is an object, check if it has array properties
+        const keys = Object.keys(response.data.data);
+        console.log("Data object keys:", keys);
+        
+        // Look for array properties in the object
+        for (const key of keys) {
+          if (Array.isArray(response.data.data[key])) {
+            dataArray = response.data.data[key];
+            break;
+          }
+        }
+        
+        // If no array found, treat the object as a single item
+        if (!dataArray) {
+          dataArray = [response.data.data];
+        }
       } else {
+        console.error("Unexpected data structure:", response.data);
+        setCustomerCount(0);
+        return;
+      }
+      
+      console.log("Processing data array:", dataArray);
+      
+      if (Array.isArray(dataArray)) {
+        const customerData = dataArray.find(
+          (item) => item.salesAgent === parseInt(formData.empId)
+        );
+        
+        if (customerData) {
+          setCustomerCount(customerData.customerCount);
+        } else {
+          setCustomerCount(dataArray[0]?.customerCount || 0);
+        }
+      } else {
+        console.error("Still not an array after processing:", typeof dataArray);
         setCustomerCount(0);
       }
     }
   } catch (error) {
     console.error("Error fetching customer count:", error);
-    setCustomerCount(0); // Set to 0 on error
+    setCustomerCount(0);
   }
 };
   
 
   const handleUpdate = async () => {
-    Keyboard.dismiss()
      if (isSubmitting) return;
   
   setIsSubmitting(true);
@@ -202,9 +278,12 @@ const fetchCustomerCount = async () => {
       const dataToSend = {
         firstName: formData.firstName,
         lastName: formData.lastName,
+        email: formData.email,
+        phoneNumber1: formData.phoneNumber1,
         houseNumber: formData.houseNumber,
         streetName: formData.streetName,
         city: formData.city,
+        nic: formData.nic
       };
       
     
@@ -348,7 +427,7 @@ const fetchCustomerCount = async () => {
                       style={{ width: 24, height: 24 }} 
                     />
                     <Text className="text-white text-sm mt-1">Points</Text>
-                    <Text className="text-white text-lg font-bold">{points}</Text>
+                    <Text className="text-white text-lg font-bold">{agentStats.monthly.totalStars}</Text>
                   </View>
 
                   <View className="w-[1px] bg-white h-full mx-2" />
@@ -437,36 +516,25 @@ const fetchCustomerCount = async () => {
               <Text className="text-black mb-1">
                   NIC Number
                 </Text>
-                {/* <TextInput
+                <TextInput
                   className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2"
                   value={formData.nic}
                   onChangeText={(text) => handleInputChange("nic", text)}
                   placeholder="Enter NIC Number"
-                  maxLength={12}
-                /> */}
-                 <Text
-                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2 text-[#8492A3]"
-                >
-                  {formData.nic}
-                </Text>
+                />
               </View>
 
               <View className="mb-4">
               <Text className="text-black mb-1">
                   Email Address
                 </Text>
-                {/* <TextInput
+                <TextInput
                   className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2"
                   value={formData.email}
                   onChangeText={(text) => handleInputChange("email", text)}
                   placeholder="Enter Email Address"
                   keyboardType="email-address"
-                /> */}
-                         <Text
-                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2 text-[#8492A3]"
-                >
-                  {formData.email}
-                </Text>
+                />
               </View>
 
               <View className="mb-4">

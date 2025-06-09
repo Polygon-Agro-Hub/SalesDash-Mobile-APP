@@ -141,7 +141,7 @@ const [packageDisplayName, setPackageDisplayName] = useState<string>("");
   const timeDisplay = selectedTimeSlot || "Not set";
 
  
-  const totalDeliveryPlus = 350 + total;
+  const totalDeliveryPlus = fullTotal;
 
    const subTotalDeliveryPlus = totalDeliveryPlus + discount;
 
@@ -673,14 +673,14 @@ useEffect(() => {
       selectedDate,
       timeDisplay,
       isPackage,
-     
+      packageId:  route.params?.packageId,
       customerid,
       orderItems
     });
 
     navigation.navigate("ScheduleScreen" as any, {
       total,
-     
+      packageId:  route.params?.packageId,
       items,
       subtotal,
       discount,
@@ -1064,7 +1064,7 @@ else if (isPackage === 1) {
         selectedDate,
         timeDisplay,
         isPackage,
-   
+   packageId:  route.params?.packageId,
         selectedTimeSlot,
         customerId,
         customerid: customerid?.toString() || customerId?.toString(),

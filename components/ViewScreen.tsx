@@ -24,12 +24,13 @@ type RootStackParamList = {
     selectedPackageId: number;
     selectedPackageName: string;
     selectedPackageImage: string;
-    selectedPackageproductPrice: string;
-     selectedPackagepackingFee: string;
-      selectedPackageserviceFee: string;
+    selectedPackageTotal: string;
     selectedPackageDescription:string;
     selectedPackageportion: string;  
     selectedPackageperiod: string;
+    selectedPackageServiceFee: string;
+    selectedPackagePackingFee: string ;
+    selectedPackageProductPrice : string;
   };
 };
 
@@ -46,14 +47,10 @@ interface ViewScreenProps {
 
 
 const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
-  const { selectedPackageId, selectedPackageName, selectedPackageImage , selectedPackageproductPrice, selectedPackagepackingFee,  selectedPackageserviceFee ,selectedPackageDescription,selectedPackageportion ,selectedPackageperiod  } = route.params;
+  const { selectedPackageId, selectedPackageName, selectedPackageImage ,selectedPackageTotal,selectedPackageDescription,selectedPackageportion ,selectedPackageperiod,selectedPackagePackingFee ,selectedPackageProductPrice,selectedPackageServiceFee } = route.params;
 
-  const [items, setItems] = useState<{ name: string; qty: string}[]>([]);
-  let selectedPackageTotal = (
-    parseFloat(selectedPackageproductPrice || '0') +
-    parseFloat( selectedPackagepackingFee || '0') +
-    parseFloat(selectedPackageserviceFee || '0')
-  ).toFixed(2);
+  const [items, setItems] = useState<{ name: string; quantity: string; quantityType: string;  portion: number; period :number; qty: string }[]>([]);
+
   
   useEffect(() => {
     if (selectedPackageId) {
@@ -69,7 +66,7 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
         return;
       }
 
-      const response = await axios.get<{ data: { name: string; qty: string}[] }>(
+      const response = await axios.get<{ data: { name: string; quantity: string, quantityType: string, portion: number; period :number; qty: string }[] }>(
         `${environment.API_BASE_URL}api/packages/${packageId}/items`,
         {
           headers: { Authorization: `Bearer ${storedToken}` },
@@ -123,10 +120,27 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
             showsVerticalScrollIndicator={true}
           >
             {/* Title and Price */}
-            <View className="flex-row justify-between items-center mb-4">
+            {/* <View className="flex-row justify-between items-center mb-4">
               <Text className="text-xl font-bold text-purple-600">{selectedPackageName}</Text>
               <Text className="text-lg font-bold text-gray-800">Rs. {selectedPackageTotal}</Text>
-            </View>
+            </View> */}
+
+            <View className="flex-row justify-between items-start mb-4 px-2">
+  <View className="flex-1 mr-4">
+    <Text 
+      className="text-xl font-bold text-purple-600"
+      numberOfLines={2}
+      style={{ lineHeight: 24 }}
+    >
+      {selectedPackageName}
+    </Text>
+  </View>
+  <View className="flex-shrink-0">
+    <Text className="text-lg font-bold text-gray-800">
+      Rs. {selectedPackageTotal}
+    </Text>
+  </View>
+</View>
 
             {/* Description */}
             <View className="flex-row items-start mb-6">
@@ -140,11 +154,13 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
             </View>
 
             {/* Items List */}
-            <Text className="text-gray-800 text-lg font-bold p-4">All ({items.length} items)</Text>
+        <Text className="text-gray-800 text-lg font-bold p-4">
+  All ({items.reduce((total, item) => total + parseInt(item.qty), 0)} items)
+</Text>
             {items.map((item, index) => (
               <View key={index} className="flex-row justify-between items-center border-b border-gray-200 py-3 px-4">
                 <Text className="text-gray-700 text-sm">{item.name}</Text>
-                <Text className="text-gray-500 text-sm">{item.qty}</Text>
+                <Text className="text-[#5D5D5D] text-sm">{item.qty}</Text>
               </View>
             ))}
             
