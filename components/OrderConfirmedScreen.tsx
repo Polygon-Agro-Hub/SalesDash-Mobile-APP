@@ -395,12 +395,12 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
         </head>
         <body>
             <div class="invoice-container">
-                <div class="watermark">
-  <img 
-    src="https://pub-79ee03a4a23e4dbbb70c7d799d3cb786.r2.dev/POLYGON%20ORIGINAL%20LOGO.png" 
-    alt="Watermark" 
-    style="width: 100px; height: 100px;" 
-  />
+           <div class="watermark">
+    <img 
+        src="https://pub-79ee03a4a23e4dbbb70c7d799d3cb786.r2.dev/POLYGON%20ORIGINAL%20LOGO.png" 
+        alt="Watermark" 
+        style="width: full; height: full; opacity: 0.3;" 
+    />
 </div>
 
                 
