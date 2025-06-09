@@ -9,7 +9,8 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
-  BackHandler
+  BackHandler,
+  ActivityIndicator
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RouteProp } from "@react-navigation/native";
@@ -88,6 +89,8 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
   const [error, setError] = useState<string | null>(null);
   const [deliveryFee, setDeliveryFee] = useState<number>(0);
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const { 
     orderId = "N/A", 
@@ -224,10 +227,14 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
               }
             }
           }
+          
+          // Set data loaded to true after all data is fetched
+          setIsDataLoaded(true);
         } else {
           const errorMsg = customerResponse.data?.message || "Failed to fetch customer data";
           console.log("Customer API error:", errorMsg);
           setError(errorMsg);
+          setIsDataLoaded(true); // Set to true even on error to show the page
         }
       } catch (error: any) {
         console.error("Error fetching customer data:", error);
@@ -238,6 +245,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
         } else {
           setError("Failed to fetch customer data");
         }
+        setIsDataLoaded(true); // Set to true even on error to show the page
       }
     };
 
@@ -306,7 +314,11 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
   };
 
   const handleDownloadAndShareInvoice = async () => {
+    if (isDownloading) return; // Prevent multiple clicks
+    
     try {
+      setIsDownloading(true);
+      
       const watermarkBase64 = await convertImageToBase64();
       const invoiceNumber = order?.invoiceNumber || `INV-${Date.now()}`;
 
@@ -532,14 +544,25 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
     } catch (error) {
       console.error('Invoice generation error:', error);
       Alert.alert(('Error'), ('Failed to generate invoice. Please try again.'));
+    } finally {
+      setIsDownloading(false);
     }
   };
 
+ 
+  if (loading || !isDataLoaded) {
+    return (
+      <View className="flex-1 inset-0 bg-white/20 bg-white justify-center items-center">
+        <ActivityIndicator size="large" color="#6839CF" />
+        <Text className="mt-4 text-lg text-gray-600">Loading order details...</Text>
+      </View>
+    );
+  }
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       enabled 
-      className="flex-1"
+      className="flex-1 relative"
     >
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} 
         keyboardShouldPersistTaps="handled"
@@ -568,18 +591,41 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
 
             <TouchableOpacity 
               onPress={handleDownloadAndShareInvoice} 
-              style={{ marginHorizontal: wp(20), marginTop: hp(7) }}
+              style={{ 
+                marginHorizontal: wp(20), 
+                marginTop: hp(7),
+                opacity: isDownloading ? 0.7 : 1 
+              }}
+              disabled={isDownloading}
             >
               <LinearGradient 
-                colors={["#6839CF", "#874DDB"]} 
-                style={{ paddingVertical: 12, paddingHorizontal: 16, borderRadius: 30, alignItems: "center" }}
+                colors={isDownloading ? ["#9ca3af", "#6b7280"] : ["#6839CF", "#874DDB"]} 
+                style={{ 
+                  paddingVertical: 12, 
+                  paddingHorizontal: 16, 
+                  borderRadius: 30, 
+                  alignItems: "center",
+                  flexDirection: "row",
+                  justifyContent: "center"
+                }}
               >
-                <Text style={{ color: "white", fontWeight: "bold" }}>Download Invoice</Text>
+                {isDownloading && (
+                  <ActivityIndicator 
+                    size="small" 
+                    color="white" 
+                    style={{ marginRight: 8 }} 
+                  />
+                )}
+                <Text style={{ color: "white", fontWeight: "bold" }}>
+                  {isDownloading ? "Downloading..." : "Download Invoice"}
+                </Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
+      
+   
     </KeyboardAvoidingView>
   );
 };
