@@ -481,6 +481,7 @@ import environment from "@/environment/environment";
 import DropDownPicker from "react-native-dropdown-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+import { ActivityIndicator } from "react-native";
 
 type ScheduleScreenNavigationProp = StackNavigationProp<RootStackParamList, "ScheduleScreen">;
 type ScheduleScreenRouteProp = RouteProp<RootStackParamList, "ScheduleScreen">;
@@ -1045,6 +1046,31 @@ const handleProceed = () => {
   
   console.log("Data passed to payment:", navigationParams);
 };
+
+
+ if (loading) {
+    return (
+      <View className="flex-1 bg-white justify-center items-center">
+        <ActivityIndicator size="large" color="#6C3CD1" />
+        <Text className="mt-4 text-gray-600">Loading delivery information...</Text>
+      </View>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <View className="flex-1 bg-white justify-center items-center p-4">
+        <Text className="text-red-500 text-lg mb-4">{error}</Text>
+        <TouchableOpacity
+          className="bg-[#6C3CD1] px-6 py-3 rounded-full"
+          onPress={() => navigation.goBack()}
+        >
+          <Text className="text-white">Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   
   return (

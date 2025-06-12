@@ -79,6 +79,8 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
           Authorization: `Bearer ${storedToken}`
         }
       });
+
+      console.log("responsesblkvadj",response.data)
       
       const data = response.data.data || {};
       const newNotifications = data.notifications || [];
@@ -101,6 +103,8 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
         // Update our reference for next time
         highestNotificationId.current = maxId;
       }
+
+      console.log("unreadjkdhsvla",newUnreadCount)
       
       setNotifications(newNotifications);
       setUnreadCount(newUnreadCount);
@@ -208,12 +212,14 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
 
   const getNotificationIcon = (title: string) => {
     switch(title) {
-      case 'Payment Reminder':
+      case 'Payment reminder ':
         return require("../assets/images/payment-method.webp");
       case 'Order is Processing':
         return require("../assets/images/time-management.webp");
       case 'Order is Out for Delivery':
         return require("../assets/images/fast-shipping.webp");
+      case 'Order is Cancelled':
+        return require("../assets/images/OrderisCancelled.webp");
       default:
         return require("../assets/images/notification.webp");
     }

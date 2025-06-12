@@ -35,7 +35,6 @@ interface Order {
   sheduleTime: string;
   weeklyDate: string;
   paymentMethod: string;
- 
   paymentStatus: number;
   status: string;
   createdAt: string;
@@ -55,7 +54,6 @@ type ViewCustomerScreenProps = {
   navigation: ViewCustomerScreenNavigationProp;
 };
 
-
 const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigation }) => {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [searchText, setSearchText] = useState("");
@@ -64,6 +62,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
+
 
   const { name, number, id, customerId, title } = route.params;
 
@@ -94,9 +93,19 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
         } else {
           setError(response.data.message || "Failed to load orders");
         }
-      } catch (err) {
-        console.error("Error fetching orders:", err);
-        setError("Network error. Please try again.");
+      } catch (err: any) {
+        console.log("Error fetching orders:", err);
+        
+        // Handle 404 as "no orders found" instead of an error
+        if (err.response && err.response.status === 404) {
+          console.log("No orders found for this customer (404) - this is normal");
+          setOrders([]); // Set empty orders array
+          setError(null); // Don't set error for 404
+        } else {
+          // For other errors, show error message
+          console.error("Actual error fetching orders:", err);
+          setError("Network error. Please try again.");
+        }
       } finally {
         setLoading(false);
       }
@@ -105,12 +114,24 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
     fetchOrders();
   }, [id]);
 
-  // Clear search error when search text changes
+  // Check for search results when search text or filter changes
   useEffect(() => {
     if (searchText.trim() === "") {
       setSearchError(null);
+    } else {
+      // Check if the search returns any results
+      const results = orders.filter(order => 
+        order.InvNo && order.InvNo.toLowerCase().includes(searchText.toLowerCase()) &&
+        (selectedFilter === "All" || order.status === selectedFilter)
+      );
+      
+      if (results.length === 0) {
+        setSearchError(`No order found with number "${searchText}"`);
+      } else {
+        setSearchError(null);
+      }
     }
-  }, [searchText]);
+  }, [searchText, selectedFilter, orders]);
 
   const handleGetACall = () => {
     const phoneNumber = `tel:${number}`;
@@ -128,22 +149,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
   };
 
   const handleSearch = () => {
-    if (searchText.trim() === "") {
-      setSearchError(null);
-      return;
-    }
-    
-    // Check if the search returns any results
-    const results = orders.filter(order => 
-      order.InvNo && order.InvNo.toLowerCase().includes(searchText.toLowerCase()) &&
-      (selectedFilter === "All" || order.status === selectedFilter)
-    );
-    
-    if (results.length === 0) {
-      setSearchError(`No order found with number "${searchText}"`);
-    } else {
-      setSearchError(null);
-    }
+    // This function can be kept for manual search trigger if needed
+    // But the search logic now happens automatically in useEffect
   };
 
   const filteredOrders = orders.filter(order => {
@@ -167,14 +174,13 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
         <View className="relative">
           <View className="bg-white flex-row rounded-b-[35px] items-center justify-between h-28 z-50 shadow-lg px-5">
             <View className="mt-[-8%] ml-[-2%]">
-              {/* <BackButton navigation={navigation} /> */}
               <TouchableOpacity 
-        style = {{ paddingHorizontal: wp(2), paddingVertical: hp(2)}}
-       onPress={() => navigation.navigate("CustomersScreen")}>
-         <View className="w-9 h-9 bg-[#F6F6F680] rounded-full justify-center items-center">
-           <AntDesign name="left" size={20} color="black" />
-         </View>
-       </TouchableOpacity> 
+                style={{ paddingHorizontal: wp(2), paddingVertical: hp(2) }}
+                onPress={() => navigation.navigate("CustomersScreen")}>
+                <View className="w-9 h-9 bg-[#F6F6F680] rounded-full justify-center items-center">
+                  <AntDesign name="left" size={20} color="black" />
+                </View>
+              </TouchableOpacity> 
             </View> 
 
             <View className="flex-1 justify-center items-center mt-[-3%]">
@@ -187,11 +193,13 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
             </View>
 
             <TouchableOpacity 
-              className="px-6 mt-[-20%] mr-[-10%]"
-              onPress={() => navigation.navigate("EditCustomerScreen", { id,                   
-                customerId:customerId,
+              className="px-6 mt-[-9%] mr-[-10%]"
+              onPress={() => navigation.navigate("EditCustomerScreen", { 
+                id,                   
+                customerId: customerId,
                 name: name,
-                title:title })}
+                title: title 
+              })}
             >
               <MaterialIcons name="edit" size={28} color="#6839CF" />
             </TouchableOpacity>
@@ -209,10 +217,12 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
               </TouchableOpacity>
 
               <TouchableOpacity 
-                onPress={() => navigation.navigate("SelectOrderType" as any, { id,    customerId:customerId,
+                onPress={() => navigation.navigate("SelectOrderType" as any, { 
+                  id,    
+                  customerId: customerId,
                   name: name,
-                  title:title  })}
-                
+                  title: title  
+                })}
                 className="flex-row bg-[#6B3BCF] px-4 py-2 rounded-full items-center mt-5 mx-4"
               >
                 <Image source={require("../assets/images/newOrder.webp")} className="w-5 h-5 mr-2" />
@@ -240,133 +250,144 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
             </TouchableOpacity>
           </View>
           
-          {/* Search Error Message */}
+          {/* Search Error Message - Show when typing and no results found */}
           {searchError && (
-            <View >
+            <View>
               <View className="bg-red-50 px-4 py-2 mt-2 rounded-lg border border-red-200">
-              <Text className="text-red-600 text-center">{searchError}</Text>
+                <Text className="text-red-600 text-center">{searchError}</Text>
               </View>
-             <View className=" justify-center items-center mt-[-20]">
-            <LottieView
-                      source={require("../assets/images/NoComplaints.json")}
-                      style={{ width: wp(50), height: hp(50) }}
-                      autoPlay
-                      loop
-                    />
-          </View>
-          </View>
-        
+              <View className="justify-center items-center mt-4">
+                <LottieView
+                  source={require("../assets/images/NoComplaints.json")}
+                  style={{ width: wp(50), height: hp(50) }}
+                  autoPlay
+                  loop
+                />
+                <Text className="text-gray-500 mt-2">No data found</Text>
+              </View>
+            </View>
           )}
         </View>
-<View className="mt-4">
-        <ScrollView 
-  horizontal 
-  showsHorizontalScrollIndicator={false}
-  className="flex-row flex-wrap  mt-[2%] mb-[1%] mx-[2%]"
-  contentContainerStyle={{ paddingHorizontal: wp('1%') }}
->
-  {filters.map((filter) => (
-    <TouchableOpacity
-      key={filter}
-      className={`px-4 py-2 rounded-full border mr-2 ${selectedFilter === filter ? " px-4 py-2 rounded-full border mr-2 bg-[#6B3BCF] border-[#6B3BCF]" : "border-[#6B3BCF]"}`}
-      onPress={() => setSelectedFilter(filter)}
-    >
-      <Text className={`text-center text-sm ${selectedFilter === filter ? "text-white font-bold" : "text-[#6B3BCF]"}`}>
-        {filter}
-      </Text>
-    </TouchableOpacity>
-  ))}
-</ScrollView>
-</View>
 
-
-<View className="mt-3 mb-[100%]">
-        {/* Orders List */}
-        {loading ? (
-          <View className="flex-1 justify-center items-center">
-            {/* <ActivityIndicator size="large" color="#6B3BCF" /> */}
-            {/* <Text className="text-[#6B3BCF] mt-2">Loading orders...</Text> */}
-          </View>
-        ) : error ? (
-          <View className="flex-1 justify-center items-center px-4">
-            <Text className="text-red-500 text-center">{error}</Text>
-            <TouchableOpacity 
-              className="mt-4 bg-white px-4 py-2 rounded-full"
-              onPress={() => {
-                setLoading(true);
-                setError(null);
-              }}
-            >
-              <Text className="text-white font-semibold">Retry</Text>
-            </TouchableOpacity>
-          </View>
-        ) : 
-        
-        isEmpty ? (
-          <View className="flex-1 justify-center items-center px-4 mt-[40%]">
-            <LottieView
-                      source={require("../assets/images/NoComplaints.json")}
-                      style={{ width: wp(50), height: hp(50) }}
-                      autoPlay
-                      loop
-                    />
-          </View>
-        )  : (filteredOrders.length > 0 ? (
-          <FlatList
-            data={filteredOrders}
-            keyExtractor={(item) => item.orderId.toString()}
-            renderItem={({ item }) => (
-              <TouchableOpacity 
-                onPress={() => navigation.navigate("View_CancelOrderScreen" as any, { 
-                  orderId: item.orderId
-                })}
+        <View className="mt-4">
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            className="flex-row flex-wrap mt-[2%] mb-[1%] mx-[2%]"
+            contentContainerStyle={{ paddingHorizontal: wp('1%') }}
+          >
+            {filters.map((filter) => (
+              <TouchableOpacity
+                key={filter}
+                className={`px-4 py-2 rounded-full border mr-2 ${
+                  selectedFilter === filter 
+                    ? "bg-[#6B3BCF] border-[#6B3BCF]" 
+                    : "border-[#6B3BCF]"
+                }`}
+                onPress={() => setSelectedFilter(filter)}
               >
-                <View className="bg-white rounded-2xl p-4 mb-4 border border-gray-200 mx-4 shadow-sm mt-4 ">
-                  <View className="flex-row justify-between items-center">
-                    <Text className="text-lg font-semibold text-gray-900">
-                      Order: #{item.InvNo || "N/A"}
-                    </Text>
-                    <View className={`px-3 py-1 rounded-full ${
-                      item.status === "Ordered" ? "bg-[#E0E0E0]" 
-                      : item.status === "On the way" ? "bg-[#FFFD99]" 
-                      : item.status === "Processing" ? "bg-[#CFE1FF]"
-                        : item.status === "Delivered" ? "bg-[#CCFBF1]"
-                      : item.status === "Cancelled" ? "bg-[#FFE4E1]"
-                      : "bg-[#EAEAEA]"
-                    }`}>
-                      <Text className={`text-xs font-semibold ${
-                        item.status === "Ordered" ? "text-[#3F3F3F]"
-                        : item.status === "On the way" ? "text-[#A6A100]"
-                        : item.status === "Processing" ? "text-[#3B82F6]"
-                        : item.status === "Delivered" ? "bg-[#0D9488]"
-                        : item.status === "Cancelled" ? "text-[#FF0000]"
-                        : "text-[#393939]"
-                      }`}>
-                        {item.status}
-                      </Text>
-                    </View>
-                  </View>
-                  
-                  <Text className="text-sm text-[#808FA2] mt-1">
-                    Scheduled to : {formatsheduleDate(item.sheduleDate)}
-                  </Text>
-                  <Text className="text-sm text-[#808FA2]">
-                     {item.sheduleTime}
-                  </Text>
-                 
-                </View>
+                <Text className={`text-center text-sm ${
+                  selectedFilter === filter 
+                    ? "text-white font-bold" 
+                    : "text-[#6B3BCF]"
+                }`}>
+                  {filter}
+                </Text>
               </TouchableOpacity>
-            )}
-            contentContainerStyle={{ paddingBottom: 70 }}
-          />
-        ) : (
-          <View className="flex-1 justify-center items-center">
-            <Text className="text-center text-gray-500">
-              {searchText ? "No matching orders found" : "No orders found for this status"}
-            </Text>
-          </View>
-        ))}
-      </View>
+            ))}
+          </ScrollView>
+        </View>
+
+        <View className="mt-3 mb-[100%]">
+          {/* Orders List */}
+          {loading ? (
+            <View className="flex-1 justify-center items-center">
+              {/* <ActivityIndicator size="large" color="#6B3BCF" /> */}
+              {/* <Text className="text-[#6B3BCF] mt-2">Loading orders...</Text> */}
+            </View>
+          ) : error ? (
+            <View className="flex-1 justify-center items-center px-4">
+              <Text className="text-red-500 text-center">{error}</Text>
+              <TouchableOpacity 
+                className="mt-4 bg-white px-4 py-2 rounded-full"
+                onPress={() => {
+                  setLoading(true);
+                  setError(null);
+                }}
+              >
+                <Text className="text-white font-semibold">Retry</Text>
+              </TouchableOpacity>
+            </View>
+          ) : searchError ? (
+            // Search error is already displayed above, don't show anything here
+            null
+          ) : filteredOrders.length > 0 ? (
+            <FlatList
+              data={filteredOrders}
+              keyExtractor={(item) => item.orderId.toString()}
+              renderItem={({ item }) => (
+                <TouchableOpacity 
+                  onPress={() => navigation.navigate("View_CancelOrderScreen" as any, { 
+                    orderId: item.orderId
+                  })}
+                >
+                  <View className="bg-white rounded-2xl p-4 mb-4 border border-gray-200 mx-4 shadow-sm mt-4">
+                    <View className="flex-row justify-between items-center">
+                      <Text className="text-lg font-semibold text-gray-900">
+                        Order: #{item.InvNo || "N/A"}
+                      </Text>
+                      <View className={`px-3 py-1 rounded-full ${
+                        item.status === "Ordered" ? "bg-[#E0E0E0]" 
+                        : item.status === "On the way" ? "bg-[#FFFD99]" 
+                        : item.status === "Processing" ? "bg-[#CFE1FF]"
+                        : item.status === "Delivered" ? "bg-[#CCFBF1]"
+                        : item.status === "Cancelled" ? "bg-[#FFE4E1]"
+                        : "bg-[#EAEAEA]"
+                      }`}>
+                        <Text className={`text-xs font-semibold ${
+                          item.status === "Ordered" ? "text-[#3F3F3F]"
+                          : item.status === "On the way" ? "text-[#A6A100]"
+                          : item.status === "Processing" ? "text-[#3B82F6]"
+                          : item.status === "Delivered" ? "text-[#0D9488]"
+                          : item.status === "Cancelled" ? "text-[#FF0000]"
+                          : "text-[#393939]"
+                        }`}>
+                          {item.status}
+                        </Text>
+                      </View>
+                    </View>
+                    
+                    <Text className="text-sm text-[#808FA2] mt-1">
+                      Scheduled to: {formatsheduleDate(item.sheduleDate)}
+                    </Text>
+                    <Text className="text-sm text-[#808FA2]">
+                      {item.sheduleTime}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+              contentContainerStyle={{ paddingBottom: 70 }}
+            />
+          ) : (
+            // Show Lottie animation when no filtered results (whether it's no orders at all, or filter has no results)
+            <View className="flex-1 justify-center items-center px-4 mt-[40%]">
+              <LottieView
+                source={require("../assets/images/NoComplaints.json")}
+                style={{ width: wp(50), height: hp(50) }}
+                autoPlay
+                loop
+              />
+              <Text className="text-gray-500 mt-4 text-center">
+                {orders.length === 0 
+                  ? "No orders found" 
+                  : searchText 
+                    ? "No matching orders found" 
+                    : `No orders found with status "${selectedFilter}"`
+                }
+              </Text>
+            </View>
+          )}
+        </View>
       </View>
     </KeyboardAvoidingView>
   );
