@@ -52,8 +52,8 @@ interface SelectPaymentMethodProps {
         subtotal?: number;
         discount?: number;
         id?: string;
-        isCustomPackage?: string;
-        isSelectPackage?: string;
+        isPackage?: string;
+      
         customerid?: string; 
         selectedMethod?: "Online Payment" | "Pay By Cash" | null; // Add this property
         
@@ -237,8 +237,8 @@ interface SelectPaymentMethodProps {
 const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, route }) => {
   const { 
     customerid, 
-    isCustomPackage, 
-    isSelectPackage, 
+    isPackage, 
+   
     selectedMethod: previousSelectedMethod, 
     // Extract all other previously passed params
     items,
@@ -283,8 +283,8 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, r
     const navigationData = {
       ...route.params,
       paymentMethod: selectedMethod,
-      isSelectPackage: isSelectPackage,
-      isCustomPackage: isCustomPackage
+      isPackage: isPackage
+  
     };
 
     console.log("Navigation data to OrderSummeryScreen:", JSON.stringify(navigationData, null, 2));
@@ -296,8 +296,8 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, r
     console.log("Selected Date:", navigationData.selectedDate);
     console.log("Selected Time Slot:", navigationData.selectedTimeSlot);
     console.log("Payment Method:", navigationData.paymentMethod);
-    console.log("isCustomPackage", isCustomPackage);
-    console.log('isSelectPackage', isSelectPackage);
+    console.log("isPackage",isPackage);
+ 
 
     navigation.navigate("OrderSummeryScreen" as any, navigationData);
   };

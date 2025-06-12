@@ -31,12 +31,13 @@ interface Order {
   orderId: string;
   customerId: string;
   deliveryType: string;
-  scheduleDate: string;
-  scheduleTimeSlot: string;
+  sheduleDate: string;
+  sheduleTime: string;
   weeklyDate: string;
   paymentMethod: string;
+ 
   paymentStatus: number;
-  orderStatus: string;
+  status: string;
   createdAt: string;
   InvNo: string;
   fullTotal: string | null;
@@ -86,6 +87,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
           `${environment.API_BASE_URL}api/orders/get-order-bycustomerId/${id}`
         );
 
+        console.log("data------",response.data)
+
         if (response.data.success) {
           setOrders(response.data.data);
         } else {
@@ -116,7 +119,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
 
   const filters = ["Ordered", "Processing", "On the way", "Delivered", "Cancelled"];
 
-  const formatScheduleDate = (dateString: string) => {
+  const formatsheduleDate = (dateString: string) => {
     const date = new Date(dateString);
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -133,7 +136,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
     // Check if the search returns any results
     const results = orders.filter(order => 
       order.InvNo && order.InvNo.toLowerCase().includes(searchText.toLowerCase()) &&
-      (selectedFilter === "All" || order.orderStatus === selectedFilter)
+      (selectedFilter === "All" || order.status === selectedFilter)
     );
     
     if (results.length === 0) {
@@ -144,7 +147,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
   };
 
   const filteredOrders = orders.filter(order => {
-    const matchesStatus = selectedFilter === "All" || order.orderStatus === selectedFilter;
+    const matchesStatus = selectedFilter === "All" || order.status === selectedFilter;
     const matchesSearch = !searchText || 
       (order.InvNo && order.InvNo.toLowerCase().includes(searchText.toLowerCase()));
     
@@ -318,37 +321,37 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
                   orderId: item.orderId
                 })}
               >
-                <View className="bg-white rounded-2xl p-4 mb-4 border border-gray-200 mx-4 shadow-sm mt-4">
+                <View className="bg-white rounded-2xl p-4 mb-4 border border-gray-200 mx-4 shadow-sm mt-4 ">
                   <View className="flex-row justify-between items-center">
                     <Text className="text-lg font-semibold text-gray-900">
                       Order: #{item.InvNo || "N/A"}
                     </Text>
                     <View className={`px-3 py-1 rounded-full ${
-                      item.orderStatus === "Ordered" ? "bg-[#E0E0E0]" 
-                      : item.orderStatus === "On the way" ? "bg-[#FFFD99]" 
-                      : item.orderStatus === "Processing" ? "bg-[#CFE1FF]"
-                        : item.orderStatus === "Delivered" ? "bg-[#CCFBF1]"
-                      : item.orderStatus === "Cancelled" ? "bg-[#FFE4E1]"
+                      item.status === "Ordered" ? "bg-[#E0E0E0]" 
+                      : item.status === "On the way" ? "bg-[#FFFD99]" 
+                      : item.status === "Processing" ? "bg-[#CFE1FF]"
+                        : item.status === "Delivered" ? "bg-[#CCFBF1]"
+                      : item.status === "Cancelled" ? "bg-[#FFE4E1]"
                       : "bg-[#EAEAEA]"
                     }`}>
                       <Text className={`text-xs font-semibold ${
-                        item.orderStatus === "Ordered" ? "text-[#3F3F3F]"
-                        : item.orderStatus === "On the way" ? "text-[#A6A100]"
-                        : item.orderStatus === "Processing" ? "text-[#3B82F6]"
-                        : item.orderStatus === "Delivered" ? "bg-[#0D9488]"
-                        : item.orderStatus === "Cancelled" ? "text-[#FF0000]"
+                        item.status === "Ordered" ? "text-[#3F3F3F]"
+                        : item.status === "On the way" ? "text-[#A6A100]"
+                        : item.status === "Processing" ? "text-[#3B82F6]"
+                        : item.status === "Delivered" ? "bg-[#0D9488]"
+                        : item.status === "Cancelled" ? "text-[#FF0000]"
                         : "text-[#393939]"
                       }`}>
-                        {item.orderStatus}
+                        {item.status}
                       </Text>
                     </View>
                   </View>
                   
                   <Text className="text-sm text-[#808FA2] mt-1">
-                    Scheduled to : {formatScheduleDate(item.scheduleDate)}
+                    Scheduled to : {formatsheduleDate(item.sheduleDate)}
                   </Text>
                   <Text className="text-sm text-[#808FA2]">
-                     {item.scheduleTimeSlot}
+                     {item.sheduleTime}
                   </Text>
                  
                 </View>

@@ -14,7 +14,10 @@ import {
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
-import { widthPercentageToDP as wp } from "react-native-responsive-screen";
+import {
+    widthPercentageToDP as wp,
+    heightPercentageToDP as hp,
+  } from "react-native-responsive-screen";
 import BackButton from "./BackButton";
 import axios from "axios";
 import environment from "@/environment/environment";
@@ -23,7 +26,7 @@ import { Alert } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import DropDownPicker from "react-native-dropdown-picker";
 import { SelectList } from "react-native-dropdown-select-list";
-
+import { AntDesign } from "@expo/vector-icons"; 
 type AddComplaintScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
   "AddComplaintScreen"
@@ -136,19 +139,29 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
     Keyboard.dismiss();
   };
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <ScrollView 
-      keyboardShouldPersistTaps="handled"
-      style={{ paddingHorizontal: wp(4) }}>
-        <TouchableWithoutFeedback>
+         
         <KeyboardAvoidingView 
     behavior={Platform.OS ==="ios" ? "padding" : "height"}
   enabled 
-  className="flex-1"
->
-            <View className="flex-1">
-              <BackButton navigation={navigation} />
-              <ScrollView className="px-8 py-4" keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 100 }}>
+  className="flex-1 bg-white"
+> 
+      <ScrollView 
+      keyboardShouldPersistTaps="handled"
+      style={{ paddingHorizontal: wp(4) }}
+      className="flex-1 bg-white"
+      >
+
+<View>
+                  <TouchableOpacity 
+                   style = {{ paddingHorizontal: wp(2), paddingVertical: hp(2)}}
+                  onPress={() => navigation.navigate("SidebarScreen")}>
+                    <View className="w-9 h-9 bg-[#F6F6F680] rounded-full justify-center items-center">
+                      <AntDesign name="left" size={20} color="black" />
+                    </View>
+                  </TouchableOpacity>
+
+</View>
+            <View className="flex-1 p-4">
                 <View className="items-center mb-6">
                   <Image source={require("../assets/images/complain11.webp")} className="w-20 h-20" />
                   <Text className="text-xl font-bold text-gray-900 mt-2">
@@ -160,7 +173,7 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
   data={category}
   save="key"
   placeholder="Select Complaint Category"
-  boxStyles={{ borderColor: "#393939", height: 50 }}
+  boxStyles={{ borderColor: "#393939", height: 50 , borderRadius:30}}
   inputStyles={{ color: "#434343", fontSize: 14 }}
   dropdownTextStyles={{ fontSize: 12 }}
   search={false}
@@ -181,13 +194,13 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
     textAlignVertical="top"
     placeholder="Add the Complaint here.."
     placeholderTextColor="#808FA2 text-italic" 
-    className="text-black bg-white border border-[#393939] rounded-lg p-4 min-h-[250px] italic"
+    className="text-black bg-white border border-[#393939] rounded-lg p-4 min-h-[250px] "
     value={complaintText}
     onChangeText={setComplaintText}
   />
 </View>
 
-                <TouchableOpacity onPress={handleSubmit} className="mx-auto shadow-lg w-40">
+                <TouchableOpacity onPress={handleSubmit} className="mx-auto shadow-lg w-40 pb-8 ">
   <LinearGradient
     colors={["#6839CF", "#874DDB"]}
     start={{ x: 0, y: 0 }}
@@ -198,13 +211,14 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
   </LinearGradient>
 </TouchableOpacity>
 
-              </ScrollView>
             </View>
-          </KeyboardAvoidingView>
-        </TouchableWithoutFeedback>
+   
       </ScrollView>
-    </SafeAreaView>
+      </KeyboardAvoidingView>
   );
 };
 
 export default AddComplaintScreen;
+
+
+///////
