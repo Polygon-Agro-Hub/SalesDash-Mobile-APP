@@ -8,7 +8,7 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/favicon.png",
+      "image": "./assets/images/lgooo.png",
       "resizeMode": "contain",
       "backgroundColor": "#6638CE"
     },
@@ -84,7 +84,9 @@
         "REQUEST_INSTALL_PACKAGES",
         "NOTIFICATIONS",
         "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS"
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.MANAGE_EXTERNAL_STORAGE",
+        "android.permission.READ_EXTERNAL_STORAGE"
       ]
     },
     "web": {
@@ -108,8 +110,10 @@
     "extra": {
       "router": {
         "origin": false
+      },
+      "eas": {
+        "projectId": "cbafaddf-a3a1-48f8-acf4-295b3ed84bbb"
       }
-      
     }
   }
 }
