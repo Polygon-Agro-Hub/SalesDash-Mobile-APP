@@ -19,6 +19,8 @@ import environment from "@/environment/environment";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
+import LottieView from "lottie-react-native";
+import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
 
 type CreateCustomPackageNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -248,7 +250,13 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation, r
               </TouchableOpacity>
             ))
           ) : (
-            <View className="py-8 items-center justify-center">
+            <View className="py-8 items-center justify-center mt-[20%]">
+                <LottieView
+              source={require("../assets/images/NoComplaints.json")}
+              style={{ width: wp(50), height: hp(30) }}
+              autoPlay
+              loop
+            />
               <Text className="text-gray-500">No products found</Text>
             </View>
           )}

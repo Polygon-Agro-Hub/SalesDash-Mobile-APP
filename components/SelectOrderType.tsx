@@ -54,14 +54,14 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({ navigation, route }) 
 
   console.log("----------",id)
   return (
-    <View className="flex-1 bg-white">
-      <View className="flex-row items-center h-16 shadow-md px-4 bg-white">
+    <View className="flex-1 bg-white ">
+      <View className="flex-row items-center h-16 shadow-md px-4 bg-white mt-3 ">
         {/* <BackButton navigation={navigation} /> */}
         <TouchableOpacity 
         style = {{ paddingHorizontal: wp(2), paddingVertical: hp(2)}}
         onPress={() => navigation.navigate("ViewCustomerScreen" as any, { id: id, customerId:customerId, name: name, title:title })}
         >
-         <View className="w-9 h-9 bg-[#F6F6F680] rounded-full justify-center items-center">
+         <View className="w-9 h-9 bg-[#F6F6F680] rounded-full justify-center items-center ">
            <AntDesign name="left" size={20} color="black" />
          </View>
        </TouchableOpacity> 
