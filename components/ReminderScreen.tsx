@@ -218,6 +218,8 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
         return require("../assets/images/time-management.webp");
       case 'Order is Out for Delivery':
         return require("../assets/images/fast-shipping.webp");
+      case 'Order is Cancelled':
+        return require("../assets/images/OrderisCancelled.webp");
       default:
         return require("../assets/images/notification.webp");
     }
