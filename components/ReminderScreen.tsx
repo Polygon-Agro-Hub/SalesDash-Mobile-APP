@@ -1,3 +1,6 @@
+// 1. First, update your ReminderScreen to expose unreadCount globally
+// Add this to your ReminderScreen.tsx
+
 import React, { useEffect, useRef, useState } from "react";
 import { View, Text, FlatList, TouchableOpacity, Image, Modal, ActivityIndicator } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -9,8 +12,27 @@ import ReminderScreenSkeleton from "../components/Skeleton/ReminderSkeleton";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import environment from "@/environment/environment";
-import { Audio } from "expo-av"; 
+import { Audio } from "expo-av";
 
+// Add this global state management
+let globalUnreadCount = 0;
+let unreadCountListeners: ((count: number) => void)[] = [];
+
+export const subscribeToUnreadCount = (listener: (count: number) => void) => {
+  unreadCountListeners.push(listener);
+  listener(globalUnreadCount); // Send current count immediately
+  
+  return () => {
+    unreadCountListeners = unreadCountListeners.filter(l => l !== listener);
+  };
+};
+
+const updateGlobalUnreadCount = (count: number) => {
+  globalUnreadCount = count;
+  unreadCountListeners.forEach(listener => listener(count));
+};
+
+// Your existing interfaces...
 type ReminderScreenNavigationProp = StackNavigationProp<RootStackParamList, "ReminderScreen">;
 
 interface ReminderScreenProps {
@@ -26,6 +48,7 @@ interface Notification {
   invNo: string;
   orderStatus: string;
   cusId: string;
+  customerId: string;
   customerName: string;
   phoneNumber: string;
 }
@@ -37,8 +60,13 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const previousNotificationsCount = useRef(0); // Keep track of the previous notification count
+  const previousNotificationsCount = useRef(0);
   const sound = useRef<Audio.Sound | null>(null);
+
+  // Update global unread count whenever local unreadCount changes
+  useEffect(() => {
+    updateGlobalUnreadCount(unreadCount);
+  }, [unreadCount]);
 
   // Function to play notification sound
   const playNotificationSound = async () => {
@@ -48,13 +76,12 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
       }
       
       const { sound: newSound } = await Audio.Sound.createAsync(
-        require('../assets/sounds/p2.mp3'), // Make sure to add this MP3 file to your assets
+        require('../assets/sounds/p2.mp3'),
         { shouldPlay: true }
       );
       
       sound.current = newSound;
       
-      // Unload sound after it finishes playing
       newSound.setOnPlaybackStatusUpdate(status => {
         if (status.isLoaded && status.didJustFinish) {
           sound.current?.unloadAsync();
@@ -79,18 +106,18 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
           Authorization: `Bearer ${storedToken}`
         }
       });
+
+      console.log("responsesblkvadj", response.data);
       
       const data = response.data.data || {};
       const newNotifications = data.notifications || [];
       const newUnreadCount = data.unreadCount || 0;
       
-      // Find the highest notification ID in the new data
       if (newNotifications.length > 0) {
         const maxId = Math.max(...newNotifications.map((n: { id: any; }) => n.id));
         console.log("Max ID:", maxId);
         console.log("Previous Max ID:", highestNotificationId.current);
         
-        // Check if we have a new highest ID and we're not on the first load
         if (!isLoading && maxId > highestNotificationId.current) {
           console.log("✅ New notifications detected! Playing sound...");
           playNotificationSound();
@@ -98,9 +125,10 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
           console.log("❌ No new notifications detected");
         }
         
-        // Update our reference for next time
         highestNotificationId.current = maxId;
       }
+
+      console.log("unreadjkdhsvla", newUnreadCount);
       
       setNotifications(newNotifications);
       setUnreadCount(newUnreadCount);
@@ -115,7 +143,6 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
   };
 
   useEffect(() => {
-    // Load sound on component mount
     const loadSound = async () => {
       try {
         await Audio.setAudioModeAsync({
@@ -129,16 +156,12 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
     };
     
     loadSound();
-    
-    // Initial fetch
     fetchNotifications();
   
-    // Set up interval for periodic fetching (every 2 minutes)
     const intervalId = setInterval(() => {
       fetchNotifications();
-    }, 12000); // 2 minutes in milliseconds
+    }, 12000);
   
-    // Clean up interval and sound on component unmount
     return () => {
       clearInterval(intervalId);
       if (sound.current) {
@@ -154,10 +177,8 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
 
   const markAsRead = async (id: number) => {
     try {
-      // Find the notification first
       const notificationToUpdate = notifications.find(n => n.id === id);
       
-      // Only proceed if the notification exists and is unread
       if (notificationToUpdate && !notificationToUpdate.readStatus) {
         const storedToken = await AsyncStorage.getItem("authToken");
         await axios.patch(`${environment.API_BASE_URL}api/notifications/mark-read/${id}`, {}, {
@@ -166,12 +187,10 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
           }
         });
   
-        // Update local state
         setNotifications(prev => prev.map(n => 
           n.id === id ? { ...n, readStatus: true } : n
         ));
         
-        // Only decrement if it was previously unread
         setUnreadCount(prev => Math.max(0, prev - 1));
       }
     } catch (err) {
@@ -184,17 +203,14 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
   
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
-      // Change to delete by notification ID (not orderId)
       await axios.delete(`${environment.API_BASE_URL}api/notifications/${selectedNotification.id}`, {
         headers: {
           Authorization: `Bearer ${storedToken}`
         }
       });
   
-      // Filter by the same ID we deleted
       setNotifications(prev => prev.filter(n => n.id !== selectedNotification.id));
       
-      // Update unread count if needed
       if (!selectedNotification.readStatus) {
         setUnreadCount(prev => Math.max(0, prev - 1));
       }
@@ -208,12 +224,14 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
 
   const getNotificationIcon = (title: string) => {
     switch(title) {
-      case 'Payment Reminder':
+      case 'Payment reminder ':
         return require("../assets/images/payment-method.webp");
       case 'Order is Processing':
         return require("../assets/images/time-management.webp");
       case 'Order is Out for Delivery':
         return require("../assets/images/fast-shipping.webp");
+      case 'Order is Cancelled':
+        return require("../assets/images/OrderisCancelled.webp");
       default:
         return require("../assets/images/notification.webp");
     }
@@ -251,7 +269,7 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
             </Text>
           </LinearGradient>
 
-          <View style={{ flex: 1, paddingVertical: hp(2),padding:8 }}>
+          <View style={{ flex: 1, paddingVertical: hp(2) }}>
             {isEmpty ? (
               <View className="flex-1 justify-center items-center px-4 ">
                 <Image 
@@ -274,7 +292,7 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
                       onPress={() => markAsRead(item.id)} 
                       activeOpacity={0.8}
                     >
-                      <View className={`shadow-md p-4 mb-3 mx-3 flex-row justify-between items-center rounded-lg ${itemStyle}`}>
+                      <View className={`shadow-md p-4 mb-3  flex-row justify-between items-center rounded-lg ${itemStyle}`}>
                         <Image 
                           source={getNotificationIcon(item.title)} 
                           style={{ width: 30, height: 30 }} 
@@ -282,7 +300,7 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
                         <View className="flex-1 ml-5">
                           <Text className="text-gray-800 font-bold">{item.title}</Text>
                           <Text className="text-gray-600">Order No: {item.invNo}</Text>
-                          <Text className="text-gray-600">Customer ID: {item.cusId}</Text>
+                          <Text className="text-gray-600">Customer ID: {item.customerId}</Text>
                         </View>
 
                         <TouchableOpacity onPress={() => showDeleteModal(item)}>
@@ -330,3 +348,4 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
 };
 
 export default ReminderScreen;
+

@@ -7,17 +7,37 @@ const CustomersScreenSkeleton: React.FC = () => {
   return (
     <View className="flex-1 bg-white">
       {/* Header Skeleton */}
-      <ContentLoader speed={1.5} width={wp(90)} height={hp(7)} backgroundColor="#e0e0e0" foregroundColor="#f5f5f5">
-        
-        <Rect x="100" y="20" rx="6" ry="6" width={wp(40)} height={hp(2)} />
+     
+  <ContentLoader
+        speed={1.5}
+        width={wp(90)}
+        height={hp(7)}
+        backgroundColor="#e0e0e0"
+        foregroundColor="#f5f5f5"
+        style={{
+          alignSelf: "center",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Rect 
+          x={wp(25)} 
+          y="20" 
+          rx="6" 
+          ry="6" 
+          width={wp(40)} 
+          height={hp(2)} 
+        />
       </ContentLoader>
+
+
 
       {/* Skeleton for Search Bar */}
       <View
         style={{
           flexDirection: "row",
           alignItems: "center",
-          justifyContent: "space-between",
+          justifyContent: "center",
           backgroundColor: "white",
           borderRadius: wp(10),
           padding: wp(3),

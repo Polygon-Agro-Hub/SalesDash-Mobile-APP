@@ -23,6 +23,13 @@ interface EditCustomerScreenProps {
   route: any;  
 }
 
+interface City {
+  id: number;
+ city:string;
+ charge:string;
+  createdAt?: string;
+}
+
 const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, route }) => {
   const { id , customerId,name, title} = route.params;
   console.log(id) 
@@ -51,6 +58,8 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
 
   // For building type dropdown picker
   const [buildingTypeOpen, setBuildingTypeOpen] = useState(false);
+    const [openCityDropdown, setOpenCityDropdown] = useState(false);
+  const [cityItems, setCityItems] = useState<{label: string, value: string}[]>([]);
   const [buildingTypeItems, setBuildingTypeItems] = useState([
     { label: "House", value: "House" },
     { label: "Apartment", value: "Apartment" },
@@ -179,6 +188,37 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
       setLoading(false);
     }
   };
+
+
+  const fetchCity = async () => {
+    try {
+      const storedToken = await AsyncStorage.getItem("authToken");
+      if (!storedToken) return;
+  
+      setToken(storedToken);
+  
+      const response = await axios.get<{ data: City[] }>(
+        `${environment.API_BASE_URL}api/customer/get-city`,
+        {
+          headers: { Authorization: `Bearer ${storedToken}` },
+        }
+      );
+      
+      if (response.data && response.data.data) {
+        const formattedCities = response.data.data.map(city => ({
+          label: city.city,
+          value: city.city
+        }));
+        setCityItems(formattedCities);
+      }
+    } catch (error) {
+      console.error("City fetch error:", error);
+    }
+  };
+  
+        useEffect(() => {
+          fetchCity()
+        }, []);
   
  
 
@@ -259,7 +299,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
         buildingData = {
           houseNo: houseNo || "",
           streetName: streetName || "",
-          city: city || ""
+           city: city
         };
       } else if (buildingType === "Apartment") {
         buildingData = {
@@ -269,7 +309,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
           floorNo: floorNo || "",
           houseNo: houseNo || "",
           streetName: streetName || "",
-          city: city || ""
+           city: city
         };
       }
   
@@ -311,7 +351,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
   
     } catch (error: unknown) {
       if (error instanceof Error) {
-        Alert.alert("Error", `Failed to update customer: ${error.message}`);
+      //  Alert.alert("Error", `Failed to update customer: ${error.message}`);
         console.error(error);
       } else {
         Alert.alert("Error", "An unknown error occurred");
@@ -556,15 +596,55 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                       onChangeText={setStreetName}
                     />
                   </View>
-                  <View className="mb-4">
-                    <Text className="text-gray-700 mb-1">City</Text>
-                    <TextInput
-                      className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
-                      placeholder="City"
-                      value={city}
-                      onChangeText={setCity}
-                    />
-                  </View>
+                <View className="mb-4 z-10">
+  <Text className="text-gray-700 mb-1">City</Text>
+  <DropDownPicker
+    open={openCityDropdown}
+    value={city}
+    items={cityItems}
+    setOpen={setOpenCityDropdown}
+    setValue={setCity}
+    setItems={setCityItems}
+    placeholder={city ? city : "Select City"}
+    searchable={true}
+    searchPlaceholder="Search city..."
+    style={{
+      backgroundColor: '#F6F6F6',
+      borderColor: '#F6F6F6',
+      borderRadius: 30,
+      minHeight: 40,
+    }}
+    dropDownContainerStyle={{
+      backgroundColor: '#ffffff',
+      borderColor: '#F6F6F6',
+      borderRadius: 10,
+      zIndex: 1000,
+    }}
+    textStyle={{
+      color: '#333',
+      fontSize: 14,
+      paddingLeft: 5,
+    }}
+    placeholderStyle={{
+      color: city ? '#333' : '#999',
+      fontSize: 14,
+    }}
+    zIndex={3000}
+    zIndexInverse={1000}
+      modalProps={{
+      animationType: "fade",
+    }}
+    listMode="MODAL"
+    scrollViewProps={{
+      nestedScrollEnabled: true,
+    }}
+    onChangeValue={(value) => {
+      if (value) {
+        setCity(value);
+      }
+    }}
+  />
+</View>
                 </>
               )}
 
@@ -626,15 +706,55 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                       onChangeText={setStreetName}
                     />
                   </View>
-                  <View className="mb-4">
-                    <Text className="text-gray-700 mb-1">City</Text>
-                    <TextInput
-                      className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
-                      placeholder="City"
-                      value={city}
-                      onChangeText={setCity}
-                    />
-                  </View>
+                  <View className="mb-4 z-10">
+  <Text className="text-gray-700 mb-1">City</Text>
+  <DropDownPicker
+    open={openCityDropdown}
+    value={city}
+    items={cityItems}
+    setOpen={setOpenCityDropdown}
+    setValue={setCity}
+    setItems={setCityItems}
+    placeholder={city ? city : "Select City"}
+    searchable={true}
+    searchPlaceholder="Search city..."
+    style={{
+      backgroundColor: '#F6F6F6',
+      borderColor: '#F6F6F6',
+      borderRadius: 30,
+      minHeight: 40,
+    }}
+    dropDownContainerStyle={{
+      backgroundColor: '#ffffff',
+      borderColor: '#F6F6F6',
+      borderRadius: 10,
+      zIndex: 1000,
+    }}
+    textStyle={{
+      color: '#333',
+      fontSize: 14,
+      paddingLeft: 5,
+    }}
+    placeholderStyle={{
+      color: city ? '#333' : '#999',
+      fontSize: 14,
+    }}
+    zIndex={3000}
+    zIndexInverse={1000}
+      modalProps={{
+      animationType: "fade",
+    }}
+    listMode="MODAL"
+    scrollViewProps={{
+      nestedScrollEnabled: true,
+    }}
+    onChangeValue={(value) => {
+      if (value) {
+        setCity(value);
+      }
+    }}
+  />
+</View>
                 </>
               )}
 
@@ -644,7 +764,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
 >
   <LinearGradient 
     colors={["#854BDA", "#6E3DD1"]} 
-    className="py-3 px-4 rounded-lg items-center mt-6 mb-[15%] mr-[20%] ml-[20%] h-15 rounded-full"
+    className="py-3 px-4  items-center mt-6 mb-[15%] mr-[20%] ml-[20%] h-15 rounded-full"
   >
     {isSubmitting ? (
       <ActivityIndicator color="#FFFFFF" />

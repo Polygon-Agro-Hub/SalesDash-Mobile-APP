@@ -131,6 +131,10 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
       const currentQuantity = typeof item.quantity === 'string' 
         ? parseFloat(item.quantity) 
         : item.quantity || startValueNum;
+
+        const currentQuantity1 = typeof item.changeby === 'string' 
+        ? parseFloat(item.changeby) 
+        : item.changeby || startValueNum;
       
       // Calculate initial changeby value based on unitType
       let initialChangeby;
@@ -171,7 +175,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
         changeby: initialChangeby, 
         quantity: initialChangeby,
         unitType: unitType,
-        startValue: startValueNum
+        startValue: currentQuantity1
       };
     });
     
@@ -246,14 +250,17 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
       })
     );
   };
+  
 
   const increaseQuantity = (id: number) => {
     setCartItems(
       cartItems.map(item => {
         if (item.id === id) {
           // Get base startValue in kg
-          const baseIncrementAmount = typeof item.startValue === 'string' 
-            ? parseFloat(item.startValue) 
+
+          console.log("dcwhkvbsju",item.changeby)
+          const baseIncrementAmount = typeof item.changeby === 'string' 
+            ? parseFloat(item.changeby) 
             : item.startValue;
           
           // Adjust increment based on current unit type
@@ -322,6 +329,8 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
       })
     );
   };
+
+
   
   // Calculate totals including ALL items, regardless of selection state
   const currentSubtotal = cartItems.reduce((total, item) => {

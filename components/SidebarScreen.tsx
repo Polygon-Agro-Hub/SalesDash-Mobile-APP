@@ -288,7 +288,7 @@ const handleLogout = async () => {
   >
             <Ionicons name="log-out-outline" size={hp(3)} color="#FF3B30" />
             </View>
-            <Text style={{ marginLeft: wp(4), fontSize: hp(2), color: "#FF3B30", fontWeight: "bold" }}>Logout</Text>
+            <Text style={{ marginLeft: wp(4), fontSize: hp(2), color: "#FF3B30", fontWeight: "bold",  marginTop:(13)}}>Logout</Text>
           </TouchableOpacity>
         </View>
         </View>

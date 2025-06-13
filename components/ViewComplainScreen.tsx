@@ -335,15 +335,15 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({ navigation }) =
   
           setFormData(profileResponse.data.data);
         } catch (error) {
-          console.error("Error fetching complaints or user profile:", error);
+        //  console.error("Error fetching complaints or user profile:", error);
           setLoading(false);
-          Alert.alert("Error", "Failed to fetch complaints or user profile");
+      //    Alert.alert("Error", "Failed to fetch complaints or user profile");
         }
       }, 2000); 
     } catch (error) {
       console.error("Error fetching complaints or user profile:", error);
       setLoading(false);
-      Alert.alert("Error", "Failed to fetch complaints or user profile");
+  //    Alert.alert("Error", "Failed to fetch complaints or user profile");
     }
   };
   
