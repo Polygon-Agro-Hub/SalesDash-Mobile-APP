@@ -55,7 +55,7 @@ interface SelectPaymentMethodProps {
         isPackage?: string;
       
         customerid?: string; 
-        selectedMethod?: "Online Payment" | "Pay By Cash" | null; // Add this property
+        selectedMethod?: "Card" | "Cash" | null; // Add this property
         
         orderItems?: Array<{
           additionalItems?: Array<AdditionalItem>;
@@ -254,8 +254,8 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, r
   
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   // Initialize with the previously selected method if available
-  const [selectedMethod, setSelectedMethod] = useState<"Online Payment" | "Pay By Cash" | null>(
-    previousSelectedMethod || "Online Payment"
+  const [selectedMethod, setSelectedMethod] = useState<"Card" | "Cash" | null>(
+    previousSelectedMethod || "Card"
   );
 
   useEffect(() => {
@@ -333,15 +333,15 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, r
         <View className="flex-1 w-full items-center space-y-5 p-12 mt-[-10]">
      
           <TouchableOpacity
-            onPress={() => setSelectedMethod("Online Payment")}
+            onPress={() => setSelectedMethod("Card")}
             className={`w-full py-5 px-5 rounded-lg flex-row items-center justify-between border border-[#5D5D5D] ${
-              selectedMethod === "Online Payment" ? "bg-[#6C3CD1] border-[#6C3CD1]" : "bg-white border-[#5D5D5D]"
+              selectedMethod === "Card" ? "bg-[#6C3CD1] border-[#6C3CD1]" : "bg-white border-[#5D5D5D]"
             }`}
           >
-            <Text className={`text-lg ${selectedMethod === "Online Payment" ? "text-white font-bold" : "text-gray-700 font-medium"}`}>
+            <Text className={`text-lg ${selectedMethod === "Card" ? "text-white font-bold" : "text-gray-700 font-medium"}`}>
               Online Payment 
             </Text>
-            {selectedMethod === "Online Payment" && (
+            {selectedMethod === "Card" && (
               <View className="w-7 h-7 bg-white rounded-full flex items-center justify-center">
                 <Image 
                   source={require("../assets/images/DonePurple.webp")} 
@@ -354,15 +354,15 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, r
 
      
           <TouchableOpacity
-            onPress={() => setSelectedMethod("Pay By Cash")}
+            onPress={() => setSelectedMethod("Cash")}
             className={`w-full py-5 px-5 rounded-lg flex-row items-center justify-between border border-[#5D5D5D] ${
-              selectedMethod === "Pay By Cash" ? "bg-[#6C3CD1] border-[#6C3CD1]" : "bg-white border-[#5D5D5D]"
+              selectedMethod === "Cash" ? "bg-[#6C3CD1] border-[#6C3CD1]" : "bg-white border-[#5D5D5D]"
             }`}
           >
-            <Text className={`text-lg ${selectedMethod === "Pay By Cash" ? "text-white font-bold" : "text-gray-700 font-medium"}`}>
+            <Text className={`text-lg ${selectedMethod === "Cash" ? "text-white font-bold" : "text-gray-700 font-medium"}`}>
               Pay By Cash
             </Text>
-            {selectedMethod === "Pay By Cash" && (
+            {selectedMethod === "Cash" && (
               <View className="w-7 h-7 bg-white rounded-full flex items-center justify-center">
                 <Image 
                   source={require("../assets/images/DonePurple.webp")} 
@@ -378,7 +378,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, r
         <TouchableOpacity onPress={handleProceed}>
         <LinearGradient 
           colors={["#6839CF", "#874DDB"]} 
-          className="py-3 px-4 rounded-lg items-center mb-[22%] mr-[25%] ml-[25%] rounded-3xl h-15"
+          className="py-3 px-4  items-center mb-[22%] mr-[25%] ml-[25%] rounded-3xl h-15"
         >
           
             <Text className="text-center text-white font-bold">Proceed</Text>

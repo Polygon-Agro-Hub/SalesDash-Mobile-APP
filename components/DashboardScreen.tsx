@@ -10,13 +10,13 @@ import {
   KeyboardAvoidingView,
   ScrollView,
   BackHandler,
-  RefreshControl,
+  RefreshControl
 } from "react-native";
-import { StackNavigationProp } from "@react-navigation/stack";
-import { RootStackParamList } from "./types";
-import { Bar } from "react-native-progress";
+import { StackNavigationProp } from "@react-navigation/stack"; 
+import { RootStackParamList } from "./types"; 
+import { Bar } from 'react-native-progress';
 import { LinearGradient } from "expo-linear-gradient";
-import DashboardSkeleton from "../components/Skeleton/DashboardSkeleton";
+import DashboardSkeleton from "../components/Skeleton/DashboardSkeleton"; 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import environment from "@/environment/environment";
@@ -26,37 +26,33 @@ import {
 } from "react-native-responsive-screen";
 import { useFocusEffect } from "expo-router";
 
-type DashboardScreenNavigationProp = StackNavigationProp<
-  RootStackParamList,
-  "DashboardScreen"
->;
+
+type DashboardScreenNavigationProp = StackNavigationProp<RootStackParamList, "DashboardScreen">;
 
 interface DashboardScreenProps {
   navigation: DashboardScreenNavigationProp;
 }
 
-interface Package {
-  id: number;
-  displayName: string;
-  image: string;
-  price: string;
-  description: string;
-  portion: number;
-  period: number;
-}
+
 
 interface Package {
   id: number;
   displayName: string;
   image: string;
-  name: string;
-  productPrice: string;
-  packingFee: string;
-  serviceFee:string
+  name?: string;
+  price?: string;
+  total: string; // This will be the calculated total
   description: string;
-  portion: number;
-  period: number;
+  portion?: number;
+  period?: number;
+  // Add the new fields from API response
+  packingFee: string;
+  productPrice: string;
+  serviceFee: string;
+  status: string;
+  createdAt?: string;
 }
+
 
 interface AgentStats {
   daily: {
@@ -73,43 +69,55 @@ interface AgentStats {
 const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [token, setToken] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ firstName: "", image: "" });
+  const [ totalprice , setTotalprice] = useState()
+  const [formData, setFormData] = useState({ firstName: "" , image:""});
   const [packages, setPackages] = useState<Package[]>([]);
   const [agentStats, setAgentStats] = useState<AgentStats>({
     daily: {
       target: 10,
       completed: 0,
       numOfStars: 0,
-      progress: 0,
+      progress: 0
     },
     monthly: {
-      totalStars: 0,
-    },
+      totalStars: 0
+    }
   });
 
-  // const refreshData = async () => {
-  //   setIsLoading(true);
-  //   await Promise.all([getUserProfile(), fetchPackages(), fetchAgentStats()]);
-  //   setIsLoading(false);
-  // };
+  // useEffect(() => {
+  //   // Handle hardware back button (Android)
+  //   const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+  //     // Return true to prevent default behavior (going back)
+  //     return true;
+  //   });
+  
+  //   return () => backHandler.remove();
+  // }, []);
+
+
+  
+  
   const refreshData = async () => {
     setIsLoading(true);
-    await Promise.all([getUserProfile(), fetchPackages()]);
+    await Promise.all([getUserProfile(), fetchPackages(), fetchAgentStats()]);
     setIsLoading(false);
   };
 
+
   useEffect(() => {
-    const unsubscribe = navigation.addListener("focus", () => {
+    const unsubscribe = navigation.addListener('focus', () => {
       refreshData();
     });
-
+    
     return unsubscribe;
   }, [navigation]);
+
 
   const getUserProfile = async () => {
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
       if (!storedToken) {
+
         navigation.reset({
           index: 0,
           routes: [{ name: "LoginScreen" }],
@@ -118,15 +126,12 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       }
       setToken(storedToken);
 
-      const response = await axios.get(
-        `${environment.API_BASE_URL}api/auth/user/profile`,
-        {
-          headers: { Authorization: `Bearer ${storedToken}` },
-        }
-      );
+      const response = await axios.get(`${environment.API_BASE_URL}api/auth/user/profile`, {
+        headers: { Authorization: `Bearer ${storedToken}` },
+      });
 
       setFormData(response.data.data);
-      // console.log("''''''",response.data)
+     // console.log("''''''",response.data)
     } catch (error) {
       console.error("Profile fetch error:", error);
 
@@ -146,6 +151,8 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       return;
     }
   };
+
+  
 
   useEffect(() => {
     const checkTokenExpiration = async () => {
@@ -168,27 +175,25 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
               "tokenStoredTime",
               "tokenExpirationTime",
             ]);
-            Alert.alert(
-              "Sorry",
-              "No authenticated user found, please login again"
-            );
+            Alert.alert("Sorry","No authenticated user found, please login again")
             navigation.reset({
               index: 0,
               routes: [{ name: "LoginScreen" }],
-            });
-          }
+            });   
+           }
         }
       } catch (error) {
         console.error("Error checking token expiration:", error);
         navigation.reset({
           index: 0,
           routes: [{ name: "LoginScreen" }],
-        });
-      }
+        });     
+       }
     };
 
     checkTokenExpiration();
   }, [navigation]);
+
 
   const fetchPackages = async () => {
     try {
@@ -202,8 +207,9 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
         {
           headers: { Authorization: `Bearer ${storedToken}` },
         }
+        
       );
-      console.log(response.data);
+  console.log(response.data)
 
       setPackages(response.data.data);
     } catch (error) {
@@ -211,24 +217,27 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     }
   };
 
-  // const fetchAgentStats = async () => {
-  //   try {
-  //     const storedToken = await AsyncStorage.getItem("authToken");
-  //     if (!storedToken) return;
 
-  //     const response = await axios.get<{ data: AgentStats }>(
-  //       `${environment.API_BASE_URL}api/orders/sales-agent`,
-  //       {
-  //         headers: { Authorization: `Bearer ${storedToken}` },
-  //       }
-  //     );
+  const fetchAgentStats = async () => {
+    try {
+      const storedToken = await AsyncStorage.getItem("authToken");
+      if (!storedToken) return;
 
-  //     setAgentStats(response.data.data);
-  //   } catch (error) {
-  //     console.error("Failed to fetch agent stats:", error);
+      const response = await axios.get<{ data: AgentStats }>(
+        `${environment.API_BASE_URL}api/orders/sales-agent`,
+        {
+          headers: { Authorization: `Bearer ${storedToken}` },
+        }
+      );
 
-  //   }
-  // };
+      setAgentStats(response.data.data);
+    } catch (error) {
+      console.error("Failed to fetch agent stats:", error);
+      
+    }
+  };
+
+  const total = 
 
   useFocusEffect(
     useCallback(() => {
@@ -238,60 +247,53 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
         BackHandler.removeEventListener("hardwareBackPress", onBackPress);
     }, [])
   );
+  
 
   if (isLoading) {
     return <DashboardSkeleton />;
   }
 
-  const renderPackage = ({ item }: { item: Package }) => (
+
+ const renderPackage = ({ item }: { item: Package }) => {
+
+  const totalPrice = (parseFloat(item.packingFee) + parseFloat(item.productPrice) + parseFloat(item.serviceFee));
+const formattedTotalPrice = totalPrice.toLocaleString('en-US', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2
+});
+
+  return (
     <View
       className="bg-white rounded-xl m-3 p-3 w-[45%] items-center mb-6"
-      // style={{
-      //   shadowColor: "#000",
-      //   shadowOffset: { width: 0, height: 6 },
-      //   shadowOpacity: 0.2,
-      //   shadowRadius: 8,
-      //   elevation: 10,
-      // }}
       style={{
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.2,
         shadowRadius: 8,
         elevation: 10,
-        flexDirection: "column", // Ensure flex column layout
-        justifyContent: "space-between", // Distribute space between content
+        flexDirection: 'column',
+        justifyContent: 'space-between',
       }}
     >
-      <Image
-        source={{ uri: item.image }}
-        className="w-20 h-20 mb-3 "
-        resizeMode="contain"
-      />
-      <Text className="font-bold text-[#6A3AD0] text-center">
-        {item.displayName}
+      <Image source={{ uri: item.image }} className="w-20 h-20 mb-3 " resizeMode="contain" />
+      <Text className="font-bold text-[#6A3AD0] text-center">{item.displayName}</Text>
+      <Text className="text-sm font-medium text-gray-500">
+        Rs. {formattedTotalPrice}
       </Text>
-      <Text className="text-sm font-medium text-gray-500 mt-1">
-  Rs. {(
-    parseFloat(item.productPrice || '0') +
-    parseFloat(item.packingFee || '0') +
-    parseFloat(item.serviceFee || '0')
-  ).toFixed(2)} {/* Format the sum to 2 decimal places */}
-</Text>
-
-
+    
       <TouchableOpacity
-        onPress={() =>
-          navigation.navigate("ViewScreen", {
+        onPress={() => 
+          navigation.navigate("ViewScreen" as any, {
             selectedPackageId: item.id,
             selectedPackageName: item.displayName,
             selectedPackageImage: item.image,
-            selectedPackageproductPrice: item.productPrice ,
-             selectedPackagepackingFee: item.packingFee ,
-             selectedPackageserviceFee: item.serviceFee ,
+            selectedPackageTotal: formattedTotalPrice, 
             selectedPackageDescription: item.description,
             selectedPackageportion: item.portion,
             selectedPackageperiod: item.period,
+            selectedPackagePackingFee: item.packingFee,
+            selectedPackageProductPrice: item.productPrice,
+            selectedPackageServiceFee: item.serviceFee,
           })
         }
         className="items-center"
@@ -310,10 +312,13 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       </TouchableOpacity>
     </View>
   );
+};
+
+  
   return (
-    <KeyboardAvoidingView
+    <KeyboardAvoidingView 
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      enabled
+      enabled 
       className="flex-1"
     >
       <View className="flex-1 bg-white">
@@ -321,77 +326,69 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
         <View className="bg-white shadow-md p-5 rounded-b-3xl">
           <View className="flex-row justify-between items-center">
             <View className="flex-row items-center">
-              <TouchableOpacity
-                onPress={() => navigation.navigate("SidebarScreen")}
-              >
+              <TouchableOpacity onPress={() => navigation.navigate("SidebarScreen")}>
                 {/* <Image source={require("../assets/images/profile.png")} className="w-12 h-12 rounded-full" /> */}
                 {formData.image ? (
-                  <Image
-                    source={{ uri: formData.image }}
-                    className="w-12 h-12 rounded-full"
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <Image
-                    source={require("../assets/images/profile.webp")}
-                    className="w-12 h-12 rounded-full"
-                    resizeMode="cover"
-                  />
-                )}
+  <Image
+    source={{ uri: formData.image }}  
+    className="w-12 h-12 rounded-full"
+    resizeMode="cover"
+  />
+) : (
+  <Image
+    source={require("../assets/images/profile.webp")}  
+    className="w-12 h-12 rounded-full"
+    resizeMode="cover"
+  />
+)}
               </TouchableOpacity>
-              <Text className="ml-3 text-lg font-bold text-gray-800">
-                Hello, {formData.firstName}
-              </Text>
+              <Text className="ml-3 text-lg font-bold text-gray-800">Hello, {formData.firstName}</Text>
             </View>
             <View className="flex-row items-center">
+             
               <View className="flex-row items-center bg-[#E6DBF766] py-1 px-3 rounded-full">
-                <Image
-                  source={require("../assets/images/star.webp")}
-                  className="w-6 h-6"
-                  resizeMode="contain"
-                />
-                <Text className="ml-2 font-bold text-gray-700">
-                  {agentStats.monthly.totalStars}
-                </Text>
+                <Image source={require("../assets/images/star.webp")} className="w-6 h-6" resizeMode="contain" />
+                <Text className="ml-2 font-bold text-gray-700">{agentStats.monthly.totalStars}</Text>
               </View>
             </View>
           </View>
 
-          {/* Progress Bar */}
-          <Text className="text-lg text-purple-600 mt-5 font-bold">
-            Your Daily Target
-          </Text>
-          <View className="flex-row bg-[#824AD933] h-14 rounded-xl items-center mt-3 px-6">
-            <Text
-              className="absolute text-purple-600 text-sm font-bold"
-              style={{
-                top: 2,
-                left: "50%",
-                transform: [{ translateX: -12 }],
-              }}
-            >
-              {agentStats.daily.completed}/{agentStats.daily.target || "0"}
-            </Text>
-            <View className="mt-2">
-              <Bar
-                progress={agentStats.daily.progress}
-                width={wp("68%")}
-                color="#854BDA"
-                unfilledColor="#FFFFFF" /* Add this line to make unfilled portion white */
-                borderWidth={0}
-                height={10}
-              />
-            </View>
-            <Image
-              source={require("../assets/images/star.webp")}
-              className="w-8 absolute right-0 h-8 mr-3"
-              resizeMode="contain"
-            />
-          </View>
+       
+       {/* Progress Bar */}
+<Text className="text-lg text-purple-600 mt-5 font-bold">
+  Your Daily Target
+</Text>
+<View className="flex-row bg-[#824AD933] h-14 rounded-xl items-center mt-3 px-6">
+  <Text
+    className="absolute text-purple-600 text-sm font-bold"
+    style={{
+      top: 2,
+      left: "50%", 
+      transform: [{ translateX: -12 }], 
+    }}
+  >
+    {agentStats.daily.completed}/{agentStats.daily.target || '0'}
+  </Text>
+  <View className="mt-2">
+  <Bar
+  progress={agentStats.daily.progress}
+  width={wp("68%")}
+  color="#854BDA"
+  unfilledColor="#FFFFFF"  /* Add this line to make unfilled portion white */
+  borderWidth={0}
+  height={10}
+/>
+</View>
+  <Image
+    source={require("../assets/images/star.webp")} 
+    className="w-8 absolute right-0 h-8 mr-3"
+    resizeMode="contain"
+  />
+</View>
         </View>
 
         {/* Packages Section with Pull to Refresh */}
-        <ScrollView
+        <ScrollView 
           className="flex-1"
           refreshControl={
             <RefreshControl
@@ -405,40 +402,20 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
           <Text className="text-xl font-bold text-[#874CDB] mt-6 ml-6 mb-2">
             Packages
           </Text>
-     
-            {/* <FlatList
-              data={packages}
-              renderItem={renderPackage}
-              keyExtractor={(item) => item.id.toString()}
-              numColumns={2}
-              scrollEnabled={false}
-              contentContainerStyle={{
-                paddingHorizontal: 10,
-                paddingLeft: 2,
-                paddingBottom: 60,
-              }}
-            /> */}
-              {packages.length === 0 ? (
-                   <View className="flex-1 justify-center items-center">
-            <Text className="text-center text-lg font-semibold text-gray-500">No packages available</Text>
+          <View className="p-2">
+          <FlatList
+            data={packages}
+            renderItem={renderPackage}
+            keyExtractor={(item) => item.id.toString()}
+            numColumns={2}
+            scrollEnabled={false}
+            contentContainerStyle={{ 
+              paddingHorizontal: 10, 
+              paddingLeft: 2,
+              paddingBottom: 60
+            }}
+          />
           </View>
-          ) : (
-                 <View className="p-2">
-            <FlatList
-              data={packages}
-              renderItem={renderPackage}
-              keyExtractor={(item) => item.id.toString()}
-              numColumns={2}
-              scrollEnabled={false}
-              contentContainerStyle={{
-                paddingHorizontal: 10,
-                paddingLeft: 2,
-                paddingBottom: 60,
-              }}
-            />
-                 </View>
-          )}
-     
         </ScrollView>
       </View>
     </KeyboardAvoidingView>

@@ -35,18 +35,22 @@ interface View_CancelOrderScreenProps {
 
 interface Order {
   orderId: number;
-  customerId: number;
+  userId: number;
   deliveryType: string;
   scheduleDate: string;
   scheduleTimeSlot: string;
   weeklyDate: string;
+  total: string;
+    discount: string,
+    fullTotal: string,
   paymentMethod: string;
   paymentStatus: number;
   orderStatus: string;
   createdAt: string;
   InvNo: string;
-  reportStatus:string;
-  fullTotal: string | null;
+  reportStatus: string;
+  status:string;
+//  fullTotal: string | null;
   fullSubTotal: string | null;
   fullDiscount: string | null;
   deleteStatus: string | null;
@@ -55,12 +59,44 @@ interface Order {
   phoneNumber: string;
   buildingType: string;
   fullAddress: string;
+  // Additional fields from API response
+//  discount?: string;
+  invoiceNumber?: string;
+  sheduleDate?: string;
+  sheduleTime?: string;
+  sheduleType?: string;
+  title?: string;
+//  total?: string;
+}
+
+interface City {
+  id: number;
+  city: string;
+  charge: string;
+  createdAt?: string;
+}
+
+interface CustomerData {
+  title?: string;
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
+  buildingType?: string;
+  buildingDetails?: {
+    buildingNo?: string;
+    unitNo?: string;
+    buildingName?: string;
+    floorNo?: string;
+    houseNo?: string;
+    streetName?: string;
+    city?: string;
+  };
 }
 
 const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   navigation, route
 }) => {
-  const { orderId } = route.params;
+  const { orderId, userId } = route.params;
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -69,17 +105,26 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   const [showStatusMessage, setShowStatusMessage] = useState(false);
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
   const [subtotal, setSubtotal] = useState(0);
+  const [customerData, setCustomerData] = useState<CustomerData | null>(null);
+  const [deliveryFee, setDeliveryFee] = useState<number>(0);
 
-  console.log(";;;;;;",route.params)
+  console.log("Route params:", route.params);
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
       try {
         setLoading(true);
         const response = await axios.get(`${environment.API_BASE_URL}api/orders/get-order/${orderId}`);
-        console.log("mkk", response.data);
+        console.log("Order API response:", response.data);
+        
         if (response.data.success) {
           setOrder(response.data.data);
+          
+          // Extract city from fullAddress and fetch delivery fee
+          const orderData = response.data.data;
+          if (orderData.fullAddress) {
+            await fetchDeliveryFee(orderData.fullAddress, orderData.userId || userId);
+          }
         } else {
           setError("Failed to load order details");
         }
@@ -94,6 +139,122 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
     fetchOrderDetails();
   }, [orderId]);
 
+  const fetchDeliveryFee = async (fullAddress: string, customerUserId?: number) => {
+    try {
+      const storedToken = await AsyncStorage.getItem("authToken");
+      
+      if (!storedToken) {
+        console.log("No authentication token found");
+        return;
+      }
+
+      // First fetch customer data to get the correct city
+      if (customerUserId || userId) {
+        const customerData = await fetchCustomerData(customerUserId || userId);
+        
+        // Use city from customer data if available
+        if (customerData && customerData.buildingDetails?.city) {
+          const cityName = customerData.buildingDetails.city;
+          console.log("Using city from customer data:", cityName);
+          
+          // Fetch cities to get delivery charge
+          const cityResponse = await axios.get<{ data: City[] }>(
+            `${environment.API_BASE_URL}api/customer/get-city`,
+            { headers: { Authorization: `Bearer ${storedToken}` }}
+          );
+          
+          console.log("Cities API response:", cityResponse.data);
+          
+          if (cityResponse.data && cityResponse.data.data) {
+            const cityData = cityResponse.data.data.find(c => 
+              c.city.toLowerCase() === cityName.toLowerCase()
+            );
+            
+            if (cityData) {
+              const fee = parseFloat(cityData.charge) || 0;
+              console.log(`Setting delivery fee to ${fee} for city ${cityName}`);
+              setDeliveryFee(fee);
+            } else {
+              console.log(`City ${cityName} not found in cities list`);
+              console.log("Available cities:", cityResponse.data.data.map(c => c.city));
+            }
+          }
+          return;
+        }
+      }
+
+      // Fallback: Extract city from fullAddress if customer data fails
+      const addressParts = fullAddress.split(', ');
+      let cityName = '';
+      
+      if (addressParts.length >= 2) {
+        cityName = addressParts[addressParts.length - 2].trim();
+      }
+      
+      console.log("Fallback: Extracted city from address:", cityName);
+      
+      if (cityName) {
+        // Fetch cities to get delivery charge
+        const cityResponse = await axios.get<{ data: City[] }>(
+          `${environment.API_BASE_URL}api/customer/get-city`,
+          { headers: { Authorization: `Bearer ${storedToken}` }}
+        );
+        
+        if (cityResponse.data && cityResponse.data.data) {
+          const cityData = cityResponse.data.data.find(c => 
+            c.city.toLowerCase() === cityName.toLowerCase()
+          );
+          
+          if (cityData) {
+            const fee = parseFloat(cityData.charge) || 0;
+            console.log(`Setting delivery fee to ${fee} for city ${cityName}`);
+            setDeliveryFee(fee);
+          }
+        }
+      }
+      
+    } catch (error) {
+      console.error("Error fetching delivery fee:", error);
+    }
+  };
+
+  const fetchCustomerData = async (customerUserId: number): Promise<CustomerData | null> => {
+    try {
+      const storedToken = await AsyncStorage.getItem("authToken");
+      
+      if (!storedToken) {
+        console.log("No authentication token found");
+        return null;
+      }
+      
+      // Fetch customer data
+      const apiUrl = `${environment.API_BASE_URL}api/orders/get-customer-data/${customerUserId}`;
+      const response = await axios.get(apiUrl, {
+        headers: { Authorization: `Bearer ${storedToken}` },
+      });
+      
+      console.log("Customer data API response:", response.data);
+      
+      if (response.data && response.data.success) {
+        console.log("Customer data received:", response.data.data);
+        setCustomerData(response.data.data);
+        return response.data.data;
+      } else {
+        const errorMsg = response.data?.message || "Failed to fetch customer data";
+        console.log("Customer API error:", errorMsg);
+        return null;
+      }
+    } catch (error: any) {
+      console.error("Error fetching customer data:", error);
+      if (axios.isAxiosError(error)) {
+        const errorMsg = error.response?.data?.message || error.message;
+        console.log("Customer data Axios error:", errorMsg);
+      }
+      return null;
+    }
+  };
+
+  console.log("Current delivery fee:", deliveryFee);
   
 
   const formatDateShort = (dateString: string) => {
@@ -125,21 +286,21 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
     if (!order) return "";
     
 
-    if (order.orderStatus === "Cancelled") {
+    if (order.status === "Cancelled") {
       return "Cancelled";
     }
     
   
-    if (order.orderStatus === "Ordered" && isAfter6PM(order.createdAt)) {
+    if (order.status === "Ordered" && isAfter6PM(order.createdAt)) {
       return "Processing";
     }
     
-    return order.orderStatus;
+    return order.status;
   };
 
   const isCancelDisabled = () => {
     if (!order) return true;
-    return order.orderStatus === "On the way" || order.orderStatus === "Processing" || order.orderStatus === "Delivered" || order.orderStatus === "Cancelled";
+    return order.status === "On the way" || order.status === "Processing" || order.status === "Delivered" || order.status === "Cancelled";
   };
 
   const handlePhone = () => {
@@ -257,10 +418,30 @@ const isTimelineItemActive = (status: string) => {
   return itemIndex <= currentIndex;
 };
 
+    // const handleGetACall = () => {
+    //   const phoneNumber = `tel:${order?.phoneNumber}`;
+    //   Linking.openURL(phoneNumber).catch((err) => console.error("Error opening dialer", err));
+    // };
+
     const handleGetACall = () => {
-      const phoneNumber = `tel:${order?.phoneNumber}`;
-      Linking.openURL(phoneNumber).catch((err) => console.error("Error opening dialer", err));
-    };
+    let phoneNumber = order?.phoneNumber || '';
+    
+    // Ensure phone number has +94 country code
+    if (phoneNumber) {
+        // Remove any existing country code formats
+        phoneNumber = phoneNumber.replace(/^\+?94/, ''); // Remove +94 or 94 if exists
+        phoneNumber = phoneNumber.replace(/^0/, ''); // Remove leading 0 if exists
+        
+        // Clean up any spaces, dashes, or parentheses
+        phoneNumber = phoneNumber.replace(/[\s\-\(\)]/g, '');
+        
+        // Add +94 country code
+        phoneNumber = `+94${phoneNumber}`;
+    }
+    
+    const telUrl = `tel:${phoneNumber}`;
+    Linking.openURL(telUrl).catch((err) => console.error("Error opening dialer", err));
+};
 
     const handleCancelOrder = () => {
       if (isCancelDisabled()) {
@@ -388,7 +569,7 @@ const isTimelineItemActive = (status: string) => {
     </View>
 
     {/* Delivered - Last item in normal flow */}
-    <View className={`flex-row items-center ${order.orderStatus === "Cancelled" ? "mb-10" : ""}`}>
+    <View className={`flex-row items-center ${order.status === "Cancelled" ? "mb-10" : ""}`}>
       <View 
         className={`w-4 h-4 rounded-full absolute -left-7 ${isTimelineItemActive("Delivered") ? "bg-[#6C3CD1]" : "bg-[#D9D9D9]"}`} 
       />
@@ -398,7 +579,7 @@ const isTimelineItemActive = (status: string) => {
     </View>
 
     {/* Order Cancelled - Show ONLY if order is cancelled */}
-    {order.orderStatus === "Cancelled" && (
+    {order.status === "Cancelled" && (
       <View className="flex-row items-center">
         <View 
           className="w-4 h-4 rounded-full absolute -left-7 bg-[#6C3CD1]"
@@ -433,23 +614,23 @@ const isTimelineItemActive = (status: string) => {
                 <View className="flex-row justify-between mb-2">
   <Text className="text-[#8492A3]">Subtotal</Text>
   <Text className="text-black font-medium">
-    Rs.{(parseFloat(order.fullTotal || "0") - 350 ).toFixed(2)}
+    Rs.{(parseFloat(order.total || "0") -deliveryFee ).toFixed(2)}
   </Text>
 </View>
-                {order.fullDiscount && parseFloat(order.fullDiscount) > 0 && (
+                {order.discount && parseFloat(order.discount) > 0 && (
                   <View className="flex-row justify-between mb-2">
                     <Text className="text-[#8492A3]">Discount</Text>
-                    <Text className="text-[#8492A3]">Rs.{parseFloat(order.fullDiscount).toFixed(2)}</Text>
+                    <Text className="text-[#8492A3]">Rs.{parseFloat(order.discount).toFixed(2)}</Text>
                   </View>
                 )}
                 <View className="flex-row justify-between mb-2">
                     <Text className="text-[#8492A3]">Delivery</Text>
-                    <Text className="text-[#8492A3]">Rs.350.00</Text>
+                    <Text className="text-[#8492A3]">{deliveryFee.toFixed(2)}</Text>
                   </View>
                 <View className="flex-row justify-between pt-2">
                   <Text className="font-semibold text-black">Grand Total</Text>
                   <Text className="font-bold text-black">
-                  Rs.{parseFloat(order.fullSubTotal || "0").toFixed(2)}
+                  Rs.{parseFloat(order.fullTotal || "0").toFixed(2)}
                   </Text>
                 </View>
               </View>
@@ -476,7 +657,7 @@ const isTimelineItemActive = (status: string) => {
             
 
             {/* Report Status Button - Only shown when not Ordered or Cancelled */}
-{ order.orderStatus !== "Cancelled" && (
+{ order.status !== "Cancelled" && (
   <TouchableOpacity 
     onPress={handleReportStatus}
     className="mx-5 mb-3 rounded-full px-14"

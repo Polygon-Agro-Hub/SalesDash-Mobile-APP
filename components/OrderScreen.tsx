@@ -349,82 +349,108 @@ const fetchProductPrices = useCallback(async (productIds: number[]) => {
 
 
 
-  // Handle confirm function
-  const handleConfirm = useCallback(async () => {
-    setLoading(true);
-    
-    try {
-      const orderData = {
-        userId: route.params?.id,
-        isPackage: isPackage === "1" ? 1 : 0,
-        packageId: packageValue ? parseInt(packageValue) : null,
-        total: parseFloat(calculateGrandTotal()),
-        fullTotal: parseFloat(calculateGrandTotal()),
-        discount: additionalItems.reduce((sum, item) => sum + item.discount, 0),
-        additionalItems: additionalItems.map(item => ({
-          productId: item.id, // This now contains the correct productId
-          qty: item.quantity,
-          unit: item.unit.toLowerCase(),
-          price: item.discountedPricePerKg * (item.unit === 'Kg' ? item.quantity : item.quantity / 1000),
-          discount: item.discount
-        }))
-      };
 
-      navigation.navigate("ScheduleScreen" as any, { 
-        orderData,
-        customerid: route.params?.id,
-        isPackage
-      });
-      
-    } catch (error) {
-      console.error("Error confirming order:", error);
-      Alert.alert("Error", "Failed to process order");
-    } finally {
-      setLoading(false);
+  const handleConfirm = useCallback(async () => {
+  setLoading(true);
+  
+  try {
+    // Calculate package total if a package is selected
+    let packageTotalAmount = 0;
+    if (packageValue && selectedPackage) {
+      const packingFee = parseFloat(selectedPackage.packingFee) || 0;
+      const productPrice = parseFloat(selectedPackage.productPrice) || 0;
+      const serviceFee = parseFloat(selectedPackage.serviceFee) || 0;
+      packageTotalAmount = packingFee + productPrice + serviceFee;
     }
-  }, [isPackage, packageValue,  additionalItems, navigation, route.params?.id]);
+
+    const orderData = {
+      userId: route.params?.id,
+      isPackage: isPackage === "1" ? 1 : 0,
+      packageId: packageValue ? parseInt(packageValue) : null,
+      total: packageTotalAmount + additionalItems.reduce((sum, item) => sum + item.totalAmount, 0),
+      fullTotal: packageTotalAmount + additionalItems.reduce((sum, item) => sum + item.totalAmount, 0),
+      discount: additionalItems.reduce((sum, item) => sum + item.discount, 0),
+      additionalItems: additionalItems.map(item => ({
+        productId: item.id,
+        qty: item.quantity,
+        unit: item.unit.toLowerCase(),
+        price: item.discountedPricePerKg * (item.unit === 'Kg' ? item.quantity : item.quantity / 1000),
+        discount: item.discount
+      }))
+    };
+
+    console.log("orderData--------", orderData);
+    
+    navigation.navigate("ScheduleScreen" as any, { 
+      orderData,
+      customerid: route.params?.id,
+      isPackage
+    });
+    
+  } catch (error) {
+    console.error("Error confirming order:", error);
+    Alert.alert("Error", "Failed to process order");
+  } finally {
+    setLoading(false);
+  }
+}, [isPackage, packageValue, additionalItems, navigation, route.params?.id, selectedPackage]);
 
   // Updated handleSaveItem function with dynamic quantity initialization
   const handleSaveItem = useCallback(() => {
-    const selectedProductData = productItems.find(item => item.value === productValue);
-    
-    if (!selectedProductData) {
-      Alert.alert("Error", "Please select a product");
-      return;
-    }
+  const selectedProductData = productItems.find(item => item.value === productValue);
+  
+  if (!selectedProductData) {
+    Alert.alert("Error", "Please select a product");
+    return;
+  }
 
-    const unit = selectedUnit === 'Kg' ? 'Kg' : 'g';
-    const quantityInKg = unit === 'Kg' ? quantity : quantity / 1000;
-    
-    // Get both normal and discounted prices
-    const normalPrice = parseFloat(selectedProductData.price);
-    const discountedPrice = selectedProductData.discountedPrice 
-      ? parseFloat(selectedProductData.discountedPrice) 
-      : normalPrice;
-    const discountPerKg = normalPrice - discountedPrice;
-    const totalDiscountForQuantity = discountPerKg * quantityInKg;
-    
-    const totalAmount = quantityInKg * discountedPrice;
-   
-    const newItem = {
-      id: selectedProductData.id || Date.now(), // Use product ID or timestamp as fallback
-      name: selectedProductData.label,
-      quantity: quantity,
-      unit: unit,
-      pricePerKg: normalPrice,
-      discountedPricePerKg: discountedPrice,
-      discount: totalDiscountForQuantity,
-      totalAmount: totalAmount,
-      selected: false
-    };
+  // Check if this product is already in additionalItems
+  const isProductAlreadyAdded = additionalItems.some(item => item.id === selectedProductData.id);
+  
+  if (isProductAlreadyAdded) {
+    Alert.alert("Error", "This product is already added");
+    return;
+  }
 
-    setAdditionalItems(prev => [...prev, newItem]);
-    
-    setShowAddModal(false);
-    setQuantity(1);
-    setSelectedUnit('g');
-    setPricePerKg(discountedPrice);
-  }, [productItems, productValue, selectedUnit, quantity, selectedProduct]);
+  const unit = selectedUnit === 'Kg' ? 'Kg' : 'g';
+  const quantityInKg = unit === 'Kg' ? quantity : quantity / 1000;
+  
+  // Get both normal and discounted prices
+  const normalPrice = parseFloat(selectedProductData.price);
+  const discountedPrice = selectedProductData.discountedPrice 
+    ? parseFloat(selectedProductData.discountedPrice) 
+    : normalPrice;
+  const discountPerKg = normalPrice - discountedPrice;
+  const totalDiscountForQuantity = discountPerKg * quantityInKg;
+  
+  const totalAmount = quantityInKg * discountedPrice;
+ 
+  const newItem = {
+    id: selectedProductData.id || Date.now(), // Use product ID or timestamp as fallback
+    name: selectedProductData.label,
+    quantity: quantity,
+    unit: unit,
+    pricePerKg: normalPrice,
+    discountedPricePerKg: discountedPrice,
+    discount: totalDiscountForQuantity,
+    totalAmount: totalAmount,
+    selected: false
+  };
+
+  setAdditionalItems(prev => [...prev, newItem]);
+  setShowAddModal(false);
+  setQuantity(1);
+  setSelectedUnit('g');
+  setPricePerKg(discountedPrice);
+}, [productItems, productValue, selectedUnit, quantity, additionalItems]);
+
+const availableProducts = productItems.filter(
+  item => !additionalItems.some(addedItem => addedItem.id === item.id)
+);
+const productDropdownItems = productItems.map(item => ({
+  ...item,
+  disabled: additionalItems.some(addedItem => addedItem.id === item.id)
+}));
 
  
 
@@ -482,7 +508,7 @@ const fetchProductPrices = useCallback(async (productIds: number[]) => {
         }
       );
       
-      console.log("packagedata", response.data);
+      //console.log("packagedata", response.data);
       setPackages(response.data.data);
       
       // Transform packages for dropdown
@@ -504,7 +530,7 @@ const fetchProductPrices = useCallback(async (productIds: number[]) => {
   }, []);
 
 
-  console.log("ispackage--------", isPackage)
+ // console.log("ispackage--------", isPackage)
 
   useEffect(() => {
   console.log("Route params received:", route.params);
@@ -651,10 +677,15 @@ const calculateDiscountForQuantity = () => {
 
 
 
+  // const handleGoBack = () => {
+  //   setShowAddModal(false);
+  // };
   const handleGoBack = () => {
-    setShowAddModal(false);
-  };
-  console.log("dissssssssssssssss",discountprice)
+  setShowAddModal(false);
+  setProductValue('');
+  setSelectedProduct('');
+};
+  //console.log("dissssssssssssssss",discountprice)
 
  const toggleItemSelection = (id: number) => {
   setSelectedItems(prev => {
@@ -677,31 +708,75 @@ const deleteSelectedItems = () => {
   };
 
   // Updated increment function with dynamic changeBy value
-  const incrementQuantity = () => {
-    const selectedProductData = productItems.find(item => item.value === productValue);
-    const changeBy = selectedProductData?.changeby ? Number(selectedProductData.changeby) : 1;
+  // const incrementQuantity = () => {
+  //   const selectedProductData = productItems.find(item => item.value === productValue);
+  //   const changeBy = selectedProductData?.changeby ? Number(selectedProductData.changeby) : 1;
     
-    // Adjust changeBy based on unit type
-    const adjustedChangeBy = selectedUnit === 'Kg' ? changeBy : changeBy * 1000;
+  //   // Adjust changeBy based on unit type
+  //   const adjustedChangeBy = selectedUnit === 'Kg' ? changeBy : changeBy * 1000;
     
-    setQuantity(prev => prev + adjustedChangeBy);
-  };
+  //   setQuantity(prev => prev + adjustedChangeBy);
+  // };
 
-  // Updated decrement function with dynamic changeBy value
-  const decrementQuantity = () => {
-    const selectedProductData = productItems.find(item => item.value === productValue);
-    const changeBy = selectedProductData?.changeby ? Number(selectedProductData.changeby) : 1;
+  // // Updated decrement function with dynamic changeBy value
+  // const decrementQuantity = () => {
+  //   const selectedProductData = productItems.find(item => item.value === productValue);
+  //   const changeBy = selectedProductData?.changeby ? Number(selectedProductData.changeby) : 1;
     
-    // Adjust changeBy based on unit type
-    const adjustedChangeBy = selectedUnit === 'Kg' ? changeBy : changeBy * 1000;
-    const startValue = selectedProductData?.startValue ? Number(selectedProductData.startValue) : 1;
+  //   // Adjust changeBy based on unit type
+  //   const adjustedChangeBy = selectedUnit === 'Kg' ? changeBy : changeBy * 1000;
+  //   const startValue = selectedProductData?.startValue ? Number(selectedProductData.startValue) : 1;
     
-    // Adjust startValue based on unit type
-    const adjustedStartValue = selectedUnit === 'Kg' ? startValue : startValue * 1000;
+  //   // Adjust startValue based on unit type
+  //   const adjustedStartValue = selectedUnit === 'Kg' ? startValue : startValue * 1000;
     
-    setQuantity(prev => prev > adjustedStartValue ? prev - adjustedChangeBy : adjustedStartValue);
-  };
+  //   setQuantity(prev => prev > adjustedStartValue ? prev - adjustedChangeBy : adjustedStartValue);
+  // };
 
+ const incrementQuantity = () => {
+  const selectedProductData = productItems.find(item => item.value === productValue);
+  const changeBy = selectedProductData?.changeby ? Number(selectedProductData.changeby) : 1;
+  
+  // For Kg, use the changeBy value as is (could be decimal like 0.5)
+  // For g, multiply by 1000 to get gram increments
+  const adjustedChangeBy = selectedUnit === 'Kg' ? changeBy : changeBy * 1000;
+  
+  setQuantity(prev => prev + adjustedChangeBy);
+};
+
+const decrementQuantity = () => {
+  const selectedProductData = productItems.find(item => item.value === productValue);
+  const changeBy = selectedProductData?.changeby ? Number(selectedProductData.changeby) : 1;
+  const startValue = selectedProductData?.startValue ? Number(selectedProductData.startValue) : 1;
+  
+  // For Kg, use values as is
+  // For g, multiply by 1000
+  const adjustedChangeBy = selectedUnit === 'Kg' ? changeBy : changeBy * 1000;
+  const adjustedStartValue = selectedUnit === 'Kg' ? startValue : startValue * 1000;
+  
+  setQuantity(prev => Math.max(adjustedStartValue, prev - adjustedChangeBy));
+};
+
+// Update the edit modal increment/decrement functions
+const updateQuantity = (changeBy: number, increase: boolean) => {
+  if (!editingItem) return;
+  
+  // Get the product data to access changeby and startValue
+  const productData = productItems.find(item => item.id === editingItem.id);
+  const dynamicChangeBy = productData?.changeby ? Number(productData.changeby) : changeBy;
+  const startValue = productData?.startValue ? Number(productData.startValue) : 1;
+  
+  // For Kg, use values as is (could be decimal)
+  // For g, multiply by 1000
+  const adjustedChangeBy = editSelectedUnit === 'Kg' ? dynamicChangeBy : dynamicChangeBy * 1000;
+  const adjustedStartValue = editSelectedUnit === 'Kg' ? startValue : startValue * 1000;
+  
+  if (increase) {
+    setNewItemQuantity(prev => prev + adjustedChangeBy);
+  } else {
+    setNewItemQuantity(prev => Math.max(adjustedStartValue, prev - adjustedChangeBy));
+  }
+};
 
 
   const handleUnitChange = (unit: string) => {
@@ -726,6 +801,8 @@ const saveUpdatedItem = () => {
     discount: discountAmount
   };
 
+console.log("hgfsjka",updatedItem)
+
   setAdditionalItems(items => 
     items.map(item => 
       item.id === editingItem.id ? updatedItem : item
@@ -737,24 +814,24 @@ const saveUpdatedItem = () => {
 };
 
 // Updated updateQuantity function for edit modal with dynamic values
-const updateQuantity = (changeBy: number, increase: boolean) => {
-  if (!editingItem) return;
+// const updateQuantity = (changeBy: number, increase: boolean) => {
+//   if (!editingItem) return;
   
-  // Get the product data to access changeby and startValue
-  const productData = productItems.find(item => item.id === editingItem.id);
-  const dynamicChangeBy = productData?.changeby ? Number(productData.changeby) : changeBy;
-  const startValue = productData?.startValue ? Number(productData.startValue) : 1;
+//   // Get the product data to access changeby and startValue
+//   const productData = productItems.find(item => item.id === editingItem.id);
+//   const dynamicChangeBy = productData?.changeby ? Number(productData.changeby) : changeBy;
+//   const startValue = productData?.startValue ? Number(productData.startValue) : 1;
   
-  // Adjust values based on unit type
-  const adjustedChangeBy = editSelectedUnit === 'Kg' ? dynamicChangeBy : dynamicChangeBy * 1000;
-  const adjustedStartValue = editSelectedUnit === 'Kg' ? startValue : startValue * 1000;
+//   // Adjust values based on unit type
+//   const adjustedChangeBy = editSelectedUnit === 'Kg' ? dynamicChangeBy : dynamicChangeBy * 1000;
+//   const adjustedStartValue = editSelectedUnit === 'Kg' ? startValue : startValue * 1000;
   
-  if (increase) {
-    setNewItemQuantity(prev => prev + adjustedChangeBy);
-  } else {
-    setNewItemQuantity(prev => Math.max(adjustedStartValue, prev - adjustedChangeBy));
-  }
-};
+//   if (increase) {
+//     setNewItemQuantity(prev => prev + adjustedChangeBy);
+//   } else {
+//     setNewItemQuantity(prev => Math.max(adjustedStartValue, prev - adjustedChangeBy));
+//   }
+// };
 
   // Calculate total items count
   const getTotalItemsCount = () => {
@@ -771,13 +848,16 @@ const handleEditItem = (item: AdditionalItem) => {
   setModalVisible(true);
 };
 
-// Updated effect to set initial quantity based on product selection
+
+
+
+
 useEffect(() => {
   if (productValue) {
     const selectedProductData = productItems.find(item => item.value === productValue);
     if (selectedProductData) {
       const startValue = selectedProductData.startValue ? Number(selectedProductData.startValue) : 1;
-      // Adjust startValue based on current unit
+      // Only set initial quantity when product changes, not when unit changes
       const adjustedStartValue = selectedUnit === 'Kg' ? startValue : startValue * 1000;
       setQuantity(adjustedStartValue);
       
@@ -787,20 +867,54 @@ useEffect(() => {
       setPricePerKg(discountedPrice);
     }
   }
-}, [productValue, selectedUnit, productItems]);
-
-// Updated effect to handle unit changes
-useEffect(() => {
-  if (productValue) {
-    const selectedProductData = productItems.find(item => item.value === productValue);
-    if (selectedProductData) {
-      const startValue = selectedProductData.startValue ? Number(selectedProductData.startValue) : 1;
-      // Adjust startValue based on current unit
-      const adjustedStartValue = selectedUnit === 'Kg' ? startValue : startValue * 1000;
-      setQuantity(adjustedStartValue);
-    }
+}, [productValue, productItems]); // Removed selectedUnit dependency
+// Add this new function to handle unit conversion
+const handleUnitConversion = (newUnit: string) => {
+  const currentUnit = selectedUnit;
+  
+  if (currentUnit === newUnit) return; // No change needed
+  
+  let convertedQuantity = quantity;
+  
+  if (currentUnit === 'Kg' && newUnit === 'g') {
+    // Converting from Kg to g: multiply by 1000
+    convertedQuantity = quantity * 1000;
+  } else if (currentUnit === 'g' && newUnit === 'Kg') {
+    // Converting from g to Kg: divide by 1000
+    convertedQuantity = quantity / 1000;
   }
-}, [selectedUnit]);
+  
+  // Round to appropriate decimal places
+  if (newUnit === 'g') {
+    convertedQuantity = Math.round(convertedQuantity);
+  } else {
+    // For Kg, keep up to 3 decimal places
+    convertedQuantity = Math.round(convertedQuantity * 1000) / 1000;
+  }
+  
+  setQuantity(convertedQuantity);
+  setSelectedUnit(newUnit);
+};
+
+// Add this function for edit modal unit conversion
+const handleEditUnitConversion = (newUnit: string) => {
+  const currentUnit = editSelectedUnit;
+  
+  if (currentUnit === newUnit) return; // No change needed
+  
+  let convertedQuantity = newItemQuantity;
+  
+  if (currentUnit === 'Kg' && newUnit === 'g') {
+    // Converting from Kg to g: multiply by 1000
+    convertedQuantity = newItemQuantity * 1000;
+  } else if (currentUnit === 'g' && newUnit === 'Kg') {
+    // Converting from g to Kg: divide by 1000
+    convertedQuantity = newItemQuantity / 1000;
+  }
+  
+  setNewItemQuantity(convertedQuantity);
+  setEditSelectedUnit(newUnit);
+};
 
 
   useEffect(() => {
@@ -885,7 +999,8 @@ useEffect(() => {
                 onPress={handleAddMore}
                 className="flex-row items-center gap-1"
               >
-                <Ionicons name="add" size={16} color="#7C3AED" />
+                {/* <Ionicons name="add" size={16} color="#7C3AED" /> */}
+                 <Image source={require("../assets/images/Add.webp")} className="w-5 h-5 " />
                 <Text className="text-purple-600 text-sm font-medium">Add More</Text>
               </TouchableOpacity>
             </View>
@@ -1007,13 +1122,19 @@ useEffect(() => {
     }}
   >
 
-    <Text className="text-lg font-semibold text-gray-800">
-      Grand Total:
+    <Text className="text-lg font-semibold text-gray-800 ml-2">
+      Total:
     </Text>
 
-    <Text className="text-lg font-semibold text-purple-600">
-      Rs. {calculateGrandTotal()}
-    </Text>
+<Text className="text-base font-semibold text-[#5C5C5C] mr-10">
+  Rs. {Number(calculateGrandTotal()).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}
+</Text>
+
+
+
 
     <TouchableOpacity onPress={handleConfirm}>
       <LinearGradient 
@@ -1050,64 +1171,70 @@ useEffect(() => {
       
       {/* Product Section */}
       <View className="mb-6" style={{ zIndex: 80000 }}>
-        <Text className="text-gray-700  mb-3">Product</Text>
-        <DropDownPicker
-          open={productOpen}
-          setOpen={setProductOpen}
-          value={productValue}
-          setValue={setProductValue}
-          onSelectItem={(item) => {
-            if (item && typeof item.value === 'string' && item.label) {
-              setSelectedProduct(item.label);
-              // Update price based on selected product
-              const selectedItem = productItems.find(p => p.value === item.value);
-              if (selectedItem) {
-                const discountedPrice = selectedItem.discountedPrice 
-                  ? parseFloat(selectedItem.discountedPrice) 
-                  : parseFloat(selectedItem.price);
-                setPricePerKg(discountedPrice);
-              }
-            }
-          }}
-          items={productItems}
-          searchable={true}
-          searchPlaceholder="Search product..."
-          setItems={setProductItems}
-          dropDownContainerStyle={{
-            borderColor: "#F6F6F6",
-            borderWidth: 1,
-            backgroundColor: "#F6F6F6",
-            maxHeight: 200,
-            minHeight: 150,
-          }}
-          style={{
-            borderWidth: 1,
-            borderColor: "#F6F6F6",
-            backgroundColor: "#F6F6F6",
-            borderRadius: 15,
-            paddingHorizontal: 12,
-            paddingVertical: 12,
-            minHeight: 52,
-          }}
-          textStyle={{
-            fontSize: 14,
-            color: '#111827',
-          }}
-          zIndex={80000}
-          listMode="SCROLLVIEW"
-        />
+        <Text className="text-gray-700 mb-3">Product</Text>
+      <DropDownPicker
+  open={productOpen}
+  setOpen={setProductOpen}
+  value={productValue}
+  setValue={setProductValue}
+  items={productItems.filter(
+    product => !additionalItems.some(item => item.id === product.id)
+  )}
+  onSelectItem={(item) => {
+    if (item && item.label && item.value) {
+      setSelectedProduct(item.label);
+      const selectedItem = productItems.find(p => p.value === item.value);
+      if (selectedItem) {
+        const discountedPrice = selectedItem.discountedPrice 
+          ? parseFloat(selectedItem.discountedPrice) 
+          : parseFloat(selectedItem.price);
+        setPricePerKg(discountedPrice);
+        
+        // Set initial quantity based on product's startValue
+        const startValue = selectedItem.startValue ? Number(selectedItem.startValue) : 1;
+        const adjustedStartValue = selectedUnit === 'Kg' ? startValue : startValue * 1000;
+        setQuantity(adjustedStartValue);
+      }
+    }
+  }}
+  searchable={true}
+  searchPlaceholder="Search product..."
+  placeholder="Select a product..."
+  dropDownContainerStyle={{
+    borderColor: "#F6F6F6",
+    borderWidth: 1,
+    backgroundColor: "#F6F6F6",
+    maxHeight: 200,
+    minHeight: 150,
+  }}
+  style={{
+    borderWidth: 1,
+    borderColor: "#F6F6F6",
+    backgroundColor: "#F6F6F6",
+    borderRadius: 15,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    minHeight: 52,
+  }}
+  textStyle={{
+    fontSize: 14,
+    color: '#111827',
+  }}
+  zIndex={80000}
+  listMode="SCROLLVIEW"
+/>
       </View>
 
-      {/* Price per kg Section - Show discounted price */}
+      {/* Price per kg Section */}
       <View className="mb-6">
-        <Text className="text-gray-700  mb-3">Price per 1kg</Text>
+        <Text className="text-gray-700 mb-3">Price per 1kg</Text>
         <View className="bg-gray-50 rounded-xl px-4 py-4">
           <Text className="text-gray-900">Rs.{pricePerKg || '0.00'}</Text>
         </View>
       </View>
 
       <View className="mb-6">
-        <Text className="text-gray-700  mb-3">Quantity</Text>
+        <Text className="text-gray-700 mb-3">Quantity</Text>
         <View className="flex-row items-center space-x-2">
           {/* Quantity Control with +/- buttons */}
           <View className="flex-row items-center bg-gray-100 rounded-full flex-1">
@@ -1130,41 +1257,41 @@ useEffect(() => {
             </TouchableOpacity>
           </View>
           
-          {/* Unit dropdown */}
-          <DropDownPicker
-            open={unitOpen}
-            setOpen={setUnitOpen}
-            value={selectedUnit}
-            setValue={setSelectedUnit}
-            onSelectItem={(item) => {
-              if (item && item.value) {
-                setSelectedUnit(item.value);
-              }
-            }}
-            items={[
-              { label: "Kg", value: "Kg" },
-              { label: "g", value: "g" }
-            ]}
-            dropDownDirection="BOTTOM"
-            containerStyle={{ width: 100 }}
-            style={{
-              backgroundColor: "#F6F6F6",
-              borderColor: "#F6F6F6",
-              borderRadius: 50,
-              paddingHorizontal: 10,
-            }}
-            dropDownContainerStyle={{
-              backgroundColor: "#FFFFFF",
-              borderColor: "#FFFFFF",
-            }}
-            zIndex={70000}
-          />
+          {/* Unit dropdown - FIXED VERSION */}
+       <DropDownPicker
+  open={unitOpen}
+  setOpen={setUnitOpen}
+  value={selectedUnit}
+  setValue={setSelectedUnit}
+  onSelectItem={(item) => {
+    if (item && item.value) {
+      handleUnitConversion(item.value);
+    }
+  }}
+  items={[
+    { label: "Kg", value: "Kg" },
+    { label: "g", value: "g" }
+  ]}
+  dropDownDirection="BOTTOM"
+  containerStyle={{ width: 100 }}
+  style={{
+    backgroundColor: "#F6F6F6",
+    borderColor: "#F6F6F6",
+    borderRadius: 50,
+    paddingHorizontal: 10,
+  }}
+  dropDownContainerStyle={{
+    backgroundColor: "#FFFFFF",
+    borderColor: "#FFFFFF",
+  }}
+  zIndex={70000}
+/>
         </View>
       </View>
 
-      {/* Total Amount Section - Show discounted total */}
+      {/* Total Amount Section */}
       <View className="mb-6">
-        <Text className="text-gray-700  mb-3">Total Amount</Text>
+        <Text className="text-gray-700 mb-3">Total Amount</Text>
         <View className="bg-gray-50 rounded-xl px-4 py-4">
           <Text className="text-gray-900">
             Rs.{((selectedUnit === 'Kg' ? quantity : quantity / 1000) * pricePerKg).toFixed(2)}
@@ -1238,27 +1365,32 @@ useEffect(() => {
           
           {/* Unit dropdown */}
           <DropDownPicker
-            open={editUnitOpen}
-            setOpen={setEditUnitOpen}
-            value={editSelectedUnit}
-            setValue={setEditSelectedUnit}
-            items={[
-              { label: "Kg", value: "Kg" },
-              { label: "g", value: "g" }
-            ]}
-            dropDownDirection="BOTTOM"
-            containerStyle={{ width: 100 }}
-            style={{
-              backgroundColor: "#F6F6F6",
-              borderColor: "#F6F6F6",
-              borderRadius: 50,
-              paddingHorizontal: 10,
-            }}
-            dropDownContainerStyle={{
-              backgroundColor: "#FFFFFF",
-              borderColor: "#FFFFFF",
-            }}
-          />
+  open={editUnitOpen}
+  setOpen={setEditUnitOpen}
+  value={editSelectedUnit}
+  setValue={setEditSelectedUnit}
+  onSelectItem={(item) => {
+    if (item && item.value) {
+      handleEditUnitConversion(item.value);
+    }
+  }}
+  items={[
+    { label: "Kg", value: "Kg" },
+    { label: "g", value: "g" }
+  ]}
+  dropDownDirection="BOTTOM"
+  containerStyle={{ width: 100 }}
+  style={{
+    backgroundColor: "#F6F6F6",
+    borderColor: "#F6F6F6",
+    borderRadius: 50,
+    paddingHorizontal: 10,
+  }}
+  dropDownContainerStyle={{
+    backgroundColor: "#FFFFFF",
+    borderColor: "#FFFFFF",
+  }}
+/>
         </View>
       </View>
       
