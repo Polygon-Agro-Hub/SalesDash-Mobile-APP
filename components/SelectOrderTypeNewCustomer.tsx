@@ -37,18 +37,17 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({ navigation, route }) 
 
   const handleCreateCustomPackage = () => {
     navigation.navigate("CreateCustomPackage" as any, { 
-      id, 
-      isCustomPackage: 1,
-      isSelectPackage: 0 
+       id, 
+      isPackage: 0
     });
   };
 
 
   const handleSelectPackage = () => {
     navigation.navigate("OrderScreen" as any, { 
-      id, 
-      isCustomPackage: 0,
-      isSelectPackage: 1 
+       id, 
+   
+      isPackage: 1 
     });
   };
 
