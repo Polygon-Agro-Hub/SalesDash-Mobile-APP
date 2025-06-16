@@ -101,8 +101,11 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
     customerId = "N/A", 
     selectedDate = "N/A", 
     selectedTimeSlot = "N/A",
-    items = []
+    items = [],
+    isPackage = "",
   } = route.params || {};
+
+  console.log("ispackage",isPackage)
 
   console.log("vhalkdz", order?.invoiceNumber);
   console.log("kacsbhm", customerId);
@@ -337,6 +340,27 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
         });
       }
 
+      const serviceFeeRow = isPackage === 0 ? `
+      <tr>
+        <td>Service Fee</td>
+        <td>180.00</td>
+      </tr>
+    ` : '';
+
+    const totalFeeRow0 = isPackage === 0 ? `
+      <tr>
+        <td>Subtotal</td>
+        <td>${(total+ discount-180).toFixed(2)}</td>
+      </tr>
+    ` : '';
+
+    const totalFeeRow1 = isPackage === 1 ? `
+      <tr>
+        <td>Subtotal</td>
+        <td>${(total+ discount).toFixed(2)}</td>
+      </tr>
+    ` : '';
+
       const htmlContent = `
         <!DOCTYPE html>
         <html lang="en">
@@ -462,14 +486,19 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
                             <th>Description</th>
                             <th>Amount (Rs.)</th>
                         </tr>
-                        <tr>
-                            <td>Subtotal</td>
-                            <td>${(total+ discount).toFixed(2)}</td>
-                        </tr>
+                            </tr>
+                      ${totalFeeRow0}
+                      <tr>
+                           </tr>
+                      ${totalFeeRow1}
+                      <tr>
                         <tr>
                             <td>Discount</td>
                             <td>${discount.toFixed(2)}</td>
                         </tr>
+                        </tr>
+                      ${serviceFeeRow}
+                      <tr>
                          <tr>
                             <td>Delivery Fee</td>
                             <td>${deliveryFee.toFixed(2)}</td>
