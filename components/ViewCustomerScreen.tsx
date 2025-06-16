@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
   View, 
   Text, 
@@ -11,7 +11,8 @@ import {
   Platform, 
   KeyboardAvoidingView, 
   ScrollView,
-  ActivityIndicator
+  ActivityIndicator,
+  RefreshControl
 } from "react-native";
 import { RouteProp } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -47,6 +48,8 @@ interface OrdersResponse {
   success: boolean;
   data: Order[];
   message?: string;
+  totalCount?: number;
+  hasMore?: boolean;
 }
 
 type ViewCustomerScreenProps = {
@@ -60,9 +63,15 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
   const [selectedFilter, setSelectedFilter] = useState("Ordered");
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const isMounted = useRef(true);
 
+  const ORDERS_PER_PAGE = 5;
 
   const { name, number, id, customerId, title } = route.params;
 
@@ -76,43 +85,94 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
     };
   }, []);
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
+  const loadOrders = async (page = 1, showFullLoading = true, isLoadMore = false) => {
+    try {
+      console.log(`Loading orders for customer ${id}, page ${page}, isLoadMore: ${isLoadMore}`);
+      
+      if (showFullLoading) {
         setLoading(true);
-        setError(null);
-        
-        const response = await axios.get<OrdersResponse>(
-          `${environment.API_BASE_URL}api/orders/get-order-bycustomerId/${id}`
-        );
-
-        console.log("data------",response.data)
-
-        if (response.data.success) {
-          setOrders(response.data.data);
-        } else {
-          setError(response.data.message || "Failed to load orders");
-        }
-      } catch (err: any) {
-        console.log("Error fetching orders:", err);
-        
-        // Handle 404 as "no orders found" instead of an error
-        if (err.response && err.response.status === 404) {
-          console.log("No orders found for this customer (404) - this is normal");
-          setOrders([]); // Set empty orders array
-          setError(null); // Don't set error for 404
-        } else {
-          // For other errors, show error message
-          console.error("Actual error fetching orders:", err);
-          setError("Network error. Please try again.");
-        }
-      } finally {
-        setLoading(false);
+      } else if (isLoadMore) {
+        setLoadingMore(true);
       }
-    };
+      
+      setError(null);
+      
+      const response = await axios.get<OrdersResponse>(
+        `${environment.API_BASE_URL}api/orders/get-order-bycustomerId/${id}?page=${page}&limit=${ORDERS_PER_PAGE}`
+      );
 
-    fetchOrders();
-  }, [id]);
+      console.log("Orders response:", {
+        customerId: id,
+        page,
+        ordersCount: response.data.data?.length || 0,
+        totalCount: response.data.totalCount,
+        hasMore: response.data.hasMore
+      });
+
+      if (response.data.success) {
+        const newOrders = response.data.data;
+        
+        if (isLoadMore) {
+          // Append new orders to existing ones
+          setOrders(prevOrders => {
+            const combined = [...prevOrders, ...newOrders];
+            console.log(`Combined orders count: ${combined.length}`);
+            return combined;
+          });
+        } else {
+          // Replace orders for initial load or refresh
+          setOrders(newOrders);
+          console.log(`Set new orders count: ${newOrders.length}`);
+        }
+        
+        // Update pagination state
+        setTotalCount(response.data.totalCount || 0);
+        setHasMore(response.data.hasMore || false);
+        setCurrentPage(page);
+        
+        console.log(`Pagination state updated - hasMore: ${response.data.hasMore}, totalCount: ${response.data.totalCount}`);
+        
+      } else {
+        setError(response.data.message || "Failed to load orders");
+      }
+    } catch (err: any) {
+      console.log("Error fetching orders:", err);
+      
+      // Handle 404 as "no orders found" instead of an error
+      if (err.response && err.response.status === 404) {
+        console.log("No orders found for this customer (404) - this is normal");
+        setOrders([]); // Set empty orders array
+        setError(null); // Don't set error for 404
+        setHasMore(false);
+        setTotalCount(0);
+      } else {
+        // For other errors, show error message
+        console.error("Actual error fetching orders:", err);
+        setError("Network error. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  const loadMoreOrders = () => {
+    if (!loadingMore && hasMore && !loading) {
+      const nextPage = currentPage + 1;
+      console.log(`Loading more orders - next page: ${nextPage}`);
+      loadOrders(nextPage, false, true);
+    } else {
+      console.log(`Cannot load more - loadingMore: ${loadingMore}, hasMore: ${hasMore}, loading: ${loading}`);
+    }
+  };
+
+  const handleRefresh = () => {
+    console.log("Refreshing orders for customer:", id);
+    setCurrentPage(1);
+    setHasMore(true);
+    setOrders([]); // Clear existing orders
+    loadOrders(1, true, false);
+  };
 
   // Check for search results when search text or filter changes
   useEffect(() => {
@@ -162,6 +222,64 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
   });
 
   const isEmpty = filteredOrders.length === 0;
+
+  // Reset pagination state when customer ID changes
+  const resetPaginationState = () => {
+    setOrders([]);
+    setCurrentPage(1);
+    setHasMore(true);
+    setTotalCount(0);
+    setLoading(true);
+    setLoadingMore(false);
+    setError(null);
+    setSearchError(null);
+  };
+
+  useEffect(() => {
+    console.log("Component mounted or customer changed");
+    
+    // Reset pagination state when customer changes
+    resetPaginationState();
+    
+    // Set up listeners
+    const unsubscribe = navigation.addListener('focus', () => {
+      console.log("Screen focused - loading orders");
+      if (isMounted.current) {
+        resetPaginationState();
+        loadOrders(1, true, false);
+      }
+    });
+
+    const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () =>
+      setKeyboardVisible(true)
+    );
+    const keyboardDidHideListener = Keyboard.addListener("keyboardDidHide", () =>
+      setKeyboardVisible(false)
+    );
+
+    // Initial load
+    loadOrders(1, true, false);
+
+    // Cleanup function
+    return () => {
+      console.log("Component unmounting");
+      isMounted.current = false;
+      unsubscribe();
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, [navigation, id]); // Added 'id' dependency to reset when customer changes
+
+  const renderFooter = () => {
+    if (!loadingMore) return null;
+    
+    return (
+      <View className="py-4 justify-center items-center">
+        <ActivityIndicator size="small" color="#6B3BCF" />
+        <Text className="text-[#6B3BCF] mt-2 text-sm">Loading more orders...</Text>
+      </View>
+    );
+  };
 
   return (
     <KeyboardAvoidingView 
@@ -298,22 +416,19 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
           </ScrollView>
         </View>
 
-        <View className="mt-3 mb-[100%]">
+        <View className="flex-1 mt-3">
           {/* Orders List */}
           {loading ? (
             <View className="flex-1 justify-center items-center">
-              {/* <ActivityIndicator size="large" color="#6B3BCF" /> */}
-              {/* <Text className="text-[#6B3BCF] mt-2">Loading orders...</Text> */}
+              <ActivityIndicator size="large" color="#6B3BCF" />
+              <Text className="text-[#6B3BCF] mt-2">Loading orders...</Text>
             </View>
           ) : error ? (
             <View className="flex-1 justify-center items-center px-4">
               <Text className="text-red-500 text-center">{error}</Text>
               <TouchableOpacity 
-                className="mt-4 bg-white px-4 py-2 rounded-full"
-                onPress={() => {
-                  setLoading(true);
-                  setError(null);
-                }}
+                className="mt-4 bg-[#6B3BCF] px-4 py-2 rounded-full"
+                onPress={handleRefresh}
               >
                 <Text className="text-white font-semibold">Retry</Text>
               </TouchableOpacity>
@@ -366,11 +481,21 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
                   </View>
                 </TouchableOpacity>
               )}
-              contentContainerStyle={{ paddingBottom: 70 }}
+              onEndReached={loadMoreOrders}
+              onEndReachedThreshold={0.1}
+              ListFooterComponent={renderFooter}
+              refreshControl={
+                <RefreshControl
+                  refreshing={loading}
+                  onRefresh={handleRefresh}
+                  colors={['#6B3BCF']}
+                />
+              }
+              contentContainerStyle={{ paddingBottom: 100 }}
             />
           ) : (
             // Show Lottie animation when no filtered results (whether it's no orders at all, or filter has no results)
-            <View className="flex-1 justify-center items-center px-4 mt-[40%]">
+            <View className="flex-1 justify-center items-center px-4">
               <LottieView
                 source={require("../assets/images/NoComplaints.json")}
                 style={{ width: wp(50), height: hp(50) }}

@@ -107,6 +107,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   const [subtotal, setSubtotal] = useState(0);
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
   const [deliveryFee, setDeliveryFee] = useState<number>(0);
+  const [isPackage , setIsPackage] = useState();
 
   console.log("Route params:", route.params);
 
@@ -122,8 +123,10 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
           
           // Extract city from fullAddress and fetch delivery fee
           const orderData = response.data.data;
+          console.log("ispackagehjdjjdkdkd",orderData.isPackage)
           if (orderData.fullAddress) {
             await fetchDeliveryFee(orderData.fullAddress, orderData.userId || userId);
+            setIsPackage(orderData.isPackage)
           }
         } else {
           setError("Failed to load order details");
@@ -611,12 +614,30 @@ const isTimelineItemActive = (status: string) => {
             {order.fullTotal && (
               <View className="bg-white border border-gray-200 rounded-lg shadow-sm mx-4 p-4 mb-4">
                 <Text className="text-black font-semibold mb-2">Payment Summary</Text>
-                <View className="flex-row justify-between mb-2">
+                {/* <View className="flex-row justify-between mb-2">
   <Text className="text-[#8492A3]">Subtotal</Text>
   <Text className="text-black font-medium">
     Rs.{(parseFloat(order.total || "0") -deliveryFee ).toFixed(2)}
   </Text>
-</View>
+</View> */}
+
+ {isPackage === 1 && (
+  <View className="flex-row justify-between mb-2">
+    <Text className="text-[#8492A3]">Subtotal</Text>
+    <Text className="text-[#8492A3]">
+       Rs.{(parseFloat(order.total || "0") -deliveryFee ).toFixed(2)}
+    </Text>
+  </View>
+  )}
+
+ {isPackage === 0 && (
+   <View className="flex-row justify-between mb-2">
+    <Text className="text-[#8492A3]">Subtotal</Text>
+    <Text className="text-[#8492A3]">
+       Rs.{(parseFloat(order.total || "0") -deliveryFee -180 ).toFixed(2)}
+    </Text>
+  </View>
+  )}
                 {order.discount && parseFloat(order.discount) > 0 && (
                   <View className="flex-row justify-between mb-2">
                     <Text className="text-[#8492A3]">Discount</Text>
@@ -625,8 +646,16 @@ const isTimelineItemActive = (status: string) => {
                 )}
                 <View className="flex-row justify-between mb-2">
                     <Text className="text-[#8492A3]">Delivery</Text>
-                    <Text className="text-[#8492A3]">{deliveryFee.toFixed(2)}</Text>
+                    <Text className="text-[#8492A3]">Rs.{deliveryFee.toFixed(2)}</Text>
                   </View>
+                  {isPackage === 0 && (
+                    <View className="flex-row justify-between mb-2">
+                      <Text className="text-[#8492A3]">Service Fee</Text>
+                      <Text className="text-[#8492A3]">
+                        Rs.180.00
+                      </Text>
+                    </View>
+                  )}
                 <View className="flex-row justify-between pt-2">
                   <Text className="font-semibold text-black">Grand Total</Text>
                   <Text className="font-bold text-black">
