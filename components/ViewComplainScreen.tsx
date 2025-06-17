@@ -381,7 +381,7 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({ navigation }) =
               <View className="mt-[-3]">
                 <TouchableOpacity 
                   style={{ paddingHorizontal: wp(2), paddingVertical: hp(2)}}
-                  onPress={() => navigation.navigate("SidebarScreen")}>
+                  onPress={() => navigation.navigate("DashboardScreen")}>
                   <View className="w-9 h-9 bg-[#F6F6F680] rounded-full justify-center items-center">
                     <AntDesign name="left" size={20} color="black" />
                   </View>
