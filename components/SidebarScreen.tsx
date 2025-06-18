@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, Image, TouchableOpacity, Alert, ScrollView,KeyboardAvoidingView, Platform } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { AntDesign, Ionicons } from "@expo/vector-icons";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
@@ -92,7 +92,14 @@ const handleLogout = async () => {
     <ScrollView style={{ paddingHorizontal: wp(4) }}
     keyboardShouldPersistTaps="handled"
     >
-         <BackButton navigation={navigation} />
+         {/* <BackButton navigation={navigation} /> */}
+           <TouchableOpacity 
+                style={{ paddingHorizontal: wp(2), paddingVertical: hp(2) }}
+                onPress={() => navigation.navigate("Main" as any)}>
+                <View className="w-9 h-9 bg-[#F6F6F680] rounded-full justify-center items-center">
+                  <AntDesign name="left" size={20} color="black" />
+                </View>
+              </TouchableOpacity> 
 
          <View className="flex-row items-center p-5">
            {/* <Image source={require("../assets/images/profile.png")} style={{ width: wp(16), height: wp(16), borderRadius: wp(8) }} />*/}
