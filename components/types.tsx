@@ -160,7 +160,7 @@ export type RootStackParamList = {
       selectedDate: string;
       selectedTimeSlot: string;
       orderData?: any;
-    
+     isPackage: number;
     };
   };
   

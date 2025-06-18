@@ -84,6 +84,15 @@ interface PackageItem {
 }
 
 
+interface City {
+  id: number;
+  city: string;
+  charge: string;
+  createdAt?: string;
+}
+
+
+
 interface OrderSummeryScreenProps {
   navigation: OrderSummeryScreenNavigationProp;
   route: OrderSummeryScreenRouteProp;
@@ -116,6 +125,10 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({ navigation, rou
   const [additionalItemDetails, setAdditionalItemDetails] = useState<Record<string, ItemDetails>>({});
 const [packageItemDetails, setPackageItemDetails] = useState<Record<string, ItemDetails>>({});
 const [packageDisplayName, setPackageDisplayName] = useState<string>("");
+ const [deliveryFee, setDeliveryFee] = useState<number>(0);
+ // const [customerData, setCustomerData] = useState<CustomerData | null>(null);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const {
     items = [],
     subtotal = 0,
@@ -407,6 +420,7 @@ const handleConfirmOrder = async () => {
         screen: "OrderConfirmedScreen",
         params: {
           orderId: response.data.data.orderId,
+          isPackage:isPackage,
           total: total,
           subtotal: fullTotal,
           discount: discount,
@@ -628,6 +642,98 @@ useEffect(() => {
     fetchItemDetails();
   }
 }, [isPackage, safeOrderItems]);
+
+
+ useEffect(() => {
+  const fetchCustomerDataAndDeliveryFee = async () => {
+    const customerIdValue = customerId || route.params?.customerId || route.params?.customerid;
+    
+    if (!customerIdValue) {
+      console.log("No customer ID found");
+      return;
+    }
+
+    try {
+      console.log("Fetching customer data for userId:", customerIdValue);
+      
+      const storedToken = await AsyncStorage.getItem("authToken");
+      if (!storedToken) {
+        console.log("No authentication token found");
+        setError("No authentication token found");
+        return;
+      }
+      
+      // Fetch customer data
+      const customerResponse = await axios.get(
+        `${environment.API_BASE_URL}api/orders/get-customer-data/${customerIdValue}`,
+        {
+          headers: { Authorization: `Bearer ${storedToken}` },
+        }
+      );
+      
+      console.log("Customer API response:", customerResponse.data);
+      
+      if (customerResponse.data?.success) {
+        const customerData = customerResponse.data.data;
+        setCustomerData(customerData);
+        
+        // Extract city from customer data
+        const customerCity = customerData.buildingDetails?.city;
+        console.log("Customer city:", customerCity);
+        
+        if (customerCity) {
+          try {
+            // Fetch cities to get delivery charge
+            const cityResponse = await axios.get<{ data: City[] }>(
+              `${environment.API_BASE_URL}api/customer/get-city`,
+              { headers: { Authorization: `Bearer ${storedToken}` }}
+            );
+            
+            console.log("Cities API response:", cityResponse.data);
+            
+            if (cityResponse.data?.data) {
+              const cityData = cityResponse.data.data.find(c => c.city === customerCity);
+              if (cityData) {
+                const fee = parseFloat(cityData.charge) || 0;
+                setDeliveryFee(fee);
+                console.log(`Setting delivery fee to ${fee} for city ${customerCity}`);
+              } else {
+                console.log(`City ${customerCity} not found in cities list`);
+                setDeliveryFee(0); // Default fee if city not found
+              }
+            }
+          } catch (cityError) {
+            console.error("Error fetching cities:", cityError);
+            setDeliveryFee(0); // Default fee on error
+          }
+        } else {
+          console.log("No city found in customer data");
+          setDeliveryFee(0); // Default fee if no city
+        }
+      } else {
+        const errorMsg = customerResponse.data?.message || "Failed to fetch customer data";
+        console.log("Customer API error:", errorMsg);
+        setError(errorMsg);
+      }
+    } catch (error: any) {
+      console.error("Error fetching customer data:", error);
+      if (axios.isAxiosError(error)) {
+        const errorMsg = error.response?.data?.message || error.message;
+        console.log("Axios error details:", errorMsg);
+        setError(errorMsg);
+      } else {
+        setError("Failed to fetch customer data");
+      }
+    } finally {
+      setIsDataLoaded(true);
+    }
+  };
+
+  // Only fetch if we have a customer ID
+  if (customerId || route.params?.customerId || route.params?.customerid) {
+    fetchCustomerDataAndDeliveryFee();
+  }
+}, [customerId, route.params?.customerId, route.params?.customerid]);
 
 
 
@@ -988,18 +1094,46 @@ else if (isPackage === 1) {
   </View>
   
   {/* Rest of the payment summary remains the same */}
+  {isPackage === 1 && (
   <View className="flex-row justify-between mt-3">
     <Text className="text-[#8492A3] font-medium">Subtotal</Text>
     <Text className="text-black font-medium mr-14">
-      Rs.{subTotalDeliveryPlus.toFixed(2)}
+      Rs.{(subTotalDeliveryPlus - deliveryFee).toFixed(2)}
     </Text>
   </View>
+  )}
+
+ {isPackage === 0 && (
+   <View className="flex-row justify-between mt-3">
+    <Text className="text-[#8492A3] font-medium">Subtotal</Text>
+    <Text className="text-black font-medium mr-14">
+      Rs.{(subTotalDeliveryPlus -180-deliveryFee).toFixed(2)}
+    </Text>
+  </View>
+  )}
+
   <View className="flex-row justify-between mt-2">
     <Text className="text-[#8492A3]">Discount</Text>
     <Text className="text-gray-500 mr-14">
       Rs.{discount.toFixed(2)}
     </Text>
   </View>
+
+   <View className="flex-row justify-between mt-2">
+    <Text className="text-[#8492A3]">Delivery Fee</Text>
+    <Text className="text-gray-500 mr-14">
+      Rs.{deliveryFee.toFixed(2)}
+    </Text>
+  </View>
+
+{isPackage === 0 && (
+  <View className="flex-row justify-between mt-2">
+    <Text className="text-[#8492A3]">Service Fee</Text>
+    <Text className="text-gray-500 mr-14">
+      Rs.180.00
+    </Text>
+  </View>
+)}
   <View className="flex-row justify-between mt-2">
     <Text className="text-black font-semibold">Grand Total</Text>
     <Text className="text-black font-semibold mr-14">
