@@ -278,8 +278,8 @@ const fetchCustomerCount = async () => {
       const dataToSend = {
         firstName: formData.firstName,
         lastName: formData.lastName,
-        email: formData.email,
-        phoneNumber1: formData.phoneNumber1,
+       email: formData.email,
+    //    phoneNumber1: formData.phoneNumber1,
         houseNumber: formData.houseNumber,
         streetName: formData.streetName,
         city: formData.city,
@@ -516,25 +516,24 @@ const fetchCustomerCount = async () => {
               <Text className="text-black mb-1">
                   NIC Number
                 </Text>
-                <TextInput
-                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2"
-                  value={formData.nic}
-                  onChangeText={(text) => handleInputChange("nic", text)}
-                  placeholder="Enter NIC Number"
-                />
+                <Text
+                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2 text-[#8492A3]"
+                >
+                  {formData.nic}
+                </Text>
+           
               </View>
 
               <View className="mb-4">
               <Text className="text-black mb-1">
                   Email Address
                 </Text>
-                <TextInput
-                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2"
-                  value={formData.email}
-                  onChangeText={(text) => handleInputChange("email", text)}
-                  placeholder="Enter Email Address"
-                  keyboardType="email-address"
-                />
+              
+                    <Text
+                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2 text-[#8492A3]"
+                >
+                  {formData.email}
+                </Text>
               </View>
 
               <View className="mb-4">

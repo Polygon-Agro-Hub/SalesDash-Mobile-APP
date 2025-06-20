@@ -597,7 +597,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                     />
                   </View>
                 <View className="mb-4 z-10">
-  <Text className="text-gray-700 mb-1">City</Text>
+  <Text className="text-gray-700 mb-1">Nearest City</Text>
   <DropDownPicker
     open={openCityDropdown}
     value={city}
@@ -605,9 +605,9 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
     setOpen={setOpenCityDropdown}
     setValue={setCity}
     setItems={setCityItems}
-    placeholder={city ? city : "Select City"}
+    placeholder={city ? city : "Select Nearest City"}
     searchable={true}
-    searchPlaceholder="Search city..."
+    searchPlaceholder="Search Nearest city..."
     style={{
       backgroundColor: '#F6F6F6',
       borderColor: '#F6F6F6',
@@ -707,7 +707,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                     />
                   </View>
                   <View className="mb-4 z-10">
-  <Text className="text-gray-700 mb-1">City</Text>
+  <Text className="text-gray-700 mb-1">Nearest City</Text>
   <DropDownPicker
     open={openCityDropdown}
     value={city}
@@ -715,7 +715,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
     setOpen={setOpenCityDropdown}
     setValue={setCity}
     setItems={setCityItems}
-    placeholder={city ? city : "Select City"}
+    placeholder={city ? city : "Select Nearest City"}
     searchable={true}
     searchPlaceholder="Search city..."
     style={{

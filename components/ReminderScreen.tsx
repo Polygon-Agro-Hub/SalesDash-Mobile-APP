@@ -332,7 +332,7 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
             <Text className="text-white">Retry</Text>
           </TouchableOpacity>
           {/* Add test sound buttons for debugging */}
-          <TouchableOpacity 
+          {/* <TouchableOpacity 
             onPress={testSound}
             className="mt-2 bg-green-500 px-4 py-2 rounded"
           >
@@ -343,7 +343,7 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
             className="mt-2 bg-red-500 px-4 py-2 rounded"
           >
             <Text className="text-white">Force Test Sound</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
       ) : (
         <>
@@ -372,7 +372,7 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
                   No Notification Yet
                 </Text>
                 {/* Add test sound buttons for debugging */}
-                <TouchableOpacity 
+                {/* <TouchableOpacity 
                   onPress={testSound}
                   className="mt-4 bg-green-500 px-4 py-2 rounded"
                 >
@@ -383,7 +383,7 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
                   className="mt-2 bg-red-500 px-4 py-2 rounded"
                 >
                   <Text className="text-white">Force Test Sound</Text>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
               </View>
             ) : (
               <FlatList
