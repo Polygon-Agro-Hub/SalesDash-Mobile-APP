@@ -265,173 +265,349 @@ const OtpScreenUp: React.FC = () => {
 
 
 // 1. Fixed verifyOTP function - Add timer check at the beginning
+// const verifyOTP = async () => {
+//   const otpCode = otp.join("");
+  
+//   console.log('OTP code:', otpCode);
+  
+//   if (otpCode.length < 6) {
+//   //  Alert.alert("Error", "Please enter a valid 5-digit OTP.");
+//     setIsOtpInvalid(true);
+//     return;
+//   }
+
+//   // Check if timer has expired
+//   if (timer <= 0) {
+//     Alert.alert("Error", "OTP has expired. Please request a new one.");
+//     return;
+//   }
+  
+//   try {
+//     setLoading(true);
+//     const referenceId = await AsyncStorage.getItem("referenceId");
+//     console.log('Reference ID:', referenceId);
+    
+//     if (!referenceId) {
+//       Alert.alert("Error", "No OTP reference found.");
+//       return;
+//     }
+    
+//     const url = "https://api.getshoutout.com/otpservice/verify";
+//     const headers = {
+//       Authorization: `Apikey ${environment.SHOUTOUT_API_KEY}`,
+//       "Content-Type": "application/json",
+//     };
+    
+//     const body = {
+//       code: otpCode,
+//       referenceId,
+//     };
+    
+//     // Rest of your verification logic remains the same...
+//     const response = await axios.post(url, body, { headers });
+//     console.log('OTP verification response:', response.data);
+    
+//     const { statusCode } = response.data;
+    
+//     if (statusCode === "1000") {
+//       setIsVerified(true);
+      
+//       // Your existing customer data processing logic...
+//       const customerDataString = await AsyncStorage.getItem("pendingCustomerData");
+//       if (!customerDataString) {
+//         Alert.alert("Error", "No customer data found.");
+//         return;
+//       }
+      
+//       const parsedData = JSON.parse(customerDataString);
+//       console.log('Customer Data (parsed from AsyncStorage):', parsedData);
+      
+//       const customerData = parsedData.customerData || {};
+//       const buildingData = parsedData.buildingData || {};
+      
+//       console.log('Customer Data (extracted):', customerData);
+//       console.log('Building Data (extracted):', buildingData);
+      
+//       const authToken = await getAuthToken();
+//       const apiHeaders = {
+//         'Content-Type': 'application/json',
+//         ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
+//       };
+      
+//       try {
+//         let endpoint;
+//         let method;
+//         let data;
+        
+//         if (id) {
+//           endpoint = `${environment.API_BASE_URL}api/customer/update-customer-data/${id}`;
+//           method = 'put';
+//           data = { customerData, buildingData };
+//           console.log("Updating customer at:", endpoint);
+//         } else {
+//           endpoint = `${environment.API_BASE_URL}api/customer/add-customer`;
+//           method = 'post';
+//           data = { customerData, buildingData };
+//           console.log("Creating customer at:", endpoint);
+//         }
+        
+//         console.log("Sending data:", data);
+        
+//         const customerResponse = await axios({
+//           method,
+//           url: endpoint,
+//           headers: apiHeaders,
+//           data
+//         });
+        
+//         console.log('API response:', customerResponse.data);
+        
+//         if (customerResponse.status === 200 || customerResponse.status === 201) {
+//           const customerId = customerResponse.data?.customerId || id;
+//           console.log("Customer ID (from response or params):", customerId);
+          
+//           if (customerId) {
+//             await AsyncStorage.setItem("latestCustomerId", customerId.toString());
+//           }
+          
+//           Alert.alert(
+//             "Success", 
+//             id ? "Customer updated successfully." : "Customer created successfully."
+//           );
+          
+//           navigation.navigate("Main" as any, {
+//             screen: "OtpSuccesfulScreen" as any,
+//             params: {
+//               customerId: customerId,
+//             }
+//           });
+//         } else {
+//           throw new Error(customerResponse.data?.message || "Error processing customer data");
+//         }
+//       } catch (error) {
+//         // Your existing error handling logic...
+//         const apiError = error as AxiosError<ApiErrorResponse>;
+//         console.error("Customer API error:", apiError);
+        
+//         let errorMessage = "Failed to process customer data.";
+        
+//         if (apiError.response) {
+//           console.log("API error response:", apiError.response.data);
+//           console.log("API error status:", apiError.response.status);
+          
+//           if (apiError.response.status === 401) {
+//             errorMessage = "Authentication failed. Please login again.";
+//           } else if (apiError.response.status === 400) {
+//             errorMessage = apiError.response.data?.message || 
+//                           apiError.response.data?.error || 
+//                           "Invalid data provided.";
+//           } else {
+//             errorMessage = apiError.response.data?.message || 
+//                           apiError.response.data?.error || 
+//                           `Server error (${apiError.response.status})`;
+//           }
+//         } else if (apiError.request) {
+//           errorMessage = "No response from server. Please check your internet connection.";
+//         } else {
+//           errorMessage = apiError.message || "An unknown error occurred";
+//         }
+        
+//         Alert.alert("Error", errorMessage);
+//       }
+//     } else {
+//       setIsOtpInvalid(true);
+//       Alert.alert("Error", "Invalid OTP. Please try again.");
+//     }
+//   } catch (error) {
+//     const otpError = error as Error | AxiosError;
+//     console.log('Error during OTP verification:', otpError);
+    
+//     let errorMessage = "An error occurred during verification.";
+    
+//     if (axios.isAxiosError(otpError) && otpError.response) {
+//       errorMessage = otpError.response.data?.message || errorMessage;
+//     } else if ('message' in otpError) {
+//       errorMessage = otpError.message;
+//     }
+    
+//     Alert.alert("Error", errorMessage);
+//   } finally {
+//     setLoading(false);
+//   }
+// };
+
 const verifyOTP = async () => {
   const otpCode = otp.join("");
-  
-  console.log('OTP code:', otpCode);
-  
-  if (otpCode.length < 5) {
-    Alert.alert("Error", "Please enter a valid 5-digit OTP.");
+  console.log("OTP code:", otpCode);
+
+  if (otpCode.length !== 5) {
     setIsOtpInvalid(true);
+   // Alert.alert("Error", "Please enter a valid 5-digit OTP.");
     return;
   }
 
-  // Check if timer has expired
   if (timer <= 0) {
     Alert.alert("Error", "OTP has expired. Please request a new one.");
     return;
   }
-  
+
   try {
     setLoading(true);
     const referenceId = await AsyncStorage.getItem("referenceId");
-    console.log('Reference ID:', referenceId);
-    
+    console.log("Reference ID:", referenceId);
+
     if (!referenceId) {
-      Alert.alert("Error", "No OTP reference found.");
+      Alert.alert("Error", "No OTP reference found. Please request a new OTP.");
       return;
     }
-    
+
     const url = "https://api.getshoutout.com/otpservice/verify";
     const headers = {
       Authorization: `Apikey ${environment.SHOUTOUT_API_KEY}`,
       "Content-Type": "application/json",
     };
-    
+
     const body = {
       code: otpCode,
       referenceId,
     };
-    
-    // Rest of your verification logic remains the same...
+
     const response = await axios.post(url, body, { headers });
-    console.log('OTP verification response:', response.data);
-    
+    console.log("OTP verification response:", response.data);
+
     const { statusCode } = response.data;
-    
+
     if (statusCode === "1000") {
+      console.log("OTP verified successfully");
       setIsVerified(true);
-      
-      // Your existing customer data processing logic...
+
       const customerDataString = await AsyncStorage.getItem("pendingCustomerData");
       if (!customerDataString) {
+        console.log("No pendingCustomerData found");
         Alert.alert("Error", "No customer data found.");
         return;
       }
-      
-      const parsedData = JSON.parse(customerDataString);
-      console.log('Customer Data (parsed from AsyncStorage):', parsedData);
-      
+
+      let parsedData;
+      try {
+        parsedData = JSON.parse(customerDataString);
+      } catch (error) {
+        console.error("Failed to parse customer data:", error);
+        Alert.alert("Error", "Invalid customer data format.");
+        return;
+      }
+
       const customerData = parsedData.customerData || {};
       const buildingData = parsedData.buildingData || {};
-      
-      console.log('Customer Data (extracted):', customerData);
-      console.log('Building Data (extracted):', buildingData);
-      
+      console.log("Customer Data:", customerData);
+      console.log("Building Data:", buildingData);
+
       const authToken = await getAuthToken();
       const apiHeaders = {
-        'Content-Type': 'application/json',
-        ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
+        "Content-Type": "application/json",
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       };
-      
+
       try {
         let endpoint;
         let method;
         let data;
-        
+
         if (id) {
           endpoint = `${environment.API_BASE_URL}api/customer/update-customer-data/${id}`;
-          method = 'put';
+          method = "put";
           data = { customerData, buildingData };
           console.log("Updating customer at:", endpoint);
         } else {
           endpoint = `${environment.API_BASE_URL}api/customer/add-customer`;
-          method = 'post';
+          method = "post";
           data = { customerData, buildingData };
           console.log("Creating customer at:", endpoint);
         }
-        
+
         console.log("Sending data:", data);
-        
+
         const customerResponse = await axios({
           method,
           url: endpoint,
           headers: apiHeaders,
-          data
+          data,
         });
-        
-        console.log('API response:', customerResponse.data);
-        
+
+        console.log("Customer API response:", customerResponse.data);
+
         if (customerResponse.status === 200 || customerResponse.status === 201) {
           const customerId = customerResponse.data?.customerId || id;
-          console.log("Customer ID (from response or params):", customerId);
-          
+          console.log("Customer ID:", customerId);
+
           if (customerId) {
             await AsyncStorage.setItem("latestCustomerId", customerId.toString());
           }
-          
+
           Alert.alert(
-            "Success", 
+            "Success",
             id ? "Customer updated successfully." : "Customer created successfully."
           );
-          
-          navigation.navigate("Main" as any, {
-            screen: "OtpSuccesfulScreen" as any,
-            params: {
-              customerId: customerId,
-            }
+
+          console.log("Navigating to OtpSuccesfulScreen with customerId:", customerId);
+          navigation.navigate("Main", {
+            screen: "OtpSuccesfulScreen",
+            params: { customerId },
           });
         } else {
           throw new Error(customerResponse.data?.message || "Error processing customer data");
         }
       } catch (error) {
-        // Your existing error handling logic...
         const apiError = error as AxiosError<ApiErrorResponse>;
         console.error("Customer API error:", apiError);
-        
+
         let errorMessage = "Failed to process customer data.";
-        
+
         if (apiError.response) {
           console.log("API error response:", apiError.response.data);
           console.log("API error status:", apiError.response.status);
-          
+
           if (apiError.response.status === 401) {
             errorMessage = "Authentication failed. Please login again.";
           } else if (apiError.response.status === 400) {
-            errorMessage = apiError.response.data?.message || 
-                          apiError.response.data?.error || 
-                          "Invalid data provided.";
+            errorMessage =
+              apiError.response.data?.message ||
+              apiError.response.data?.error ||
+              "Invalid data provided.";
           } else {
-            errorMessage = apiError.response.data?.message || 
-                          apiError.response.data?.error || 
-                          `Server error (${apiError.response.status})`;
+            errorMessage =
+              apiError.response.data?.message ||
+              apiError.response.data?.error ||
+              `Server error (${apiError.response.status})`;
           }
         } else if (apiError.request) {
           errorMessage = "No response from server. Please check your internet connection.";
         } else {
           errorMessage = apiError.message || "An unknown error occurred";
         }
-        
+
         Alert.alert("Error", errorMessage);
       }
     } else {
+      console.log("Invalid OTP, statusCode:", statusCode);
       setIsOtpInvalid(true);
       Alert.alert("Error", "Invalid OTP. Please try again.");
     }
   } catch (error) {
     const otpError = error as Error | AxiosError;
-    console.log('Error during OTP verification:', otpError);
-    
+    console.error("Error during OTP verification:", otpError);
+
     let errorMessage = "An error occurred during verification.";
-    
+
     if (axios.isAxiosError(otpError) && otpError.response) {
       errorMessage = otpError.response.data?.message || errorMessage;
-    } else if ('message' in otpError) {
+    } else if ("message" in otpError) {
       errorMessage = otpError.message;
     }
-    
+
     Alert.alert("Error", errorMessage);
   } finally {
+    console.log("Verification completed, loading set to false");
     setLoading(false);
   }
 };

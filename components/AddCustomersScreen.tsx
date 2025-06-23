@@ -546,7 +546,7 @@ const handleRegister = async () => {
                     />
                   </View>
              <View className="mb-4 z-10">
-  <Text className="text-gray-700 mb-1">City</Text>
+  <Text className="text-gray-700 mb-1">Nearest City</Text>
   <DropDownPicker
     open={openCityDropdown}
     value={city}
@@ -554,7 +554,7 @@ const handleRegister = async () => {
     setOpen={setOpenCityDropdown}
     setValue={setCity}
     setItems={setCityItems}
-    placeholder="Select City"
+    placeholder="Select Nearest City"
     style={{
       backgroundColor: '#F6F6F6',
       borderColor: '#F6F6F6',
@@ -648,7 +648,7 @@ const handleRegister = async () => {
                     />
                   </View>
               <View className="mb-4 z-10">
-  <Text className="text-gray-700 mb-1">City</Text>
+  <Text className="text-gray-700 mb-1">Nearest City</Text>
   <DropDownPicker
     open={openCityDropdown}
     value={city}
@@ -656,7 +656,7 @@ const handleRegister = async () => {
     setOpen={setOpenCityDropdown}
     setValue={setCity}
     setItems={setCityItems}
-    placeholder="Select City"
+    placeholder="Select Nearest City"
     style={{
       backgroundColor: '#F6F6F6',
       borderColor: '#F6F6F6',
