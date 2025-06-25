@@ -260,7 +260,6 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation, r
               <Text className="text-gray-500">No products found</Text>
             </View>
           )}
-           
            </ScrollView>
            
          

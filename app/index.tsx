@@ -33,7 +33,9 @@ import SelectOrderType from "@/components/SelectOrderType";
 import SelectOrderTypeNewCustomer from "@/components/SelectOrderTypeNewCustomer"
 import CreateCustomPackage from "@/components/CreateCustomPackage";
 import CratScreen from "@/components/CratScreen"
-
+import ExcludeListAdd from "@/components/ExcludeListAdd"
+import ExcludeListSummery from "@/components/ExcludeListSummery"
+ 
 import { RootStackParamList } from '@/components/types';
 
 const Stack = createStackNavigator(); 
@@ -74,6 +76,8 @@ function MainTabNavigator() {
       <Tab.Screen name="OrderConfirmedScreen" component={OrderConfirmedScreen as any} />
       <Tab.Screen name="OtpSuccesfulScreen" component={OtpSuccesfulScreen as any} />
             <Tab.Screen name="AddComplaintScreen" component={AddComplaintScreen} />
+            <Tab.Screen name="ExcludeListAdd" component={ExcludeListAdd as any} />
+            <Tab.Screen name="ExcludeListSummery" component={ExcludeListSummery as any} />
 
     </Tab.Navigator>
   );

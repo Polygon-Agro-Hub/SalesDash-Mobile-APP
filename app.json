@@ -75,7 +75,6 @@
         "ACCESS_NETWORK_STATE",
         "CHANGE_NETWORK_STATE",
         "SYSTEM_ALERT_WINDOW",
-        "REQUEST_INSTALL_PACKAGES",
         "NOTIFICATIONS",
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS",
