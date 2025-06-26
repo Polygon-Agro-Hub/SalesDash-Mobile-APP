@@ -26,22 +26,23 @@ import axios from "axios";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { AntDesign } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
-type ExcludeListSummeryNavigationProp = StackNavigationProp<
+import { navigate } from "expo-router/build/global-state/routing";
+type ExcludeItemEditSummeryNavigationProp = StackNavigationProp<
   RootStackParamList,
-  "ExcludeListSummery"
+  "ExcludeItemEditSummery"
 >;
 
 interface ExcludeListAddProps {
-  navigation: ExcludeListSummeryNavigationProp;
-  route: RouteProp<RootStackParamList, "ExcludeListSummery">;
+  navigation: ExcludeItemEditSummeryNavigationProp;
+  route: RouteProp<RootStackParamList, "ExcludeItemEditSummery">;
 }
 
 const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
   route,
   navigation,
 }) => {
-  const { customerId } = route.params || {};
-  console.log("hit");
+   const { id , customerId,name, title} = route.params;
+   console.log("customer IDccccccccccc",id)
   const [crops, setCrops] = useState<any[]>([]);
   const [customerName, setCustomerName] = useState<{
     firstName: string;
@@ -58,6 +59,13 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
   useFocusEffect(
     useCallback(() => {
       const fetchProducts = async () => {
+    setCrops([]);
+      setCustomerName({
+        firstName: "",
+        lastName: "",
+        title: "",
+        cusId: "",
+      });
         try {
           // setLoading(true);
 
@@ -70,7 +78,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
 
           const apiUrl = `${environment.API_BASE_URL}api/customer/excludelist`;
           const response = await axios.get(apiUrl, {
-            params: { customerId },
+            params: { customerId:id },
             headers: { Authorization: `Bearer ${storedToken}` },
           });
 
@@ -95,7 +103,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
       return () => {
         // Optionally clean up if needed (e.g., abort requests or reset state)
       };
-    }, [customerId])
+    }, [id])
   );
 
   const deleteCrop = async (excludeId: number) => {
@@ -148,12 +156,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
         <View className="bg-white flex-row items-center h-17  px-1">
           <TouchableOpacity
             style={{ paddingHorizontal: wp(2), paddingVertical: hp(2) }}
-            onPress={() =>
-              navigation.navigate("Main", {
-                screen: "ExcludeListAdd",
-                params: { customerId },
-              })
-            }
+                onPress={() => navigation.navigate("ViewCustomerScreen" as any, { id: id, customerId:customerId, name: name, title:title })}
           >
             <View className="w-9 h-9 bg-[#F6F6F680] rounded-full justify-center items-center">
               <AntDesign name="left" size={20} color="black" />
@@ -188,7 +191,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
 
         <ScrollView keyboardShouldPersistTaps="handled" className="mb-[90%]">
           <View className="px-6 mt-4">
-            {crops.length === 0 ? (
+          {crops.length === 0 || crops.every((crop) => crop.excludeId === null) ? (
               //    <View
               //   style={{
               //     flex: 1,
@@ -242,12 +245,12 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
       </View>
       <TouchableOpacity
         className="absolute bottom-[14%] left-0 right-0 items-center "
-        onPress={() =>
-          navigation.navigate("Main", {
-            screen: "SelectOrderTypeNewCustomer",
-            params: { id: customerId },
-          })
-        }
+        onPress={() => navigation.navigate("ExcludeAddMore", { 
+                id:id,                   
+                customerId: customerId,
+                name: name,
+                title: title 
+              })}
       >
         <LinearGradient
           colors={["#6C3CD1", "#9B65D6"]}
@@ -262,7 +265,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
           }}
         >
           <Text style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}>
-            Select Order Type
+            Add More
           </Text>
         </LinearGradient>
       </TouchableOpacity>

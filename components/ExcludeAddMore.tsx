@@ -26,22 +26,23 @@ import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import Ionicons from "react-native-vector-icons/Ionicons";
+import { AntDesign } from "@expo/vector-icons";
 
-type ExcludeListAddNavigationProp = StackNavigationProp<
+type ExcludeAddMoreNavigationProp = StackNavigationProp<
   RootStackParamList,
-  "ExcludeListAdd"
+  "ExcludeAddMore"
 >;
 
 interface ExcludeListAddProps {
-  navigation: ExcludeListAddNavigationProp;
-  route: RouteProp<RootStackParamList, "ExcludeListAdd">;
+  navigation: ExcludeAddMoreNavigationProp;
+  route: RouteProp<RootStackParamList, "ExcludeAddMore">;
 }
 
 const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
   route,
   navigation,
 }) => {
-  const { customerId } = route.params || {};
+  const { id , customerId,name, title} = route.params;
   const [crops, setCrops] = useState<any[]>([]);
   const [selectedCrops, setSelectedCrops] = useState<number[]>([]);
   const [filteredCrops, setFilteredCrops] = useState<any[]>([]); // New state to store filtered crops
@@ -75,7 +76,7 @@ useFocusEffect(
         const apiUrl = `${environment.API_BASE_URL}api/customer/croplist`;
         const response = await axios.get(apiUrl, {
           headers: { Authorization: `Bearer ${storedToken}` },
-          params: { customerId:customerId },
+          params: { customerId:id },
         });
 
         console.log(response.data);
@@ -95,7 +96,7 @@ useFocusEffect(
     fetchProducts();
  return () => {
     };
-  }, [customerId])
+  }, [id])
 );
 
     const handleSearch = (query: string) => {
@@ -122,7 +123,7 @@ useFocusEffect(
     }
 
      const payload = {
-      customerId,          
+      customerId:id,          
       selectedCrops,       
     };
 
@@ -140,10 +141,7 @@ useFocusEffect(
         console.log("Response:", checkResponse.data);
       if (checkResponse.status === 200) {
       console.log("Exclude list updated successfully");
-      navigation.navigate("Main", {
-        screen: "ExcludeListSummery",
-        params : {customerId: customerId}
-      })
+     navigation.navigate("ExcludeItemEditSummery" as any, { id: id, customerId:customerId, name: name, title:title })
     } else if (checkResponse.status === 400) {
       console.error("Bad request:", checkResponse.data.message);
     } else if (checkResponse.status === 404) {
@@ -158,14 +156,8 @@ useFocusEffect(
 
     const handleNavigateIfNoCropsSelected = () => {
         
-    if (selectedCrops.length === 0) {
-         navigation.navigate("Main", {
-        screen: "ExcludeListSummery",
-        params : {customerId: customerId}
-      })
-    } else {
       handlesubmitexcludelist();
-    }
+    
   };
 
   useEffect(()=>{
@@ -198,7 +190,14 @@ useFocusEffect(
       <View className="flex-1 ">
   
           <View className="bg-white flex-row items-center h-17  px-1">
-            <BackButton navigation={navigation} />
+                <TouchableOpacity
+            style={{ paddingHorizontal: wp(2), paddingVertical: hp(2) }}
+                onPress={() => navigation.navigate("ExcludeItemEditSummery" as any, { id: id, customerId:customerId, name: name, title:title })}
+          >
+            <View className="w-9 h-9 bg-[#F6F6F680] rounded-full justify-center items-center">
+              <AntDesign name="left" size={20} color="black" />
+            </View>
+          </TouchableOpacity>
             {/* Title */}
             <Text
               style={{ fontSize: 18 }}
@@ -246,7 +245,7 @@ useFocusEffect(
           name="search"
           size={24}
           color="#6C3CD1"
-            style={{ position: "absolute", right: 20, marginTop: Platform.OS === 'ios' ? 10 : 5, transform: [{ translateY: -12 }] }}
+            style={{ position: "absolute", right: 20, marginTop: Platform.OS === 'ios' ? 20 : 5, transform: [{ translateY: -12 }] }}
         />
       </View>
 </View>
@@ -349,7 +348,7 @@ useFocusEffect(
         ) : (
           <View>
             <Text style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}>
-              Continue
+              Add
             </Text>
           </View>
         )}
