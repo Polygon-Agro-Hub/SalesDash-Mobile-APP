@@ -1167,7 +1167,8 @@ const handleEditUnitConversion = (newUnit: string) => {
    <Modal
   visible={showAddModal}
   animationType="slide"
-  presentationStyle="pageSheet"
+  // presentationStyle="pageSheet"
+   transparent={true}
   onRequestClose={handleGoBack}
 >
   <View className="flex-1 justify-center items-center bg-[#00000066]  p-2">
@@ -1185,7 +1186,7 @@ const handleEditUnitConversion = (newUnit: string) => {
         <Text className="text-gray-700 mb-3">Product</Text>
       <DropDownPicker
   open={productOpen}
-  setOpen={setProductOpen}
+  setOpen={(open) =>{setProductOpen(open); setUnitOpen(false)}}
   value={productValue}
   setValue={setProductValue}
   items={productItems.filter(
@@ -1215,8 +1216,8 @@ const handleEditUnitConversion = (newUnit: string) => {
     borderColor: "#F6F6F6",
     borderWidth: 1,
     backgroundColor: "#F6F6F6",
-    maxHeight: 200,
-    minHeight: 150,
+    maxHeight: 300,
+    minHeight: 350,
   }}
   style={{
     borderWidth: 1,
@@ -1288,12 +1289,15 @@ const handleEditUnitConversion = (newUnit: string) => {
   style={{
     backgroundColor: "#F6F6F6",
     borderColor: "#F6F6F6",
-    borderRadius: 50,
+    borderRadius: 30,
     paddingHorizontal: 10,
+    paddingVertical: 10,
   }}
   dropDownContainerStyle={{
-    backgroundColor: "#FFFFFF",
-    borderColor: "#FFFFFF",
+        borderColor: "#F6F6F6",
+    borderWidth: 1,
+    backgroundColor: "#F6F6F6",
+    marginLeft:8
   }}
   zIndex={70000}
 />
