@@ -1081,7 +1081,7 @@ const handleProceed = () => {
     >
       <View className="flex-1 bg-white">
         {/* Header */}
-        <View className="flex-row items-center shadow-md px-3 bg-white">
+        <View className="flex-row items-center  px-3 bg-white">
           <BackButton navigation={navigation} />
           <Text className="text-lg font-bold text-[#6C3CD1] flex-grow text-center mr-8">Schedule</Text>
         </View>
@@ -1171,14 +1171,14 @@ const handleProceed = () => {
                   </TouchableOpacity>
                 </View>
                 
-                <DateTimePicker
-                  value={date}
-                  mode="date"
-                  display="spinner"
-                  onChange={handleDateChange}
-                  minimumDate={minimumDate}
-                  style={{ height: 200, marginTop: -10 }}
-                />
+                        <DateTimePicker
+                        value={date}
+                        mode="date"
+                        display="inline"
+                        style={{ width: 320, height: 260 }}
+                        minimumDate={minimumDate}
+                        onChange={handleDateChange}
+                      />
                 
                 <View className="flex-row justify-between mt-2">
                   <TouchableOpacity

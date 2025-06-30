@@ -234,6 +234,7 @@ const fetchProductPrices = useCallback(async (productIds: number[]) => {
       
       const response = await axios.get(`${environment.API_BASE_URL}api/packages/crops/all`, {
         headers: { Authorization: `Bearer ${storedToken}` },
+        params: {id}
       });
 
       const productPrices: Record<string, { normalPrice: number; discountedPrice: number; displayName: string }> = {};
@@ -257,6 +258,8 @@ const fetchProductPrices = useCallback(async (productIds: number[]) => {
 
   // Separate useEffect for initializing additional items
   useEffect(() => {
+      console.log("hittttttttttttttttttttt1")
+
     const initializeAdditionalItems = async () => {
       if (route.params?.isEdit && route.params?.additionalItems) {
         const productIds = route.params.additionalItems.map(item => item.productId).filter(Boolean);
@@ -585,6 +588,7 @@ const fetchCrops = async () => {
     setLoading(true);
     const response = await axios.get(`${environment.API_BASE_URL}api/packages/crops/all`, {
       headers: { Authorization: `Bearer ${token}` },
+      params: {id}
     });
 
     const retailItems = response.data.data
@@ -1163,18 +1167,26 @@ const handleEditUnitConversion = (newUnit: string) => {
    <Modal
   visible={showAddModal}
   animationType="slide"
-  presentationStyle="pageSheet"
+  // presentationStyle="pageSheet"
+   transparent={true}
   onRequestClose={handleGoBack}
 >
-  <View className="flex-1 justify-center items-center bg-[#00000066] bg-opacity-10">
-    <View className="bg-white p-6 rounded-xl w-4/5">
-      
+  <View className="flex-1 justify-center items-center bg-[#00000066]  p-2">
+    {/* <View className="bg-white p-6 rounded-xl w-4/5  "> */}
+          <View
+      className="bg-white p-6 rounded-xl"
+      style={{
+        width: '90%', // Responsive width
+        maxHeight: '100%', // Maximum height (to prevent overflow)
+        height: 'auto', // Auto height adjustment
+      }}
+    >
       {/* Product Section */}
-      <View className="mb-6" style={{ zIndex: 80000 }}>
+      <View className="mb-4" style={{ zIndex: 80000 }}>
         <Text className="text-gray-700 mb-3">Product</Text>
       <DropDownPicker
   open={productOpen}
-  setOpen={setProductOpen}
+  setOpen={(open) =>{setProductOpen(open); setUnitOpen(false)}}
   value={productValue}
   setValue={setProductValue}
   items={productItems.filter(
@@ -1204,8 +1216,8 @@ const handleEditUnitConversion = (newUnit: string) => {
     borderColor: "#F6F6F6",
     borderWidth: 1,
     backgroundColor: "#F6F6F6",
-    maxHeight: 200,
-    minHeight: 150,
+    maxHeight: 300,
+    minHeight: 350,
   }}
   style={{
     borderWidth: 1,
@@ -1213,8 +1225,8 @@ const handleEditUnitConversion = (newUnit: string) => {
     backgroundColor: "#F6F6F6",
     borderRadius: 15,
     paddingHorizontal: 12,
-    paddingVertical: 12,
-    minHeight: 52,
+    paddingVertical: 10,
+    minHeight: 0,
   }}
   textStyle={{
     fontSize: 14,
@@ -1226,14 +1238,14 @@ const handleEditUnitConversion = (newUnit: string) => {
       </View>
 
       {/* Price per kg Section */}
-      <View className="mb-6">
-        <Text className="text-gray-700 mb-3">Price per 1kg</Text>
-        <View className="bg-gray-50 rounded-xl px-4 py-4">
+      <View className="mb-4">
+        <Text className="text-gray-700 mb-">Price per 1kg</Text>
+        <View className="bg-gray-50 rounded-xl p-3">
           <Text className="text-gray-900">Rs.{pricePerKg || '0.00'}</Text>
         </View>
       </View>
 
-      <View className="mb-6">
+      <View className="mb-4">
         <Text className="text-gray-700 mb-3">Quantity</Text>
         <View className="flex-row items-center space-x-2">
           {/* Quantity Control with +/- buttons */}
@@ -1277,12 +1289,15 @@ const handleEditUnitConversion = (newUnit: string) => {
   style={{
     backgroundColor: "#F6F6F6",
     borderColor: "#F6F6F6",
-    borderRadius: 50,
+    borderRadius: 30,
     paddingHorizontal: 10,
+    paddingVertical: 10,
   }}
   dropDownContainerStyle={{
-    backgroundColor: "#FFFFFF",
-    borderColor: "#FFFFFF",
+        borderColor: "#F6F6F6",
+    borderWidth: 1,
+    backgroundColor: "#F6F6F6",
+    marginLeft:8
   }}
   zIndex={70000}
 />
@@ -1300,7 +1315,7 @@ const handleEditUnitConversion = (newUnit: string) => {
       </View>
 
       {/* Dynamic Discount Message */}
-      <View className="mb-8">
+      <View className="mb-4">
         <Text className="text-purple-600 text-center text-sm font-medium">
           You received a discount of Rs.{calculateDiscountForQuantity()} for this product
         </Text>

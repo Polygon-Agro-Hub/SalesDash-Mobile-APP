@@ -162,5 +162,14 @@ export type RootStackParamList = {
       orderData?: any;
      isPackage: number;
     };
+    ExcludeListAdd:{
+      customerId : number
+    },
+    ExcludeListSummery :{
+      customerId : number
+    }
+    ExcludeItemEditSummery :{ id: string, customerId:string, name: string,title:string},
+    ExcludeAddMore : {id: string, customerId:string, name: string,title:string}
+
   };
   

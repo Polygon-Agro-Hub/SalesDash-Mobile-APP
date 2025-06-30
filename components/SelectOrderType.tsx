@@ -125,6 +125,7 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({ navigation, route }) 
     shadowRadius: 40,
     elevation: 5, // for Android shadow
   }}
+  className="mb-40"
   onPress={handleSelectPackage}
 >
   <Text style={{
