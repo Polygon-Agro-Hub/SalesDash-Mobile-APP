@@ -18,11 +18,12 @@ import { RouteProp } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
+import AntIcons from "react-native-vector-icons/Feather";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
 import BackButton from "./BackButton";
 import axios from "axios";
 import environment from "@/environment/environment";
-import { AntDesign } from "@expo/vector-icons";
+import { AntDesign, Ionicons } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
 
 type ViewCustomerScreenNavigationProp = StackNavigationProp<RootStackParamList, "ViewCustomerScreen">;
@@ -74,6 +75,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
   const ORDERS_PER_PAGE = 5;
 
   const { name, number, id, customerId, title } = route.params;
+  console.log("parid",id)
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
@@ -301,14 +303,41 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
               </TouchableOpacity> 
             </View> 
 
-            <View className="flex-1 justify-center items-center mt-[-3%]">
-              <Text className="text-xl font-bold text-gray-800" style={{ textAlign: 'center' }}>
+            <View className="flex-1 justify-center items-center mt-[3%]">
+              <Text className="text-lg font-bold text-gray-800" style={{ textAlign: 'center' }}>
                 {title}.{name}
               </Text>
-              <Text className="text-gray-500" style={{ textAlign: 'center' }}>
+              <Text className="text-gray-500 text-base" style={{ textAlign: 'center' }}>
                 Customer ID: {customerId}
               </Text>
+
+<TouchableOpacity
+//  onPress={() => navigation.navigate("Main", {
+//   screen: "ExcludeItemEditSummery",
+//   params: {
+//     id,
+//     customerId: customerId,
+//     name: name,
+//     title: title
+//   }
+// })}
+ onPress={() => navigation.navigate("ExcludeItemEditSummery", { 
+                id:id,                   
+                customerId: customerId,
+                name: name,
+                title: title 
+              })}
+>
+  <View className="flex-row justify-center items-center gap-2 mt-[1%]">
+    <Text className=" text-base font-semibold text-[#7240D3] underline">Exclude Item List</Text>
+    <AntIcons name="external-link" size={20} color="#6C3CD1" />
+  </View>
+</TouchableOpacity>
+          
+
             </View>
+
+        
 
             <TouchableOpacity 
               className="px-6 mt-[-9%] mr-[-10%]"
@@ -321,7 +350,9 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
             >
               <MaterialIcons name="edit" size={28} color="#6839CF" />
             </TouchableOpacity>
+            
           </View>
+
 
           {/* Action Buttons */}
           <View className="bg-[#F1E8FF] rounded-b-[25px] pt-6 pb-3 shadow-md mt-[-20] items-center z-5">
