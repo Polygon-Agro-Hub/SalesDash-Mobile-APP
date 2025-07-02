@@ -55,48 +55,47 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
     cusId: "",
   });
 
-  useFocusEffect(
-    useCallback(() => {
-      const fetchProducts = async () => {
-        try {
-          // setLoading(true);
+ useFocusEffect(
+  useCallback(() => {
+    const fetchProducts = async () => {
+      try {
+        const storedToken = await AsyncStorage.getItem("authToken");
+        if (!storedToken) {
+          return;
+        }
 
-          const storedToken = await AsyncStorage.getItem("authToken");
-          if (!storedToken) {
-            //   setError("No authentication token found");
-            //   setLoading(false);
-            return;
-          }
+        const apiUrl = `${environment.API_BASE_URL}api/customer/excludelist`;
+        const response = await axios.get(apiUrl, {
+          params: { customerId },
+          headers: { Authorization: `Bearer ${storedToken}` },
+        });
 
-          const apiUrl = `${environment.API_BASE_URL}api/customer/excludelist`;
-          const response = await axios.get(apiUrl, {
-            params: { customerId },
-            headers: { Authorization: `Bearer ${storedToken}` },
-          });
+        console.log("API Response:", response.data);
 
-          console.log(response.data);
-
-          if (response.data && response.data.data) {
-            setCrops(response.data.data);
-          }
-          if (response.data && response.data.data.length > 0) {
-            const { firstName, lastName, title, cusId } = response.data.data[0]; // Assuming first crop contains the name
+        if (response.data && response.data.data) {
+          // Filter out any invalid or empty items
+          const validCrops = response.data.data.filter(
+            (item: any) => item.excludeId && item.displayName
+          );
+          setCrops(validCrops);
+          
+          // Set customer name from first valid item
+          if (validCrops.length > 0) {
+            const { firstName, lastName, title, cusId } = validCrops[0];
             setCustomerName({ firstName, lastName, title, cusId });
           }
-        } catch (err) {
-          console.error("Failed to fetch products:", err);
-          // setError("Failed to load products. Please try again.");
-        } finally {
-          // setLoading(false);
+        } else {
+          setCrops([]);
         }
-      };
+      } catch (err) {
+        console.error("Failed to fetch products:", err);
+        setCrops([]); // Set empty array on error
+      }
+    };
 
-      fetchProducts();
-      return () => {
-        // Optionally clean up if needed (e.g., abort requests or reset state)
-      };
-    }, [customerId])
-  );
+    fetchProducts();
+  }, [customerId])
+);
 
   const deleteCrop = async (excludeId: number) => {
     // Ask for confirmation before deleting
@@ -175,7 +174,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
           className=" text-center text-black flex-grow ml-4 text-xl -mt-6"
         >
           {customerName.firstName && customerName.lastName
-            ? `Customer Id : ${customerName.cusId.slice(4)}`
+            ? `Customer ID : ${customerName.cusId.slice(4)}`
             : "Loading..."}
         </Text>
 
@@ -186,59 +185,64 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
           <View className="bg-gray-300 h-[1px] mt-2" />
         </View>
 
-        <ScrollView keyboardShouldPersistTaps="handled" className="mb-[90%]">
-          <View className="px-6 mt-4">
-            {crops.length === 0 ? (
-              //    <View
-              //   style={{
-              //     flex: 1,
-              //     justifyContent: "center",
-              //     alignItems: "center",
-              //     height: hp("60%"),
-              //   }}
-              // >
-              //   <Text className="text-center text-lg text-gray-500">No exclude list</Text>
-              // </View>
-              <View className="flex-1 justify-center items-center px-4 ">
-                <LottieView
-                  source={require("../assets/images/NoComplaints.json")}
-                  style={{ width: wp(50), height: hp(50) }}
-                  autoPlay
-                  loop
-                />
-              </View>
-            ) : (
-              crops.map((crop) => (
-                <View
-                  key={crop.excludeId}
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginVertical: 4,
-                  }}
-                >
-                  <View className="flex-row justify-center items-center gap-6">
-                    <Image
-                      source={{ uri: crop.image }}
-                      style={{ width: 60, height: 60, marginRight: 10 }}
-                      resizeMode="contain"
-                    />
-                    <Text style={{ fontSize: 16, color: "#000" }}>
-                      {crop.displayName}
-                    </Text>
-                  </View>
+       {crops.length === 0 || !crops.some(crop => crop.excludeId && crop.displayName) ? (
+  // Empty state - show Lottie animation
+  <View 
+    style={{
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      paddingTop: hp("30%"),
+      paddingBottom: hp("20%"),
+    }}
+  >
+    <LottieView
+      source={require("../assets/images/NoComplaints.json")}
+      style={{ width: wp(50), height: wp(50) }}
+      autoPlay
+      loop
+    />
+    <Text className="text-center text-lg text-gray-500 mt-4">
+      No items to exclude
+    </Text>
+  </View>
+) : (
+  // Items exist - show scrollable list
+  <ScrollView keyboardShouldPersistTaps="handled" className="mb-[90%]">
+    <View className="px-6 mt-4">
+      {crops
+        .filter(crop => crop.excludeId && crop.displayName) // Filter out invalid items
+        .map((crop) => (
+          <View
+            key={crop.excludeId}
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginVertical: 4,
+            }}
+          >
+            <View className="flex-row justify-center items-center gap-6">
+              <Image
+                source={{ uri: crop.image }}
+                style={{ width: 60, height: 60, marginRight: 10 }}
+                resizeMode="contain"
+              />
+              <Text style={{ fontSize: 16, color: "#000" }}>
+                {crop.displayName}
+              </Text>
+            </View>
 
-                  <TouchableOpacity onPress={() => deleteCrop(crop.excludeId)}>
-                    <View>
-                      <MaterialIcons name="delete" size={24} color="#FF0000" />
-                    </View>
-                  </TouchableOpacity>
-                </View>
-              ))
-            )}
+            <TouchableOpacity onPress={() => deleteCrop(crop.excludeId)}>
+              <View>
+                <MaterialIcons name="delete" size={24} color="#FF0000" />
+              </View>
+            </TouchableOpacity>
           </View>
-        </ScrollView>
+        ))}
+    </View>
+  </ScrollView>
+)}
       </View>
       <TouchableOpacity
         className="absolute bottom-[14%] left-0 right-0 items-center "

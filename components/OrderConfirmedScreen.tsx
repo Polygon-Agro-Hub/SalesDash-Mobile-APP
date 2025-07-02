@@ -698,10 +698,15 @@ if (order?.additionalItems && order.additionalItems.length > 0) {
           <p>Additional Items</p>
           <p>Rs. ${additionalItemsTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</p>
         </div>` : ''}
+         ${order?.isPackage === 0 ? `
+        <div style="display: flex; justify-content: space-between; margin-right: 20px; " class="ptext" >
+          <p>service fee</p>
+          <p>Rs. 180.00</p>
+        </div>` : ''}
         ${totaldiscount > 0 ? `
         <div style="display: flex; justify-content: space-between; margin-right: 20px;" class="ptext" >
           <p>Discount</p>
-          <p>- Rs. ${totaldiscount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</p>
+          <p> Rs. ${totaldiscount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</p>
         </div>` : ''}
         <div style="display: flex; justify-content: space-between; margin-right: 20px;"class="ptext" >
           <p>Delivery Fee</p>

@@ -26,11 +26,33 @@ import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import Ionicons from "react-native-vector-icons/Ionicons";
+import { AntDesign } from "@expo/vector-icons";
+import LottieView from "lottie-react-native";
 
 type ExcludeListAddNavigationProp = StackNavigationProp<
   RootStackParamList,
   "ExcludeListAdd"
 >;
+
+// Define proper interfaces for customer data and route params
+interface CustomerData {
+  name?: string;
+  title?: string;
+  number?: string;
+  cusId?: number;
+  id?: number;
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
+}
+
+interface RouteParams {
+  customerId: number;
+  name?: string;
+  title?: string;
+  number?: string;
+  id?: number;
+}
 
 interface ExcludeListAddProps {
   navigation: ExcludeListAddNavigationProp;
@@ -41,74 +63,171 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
   route,
   navigation,
 }) => {
-  const { customerId } = route.params || {};
+  const { customerId, name, title, number, id } = (route.params as RouteParams) || {};
   const [crops, setCrops] = useState<any[]>([]);
   const [selectedCrops, setSelectedCrops] = useState<number[]>([]);
-  const [filteredCrops, setFilteredCrops] = useState<any[]>([]); // New state to store filtered crops
+  const [filteredCrops, setFilteredCrops] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
-  const [loading, setLoading] = useState(false)
-  console.log("selected Crop", selectedCrops)
+  const [customerData, setCustomerData] = useState<CustomerData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [customerDataLoading, setCustomerDataLoading] = useState(true);
+  const [listLoading, setListLoading] = useState(true);
+    const [searchError, setSearchError] = useState<string | null>(null);
+  
+  console.log("selected Crop", selectedCrops);
+  console.log("Customer Data:", customerData);
+  
   const toggleSelect = (id: number) => {
     setSelectedCrops(
       (prevSelected) =>
         prevSelected.includes(id)
-          ? prevSelected.filter((cropId) => cropId !== id) // Unselect if already selected
-          : [...prevSelected, id] // Select if not selected
+          ? prevSelected.filter((cropId) => cropId !== id)
+          : [...prevSelected, id]
     );
   };
 
-useFocusEffect(
-  useCallback(() => {
-    setSelectedCrops([])
-    const fetchProducts = async () => {
-      try {
-        // setLoading(true);
+  // Get current customer data (either from state or route params)
+  const getCurrentCustomerData = () => {
+    if (customerData) {
+      return {
+        name: customerData.name || customerData.firstName || name || "",
+        title: customerData.title || title || "",
+        number: customerData.number || customerData.phoneNumber || number || "",
+        id: customerData.id?.toString() || id?.toString() || "",
+        customerId: customerData.cusId?.toString() || customerId.toString()
+      };
+    }
+    return {
+      name: name || "",
+      title: title || "",
+      number: number || "",
+      id: id?.toString() || "",
+      customerId: customerId.toString()
+    };
+  };
 
-        const storedToken = await AsyncStorage.getItem("authToken");
-        if (!storedToken) {
-          //   setError("No authentication token found");
-          //   setLoading(false);
+  // Define handleBackPress outside of useFocusEffect so it can be reused
+  const handleBackPress = useCallback(() => {
+    const currentData = getCurrentCustomerData();
+    navigation.navigate("ViewCustomerScreen", {
+      number: currentData.number,
+      name: currentData.name,
+      customerId: currentData.customerId,
+      id: currentData.id,
+      title: currentData.title
+    });
+    return true;
+  }, [navigation, customerData, customerId, number, name, id, title]);
+
+  // Fetch customer data
+  useEffect(() => {
+    const fetchCustomerData = async () => {
+      try {
+        setCustomerDataLoading(true);
+        const token = await AsyncStorage.getItem("authToken");
+        if (!token) {
+          console.error("No authentication token found");
+          setCustomerDataLoading(false);
           return;
         }
 
-        const apiUrl = `${environment.API_BASE_URL}api/customer/croplist`;
-        const response = await axios.get(apiUrl, {
-          headers: { Authorization: `Bearer ${storedToken}` },
-          params: { customerId:customerId },
-        });
-
-        console.log(response.data);
-
+        // Fixed the API endpoint name
+        const response = await axios.get(
+          `${environment.API_BASE_URL}api/customer/get-customer-excludelist/${customerId}`, 
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        
+        console.log("Customer data response:", response.data);
+        
         if (response.data && response.data.data) {
-          setCrops(response.data.data);
-           setFilteredCrops(response.data.data);
+          setCustomerData(response.data.data);
         }
-      } catch (err) {
-        console.error("Failed to fetch products:", err);
-        // setError("Failed to load products. Please try again.");
+      } catch (error) {
+        console.error("Error fetching customer data:", error);
       } finally {
-        // setLoading(false);
+        setCustomerDataLoading(false);
       }
     };
 
-    fetchProducts();
- return () => {
-    };
-  }, [customerId])
-);
-
-    const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    if (query === "") {
-      setFilteredCrops(crops); // If search is cleared, reset to all crops
-    } else {
-      const filtered = crops.filter((crop) =>
-        crop.displayName.toLowerCase().includes(query.toLowerCase())
-      );
-      setFilteredCrops(filtered); // Update filtered crops
+    if (customerId) {
+      fetchCustomerData();
     }
-  };
+  }, [customerId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      setSelectedCrops([]);
+      
+      // Override the default back action for BackButton
+      const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+        e.preventDefault();
+        const currentData = getCurrentCustomerData();
+        navigation.navigate("ViewCustomerScreen", {
+          number: currentData.number,
+          name: currentData.name,
+          customerId: currentData.customerId,
+          id: currentData.id,
+          title: currentData.title
+        });
+      });
+      
+      // Handle hardware back button
+      const backHandler = BackHandler.addEventListener(
+        'hardwareBackPress', 
+        handleBackPress
+      );
+      
+      const fetchProducts = async () => {
+  try {
+    setListLoading(true); // Set loading to true when starting
+    const storedToken = await AsyncStorage.getItem("authToken");
+    if (!storedToken) {
+      setListLoading(false);
+      return;
+    }
+
+    const apiUrl = `${environment.API_BASE_URL}api/customer/croplist`;
+    const response = await axios.get(apiUrl, {
+      headers: { Authorization: `Bearer ${storedToken}` },
+      params: { customerId: customerId },
+    });
+
+    console.log("Crops response:", response.data);
+
+    if (response.data && response.data.data) {
+      setCrops(response.data.data);
+      setFilteredCrops(response.data.data);
+    }
+  } catch (err) {
+    console.error("Failed to fetch products:", err);
+  } finally {
+    setListLoading(false); // Always set loading to false when done
+  }
+};
+
+      fetchProducts();
+      
+      return () => {
+        unsubscribe();
+        backHandler.remove();
+      };
+    }, [navigation, customerData, customerId, number, name, id, title])
+  );
+
+  // const handleSearch = (query: string) => {
+  //   setSearchQuery(query);
+  //   if (query === "") {
+  //     setFilteredCrops(crops);
+  //   } else {
+  //     const filtered = crops.filter((crop) =>
+  //       crop.displayName.toLowerCase().includes(query.toLowerCase())
+  //     );
+  //     setFilteredCrops(filtered);
+  //   }
+  // };
 
   const handlesubmitexcludelist = async () => {
 
@@ -156,7 +275,27 @@ useFocusEffect(
     }
   }
 
-    const handleNavigateIfNoCropsSelected = () => {
+const handleSearch = (query: string) => {
+  setSearchQuery(query);
+  setSearchError(null); // Clear any previous error
+  
+  if (query === "") {
+    setFilteredCrops(crops);
+  } else {
+    const filtered = crops.filter((crop) =>
+      crop.displayName.toLowerCase().includes(query.toLowerCase())
+    );
+    setFilteredCrops(filtered);
+    
+    // Set error if no results found
+    if (filtered.length === 0) {
+      setSearchError("No products found matching your search");
+    }
+  }
+};
+
+
+   const handleNavigateIfNoCropsSelected = () => {
         
     if (selectedCrops.length === 0) {
          navigation.navigate("Main", {
@@ -168,197 +307,180 @@ useFocusEffect(
     }
   };
 
-  useEffect(()=>{
+  useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
       "keyboardDidShow",
       () => {
-        setIsKeyboardVisible(true); // Keyboard is visible, hide the button
+        setIsKeyboardVisible(true);
       }
     );
     const keyboardDidHideListener = Keyboard.addListener(
       "keyboardDidHide",
       () => {
-        setIsKeyboardVisible(false); // Keyboard is hidden, show the button
+        setIsKeyboardVisible(false);
       }
     );
 
     return () => {
-      // Cleanup listeners when the component is unmounted
       keyboardDidShowListener.remove();
       keyboardDidHideListener.remove();
     };
   }, []);
 
+  // Show loading while fetching customer data
+  if (listLoading) {
+    return (
+      <View className="flex-1 justify-center items-center bg-white">
+        <ActivityIndicator size="large" color="#6C3CD1" />
+       
+      </View>
+    );
+  }
+
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      enabled
-      className="flex-1  bg-white"
-    >
-      <View className="flex-1 ">
-  
-          <View className="bg-white flex-row items-center h-17  px-1">
-            <BackButton navigation={navigation} />
-            {/* Title */}
-            <Text
-              style={{ fontSize: 18 }}
-              className="font-bold text-center text-[#6C3CD1] flex-grow mr-9 text-xl "
-            >
-              Exclude Item List
-            </Text>
+  behavior={Platform.OS === "ios" ? "padding" : "height"}
+  style={{flex: 1}}
+  keyboardVerticalOffset={Platform.select({ios: 60, android: 0})}
+>
+      <View className="flex-1 bg-white">
+        <View className="bg-white flex-row items-center h-17 px-1">
+          <TouchableOpacity 
+            style={{ paddingHorizontal: wp(2), paddingVertical: hp(2) }}
+            onPress={handleBackPress}
+          >
+            <View className="w-9 h-9 bg-[#F6F6F680] rounded-full justify-center items-center">
+              <AntDesign name="left" size={20} color="black" />
+            </View>
+          </TouchableOpacity> 
+          
+          <Text
+            style={{ fontSize: 18 }}
+            className="font-bold text-center text-[#6C3CD1] flex-grow mr-9 text-xl"
+          >
+            Exclude Item List
+          </Text>
+        </View>
+
+        <View className="px-5">
+          <Text className="text-center text-sm">
+            Exclude any items your customer doesn't want in their package.
+            Simply tap on the Products they want to remove.
+          </Text>
+        </View>
+
+        <View className="px-6 mt-6 mb-6">
+          <View className="relative">
+            <TextInput
+              className="p-3 pr-10 flex-row justify-between items-center border border-[#6B3BCF] rounded-full bg-[#F5F1FC]"
+              placeholder="Search Products"
+              placeholderTextColor="black"
+              value={searchQuery}
+              onFocus={() => setIsKeyboardVisible(true)}
+              onChangeText={handleSearch}
+            />
+            
+            <Ionicons
+              name="search"
+              size={24}
+              color="#6C3CD1"
+              style={{ 
+                position: "absolute", 
+                right: 20, 
+                marginTop: Platform.OS === 'ios' ? 10 : 20, 
+                transform: [{ translateY: -12 }] 
+              }}
+            />
           </View>
+        </View>
 
-          <View className="px-5 ">
-            <Text className="text-center text-sm">
-              Exclude any items your customer doesn’t want in their package.
-              Simply tap on the Products they want to remove.
-            </Text>
-          </View>
-{/* 
-<View className="px-6">
-          <View className="p-1 px-6 mt-8 flex-row justify-between items-center border border-[#6B3BCF] rounded-full">
-            <TextInput className="   " placeholder="Search Products" value={searchQuery}
-            onChangeText={handleSearch}>
-
-            </TextInput>
- <Ionicons
-            name="search"
-            size={24}
-            color="#6C3CD1"
-          />
-
-          </View>
-</View> */}
-
-<View className="px-6 mt-6 mb-6">
-        <View className="relative">
-        {/* TextInput with search icon inside */}
-        <TextInput
-          className="p-3 pr-10 flex-row justify-between items-center border border-[#6B3BCF] rounded-full"
-          placeholder="Search Products"
-          value={searchQuery}
-          onFocus={() => setIsKeyboardVisible(true)}
-          onChangeText={handleSearch}
-        />
+         {searchError && (
+                    <View>
+                      <View className="bg-red-50 px-4 py-2 mt-2 rounded-lg border border-red-200">
+                        <Text className="text-red-600 text-center">{searchError}</Text>
+                      </View>
+                      <View className="justify-center items-center mt-4">
+                        <LottieView
+                          source={require("../assets/images/NoComplaints.json")}
+                          style={{ width: wp(50), height: hp(50) }}
+                          autoPlay
+                          loop
+                        />
+                      
+                      </View>
+                    </View>
+                  )}
+             
         
-        {/* Search icon positioned inside the TextInput */}
-        <Ionicons
-          name="search"
-          size={24}
-          color="#6C3CD1"
-            style={{ position: "absolute", right: 20, marginTop: Platform.OS === 'ios' ? 10 : 5, transform: [{ translateY: -12 }] }}
-        />
-      </View>
-</View>
-                {/* <ScrollView
-          className="flex-1  px-3 mb-[45%]"
-          keyboardShouldPersistTaps="handled"
-        >
-          <View className="px-4 mt-8">
-            {crops.map((crop) => (
-              <View
-                key={crop.id}
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginVertical: 4,
-                }}
-              >
-                <View className="flex-row justify-center items-center gap-6 ">
-                  <TouchableOpacity onPress={() => toggleSelect(crop.id)}>
+        <View className="flex-1 ">
+          <FlatList
+            keyboardShouldPersistTaps='handled'
+            data={filteredCrops}
+            renderItem={({ item }) => (
+              <View className="flex-row justify-between items-center my-1 px-6 mb">
+                <View className="flex-row items-center space-x-6">
+                  <TouchableOpacity onPress={() => toggleSelect(item.id)}>
                     <View
-                      className={`w-6 h-6 rounded-full border justify-center items-center ${
-                        selectedCrops.includes(crop.id)
-                          ? "bg-[#FF0000] border-[#FF0000]"
-                          : "border-gray-400"
+                      className={`w-6 h-6 rounded-full border-2 justify-center items-center ${
+                        selectedCrops.includes(item.id) ? "bg-red-600 border-red-600" : "bg-white border-gray-400"
                       }`}
                     >
-                      {selectedCrops.includes(crop.id) && (
+                      {selectedCrops.includes(item.id) && (
                         <Ionicons name="close" size={16} color="white" />
                       )}
                     </View>
                   </TouchableOpacity>
-                  <Text style={{ fontSize: 16, color: "#000", marginLeft: 10 }}>
-                    {crop.displayName}
-                  </Text>
+                  <Text className="text-black">{item.displayName}</Text>
                 </View>
 
-                <Image
-                  source={{ uri: crop.image }}
-                  style={{ width: 60, height: 60, marginRight: 10 }}
-                  resizeMode="contain"
+                <Image 
+                  source={{ uri: item.image }} 
+                  style={{ width: 60, height: 60, marginRight: 10 }} 
+                  resizeMode="contain" 
                 />
               </View>
-            ))}
-          
-          </View>
-          
-             
-        </ScrollView> */}
-        <View className="flex-1   mb-[45%]" >
-            
-    
-         <FlatList
-         keyboardShouldPersistTaps = 'handled'
-      data={filteredCrops}
-      renderItem={({ item }) => (
-        <View className="flex-row justify-between  items-center my-1 px-6 mb">
-          {/* Crop name and selection toggle */}
-          <View className="flex-row items-center space-x-6">
-            <TouchableOpacity onPress={() => toggleSelect(item.id)}>
-              <View
-                className={`w-6 h-6 rounded-full border-2 justify-center items-center ${
-                  selectedCrops.includes(item.id) ? "bg-red-600 border-red-600" : "bg-white border-gray-400"
-                }`}
-              >
-                {selectedCrops.includes(item.id) && (
-                  <Ionicons name="close" size={16} color="white" />
-                )}
-              </View>
-            </TouchableOpacity>
-            <Text className="text-lg text-black">{item.displayName}</Text>
-          </View>
-
-          {/* Crop image */}
-          <Image source={{ uri: item.image }} style={{ width: 60, height: 60, marginRight: 10 }} resizeMode="contain" />
-        </View>
-        
-      )}
-      keyExtractor={(item) => item.id.toString()}
-      contentContainerStyle={{ paddingBottom: 20 }} // Adding padding at the bottom
-    />
+            )}
+            keyExtractor={(item) => item.id.toString()}
+         contentContainerStyle={{ 
+        paddingBottom: 200, // Adds space at the bottom for the button
+        paddingTop: 10 
+      }}
+          />
         </View>
       </View>
-     {!isKeyboardVisible && (
-      <TouchableOpacity onPress={handleNavigateIfNoCropsSelected} className="absolute bottom-[14%] left-0 right-0 items-center " disabled={loading} >
-            <LinearGradient
-              colors={["#6C3CD1", "#9B65D6"]}
-              start={[0, 0]}
-              end={[1, 1]}
-              style={{
-                width: "70%",
-                paddingVertical: 12,
-                borderRadius: 25,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-                {loading ? (
-          <ActivityIndicator color="#fff" size="small" />
-        ) : (
-          <View>
-            <Text style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}>
-              Continue
-            </Text>
-          </View>
-        )}
-              {/* <Text style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}>
-                Continue
-              </Text> */}
-            </LinearGradient>
-          </TouchableOpacity>
-     )}
+      
+           {!isKeyboardVisible && (
+            <View className="absolute bottom-0 left-0 right-0 bg-white pt-4 pb-20 px-6">
+        <TouchableOpacity 
+          onPress={handleNavigateIfNoCropsSelected} 
+          className="bottom-[14%] left-0 right-0 items-center" 
+          disabled={loading}
+        >
+          <LinearGradient
+            colors={["#6C3CD1", "#9B65D6"]}
+            start={[0, 0]}
+            end={[1, 1]}
+            style={{
+              width: "70%",
+              paddingVertical: 12,
+              borderRadius: 25,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <View>
+                <Text style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}>
+                  Continue
+                </Text>
+              </View>
+            )}
+          </LinearGradient>
+        </TouchableOpacity>
+        </View>
+      )}
     </KeyboardAvoidingView>
   );
 };
