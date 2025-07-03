@@ -32,7 +32,6 @@
       "permissions": [
         "CAMERA",
         "PHOTO_LIBRARY",
-        "LOCATION",
         "NOTIFICATIONS",
         "MICROPHONE",
         "CALENDAR",
@@ -44,7 +43,6 @@
         "ACCESS_NETWORK_STATE",
         "CHANGE_NETWORK_STATE",
         "VIBRATE",
-        "USE_FINGERPRINT",
         "WRITE_EXTERNAL_STORAGE"
       ],
       "bundleIdentifier": "com.salesdash.SalesDash"
@@ -54,6 +52,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "versionCode": 1,
       "package": "com.salesdash.SalesDash",
       "permissions": [
         "INTERNET",
@@ -66,8 +65,6 @@
         "WAKE_LOCK",
         "FOREGROUND_SERVICE",
         "RECEIVE_BOOT_COMPLETED",
-        "USE_FINGERPRINT",
-        "LOCATION",
         "BLUETOOTH",
         "BLUETOOTH_ADMIN",
         "ACCESS_WIFI_STATE",
@@ -103,8 +100,10 @@
     "extra": {
       "router": {
         "origin": false
+      },
+      "eas": {
+        "projectId": "ca855248-cc65-49dc-95cd-dbe7a0386676"
       }
-   
     }
   }
 }
