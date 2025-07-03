@@ -55,7 +55,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
     cusId: "",
   });
 
- useFocusEffect(
+useFocusEffect(
   useCallback(() => {
     const fetchProducts = async () => {
       try {
@@ -73,17 +73,17 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
         console.log("API Response:", response.data);
 
         if (response.data && response.data.data) {
-          // Filter out any invalid or empty items
+          // Set customer name from first item (regardless of crop validity)
+          if (response.data.data.length > 0) {
+            const { firstName, lastName, title, cusId } = response.data.data[0];
+            setCustomerName({ firstName, lastName, title, cusId });
+          }
+          
+          // Filter out any invalid or empty items for crops display
           const validCrops = response.data.data.filter(
             (item: any) => item.excludeId && item.displayName
           );
           setCrops(validCrops);
-          
-          // Set customer name from first valid item
-          if (validCrops.length > 0) {
-            const { firstName, lastName, title, cusId } = validCrops[0];
-            setCustomerName({ firstName, lastName, title, cusId });
-          }
         } else {
           setCrops([]);
         }
