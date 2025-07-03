@@ -27,6 +27,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { AntDesign } from "@expo/vector-icons";
+import LottieView from "lottie-react-native";
 
 type ExcludeAddMoreNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -48,6 +49,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
   const [filteredCrops, setFilteredCrops] = useState<any[]>([]); // New state to store filtered crops
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+    const [searchError, setSearchError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false)
   console.log("selected Crop", selectedCrops)
   const toggleSelect = (id: number) => {
@@ -99,17 +101,24 @@ useFocusEffect(
   }, [id])
 );
 
-    const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    if (query === "") {
-      setFilteredCrops(crops); // If search is cleared, reset to all crops
-    } else {
-      const filtered = crops.filter((crop) =>
-        crop.displayName.toLowerCase().includes(query.toLowerCase())
-      );
-      setFilteredCrops(filtered); // Update filtered crops
+   const handleSearch = (query: string) => {
+  setSearchQuery(query);
+  setSearchError(null); // Clear any previous error
+  
+  if (query === "") {
+    setFilteredCrops(crops);
+  } else {
+    const filtered = crops.filter((crop) =>
+      crop.displayName.toLowerCase().includes(query.toLowerCase())
+    );
+    setFilteredCrops(filtered);
+    
+    // Set error if no results found
+    if (filtered.length === 0) {
+      setSearchError("No products found matching your search");
     }
-  };
+  }
+};
 
   const handlesubmitexcludelist = async () => {
 
@@ -233,8 +242,9 @@ useFocusEffect(
         <View className="relative">
         {/* TextInput with search icon inside */}
         <TextInput
-          className="p-3 pr-10 flex-row justify-between items-center border border-[#6B3BCF] rounded-full"
+          className="p-3 pr-10 flex-row justify-between items-center border border-[#6B3BCF] rounded-full bg-[#F5F1FC]"
           placeholder="Search Products"
+          placeholderTextColor="black"
           value={searchQuery}
           onFocus={() => setIsKeyboardVisible(true)}
           onChangeText={handleSearch}
@@ -245,10 +255,27 @@ useFocusEffect(
           name="search"
           size={24}
           color="#6C3CD1"
-            style={{ position: "absolute", right: 20, marginTop: Platform.OS === 'ios' ? 20 : 5, transform: [{ translateY: -12 }] }}
+            style={{ position: "absolute", right: 20, marginTop: Platform.OS === 'ios' ? 20 : 20, transform: [{ translateY: -12 }] }}
         />
       </View>
 </View>
+
+    {searchError && (
+                    <View>
+                      <View className="bg-red-50 px-4 py-2 mt-2 rounded-lg border border-red-200">
+                        <Text className="text-red-600 text-center">{searchError}</Text>
+                      </View>
+                      <View className="justify-center items-center mt-4">
+                        <LottieView
+                          source={require("../assets/images/NoComplaints.json")}
+                          style={{ width: wp(50), height: hp(50) }}
+                          autoPlay
+                          loop
+                        />
+                      
+                      </View>
+                    </View>
+                  )}
                 {/* <ScrollView
           className="flex-1  px-3 mb-[45%]"
           keyboardShouldPersistTaps="handled"
@@ -295,7 +322,7 @@ useFocusEffect(
           
              
         </ScrollView> */}
-        <View className="flex-1   mb-[45%]" >
+        <View className="flex-1  " >
             
     
          <FlatList
@@ -316,7 +343,7 @@ useFocusEffect(
                 )}
               </View>
             </TouchableOpacity>
-            <Text className="text-lg text-black">{item.displayName}</Text>
+            <Text className=" text-black">{item.displayName}</Text>
           </View>
 
           {/* Crop image */}
@@ -325,12 +352,16 @@ useFocusEffect(
         
       )}
       keyExtractor={(item) => item.id.toString()}
-      contentContainerStyle={{ paddingBottom: 20 }} // Adding padding at the bottom
+        contentContainerStyle={{ 
+        paddingBottom: 200, // Adds space at the bottom for the button
+        paddingTop: 10 
+      }}
     />
         </View>
       </View>
      {!isKeyboardVisible && (
-      <TouchableOpacity onPress={handleNavigateIfNoCropsSelected} className="absolute bottom-[14%] left-0 right-0 items-center " disabled={loading} >
+      <View className="absolute bottom-0 left-0 right-0 bg-white pt-4 pb-20 px-6">
+      <TouchableOpacity onPress={handleNavigateIfNoCropsSelected} className=" bottom-[14%] left-0 right-0 items-center " disabled={loading} >
             <LinearGradient
               colors={["#6C3CD1", "#9B65D6"]}
               start={[0, 0]}
@@ -357,6 +388,7 @@ useFocusEffect(
               </Text> */}
             </LinearGradient>
           </TouchableOpacity>
+          </View>
      )}
     </KeyboardAvoidingView>
   );

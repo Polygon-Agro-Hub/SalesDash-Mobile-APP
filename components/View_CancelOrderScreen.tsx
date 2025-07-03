@@ -596,20 +596,33 @@ const isTimelineItemActive = (status: string) => {
 </View>
 
             {/* Customer Information */}
-            <View className="bg-white border border-gray-200 rounded-lg shadow-sm mx-4 p-4 mb-4">
-              <Text className="text-[#808FA2] font-medium mb-1">Customer's Name</Text>
-              <Text className="text-black font-medium mb-3">{`${order.firstName} ${order.lastName}`}</Text>
+          <View className="bg-white border border-gray-200 rounded-lg shadow-sm mx-4 p-4 mb-4">
+  <Text className="text-[#808FA2] font-medium mb-1">Customer's Name</Text>
+  <Text className="text-black font-medium mb-3">
+    {customerData ? 
+      `${customerData.title || ''} ${customerData.firstName || ''} ${customerData.lastName || ''}`.trim() || 'Not Available' :
+      `${order.title || ''}  ${order.firstName || ''} ${order.lastName || ''}`.trim() || 'Not Available'
+    }
+  </Text>
 
-              <Text className="text-[#808FA2] font-medium mb-1">Customer's Phone Number</Text>
-              <Text className="text-black font-medium mb-3">{order.phoneNumber}</Text>
+  <Text className="text-[#808FA2] font-medium mb-1">Customer's Phone Number</Text>
+  <Text className="text-black font-medium mb-3">
+    {customerData?.phoneNumber || order.phoneNumber || 'Not Available'}
+  </Text>
 
-              <Text className="text-[#808FA2] font-medium mb-1">Building Type</Text>
-              <Text className="text-black font-medium mb-3">{order.buildingType}</Text>
+  <Text className="text-[#808FA2] font-medium mb-1">Building Type</Text>
+  <Text className="text-black font-medium mb-3">
+    {customerData?.buildingType || order.buildingType || 'Not Available'}
+  </Text>
 
-              <Text className="text-[#808FA2] font-medium mb-1">Address</Text>
-              <Text className="text-black font-medium">{order.fullAddress}</Text>
-            </View>
-
+  <Text className="text-[#808FA2] font-medium mb-1">Address</Text>
+  <Text className="text-black font-medium">
+    {customerData?.buildingDetails ? 
+      `${customerData.buildingDetails.houseNo || ''} ${customerData.buildingDetails.streetName || ''}, ${customerData.buildingDetails.city || ''}`.trim() || order.fullAddress || 'Not Available' :
+      order.fullAddress || 'Not Available'
+    }
+  </Text>
+</View>
             {/* Payment Summary */}
             {order.fullTotal && (
               <View className="bg-white border border-gray-200 rounded-lg shadow-sm mx-4 p-4 mb-4">
