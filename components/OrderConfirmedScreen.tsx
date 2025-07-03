@@ -700,7 +700,7 @@ if (order?.additionalItems && order.additionalItems.length > 0) {
         </div>` : ''}
          ${order?.isPackage === 0 ? `
         <div style="display: flex; justify-content: space-between; margin-right: 20px; " class="ptext" >
-          <p>service fee</p>
+          <p>Service Fee</p>
           <p>Rs. 180.00</p>
         </div>` : ''}
         ${totaldiscount > 0 ? `
