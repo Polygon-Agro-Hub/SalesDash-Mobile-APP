@@ -178,7 +178,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
           className=" text-center text-black flex-grow ml-4 text-xl -mt-6"
         >
           {customerName.firstName && customerName.lastName
-            ? `Customer Id : ${customerName.cusId.slice(4)}`
+            ? `Customer ID : ${customerName.cusId.slice(4)}`
             : "Loading..."}
         </Text>
 

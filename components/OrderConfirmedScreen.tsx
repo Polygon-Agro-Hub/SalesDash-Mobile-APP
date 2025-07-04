@@ -34,28 +34,63 @@ interface OrderConfirmedScreenProps {
   route: OrderConfirmedScreenRouteProp;
 }
 
-interface Order {
-  orderId: number;
-  userId: number;
-  deliveryType: string;
-  scheduleDate: string;
-  scheduleTimeSlot: string;
-  weeklyDate: string;
-  paymentMethod: string;
-  paymentStatus: number;
-  orderStatus: string;
-  createdAt: string;
-  invoiceNumber: string;
-  fullTotal: string | null;
-  fullSubTotal: string | null;
-  fullDiscount: string | null;
-  deleteStatus: string | null;
-  title: string | null;
+// Updated interfaces to match API response
+interface PackageDetail {
+  id: number;
+  name: string;
+  quantity: string;
+  category?: string;
+}
+
+interface PackageInfo {
+  displayName: string;
+  packageDetails: PackageDetail[];
+  packageId: number;
+  packingFee: string;
+  productPrice: string;
+  serviceFee: string;
+  status: string;
+}
+
+interface AdditionalItem {
+  id: number;
+  name: string;
+  price: string;
+  quantity: string;
+  unit: string;
+  totalPrice: string;
+}
+
+interface CustomerInfo {
+  buildingType: string;
   firstName: string;
   lastName: string;
   phoneNumber: string;
-  buildingType: string;
+  title: string;
+}
+
+interface OrderStatus {
+  invoiceNumber: string;
+  reportStatus: string | null;
+  status: string;
+}
+
+interface Order {
+  additionalItems: AdditionalItem[];
+  createdAt: string;
+  customerInfo: CustomerInfo;
+  discount: string;
   fullAddress: string;
+  fullTotal: string;
+  isPackage: number;
+  orderId: number;
+  orderStatus: OrderStatus;
+  packageInfo: PackageInfo;
+  scheduleDate: string;
+  scheduleTime: string;
+  scheduleType: string;
+  total: string;
+  userId: number;
 }
 
 interface CustomerData {
@@ -73,7 +108,7 @@ interface CustomerData {
     streetName?: string;
     city?: string;
   };
-  email?:string
+  email?: string;
 }
 
 interface City {
@@ -81,6 +116,24 @@ interface City {
   city: string;
   charge: string;
   createdAt?: string;
+}
+
+interface PackageDetail {
+  id: number;
+  packageId: number;
+  productTypeId: number;
+  qty: number;
+  productTypeName: string;
+}
+
+interface AdditionalItem {
+  productId: number;
+  qty: number;
+  unit: string;
+  price: string;
+  discount: number;
+  displayName: string;
+  varietyId: number;
 }
 
 const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation, route }) => {
@@ -106,9 +159,8 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
     isPackage = "",
   } = route.params || {};
 
-  console.log("ispackage",isPackage)
-
-  console.log("vhalkdz", order?.invoiceNumber);
+  console.log("ispackage", isPackage);
+  console.log("vhalkdz", order?.orderStatus?.invoiceNumber);
   console.log("kacsbhm", customerId);
 
   useEffect(() => {
@@ -324,215 +376,84 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
       setIsDownloading(true);
       
       const watermarkBase64 = await convertImageToBase64();
-      const invoiceNumber = order?.invoiceNumber || `INV-${Date.now()}`;
+      const invoiceNumber = order?.orderStatus?.invoiceNumber || `INV-${Date.now()}`;
 
-      let itemsRows = '';
-      if (items && items.length > 0) {
-        items.forEach(item => {
-          const itemPrice = item.price || 0;
-          const itemQuantity = item.quantity || 0;
-          itemsRows += 
-            `<tr>
-              <td>${item.name || 'Item'}</td>
-              <td>${itemQuantity}</td>
-              <td>${itemPrice.toFixed(2)}</td>
-              <td>${(itemPrice * itemQuantity).toFixed(2)}</td>
-            </tr>`;
-        });
-      }
+      // Calculate totals from API data
+      const packagePrice = parseFloat(order?.packageInfo?.productPrice || '0');
+      const packingFee = parseFloat(order?.packageInfo?.packingFee || '0');
+      const serviceFee = parseFloat(order?.packageInfo?.serviceFee || '0');
+      const discountAmount = parseFloat(order?.discount || '0');
+      const totalAmount = parseFloat(order?.total || '0');
+      
 
-      const serviceFeeRow = isPackage === 0 ? `
-      <tr>
-        <td>Service Fee</td>
-        <td>180.00</td>
-      </tr>
-    ` : '';
+// Calculate additional items total
+// Calculate additional items total (using price directly as total price)
+const additionalItemsTotal = order?.additionalItems?.reduce((sum, item) => {
+  return sum + parseFloat(item.price || '0');
+}, 0) || 0;
 
-    const totalFeeRow0 = isPackage === 0 ? `
-      <tr>
-        <td>Subtotal</td>
-        <td>${(total+ discount-180).toFixed(2)}</td>
-      </tr>
-    ` : '';
 
-    const totalFeeRow1 = isPackage === 1 ? `
-      <tr>
-        <td>Subtotal</td>
-        <td>${(total+ discount).toFixed(2)}</td>
-      </tr>
-    ` : '';
+const totaldiscount = order?.additionalItems?.reduce((sum, item) => {
+  // Convert discount to string before parsing if it's a number
+  const discount = typeof item.discount === 'number' ? item.discount.toString() : item.discount || '0';
+  return sum + parseFloat(discount);
+}, 0) || 0;
 
-//       const htmlContent = `
-//         <!DOCTYPE html>
-//         <html lang="en">
-//         <head>
-//             <meta charset="UTF-8">
-//             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-//             <title>Purchase Invoice</title>
-//             <style>
-//                 body {
-//                     font-family: Arial, sans-serif;
-//                     padding: 10px;
-//                     margin: 0;
-//                     background-color: #ffffff;
-//                     position: relative;
-//                 }
-//                 .invoice-container {
-//                     position: relative;
-//                     border: 1px solid #ccc;
-//                     padding: 10px;
-//                     max-width: 700px;
-//                     margin: auto;
-//                     background: white;
-//                     overflow: hidden;
-//                 }
-//                 .watermark {
-//                     position: absolute;
-//                     top: 0;
-//                     left: 0;
-//                     width: 100%;
-//                     height: 100%;
-//                     opacity: 0.5;
-//                     z-index: 0;
-//                     display: flex;
-//                     justify-content: center;
-//                     align-items: center;
-//                 }
-//                 .watermark img {
-//                     width: 70%;
-//                     height: auto;
-//                 }
-//                 h1, h2 {
-//                     color: #000;
-//                     text-align: left;
-//                 }
-//                 .section {
-//                     border-bottom: 2px solid #ddd;
-//                     padding-bottom: 10px;
-//                     line-height: 0.8;
-//                     margin-bottom: 5px;
-//                 }
-//                 .bold {
-//                     font-weight: bold;
-//                 }
-//                 table {
-//                     width: 100%;
-//                     border-collapse: collapse;
-//                 }
-//                 table, th, td {
-//                     border: 1px solid black;
-//                     padding: 10px;
-//                     text-align: left;
-//                 }
-//                 .footer {
-//                     text-align: center;
-//                     font-size: 14px;
-//                 }
-//             </style>
-//         </head>
-//         <body>
-//             <div class="invoice-container">
-//            <div class="watermark">
-//     <img 
-//         src="https://pub-79ee03a4a23e4dbbb70c7d799d3cb786.r2.dev/POLYGON%20ORIGINAL%20LOGO.png" 
-//         alt="Watermark" 
-//         style="width: full; height: full; opacity: 0.3;" 
-//     />
-// </div>
+      // Generate package details rows
+     // Generate package details rows
+let packageDetailsRows = '';
+if (order?.packageInfo?.packageDetails && order.packageInfo.packageDetails.length > 0) {
+  order.packageInfo.packageDetails.forEach((item, index) => {
+    packageDetailsRows += 
+      `<tr>
+        <td style="text-align: center">${index + 1}</td>
+        <td class="tabledata">${item.productTypeName || 'Item'}</td>
+        <td class="tabledata">${item.qty || 'N/A'}</td>
+      </tr>`;
+  });
+}
 
-                
-//                 <h3>Purchase Invoice</h3>
-//                 <div class="section">
-//                     <p class="bold">AgroWorld (Pvt) Ltd.</p>
-//                     <p>Address: No 46/42, Nawam Mawatha, Colombo 02</p>
-//                     <p>Contact: +94 770111999</p>
-//                     <p>Invoice Number: <strong>${order?.invoiceNumber}</strong></p>
-//                     <p>Date: <strong>${new Date().toLocaleDateString()}</strong></p>
-//                 </div>
-  
-//                 <div class="section">
-//                     <h3>Order Details</h3>
-//                     <p><span class="bold">Delivery Type:</span> One time</p>
-//                     <p><span class="bold">Selected Date:</span> ${selectedDate}</p>
-//                     <p><span class="bold"> Time :</span> ${selectedTimeSlot}</p>
-//                 </div>
-  
-//                 <div class="section">
-//                     <h3>Receiver Details</h3>
-//                     <p><span class="bold">Receiver's Name:</span> ${order?.title}  ${order?.firstName}  ${order?.lastName}</p>
-//                     <p><span class="bold">Phone Number:</span> ${order?.phoneNumber}</p>
-//                     <p><span class="bold">Building Type:</span> ${order?.buildingType}</p>
-//                     <p><span class="bold">Address:</span> ${order?.fullAddress}</p>
-//                 </div>
-  
-//                 ${items && items.length > 0 ? `
-//                 <div class="section">
-//                     <h3>Order Items</h3>
-//                     <table>
-//                         <tr>
-//                             <th>Item</th>
-//                             <th>Quantity</th>
-//                             <th>Unit Price</th>
-//                             <th>Total</th>
-//                         </tr>
-//                         ${itemsRows}
-//                     </table>
-//                 </div>
-//                 ` : ''}
-  
-//                 <div class="section">
-//                     <h3>Payment Summary</h3>
-//                     <table>
-//                         <tr>
-//                             <th>Description</th>
-//                             <th>Amount (Rs.)</th>
-//                         </tr>
-//                             </tr>
-//                       ${totalFeeRow0}
-//                       <tr>
-//                            </tr>
-//                       ${totalFeeRow1}
-//                       <tr>
-//                         <tr>
-//                             <td>Discount</td>
-//                             <td>${discount.toFixed(2)}</td>
-//                         </tr>
-//                         </tr>
-//                       ${serviceFeeRow}
-//                       <tr>
-//                          <tr>
-//                             <td>Delivery Fee</td>
-//                             <td>${deliveryFee.toFixed(2)}</td>
-//                         </tr>
-//                         <tr>
-//                             <td><strong>Grand Total</strong></td>
-//                            <td><strong>${(total + deliveryFee).toFixed(2)}</strong></td>
-//                         </tr>
-//                     </table>
-//                 </div>
-                
-//                 <div class="section">
-//                     <h3>Payment Method</h3>
-//                     <p><span class="bold">Payment Method:</span> ${paymentMethod}</p>
-//                 </div>
-                
-//                 <div class="footer">
-//                     <p><strong>Thank You for Shopping with Us!</strong></p>
-//                     <p>We value your trust and look forward to serving you again.</p>
-//                     <p>We are an Agro Fin Tech Company</p>
-//                 </div>
-//             </div>
-//         </body>
-//         </html>
-//       `;
- const htmlContent = `
+// Generate additional items rows
+let additionalItemsRows = '';
+if (order?.additionalItems && order.additionalItems.length > 0) {
+  order.additionalItems.forEach((item, index) => {
+    additionalItemsRows += 
+      `<tr>
+        <td style="text-align: center">${index + 1}</td>
+        <td class="tabledata">${item.displayName || 'Item'}</td>
+        <td class="tabledata">${parseFloat(item.price || '0').toFixed(2)}</td>
+        <td class="tabledata">${item.qty || '0'} ${item.unit || ''}</td>
+        <td class="tabledata">${(parseFloat(item.price || '0'))}</td>
+      </tr>`;
+  });
+}
+
+      // Format scheduled date
+      const formatScheduleDate = (dateString: string) => {
+        try {
+          const date = new Date(dateString);
+          return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
+        } catch (error) {
+          return selectedDate;
+        }
+      };
+
+      const htmlContent = `
        <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Purchase Invoice</title>
+
     <style>
+    @page{
+    margin-top:20px;
+    }
       body {
         font-family: Arial, sans-serif;
         padding: 10px;
@@ -541,7 +462,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
       }
       .invoice-container {
         width: 100%;
-        max-width: 760px;
+        max-width: 730px;
         margin: auto;
         background: white;
         padding: 20px;
@@ -567,12 +488,10 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
         width: 180px;
         height: auto;
       }
-
       .bold {
         font-weight: 550;
         font-size: 14px;
       }
-
       .table {
         width: 100%;
         border-collapse: collapse;
@@ -588,7 +507,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
       .table th {
         background-color: #f8f8f8;
         font-size: 14px;
-        font-weight: 100;
+        font-weight: ;
         justify-items: center;
         border-bottom: 1px solid #ddd;
       }
@@ -614,6 +533,9 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
       }
       .section3 {
         margin-top: 10px;
+      }
+        .section {
+        page-break-inside: avoid; /* Avoid page breaks inside these sections */
       }
       .ptext {
         font-size: 14px;
@@ -653,15 +575,15 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
       >
         <div>
           <p class="bold">Bill To :</p>
-          <p class="headerp">${order?.title}  ${order?.firstName}  ${order?.lastName}</p>
-          <p class="headerp">${order?.fullAddress}</p>
-          <p class="headerp">${order?.phoneNumber}</p>
-          <p class="headerp">${customerData?.email}</p>
+          <p class="headerp">${order?.customerInfo?.title || ''} ${order?.customerInfo?.firstName || ''} ${order?.customerInfo?.lastName || ''}</p>
+          <p class="headerp">${order?.fullAddress || ''}</p>
+          <p class="headerp">${order?.customerInfo?.phoneNumber || ''}</p>
+          <p class="headerp">${customerData?.email || ''}</p>
         </div>
         <div>
           <div style="margin-right: 55px">
             <p class="bold">Grand Total :</p>
-            <p style="font-weight: 550; font-size: 16px">Rs. ${(total + deliveryFee).toFixed(2)}</p>
+            <p style="font-weight: 550; font-size: 16px">Rs. ${(totalAmount ).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</p>
             <div class="section" style="margin-top: 30px">
               <p class="bold">Payment Method :</p>
               <p class="headerp">${paymentMethod}</p>
@@ -677,12 +599,11 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
         >
           <div>
             <p class="bold">Invoice No :</p>
-            <p class="headerp">${order?.invoiceNumber}</p>
+            <p class="headerp">${invoiceNumber}</p>
           </div>
-
-          <div style="margin-right: 79px">
+       <div style="margin-right: 79px">
             <p class="bold">Ordered Date :</p>
-            <p class="headerp">${new Date().toLocaleDateString()}</p>
+            <p class="headerp">${new Date(order?.createdAt || '').toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'}).replace(/ /g, '-')}</p>
           </div>
         </div>
 
@@ -694,16 +615,16 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
             <p class="bold">Delivery Method :</p>
             <p class="headerp">Home Delivery</p>
           </div>
-
           <div style="margin-right: 64px">
             <p class="bold">Scheduled Date :</p>
-            <p class="headerp">${selectedDate}</p>
+         <p class="headerp">${new Date(order?.scheduleDate || '').toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'}).replace(/ /g, '-')}</p>
           </div>
         </div>
       </div>
 
-      <!-- Order Items Section -->
-      <div class="section3" style="margin-top: 40px; margin-bottom: 30px">
+      ${order?.isPackage === 1 ? `
+      <!-- Package Section -->
+      <div class="section" style="margin-top: 40px; margin-bottom: 30px">
         <div
           style="
             display: flex;
@@ -713,8 +634,8 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
             padding-bottom: 10px;
           "
         >
-          <div class="bold">Family Pack for 2 (03 Items)</div>
-          <div style="font-weight: 550; font-size: 16px">Rs. 380.00</div>
+          <div class="bold">${order?.packageInfo?.displayName || 'Package'} (${order?.packageInfo?.packageDetails?.length || 0} Items)</div>
+          <div style="font-weight: 550; font-size: 16px">Rs. ${(packagePrice + packingFee + serviceFee).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</div>
         </div>
         <div style="border: 1px solid #ddd; border-radius: 10px">
           <table class="table">
@@ -725,27 +646,14 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
               <th>Item Description</th>
               <th style="border-top-right-radius: 10px; width: 40%">QTY</th>
             </tr>
-            <tr>
-              <td style="text-align: center">1</td>
-              <td class="tabledata">Up Country Fruits</td>
-              <td class="tabledata">05</td>
-            </tr>
-            <tr>
-              <td style="text-align: center">2</td>
-              <td class="tabledata">Low Country Fruits</td>
-              <td class="tabledata">05</td>
-            </tr>
-            <tr>
-              <td style="text-align: center">3</td>
-              <td class="tabledata">Low Country Vegetables</td>
-              <td class="tabledata">10</td>
-            </tr>
+            ${packageDetailsRows}
           </table>
         </div>
-      </div>
+      </div>` : ''}
 
+      ${order?.additionalItems && order.additionalItems.length > 0 ? `
       <!-- Additional Items Section -->
-      <div class="section">
+      <div class="section 4">
         <div
           style="
             display: flex;
@@ -753,10 +661,11 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
             margin-bottom: 20px;
             border-bottom: 1px solid #ccc;
             padding-bottom: 10px;
+            margin-top:10px
           "
         >
-          <div class="bold">Additional Items (03 Items)</div>
-          <div style="font-weight: 550; font-size: 16px">Rs. 380.00</div>
+          <div class="bold">Additional Items (${order?.additionalItems?.length || 0} Items)</div>
+          <div style="font-weight: 550; font-size: 16px">Rs. ${additionalItemsTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</div>
         </div>
         <div style="border: 1px solid #ddd; border-radius: 10px">
           <table class="table">
@@ -769,47 +678,39 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
               <th>QTY</th>
               <th style="border-top-right-radius: 10px">Amount (Rs.)</th>
             </tr>
-            <tr>
-              <td style="text-align: center">1</td>
-              <td class="tabledata">Papaya</td>
-              <td class="tabledata">200.00</td>
-              <td class="tabledata">1kg</td>
-              <td class="tabledata">200.00</td>
-            </tr>
-            <tr>
-              <td style="text-align: center">2</td>
-              <td class="tabledata">Lettuce</td>
-              <td class="tabledata">200.00</td>
-              <td class="tabledata">500g</td>
-              <td class="tabledata">100.00</td>
-            </tr>
-            <tr>
-              <td style="text-align: center">3</td>
-              <td class="tabledata">Beans</td>
-              <td class="tabledata">200.00</td>
-              <td class="tabledata">800g</td>
-              <td class="tabledata">80.00</td>
-            </tr>
+            ${additionalItemsRows}
           </table>
         </div>
-      </div>
+      </div>` : ''}
 
       <!-- Grand Total Section -->
       <div class="section" style="margin-top: 30px">
         <div style="margin-bottom: 20px; border-bottom: 1px solid #ccc;padding-bottom: 10px;" >
           <div class="bold">Grand Total for all items</div>
         </div>
+        ${order?.isPackage === 1 ? `
         <div style="display: flex; justify-content: space-between; margin-right: 20px; " class="ptext" >
-          <p>Family Pack for 2</p>
-          <p>Rs. 380.00</p>
-        </div>
+          <p>${order?.packageInfo?.displayName || 'Package'}</p>
+          <p>Rs. ${(packagePrice + packingFee + serviceFee).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</p>
+        </div>` : ''}
+        ${order?.additionalItems && order.additionalItems.length > 0 ? `
         <div style=" display: flex; justify-content: space-between; margin-right: 20px;" class="ptext" > 
           <p>Additional Items</p>
-          <p>Rs. 380.00</p>
-        </div>
-        <div style="display: flex; justify-content: space-between; margin-right: 20px;  "class="ptext" >
+          <p>Rs. ${additionalItemsTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</p>
+        </div>` : ''}
+         ${order?.isPackage === 0 ? `
+        <div style="display: flex; justify-content: space-between; margin-right: 20px; " class="ptext" >
+          <p>Service Fee</p>
+          <p>Rs. 180.00</p>
+        </div>` : ''}
+        ${totaldiscount > 0 ? `
+        <div style="display: flex; justify-content: space-between; margin-right: 20px;" class="ptext" >
+          <p>Discount</p>
+          <p> Rs. ${totaldiscount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</p>
+        </div>` : ''}
+        <div style="display: flex; justify-content: space-between; margin-right: 20px;"class="ptext" >
           <p>Delivery Fee</p>
-          <p>${deliveryFee.toFixed(2)}</p>
+          <p>Rs. ${deliveryFee.toFixed(2)}</p>
         </div>
 
         <div style="margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px;" ></div>
@@ -818,7 +719,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
       <!-- Payment Method Section -->
       <div style="margin-top: -10px; display: flex; justify-content: space-between; font-size: 16px; font-weight: 600; margin-right: 20px;">
         <p>Grand Total</p>
-        <p>Rs. ${(total + deliveryFee).toFixed(2)}</p>
+        <p>Rs. ${(totalAmount ).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</p>
       </div>
 
       <!-- Remarks Section -->
@@ -848,6 +749,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
   </body>
 </html>
       `;
+
       const { uri: pdfUri } = await Print.printToFileAsync({ 
         html: htmlContent,
         width: 595, 
@@ -901,7 +803,6 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
     }
   };
 
- 
   if (loading || !isDataLoaded) {
     return (
       <View className="flex-1 inset-0 bg-white/20 bg-white justify-center items-center">
@@ -910,6 +811,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
       </View>
     );
   }
+
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -926,7 +828,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
                 Order is Confirmed!
               </Text>
               <Text style={{ fontSize: 18 }} className="text-[#3F3F3F] text-center mt-2">
-                Order No: {order?.invoiceNumber}
+                Order No: {order?.orderStatus?.invoiceNumber}
               </Text>
               <Text style={{ fontSize: 16 }} className="text-[#747474] text-center mt-5">
                 Order Confirmation message and Payment Gateway Link has been sent to your Customer
@@ -976,8 +878,6 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
           </View>
         </View>
       </ScrollView>
-      
-   
     </KeyboardAvoidingView>
   );
 };
