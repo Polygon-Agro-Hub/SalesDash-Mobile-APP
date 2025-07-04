@@ -790,7 +790,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
 
   
   const timeSlots = [
-    { key: "Within 8-12 AM", value: "Within 8-12 AM" },
+    { key: "Within 8-12 PM", value: "Within 8-12 PM" },
     { key: "Within 12-4 PM", value: "Within 12-4 PM" },
     { key: "Within 4-8 PM", value: "Within 4-8 PM" },
   ];
@@ -930,7 +930,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
   // Helper function to convert time slot to 24-hour format
   const convertTimeSlotTo24Hour = (timeSlot: string): string => {
     switch (timeSlot) {
-      case "Within 8-12 AM":
+      case "Within 8-12 PM":
         return "10:00"; // Middle of the range
       case "Within 12-4 PM":
         return "14:00"; // Middle of the range
