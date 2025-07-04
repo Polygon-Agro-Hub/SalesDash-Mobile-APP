@@ -82,18 +82,25 @@ Successfully Verified!
   Customer Phone number has been verified!
 </Text>
 </View>
-
+<TouchableOpacity onPress={() => navigation.navigate("Main", {
+  screen: "ExcludeListAdd",
+  params: { customerId: customerId } 
+})}>
           <LinearGradient
             colors={["#6839CF", "#874DDB"]}
             className="py-2 px-10 items-center mt-[55%] mb-[5%] mr-[20%] ml-[20%] rounded-3xl h-15"
           >
-<TouchableOpacity onPress={() => navigation.navigate("Main", {
+{/* <TouchableOpacity onPress={() => navigation.navigate("Main", {
   screen: "SelectOrderTypeNewCustomer",
   params: { id: customerId } 
 })}>
   <Text className="text-center text-white font-bold text-lg">Order Now</Text>
-</TouchableOpacity>
+</TouchableOpacity> */}
+
+  <Text className="text-center text-white font-bold text-lg">Order Now</Text>
+
           </LinearGradient>
+          </TouchableOpacity>
         </View>
 
         </ScrollView>

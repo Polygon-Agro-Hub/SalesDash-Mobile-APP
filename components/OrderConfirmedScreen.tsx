@@ -34,28 +34,63 @@ interface OrderConfirmedScreenProps {
   route: OrderConfirmedScreenRouteProp;
 }
 
-interface Order {
-  orderId: number;
-  userId: number;
-  deliveryType: string;
-  scheduleDate: string;
-  scheduleTimeSlot: string;
-  weeklyDate: string;
-  paymentMethod: string;
-  paymentStatus: number;
-  orderStatus: string;
-  createdAt: string;
-  invoiceNumber: string;
-  fullTotal: string | null;
-  fullSubTotal: string | null;
-  fullDiscount: string | null;
-  deleteStatus: string | null;
-  title: string | null;
+// Updated interfaces to match API response
+interface PackageDetail {
+  id: number;
+  name: string;
+  quantity: string;
+  category?: string;
+}
+
+interface PackageInfo {
+  displayName: string;
+  packageDetails: PackageDetail[];
+  packageId: number;
+  packingFee: string;
+  productPrice: string;
+  serviceFee: string;
+  status: string;
+}
+
+interface AdditionalItem {
+  id: number;
+  name: string;
+  price: string;
+  quantity: string;
+  unit: string;
+  totalPrice: string;
+}
+
+interface CustomerInfo {
+  buildingType: string;
   firstName: string;
   lastName: string;
   phoneNumber: string;
-  buildingType: string;
+  title: string;
+}
+
+interface OrderStatus {
+  invoiceNumber: string;
+  reportStatus: string | null;
+  status: string;
+}
+
+interface Order {
+  additionalItems: AdditionalItem[];
+  createdAt: string;
+  customerInfo: CustomerInfo;
+  discount: string;
   fullAddress: string;
+  fullTotal: string;
+  isPackage: number;
+  orderId: number;
+  orderStatus: OrderStatus;
+  packageInfo: PackageInfo;
+  scheduleDate: string;
+  scheduleTime: string;
+  scheduleType: string;
+  total: string;
+  userId: number;
 }
 
 interface CustomerData {
@@ -73,6 +108,7 @@ interface CustomerData {
     streetName?: string;
     city?: string;
   };
+  email?: string;
 }
 
 interface City {
@@ -80,6 +116,24 @@ interface City {
   city: string;
   charge: string;
   createdAt?: string;
+}
+
+interface PackageDetail {
+  id: number;
+  packageId: number;
+  productTypeId: number;
+  qty: number;
+  productTypeName: string;
+}
+
+interface AdditionalItem {
+  productId: number;
+  qty: number;
+  unit: string;
+  price: string;
+  discount: number;
+  displayName: string;
+  varietyId: number;
 }
 
 const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation, route }) => {
@@ -105,9 +159,8 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
     isPackage = "",
   } = route.params || {};
 
-  console.log("ispackage",isPackage)
-
-  console.log("vhalkdz", order?.invoiceNumber);
+  console.log("ispackage", isPackage);
+  console.log("vhalkdz", order?.orderStatus?.invoiceNumber);
   console.log("kacsbhm", customerId);
 
   useEffect(() => {
@@ -323,206 +376,378 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
       setIsDownloading(true);
       
       const watermarkBase64 = await convertImageToBase64();
-      const invoiceNumber = order?.invoiceNumber || `INV-${Date.now()}`;
+      const invoiceNumber = order?.orderStatus?.invoiceNumber || `INV-${Date.now()}`;
 
-      let itemsRows = '';
-      if (items && items.length > 0) {
-        items.forEach(item => {
-          const itemPrice = item.price || 0;
-          const itemQuantity = item.quantity || 0;
-          itemsRows += 
-            `<tr>
-              <td>${item.name || 'Item'}</td>
-              <td>${itemQuantity}</td>
-              <td>${itemPrice.toFixed(2)}</td>
-              <td>${(itemPrice * itemQuantity).toFixed(2)}</td>
-            </tr>`;
-        });
-      }
+      // Calculate totals from API data
+      const packagePrice = parseFloat(order?.packageInfo?.productPrice || '0');
+      const packingFee = parseFloat(order?.packageInfo?.packingFee || '0');
+      const serviceFee = parseFloat(order?.packageInfo?.serviceFee || '0');
+      const discountAmount = parseFloat(order?.discount || '0');
+      const totalAmount = parseFloat(order?.total || '0');
+      
 
-      const serviceFeeRow = isPackage === 0 ? `
-      <tr>
-        <td>Service Fee</td>
-        <td>180.00</td>
-      </tr>
-    ` : '';
+// Calculate additional items total
+// Calculate additional items total (using price directly as total price)
+const additionalItemsTotal = order?.additionalItems?.reduce((sum, item) => {
+  return sum + parseFloat(item.price || '0');
+}, 0) || 0;
 
-    const totalFeeRow0 = isPackage === 0 ? `
-      <tr>
-        <td>Subtotal</td>
-        <td>${(total+ discount-180).toFixed(2)}</td>
-      </tr>
-    ` : '';
 
-    const totalFeeRow1 = isPackage === 1 ? `
-      <tr>
-        <td>Subtotal</td>
-        <td>${(total+ discount).toFixed(2)}</td>
-      </tr>
-    ` : '';
+const totaldiscount = order?.additionalItems?.reduce((sum, item) => {
+  // Convert discount to string before parsing if it's a number
+  const discount = typeof item.discount === 'number' ? item.discount.toString() : item.discount || '0';
+  return sum + parseFloat(discount);
+}, 0) || 0;
+
+      // Generate package details rows
+     // Generate package details rows
+let packageDetailsRows = '';
+if (order?.packageInfo?.packageDetails && order.packageInfo.packageDetails.length > 0) {
+  order.packageInfo.packageDetails.forEach((item, index) => {
+    packageDetailsRows += 
+      `<tr>
+        <td style="text-align: center">${index + 1}</td>
+        <td class="tabledata">${item.productTypeName || 'Item'}</td>
+        <td class="tabledata">${item.qty || 'N/A'}</td>
+      </tr>`;
+  });
+}
+
+// Generate additional items rows
+let additionalItemsRows = '';
+if (order?.additionalItems && order.additionalItems.length > 0) {
+  order.additionalItems.forEach((item, index) => {
+    additionalItemsRows += 
+      `<tr>
+        <td style="text-align: center">${index + 1}</td>
+        <td class="tabledata">${item.displayName || 'Item'}</td>
+        <td class="tabledata">${parseFloat(item.price || '0').toFixed(2)}</td>
+        <td class="tabledata">${item.qty || '0'} ${item.unit || ''}</td>
+        <td class="tabledata">${(parseFloat(item.price || '0'))}</td>
+      </tr>`;
+  });
+}
+
+      // Format scheduled date
+      const formatScheduleDate = (dateString: string) => {
+        try {
+          const date = new Date(dateString);
+          return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
+        } catch (error) {
+          return selectedDate;
+        }
+      };
 
       const htmlContent = `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Purchase Invoice</title>
-            <style>
-                body {
-                    font-family: Arial, sans-serif;
-                    padding: 10px;
-                    margin: 0;
-                    background-color: #ffffff;
-                    position: relative;
-                }
-                .invoice-container {
-                    position: relative;
-                    border: 1px solid #ccc;
-                    padding: 10px;
-                    max-width: 700px;
-                    margin: auto;
-                    background: white;
-                    overflow: hidden;
-                }
-                .watermark {
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    opacity: 0.5;
-                    z-index: 0;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                }
-                .watermark img {
-                    width: 70%;
-                    height: auto;
-                }
-                h1, h2 {
-                    color: #000;
-                    text-align: left;
-                }
-                .section {
-                    border-bottom: 2px solid #ddd;
-                    padding-bottom: 10px;
-                    line-height: 0.8;
-                    margin-bottom: 5px;
-                }
-                .bold {
-                    font-weight: bold;
-                }
-                table {
-                    width: 100%;
-                    border-collapse: collapse;
-                }
-                table, th, td {
-                    border: 1px solid black;
-                    padding: 10px;
-                    text-align: left;
-                }
-                .footer {
-                    text-align: center;
-                    font-size: 14px;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="invoice-container">
-           <div class="watermark">
-    <img 
-        src="https://pub-79ee03a4a23e4dbbb70c7d799d3cb786.r2.dev/POLYGON%20ORIGINAL%20LOGO.png" 
-        alt="Watermark" 
-        style="width: full; height: full; opacity: 0.3;" 
-    />
-</div>
+       <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Purchase Invoice</title>
 
-                
-                <h3>Purchase Invoice</h3>
-                <div class="section">
-                    <p class="bold">AgroWorld (Pvt) Ltd.</p>
-                    <p>Address: No 46/42, Nawam Mawatha, Colombo 02</p>
-                    <p>Contact: +94 770111999</p>
-                    <p>Invoice Number: <strong>${order?.invoiceNumber}</strong></p>
-                    <p>Date: <strong>${new Date().toLocaleDateString()}</strong></p>
-                </div>
-  
-                <div class="section">
-                    <h3>Order Details</h3>
-                    <p><span class="bold">Delivery Type:</span> One time</p>
-                    <p><span class="bold">Selected Date:</span> ${selectedDate}</p>
-                    <p><span class="bold"> Time :</span> ${selectedTimeSlot}</p>
-                </div>
-  
-                <div class="section">
-                    <h3>Receiver Details</h3>
-                    <p><span class="bold">Receiver's Name:</span> ${order?.title}  ${order?.firstName}  ${order?.lastName}</p>
-                    <p><span class="bold">Phone Number:</span> ${order?.phoneNumber}</p>
-                    <p><span class="bold">Building Type:</span> ${order?.buildingType}</p>
-                    <p><span class="bold">Address:</span> ${order?.fullAddress}</p>
-                </div>
-  
-                ${items && items.length > 0 ? `
-                <div class="section">
-                    <h3>Order Items</h3>
-                    <table>
-                        <tr>
-                            <th>Item</th>
-                            <th>Quantity</th>
-                            <th>Unit Price</th>
-                            <th>Total</th>
-                        </tr>
-                        ${itemsRows}
-                    </table>
-                </div>
-                ` : ''}
-  
-                <div class="section">
-                    <h3>Payment Summary</h3>
-                    <table>
-                        <tr>
-                            <th>Description</th>
-                            <th>Amount (Rs.)</th>
-                        </tr>
-                            </tr>
-                      ${totalFeeRow0}
-                      <tr>
-                           </tr>
-                      ${totalFeeRow1}
-                      <tr>
-                        <tr>
-                            <td>Discount</td>
-                            <td>${discount.toFixed(2)}</td>
-                        </tr>
-                        </tr>
-                      ${serviceFeeRow}
-                      <tr>
-                         <tr>
-                            <td>Delivery Fee</td>
-                            <td>${deliveryFee.toFixed(2)}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Grand Total</strong></td>
-                           <td><strong>${(total + deliveryFee).toFixed(2)}</strong></td>
-                        </tr>
-                    </table>
-                </div>
-                
-                <div class="section">
-                    <h3>Payment Method</h3>
-                    <p><span class="bold">Payment Method:</span> ${paymentMethod}</p>
-                </div>
-                
-                <div class="footer">
-                    <p><strong>Thank You for Shopping with Us!</strong></p>
-                    <p>We value your trust and look forward to serving you again.</p>
-                    <p>We are an Agro Fin Tech Company</p>
-                </div>
+    <style>
+    @page{
+    margin-top:20px;
+    }
+      body {
+        font-family: Arial, sans-serif;
+        padding: 10px;
+        margin: 0;
+        background-color: #ffffff;
+      }
+      .invoice-container {
+        width: 100%;
+        max-width: 730px;
+        margin: auto;
+        background: white;
+        padding: 20px;
+      }
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 30px;
+      }
+      .top h1 {
+        color: #3e206d;
+        font-size: 20px;
+        text-align: center;
+        justify-items: center;
+        align-items: center;
+      }
+      .headerp {
+        font-size: 14px;
+        line-height: 10px;
+      }
+      .logo {
+        width: 180px;
+        height: auto;
+      }
+      .bold {
+        font-weight: 550;
+        font-size: 14px;
+      }
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+      }
+      .table th,
+      .table td {
+        border-left: none; 
+        border-right: none; 
+        padding: 15px;
+        text-align: left;
+      }
+      .table th {
+        background-color: #f8f8f8;
+        font-size: 14px;
+        font-weight: ;
+        justify-items: center;
+        border-bottom: 1px solid #ddd;
+      }
+      .tabledata {
+        font-size: 14px;
+        font-weight: bold;
+        color: #666666;
+      }
+      .table td {
+        text-align: left;
+      }
+      .footer {
+        text-align: center;
+        font-size: 12px;
+        margin-top: 60px;
+        color: #8492A3;
+      }
+      .section1 {
+        margin-top: 10px;
+      }
+      .section2 {
+        margin-top: 10px;
+      }
+      .section3 {
+        margin-top: 10px;
+      }
+        .section {
+        page-break-inside: avoid; /* Avoid page breaks inside these sections */
+      }
+      .ptext {
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="invoice-container">
+      <!-- Header Section -->
+      <div class="top">
+        <h1>INVOICE</h1>
+      </div>
+      <div class="header">
+        <div>
+          <p>
+            <span style="font-weight: 550; font-size: 16px"
+              >Polygon Holdings (Private) Ltd.</span
+            >
+          </p>
+          <p class="headerp">No. 42/46, Nawam Mawatha, Colombo 02.</p>
+          <p class="headerp">Contact No : +94 770 111 999</p>
+          <p class="headerp">Email Address : info@polygon.lk</p>
+        </div>
+        <div>
+          <img
+            src="https://pub-79ee03a4a23e4dbbb70c7d799d3cb786.r2.dev/POLYGON%20ORIGINAL%20LOGO.png"
+            alt="Polygon Logo"
+            class="logo"
+          />
+        </div>
+      </div>
+
+      <!-- Billing Section -->
+      <div
+        class="section1"
+        style="display: flex; justify-content: space-between"
+      >
+        <div>
+          <p class="bold">Bill To :</p>
+          <p class="headerp">${order?.customerInfo?.title || ''} ${order?.customerInfo?.firstName || ''} ${order?.customerInfo?.lastName || ''}</p>
+          <p class="headerp">${order?.fullAddress || ''}</p>
+          <p class="headerp">${order?.customerInfo?.phoneNumber || ''}</p>
+          <p class="headerp">${customerData?.email || ''}</p>
+        </div>
+        <div>
+          <div style="margin-right: 55px">
+            <p class="bold">Grand Total :</p>
+            <p style="font-weight: 550; font-size: 16px">Rs. ${(totalAmount ).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</p>
+            <div class="section" style="margin-top: 30px">
+              <p class="bold">Payment Method :</p>
+              <p class="headerp">${paymentMethod}</p>
             </div>
-        </body>
-        </html>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div
+          class="section2"
+          style="display: flex; justify-content: space-between"
+        >
+          <div>
+            <p class="bold">Invoice No :</p>
+            <p class="headerp">${invoiceNumber}</p>
+          </div>
+       <div style="margin-right: 79px">
+            <p class="bold">Ordered Date :</p>
+            <p class="headerp">${new Date(order?.createdAt || '').toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'}).replace(/ /g, '-')}</p>
+          </div>
+        </div>
+
+        <div
+          class="section2"
+          style="display: flex; justify-content: space-between"
+        >
+          <div>
+            <p class="bold">Delivery Method :</p>
+            <p class="headerp">Home Delivery</p>
+          </div>
+          <div style="margin-right: 64px">
+            <p class="bold">Scheduled Date :</p>
+         <p class="headerp">${new Date(order?.scheduleDate || '').toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'}).replace(/ /g, '-')}</p>
+          </div>
+        </div>
+      </div>
+
+      ${order?.isPackage === 1 ? `
+      <!-- Package Section -->
+      <div class="section" style="margin-top: 40px; margin-bottom: 30px">
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 10px;
+          "
+        >
+          <div class="bold">${order?.packageInfo?.displayName || 'Package'} (${order?.packageInfo?.packageDetails?.length || 0} Items)</div>
+          <div style="font-weight: 550; font-size: 16px">Rs. ${(packagePrice + packingFee + serviceFee).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</div>
+        </div>
+        <div style="border: 1px solid #ddd; border-radius: 10px">
+          <table class="table">
+            <tr>
+              <th style="text-align: center; border-top-left-radius: 10px">
+                Index
+              </th>
+              <th>Item Description</th>
+              <th style="border-top-right-radius: 10px; width: 40%">QTY</th>
+            </tr>
+            ${packageDetailsRows}
+          </table>
+        </div>
+      </div>` : ''}
+
+      ${order?.additionalItems && order.additionalItems.length > 0 ? `
+      <!-- Additional Items Section -->
+      <div class="section 4">
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 10px;
+            margin-top:10px
+          "
+        >
+          <div class="bold">Additional Items (${order?.additionalItems?.length || 0} Items)</div>
+          <div style="font-weight: 550; font-size: 16px">Rs. ${additionalItemsTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</div>
+        </div>
+        <div style="border: 1px solid #ddd; border-radius: 10px">
+          <table class="table">
+            <tr>
+              <th style="text-align: center; border-top-left-radius: 10px">
+                Index
+              </th>
+              <th>Item Description</th>
+              <th>Unit Price (Rs.)</th>
+              <th>QTY</th>
+              <th style="border-top-right-radius: 10px">Amount (Rs.)</th>
+            </tr>
+            ${additionalItemsRows}
+          </table>
+        </div>
+      </div>` : ''}
+
+      <!-- Grand Total Section -->
+      <div class="section" style="margin-top: 30px">
+        <div style="margin-bottom: 20px; border-bottom: 1px solid #ccc;padding-bottom: 10px;" >
+          <div class="bold">Grand Total for all items</div>
+        </div>
+        ${order?.isPackage === 1 ? `
+        <div style="display: flex; justify-content: space-between; margin-right: 20px; " class="ptext" >
+          <p>${order?.packageInfo?.displayName || 'Package'}</p>
+          <p>Rs. ${(packagePrice + packingFee + serviceFee).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</p>
+        </div>` : ''}
+        ${order?.additionalItems && order.additionalItems.length > 0 ? `
+        <div style=" display: flex; justify-content: space-between; margin-right: 20px;" class="ptext" > 
+          <p>Additional Items</p>
+          <p>Rs. ${additionalItemsTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</p>
+        </div>` : ''}
+         ${order?.isPackage === 0 ? `
+        <div style="display: flex; justify-content: space-between; margin-right: 20px; " class="ptext" >
+          <p>Service Fee</p>
+          <p>Rs. 180.00</p>
+        </div>` : ''}
+        ${totaldiscount > 0 ? `
+        <div style="display: flex; justify-content: space-between; margin-right: 20px;" class="ptext" >
+          <p>Discount</p>
+          <p> Rs. ${totaldiscount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</p>
+        </div>` : ''}
+        <div style="display: flex; justify-content: space-between; margin-right: 20px;"class="ptext" >
+          <p>Delivery Fee</p>
+          <p>Rs. ${deliveryFee.toFixed(2)}</p>
+        </div>
+
+        <div style="margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px;" ></div>
+      </div>
+
+      <!-- Payment Method Section -->
+      <div style="margin-top: -10px; display: flex; justify-content: space-between; font-size: 16px; font-weight: 600; margin-right: 20px;">
+        <p>Grand Total</p>
+        <p>Rs. ${(totalAmount ).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</p>
+      </div>
+
+      <!-- Remarks Section -->
+      <div class="section">
+        <p style=" margin-top: 50px; display: flex; justify-content: space-between; font-size: 14px; font-weight: 600;">
+          Remarks :
+        </p>
+
+        <div   style="color: #666666; font-size: 12px; line-height: 10px;">
+          <p>Kindly inspect all goods at the time of delivery to ensure accuracy and condition.</p>
+          <p>Polygon does not accept returns under any circumstances.</p>
+          <p>Please report any issues or discrepancies within 24 hours of delivery to ensure prompt attention.</p>
+          <p>For any assistance, feel free to contact our customer service team.</p>
+        </div>
+       
+      </div>
+
+      <!-- Footer Section -->
+      <div class="footer">
+        <p  style=" margin-top: 50px; font-size: 16px; font-weight: 600; color:#000; font-style:italic">Thank you for shopping with us!</p>
+        <p  style=" margin-top: -5px; font-size: 14px; font-weight: 500; color:#4B4B4B; font-style:italic">WE WILL SEND YOU MORE OFFERS, LOWEST PRICED VEGGIES FROM US.</p>
+        <p style=" margin-top: 50px; font-style:italic">
+          - THIS IS A COMPUTER GENERATED INVOICE, THUS NO SIGNATURE REQUIRED -
+        </p>
+      </div>
+    </div>
+  </body>
+</html>
       `;
 
       const { uri: pdfUri } = await Print.printToFileAsync({ 
@@ -578,7 +803,6 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
     }
   };
 
- 
   if (loading || !isDataLoaded) {
     return (
       <View className="flex-1 inset-0 bg-white/20 bg-white justify-center items-center">
@@ -587,6 +811,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
       </View>
     );
   }
+
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -603,7 +828,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
                 Order is Confirmed!
               </Text>
               <Text style={{ fontSize: 18 }} className="text-[#3F3F3F] text-center mt-2">
-                Order No: {order?.invoiceNumber}
+                Order No: {order?.orderStatus?.invoiceNumber}
               </Text>
               <Text style={{ fontSize: 16 }} className="text-[#747474] text-center mt-5">
                 Order Confirmation message and Payment Gateway Link has been sent to your Customer
@@ -653,8 +878,6 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
           </View>
         </View>
       </ScrollView>
-      
-   
     </KeyboardAvoidingView>
   );
 };

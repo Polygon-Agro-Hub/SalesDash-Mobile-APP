@@ -74,6 +74,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation, r
         const apiUrl = `${environment.API_BASE_URL}api/packages/crops/all`;
         const response = await axios.get(apiUrl, {
           headers: { Authorization: `Bearer ${storedToken}` },
+          params: {id}
         });
 
         console.log(response.data)
@@ -88,7 +89,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation, r
           })));
         }
       } catch (err) {
-        console.error("Failed to fetch products:", err);
+        console.error("Failed to fetch product:", err);
         setError("Failed to load products. Please try again.");
       } finally {
         setLoading(false);
@@ -192,17 +193,18 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation, r
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
-        <View className="flex-1 px-4">
-          {/* Header */}
-          <View className="flex-row items-center h-16 shadow-md bg-white">
+                  <View className="flex-row items-center h-16  bg-white px-4">
             <BackButton navigation={navigation} />
             <Text className="text-lg font-bold text-[#6C3CD1] flex-grow text-center mr-7">
               Select Custom Items
             </Text>
           </View>
+        <View className="flex-1 px-6">
+          {/* Header */}
+
 
           {/* Search Bar */}
-          <View className="mb-4 bg-[#F5F1FC] rounded-full flex-row items-center px-4 py-2">
+          <View className="mb-4 bg-[#F5F1FC] rounded-full flex-row items-center px-4 py-2 mt-2">
             <TextInput
               className="flex-1 text-gray-700"
               placeholder="Search By Product Name"
@@ -260,7 +262,6 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation, r
               <Text className="text-gray-500">No products found</Text>
             </View>
           )}
-           
            </ScrollView>
            
          

@@ -32,22 +32,17 @@
       "permissions": [
         "CAMERA",
         "PHOTO_LIBRARY",
-        "LOCATION",
         "NOTIFICATIONS",
         "MICROPHONE",
         "CALENDAR",
         "CONTACTS",
         "MOTION",
         "BLUETOOTH",
-        "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_BACKGROUND_LOCATION",
         "ACCESS_WIFI_STATE",
         "CHANGE_WIFI_STATE",
         "ACCESS_NETWORK_STATE",
         "CHANGE_NETWORK_STATE",
         "VIBRATE",
-        "USE_FINGERPRINT",
         "WRITE_EXTERNAL_STORAGE"
       ],
       "bundleIdentifier": "com.salesdash.SalesDash"
@@ -57,6 +52,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "versionCode": 1,
       "package": "com.salesdash.SalesDash",
       "permissions": [
         "INTERNET",
@@ -65,15 +61,10 @@
         "RECORD_AUDIO",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
-        "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION",
         "VIBRATE",
         "WAKE_LOCK",
         "FOREGROUND_SERVICE",
         "RECEIVE_BOOT_COMPLETED",
-        "USE_FINGERPRINT",
-        "LOCATION",
-        "ACCESS_BACKGROUND_LOCATION",
         "BLUETOOTH",
         "BLUETOOTH_ADMIN",
         "ACCESS_WIFI_STATE",
@@ -81,7 +72,6 @@
         "ACCESS_NETWORK_STATE",
         "CHANGE_NETWORK_STATE",
         "SYSTEM_ALERT_WINDOW",
-        "REQUEST_INSTALL_PACKAGES",
         "NOTIFICATIONS",
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS",
@@ -112,7 +102,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "4fc21078-022e-4c07-ba08-b4b7ee5c95d1"
+        "projectId": "ca855248-cc65-49dc-95cd-dbe7a0386676"
       }
     }
   }
