@@ -426,7 +426,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                   onEndReachedThreshold={0.1}
                   renderItem={({ item }) => (
                     <TouchableOpacity 
-                      onPress={() => navigation.navigate("View_CancelOrderScreen" as any, { orderId: item.orderId })} 
+                      onPress={() => navigation.navigate("View_CancelOrderScreen" as any, { orderId: item.orderId , status:item.status})} 
                       activeOpacity={0.7}
                     >
                       <View style={{

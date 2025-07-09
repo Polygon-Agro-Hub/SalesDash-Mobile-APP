@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform, ScrollView, Alert } from "react-native";
+import React, { useCallback, useEffect, useState } from "react";
+import { View, Text, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform, ScrollView, Alert, BackHandler } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types"; 
 import Icon from "react-native-vector-icons/Ionicons"; 
@@ -8,6 +8,7 @@ import axios  from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage"; 
 import environment from "@/environment/environment";
 import { Keyboard } from "react-native";
+import { useFocusEffect } from "expo-router";
 
 // Navigation type
 type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, "LoginScreen">;
@@ -15,6 +16,9 @@ type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, "LoginS
 interface LoginScreenProps {
   navigation: LoginScreenNavigationProp;
 }
+
+
+
 
 const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [empId, setEmpId] = useState("");
@@ -107,6 +111,15 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       setLoading(false);
     }
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => true;
+      BackHandler.addEventListener("hardwareBackPress", onBackPress);
+      return () =>
+        BackHandler.removeEventListener("hardwareBackPress", onBackPress);
+    }, [])
+  );
 
   return (
     <KeyboardAvoidingView 

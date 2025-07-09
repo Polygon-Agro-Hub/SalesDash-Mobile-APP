@@ -96,7 +96,7 @@ interface CustomerData {
 const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   navigation, route
 }) => {
-  const { orderId, userId } = route.params;
+  const { orderId, userId ,status } = route.params;
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -289,22 +289,36 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
     if (!order) return "";
     
 
-    if (order.status === "Cancelled") {
+    if (status === "Cancelled") {
       return "Cancelled";
     }
     
   
-    if (order.status === "Ordered" && isAfter6PM(order.createdAt)) {
+    if (status === "Ordered" && isAfter6PM(order.createdAt)) {
       return "Processing";
     }
     
-    return order.status;
+    return status;
   };
 
+  // const isCancelDisabled = () => {
+  //   if (!order) return true;
+  //   return status === "On the way" || status === "Processing" || status === "Delivered" || status === "Cancelled";
+  // };
   const isCancelDisabled = () => {
-    if (!order) return true;
-    return order.status === "On the way" || order.status === "Processing" || order.status === "Delivered" || order.status === "Cancelled";
-  };
+  if (!order) return true;
+  
+    
+  // Get the actual status using the same logic as getActualStatus
+  const actualStatus = getActualStatus();
+    console.log("-----------actuacl status-------", status)
+  
+  // Disable cancel button for these statuses
+  return actualStatus === "On the way" || 
+         actualStatus === "Processing" || 
+         actualStatus === "Delivered" || 
+         actualStatus === "Cancelled";
+};
 
   const handlePhone = () => {
     if (isCancelDisabled()) {
@@ -426,25 +440,54 @@ const isTimelineItemActive = (status: string) => {
     //   Linking.openURL(phoneNumber).catch((err) => console.error("Error opening dialer", err));
     // };
 
-    const handleGetACall = () => {
-    let phoneNumber = order?.phoneNumber || '';
-    
-    // Ensure phone number has +94 country code
-    if (phoneNumber) {
-        // Remove any existing country code formats
-        phoneNumber = phoneNumber.replace(/^\+?94/, ''); // Remove +94 or 94 if exists
-        phoneNumber = phoneNumber.replace(/^0/, ''); // Remove leading 0 if exists
-        
-        // Clean up any spaces, dashes, or parentheses
-        phoneNumber = phoneNumber.replace(/[\s\-\(\)]/g, '');
-        
-        // Add +94 country code
-        phoneNumber = `+94${phoneNumber}`;
+  const handleGetACall = () => {
+  // Get phone number from customer data first, fallback to order data
+  const phoneNumber = customerData?.phoneNumber || order?.phoneNumber;
+  
+  if (!phoneNumber) {
+    Alert.alert("Error", "Phone number not available");
+    return;
+  }
+
+  // Clean the phone number - remove all non-digit characters except '+'
+  let cleanedNumber = phoneNumber.replace(/[^\d+]/g, '');
+
+  // If number starts with +, use as-is (already international format)
+  if (cleanedNumber.startsWith('+')) {
+    // Ensure it's a valid international number
+    if (cleanedNumber.length < 10) { // +94 + 9 digits
+      Alert.alert("Error", "Invalid international phone number format");
+      return;
     }
-    
-    const telUrl = `tel:${phoneNumber}`;
-    Linking.openURL(telUrl).catch((err) => console.error("Error opening dialer", err));
+  } 
+  // If number starts with 94 (without +), add +
+  else if (cleanedNumber.startsWith('94')) {
+    cleanedNumber = `+${cleanedNumber}`;
+  }
+  // If number starts with 0 (local format), convert to international
+  else if (cleanedNumber.startsWith('0')) {
+    cleanedNumber = `+94${cleanedNumber.substring(1)}`;
+  }
+  // Otherwise assume it's a local number without 0
+  else {
+    cleanedNumber = `+94${cleanedNumber}`;
+  }
+
+  // Final validation - should be +94 followed by 9 digits
+  if (!/^\+94\d{9}$/.test(cleanedNumber)) {
+    Alert.alert("Error", "Invalid phone number format");
+    return;
+  }
+
+  console.log("Dialing:", cleanedNumber); // For debugging
+  
+  const telUrl = `tel:${cleanedNumber}`;
+  Linking.openURL(telUrl).catch((err) => {
+    console.error("Error opening dialer", err);
+    Alert.alert("Error", "Could not open phone dialer");
+  });
 };
+
 
     const handleCancelOrder = () => {
       if (isCancelDisabled()) {
@@ -459,6 +502,7 @@ const isTimelineItemActive = (status: string) => {
       setCancelModalVisible(true);
     };
     console.log("=+=========",order?.reportStatus)
+
  
 
     const confirmCancelOrder = async () => {
@@ -572,7 +616,7 @@ const isTimelineItemActive = (status: string) => {
     </View>
 
     {/* Delivered - Last item in normal flow */}
-    <View className={`flex-row items-center ${order.status === "Cancelled" ? "mb-10" : ""}`}>
+    <View className={`flex-row items-center ${status === "Cancelled" ? "mb-10" : ""}`}>
       <View 
         className={`w-4 h-4 rounded-full absolute -left-7 ${isTimelineItemActive("Delivered") ? "bg-[#6C3CD1]" : "bg-[#D9D9D9]"}`} 
       />
@@ -582,7 +626,7 @@ const isTimelineItemActive = (status: string) => {
     </View>
 
     {/* Order Cancelled - Show ONLY if order is cancelled */}
-    {order.status === "Cancelled" && (
+    {status === "Cancelled" && (
       <View className="flex-row items-center">
         <View 
           className="w-4 h-4 rounded-full absolute -left-7 bg-[#6C3CD1]"
@@ -699,7 +743,7 @@ const isTimelineItemActive = (status: string) => {
             
 
             {/* Report Status Button - Only shown when not Ordered or Cancelled */}
-{ order.status !== "Cancelled" && (
+{ status !== "Cancelled" && (
   <TouchableOpacity 
     onPress={handleReportStatus}
     className="mx-5 mb-3 rounded-full px-14"

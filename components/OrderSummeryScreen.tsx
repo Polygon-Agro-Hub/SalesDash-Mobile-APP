@@ -802,8 +802,11 @@ useEffect(() => {
 
 
 
-                      className="border border-[#6C3CD1] px-3 rounded-full ml-12">
+                  //    className="border border-[#6C3CD1] px-3 rounded-full ml-12 py-[-2]"
+                      >
+                        <View className="border border-[#6C3CD1] px-3 rounded-full ml-11">
                       <Text className="text-[#6C3CD1] font-medium">Edit</Text>
+                      </View>
                     </TouchableOpacity>
                   </View>
                   <Text className="text-[#808FA2] text-sm">Scheduled to {selectedDate}</Text>

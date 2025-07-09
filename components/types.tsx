@@ -109,7 +109,7 @@ export type RootStackParamList = {
     OrderScreen: {id: string; isCustomPackage:string; isSelectPackage:string;};
     ScheduleScreen: {totalPrice: Number };
     ViewOrdersScreen:undefined;
-    View_CancelOrderScreen:{orderId:number ,userId:number};
+    View_CancelOrderScreen:{orderId:number ,userId:number, status:string};
     SelectOrderType:undefined;
     SelectOrderTypeNewCustomer : undefined;
     CreateCustomPackage :{id: string; isCustomPackage:string; isSelectPackage:string;};
