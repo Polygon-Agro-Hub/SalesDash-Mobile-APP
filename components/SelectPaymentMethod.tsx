@@ -254,8 +254,8 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, r
   
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   // Initialize with the previously selected method if available
-  const [selectedMethod, setSelectedMethod] = useState<"Card" | "Cash" | null>(
-    previousSelectedMethod || "Card"
+  const [selectedMethod, setSelectedMethod] = useState<"Cash" | "Card" | null>(
+    previousSelectedMethod || "Cash"
   );
 
   useEffect(() => {
@@ -332,7 +332,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, r
  
         <View className="flex-1 w-full items-center space-y-5 p-12 mt-[-10]">
      
-          <TouchableOpacity
+          {/* <TouchableOpacity
             onPress={() => setSelectedMethod("Card")}
             className={`w-full py-5 px-5 rounded-lg flex-row items-center justify-between border border-[#5D5D5D] ${
               selectedMethod === "Card" ? "bg-[#6C3CD1] border-[#6C3CD1]" : "bg-white border-[#5D5D5D]"
@@ -350,7 +350,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, r
                 />
               </View>
             )}
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
      
           <TouchableOpacity
