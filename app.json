@@ -17,27 +17,13 @@
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
-        },
-        "NSCameraUsageDescription": "This app requires camera access to scan plant QR codes.",
-        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to save plant images.",
-        "NSLocationWhenInUseUsageDescription": "This app uses your location to track plant care reminders based on your location.",
-        "NSLocationAlwaysUsageDescription": "This app uses your location in the background to give accurate care reminders.",
-        "NSMicrophoneUsageDescription": "Microphone access is required to record sounds for plant growth monitoring.",
-        "NSBluetoothPeripheralUsageDescription": "Bluetooth is required to connect to plant sensors.",
-        "UIBackgroundModes": [
-          "location",
-          "audio"
-        ]
+        }
       },
       "permissions": [
         "CAMERA",
-        "PHOTO_LIBRARY",
         "NOTIFICATIONS",
-        "MICROPHONE",
         "CALENDAR",
         "CONTACTS",
-        "MOTION",
-        "BLUETOOTH",
         "ACCESS_WIFI_STATE",
         "CHANGE_WIFI_STATE",
         "ACCESS_NETWORK_STATE",
@@ -56,17 +42,10 @@
       "package": "com.salesdash.SalesDash",
       "permissions": [
         "INTERNET",
-        "android.permission.FOREGROUND_SERVICE",
-        "CAMERA",
-        "RECORD_AUDIO",
-        "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
         "VIBRATE",
-        "WAKE_LOCK",
         "FOREGROUND_SERVICE",
         "RECEIVE_BOOT_COMPLETED",
-        "BLUETOOTH",
-        "BLUETOOTH_ADMIN",
         "ACCESS_WIFI_STATE",
         "CHANGE_WIFI_STATE",
         "ACCESS_NETWORK_STATE",
@@ -74,9 +53,7 @@
         "SYSTEM_ALERT_WINDOW",
         "NOTIFICATIONS",
         "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS",
-        "android.permission.MANAGE_EXTERNAL_STORAGE",
-        "android.permission.READ_EXTERNAL_STORAGE"
+        "android.permission.MODIFY_AUDIO_SETTINGS"
       ]
     },
     "web": {
@@ -100,8 +77,10 @@
     "extra": {
       "router": {
         "origin": false
+      },
+      "eas": {
+        "projectId": "b7853320-7b6c-4fdd-a9b0-6e3e77c55a24"
       }
-  
     }
   }
 }
