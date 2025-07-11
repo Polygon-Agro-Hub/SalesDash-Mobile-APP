@@ -1182,7 +1182,7 @@ const handleEditUnitConversion = (newUnit: string) => {
       }}
     >
       {/* Product Section */}
-      <View className="mb-4" style={{ zIndex: 80000 }}>
+      <View className="mb-4" >
         <Text className="text-gray-700 mb-3">Product</Text>
       <DropDownPicker
   open={productOpen}
@@ -1233,7 +1233,7 @@ const handleEditUnitConversion = (newUnit: string) => {
     color: '#111827',
   }}
   zIndex={80000}
-  listMode="SCROLLVIEW"
+
 />
       </View>
 
