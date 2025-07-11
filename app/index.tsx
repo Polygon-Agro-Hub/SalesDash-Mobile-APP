@@ -40,6 +40,7 @@ import ExcludeAddMore from '@/components/ExcludeAddMore'
  
 import { RootStackParamList } from '@/components/types';
 
+
 const Stack = createStackNavigator(); 
 // (Text as any).defaultProps = {
 //   ...(Text as any).defaultProps,

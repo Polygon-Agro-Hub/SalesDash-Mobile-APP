@@ -830,7 +830,7 @@ useEffect(() => {
         
             <Text className="text-[#808FA2] text-xs mt-2">Address</Text>
 {customerData && customerData.buildingDetails ? (
-  <View>
+  <View className="-m-1">
     {customerData.buildingDetails.buildingNo && (
       <Text className="text-black font-medium"> {customerData.buildingDetails.buildingNo},</Text>
     )}
