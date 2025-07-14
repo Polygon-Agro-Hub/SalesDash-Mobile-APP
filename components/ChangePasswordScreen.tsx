@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -20,6 +20,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import environment from '@/environment/environment';
+import { useFocusEffect } from 'expo-router';
 
 
 type ChangePasswordScreenNavigationProp = StackNavigationProp<
@@ -101,6 +102,11 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
       Alert.alert('Success', 'Password updated successfully', [
         { text: 'OK', onPress: () => navigation.replace('LoginScreen') },
       ]);
+       await AsyncStorage.multiRemove([
+      "authToken",
+      "tokenStoredTime",
+      "tokenExpirationTime",
+    ]);
     }
   } catch (error) {
     // Check for password mismatch error specifically
@@ -122,6 +128,15 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
     setLoading(false);
   }
 };
+
+ useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => true;
+      BackHandler.addEventListener("hardwareBackPress", onBackPress);
+      return () =>
+        BackHandler.removeEventListener("hardwareBackPress", onBackPress);
+    }, [])
+  );
 
 
   return (
