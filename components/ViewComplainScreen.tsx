@@ -271,7 +271,7 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({ navigation }) =
   const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null); 
   const [complaints, setComplaints] = useState<Complaint[]>([]); 
   const [loading, setLoading] = useState<boolean>(true); 
-  const [formData, setFormData] = useState({ username: "" });
+  const [formData, setFormData] = useState({ username: "" ,firstName:"",lastName:"" });
   const [refreshing, setRefreshing] = useState(false);
 
   interface Complaint {
@@ -305,6 +305,7 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({ navigation }) =
           const complaintsResponse = await axios.get(complaintsUrl, {
             headers: { Authorization: `Bearer ${storedToken}` },
           });
+          console.log("complainnnnnnnn",complaintsResponse.data)
   
           if (complaintsResponse.status === 404) {
       
@@ -331,7 +332,10 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({ navigation }) =
           const profileUrl = `${environment.API_BASE_URL.replace(/\/$/, '')}/api/auth/user/profile`;
           const profileResponse = await axios.get(profileUrl, {
             headers: { Authorization: `Bearer ${storedToken}` },
+
+            
           });
+          console.log("data",profileResponse.data.data)
   
           setFormData(profileResponse.data.data);
         } catch (error) {
@@ -458,13 +462,15 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({ navigation }) =
             {selectedComplaint ? (
               <View className="mt-4">
                 <Text className="text-gray-800 text-base leading-relaxed text-left">
-                  <Text className="font-bold">Dear {formData.username || "User"},</Text>
+                  <Text className="font-">Dear {formData.firstName || "User"} {formData.lastName},</Text>
                   {"\n\n"}
                   {selectedComplaint.reply || "No response available."}
                   {"\n\n"}
                   <Text className="text-left">Sincerely,</Text>
                   {"\n"}
-                  <Text className="text-left">AgroWorld Customer Support Team</Text>
+                  <View>
+                  <Text className="text-left text-base text-gray-800 ">AgroWorld Customer Support Team</Text>
+                  </View>
                   {"\n\n"}
                 </Text>
   
