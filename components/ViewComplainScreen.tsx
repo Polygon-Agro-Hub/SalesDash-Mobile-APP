@@ -469,19 +469,19 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({ navigation }) =
                   <Text className="text-left">Sincerely,</Text>
                   {"\n"}
                   <View>
-                  <Text className="text-left text-base text-gray-800 ">AgroWorld Customer Support Team</Text>
+                  <Text className="text-left text-base text-gray-800 ">Polygon Customer Support Team</Text>
                   </View>
                   {"\n\n"}
                 </Text>
   
                 {selectedComplaint.replyTime ? (
-                  <Text className="text-gray-800 mt-[-28] text-base">
-                    {new Date(selectedComplaint.replyTime).toLocaleString("en-US", {
-                      day: "2-digit",     
-                      month: "2-digit",    
-                      year: "numeric",    
-                    })}
-                  </Text>
+                   <Text className="text-gray-800 mt-[-28] text-base">
+    {new Date(selectedComplaint.replyTime).toLocaleString("en-US", {
+      year: "numeric",  
+      month: "2-digit",  
+      day: "2-digit", 
+    }).replace(/(\d+)\/(\d+)\/(\d+)/, '$3/$1/$2')}
+  </Text>
                 ) : (
                   <Text className="text-gray-600 text-sm">No reply time available</Text>
                 )}
