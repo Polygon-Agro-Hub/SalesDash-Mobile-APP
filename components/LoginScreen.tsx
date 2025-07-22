@@ -159,8 +159,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             placeholderTextColor="#A3A3A3"
             className="flex-1 py-3 text-gray-800"
             value={empId}
-            onChangeText={setEmpId}
-          />
+               onChangeText={(text) => setEmpId(text)}
+    autoCapitalize="characters"  // Automatically capitalizes all letters
+  />
         </View>
         {error2.length > 0 && (
           <View className="-mb-3">
