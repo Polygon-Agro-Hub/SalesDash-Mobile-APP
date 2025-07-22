@@ -38,7 +38,6 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "versionCode": 1,
       "package": "com.salesdash.SalesDash",
       "permissions": [
         "INTERNET",
@@ -77,8 +76,10 @@
     "extra": {
       "router": {
         "origin": false
+      },
+      "eas": {
+        "projectId": "f62ed800-fd07-447c-819d-a763a61d72cf"
       }
-     
     }
   }
 }
