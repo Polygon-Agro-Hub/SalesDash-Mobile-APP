@@ -25,6 +25,7 @@ import {
 import BackButton from "./BackButton";
 import { LinearGradient } from "expo-linear-gradient";
 import { AxiosError } from 'axios';
+import LottieView from "lottie-react-native";
 
 type ProfileScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -69,25 +70,47 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   const [customerCount, setCustomerCount] = useState<number>(0);
   const [points, setPoints] = useState<number>(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [loading, setLoading] = useState(false);
-   const [agentStats, setAgentStats] = useState<AgentStats>({
-      daily: {
-        target: 10,
-        completed: 0,
-        numOfStars: 0,
-        progress: 0
-      },
-      monthly: {
-        totalStars: 0
-      }
-    } as any);
+  const [loading, setLoading] = useState(true); // Changed to true initially
+  const [agentStats, setAgentStats] = useState<AgentStats>({
+    daily: {
+      target: 10,
+      completed: 0,
+      numOfStars: 0,
+      progress: 0
+    },
+    monthly: {
+      totalStars: 0
+    }
+  } as any);
 
   useEffect(() => {
-    getUserProfile();
-    fetchAgentStats();
-    fetchOrderCount();
-    fetchCustomerCount();
+    initializeData();
   }, []);
+
+  // Combined initialization function with minimum 2 second loading
+  const initializeData = async () => {
+    setLoading(true);
+    const startTime = Date.now();
+    
+    try {
+      await Promise.all([
+        getUserProfile(),
+        fetchAgentStats(),
+        fetchOrderCount(),
+        fetchCustomerCount()
+      ]);
+    } catch (error) {
+      console.error("Error initializing data:", error);
+    }
+    
+    // Ensure loading is displayed for at least 2 seconds
+    const elapsedTime = Date.now() - startTime;
+    const remainingTime = Math.max(0, 2000 - elapsedTime);
+    
+    setTimeout(() => {
+      setLoading(false);
+    }, remainingTime);
+  };
  
 
   const getUserProfile = async () => {
@@ -118,27 +141,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
     }));
   };
 
-  // const fetchAgentStats = async () => {
-  //   try {
-  //     const storedToken = await AsyncStorage.getItem("authToken");
-  //     if (!storedToken) return;
-      
-  //     const response = await axios.get<{ success: boolean; data: AgentStats }>(
-  //       `${environment.API_BASE_URL}api/orders/get-All-Start`,
-  //       {
-  //         headers: { Authorization: `Bearer ${storedToken}` },
-  //       }
-  //     );
-      
-  //     if (response.data.success) {
-  //       setPoints(response.data.data.monthly.totalStars);
-  //     }
-  //   } catch (error) {
-  //     console.error("Failed to fetch agent stats:", error);
-  //   }
-  // };
-
-
   const fetchAgentStats = async () => {
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
@@ -154,7 +156,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
       setAgentStats(response.data.data);
     } catch (error) {
       console.error("Failed to fetch agent stats:", error);
-      
     }
   };
 
@@ -265,7 +266,7 @@ const fetchCustomerCount = async () => {
 };
   
 
-  const handleUpdate = async () => {
+   const handleUpdate = async () => {
      if (isSubmitting) return;
   
   setIsSubmitting(true);
@@ -358,6 +359,23 @@ const fetchCustomerCount = async () => {
   }
   };
 
+  // Show loading screen while data is being fetched
+  if (loading) {
+    return (
+      <View className="flex-1 bg-white justify-center items-center">
+        <LottieView
+          source={require("../assets/images/loading.json")}
+          autoPlay
+          loop
+          style={{ width: wp(25), height: hp(12) }}
+        />
+        <Text className="text-[#6839CF] text-lg font-semibold mt-4">
+          Loading Profile...
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <View className="flex-1 bg-white">
       <KeyboardAvoidingView 
@@ -389,34 +407,34 @@ const fetchCustomerCount = async () => {
               style={{ marginTop: hp(15), paddingHorizontal: wp(6) }}
             >
               <View className="items-center" style={{ marginTop: -hp(12) }}>
-  <TouchableOpacity className="relative">
-    {formData.image ? (
-      <Image
-        source={{ uri: formData.image }}
-        style={{
-          width: wp(35),
-          height: wp(35),
-          borderRadius: wp(35) / 2,
-        }}
-        onError={(e) => console.log("Image load error:", e.nativeEvent.error)}
-        defaultSource={require("../assets/images/profile.webp")}
-      />
-    ) : (
-      <Image
-        source={require("../assets/images/profile.webp")}
-        style={{
-          width: wp(34),
-          height: wp(34),
-          borderRadius: wp(34) / 2,
-        }}
-      />
-    )}
-  </TouchableOpacity>
-  <Text className="text-black text-2xl font-bold mb-2">
-    {formData.firstName} {formData.lastName}
-  </Text>
-</View>
-</View>
+                <TouchableOpacity className="relative">
+                  {formData.image ? (
+                    <Image
+                      source={{ uri: formData.image }}
+                      style={{
+                        width: wp(35),
+                        height: wp(35),
+                        borderRadius: wp(35) / 2,
+                      }}
+                      onError={(e) => console.log("Image load error:", e.nativeEvent.error)}
+                      defaultSource={require("../assets/images/profile.webp")}
+                    />
+                  ) : (
+                    <Image
+                      source={require("../assets/images/profile.webp")}
+                      style={{
+                        width: wp(34),
+                        height: wp(34),
+                        borderRadius: wp(34) / 2,
+                      }}
+                    />
+                  )}
+                </TouchableOpacity>
+                <Text className="text-black text-2xl font-bold mb-2">
+                  {formData.firstName} {formData.lastName}
+                </Text>
+              </View>
+            </View>
 
             <View className="bg-white px-7">
               <View className="p-4">
@@ -453,7 +471,7 @@ const fetchCustomerCount = async () => {
                   </View>
                 </View>
               </View>
-              <View className="px-5">
+              <View className="px-5 mb-8">
 
               <View className="mb-4">
                 <Text className="text-black mb-1">
@@ -470,24 +488,34 @@ const fetchCustomerCount = async () => {
               <Text className="text-black mb-1">
                   First Name
                 </Text>
-                <TextInput
+                 {/* <TextInput
                   className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2"
                   value={formData.firstName}
                   onChangeText={(text) => handleInputChange("firstName", text)}
                   placeholder="Enter First Name"
-                />
+                /> */}
+                 <Text
+                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2 text-[#8492A3]"
+                >
+                  {formData.firstName}
+                </Text>
               </View>
 
               <View className="mb-4">
               <Text className="text-black mb-1">
                   Last Name
                 </Text>
-                <TextInput
+                  {/* <TextInput
                   className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2"
                   value={formData.lastName}
                   onChangeText={(text) => handleInputChange("lastName", text)}
                   placeholder="Enter Last Name"
-                />
+                /> */}
+                 <Text
+                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2 text-[#8492A3]"
+                >
+                  {formData.lastName}
+                </Text>
               </View>
 
               <View className="mb-4">
@@ -540,39 +568,54 @@ const fetchCustomerCount = async () => {
               <Text className="text-black mb-1">
                   Building / House No
                 </Text>
-                <TextInput
+                {/* <TextInput
                   className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2"
                   value={formData.houseNumber}
                   onChangeText={(text) => handleInputChange("houseNumber", text)}
                   placeholder="Enter Building Number"
-                />
+                /> */}
+                 <Text
+                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2 text-[#8492A3]"
+                >
+                  {formData.houseNumber}
+                </Text>
               </View>
 
               <View className="mb-4">
               <Text className="text-black mb-1">
                   Street Name
                 </Text>
-                <TextInput
+                  {/* <TextInput
                   className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2"
                   value={formData.streetName}
                   onChangeText={(text) => handleInputChange("streetName", text)}
                   placeholder="Enter Street Name"
-                />
+                /> */}
+                 <Text
+                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2 text-[#8492A3]"
+                >
+                  {formData.streetName}
+                </Text>
               </View>
 
               <View className="mb-4">
               <Text className="text-black mb-1">
                   City
                 </Text>
-                <TextInput
+                 {/* <TextInput
                   className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2"
                   value={formData.city}
                   onChangeText={(text) => handleInputChange("city", text)}
                   placeholder="Enter City"
-                />
+                /> */}
+                    <Text
+                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2 text-[#8492A3]"
+                >
+                  {formData.city}
+                </Text>
               </View>
               </View>
-              <View className="">
+               {/* <View className="">
               <TouchableOpacity  onPress={handleUpdate} >
 
                  <LinearGradient colors={["#6839CF", "#874DDB"]} className="py-3   items-center mt-6 mb-[15%] mr-[20%] ml-[20%] rounded-3xl h-15">
@@ -586,7 +629,7 @@ const fetchCustomerCount = async () => {
                               </TouchableOpacity>
 
             
-              </View>
+              </View> */}
             </View>
           </View>
         </ScrollView>

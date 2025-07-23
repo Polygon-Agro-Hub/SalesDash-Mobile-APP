@@ -44,28 +44,45 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
 
 
 
-   const validatePassword = () => {
-    // Check if all fields are filled
-    if (!currentPassword || !newPassword || !confirmNewPassword) {
-      Alert.alert('Error', 'All fields are required');
-      return false;
-    }
+  const validatePassword = () => {
+  // Check if all fields are filled
+  if (!currentPassword || !newPassword || !confirmNewPassword) {
+    Alert.alert('Error', 'All fields are required');
+    return false;
+  }
 
-    // Check if new password has at least 6 characters
-    if (newPassword.length < 6) {
-      Alert.alert('Error', 'The password must have a minimum length of 6-digits');
-      return false;
-    }
+  // Check if new password meets format requirements
+  if (newPassword.length < 8) {
+    Alert.alert('Error', 'Your password must contain a minimum of 8 characters with 1 Uppercase, Numbers & Special characters.');
+    return false;
+  }
 
-    // Check if new password and confirm password match
-    if (newPassword !== confirmNewPassword) {
-      Alert.alert('Error', 'New password and confirm password do not match');
-      return false;
-    }
+  // Check for at least 1 uppercase letter
+  if (!/[A-Z]/.test(newPassword)) {
+    Alert.alert('Error', 'Your password must contain a minimum of 8 characters with 1 Uppercase, Numbers & Special characters.');
+    return false;
+  }
 
-    return true;
-  };
+  // Check for at least 1 number
+  if (!/[0-9]/.test(newPassword)) {
+    Alert.alert('Error', 'Your password must contain a minimum of 8 characters with 1 Uppercase, Numbers & Special characters.');
+    return false;
+  }
 
+  // Check for at least 1 special character
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(newPassword)) {
+    Alert.alert('Error', 'Your password must contain a minimum of 8 characters with 1 Uppercase, Numbers & Special characters.');
+    return false;
+  }
+
+  // Check if new password and confirm password match
+  if (newPassword !== confirmNewPassword) {
+    Alert.alert('Error', 'New password and confirm password do not match');
+    return false;
+  }
+
+  return true;
+};
 
   
 

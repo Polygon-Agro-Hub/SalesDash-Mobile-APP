@@ -366,6 +366,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
   const [open, setOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [items, setItems] = useState([
+       { key: 'Rev', label: "Rev", value: 'Rev' },
     { key: 'Mr', label: "Mr", value: "Mr" },
     { key: 'Ms', label: "Ms", value: "Ms" },
      { key: 'Mrs', label: "Mrs", value: "Mrs" },
