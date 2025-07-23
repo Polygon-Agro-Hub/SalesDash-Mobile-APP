@@ -1099,35 +1099,53 @@ else if (isPackage === 1) {
   {/* Rest of the payment summary remains the same */}
   {isPackage === 1 && (
   <View className="flex-row justify-between mt-3">
-    <Text className="text-[#8492A3] font-medium">Subtotal</Text>
-    <Text className="text-black font-medium mr-14">
-      Rs.{(subTotalDeliveryPlus - deliveryFee).toFixed(2)}
-    </Text>
-  </View>
+  <Text className="text-[#8492A3] font-medium">Subtotal</Text>
+  <Text className="text-black font-medium mr-14">
+    Rs.{(subTotalDeliveryPlus - deliveryFee).toLocaleString('en-US', {
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 2
+    })}
+  </Text>
+</View>
   )}
 
  {isPackage === 0 && (
-   <View className="flex-row justify-between mt-3">
-    <Text className="text-[#8492A3] font-medium">Subtotal</Text>
-    <Text className="text-black font-medium mr-14">
-      Rs.{(subTotalDeliveryPlus -180-deliveryFee).toFixed(2)}
-    </Text>
-  </View>
+  //  <View className="flex-row justify-between mt-3">
+  //   <Text className="text-[#8492A3] font-medium">Subtotal</Text>
+  //   <Text className="text-black font-medium mr-14">
+  //     Rs.{(subTotalDeliveryPlus -180-deliveryFee).toFixed(2)}
+  //   </Text>
+  // </View>
+  <View className="flex-row justify-between mt-3">
+  <Text className="text-[#8492A3] font-medium">Subtotal</Text>
+  <Text className="text-black font-medium mr-14">
+    Rs.{(subTotalDeliveryPlus - 180 - deliveryFee).toLocaleString('en-US', {
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 0
+    })}.00
+  </Text>
+</View>
   )}
 
-  <View className="flex-row justify-between mt-2">
-    <Text className="text-[#8492A3]">Discount</Text>
-    <Text className="text-gray-500 mr-14">
-      Rs.{discount.toFixed(2)}
-    </Text>
-  </View>
+ <View className="flex-row justify-between mt-2">
+  <Text className="text-[#8492A3]">Discount</Text>
+  <Text className="text-gray-500 mr-14">
+    Rs.{discount.toLocaleString('en-US', {
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 0
+    })}.00
+  </Text>
+</View>
 
    <View className="flex-row justify-between mt-2">
-    <Text className="text-[#8492A3]">Delivery Fee</Text>
-    <Text className="text-gray-500 mr-14">
-      Rs.{deliveryFee.toFixed(2)}
-    </Text>
-  </View>
+  <Text className="text-[#8492A3]">Delivery Fee</Text>
+  <Text className="text-gray-500 mr-14">
+    Rs.{deliveryFee.toLocaleString('en-US', {
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 0
+    })}.00
+  </Text>
+</View>
 
 {isPackage === 0 && (
   <View className="flex-row justify-between mt-2">
@@ -1137,12 +1155,15 @@ else if (isPackage === 1) {
     </Text>
   </View>
 )}
-  <View className="flex-row justify-between mt-2">
-    <Text className="text-black font-semibold">Grand Total</Text>
-    <Text className="text-black font-semibold mr-14">
-      Rs.{totalDeliveryPlus.toFixed(2)}
-    </Text>
-  </View>
+<View className="flex-row justify-between mt-2">
+  <Text className="text-black font-semibold">Grand Total</Text>
+  <Text className="text-black font-semibold mr-14">
+    Rs.{totalDeliveryPlus.toLocaleString('en-US', {
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 0
+    })}.00
+  </Text>
+</View>
 </View>
           {/* Payment Method */}
           {/* <View className="bg-white border border-gray-300 rounded-lg p-4 mt-3 shadow-sm">
@@ -1213,7 +1234,8 @@ else if (isPackage === 1) {
       <Text className="text-[#6C3CD1] font-medium">Edit</Text>
     </TouchableOpacity>
   </View>
-  <Text className="text-[#8492A3] mt-1">{paymentMethod || "Not selected"}</Text>
+  {/* <Text className="text-[#8492A3] mt-1">{paymentMethod || "Not selected"} Cash On Delivery</Text> */}
+   <Text className="text-[#8492A3] mt-1">Cash On Delivery</Text>
 </View>
 </View>
   

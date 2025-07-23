@@ -360,7 +360,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, r
             }`}
           >
             <Text className={`text-lg ${selectedMethod === "Cash" ? "text-white font-bold" : "text-gray-700 font-medium"}`}>
-              Pay By Cash
+              Cash On Delivery
             </Text>
             {selectedMethod === "Cash" && (
               <View className="w-7 h-7 bg-white rounded-full flex items-center justify-center">

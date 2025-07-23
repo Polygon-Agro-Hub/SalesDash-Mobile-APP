@@ -325,38 +325,39 @@ useFocusEffect(
         <View className="flex-1  " >
             
     
-         <FlatList
-         keyboardShouldPersistTaps = 'handled'
-      data={filteredCrops}
-      renderItem={({ item }) => (
-        <View className="flex-row justify-between  items-center my-1 px-6 mb">
-          {/* Crop name and selection toggle */}
-          <View className="flex-row items-center space-x-6">
-            <TouchableOpacity onPress={() => toggleSelect(item.id)}>
-              <View
-                className={`w-6 h-6 rounded-full border-2 justify-center items-center ${
-                  selectedCrops.includes(item.id) ? "bg-red-600 border-red-600" : "bg-white border-gray-400"
-                }`}
-              >
-                {selectedCrops.includes(item.id) && (
-                  <Ionicons name="close" size={16} color="white" />
-                )}
-              </View>
-            </TouchableOpacity>
-            <Text className=" text-black">{item.displayName}</Text>
-          </View>
+       <FlatList          
+  keyboardShouldPersistTaps='handled'       
+  data={filteredCrops}       
+  renderItem={({ item }) => (         
+    <TouchableOpacity 
+      onPress={() => toggleSelect(item.id)}
+      className="flex-row justify-between items-center my-1 px-6 mb-2"
+    >           
+      {/* Crop name and selection toggle */}                      
+      <View className="flex-row items-center space-x-4">
+        <View
+          className={`w-6 h-6 rounded-full border-2 justify-center items-center ${
+            selectedCrops.includes(item.id) 
+              ? "bg-red-600 border-red-600" 
+              : "bg-white border-gray-400"
+          }`}
+        >
+          {selectedCrops.includes(item.id) && (
+            <Ionicons name="close" size={16} color="white" />
+          )}
+        </View>                         
+        <Text className="text-black text-base font-medium">{item.displayName}</Text>
+      </View>            
 
-          {/* Crop image */}
-          <Image source={{ uri: item.image }} style={{ width: 60, height: 60, marginRight: 10 }} resizeMode="contain" />
-        </View>
-        
-      )}
-      keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={{ 
-        paddingBottom: 200, // Adds space at the bottom for the button
-        paddingTop: 10 
-      }}
-    />
+      {/* Crop image */}
+      <Image 
+        source={{ uri: item.image }} 
+        style={{ width: 60, height: 60 }} 
+        resizeMode="contain" 
+      />            
+    </TouchableOpacity>         
+  )}
+/>
         </View>
       </View>
      {!isKeyboardVisible && (
