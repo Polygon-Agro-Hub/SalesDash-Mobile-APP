@@ -464,8 +464,13 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({ navigation }) =
                 <Text className="text-gray-800 text-base leading-relaxed text-left">
                   <Text className="font-">Dear {formData.firstName || "User"} {formData.lastName},</Text>
                   {"\n\n"}
+                  We are pleased to inform you that your complaint has been resolved.
+                     {"\n\n"}
                   {selectedComplaint.reply || "No response available."}
                   {"\n\n"}
+                  If you have any further concerns or questions, feel free to reach out.
+Thank you for your patience and understanding.
+                   {"\n\n"}
                   <Text className="text-left">Sincerely,</Text>
                   {"\n"}
                   <View>
