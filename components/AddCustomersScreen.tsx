@@ -130,7 +130,17 @@ const [cityItems, setCityItems] = useState<{label: string, value: string}[]>([])
   const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
 
 
-  const validatePhoneNumber = (phone: string) => phoneRegex.test(phone);
+ // const validatePhoneNumber = (phone: string) => phoneRegex.test(phone);
+  const validatePhoneNumber = (phone: string) => {
+  // Check length first
+  if (phone.length > 12) return false;
+  return phoneRegex.test(phone);
+};
+
+// Add name validation
+const validateName = (name: string) => {
+  return /^[A-Z][a-z]*$/.test(name);
+};
   const validateEmail = (email: string) => emailRegex.test(email);
 
   // Validate email when it changes
@@ -171,25 +181,29 @@ const [cityItems, setCityItems] = useState<{label: string, value: string}[]>([])
     }
   }, [phoneNumber, touchedFields.phoneNumber]);
 
-  useEffect(() => {
-    if (touchedFields.firstName) {
-      if (!firstName) {
-        setFirstNameError("First name is required");
-      } else {
-        setFirstNameError("");
-      }
+ useEffect(() => {
+  if (touchedFields.firstName) {
+    if (!firstName) {
+      setFirstNameError("First name is required");
+    } else if (!validateName(firstName)) {
+      setFirstNameError("First name must start with a capital letter");
+    } else {
+      setFirstNameError("");
     }
-  }, [firstName, touchedFields.firstName]);
-  
-  useEffect(() => {
-    if (touchedFields.lastName) {
-      if (!lastName) {
-        setLastNameError("Last name is required");
-      } else {
-        setLastNameError("");
-      }
+  }
+}, [firstName, touchedFields.firstName]);
+
+useEffect(() => {
+  if (touchedFields.lastName) {
+    if (!lastName) {
+      setLastNameError("Last name is required");
+    } else if (!validateName(lastName)) {
+      setLastNameError("Last name must start with a capital letter");
+    } else {
+      setLastNameError("");
     }
-  }, [lastName, touchedFields.lastName]);
+  }
+}, [lastName, touchedFields.lastName]);
   
   useEffect(() => {
     if (touchedFields.buildingType) {
@@ -200,6 +214,18 @@ const [cityItems, setCityItems] = useState<{label: string, value: string}[]>([])
       }
     }
   }, [buildingType, touchedFields.buildingType]);
+
+ // Helper function to capitalize first letter and remove special characters
+const formatNameInput = (text: string) => {
+  if (!text) return text;
+  
+  // Remove special characters and numbers using regex
+  const filteredText = text.replace(/[^a-zA-Z]/g, '');
+  
+  // Capitalize first letter and make rest lowercase
+  return filteredText.charAt(0).toUpperCase() + filteredText.slice(1).toLowerCase();
+};
+
   
 
   // Mark field as touched
@@ -368,7 +394,12 @@ const handleRegister = async () => {
   }
 };
 
-  
+// Helper function to capitalize first letter
+const capitalizeFirstLetter = (text: string) => {
+  if (!text) return text;
+  return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+};
+
 
 
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
@@ -407,9 +438,11 @@ const handleRegister = async () => {
                   <SelectList
   setSelected={setSelectedCategory} 
   data={[
+      { key: 'Rev', value: 'Rev' },
     { key: 'Mr', value: 'Mr' },
     { key: 'Ms', value: 'Ms' },
      { key: 'Mrs', value: 'Mrs' }
+      
   ]} 
   boxStyles={{
     backgroundColor: '#F6F6F6',
@@ -428,7 +461,7 @@ const handleRegister = async () => {
 
                 <View className="flex-[2] ml-2">
   <Text className="text-gray-700 mb-1">First Name</Text>
-  <TextInput
+  {/* <TextInput
     className={`bg-[#F6F6F6] border ${firstNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
     placeholder="First Name"
     value={firstName}
@@ -441,7 +474,21 @@ const handleRegister = async () => {
       }
     }}
     onBlur={() => handleFieldTouch("firstName")}
-  />
+  /> */}
+ <TextInput
+  className={`bg-[#F6F6F6] border ${firstNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+  placeholder="First Name"
+  value={firstName}
+  onChangeText={(text) => {
+    setFirstName(formatNameInput(text));
+    if (touchedFields.firstName && !text) {
+      setFirstNameError("First name is required");
+    } else if (touchedFields.firstName) {
+      setFirstNameError("");
+    }
+  }}
+  onBlur={() => handleFieldTouch("firstName")}
+/>
   {firstNameError ? (
     <Text className="text-red-500 text-xs pl-4 pt-1">{firstNameError}</Text>
   ) : null}
@@ -450,7 +497,7 @@ const handleRegister = async () => {
 
               <View className="mb-4">
   <Text className="text-gray-700 mb-1">Last Name</Text>
-  <TextInput
+  {/* <TextInput
     className={`bg-[#F6F6F6] border ${lastNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
     placeholder="Last Name"
     value={lastName}
@@ -463,7 +510,21 @@ const handleRegister = async () => {
       }
     }}
     onBlur={() => handleFieldTouch("lastName")}
-  />
+  /> */}
+  <TextInput
+  className={`bg-[#F6F6F6] border ${lastNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+  placeholder="Last Name"
+  value={lastName}
+  onChangeText={(text) => {
+    setLastName(formatNameInput(text));
+    if (touchedFields.lastName && !text) {
+      setLastNameError("Last name is required");
+    } else if (touchedFields.lastName) {
+      setLastNameError("");
+    }
+  }}
+  onBlur={() => handleFieldTouch("lastName")}
+/>
   {lastNameError ? (
     <Text className="text-red-500 text-xs pl-4 pt-1">{lastNameError}</Text>
   ) : null}
@@ -477,6 +538,7 @@ const handleRegister = async () => {
                 keyboardType="phone-pad"
                 value={phoneNumber}
                 onChangeText={setPhoneNumber}
+                maxLength={12} 
                 onBlur={() => handleFieldTouch("phoneNumber")}
               />
               {phoneError ? (

@@ -413,7 +413,7 @@ const handleSearch = (query: string) => {
              
         
         <View className="flex-1 ">
-          <FlatList
+          {/* <FlatList
             keyboardShouldPersistTaps='handled'
             data={filteredCrops}
             renderItem={({ item }) => (
@@ -445,6 +445,39 @@ const handleSearch = (query: string) => {
         paddingBottom: 200, // Adds space at the bottom for the button
         paddingTop: 10 
       }}
+          /> */}
+            <FlatList          
+            keyboardShouldPersistTaps='handled'       
+            data={filteredCrops}       
+            renderItem={({ item }) => (         
+              <TouchableOpacity 
+                onPress={() => toggleSelect(item.id)}
+                className="flex-row justify-between items-center my-1 px-6 mb-2"
+              >           
+                {/* Crop name and selection toggle */}                      
+                <View className="flex-row items-center space-x-4">
+                  <View
+                    className={`w-6 h-6 rounded-full border-2 justify-center items-center ${
+                      selectedCrops.includes(item.id) 
+                        ? "bg-red-600 border-red-600" 
+                        : "bg-white border-gray-400"
+                    }`}
+                  >
+                    {selectedCrops.includes(item.id) && (
+                      <Ionicons name="close" size={16} color="white" />
+                    )}
+                  </View>                         
+                  <Text className="text-black text-base font-medium">{item.displayName}</Text>
+                </View>            
+          
+                {/* Crop image */}
+                <Image 
+                  source={{ uri: item.image }} 
+                  style={{ width: 60, height: 60 }} 
+                  resizeMode="contain" 
+                />            
+              </TouchableOpacity>         
+            )}
           />
         </View>
       </View>
