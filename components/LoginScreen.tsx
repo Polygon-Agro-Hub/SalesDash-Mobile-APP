@@ -159,8 +159,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             placeholderTextColor="#A3A3A3"
             className="flex-1 py-3 text-gray-800"
             value={empId}
-            onChangeText={setEmpId}
-          />
+               onChangeText={(text) => setEmpId(text)}
+    autoCapitalize="characters"  // Automatically capitalizes all letters
+  />
         </View>
         {error2.length > 0 && (
           <View className="-mb-3">
@@ -186,11 +187,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           </TouchableOpacity>
         </View>
        <View className="mb-2">
+                  <TouchableOpacity className="items-center" onPress={handleSignIn} disabled={loading}>
+
         <LinearGradient colors={["#854BDA", "#6E3DD1"]} className="rounded-full py-3 px-12 self-center shadow-lg">
-          <TouchableOpacity className="items-center" onPress={handleSignIn} disabled={loading}>
             <Text className="text-white text-lg font-bold">{loading ? "Signing in..." : "Sign in"}</Text>
-          </TouchableOpacity>
         </LinearGradient>
+                  </TouchableOpacity>
+
         </View>
       </View>
     </View>

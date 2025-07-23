@@ -696,7 +696,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
   // Calculate minimum date (2 days from today)
   const getMinimumSelectableDate = () => {
     const minDate = new Date();
-    minDate.setDate(minDate.getDate() + 2);
+    minDate.setDate(minDate.getDate() + 3);
     return minDate;
   };
 
