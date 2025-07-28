@@ -51,6 +51,7 @@ interface Notification {
   customerName: string;
   phoneNumber: string;
   orderid: number;
+  status:string
 }
 
 const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
@@ -61,6 +62,7 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAudioInitialized, setIsAudioInitialized] = useState(false);
+  const [ status ,setStatus] = useState('')
   
   const previousNotificationsCount = useRef(0);
   const sound = useRef<Audio.Sound | null>(null);
@@ -142,9 +144,9 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
     }
   };
 
- const fetchNotifications = async () => {
+const fetchNotifications = async () => {
   try {
-    console.log(" Fetching notifications...");
+    console.log("🔄 Fetching notifications...");
     setError(null);
     
     const storedToken = await AsyncStorage.getItem("authToken");
@@ -158,20 +160,20 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
     const newNotifications = data.notifications || [];
     const newUnreadCount = data.unreadCount || 0;
     
-    console.log(` Fetched ${newNotifications.length} notifications, ${newUnreadCount} unread`);
+    console.log(`📱 Fetched ${newNotifications.length} notifications, ${newUnreadCount} unread`);
     
-    // First update the state to mark loading as complete
+    // Update state
     setNotifications(newNotifications);
     setUnreadCount(newUnreadCount);
     setIsLoading(false);
     
-    // Then check for new notifications and play sound if needed
+    // Check for new notifications and play sound if needed
     if (newNotifications.length > 0) {
-      const maxId = Math.max(...newNotifications.map((n: { id: any; }) => n.id));
-      console.log(` Current max ID: ${maxId}, Previous: ${highestNotificationId.current}`);
+      const maxId = Math.max(...newNotifications.map((n: Notification) => n.id));
+      console.log(`🆔 Current max ID: ${maxId}, Previous: ${highestNotificationId.current}`);
       
       if (!isFirstLoad.current && maxId > highestNotificationId.current) {
-        console.log(" NEW NOTIFICATION DETECTED! Playing sound...");
+        console.log("🔊 NEW NOTIFICATION DETECTED! Playing sound...");
         await playNotificationSound();
       }
       
@@ -186,11 +188,13 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
     setIsLoading(false);
   } finally {
     if (isFirstLoad.current) {
-      console.log(" First load completed, future notifications will play sound");
+      console.log("✅ First load completed, future notifications will play sound");
       isFirstLoad.current = false;
     }
   }
 };
+
+
   useEffect(() => {
     const setupComponent = async () => {
       await initializeAudio();
@@ -248,34 +252,37 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
   };
 
   const markAsRead = async (id: number) => {
-    try {
-      const notificationToUpdate = notifications.find(n => n.id === id);
+  try {
+    const notificationToUpdate = notifications.find(n => n.id === id);
+    
+    if (notificationToUpdate && !notificationToUpdate.readStatus) {
+      const storedToken = await AsyncStorage.getItem("authToken");
+      await axios.patch(`${environment.API_BASE_URL}api/notifications/mark-read/${id}`, {}, {
+        headers: {
+          Authorization: `Bearer ${storedToken}`
+        }
+      });
+
+      setNotifications(prev => prev.map(n => 
+        n.id === id ? { ...n, readStatus: true } : n
+      ));
       
-      if (notificationToUpdate && !notificationToUpdate.readStatus) {
-        const storedToken = await AsyncStorage.getItem("authToken");
-        await axios.patch(`${environment.API_BASE_URL}api/notifications/mark-read/${id}`, {}, {
-          headers: {
-            Authorization: `Bearer ${storedToken}`
-          }
-        });
-
-        setNotifications(prev => prev.map(n => 
-          n.id === id ? { ...n, readStatus: true } : n
-        ));
-        
-        setUnreadCount(prev => Math.max(0, prev - 1));
-      }
-
-      if (notificationToUpdate) {
-        navigation.navigate("View_CancelOrderScreen" as any, {
-          orderId: notificationToUpdate.orderid,
-          userId: notificationToUpdate.cusId || notificationToUpdate.customerId
-        });
-      }
-    } catch (err) {
-      console.error('Failed to mark as read:', err);
+      setUnreadCount(prev => Math.max(0, prev - 1));
     }
-  };
+
+    if (notificationToUpdate) {
+      // Pass all necessary data including status to View_CancelOrderScreen
+      navigation.navigate("View_CancelOrderScreen" as any, {
+        orderId: notificationToUpdate.orderid,
+        userId: notificationToUpdate.cusId || notificationToUpdate.customerId,
+        status: notificationToUpdate.status
+       
+      });
+    }
+  } catch (err) {
+    console.error('❌ Failed to mark as read:', err);
+  }
+};
 
   const deleteNotification = async () => {
     if (!selectedNotification) return;
