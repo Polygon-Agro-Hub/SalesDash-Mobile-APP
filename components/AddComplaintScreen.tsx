@@ -168,7 +168,7 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
                     Tell us the <Text className="text-[#6839CF]">problem</Text>
                   </Text>
                 </View>
-               <SelectList
+               {/* <SelectList
   setSelected={(val: string) => setSelectedCategory(val)}
   data={category}
   save="key"
@@ -176,7 +176,49 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
   boxStyles={{ borderColor: "#393939", height: 50 , borderRadius:30}}
   inputStyles={{ color: "#434343", fontSize: 14 }}
   dropdownTextStyles={{ fontSize: 12 }}
-  search={false}
+  search={true}
+/> */}
+
+<DropDownPicker
+  open={open}
+  setOpen={setOpen}
+  value={selectedCategory}
+  setValue={setSelectedCategory}
+  items={category.map(item => ({
+    label: item.value,  // What's displayed
+    value: item.key     // What's stored in state
+  }))}
+  searchable={true}
+  searchPlaceholder="Search category..."
+  placeholder="Select Complaint Category"
+  style={{
+    borderColor: "#393939",
+    borderRadius: 30,
+    height: 50,
+    backgroundColor: "#FFFFFF",
+  }}
+  dropDownContainerStyle={{
+    borderColor: "#E5E7EB",
+    backgroundColor: "#FFFFFF",
+    maxHeight: 500,  // Makes it scrollable
+  }}
+  textStyle={{
+    color: "#434343",
+    fontSize: 14,
+  }}
+  searchTextInputStyle={{
+    borderColor: "#E5E7EB",
+    color: "#434343",
+  }}
+  searchContainerStyle={{
+    borderBottomColor: "#E5E7EB",
+  }}
+  listItemLabelStyle={{
+    fontSize: 12,
+  }}
+  zIndex={3000}
+  zIndexInverse={1000}
+   listMode="SCROLLVIEW"
 />
 
               
@@ -187,7 +229,7 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
                   -- We will get back to you within 2 days --
                 </Text>
 
-                <View className="mb-8">
+  <View className="mb-8">
   <TextInput
     multiline
     numberOfLines={6}
@@ -196,7 +238,19 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
     placeholderTextColor="#808FA2 text-italic" 
     className="text-black bg-white border border-[#393939] rounded-lg p-4 min-h-[250px] "
     value={complaintText}
-    onChangeText={setComplaintText}
+    onChangeText={(text) => {
+      // Prevent leading spaces
+      if (text.startsWith(' ')) {
+        return; // Don't update state if text starts with space
+      }
+      
+      // Capitalize first letter if it's the first character
+      if (text.length === 1) {
+        text = text.toUpperCase();
+      }
+      setComplaintText(text);
+    }}
+    autoCapitalize="sentences"
   />
 </View>
 
@@ -221,4 +275,3 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
 export default AddComplaintScreen;
 
 
-///////

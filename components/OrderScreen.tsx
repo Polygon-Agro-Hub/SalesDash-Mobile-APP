@@ -751,7 +751,7 @@ const deleteSelectedItems = () => {
 const decrementQuantity = () => {
   const selectedProductData = productItems.find(item => item.value === productValue);
   const changeBy = selectedProductData?.changeby ? Number(selectedProductData.changeby) : 1;
-  const startValue = selectedProductData?.startValue ? Number(selectedProductData.startValue) : 1;
+  const startValue = selectedProductData?.startValue ? Number(selectedProductData.startValue) : 0;
   
   // For Kg, use values as is
   // For g, multiply by 1000
@@ -948,49 +948,63 @@ const handleEditUnitConversion = (newUnit: string) => {
 
       <ScrollView className="flex-1 px-7" showsVerticalScrollIndicator={false}>
         {/* Package Selection */}
-        <View className="mb-6" style={{ zIndex: 3000 }}>
-          <Text className="font-medium text-gray-700 mb-2 rounded-full">Package</Text>
-          <DropDownPicker
-            open={packageOpen}
-            value={packageValue}
-            items={packageItems}
-            setOpen={setPackageOpen}
-            setValue={setPackageValue}
-            setItems={setPackageItems}
-            onChangeValue={handlePackageChange}
-            placeholder="Select a package"
-            placeholderStyle={{ color: '#000000' }}
-            style={{
-              backgroundColor: '#F6F6F6',
-              borderColor: '#F6F6F6',
-              borderRadius: 20,
-              minHeight: 48,
-            }}
-            textStyle={{
-              fontSize: 14,
-              color: '#111827',
-            }}
-            dropDownContainerStyle={{
-              backgroundColor: '#FFFFFF',
-              borderColor: '#E5E7EB',
-              borderRadius: 8,
-            }}
-            arrowIconStyle={{
-              width: 20,
-              height: 20,
-            }}
-            tickIconStyle={{
-              width: 20,
-              height: 20,
-            }}
-            labelStyle={{
-              fontWeight: '500',
-              color: '#111827',
-            }}
-            searchable={false}
-            listMode="SCROLLVIEW"
-          />
-        </View>
+       <View className="mb-6" >
+  <Text className="font-medium text-gray-700 mb-2 rounded-full">Package</Text>
+  <DropDownPicker
+    open={packageOpen}
+    value={packageValue}
+    items={packageItems}
+    setOpen={setPackageOpen}
+    setValue={setPackageValue}
+    setItems={setPackageItems}
+    onChangeValue={handlePackageChange}
+    placeholder="Select a package"
+    placeholderStyle={{ color: '#000000' }}
+    style={{
+      backgroundColor: '#F6F6F6',
+      borderColor: '#F6F6F6',
+      borderRadius: 20,
+      minHeight: 48,
+      borderWidth: 1,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+    }}
+    textStyle={{
+      fontSize: 14,
+      color: '#111827',
+    }}
+    dropDownContainerStyle={{
+      backgroundColor: '#FFFFFF',
+      borderColor: '#E5E7EB',
+      borderRadius: 8,
+      borderWidth: 1,
+      maxHeight: 300,        // Add maxHeight
+      minHeight: 200,        // Add minHeight if needed
+    }}
+    arrowIconStyle={{
+      width: 20,
+      height: 20,
+    }}
+    tickIconStyle={{
+      width: 20,
+      height: 20,
+    }}
+    labelStyle={{
+      fontWeight: '500',
+      color: '#111827',
+    }}
+    searchable={true}
+    searchPlaceholder="Search package..."
+    listMode="SCROLLVIEW"
+    scrollViewProps={{              // Add this - crucial for scrolling
+      nestedScrollEnabled: true,
+      keyboardShouldPersistTaps: 'handled',
+      showsVerticalScrollIndicator: true,
+    }}
+    zIndex={3000}                   // Move zIndex here instead of View style
+  />
+</View>
+
 
         {/* Package Items - Now using dynamic data */}
         {items.length > 0 && (
