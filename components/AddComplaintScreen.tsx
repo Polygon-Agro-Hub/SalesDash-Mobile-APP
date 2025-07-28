@@ -228,8 +228,7 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
                 <Text className="text-center text-black mb-4 mt-4">
                   -- We will get back to you within 2 days --
                 </Text>
-
-  <View className="mb-8">
+<View className="mb-8">
   <TextInput
     multiline
     numberOfLines={6}
@@ -244,10 +243,21 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
         return; // Don't update state if text starts with space
       }
       
-      // Capitalize first letter if it's the first character
-      if (text.length === 1) {
-        text = text.toUpperCase();
+      // Check if first character is alphabetic only (no numbers or special characters)
+      if (text.length > 0) {
+        const firstChar = text.charAt(0);
+        const isAlphabetic = /^[a-zA-Z]$/.test(firstChar);
+        
+        if (!isAlphabetic) {
+          return; // Don't update state if first character is not alphabetic
+        }
+        
+        // Capitalize first letter if it's the first character
+        if (text.length === 1) {
+          text = text.toUpperCase();
+        }
       }
+      
       setComplaintText(text);
     }}
     autoCapitalize="sentences"
