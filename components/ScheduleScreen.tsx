@@ -694,13 +694,34 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
   console.log("orderData--------", orderData);
 
   // Calculate minimum date (2 days from today)
-  const getMinimumSelectableDate = () => {
-    const minDate = new Date();
-    minDate.setDate(minDate.getDate() + 3);
-    return minDate;
-  };
+  // const getMinimumSelectableDate = () => {
+  //   const minDate = new Date();
+  //   minDate.setDate(minDate.getDate() + 3);
+  //   return minDate;
+  // };
 
-  const minimumDate = getMinimumSelectableDate();
+  // const minimumDate = getMinimumSelectableDate();
+
+  const getMinimumSelectableDate = () => {
+  const today = new Date(); // Current date and time 
+  const currentHour = today.getHours(); // Get the current hour before modifying the date
+  
+  console.log("current hour:", currentHour); // Log current hour for debugging
+
+  const minDate = new Date(today); // Create a new date object for minDate
+  
+  // If the current time is between 6 PM and 6 AM
+  if (currentHour >= 18 || currentHour < 6) {
+    minDate.setDate(today.getDate() + 4); // Set the minimum date to 4 days from today
+  } else {
+    minDate.setDate(today.getDate() + 3); // Set the minimum date to 3 days from today
+  }
+
+  return minDate;
+};
+
+const minimumDate = getMinimumSelectableDate();
+
 
 
 
@@ -847,17 +868,41 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
     setShowDatePicker(true);
   };
 
-  const getSelectableDates = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+  // const getSelectableDates = () => {
+  //   const today = new Date();
+  //   today.setHours(0, 0, 0, 0);
     
-    const minDate = new Date(today);
-    minDate.setDate(today.getDate() + 3);
+  //   const minDate = new Date(today);
+  //   minDate.setDate(today.getDate() + 3);
     
-    return { minDate };
-  };
+  //   return { minDate };
+  // };
 
-  const { minDate } = getSelectableDates();
+  // const { minDate } = getSelectableDates();
+  const getSelectableDates = () => {
+  const today = new Date();
+    const currentHour = today.getHours(); // Get the current hour before resetting to midnight
+  
+  console.log("current hour:", currentHour);
+  today.setHours(0, 0, 0, 0); // Reset to midnight
+  
+
+  
+  const minDate = new Date(today);
+  
+  // If the current time is between 6 PM and 6 AM
+  if (currentHour >= 18 || currentHour < 6) {
+    minDate.setDate(today.getDate() + 4); // Set the minimum date to 4 days from today
+  } else {
+    minDate.setDate(today.getDate() + 3); // Set the minimum date to 3 days from today
+    console.log("hit")
+  }
+
+  return { minDate };
+};
+
+const { minDate } = getSelectableDates();
+
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(Platform.OS === 'ios');
