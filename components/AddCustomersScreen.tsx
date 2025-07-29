@@ -434,7 +434,7 @@ const capitalizeFirstLetter = (text: string) => {
             <View className="p-3 px-6">
               <View className="mb-4 mt-4 flex-row justify-between">
                 <View className="flex-[1]">
-                  <Text className="text-gray-700 mb-1">Title</Text>
+                  <Text className="text-gray-700 mb-1">Title *</Text>
                   <SelectList
   setSelected={setSelectedCategory} 
   data={[
@@ -460,7 +460,7 @@ const capitalizeFirstLetter = (text: string) => {
                 </View>
 
                 <View className="flex-[2] ml-2">
-  <Text className="text-gray-700 mb-1">First Name</Text>
+  <Text className="text-gray-700 mb-1">First Name *</Text>
   {/* <TextInput
     className={`bg-[#F6F6F6] border ${firstNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
     placeholder="First Name"
@@ -496,7 +496,7 @@ const capitalizeFirstLetter = (text: string) => {
               </View>
 
               <View className="mb-4">
-  <Text className="text-gray-700 mb-1">Last Name</Text>
+  <Text className="text-gray-700 mb-1">Last Name *</Text>
   {/* <TextInput
     className={`bg-[#F6F6F6] border ${lastNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
     placeholder="Last Name"
@@ -531,7 +531,7 @@ const capitalizeFirstLetter = (text: string) => {
 </View>
 
               <View className="mb-4">
-              <Text className="text-gray-700 mb-1">Phone Number</Text>
+              <Text className="text-gray-700 mb-1"> Mobile Number *</Text>
               <TextInput
                 className={`bg-[#F6F6F6] border ${phoneError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
                 placeholder="ex: +9477 XXXXXXX"
@@ -540,6 +540,12 @@ const capitalizeFirstLetter = (text: string) => {
                 onChangeText={setPhoneNumber}
                 maxLength={12} 
                 onBlur={() => handleFieldTouch("phoneNumber")}
+                onFocus={() => {
+    // Ensure +94 is there when focused
+    if (phoneNumber === "") {
+      setPhoneNumber("+94");
+    }
+  }}
               />
               {phoneError ? (
                 <Text className="text-red-500 text-xs pl-4 pt-1">{phoneError}</Text>
@@ -548,7 +554,7 @@ const capitalizeFirstLetter = (text: string) => {
 
 
               <View className="mb-4">
-              <Text className="text-gray-700 mb-1">Email Address</Text>
+              <Text className="text-gray-700 mb-1">Email Address *</Text>
               <TextInput
                 className={`bg-[#F6F6F6] border ${emailError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
                 placeholder="Email Address"
@@ -563,7 +569,7 @@ const capitalizeFirstLetter = (text: string) => {
             </View>
 
               <View className="mb-4">
-                <Text className="text-gray-700 mb-1">Building Type</Text>
+                <Text className="text-gray-700 mb-1">Building Type *</Text>
              
        <SelectList
         setSelected={setBuildingType} 
@@ -590,7 +596,7 @@ const capitalizeFirstLetter = (text: string) => {
               {buildingType === "House" && (
                 <>
                   <View className="mb-4">
-                    <Text className="text-gray-700 mb-1">Building / House No</Text>
+                    <Text className="text-gray-700 mb-1">Building / House No *</Text>
                     <TextInput
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="Building / House No (e.g., 14/B)"
@@ -599,7 +605,7 @@ const capitalizeFirstLetter = (text: string) => {
                     />
                   </View>
                   <View className="mb-4">
-                    <Text className="text-gray-700 mb-1">Street Name</Text>
+                    <Text className="text-gray-700 mb-1">Street Name *</Text>
                     <TextInput
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="Street Name"
@@ -608,7 +614,7 @@ const capitalizeFirstLetter = (text: string) => {
                     />
                   </View>
              <View className="mb-4 z-10">
-  <Text className="text-gray-700 mb-1">Nearest City</Text>
+  <Text className="text-gray-700 mb-1">Nearest City *</Text>
   <DropDownPicker
     open={openCityDropdown}
     value={city}
@@ -654,7 +660,7 @@ const capitalizeFirstLetter = (text: string) => {
               {buildingType === "Apartment" && (
                 <>
                   <View className="mb-4">
-                   <Text className="text-gray-700 mb-1">Apartment / Building No</Text>
+                   <Text className="text-gray-700 mb-1">Apartment / Building No *</Text>
                     <TextInput
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="Apartment / Building Name"
@@ -664,7 +670,7 @@ const capitalizeFirstLetter = (text: string) => {
                   </View>
 
                   <View className="mb-4">
-                    <Text className="text-gray-700 mb-1">Apartment / Building Name</Text>
+                    <Text className="text-gray-700 mb-1">Apartment / Building Name *</Text>
                     <TextInput
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="Apartment / Building Name"
@@ -673,7 +679,7 @@ const capitalizeFirstLetter = (text: string) => {
                     />
                   </View>
                   <View className="mb-4">
-                    <Text className="text-gray-700 mb-1">Flat / Unit Number</Text>
+                    <Text className="text-gray-700 mb-1">Flat / Unit Number *</Text>
                     <TextInput
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="ex : Building B"
@@ -682,7 +688,7 @@ const capitalizeFirstLetter = (text: string) => {
                     />
                   </View>
                   <View className="mb-4">
-                    <Text className="text-gray-700 mb-1">Floor Number</Text>
+                    <Text className="text-gray-700 mb-1">Floor Number *</Text>
                     <TextInput
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="ex : 3rd Floor"
@@ -692,7 +698,7 @@ const capitalizeFirstLetter = (text: string) => {
                   </View>
 
                   <View className="mb-4">
-                    <Text className="text-gray-700 mb-1">House No</Text>
+                    <Text className="text-gray-700 mb-1">House No *</Text>
                     <TextInput
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="ex : 14"
@@ -701,7 +707,7 @@ const capitalizeFirstLetter = (text: string) => {
                     />
                   </View>
                   <View className="mb-4">
-                    <Text className="text-gray-700 mb-1">Street Name</Text>
+                    <Text className="text-gray-700 mb-1">Street Name *</Text>
                     <TextInput
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="Street Name"
@@ -710,7 +716,7 @@ const capitalizeFirstLetter = (text: string) => {
                     />
                   </View>
               <View className="mb-4 z-10">
-  <Text className="text-gray-700 mb-1">Nearest City</Text>
+  <Text className="text-gray-700 mb-1">Nearest City *</Text>
   <DropDownPicker
     open={openCityDropdown}
     value={city}
