@@ -403,6 +403,29 @@ const capitalizeFirstLetter = (text: string) => {
 
 
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
+  const handlePhoneNumberChange = (text: string) => {
+  // Always ensure the input starts with +94
+  if (!text.startsWith('+94')) {
+    // If user tries to delete +94, restore it
+    if (text.length < 3) {
+      setPhoneNumber('+94');
+      return;
+    }
+    // If user types without +94, add it
+    text = '+94' + text.replace(/^\+?94?/, '');
+  }
+  
+  // Limit to 12 characters total (+94 + 9 digits)
+  if (text.length > 12) {
+    text = text.substring(0, 12);
+  }
+  
+  // Only allow numbers after +94
+  const cleanText = text.substring(0, 3) + text.substring(3).replace(/[^0-9]/g, '');
+  
+  setPhoneNumber(cleanText);
+};
     
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
@@ -530,28 +553,27 @@ const capitalizeFirstLetter = (text: string) => {
   ) : null}
 </View>
 
-              <View className="mb-4">
-              <Text className="text-gray-700 mb-1"> Mobile Number *</Text>
-              <TextInput
-                className={`bg-[#F6F6F6] border ${phoneError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
-                placeholder="ex: +9477 XXXXXXX"
-                keyboardType="phone-pad"
-                value={phoneNumber}
-                onChangeText={setPhoneNumber}
-                maxLength={12} 
-                onBlur={() => handleFieldTouch("phoneNumber")}
-                onFocus={() => {
-    // Ensure +94 is there when focused
-    if (phoneNumber === "") {
-      setPhoneNumber("+94");
-    }
-  }}
-              />
-              {phoneError ? (
-                <Text className="text-red-500 text-xs pl-4 pt-1">{phoneError}</Text>
-              ) : null}
-            </View>
-
+          <View className="mb-4">
+  <Text className="text-gray-700 mb-1">Mobile Number *</Text>
+  <TextInput
+    className={`bg-[#F6F6F6] border ${phoneError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+    placeholder="+947XXXXXXXX"
+    value={phoneNumber}
+    onChangeText={handlePhoneNumberChange}
+    onBlur={() => handleFieldTouch("phoneNumber")}
+    keyboardType="phone-pad"
+    maxLength={12}
+    onFocus={() => {
+      // Ensure +94 is always present when focusing
+      if (!phoneNumber || phoneNumber.length < 3) {
+        setPhoneNumber('+94');
+      }
+    }}
+  />
+  {phoneError ? (
+    <Text className="text-red-500 text-xs pl-4 pt-1">{phoneError}</Text>
+  ) : null}
+</View>
 
               <View className="mb-4">
               <Text className="text-gray-700 mb-1">Email Address *</Text>

@@ -474,7 +474,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
               renderItem={({ item }) => (
                 <TouchableOpacity 
                   onPress={() => navigation.navigate("View_CancelOrderScreen" as any, { 
-                    orderId: item.orderId
+                    orderId: item.orderId,
+                    status:item.status
                   })}
                 >
                   <View className="bg-white rounded-2xl p-4 mb-4 border border-gray-200 mx-4 shadow-sm mt-4">
