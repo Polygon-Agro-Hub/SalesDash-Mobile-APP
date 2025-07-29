@@ -33,84 +33,80 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
   ///text 
 
-  const handleSignIn = async () => {
-    Keyboard.dismiss()
-    setError1("")
-    setError2("")
-    if (empId.trim() === "") {
-      setError1("Employee ID is required");
-      return;
-    }
-    if (password.trim() === "") {
-      // validationErrors.push("Password is required");
-      setError2("Password is required")
-      return;
-    }
+ const handleSignIn = async () => {
+  Keyboard.dismiss()
+  setError1("")
+  setError2("")
+  
+  if (empId.trim() === "") {
+    setError1("Employee ID is required");
+    return;
+  }
+  
+  // Check if empId contains lowercase letters
+  if (empId !== empId.toUpperCase()) {
+    setError1("Employee ID must be in uppercase format (e.g., SA00001)");
+    return;
+  }
+  
+  if (password.trim() === "") {
+    setError2("Password is required")
+    return;
+  }
 
-    // if (validationErrors.length > 0) {
-    //   // setErrors(validationErrors);
-    //   return;
-    // }
-    await AsyncStorage.multiRemove([
-      "authToken",
-      "tokenStoredTime",
-      "tokenExpirationTime",
-    ]);
-    setLoading(true); 
+  await AsyncStorage.multiRemove([
+    "authToken",
+    "tokenStoredTime",
+    "tokenExpirationTime",
+  ]);
+  setLoading(true); 
 
-    try {
-      const response = await axios.post(`${environment.API_BASE_URL}api/auth/login`, { empId, password });
+  try {
+    const response = await axios.post(`${environment.API_BASE_URL}api/auth/login`, { 
+      empId: empId.trim(), 
+      password 
+    });
 
-      if (response.data.success) {
-        const { token, passwordUpdate } = response.data.data;
-        console.log(token)
+    if (response.data.success) {
+      const { token, passwordUpdate } = response.data.data;
+      console.log(token)
 
-    
-        // await AsyncStorage.setItem("authToken", token);
-        if (token) {
-          const timestamp = new Date();
-          const expirationTime = new Date(
-            timestamp.getTime() + 8 * 60 * 60 * 1000
-            // timestamp.getTime() + 2 * 60 * 1000
-          );
-          await AsyncStorage.setItem("authToken", token);
-          await AsyncStorage.multiSet([
-            ["tokenStoredTime", timestamp.toISOString()],
-            ["tokenExpirationTime", expirationTime.toISOString()],
-          ]);
-          if (passwordUpdate === 0) {
-            navigation.navigate("ChangePasswordScreen");
-          } else {
-            navigation.navigate("Main", { screen: "DashboardScreen" });
-          }
+      if (token) {
+        const timestamp = new Date();
+        const expirationTime = new Date(
+          timestamp.getTime() + 8 * 60 * 60 * 1000
+        );
+        await AsyncStorage.setItem("authToken", token);
+        await AsyncStorage.multiSet([
+          ["tokenStoredTime", timestamp.toISOString()],
+          ["tokenExpirationTime", expirationTime.toISOString()],
+        ]);
+        if (passwordUpdate === 0) {
+          navigation.navigate("ChangePasswordScreen");
         } else {
-          Alert.alert("Sorry","Something went wrong, please try again later..");
-        }
-        // if (passwordUpdate === 0) {
-        //   navigation.navigate("ChangePasswordScreen");
-        // } else {
-        //   navigation.navigate("Main", { screen: "DashboardScreen" });
-        // }
-      }
-    } catch (err) {
-      console.log(err)
-      if (axios.isAxiosError(err)) {
-        const errorMessage = err.response?.data?.message || "Something went wrong.";
-        if (errorMessage === "Invalid password") {
-          // Show an alert for invalid password
-          Alert.alert("Login Error", "Invalid password, please try again.");
-        } else {
-          // If it's another error, you can display it
-          Alert.alert("Error", "Invalid user name");
+          navigation.navigate("Main", { screen: "DashboardScreen" });
         }
       } else {
-        setErrors(["Something went wrong. Please try again."]);
-        Alert.alert("Error", "Something went wrong. Please try again.");
+        Alert.alert("Sorry","Something went wrong, please try again later..");
       }
-    } finally {
-      setLoading(false);
     }
-  };
+  } catch (err) {
+    console.log(err)
+    if (axios.isAxiosError(err)) {
+      const errorMessage = err.response?.data?.message || "Something went wrong.";
+      if (errorMessage === "Invalid password") {
+        Alert.alert("Login Error", "Invalid password, please try again.");
+      } else {
+        Alert.alert("Error", "Invalid employee ID or credentials");
+      }
+    } else {
+      setErrors(["Something went wrong. Please try again."]);
+      Alert.alert("Error", "Something went wrong. Please try again.");
+    }
+  } finally {
+    setLoading(false);
+  }
+};
 
   useFocusEffect(
     useCallback(() => {
@@ -159,8 +155,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             placeholderTextColor="#A3A3A3"
             className="flex-1 py-3 text-gray-800"
             value={empId}
-            onChangeText={setEmpId}
-          />
+               onChangeText={(text) => setEmpId(text)}
+    autoCapitalize="characters"  // Automatically capitalizes all letters
+  />
         </View>
         {error2.length > 0 && (
           <View className="-mb-3">
