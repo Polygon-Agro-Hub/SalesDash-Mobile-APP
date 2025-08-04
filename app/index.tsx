@@ -39,6 +39,8 @@ import ExcludeItemEditSummery from "@/components/ExcludeItemEditSummery"
 import ExcludeAddMore from '@/components/ExcludeAddMore'
  
 import { RootStackParamList } from '@/components/types';
+import { Provider, useSelector } from 'react-redux';
+import  store, { RootState } from "@/services/reducxStore";
 
 
 const Stack = createStackNavigator(); 
@@ -83,6 +85,10 @@ function MainTabNavigator() {
             <Tab.Screen name="ExcludeListSummery" component={ExcludeListSummery as any} />
             <Tab.Screen name="ExcludeItemEditSummery" component={ExcludeItemEditSummery as any} />
             <Tab.Screen name="ExcludeAddMore" component={ExcludeAddMore as any} />
+             <Tab.Screen name="AddCustomersScreen" 
+             component={AddCustomersScreen} 
+             
+             />
     </Tab.Navigator>
   );
 }
@@ -92,6 +98,7 @@ const index = () => {
     // ScreenCapture.usePreventScreenCapture()
 
   return (
+    <Provider store={store}>
     <LanguageProvider>
     <GestureHandlerRootView >
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -107,7 +114,7 @@ const index = () => {
       {/* <Stack.Screen name="ViewComplainScreen" component={ViewComplainScreen} /> */}
       {/* <Stack.Screen name="ViewCustomerScreen" component={ViewCustomerScreen as any} /> */}
       {/* <Stack.Screen name="ReminderScreen" component={ReminderScreen} /> */}
-      <Stack.Screen name="AddCustomersScreen" component={AddCustomersScreen} />
+      {/* <Stack.Screen name="AddCustomersScreen" component={AddCustomersScreen} /> */}
       <Stack.Screen name="OtpScreen" component={OtpScreen} />
       <Stack.Screen name="OtpScreenUp" component={OtpScreenUp} />
       {/* <Stack.Screen name="OtpSuccesfulScreen" component={OtpSuccesfulScreen as any} /> */}
@@ -128,6 +135,7 @@ const index = () => {
     </Stack.Navigator>
    </GestureHandlerRootView>
     </LanguageProvider>
+    </Provider>
   )
 }
 

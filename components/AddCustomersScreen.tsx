@@ -3,13 +3,19 @@ import { View, Text, ScrollView, TextInput, TouchableOpacity, Keyboard, Platform
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import { LinearGradient } from "expo-linear-gradient";
-import { widthPercentageToDP as wp } from "react-native-responsive-screen";
+import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
 import BackButton from "./BackButton";
 import axios from "axios";
 import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SelectList } from "react-native-dropdown-select-list";
 import DropDownPicker from "react-native-dropdown-picker";
+import { useFocusEffect } from "expo-router";
+import { AntDesign, Ionicons } from "@expo/vector-icons";
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState } from '../services/reducxStore'; // Adjust path as needed
+import { setInputClick, clearInputClick } from '../store/navSlice';
+
 
 type AddCustomersScreenNavigationProp = StackNavigationProp<RootStackParamList, "AddCustomersScreen">;
 
@@ -60,11 +66,69 @@ const [token, setToken] = useState<string | null>(null);
   const [cities, setCities] = useState<City[]>([]);
   const [openCityDropdown, setOpenCityDropdown] = useState(false);
 const [cityItems, setCityItems] = useState<{label: string, value: string}[]>([]);
+const dispatch = useDispatch();
+  const isClick = useSelector((state: RootState) => state.input.isClick);
 
   const buildingOptions = [
     { key: "1", value: "House" },
     { key: "2", value: "Apartment" },
   ];
+
+    const resetForm = () => {
+    setFirstName("");
+    setLastName("");
+    setPhoneNumber("");
+    setEmail("");
+    setHouseNo("");
+    setStreetName("");
+    setCity("");
+    setbuildingNo("");
+    setfloorNo("");
+    setunitNo("");
+    setbuildingName("");
+    setBuildingType("");
+    setSelectedCategory("");
+    setLoading(false);
+    setOtpSent(false);
+    setEmailError("");
+    setPhoneError("");
+    setFirstNameError("");
+    setLastNameError("");
+    setBuildingTypeError("");
+    setTitleError("");
+    setIsSubmitting(false);
+    setTouchedFields({
+      email: false,
+      phoneNumber: false,
+      firstName: false,
+      lastName: false
+    });
+    // Clear input click state when form resets
+    dispatch(clearInputClick());
+  };
+
+  // Handle input focus - set isClick to 1
+  const handleInputFocus = () => {
+    dispatch(setInputClick(1));
+  };
+
+  // Handle input blur - set isClick to 0
+  const handleInputBlur = () => {
+    dispatch(setInputClick(0));
+  };
+
+  // Reset form when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      resetForm();
+      fetchCity();
+
+      return () => {
+        // Cleanup if needed
+        dispatch(clearInputClick());
+      };
+    }, [])
+  );
   
   const sendOTP = async () => {
     if (!phoneNumber) {
@@ -403,34 +467,78 @@ const capitalizeFirstLetter = (text: string) => {
 
 
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
+  const handlePhoneNumberChange = (text: string) => {
+  // Always ensure the input starts with +94
+  if (!text.startsWith('+94')) {
+    // If user tries to delete +94, restore it
+    if (text.length < 3) {
+      setPhoneNumber('+94');
+      return;
+    }
+    // If user types without +94, add it
+    text = '+94' + text.replace(/^\+?94?/, '');
+  }
+  
+  // Limit to 12 characters total (+94 + 9 digits)
+  if (text.length > 12) {
+    text = text.substring(0, 12);
+  }
+  
+  // Only allow numbers after +94
+  const cleanText = text.substring(0, 3) + text.substring(3).replace(/[^0-9]/g, '');
+  
+  setPhoneNumber(cleanText);
+};
     
   useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
-    const keyboardDidHideListener = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false));
-    return () => {
-      keyboardDidShowListener.remove();
-      keyboardDidHideListener.remove();
-    };
-  }, []);
+  const keyboardDidShowListener = Keyboard.addListener(
+    'keyboardDidShow',
+    () => setKeyboardVisible(true)
+  );
+  const keyboardDidHideListener = Keyboard.addListener(
+    'keyboardDidHide',
+    () => setKeyboardVisible(false)
+  );
+
+  return () => {
+    keyboardDidShowListener.remove();
+    keyboardDidHideListener.remove();
+  };
+}, []);
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-       <KeyboardAvoidingView 
-    behavior={Platform.OS ==="ios" ? "padding" : "height"}
-  enabled 
-  className="flex-1"
+  <KeyboardAvoidingView 
+  behavior={Platform.OS === "ios" ? "padding" : "height"}
+  keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })} // Adjust this value as needed
+  style={{ flex: 1 }}
 >
         <View className="flex-1 bg-white py-4 p-2">
           <View className="p-[-2]">
             <View className="bg-white flex-row items-center h-17 shadow-lg px-1">
-              <BackButton navigation={navigation} />
+              {/* <BackButton navigation={navigation} /> */}
+               <TouchableOpacity 
+                              style={{ paddingHorizontal: wp(2), paddingVertical: hp(2) }}
+                              onPress={() => navigation.navigate("CustomersScreen")}>
+                              <View className="w-9 h-9 bg-[#F6F6F680] rounded-full justify-center items-center">
+                                <AntDesign name="left" size={20} color="black" />
+                              </View>
+                            </TouchableOpacity> 
+              
               <Text style={{ fontSize: 18 }} className="font-bold text-center text-purple-600 flex-grow mr-9">
                 New Customer Registration
               </Text>
             </View>
           </View>
 
-          <ScrollView className="flex-1 " keyboardShouldPersistTaps="handled">
+          {/* <ScrollView className="flex-1 " keyboardShouldPersistTaps="handled"> */}
+          <ScrollView 
+  contentContainerStyle={{ 
+    paddingBottom: isKeyboardVisible ? 200 : 0 // Adjust this value as needed
+  }}
+  keyboardShouldPersistTaps="handled"
+>
             <View className="p-3 px-6">
               <View className="mb-4 mt-4 flex-row justify-between">
                 <View className="flex-[1]">
@@ -487,7 +595,11 @@ const capitalizeFirstLetter = (text: string) => {
       setFirstNameError("");
     }
   }}
-  onBlur={() => handleFieldTouch("firstName")}
+   onFocus={handleInputFocus}
+                    onBlur={() => {
+                      handleFieldTouch("firstName");
+                      handleInputBlur();
+                    }}
 />
   {firstNameError ? (
     <Text className="text-red-500 text-xs pl-4 pt-1">{firstNameError}</Text>
@@ -523,35 +635,39 @@ const capitalizeFirstLetter = (text: string) => {
       setLastNameError("");
     }
   }}
-  onBlur={() => handleFieldTouch("lastName")}
+  onFocus={handleInputFocus}
+                  onBlur={() => {
+                    handleFieldTouch("lastName");
+                    handleInputBlur();
+                  }}
 />
   {lastNameError ? (
     <Text className="text-red-500 text-xs pl-4 pt-1">{lastNameError}</Text>
   ) : null}
 </View>
 
-              <View className="mb-4">
-              <Text className="text-gray-700 mb-1"> Mobile Number *</Text>
-              <TextInput
-                className={`bg-[#F6F6F6] border ${phoneError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
-                placeholder="ex: +9477 XXXXXXX"
-                keyboardType="phone-pad"
-                value={phoneNumber}
-                onChangeText={setPhoneNumber}
-                maxLength={12} 
-                onBlur={() => handleFieldTouch("phoneNumber")}
-                onFocus={() => {
-    // Ensure +94 is there when focused
-    if (phoneNumber === "") {
-      setPhoneNumber("+94");
-    }
-  }}
-              />
-              {phoneError ? (
-                <Text className="text-red-500 text-xs pl-4 pt-1">{phoneError}</Text>
-              ) : null}
-            </View>
-
+          <View className="mb-4">
+  <Text className="text-gray-700 mb-1">Mobile Number *</Text>
+  <TextInput
+    className={`bg-[#F6F6F6] border ${phoneError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+    placeholder="+947XXXXXXXX"
+    value={phoneNumber}
+    onChangeText={handlePhoneNumberChange}
+    onBlur={() => handleFieldTouch("phoneNumber")}
+    keyboardType="phone-pad"
+    maxLength={12}
+    onFocus={() => {
+      // Ensure +94 is always present when focusing
+      if (!phoneNumber || phoneNumber.length < 3) {
+        setPhoneNumber('+94');
+      }
+    }}
+    
+  />
+  {phoneError ? (
+    <Text className="text-red-500 text-xs pl-4 pt-1">{phoneError}</Text>
+  ) : null}
+</View>
 
               <View className="mb-4">
               <Text className="text-gray-700 mb-1">Email Address *</Text>
@@ -561,7 +677,11 @@ const capitalizeFirstLetter = (text: string) => {
                 keyboardType="email-address"
                 value={email}
                 onChangeText={setEmail}
-                onBlur={() => handleFieldTouch("email")}
+                onFocus={handleInputFocus}
+                  onBlur={() => {
+                    handleFieldTouch("email");
+                    handleInputBlur();
+                  }}
               />
               {emailError ? (
                 <Text className="text-red-500 text-xs pl-4 pt-1">{emailError}</Text>
@@ -777,10 +897,11 @@ const capitalizeFirstLetter = (text: string) => {
 <TouchableOpacity 
   onPress={handleRegister}
   disabled={isSubmitting || loading}
+  className="mb-[40%]"
 >
   <LinearGradient 
     colors={["#854BDA", "#6E3DD1"]} 
-    className="py-3 px-4 items-center mt-6 mb-[15%] mr-[20%] ml-[20%] rounded-3xl h-15"
+    className="py-3 px-4 items-center mt-6 mb-[15%] mr-[20%] ml-[20%] rounded-3xl h-15 "
   >
     {isSubmitting || loading ? (
       <ActivityIndicator color="#FFFFFF" />
