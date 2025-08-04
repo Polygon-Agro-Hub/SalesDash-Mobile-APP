@@ -39,6 +39,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.polygonagro.SalesDash",
+      "versionCode": 2,
       "permissions": [
         "INTERNET",
         "WRITE_EXTERNAL_STORAGE",
@@ -70,12 +71,10 @@
         }
       ],
       [
-       "expo-build-properties",
+        "expo-build-properties",
         {
           "android": {
-            "compileSdkVersion": 35,
-            "targetSdkVersion": 35,
-            "buildToolsVersion": "35.0.0"
+            "targetSdkVersion": 35
           },
           "ios": {
             "deploymentTarget": "15.1"
@@ -91,7 +90,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "f62ed800-fd07-447c-819d-a763a61d72cf"
+        "projectId": "81b07a7c-5c59-4e53-b722-3138282a18f1"
       }
     }
   }
