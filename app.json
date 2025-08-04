@@ -39,6 +39,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.polygonagro.SalesDash",
+      "versionCode": 2,
       "permissions": [
         "INTERNET",
         "WRITE_EXTERNAL_STORAGE",
@@ -68,6 +69,17 @@
         {
           "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone."
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "targetSdkVersion": 35
+          },
+          "ios": {
+            "deploymentTarget": "15.1"
+          }
+        }
       ]
     ],
     "experiments": {
@@ -78,7 +90,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "b653bbde-c21d-48e4-9eb2-7811a65a837c"
+        "projectId": "81b07a7c-5c59-4e53-b722-3138282a18f1"
       }
     }
   }
