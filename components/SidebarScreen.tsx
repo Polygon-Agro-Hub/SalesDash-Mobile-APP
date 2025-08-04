@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, Text, Image, TouchableOpacity, Alert, ScrollView,KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, Image, TouchableOpacity, Alert, ScrollView,KeyboardAvoidingView, Platform, ActivityIndicator } from "react-native";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
@@ -10,6 +10,7 @@ import environment from "@/environment/environment";
 import BackButton from "./BackButton";
 import LottieView from "lottie-react-native";
 import { useFocusEffect } from "expo-router";
+import { ActionSheetIOS } from "react-native";
 
 
 type SidebarScreenNavigationProp = StackNavigationProp<RootStackParamList, "SidebarScreen">;
@@ -79,13 +80,14 @@ const handleLogout = async () => {
 
           {loading ? (
         <View className="flex-1 justify-center items-center">
-        <LottieView
+        {/* <LottieView
           source={require("../assets/images/loading.json")}
           autoPlay
           loop
           style={{ width: wp(25), height: hp(12) }}
-        />
-        <Text className="mt-4 text-lg text-[#693ACF] font-semibold">Logging out...</Text>
+        /> */}
+         <ActivityIndicator></ActivityIndicator>
+        <Text className="mt-4  text-[#693ACF] font-semibold">Logging out...</Text>
       </View>
     ) : (
       <View className=" flex-1 w-full bg-white">
