@@ -31,14 +31,14 @@
         "VIBRATE",
         "WRITE_EXTERNAL_STORAGE"
       ],
-      "bundleIdentifier": "com.salesdash.SalesDash"
+      "bundleIdentifier": "com.polygonagro.SalesDash"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/favicon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.salesdash.SalesDash",
+      "package": "com.polygonagro.SalesDash",
       "permissions": [
         "INTERNET",
         "WRITE_EXTERNAL_STORAGE",
@@ -68,6 +68,19 @@
         {
           "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone."
         }
+      ],
+      [
+       "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "buildToolsVersion": "35.0.0"
+          },
+          "ios": {
+            "deploymentTarget": "15.1"
+          }
+        }
       ]
     ],
     "experiments": {
@@ -76,8 +89,10 @@
     "extra": {
       "router": {
         "origin": false
+      },
+      "eas": {
+        "projectId": "f62ed800-fd07-447c-819d-a763a61d72cf"
       }
-    
     }
   }
 }
