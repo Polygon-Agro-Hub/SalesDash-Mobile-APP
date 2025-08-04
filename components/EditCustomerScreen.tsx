@@ -11,6 +11,11 @@ import DropDownPicker from "react-native-dropdown-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SelectList } from "react-native-dropdown-select-list";
 import { AntDesign } from "@expo/vector-icons";
+import { useFocusEffect } from "expo-router";
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState } from '../services/reducxStore'; // Adjust path as needed
+import { setInputClick, clearInputClick } from '../store/navSlice';
+
 
 type EditCustomerScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -67,6 +72,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
   const [emailError, setEmailError] = useState<string>("");
   const [buildingTypeError, setBuildingTypeError] = useState<string>("");
   const [titleError, setTitleError] = useState<string>("");
+    const [isKeyboardVisible, setKeyboardVisible] = useState(false);
 
   // Dropdown states
   const [open, setOpen] = useState(false);
@@ -80,10 +86,14 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
   const [buildingTypeOpen, setBuildingTypeOpen] = useState(false);
   const [openCityDropdown, setOpenCityDropdown] = useState(false);
   const [cityItems, setCityItems] = useState<{label: string, value: string}[]>([]);
+  const [originalEmail, setOriginalEmail] = useState('');
   const [buildingTypeItems, setBuildingTypeItems] = useState([
     { label: "House", value: "House" },
     { label: "Apartment", value: "Apartment" },
   ]);
+  const dispatch = useDispatch();
+    const isClick = useSelector((state: RootState) => state.input.isClick);
+  
 
   // Validation regex
   const phoneRegex = /^\+947\d{8}$/;
@@ -94,6 +104,78 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
   const validatePhoneNumber = (phone: string) => phoneRegex.test(phone);
   const validateEmail = (email: string) => emailRegex.test(email);
   const validateName = (name: string) => nameRegex.test(name);
+
+  const resetFormToOriginalState = async () => {
+    try {
+      const response = await axios.get(
+        `${environment.API_BASE_URL}api/customer/get-customer-data/${id}`
+      );
+      
+      if (response.status === 200) {
+        const customerData = response.data.customer;
+        const buildingData = response.data.building;
+
+        setSelectedCategory(customerData.title || "");
+        setFirstName(customerData.firstName || "");
+        setLastName(customerData.lastName || "");
+        setPhoneNumber(customerData.phoneNumber || "");
+        setEmail(customerData.email || "");
+        setBuildingType(customerData.buildingType || "");
+        setOriginalBuildingType(customerData.buildingType || "");
+        setOriginalPhoneNumber(customerData.phoneNumber || "");
+        setOriginalEmail(customerData.email || '');
+        
+        if (buildingData) {
+          if (customerData.buildingType === "House") {
+            setHouseNo(buildingData.houseNo || "");
+            setStreetName(buildingData.streetName || "");
+            setCity(buildingData.city || "");
+          } else if (customerData.buildingType === "Apartment") {
+            setBuildingNo(buildingData.buildingNo || "");
+            setBuildingName(buildingData.buildingName || "");
+            setUnitNo(buildingData.unitNo || "");
+            setFloorNo(buildingData.floorNo || "");
+            setHouseNo(buildingData.houseNo || "");
+            setStreetName(buildingData.streetName || "");
+            setCity(buildingData.city || "");
+          }
+        }
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // Add this effect to handle screen focus changes
+  useFocusEffect(
+    React.useCallback(() => {
+      let isActive = true;
+
+      const fetchData = async () => {
+        if (isActive) {
+          await resetFormToOriginalState();
+        }
+      };
+
+      fetchData();
+        return () => {
+              // Cleanup if needed
+              dispatch(clearInputClick());
+            };
+
+      
+    }, [id])
+  );
+
+    const handleInputFocus = () => {
+      dispatch(setInputClick(1));
+    };
+  
+    // Handle input blur - set isClick to 0
+    const handleInputBlur = () => {
+      dispatch(setInputClick(0));
+    };
+  
   
   const formatNameInput = (text: string) => {
     if (!text) return text;
@@ -191,50 +273,150 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
     getToken();
   }, []);
 
-  useEffect(() => {
-    const fetchCustomerData = async () => {
-      try {
-        const response = await axios.get(
-          `${environment.API_BASE_URL}api/customer/get-customer-data/${id}`
-        );
-        
-        if (response.status === 200) {
-          const customerData = response.data.customer;
-          const buildingData = response.data.building;
+  const resetFormState = () => {
+    setSelectedCategory("");
+    setFirstName("");
+    setLastName("");
+    setPhoneNumber("");
+    setEmail("");
+    setHouseNo("");
+    setStreetName("");
+    setCity("");
+    setBuildingNo("");
+    setFloorNo("");
+    setUnitNo("");
+    setBuildingName("");
+    setBuildingType("");
+    setOriginalBuildingType("");
+    setOriginalPhoneNumber("");
+    setOriginalEmail("");
+    // Reset error states
+    setFirstNameError("");
+    setLastNameError("");
+    setPhoneError("");
+    setEmailError("");
+    setBuildingTypeError("");
+    setTitleError("");
+    // Reset touched fields
+    setTouchedFields({
+      firstName: false,
+      lastName: false,
+      phoneNumber: false,
+      email: false,
+      buildingType: false,
+      title: false
+    });
+  };
 
-          setSelectedCategory(customerData.title || "");
-          setFirstName(customerData.firstName || "");
-          setLastName(customerData.lastName || "");
-          setPhoneNumber(customerData.phoneNumber || "");
-          setEmail(customerData.email || "");
-          setBuildingType(customerData.buildingType || "");
-          setOriginalBuildingType(customerData.buildingType || "");
-          setOriginalPhoneNumber(customerData.phoneNumber || "");
+  
+  //   const fetchCustomerData = async () => {
+  //     try {
+  //       const response = await axios.get(
+  //         `${environment.API_BASE_URL}api/customer/get-customer-data/${id}`
+  //       );
+        
+  //       if (response.status === 200) {
+  //         const customerData = response.data.customer;
+  //         const buildingData = response.data.building;
+
+  //         setSelectedCategory(customerData.title || "");
+  //         setFirstName(customerData.firstName || "");
+  //         setLastName(customerData.lastName || "");
+  //         setPhoneNumber(customerData.phoneNumber || "");
+  //         setEmail(customerData.email || "");
+  //         setBuildingType(customerData.buildingType || "");
+  //         setOriginalBuildingType(customerData.buildingType || "");
+  //         setOriginalPhoneNumber(customerData.phoneNumber || "");
+  //         setOriginalEmail(customerData.email || '');
           
-          if (buildingData) {
-            if (customerData.buildingType === "House") {
-              setHouseNo(buildingData.houseNo || "");
-              setStreetName(buildingData.streetName || "");
-              setCity(buildingData.city || "");
-            } else if (customerData.buildingType === "Apartment") {
-              setBuildingNo(buildingData.buildingNo || "");
-              setBuildingName(buildingData.buildingName || "");
-              setUnitNo(buildingData.unitNo || "");
-              setFloorNo(buildingData.floorNo || "");
-              setHouseNo(buildingData.houseNo || "");
-              setStreetName(buildingData.streetName || "");
-              setCity(buildingData.city || "");
-            }
+  //         if (buildingData) {
+  //           if (customerData.buildingType === "House") {
+  //             setHouseNo(buildingData.houseNo || "");
+  //             setStreetName(buildingData.streetName || "");
+  //             setCity(buildingData.city || "");
+  //           } else if (customerData.buildingType === "Apartment") {
+  //             setBuildingNo(buildingData.buildingNo || "");
+  //             setBuildingName(buildingData.buildingName || "");
+  //             setUnitNo(buildingData.unitNo || "");
+  //             setFloorNo(buildingData.floorNo || "");
+  //             setHouseNo(buildingData.houseNo || "");
+  //             setStreetName(buildingData.streetName || "");
+  //             setCity(buildingData.city || "");
+  //           }
+  //         }
+  //       }
+  //     } catch (error) {
+  //       console.error(error);
+  //       Alert.alert("Error", "Failed to load customer data.");
+  //     }
+  //   };
+
+  //   fetchCustomerData();
+  // }, [id]);
+    const fetchCustomerData = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(
+        `${environment.API_BASE_URL}api/customer/get-customer-data/${id}`
+      );
+      
+      if (response.status === 200) {
+        const customerData = response.data.customer;
+        const buildingData = response.data.building;
+
+        setSelectedCategory(customerData.title || "");
+        setFirstName(customerData.firstName || "");
+        setLastName(customerData.lastName || "");
+        setPhoneNumber(customerData.phoneNumber || "");
+        setEmail(customerData.email || "");
+        setBuildingType(customerData.buildingType || "");
+        setOriginalBuildingType(customerData.buildingType || "");
+        setOriginalPhoneNumber(customerData.phoneNumber || "");
+        setOriginalEmail(customerData.email || '');
+        
+        if (buildingData) {
+          if (customerData.buildingType === "House") {
+            setHouseNo(buildingData.houseNo || "");
+            setStreetName(buildingData.streetName || "");
+            setCity(buildingData.city || "");
+          } else if (customerData.buildingType === "Apartment") {
+            setBuildingNo(buildingData.buildingNo || "");
+            setBuildingName(buildingData.buildingName || "");
+            setUnitNo(buildingData.unitNo || "");
+            setFloorNo(buildingData.floorNo || "");
+            setHouseNo(buildingData.houseNo || "");
+            setStreetName(buildingData.streetName || "");
+            setCity(buildingData.city || "");
           }
         }
-      } catch (error) {
-        console.error(error);
-        Alert.alert("Error", "Failed to load customer data.");
       }
-    };
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Error", "Failed to load customer data.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchCustomerData();
-  }, [id]);
+  // Use focus effect to handle screen navigation
+  useFocusEffect(
+    React.useCallback(() => {
+      let isActive = true;
+
+      const loadData = async () => {
+        if (isActive) {
+          resetFormState(); // Reset form first
+          await fetchCustomerData(); // Then fetch fresh data
+        }
+      };
+
+      loadData();
+
+      return () => {
+        isActive = false;
+      };
+    }, [id]) // Add any dependencies that should trigger a refetch
+  );
 
   useEffect(() => {
     const fetchCity = async () => {
@@ -295,123 +477,474 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
     }
   };
 
-  const handleRegister = async () => {
-    // Mark all fields as touched to show errors
-    setTouchedFields({
-      firstName: true,
-      lastName: true,
-      phoneNumber: true,
-      email: true,
-      buildingType: true,
-      title: true
-    });
+ // Updated handleRegister function with proper error handling
+// const handleRegister = async () => {
+//   // Mark all fields as touched to show errors
+//   setTouchedFields({
+//     firstName: true,
+//     lastName: true,
+//     phoneNumber: true,
+//     email: true,
+//     buildingType: true,
+//     title: true
+//   });
 
-    // Validate required fields
-    if (!selectedCategory || !firstName || !lastName || !phoneNumber || !email || !buildingType) {
-      Alert.alert("Error", "Please fill in all required fields.");
-      return;
-    }
+//   // Clear any previous validation errors
+//   setPhoneError("");
+//   setEmailError("");
 
-    // Validate formats
-    if (!validatePhoneNumber(phoneNumber)) {
-      Alert.alert("Error", "Please enter a valid phone number (format: +947XXXXXXXX).");
-      return;
-    }
+//   // Validate required fields
+//   if (!selectedCategory || !firstName || !lastName || !phoneNumber || !email || !buildingType) {
+//     Alert.alert("Error", "Please fill in all required fields.");
+//     return;
+//   }
 
-    if (!validateEmail(email)) {
-      Alert.alert("Error", "Please enter a valid email address.");
-      return;
-    }
+//   // Validate formats
+//   if (!validatePhoneNumber(phoneNumber)) {
+//     Alert.alert("Error", "Please enter a valid phone number (format: +947XXXXXXXX).");
+//     return;
+//   }
 
-    // Validate building-specific fields
-    if (buildingType === "House" && (!houseNo || !streetName || !city)) {
-      Alert.alert("Error", "Please fill in all required house fields.");
-      return;
-    }
+//   if (!validateEmail(email)) {
+//     Alert.alert("Error", "Please enter a valid email address.");
+//     return;
+//   }
 
-    if (buildingType === "Apartment" && (!buildingNo || !buildingName || !unitNo || !floorNo || !houseNo || !streetName || !city)) {
-      Alert.alert("Error", "Please fill in all required apartment fields.");
-      return;
-    }
+//   // Validate building-specific fields
+//   if (buildingType === "House" && (!houseNo || !streetName || !city)) {
+//     Alert.alert("Error", "Please fill in all required house fields.");
+//     return;
+//   }
 
-    setIsSubmitting(true);
+//   if (buildingType === "Apartment" && (!buildingNo || !buildingName || !unitNo || !floorNo || !houseNo || !streetName || !city)) {
+//     Alert.alert("Error", "Please fill in all required apartment fields.");
+//     return;
+//   }
 
-    try {
-      // Only check phone number if it's changed
-      if (phoneNumber !== originalPhoneNumber) {
+//   setIsSubmitting(true);
+
+//   try {
+//     // Check for existing phone/email when phone number has changed
+//  if (phoneNumber !== originalPhoneNumber) {
+//   try {
+//     console.log("Checking customer with:", { phoneNumber, email, excludeId: id });
+    
+//     const checkResponse = await axios.post(
+//       `${environment.API_BASE_URL}api/customer/check-customer`,
+//       { 
+//         phoneNumber, 
+//         email,
+//         excludeId: id // Add this to exclude current user from check
+//       },
+//       { 
+//         headers: { 'Authorization': `Bearer ${token}` },
+//         timeout: 10000
+//       }
+//     );
+
+//     console.log("Customer check response:", checkResponse.data);
+        
+//       } catch (checkError: any) {
+//         console.log("Customer check error:", checkError);
+        
+//         // Handle different types of errors
+//         if (checkError.code === 'ECONNABORTED') {
+//           Alert.alert("Error", "Request timed out. Please check your internet connection and try again.");
+//           return;
+//         }
+        
+//         if (checkError.response) {
+//           // Server responded with an error status
+//           const status = checkError.response.status;
+//           const errorData = checkError.response.data;
+          
+//           if (status === 400) {
+//             // Handle validation errors
+//             const errorMessage = errorData.message || "Validation failed";
+            
+//             if (errorMessage.includes("Mobile Number already exists")) {
+//               setPhoneError("This mobile number is already registered.");
+//               Alert.alert(
+//                 "Mobile Number Already Exists", 
+//                 "This mobile number is already registered. Please use a different mobile number."
+//               );
+//               return;
+//             } else if (errorMessage.includes("Email already exists")) {
+//               setEmailError("This email address is already registered.");
+//               Alert.alert(
+//                 "Email Already Exists", 
+//                 "This email address is already registered. Please use a different email address."
+//               );
+//               return;
+//             } else if (errorMessage.includes("Mobile Number and Email already exist")) {
+//               setPhoneError("This mobile number is already registered.");
+//               setEmailError("This email address is already registered.");
+//               Alert.alert(
+//                 "Account Already Exists", 
+//                 "Both mobile number and email are already registered. Please use different credentials."
+//               );
+//               return;
+//             } else {
+//               Alert.alert("Validation Error", errorMessage);
+//               return;
+//             }
+//           } else if (status === 500) {
+//             // Server error
+//             console.error("Server error during validation:", errorData);
+//             Alert.alert(
+//               "Server Error", 
+//               "There was a problem validating your information. Please try again in a moment."
+//             );
+//             return;
+//           } else {
+//             // Other HTTP errors
+//             Alert.alert("Error", `Validation failed (${status}). Please try again.`);
+//             return;
+//           }
+//         } else if (checkError.request) {
+//           // Network error
+//           console.error("Network error:", checkError.request);
+//           Alert.alert(
+//             "Network Error", 
+//             "Unable to connect to the server. Please check your internet connection and try again."
+//           );
+//           return;
+//         } else {
+//           // Other error
+//           console.error("Unexpected error:", checkError.message);
+//           Alert.alert("Error", "An unexpected error occurred. Please try again.");
+//           return;
+//         }
+//       }
+
+//       // Send OTP if validation passed
+//       try {
+//         const otpResponse = await sendOTP();
+//         if (otpResponse.status !== 200) {
+//           Alert.alert("Error", "Failed to send OTP. Please try again.");
+//           return;
+//         }
+//       } catch (otpError) {
+//         console.error("OTP sending error:", otpError);
+//         Alert.alert("Error", "Failed to send OTP. Please try again.");
+//         return;
+//       }
+//     }
+
+//     // Prepare data for update
+//     const customerData = {
+//       title: selectedCategory,
+//       firstName,
+//       lastName,
+//       phoneNumber,
+//       email,
+//       buildingType,
+//     };
+
+//     const buildingData = buildingType === "House" ? {
+//       houseNo,
+//       streetName,
+//       city
+//     } : {
+//       buildingNo,
+//       buildingName,
+//       unitNo,
+//       floorNo,
+//       houseNo,
+//       streetName,
+//       city
+//     };
+
+//     if (phoneNumber !== originalPhoneNumber) {
+//       // Store data and navigate to OTP screen
+//       await AsyncStorage.setItem("pendingCustomerData", JSON.stringify({ 
+//         customerData, 
+//         buildingData,
+//         originalBuildingType
+//       }));
+//       navigation.navigate("OtpScreenUp", { phoneNumber, id, token });
+//     } else {
+//       // Direct update without OTP (phone number unchanged)
+//       try {
+//         const response = await axios.put(
+//           `${environment.API_BASE_URL}api/customer/update-customer-data/${id}`,
+//           { ...customerData, buildingData, originalBuildingType },
+//           { 
+//             headers: { 'Authorization': `Bearer ${token}` },
+//             timeout: 15000 // 15 second timeout for update
+//           }
+//         );
+
+//         if (response.status === 200) {
+//           Alert.alert("Success", "Customer updated successfully.");
+//           navigation.goBack();
+//         }
+//       } catch (updateError: any) {
+//         console.error("Update error:", updateError);
+//         if (updateError.response?.status === 400) {
+//           Alert.alert("Update Error", updateError.response.data.message || "Failed to update customer data.");
+//         } else {
+//           Alert.alert("Error", "Failed to update customer. Please try again.");
+//         }
+//       }
+//     }
+//   } catch (error: any) {
+//     console.error("Unexpected error in handleRegister:", error);
+//     Alert.alert("Error", "An unexpected error occurred. Please try again.");
+//   } finally {
+//     setIsSubmitting(false);
+//   }
+// };
+
+const handleRegister = async () => {
+  // Mark all fields as touched to show errors
+  setTouchedFields({
+    firstName: true,
+    lastName: true,
+    phoneNumber: true,
+    email: true,
+    buildingType: true,
+    title: true
+  });
+
+  // Clear any previous validation errors
+  setPhoneError("");
+  setEmailError("");
+
+  // Validate required fields
+  if (!selectedCategory || !firstName || !lastName || !phoneNumber || !email || !buildingType) {
+    Alert.alert("Error", "Please fill in all required fields.");
+    return;
+  }
+
+  // Validate formats
+  if (!validatePhoneNumber(phoneNumber)) {
+    Alert.alert("Error", "Please enter a valid phone number (format: +947XXXXXXXX).");
+    return;
+  }
+
+  if (!validateEmail(email)) {
+    Alert.alert("Error", "Please enter a valid email address.");
+    return;
+  }
+
+  // Validate building-specific fields
+  if (buildingType === "House" && (!houseNo || !streetName || !city)) {
+    Alert.alert("Error", "Please fill in all required house fields.");
+    return;
+  }
+
+  if (buildingType === "Apartment" && (!buildingNo || !buildingName || !unitNo || !floorNo || !houseNo || !streetName || !city)) {
+    Alert.alert("Error", "Please fill in all required apartment fields.");
+    return;
+  }
+
+  setIsSubmitting(true);
+
+  try {
+    // Check if phone number or email has changed
+    const phoneNumberChanged = phoneNumber !== originalPhoneNumber;
+    const emailChanged = email !== originalEmail; // You need to add originalEmail to your state
+
+    // Check for existing phone/email when either has changed
+    if (phoneNumberChanged || emailChanged) {
+      try {
+        console.log("Checking customer with:", { phoneNumber, email, excludeId: id });
+        
         const checkResponse = await axios.post(
           `${environment.API_BASE_URL}api/customer/check-customer`,
-          { phoneNumber },
-          { headers: { 'Authorization': `Bearer ${token}` } }
+          { 
+            phoneNumber, 
+            email,
+            excludeId: id // Add this to exclude current user from check
+          },
+          { 
+            headers: { 'Authorization': `Bearer ${token}` },
+            timeout: 10000
+          }
         );
 
-        if (checkResponse.status === 400) {
-          Alert.alert("Error", "This phone number is already registered.");
+        console.log("Customer check response:", checkResponse.data);
+            
+      } catch (checkError: any) {
+        console.log("Customer check error:", checkError);
+        
+        // Handle different types of errors
+        if (checkError.code === 'ECONNABORTED') {
+          Alert.alert("Error", "Request timed out. Please check your internet connection and try again.");
           return;
         }
-
-        // Send OTP if phone number changed
-        const otpResponse = await sendOTP();
-        if (otpResponse.status !== 200) {
-          Alert.alert("Error", "Failed to send OTP. Please try again.");
+        
+        if (checkError.response) {
+          // Server responded with an error status
+          const status = checkError.response.status;
+          const errorData = checkError.response.data;
+          
+          if (status === 400) {
+            // Handle validation errors
+            const errorMessage = errorData.message || "Validation failed";
+            
+            if (errorMessage.includes("Mobile Number already exists")) {
+              setPhoneError("This mobile number is already registered.");
+              Alert.alert(
+                "Mobile Number Already Exists", 
+                "This mobile number is already registered. Please use a different mobile number."
+              );
+              return;
+            } else if (errorMessage.includes("Email already exists")) {
+              setEmailError("This email address is already registered.");
+              Alert.alert(
+                "Email Already Exists", 
+                "This email address is already registered. Please use a different email address."
+              );
+              return;
+            } else if (errorMessage.includes("Mobile Number and Email already exist")) {
+              setPhoneError("This mobile number is already registered.");
+              setEmailError("This email address is already registered.");
+              Alert.alert(
+                "Account Already Exists", 
+                "Both mobile number and email are already registered. Please use different credentials."
+              );
+              return;
+            } else {
+              Alert.alert("Validation Error", errorMessage);
+              return;
+            }
+          } else if (status === 500) {
+            // Server error
+            console.error("Server error during validation:", errorData);
+            Alert.alert(
+              "Server Error", 
+              "There was a problem validating your information. Please try again in a moment."
+            );
+            return;
+          } else {
+            // Other HTTP errors
+            Alert.alert("Error", `Validation failed (${status}). Please try again.`);
+            return;
+          }
+        } else if (checkError.request) {
+          // Network error
+          console.error("Network error:", checkError.request);
+          Alert.alert(
+            "Network Error", 
+            "Unable to connect to the server. Please check your internet connection and try again."
+          );
+          return;
+        } else {
+          // Other error
+          console.error("Unexpected error:", checkError.message);
+          Alert.alert("Error", "An unexpected error occurred. Please try again.");
           return;
         }
       }
 
-      // Prepare data
-      const customerData = {
-        title: selectedCategory,
-        firstName,
-        lastName,
-        phoneNumber,
-        email,
-        buildingType,
-      };
+      // Send OTP only if phone number changed
+      if (phoneNumberChanged) {
+        try {
+          const otpResponse = await sendOTP();
+          if (otpResponse.status !== 200) {
+            Alert.alert("Error", "Failed to send OTP. Please try again.");
+            return;
+          }
+        } catch (otpError) {
+          console.error("OTP sending error:", otpError);
+          Alert.alert("Error", "Failed to send OTP. Please try again.");
+          return;
+        }
+      }
+    }
 
-      const buildingData = buildingType === "House" ? {
-        houseNo,
-        streetName,
-        city
-      } : {
-        buildingNo,
-        buildingName,
-        unitNo,
-        floorNo,
-        houseNo,
-        streetName,
-        city
-      };
+    // Prepare data for update
+    const customerData = {
+      title: selectedCategory,
+      firstName,
+      lastName,
+      phoneNumber,
+      email,
+      buildingType,
+    };
 
-      if (phoneNumber !== originalPhoneNumber) {
-        await AsyncStorage.setItem("pendingCustomerData", JSON.stringify({ 
-          customerData, 
-          buildingData,
-          originalBuildingType
-        }));
-        navigation.navigate("OtpScreenUp", { phoneNumber, id, token });
-      } else {
+    const buildingData = buildingType === "House" ? {
+      houseNo,
+      streetName,
+      city
+    } : {
+      buildingNo,
+      buildingName,
+      unitNo,
+      floorNo,
+      houseNo,
+      streetName,
+      city
+    };
+
+    if (phoneNumberChanged) {
+      // Store data and navigate to OTP screen
+      await AsyncStorage.setItem("pendingCustomerData", JSON.stringify({ 
+        customerData, 
+        buildingData,
+        originalBuildingType
+      }));
+      navigation.navigate("OtpScreenUp", { phoneNumber, id, token });
+    } else {
+      // Direct update without OTP (phone number unchanged)
+      try {
         const response = await axios.put(
           `${environment.API_BASE_URL}api/customer/update-customer-data/${id}`,
           { ...customerData, buildingData, originalBuildingType },
-          { headers: { 'Authorization': `Bearer ${token}` } }
+          { 
+            headers: { 'Authorization': `Bearer ${token}` },
+            timeout: 15000 // 15 second timeout for update
+          }
         );
 
         if (response.status === 200) {
           Alert.alert("Success", "Customer updated successfully.");
           navigation.goBack();
         }
+      } catch (updateError: any) {
+        console.error("Update error:", updateError);
+        if (updateError.response?.status === 400) {
+          const errorMessage = updateError.response.data.message || "Failed to update customer data.";
+          
+          // Handle specific backend validation errors
+          if (errorMessage.includes("Email already exists")) {
+            setEmailError("This email address is already registered.");
+            Alert.alert("Email Already Exists", "This email address is already registered. Please use a different email address.");
+          } else if (errorMessage.includes("Mobile Number already exists")) {
+            setPhoneError("This mobile number is already registered.");
+            Alert.alert("Mobile Number Already Exists", "This mobile number is already registered. Please use a different mobile number.");
+          } else {
+            Alert.alert("Update Error", errorMessage);
+          }
+        } else {
+          Alert.alert("Error", "Failed to update customer. Please try again.");
+        }
       }
-    } catch (error: any) {
-      console.error(error);
-      if (error.response?.status === 400) {
-        Alert.alert("Error", error.response.data.message || "This phone number is already registered.");
-      } else {
-        Alert.alert("Error", "Failed to update customer. Please try again.");
-      }
-    } finally {
-      setIsSubmitting(false);
     }
-  };
+  } catch (error: any) {
+    console.error("Unexpected error in handleRegister:", error);
+    Alert.alert("Error", "An unexpected error occurred. Please try again.");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+// Enhanced input handlers with error clearing
+const handlePhoneNumberChangeWithErrorClear = (text: string) => {
+  if (phoneError) {
+    setPhoneError("");
+  }
+  handlePhoneNumberChange(text);
+};
+
+const handleEmailChangeWithErrorClear = (text: string) => {
+  if (emailError) {
+    setEmailError("");
+  }
+  setEmail(text);
+};
 
   const handleBuildingTypeChange = (value: string) => {
     setBuildingType(value);
@@ -424,6 +957,83 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
       }
     }
   };
+
+
+// Enhanced phone number change handler
+const handlePhoneNumberChange = (text: string) => {
+  // Always ensure +94 prefix is maintained
+  if (!text.startsWith('+94')) {
+    // If user tries to remove +94, restore it
+    if (text.length < 3) {
+      setPhoneNumber('+94');
+      return;
+    }
+    // If text doesn't start with +94, add it
+    const cleanedText = text.replace(/^\+?94?/, '');
+    setPhoneNumber('+94' + cleanedText.replace(/[^\d]/g, ''));
+    return;
+  }
+  
+  // If text starts with +94, validate the rest
+  const numberPart = text.slice(3); // Remove +94 part
+  
+  // Only allow digits after +94 and limit to 9 digits (total 12 chars)
+  const cleanedNumber = numberPart.replace(/[^\d]/g, '');
+  
+  // Limit to 9 digits after +94 (making total +94XXXXXXXXX format)
+  if (cleanedNumber.length <= 9) {
+    setPhoneNumber('+94' + cleanedNumber);
+  }
+};
+
+// Enhanced onFocus handler
+const handlePhoneNumberFocus = () => {
+  // Ensure +94 is there when focused and field is empty or too short
+  if (phoneNumber === "" || phoneNumber.length < 3) {
+    setPhoneNumber("+94");
+  }
+};
+
+// Enhanced onKeyPress handler for better control
+const handlePhoneNumberKeyPress = (e: any) => {
+  const { key } = e.nativeEvent;
+  
+  // Prevent deletion if trying to delete +94 prefix
+  if (key === 'Backspace' && phoneNumber.length <= 3) {
+    e.preventDefault();
+    return false;
+  }
+};
+
+    useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      () => setKeyboardVisible(true)
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => setKeyboardVisible(false)
+    );
+  
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
+
+  if (loading) {
+    return (
+      <View className="flex-1 bg-white justify-center items-center">
+        <ActivityIndicator></ActivityIndicator>
+        <Text className="text-[#6839CF]  font-semibold mt-4">
+          Loading Customer Data...
+        </Text>
+      </View>
+    );
+  }
+
+
+
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -502,8 +1112,14 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                     placeholder="First Name"
                     value={firstName}
                     onChangeText={text => setFirstName(formatNameInput(text))}
-                    onBlur={() => handleFieldTouch("firstName")}
+                    // onBlur={() => handleFieldTouch("firstName") }
                     autoCapitalize="words"
+                      onFocus={handleInputFocus}
+                      //  onFocus={handleInputFocus}
+                    onBlur={() => {
+                      handleFieldTouch("firstName");
+                      handleInputBlur();
+                    }}
                   />
                   {firstNameError ? (
                     <Text className="text-red-500 text-xs mt-1 ml-2">{firstNameError}</Text>
@@ -520,7 +1136,12 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                   placeholder="Last Name"
                   value={lastName}
                   onChangeText={text => setLastName(formatNameInput(text))}
-                  onBlur={() => handleFieldTouch("lastName")}
+                  // onBlur={() => handleFieldTouch("lastName")}
+                  onFocus={handleInputFocus}
+                  onBlur={() => {
+                    handleFieldTouch("lastName");
+                    handleInputBlur();
+                  }}
                   autoCapitalize="words"
                 />
                 {lastNameError ? (
@@ -528,46 +1149,49 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                 ) : null}
               </View>
 
-              <View className="mb-4">
-                <RequiredField> Mobile Number</RequiredField>
-                <TextInput
-                  className={`bg-[#F6F6F6] border rounded-full px-6 h-10 ${
-                    phoneError ? 'border-red-500' : 'border-[#F6F6F6]'
-                  }`}
-                  placeholder="ex: +9477XXXXXXX"
-                  keyboardType="phone-pad"
-                  value={phoneNumber}
-                  onChangeText={setPhoneNumber}
-                  onBlur={() => handleFieldTouch("phoneNumber")}
-                  maxLength={12}
-                   onFocus={() => {
-    // Ensure +94 is there when focused
-    if (phoneNumber === "") {
-      setPhoneNumber("+94");
-    }
-  }}
-                />
-                {phoneError ? (
-                  <Text className="text-red-500 text-xs mt-1 ml-2">{phoneError}</Text>
-                ) : null}
-              </View>
+       <View className="mb-4">
+  <RequiredField>Mobile Number</RequiredField>
+  <TextInput
+    className={`bg-[#F6F6F6] border rounded-full px-6 h-10 ${
+      phoneError ? 'border-red-500' : 'border-[#F6F6F6]'
+    }`}
+    placeholder="ex: +94771234567"
+    keyboardType="phone-pad"
+    value={phoneNumber}
+    onChangeText={handlePhoneNumberChangeWithErrorClear}
+    onBlur={() => handleFieldTouch("phoneNumber")}
+    onFocus={handlePhoneNumberFocus}
+   // onFocus={handleInputFocus}
+    onKeyPress={handlePhoneNumberKeyPress}
+    maxLength={12}
+    selection={phoneNumber.length <= 3 ? { start: 3, end: 3 } : undefined}
+  />
+  {phoneError ? (
+    <Text className="text-red-500 text-xs mt-1 ml-2">{phoneError}</Text>
+  ) : null}
+</View>
 
-              <View className="mb-4">
-                <RequiredField>Email Address</RequiredField>
-                <TextInput
-                  className={`bg-[#F6F6F6] border rounded-full px-6 h-10 ${
-                    emailError ? 'border-red-500' : 'border-[#F6F6F6]'
-                  }`}
-                  placeholder="Email Address"
-                  keyboardType="email-address"
-                  value={email}
-                  onChangeText={setEmail}
-                  onBlur={() => handleFieldTouch("email")}
-                />
-                {emailError ? (
-                  <Text className="text-red-500 text-xs mt-1 ml-2">{emailError}</Text>
-                ) : null}
-              </View>
+<View className="mb-4">
+  <RequiredField>Email Address</RequiredField>
+  <TextInput
+    className={`bg-[#F6F6F6] border rounded-full px-6 h-10 ${
+      emailError ? 'border-red-500' : 'border-[#F6F6F6]'
+    }`}
+    placeholder="Email Address"
+    keyboardType="email-address"
+    value={email}
+    onChangeText={handleEmailChangeWithErrorClear}
+    // onBlur={() => handleFieldTouch("email")}
+     onFocus={handleInputFocus}
+                  onBlur={() => {
+                    handleFieldTouch("email");
+                    handleInputBlur();
+                  }}
+  />
+  {emailError ? (
+    <Text className="text-red-500 text-xs mt-1 ml-2">{emailError}</Text>
+  ) : null}
+</View>
 
               <View className="mb-4 z-10">
                 <RequiredField>Building Type</RequiredField>
@@ -623,6 +1247,11 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                       placeholder="Building / House No (e.g., 14/B)"
                       value={houseNo}
                       onChangeText={setHouseNo}
+                      onFocus={handleInputFocus}
+                        onBlur={() => {
+                   
+                    handleInputBlur();
+                  }}
                     />
                   </View>
                   <View className="mb-4">
@@ -632,6 +1261,11 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                       placeholder="Street Name"
                       value={streetName}
                       onChangeText={setStreetName}
+                      onFocus={handleInputFocus}
+                        onBlur={() => {
+                  
+                    handleInputBlur();
+                  }}
                     />
                   </View>
                   <View className="mb-4 z-10">
@@ -686,6 +1320,11 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                       placeholder="Apartment / Building No"
                       value={buildingNo}
                       onChangeText={setBuildingNo}
+                      onFocus={handleInputFocus}
+                        onBlur={() => {
+                  
+                    handleInputBlur();
+                  }}
                     />
                   </View>
                   <View className="mb-4">
@@ -695,6 +1334,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                       placeholder="Apartment / Building Name"
                       value={buildingName}
                       onChangeText={setBuildingName}
+                      onFocus={handleInputFocus}
                     />
                   </View>
                   <View className="mb-4">
@@ -704,6 +1344,11 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                       placeholder="ex: Building B"
                       value={unitNo}
                       onChangeText={setUnitNo}
+                      onFocus={handleInputFocus}
+                        onBlur={() => {
+           
+                    handleInputBlur();
+                  }}
                     />
                   </View>
                   <View className="mb-4">
@@ -713,6 +1358,11 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                       placeholder="ex: 3rd Floor"
                       value={floorNo}
                       onChangeText={setFloorNo}
+                      onFocus={handleInputFocus}
+                        onBlur={() => {
+                 
+                    handleInputBlur();
+                  }}
                     />
                   </View>
                   <View className="mb-4">
@@ -722,6 +1372,11 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                       placeholder="Building / House No (e.g., 14/B)"
                       value={houseNo}
                       onChangeText={setHouseNo}
+                      onFocus={handleInputFocus}
+                        onBlur={() => {
+                
+                    handleInputBlur();
+                  }}
                     />
                   </View>
                   <View className="mb-4">
@@ -731,6 +1386,11 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                       placeholder="Street Name"
                       value={streetName}
                       onChangeText={setStreetName}
+                      onFocus={handleInputFocus}
+                        onBlur={() => {
+              
+                    handleInputBlur();
+                  }}
                     />
                   </View>
                   <View className="mb-4 z-10">
