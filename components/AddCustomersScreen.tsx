@@ -205,9 +205,145 @@ const dispatch = useDispatch();
 const validateName = (name: string) => {
   return /^[A-Z][a-z]*$/.test(name);
 };
-  const validateEmail = (email: string) => emailRegex.test(email);
+  // const validateEmail = (email: string) => emailRegex.test(email);
 
-  // Validate email when it changes
+ // Enhanced Email Validation Functions
+const validateEmail = (email: string): boolean => {
+  // Basic email format check
+  const generalEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  
+  if (!generalEmailRegex.test(email)) {
+    return false;
+  }
+  
+  // Extract local part and domain
+  const emailLower = email.toLowerCase();
+  const [localPart, domain] = emailLower.split('@');
+  
+  // Check for specific allowed domains
+  const allowedSpecificDomains = ['gmail.com', 'googlemail.com', 'yahoo.com'];
+  const allowedTLDs = ['.com', '.gov', '.lk'];
+  
+  // Gmail/Googlemail specific validation
+  if (domain === 'gmail.com' || domain === 'googlemail.com') {
+    return validateGmailLocalPart(localPart);
+  }
+  
+  // Yahoo validation (standard email rules)
+  if (domain === 'yahoo.com') {
+    return validateYahooLocalPart(localPart);
+  }
+  
+  // Check for other allowed domains (.com, .gov, .lk)
+  for (const tld of allowedTLDs) {
+    if (domain.endsWith(tld)) {
+      return validateGeneralLocalPart(localPart);
+    }
+  }
+  
+  return false;
+};
+
+// Gmail-specific local part validation
+const validateGmailLocalPart = (localPart: string): boolean => {
+  // Gmail rules:
+  // 1. Only alphanumeric characters, dots (.), and plus signs (+) allowed
+  // 2. No consecutive dots
+  // 3. No leading or trailing dots
+  // 4. Must be 6-30 characters long
+  
+  // Check length
+  if (localPart.length < 6 || localPart.length > 30) {
+    return false;
+  }
+  
+  // Check for valid characters only (a-z, 0-9, ., +)
+  const validCharsRegex = /^[a-zA-Z0-9.+]+$/;
+  if (!validCharsRegex.test(localPart)) {
+    return false;
+  }
+  
+  // Check for leading or trailing dots
+  if (localPart.startsWith('.') || localPart.endsWith('.')) {
+    return false;
+  }
+  
+  // Check for consecutive dots
+  if (localPart.includes('..')) {
+    return false;
+  }
+  
+  // Must have at least one character
+  if (localPart.length === 0) {
+    return false;
+  }
+  
+  return true;
+};
+
+// Yahoo-specific local part validation
+const validateYahooLocalPart = (localPart: string): boolean => {
+  // Yahoo rules:
+  // 1. Only alphanumeric characters, dots (.), underscores (_), and hyphens (-) allowed
+  // 2. No consecutive dots
+  // 3. No leading or trailing dots/underscores/hyphens
+  // 4. Must be 4-32 characters long
+  
+  // Check length
+  if (localPart.length < 4 || localPart.length > 32) {
+    return false;
+  }
+  
+  // Check for valid characters only
+  const validCharsRegex = /^[a-zA-Z0-9._-]+$/;
+  if (!validCharsRegex.test(localPart)) {
+    return false;
+  }
+  
+  // Check for leading or trailing special characters
+  if (/^[._-]|[._-]$/.test(localPart)) {
+    return false;
+  }
+  
+  // Check for consecutive dots
+  if (localPart.includes('..')) {
+    return false;
+  }
+  
+  return true;
+};
+
+// General local part validation for other domains
+const validateGeneralLocalPart = (localPart: string): boolean => {
+  // General rules:
+  // 1. Only alphanumeric characters, dots (.), underscores (_), hyphens (-), and plus signs (+) allowed
+  // 2. No consecutive dots
+  // 3. No leading or trailing dots
+  // 4. Must be 1-64 characters long
+  
+  // Check length
+  if (localPart.length < 1 || localPart.length > 64) {
+    return false;
+  }
+  
+  // Check for valid characters
+  const validCharsRegex = /^[a-zA-Z0-9._%+-]+$/;
+  if (!validCharsRegex.test(localPart)) {
+    return false;
+  }
+  
+  // Check for leading or trailing dots
+  if (localPart.startsWith('.') || localPart.endsWith('.')) {
+    return false;
+  }
+  
+  // Check for consecutive dots
+  if (localPart.includes('..')) {
+    return false;
+  }
+  
+  return true;
+};
 
 
   useEffect(() => {
@@ -220,18 +356,92 @@ const validateName = (name: string) => {
     }
   }, [selectedCategory, touchedFields.title]);
   
-  useEffect(() => {
-    if (touchedFields.email) {
-      if (!email) {
-        setEmailError("Email is required");
-      } else if (!validateEmail(email)) {
-        setEmailError("Please enter a valid email address");
-      } else {
-        setEmailError("");
-      }
-    }
-  }, [email, touchedFields.email]);
+  // useEffect(() => {
+  //   if (touchedFields.email) {
+  //     if (!email) {
+  //       setEmailError("Email is required");
+  //     } else if (!validateEmail(email)) {
+  //       setEmailError("Please enter a valid email address");
+  //     } else {
+  //       setEmailError("");
+  //     }
+  //   }
+  // }, [email, touchedFields.email]);
 
+// Updated useEffect for email validation with specific error messages
+useEffect(() => {
+  if (touchedFields.email) {
+    if (!email) {
+      setEmailError("Email is required");
+    } else if (!validateEmail(email)) {
+      // Provide specific error messages based on domain and validation issues
+      const emailLower = email.toLowerCase();
+      const [localPart, domain] = emailLower.split('@');
+      
+      // Check if email format is completely invalid
+      const generalEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!generalEmailRegex.test(email)) {
+        setEmailError("Please enter a valid email address");
+        return;
+      }
+      
+      if (domain === 'gmail.com' || domain === 'googlemail.com') {
+        // Gmail-specific errors
+        if (localPart.length < 6) {
+          setEmailError("Gmail addresses must have at least 6 characters before @");
+        } else if (localPart.length > 30) {
+          setEmailError("Gmail addresses cannot exceed 30 characters before @");
+        } else if (/\.{2,}/.test(localPart)) {
+          setEmailError("Gmail addresses cannot have consecutive dots");
+        } else if (/^\.|\.$/.test(localPart)) {
+          setEmailError("Gmail addresses cannot start or end with a dot");
+        } else if (!/^[a-zA-Z0-9.+]+$/.test(localPart)) {
+          setEmailError("Gmail addresses can only contain letters, numbers, dots and plus signs");
+        } else {
+          setEmailError("Please enter a valid Gmail address");
+        }
+      } else if (domain === 'yahoo.com') {
+        // Yahoo-specific errors
+        if (localPart.length < 4) {
+          setEmailError("Yahoo addresses must have at least 4 characters before @");
+        } else if (localPart.length > 32) {
+          setEmailError("Yahoo addresses cannot exceed 32 characters before @");
+        } else if (/\.{2,}/.test(localPart)) {
+          setEmailError("Yahoo addresses cannot have consecutive dots");
+        } else if (/^[._-]|[._-]$/.test(localPart)) {
+          setEmailError("Yahoo addresses cannot start or end with dots, underscores or hyphens");
+        } else if (!/^[a-zA-Z0-9._-]+$/.test(localPart)) {
+          setEmailError("Yahoo addresses can only contain letters, numbers, dots, underscores and hyphens");
+        } else {
+          setEmailError("Please enter a valid Yahoo address");
+        }
+      } else {
+        // Check if domain is supported
+        const allowedTLDs = ['.com', '.gov', '.lk'];
+        const isDomainSupported = allowedTLDs.some(tld => domain.endsWith(tld));
+        
+        if (!isDomainSupported) {
+          setEmailError("Please enter a valid email address with a supported domain (.com, .gov, .lk)");
+        } else {
+          // General validation errors
+          if (localPart.length > 64) {
+            setEmailError("Email address is too long");
+          } else if (/\.{2,}/.test(localPart)) {
+            setEmailError("Email addresses cannot have consecutive dots");
+          } else if (/^\.|\.$/.test(localPart)) {
+            setEmailError("Email addresses cannot start or end with a dot");
+          } else if (!/^[a-zA-Z0-9._%+-]+$/.test(localPart)) {
+            setEmailError("Please enter a valid email address");
+          } else {
+            setEmailError("Please enter a valid email address");
+          }
+        }
+      }
+    } else {
+      setEmailError("");
+    }
+  }
+}, [email, touchedFields.email]);
   // Validate phone when it changes
   useEffect(() => {
     if (touchedFields.phoneNumber) {
@@ -507,6 +717,8 @@ const capitalizeFirstLetter = (text: string) => {
   };
 }, []);
 
+
+
   return (
     <SafeAreaView className="flex-1 bg-white">
   <KeyboardAvoidingView 
@@ -569,20 +781,7 @@ const capitalizeFirstLetter = (text: string) => {
 
                 <View className="flex-[2] ml-2">
   <Text className="text-gray-700 mb-1">First Name *</Text>
-  {/* <TextInput
-    className={`bg-[#F6F6F6] border ${firstNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
-    placeholder="First Name"
-    value={firstName}
-    onChangeText={(text) => {
-      setFirstName(text);
-      if (touchedFields.firstName && !text) {
-        setFirstNameError("First name is required");
-      } else if (touchedFields.firstName) {
-        setFirstNameError("");
-      }
-    }}
-    onBlur={() => handleFieldTouch("firstName")}
-  /> */}
+
  <TextInput
   className={`bg-[#F6F6F6] border ${firstNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
   placeholder="First Name"
@@ -609,20 +808,7 @@ const capitalizeFirstLetter = (text: string) => {
 
               <View className="mb-4">
   <Text className="text-gray-700 mb-1">Last Name *</Text>
-  {/* <TextInput
-    className={`bg-[#F6F6F6] border ${lastNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
-    placeholder="Last Name"
-    value={lastName}
-    onChangeText={(text) => {
-      setLastName(text);
-      if (touchedFields.lastName && !text) {
-        setLastNameError("Last name is required");
-      } else if (touchedFields.lastName) {
-        setLastNameError("");
-      }
-    }}
-    onBlur={() => handleFieldTouch("lastName")}
-  /> */}
+
   <TextInput
   className={`bg-[#F6F6F6] border ${lastNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
   placeholder="Last Name"
@@ -669,7 +855,7 @@ const capitalizeFirstLetter = (text: string) => {
   ) : null}
 </View>
 
-              <View className="mb-4">
+              {/* <View className="mb-4">
               <Text className="text-gray-700 mb-1">Email Address *</Text>
               <TextInput
                 className={`bg-[#F6F6F6] border ${emailError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
@@ -686,7 +872,32 @@ const capitalizeFirstLetter = (text: string) => {
               {emailError ? (
                 <Text className="text-red-500 text-xs pl-4 pt-1">{emailError}</Text>
               ) : null}
-            </View>
+            </View> */}
+           <View className="mb-4">
+  <Text className="text-gray-700 mb-1">Email Address *</Text>
+  <TextInput
+    className={`bg-[#F6F6F6] border ${emailError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+    placeholder="Email Address"
+    keyboardType="email-address"
+    autoCapitalize="none"
+    autoCorrect={false}
+    value={email}
+    onChangeText={(text) => {
+      setEmail(text.toLowerCase()); // Normalize to lowercase
+      if (touchedFields.email) {
+        handleFieldTouch("email");
+      }
+    }}
+    onFocus={handleInputFocus}
+    onBlur={() => {
+      handleFieldTouch("email");
+      handleInputBlur();
+    }}
+  />
+  {emailError ? (
+    <Text className="text-red-500 text-xs pl-4 pt-1">{emailError}</Text>
+  ) : null}
+</View>
 
               <View className="mb-4">
                 <Text className="text-gray-700 mb-1">Building Type *</Text>
