@@ -231,13 +231,13 @@ const validateEmail = (email: string): boolean => {
   
   // Yahoo validation (standard email rules)
   if (domain === 'yahoo.com') {
-    return true;
+    return validateYahooLocalPart(localPart);
   }
   
   // Check for other allowed domains (.com, .gov, .lk)
   for (const tld of allowedTLDs) {
     if (domain.endsWith(tld)) {
-      return true;
+      return validateGeneralLocalPart(localPart);
     }
   }
   
@@ -250,6 +250,12 @@ const validateGmailLocalPart = (localPart: string): boolean => {
   // 1. Only alphanumeric characters, dots (.), and plus signs (+) allowed
   // 2. No consecutive dots
   // 3. No leading or trailing dots
+  // 4. Must be 6-30 characters long
+  
+  // Check length
+  if (localPart.length < 6 || localPart.length > 30) {
+    return false;
+  }
   
   // Check for valid characters only (a-z, 0-9, ., +)
   const validCharsRegex = /^[a-zA-Z0-9.+]+$/;
@@ -274,7 +280,70 @@ const validateGmailLocalPart = (localPart: string): boolean => {
   
   return true;
 };
-  // Validate email when it changes
+
+// Yahoo-specific local part validation
+const validateYahooLocalPart = (localPart: string): boolean => {
+  // Yahoo rules:
+  // 1. Only alphanumeric characters, dots (.), underscores (_), and hyphens (-) allowed
+  // 2. No consecutive dots
+  // 3. No leading or trailing dots/underscores/hyphens
+  // 4. Must be 4-32 characters long
+  
+  // Check length
+  if (localPart.length < 4 || localPart.length > 32) {
+    return false;
+  }
+  
+  // Check for valid characters only
+  const validCharsRegex = /^[a-zA-Z0-9._-]+$/;
+  if (!validCharsRegex.test(localPart)) {
+    return false;
+  }
+  
+  // Check for leading or trailing special characters
+  if (/^[._-]|[._-]$/.test(localPart)) {
+    return false;
+  }
+  
+  // Check for consecutive dots
+  if (localPart.includes('..')) {
+    return false;
+  }
+  
+  return true;
+};
+
+// General local part validation for other domains
+const validateGeneralLocalPart = (localPart: string): boolean => {
+  // General rules:
+  // 1. Only alphanumeric characters, dots (.), underscores (_), hyphens (-), and plus signs (+) allowed
+  // 2. No consecutive dots
+  // 3. No leading or trailing dots
+  // 4. Must be 1-64 characters long
+  
+  // Check length
+  if (localPart.length < 1 || localPart.length > 64) {
+    return false;
+  }
+  
+  // Check for valid characters
+  const validCharsRegex = /^[a-zA-Z0-9._%+-]+$/;
+  if (!validCharsRegex.test(localPart)) {
+    return false;
+  }
+  
+  // Check for leading or trailing dots
+  if (localPart.startsWith('.') || localPart.endsWith('.')) {
+    return false;
+  }
+  
+  // Check for consecutive dots
+  if (localPart.includes('..')) {
+    return false;
+  }
+  
+  return true;
+};
 
 
   useEffect(() => {
@@ -299,19 +368,30 @@ const validateGmailLocalPart = (localPart: string): boolean => {
   //   }
   // }, [email, touchedFields.email]);
 
- useEffect(() => {
+// Updated useEffect for email validation with specific error messages
+useEffect(() => {
   if (touchedFields.email) {
     if (!email) {
       setEmailError("Email is required");
     } else if (!validateEmail(email)) {
-      // Provide specific error messages based on domain
+      // Provide specific error messages based on domain and validation issues
       const emailLower = email.toLowerCase();
-      const domain = emailLower.split('@')[1];
+      const [localPart, domain] = emailLower.split('@');
+      
+      // Check if email format is completely invalid
+      const generalEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!generalEmailRegex.test(email)) {
+        setEmailError("Please enter a valid email address");
+        return;
+      }
       
       if (domain === 'gmail.com' || domain === 'googlemail.com') {
-        const localPart = emailLower.split('@')[0];
-        
-        if (/\.{2,}/.test(localPart)) {
+        // Gmail-specific errors
+        if (localPart.length < 6) {
+          setEmailError("Gmail addresses must have at least 6 characters before @");
+        } else if (localPart.length > 30) {
+          setEmailError("Gmail addresses cannot exceed 30 characters before @");
+        } else if (/\.{2,}/.test(localPart)) {
           setEmailError("Gmail addresses cannot have consecutive dots");
         } else if (/^\.|\.$/.test(localPart)) {
           setEmailError("Gmail addresses cannot start or end with a dot");
@@ -320,15 +400,48 @@ const validateGmailLocalPart = (localPart: string): boolean => {
         } else {
           setEmailError("Please enter a valid Gmail address");
         }
+      } else if (domain === 'yahoo.com') {
+        // Yahoo-specific errors
+        if (localPart.length < 4) {
+          setEmailError("Yahoo addresses must have at least 4 characters before @");
+        } else if (localPart.length > 32) {
+          setEmailError("Yahoo addresses cannot exceed 32 characters before @");
+        } else if (/\.{2,}/.test(localPart)) {
+          setEmailError("Yahoo addresses cannot have consecutive dots");
+        } else if (/^[._-]|[._-]$/.test(localPart)) {
+          setEmailError("Yahoo addresses cannot start or end with dots, underscores or hyphens");
+        } else if (!/^[a-zA-Z0-9._-]+$/.test(localPart)) {
+          setEmailError("Yahoo addresses can only contain letters, numbers, dots, underscores and hyphens");
+        } else {
+          setEmailError("Please enter a valid Yahoo address");
+        }
       } else {
-        setEmailError("Please enter a valid email address with a supported domain (.com, .gov, .lk)");
+        // Check if domain is supported
+        const allowedTLDs = ['.com', '.gov', '.lk'];
+        const isDomainSupported = allowedTLDs.some(tld => domain.endsWith(tld));
+        
+        if (!isDomainSupported) {
+          setEmailError("Please enter a valid email address with a supported domain (.com, .gov, .lk)");
+        } else {
+          // General validation errors
+          if (localPart.length > 64) {
+            setEmailError("Email address is too long");
+          } else if (/\.{2,}/.test(localPart)) {
+            setEmailError("Email addresses cannot have consecutive dots");
+          } else if (/^\.|\.$/.test(localPart)) {
+            setEmailError("Email addresses cannot start or end with a dot");
+          } else if (!/^[a-zA-Z0-9._%+-]+$/.test(localPart)) {
+            setEmailError("Please enter a valid email address");
+          } else {
+            setEmailError("Please enter a valid email address");
+          }
+        }
       }
     } else {
       setEmailError("");
     }
   }
 }, [email, touchedFields.email]);
-
   // Validate phone when it changes
   useEffect(() => {
     if (touchedFields.phoneNumber) {
