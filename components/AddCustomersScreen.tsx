@@ -205,8 +205,75 @@ const dispatch = useDispatch();
 const validateName = (name: string) => {
   return /^[A-Z][a-z]*$/.test(name);
 };
-  const validateEmail = (email: string) => emailRegex.test(email);
+  // const validateEmail = (email: string) => emailRegex.test(email);
 
+ // Enhanced Email Validation Functions
+const validateEmail = (email: string): boolean => {
+  // Basic email format check
+  const generalEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  
+  if (!generalEmailRegex.test(email)) {
+    return false;
+  }
+  
+  // Extract local part and domain
+  const emailLower = email.toLowerCase();
+  const [localPart, domain] = emailLower.split('@');
+  
+  // Check for specific allowed domains
+  const allowedSpecificDomains = ['gmail.com', 'googlemail.com', 'yahoo.com'];
+  const allowedTLDs = ['.com', '.gov', '.lk'];
+  
+  // Gmail/Googlemail specific validation
+  if (domain === 'gmail.com' || domain === 'googlemail.com') {
+    return validateGmailLocalPart(localPart);
+  }
+  
+  // Yahoo validation (standard email rules)
+  if (domain === 'yahoo.com') {
+    return true;
+  }
+  
+  // Check for other allowed domains (.com, .gov, .lk)
+  for (const tld of allowedTLDs) {
+    if (domain.endsWith(tld)) {
+      return true;
+    }
+  }
+  
+  return false;
+};
+
+// Gmail-specific local part validation
+const validateGmailLocalPart = (localPart: string): boolean => {
+  // Gmail rules:
+  // 1. Only alphanumeric characters, dots (.), and plus signs (+) allowed
+  // 2. No consecutive dots
+  // 3. No leading or trailing dots
+  
+  // Check for valid characters only (a-z, 0-9, ., +)
+  const validCharsRegex = /^[a-zA-Z0-9.+]+$/;
+  if (!validCharsRegex.test(localPart)) {
+    return false;
+  }
+  
+  // Check for leading or trailing dots
+  if (localPart.startsWith('.') || localPart.endsWith('.')) {
+    return false;
+  }
+  
+  // Check for consecutive dots
+  if (localPart.includes('..')) {
+    return false;
+  }
+  
+  // Must have at least one character
+  if (localPart.length === 0) {
+    return false;
+  }
+  
+  return true;
+};
   // Validate email when it changes
 
 
@@ -220,17 +287,47 @@ const validateName = (name: string) => {
     }
   }, [selectedCategory, touchedFields.title]);
   
-  useEffect(() => {
-    if (touchedFields.email) {
-      if (!email) {
-        setEmailError("Email is required");
-      } else if (!validateEmail(email)) {
-        setEmailError("Please enter a valid email address");
+  // useEffect(() => {
+  //   if (touchedFields.email) {
+  //     if (!email) {
+  //       setEmailError("Email is required");
+  //     } else if (!validateEmail(email)) {
+  //       setEmailError("Please enter a valid email address");
+  //     } else {
+  //       setEmailError("");
+  //     }
+  //   }
+  // }, [email, touchedFields.email]);
+
+ useEffect(() => {
+  if (touchedFields.email) {
+    if (!email) {
+      setEmailError("Email is required");
+    } else if (!validateEmail(email)) {
+      // Provide specific error messages based on domain
+      const emailLower = email.toLowerCase();
+      const domain = emailLower.split('@')[1];
+      
+      if (domain === 'gmail.com' || domain === 'googlemail.com') {
+        const localPart = emailLower.split('@')[0];
+        
+        if (/\.{2,}/.test(localPart)) {
+          setEmailError("Gmail addresses cannot have consecutive dots");
+        } else if (/^\.|\.$/.test(localPart)) {
+          setEmailError("Gmail addresses cannot start or end with a dot");
+        } else if (!/^[a-zA-Z0-9.+]+$/.test(localPart)) {
+          setEmailError("Gmail addresses can only contain letters, numbers, dots and plus signs");
+        } else {
+          setEmailError("Please enter a valid Gmail address");
+        }
       } else {
-        setEmailError("");
+        setEmailError("Please enter a valid email address with a supported domain (.com, .gov, .lk)");
       }
+    } else {
+      setEmailError("");
     }
-  }, [email, touchedFields.email]);
+  }
+}, [email, touchedFields.email]);
 
   // Validate phone when it changes
   useEffect(() => {
@@ -507,6 +604,8 @@ const capitalizeFirstLetter = (text: string) => {
   };
 }, []);
 
+
+
   return (
     <SafeAreaView className="flex-1 bg-white">
   <KeyboardAvoidingView 
@@ -569,20 +668,7 @@ const capitalizeFirstLetter = (text: string) => {
 
                 <View className="flex-[2] ml-2">
   <Text className="text-gray-700 mb-1">First Name *</Text>
-  {/* <TextInput
-    className={`bg-[#F6F6F6] border ${firstNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
-    placeholder="First Name"
-    value={firstName}
-    onChangeText={(text) => {
-      setFirstName(text);
-      if (touchedFields.firstName && !text) {
-        setFirstNameError("First name is required");
-      } else if (touchedFields.firstName) {
-        setFirstNameError("");
-      }
-    }}
-    onBlur={() => handleFieldTouch("firstName")}
-  /> */}
+
  <TextInput
   className={`bg-[#F6F6F6] border ${firstNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
   placeholder="First Name"
@@ -609,20 +695,7 @@ const capitalizeFirstLetter = (text: string) => {
 
               <View className="mb-4">
   <Text className="text-gray-700 mb-1">Last Name *</Text>
-  {/* <TextInput
-    className={`bg-[#F6F6F6] border ${lastNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
-    placeholder="Last Name"
-    value={lastName}
-    onChangeText={(text) => {
-      setLastName(text);
-      if (touchedFields.lastName && !text) {
-        setLastNameError("Last name is required");
-      } else if (touchedFields.lastName) {
-        setLastNameError("");
-      }
-    }}
-    onBlur={() => handleFieldTouch("lastName")}
-  /> */}
+
   <TextInput
   className={`bg-[#F6F6F6] border ${lastNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
   placeholder="Last Name"
@@ -669,7 +742,7 @@ const capitalizeFirstLetter = (text: string) => {
   ) : null}
 </View>
 
-              <View className="mb-4">
+              {/* <View className="mb-4">
               <Text className="text-gray-700 mb-1">Email Address *</Text>
               <TextInput
                 className={`bg-[#F6F6F6] border ${emailError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
@@ -686,7 +759,32 @@ const capitalizeFirstLetter = (text: string) => {
               {emailError ? (
                 <Text className="text-red-500 text-xs pl-4 pt-1">{emailError}</Text>
               ) : null}
-            </View>
+            </View> */}
+           <View className="mb-4">
+  <Text className="text-gray-700 mb-1">Email Address *</Text>
+  <TextInput
+    className={`bg-[#F6F6F6] border ${emailError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+    placeholder="Email Address"
+    keyboardType="email-address"
+    autoCapitalize="none"
+    autoCorrect={false}
+    value={email}
+    onChangeText={(text) => {
+      setEmail(text.toLowerCase()); // Normalize to lowercase
+      if (touchedFields.email) {
+        handleFieldTouch("email");
+      }
+    }}
+    onFocus={handleInputFocus}
+    onBlur={() => {
+      handleFieldTouch("email");
+      handleInputBlur();
+    }}
+  />
+  {emailError ? (
+    <Text className="text-red-500 text-xs pl-4 pt-1">{emailError}</Text>
+  ) : null}
+</View>
 
               <View className="mb-4">
                 <Text className="text-gray-700 mb-1">Building Type *</Text>

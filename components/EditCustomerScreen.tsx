@@ -97,14 +97,63 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
 
   // Validation regex
   const phoneRegex = /^\+947\d{8}$/;
-  const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+ // const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
   const nameRegex = /^[A-Z][a-z]*$/;
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
   // Helper functions
   const validatePhoneNumber = (phone: string) => phoneRegex.test(phone);
-  const validateEmail = (email: string) => emailRegex.test(email);
+  // const validateEmail = (email: string) => emailRegex.test(email);
   const validateName = (name: string) => nameRegex.test(name);
 
+ const validateEmail = (email: string) => {
+  if (!emailRegex.test(email)) {
+    return false;
+  }
+  
+  const parts = email.split('@');
+  if (parts.length !== 2) return false;
+  
+  const [localPart, domainPart] = parts;
+  
+  // Check local part length
+  if (localPart.length < 1 || localPart.length > 64) return false;
+  
+  // Check domain part length
+  if (domainPart.length < 1 || domainPart.length > 255) return false;
+  
+  // Check for consecutive dots
+  if (localPart.includes('..') || domainPart.includes('..')) return false;
+  
+  // Check for special characters at start/end
+  if (/^[._-]/.test(localPart) || /[._-]$/.test(localPart)) return false;
+  
+  // Check for allowed domains
+  const allowedDomains = ['gmail.com', 'googlemail.com', 'yahoo.com', 'outlook.com'];
+  const allowedTlds = ['.com', '.lk', '.gov'];
+  
+  // Check if domain is in allowed list or has allowed TLD
+  const domainLower = domainPart.toLowerCase();
+  const hasAllowedTld = allowedTlds.some(tld => domainLower.endsWith(tld));
+  
+  if (!allowedDomains.includes(domainLower) && !hasAllowedTld) {
+    return false;
+  }
+  
+  // Additional Gmail-specific rules
+  if (domainLower === 'gmail.com' || domainLower === 'googlemail.com') {
+    // Gmail doesn't allow consecutive dots
+    if (/\.{2,}/.test(localPart)) return false;
+    
+    // Gmail doesn't allow dots at start or end
+    if (/^\.|\.$/.test(localPart)) return false;
+    
+    // Gmail only allows certain characters
+    if (!/^[a-zA-Z0-9.+]+$/.test(localPart)) return false;
+  }
+  
+  return true;
+};
   const resetFormToOriginalState = async () => {
     try {
       const response = await axios.get(
@@ -231,17 +280,36 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
     }
   }, [phoneNumber, touchedFields.phoneNumber]);
 
-  useEffect(() => {
-    if (touchedFields.email) {
-      if (!email) {
-        setEmailError("Email is required");
-      } else if (!validateEmail(email)) {
-        setEmailError("Please enter a valid email address");
+
+ useEffect(() => {
+  if (touchedFields.email) {
+    if (!email) {
+      setEmailError("Email is required");
+    } else if (!validateEmail(email)) {
+      // Provide specific error messages based on domain
+      const emailLower = email.toLowerCase();
+      const domain = emailLower.split('@')[1];
+      
+      if (domain === 'gmail.com' || domain === 'googlemail.com') {
+        const localPart = emailLower.split('@')[0];
+        
+        if (/\.{2,}/.test(localPart)) {
+          setEmailError("Gmail addresses cannot have consecutive dots");
+        } else if (/^\.|\.$/.test(localPart)) {
+          setEmailError("Gmail addresses cannot start or end with a dot");
+        } else if (!/^[a-zA-Z0-9.+]+$/.test(localPart)) {
+          setEmailError("Gmail addresses can only contain letters, numbers, dots and plus signs");
+        } else {
+          setEmailError("Please enter a valid Gmail address");
+        }
       } else {
-        setEmailError("");
+        setEmailError("Please enter a valid email address with a supported domain (.com, .gov, .lk)");
       }
+    } else {
+      setEmailError("");
     }
-  }, [email, touchedFields.email]);
+  }
+}, [email, touchedFields.email]);
 
   useEffect(() => {
     if (touchedFields.buildingType) {
@@ -940,10 +1008,13 @@ const handlePhoneNumberChangeWithErrorClear = (text: string) => {
 };
 
 const handleEmailChangeWithErrorClear = (text: string) => {
+  // Clear error if present
   if (emailError) {
     setEmailError("");
   }
-  setEmail(text);
+  
+  // Convert to lowercase and update state
+  setEmail(text.toLowerCase());
 };
 
   const handleBuildingTypeChange = (value: string) => {
@@ -1171,7 +1242,7 @@ const handlePhoneNumberKeyPress = (e: any) => {
   ) : null}
 </View>
 
-<View className="mb-4">
+{/* <View className="mb-4">
   <RequiredField>Email Address</RequiredField>
   <TextInput
     className={`bg-[#F6F6F6] border rounded-full px-6 h-10 ${
@@ -1187,6 +1258,29 @@ const handlePhoneNumberKeyPress = (e: any) => {
                     handleFieldTouch("email");
                     handleInputBlur();
                   }}
+  />
+  {emailError ? (
+    <Text className="text-red-500 text-xs mt-1 ml-2">{emailError}</Text>
+  ) : null}
+</View> */}
+
+<View className="mb-4">
+  <RequiredField>Email Address</RequiredField>
+  <TextInput
+    className={`bg-[#F6F6F6] border rounded-full px-6 h-10 ${
+      emailError ? 'border-red-500' : 'border-[#F6F6F6]'
+    }`}
+    placeholder="Email Address"
+    keyboardType="email-address"
+    autoCapitalize="none"
+    autoCorrect={false}
+    value={email}
+    onChangeText={handleEmailChangeWithErrorClear}
+    onFocus={handleInputFocus}
+    onBlur={() => {
+      handleFieldTouch("email");
+      handleInputBlur();
+    }}
   />
   {emailError ? (
     <Text className="text-red-500 text-xs mt-1 ml-2">{emailError}</Text>
