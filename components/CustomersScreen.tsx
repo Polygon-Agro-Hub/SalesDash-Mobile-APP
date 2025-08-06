@@ -228,28 +228,57 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
     await loadCustomers(1, false, false);
   };
 
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
+  // const handleSearch = (query: string) => {
+  //   setSearchQuery(query);
   
-    const formattedQuery = query.startsWith("+94") ? query.replace("+94", "0") : query;
+  //   const formattedQuery = query.startsWith("+94") ? query.replace("+94", "0") : query;
   
-    if (query === "") {
-      setFilteredCustomers(customers); 
-    } else {
-      const filteredData = customers.filter((customer) => {
-        const formattedPhoneNumber = formatPhoneNumber(customer.phoneNumber);
+  //   if (query === "") {
+  //     setFilteredCustomers(customers); 
+  //   } else {
+  //     const filteredData = customers.filter((customer) => {
+  //       const formattedPhoneNumber = formatPhoneNumber(customer.phoneNumber);
         
-        return (
-          customer.firstName.toLowerCase().includes(query.toLowerCase()) ||
-          customer.lastName.toLowerCase().includes(query.toLowerCase()) ||
-          formattedPhoneNumber.includes(formattedQuery)
-        );
-      });
+  //       return (
+  //         customer.firstName.toLowerCase().includes(query.toLowerCase()) ||
+  //         customer.lastName.toLowerCase().includes(query.toLowerCase()) ||
+  //         formattedPhoneNumber.includes(formattedQuery)
+  //       );
+  //     });
   
-      // Keep the filtered results sorted alphabetically
-      setFilteredCustomers(sortCustomersByName(filteredData));
-    }
-  };
+  //     // Keep the filtered results sorted alphabetically
+  //     setFilteredCustomers(sortCustomersByName(filteredData));
+  //   }
+  // };
+
+const handleSearch = (query: string) => {
+  // Only remove leading spaces, but allow spaces within the search term
+  const cleanedQuery = query.replace(/^\s+/, '');
+  
+  setSearchQuery(cleanedQuery);
+  
+  const formattedQuery = cleanedQuery.startsWith("+94") ? cleanedQuery.replace("+94", "0") : cleanedQuery;
+  
+  if (cleanedQuery === "") {
+    setFilteredCustomers(customers); 
+  } else {
+    const filteredData = customers.filter((customer) => {
+      const formattedPhoneNumber = formatPhoneNumber(customer.phoneNumber);
+      const fullName = `${customer.firstName} ${customer.lastName}`.toLowerCase();
+      const searchTerm = cleanedQuery.toLowerCase();
+      
+      return (
+        customer.firstName.toLowerCase().includes(searchTerm) ||
+        customer.lastName.toLowerCase().includes(searchTerm) ||
+        fullName.includes(searchTerm) || // This allows searching full name
+        formattedPhoneNumber.includes(formattedQuery)
+      );
+    });
+
+    // Keep the filtered results sorted alphabetically
+    setFilteredCustomers(sortCustomersByName(filteredData));
+  }
+};
 
   const formatPhoneNumber = (phoneNumber: string) => {
     return phoneNumber.startsWith("+94")
