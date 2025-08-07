@@ -63,14 +63,27 @@ function MainTabNavigator() {
       screenOptions={({ route }) => ({
         tabBarStyle: { display: 'none' }, 
         headerShown: false,
+        tabBarHideOnKeyboard: true
       })}
+      
+
       
       tabBar={(props) => <NavigationBar {...props} />}
     >
       <Tab.Screen name="DashboardScreen" component={DashboardScreen} />
       <Tab.Screen name="ViewOrdersScreen" component={ViewOrdersScreen} />
       <Tab.Screen name="ReminderScreen" component={ReminderScreen} />
-      <Tab.Screen name="CustomersScreen" component={CustomersScreen} />
+      <Tab.Screen  
+      
+       options={{
+              tabBarHideOnKeyboard: true, // Hides tab bar for this specific screen
+                 tabBarVisibilityAnimationConfig: {
+      show: { animation: 'timing', config: { duration: 0 } },
+      hide: { animation: 'timing', config: { duration: 0 } }
+    }
+            }} 
+            name="CustomersScreen" 
+            component={CustomersScreen} />
       <Tab.Screen name="ViewComplainScreen" component={ViewComplainScreen} />
       {/* <Tab.Screen name="SidebarScreen" component={SidebarScreen} /> */}
       <Tab.Screen name="ViewScreen" component={ViewScreen as any} />
