@@ -37,10 +37,11 @@ import ExcludeListAdd from "@/components/ExcludeListAdd"
 import ExcludeListSummery from "@/components/ExcludeListSummery"
 import ExcludeItemEditSummery from "@/components/ExcludeItemEditSummery"
 import ExcludeAddMore from '@/components/ExcludeAddMore'
+import PrivacyPolicy from '@/components/PrivacyPolicy'
+import TermsConditions from '@/components/TermsConditions'
  
-import { RootStackParamList } from '@/components/types';
-import { Provider, useSelector } from 'react-redux';
-import  store, { RootState } from "@/services/reducxStore";
+
+
 
 
 const Stack = createStackNavigator(); 
@@ -111,7 +112,7 @@ const index = () => {
     // ScreenCapture.usePreventScreenCapture()
 
   return (
-    <Provider store={store}>
+
     <LanguageProvider>
     <GestureHandlerRootView >
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -142,13 +143,15 @@ const index = () => {
       {/* <Stack.Screen name="SelectOrderType" component={SelectOrderType as any} /> */}
       <Stack.Screen name="CreateCustomPackage" component={CreateCustomPackage as any} />
       <Stack.Screen name="CratScreen" component={CratScreen as any} />
+      <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicy as any} />
+      <Stack.Screen name="TermsConditions" component={TermsConditions as any} />
       <Stack.Screen name="Main" component={MainTabNavigator} />
 
       
     </Stack.Navigator>
    </GestureHandlerRootView>
     </LanguageProvider>
-    </Provider>
+
   )
 }
 
