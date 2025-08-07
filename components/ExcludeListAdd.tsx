@@ -275,15 +275,47 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
     }
   }
 
+// const handleSearch = (query: string) => {
+//   setSearchQuery(query);
+//   setSearchError(null); // Clear any previous error
+  
+//   if (query === "") {
+//     setFilteredCrops(crops);
+//   } else {
+//     const filtered = crops.filter((crop) =>
+//       crop.displayName.toLowerCase().includes(query.toLowerCase())
+//     );
+//     setFilteredCrops(filtered);
+    
+//     // Set error if no results found
+//     if (filtered.length === 0) {
+//       setSearchError("No products found matching your search");
+//     }
+//   }
+// };
+
 const handleSearch = (query: string) => {
-  setSearchQuery(query);
+  let cleanedQuery = query;
+  
+  // Remove special characters, keep only letters (a-z, A-Z), numbers (0-9), and spaces
+  cleanedQuery = cleanedQuery.replace(/[^a-zA-Z0-9\s]/g, '');
+  
+  // If the query starts with space and there's no letter/number before it, remove the leading space
+  if (cleanedQuery.length > 0 && cleanedQuery[0] === ' ') {
+    cleanedQuery = cleanedQuery.replace(/^\s+/, '');
+  }
+  
+  // Prevent multiple consecutive spaces
+  cleanedQuery = cleanedQuery.replace(/\s+/g, ' ');
+  
+  setSearchQuery(cleanedQuery);
   setSearchError(null); // Clear any previous error
   
-  if (query === "") {
+  if (cleanedQuery === "") {
     setFilteredCrops(crops);
   } else {
     const filtered = crops.filter((crop) =>
-      crop.displayName.toLowerCase().includes(query.toLowerCase())
+      crop.displayName.toLowerCase().includes(cleanedQuery.toLowerCase())
     );
     setFilteredCrops(filtered);
     
@@ -293,7 +325,6 @@ const handleSearch = (query: string) => {
     }
   }
 };
-
 
    const handleNavigateIfNoCropsSelected = () => {
         
@@ -306,6 +337,21 @@ const handleSearch = (query: string) => {
       handlesubmitexcludelist();
     }
   };
+
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      // Clear search state when screen comes into focus
+      setSearchQuery("");
+      setSearchError(null);
+      // Reset filtered crops to show all crops
+      if (crops.length > 0) {
+        setFilteredCrops(crops);
+      }
+    });
+  
+    return unsubscribe;
+  }, [navigation, crops]);
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -371,14 +417,14 @@ const handleSearch = (query: string) => {
 
         <View className="px-6 mt-6 mb-6">
           <View className="relative">
-            <TextInput
-              className="p-3 pr-10 flex-row justify-between items-center border border-[#6B3BCF] rounded-full bg-[#F5F1FC]"
-              placeholder="Search Products"
-              placeholderTextColor="black"
-              value={searchQuery}
-              onFocus={() => setIsKeyboardVisible(true)}
-              onChangeText={handleSearch}
-            />
+         <TextInput
+                   className="p-3 pr-10 flex-row justify-between items-center border border-[#6B3BCF] rounded-full bg-[#F5F1FC]"
+                   placeholder="Search Products"
+                   placeholderTextColor="black"
+                   value={searchQuery}
+                   onFocus={() => setIsKeyboardVisible(true)}
+                   onChangeText={handleSearch}
+                 />
             
             <Ionicons
               name="search"
@@ -395,20 +441,19 @@ const handleSearch = (query: string) => {
         </View>
 
          {searchError && (
-                    <View>
-                      <View className="bg-red-50 px-4 py-2 mt-2 rounded-lg border border-red-200">
-                        <Text className="text-red-600 text-center">{searchError}</Text>
-                      </View>
-                      <View className="justify-center items-center mt-4">
-                        <LottieView
-                          source={require("../assets/images/NoComplaints.json")}
-                          style={{ width: wp(50), height: hp(50) }}
-                          autoPlay
-                          loop
-                        />
-                      
-                      </View>
-                    </View>
+                   <View className="flex-1">
+                       <View className="justify-center items-center mt-4">
+                         <LottieView
+                           source={require("../assets/images/NoComplaints.json")}
+                           style={{ width: wp(50), height: hp(50) }}
+                           autoPlay
+                           loop
+                         />
+                       </View>
+                       <View className="justify-center items-center mt-[-50]">
+                         <Text className="text-red-600 text-center text-base">{searchError}</Text>
+                       </View>
+                     </View>
                   )}
              
         
