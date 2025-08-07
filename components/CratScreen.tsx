@@ -121,25 +121,43 @@ useEffect(() => {
             const unitType = item.unitType?.toLowerCase() === 'g' ? 'g' : 'kg';
             
             // Calculate initial quantity based on context
-            let initialQuantity;
+            // let initialQuantity;
             
-            if (fromOrderSummary) {
-              // Coming from order summary - preserve user's selected quantity
-              console.log(`Order Summary mode: preserving quantity ${item.quantity || item.changeby}`);
-              initialQuantity = typeof item.quantity === 'string'
-                ? parseFloat(item.quantity)
-                : (item.quantity || item.changeby);
-            } else {
-              // New selection - use API changeby value as default
-              console.log(`New selection mode: using API changeby ${changebyNum}`);
-              initialQuantity = changebyNum;
-            }
+            // if (fromOrderSummary) {
+            //   // Coming from order summary - preserve user's selected quantity
+            //   console.log(`Order Summary mode: preserving quantity ${item.quantity || item.changeby}`);
+            //   initialQuantity = typeof item.quantity === 'string'
+            //     ? parseFloat(item.quantity)
+            //     : (item.quantity || item.changeby);
+            // } else {
+            //   // New selection - use API changeby value as default
+            //   console.log(`New selection mode: using API changeby ${changebyNum}`);
+            //   initialQuantity = changebyNum;
+            // }
 
-            // Convert to grams if needed (only for new selections)
-            if (unitType === 'g' && !fromOrderSummary) {
-              initialQuantity *= 1000;
-            }
+            // // Convert to grams if needed (only for new selections)
+            // if (unitType === 'g' && !fromOrderSummary) {
+            //   initialQuantity *= 1000;
+            // }
 
+           let initialQuantity;
+
+if (fromOrderSummary) {
+  // Coming from order summary - preserve user's selected quantity
+  console.log(`Order Summary mode: preserving quantity ${item.quantity}`);
+  initialQuantity = typeof item.quantity === 'string'
+    ? parseFloat(item.quantity)
+    : (item.quantity || startValueNum);
+} else {
+  // New selection - use startValue as the initial quantity
+  console.log(`New selection mode: using startValue ${startValueNum} as initial quantity`);
+  initialQuantity = startValueNum; // startValue is the initial display quantity
+}
+
+// Convert to grams if needed (only for new selections)
+if (unitType === 'g' && !fromOrderSummary) {
+  initialQuantity *= 1000;
+}
             // Calculate prices per kg
             let pricePerKg, normalPricePerKg, discountPerKg;
             
@@ -163,19 +181,32 @@ useEffect(() => {
               discountPerKg = item.discount;
             }
 
-            const finalItem = {
-              ...item,
-              name: item.name || `Product ${item.id}`,
-              price: pricePerKg,
-              normalPrice: normalPricePerKg,
-              discountedPrice: pricePerKg,
-              discount: discountPerKg,
-              selected: fromOrderSummary ? false : (item.selected || false),
-              changeby: initialQuantity,
-              quantity: initialQuantity,
-              unitType: unitType,
-              startValue: startValueNum // Preserve the correct startValue
-            };
+            // const finalItem = {
+            //   ...item,
+            //   name: item.name || `Product ${item.id}`,
+            //   price: pricePerKg,
+            //   normalPrice: normalPricePerKg,
+            //   discountedPrice: pricePerKg,
+            //   discount: discountPerKg,
+            //   selected: fromOrderSummary ? false : (item.selected || false),
+            //   changeby: initialQuantity,
+            //   quantity: initialQuantity,
+            //   unitType: unitType,
+            //   startValue: startValueNum // Preserve the correct startValue
+            // };
+           const finalItem = {
+  ...item,
+  name: item.name || `Product ${item.id}`,
+  price: pricePerKg,
+  normalPrice: normalPricePerKg,
+  discountedPrice: pricePerKg,
+  discount: discountPerKg,
+  selected: fromOrderSummary ? false : (item.selected || false),
+  changeby: initialQuantity, // Set changeby to the initial quantity for current state
+  quantity: initialQuantity, // Display quantity
+  unitType: unitType,
+  startValue: changebyNum // Use API changeby as the increment/decrement step
+};
             
             console.log(`Final processed item ${item.id}:`, finalItem);
             return finalItem;
@@ -393,12 +424,15 @@ useEffect(() => {
     }
   };
 
+  // const formatQuantity = (item: CartItem) => {
+  //   if (item.unitType === 'kg') {
+  //     return item.changeby % 1 === 0 ? item.changeby.toFixed(0) : item.changeby.toFixed(1);
+  //   }
+  //   return item.changeby.toFixed(0);
+  // };
   const formatQuantity = (item: CartItem) => {
-    if (item.unitType === 'kg') {
-      return item.changeby % 1 === 0 ? item.changeby.toFixed(0) : item.changeby.toFixed(1);
-    }
-    return item.changeby.toFixed(0);
-  };
+  return item.changeby.toFixed(2);
+};
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -504,7 +538,7 @@ useEffect(() => {
                     />
                   </TouchableOpacity>
                   
-                  <Text className="mx-2 text-base w-12 text-center">
+                  <Text className="mx-2 text-base w-14 text-center">
                     {formatQuantity(item)}
                   </Text>
                   

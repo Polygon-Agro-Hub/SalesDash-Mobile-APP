@@ -150,14 +150,26 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         )}
         <View className="border border-gray-300 rounded-full px-4 mb-4 flex-row items-center bg-gray-100 mt-5">
 
-          <TextInput
+          {/* <TextInput
             placeholder="Employee ID"
             placeholderTextColor="#A3A3A3"
             className="flex-1 py-3 text-gray-800"
             value={empId}
                onChangeText={(text) => setEmpId(text)}
     autoCapitalize="characters"  // Automatically capitalizes all letters
-  />
+  /> */}
+  <TextInput
+  placeholder="Employee ID"
+  placeholderTextColor="#A3A3A3"
+  className="flex-1 py-3 text-gray-800"
+  value={empId}
+  onChangeText={(text) => {
+    // Convert to uppercase automatically
+    const upperCaseText = text.toUpperCase();
+    setEmpId(upperCaseText);
+  }}
+  autoCapitalize="characters"  // This helps with keyboard suggestions
+/>
         </View>
         {error2.length > 0 && (
           <View className="-mb-3">

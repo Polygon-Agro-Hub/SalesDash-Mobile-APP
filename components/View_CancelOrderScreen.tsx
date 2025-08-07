@@ -776,8 +776,8 @@ const formatPrice = (price: string | number): string => {
               className={`mx-5 mb-5 px-14 rounded-full ${isCancelDisabled() ? "opacity-70" : ""}`}
             >
               {isCancelDisabled() ? (
-                <View className="bg-[#D9D9D9] py-3 rounded-full items-center">
-                  <Text className="text-black text-center font-semibold">Cancel Order</Text>
+                <View className="bg-white py-3 rounded-full items-center">
+                  <Text className="text-white text-center font-semibold">Cancel Order</Text>
                 </View>
               ) : (
                 <View className="bg-[#000000] py-3 rounded-full items-center">
