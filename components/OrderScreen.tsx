@@ -1271,9 +1271,12 @@ const handleEditUnitConversion = (newUnit: string) => {
               <Text className="text-gray-700 text-xl font-bold">-</Text>
             </TouchableOpacity>
             
-            <Text className="flex-1 text-center text-gray-700">
+            {/* <Text className="flex-1 text-center text-gray-700">
               {quantity || "0"}
-            </Text>
+            </Text> */}
+              <Text className="flex-1 text-center text-gray-700">
+    {(quantity || 0).toFixed(2)}
+  </Text>
             
             <TouchableOpacity 
               className="w-10 h-10 flex items-center justify-center"

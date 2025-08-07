@@ -93,6 +93,34 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
   ]);
   const dispatch = useDispatch();
     const isClick = useSelector((state: RootState) => state.input.isClick);
+
+    useFocusEffect(
+      React.useCallback(() => {
+        // Track keyboard visibility
+        const keyboardDidShowListener = Keyboard.addListener(
+          'keyboardDidShow',
+          () => {
+            setKeyboardVisible(true);
+          }
+        );
+        const keyboardDidHideListener = Keyboard.addListener(
+          'keyboardDidHide',
+          () => {
+            setKeyboardVisible(false);
+          }
+        );
+    
+        // Only set to 0 if keyboard is not visible
+        if (!isKeyboardVisible) {
+          dispatch(setInputClick(0));
+        }
+    
+        return () => {
+          keyboardDidHideListener?.remove();
+          keyboardDidShowListener?.remove();
+        };
+      }, [isKeyboardVisible])
+    );
   
 
   // Validation regex
@@ -353,6 +381,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
     setBuildingNo("");
     setFloorNo("");
     setUnitNo("");
+    setOpen(false)
     setBuildingName("");
     setBuildingType("");
     setOriginalBuildingType("");
@@ -1231,8 +1260,10 @@ const handlePhoneNumberKeyPress = (e: any) => {
     value={phoneNumber}
     onChangeText={handlePhoneNumberChangeWithErrorClear}
     onBlur={() => handleFieldTouch("phoneNumber")}
-    onFocus={handlePhoneNumberFocus}
-   // onFocus={handleInputFocus}
+    onFocus={() => {
+      handlePhoneNumberFocus();
+      handleInputFocus();
+    }}
     onKeyPress={handlePhoneNumberKeyPress}
     maxLength={12}
     selection={phoneNumber.length <= 3 ? { start: 3, end: 3 } : undefined}

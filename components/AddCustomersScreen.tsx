@@ -17,6 +17,7 @@ import { RootState } from '../services/reducxStore'; // Adjust path as needed
 import { setInputClick, clearInputClick } from '../store/navSlice';
 
 
+
 type AddCustomersScreenNavigationProp = StackNavigationProp<RootStackParamList, "AddCustomersScreen">;
 
 interface AddCustomersScreenProps {
@@ -69,6 +70,14 @@ const [cityItems, setCityItems] = useState<{label: string, value: string}[]>([])
 const dispatch = useDispatch();
   const isClick = useSelector((state: RootState) => state.input.isClick);
   const [openBuildingTypeDropdown, setOpenBuildingTypeDropdown] = useState(false);
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+  const [titleDropdownOpen, setTitleDropdownOpen] = useState(false);
+  const [titleItems, setTitleItems] = useState([
+  { label: 'Rev', value: 'Rev' },
+  { label: 'Mr', value: 'Mr' },
+  { label: 'Ms', value: 'Ms' },
+  { label: 'Mrs', value: 'Mrs' }
+]);
 const [buildingTypeItems, setBuildingTypeItems] = useState([
   { label: "House", value: "House" },
   { label: "Apartment", value: "Apartment" },
@@ -83,8 +92,8 @@ const [buildingTypeItems, setBuildingTypeItems] = useState([
     setFirstName("");
     setLastName("");
     setPhoneNumber("");
-    setSelectedCategory("")
-    
+    setSelectedCategory('')
+    setTitleDropdownOpen(false)
     setEmail("");
     setHouseNo("");
     setStreetName("");
@@ -123,6 +132,64 @@ const [buildingTypeItems, setBuildingTypeItems] = useState([
   const handleInputBlur = () => {
     dispatch(setInputClick(0));
   };
+
+
+// useEffect(() => {
+//   const keyboardDidShowListener = Keyboard.addListener(
+//     'keyboardDidShow',
+//     () => {
+//       setKeyboardVisible(true);
+//     }
+//   );
+//   const keyboardDidHideListener = Keyboard.addListener(
+//     'keyboardDidHide',
+//     () => {
+//       setKeyboardVisible(false);
+//     }
+//   );
+
+//   return () => {
+//     keyboardDidHideListener?.remove();
+//     keyboardDidShowListener?.remove();
+//   };
+// }, []);
+
+// useFocusEffect(
+//   React.useCallback(() => {
+//     // Only set to 0 if keyboard is not visible
+//     if (!isKeyboardVisible) {
+//       dispatch(setInputClick(0));
+//     }
+//   }, [isKeyboardVisible])
+// );
+
+useFocusEffect(
+  React.useCallback(() => {
+    // Track keyboard visibility
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      () => {
+        setKeyboardVisible(true);
+      }
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => {
+        setKeyboardVisible(false);
+      }
+    );
+
+    // Only set to 0 if keyboard is not visible
+    if (!isKeyboardVisible) {
+      dispatch(setInputClick(0));
+    }
+
+    return () => {
+      keyboardDidHideListener?.remove();
+      keyboardDidShowListener?.remove();
+    };
+  }, [isKeyboardVisible])
+);
 
   // Reset form when screen comes into focus
  useFocusEffect(
@@ -260,10 +327,10 @@ const validateGmailLocalPart = (localPart: string): boolean => {
   // 3. No leading or trailing dots
   // 4. Must be 6-30 characters long
   
-  // Check length
-  if (localPart.length < 6 || localPart.length > 30) {
-    return false;
-  }
+  // // Check length
+  // if (localPart.length < 6 || localPart.length > 30) {
+  //   return false;
+  // }
   
   // Check for valid characters only (a-z, 0-9, ., +)
   const validCharsRegex = /^[a-zA-Z0-9.+]+$/;
@@ -749,7 +816,7 @@ const capitalizeFirstLetter = (text: string) => {
 
 
 
-  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
 
   const handlePhoneNumberChange = (text: string) => {
   // Always ensure the input starts with +94
@@ -774,21 +841,7 @@ const capitalizeFirstLetter = (text: string) => {
   setPhoneNumber(cleanText);
 };
     
-  useEffect(() => {
-  const keyboardDidShowListener = Keyboard.addListener(
-    'keyboardDidShow',
-    () => setKeyboardVisible(true)
-  );
-  const keyboardDidHideListener = Keyboard.addListener(
-    'keyboardDidHide',
-    () => setKeyboardVisible(false)
-  );
 
-  return () => {
-    keyboardDidShowListener.remove();
-    keyboardDidHideListener.remove();
-  };
-}, []);
 
 
 
@@ -828,7 +881,7 @@ const capitalizeFirstLetter = (text: string) => {
               <View className="mb-4 mt-4 flex-row justify-between">
                 <View className="flex-[1]">
                   <Text className="text-gray-700 mb-1">Title *</Text>
-                  <SelectList
+                  {/* <SelectList
   setSelected={setSelectedCategory} 
   data={[
       { key: 'Rev', value: 'Rev' },
@@ -848,8 +901,37 @@ const capitalizeFirstLetter = (text: string) => {
   }}
   search={false} 
   placeholder="Title" 
+/> */}
+<DropDownPicker
+  open={titleDropdownOpen}
+  value={selectedCategory}
+  items={titleItems}
+  setOpen={setTitleDropdownOpen}
+  setValue={setSelectedCategory}
+  setItems={setTitleItems}
+  style={{
+    backgroundColor: '#F6F6F6',
+    borderColor: '#F6F6F6',
+    borderRadius: 30,
+    paddingVertical: 5,
+    minHeight: 40,
+  }}
+  textStyle={{
+    color: 'black',
+  }}
+  searchable={false}
+  placeholder="Title"
+  zIndex={1000}
+  zIndexInverse={3000}
+  dropDownContainerStyle={{
+      backgroundColor: '#F6F6F6',
+      borderColor: '#F6F6F6',
+    }}
+  listMode="SCROLLVIEW"
+  scrollViewProps={{
+    nestedScrollEnabled: true,
+  }}
 />
-
                 </View>
 
                 <View className="flex-[2] ml-2">
@@ -919,6 +1001,7 @@ const capitalizeFirstLetter = (text: string) => {
       // Ensure +94 is always present when focusing
       if (!phoneNumber || phoneNumber.length < 3) {
         setPhoneNumber('+94');
+        handleInputFocus()
       }
     }}
     
@@ -962,6 +1045,7 @@ const capitalizeFirstLetter = (text: string) => {
       }
     }}
     onFocus={handleInputFocus}
+  
     onBlur={() => {
       handleFieldTouch("email");
       handleInputBlur();
@@ -1026,6 +1110,7 @@ const capitalizeFirstLetter = (text: string) => {
                       placeholder="Building / House No (e.g., 14/B)"
                       value={houseNo}
                       onChangeText={setHouseNo}
+                      onFocus={handleInputFocus}
                     />
                   </View>
                   <View className="mb-4">
@@ -1035,6 +1120,7 @@ const capitalizeFirstLetter = (text: string) => {
                       placeholder="Street Name"
                       value={streetName}
                       onChangeText={setStreetName}
+                      onFocus={handleInputFocus}
                     />
                   </View>
              <View className="mb-4 z-10">
@@ -1090,6 +1176,7 @@ const capitalizeFirstLetter = (text: string) => {
                       placeholder="Apartment / Building Name"
                       value={buildingNo}
                       onChangeText={setbuildingNo}
+                      onFocus={handleInputFocus}
                     />
                   </View>
 
@@ -1100,6 +1187,7 @@ const capitalizeFirstLetter = (text: string) => {
                       placeholder="Apartment / Building Name"
                       value={ buildingName}
                       onChangeText={ setbuildingName}
+                      onFocus={handleInputFocus}
                     />
                   </View>
                   <View className="mb-4">
@@ -1109,6 +1197,7 @@ const capitalizeFirstLetter = (text: string) => {
                       placeholder="ex : Building B"
                       value={unitNo}
                       onChangeText={setunitNo}
+                      onFocus={handleInputFocus}
                     />
                   </View>
                   <View className="mb-4">
@@ -1118,6 +1207,7 @@ const capitalizeFirstLetter = (text: string) => {
                       placeholder="ex : 3rd Floor"
                       value={floorNo}
                       onChangeText={setfloorNo}
+                      onFocus={handleInputFocus}
                     />
                   </View>
 
@@ -1128,6 +1218,7 @@ const capitalizeFirstLetter = (text: string) => {
                       placeholder="ex : 14"
                       value={houseNo}
                       onChangeText={setHouseNo}
+                      onFocus={handleInputFocus}
                     />
                   </View>
                   <View className="mb-4">
@@ -1137,6 +1228,7 @@ const capitalizeFirstLetter = (text: string) => {
                       placeholder="Street Name"
                       value={streetName}
                       onChangeText={setStreetName}
+                      onFocus={handleInputFocus}
                     />
                   </View>
               <View className="mb-4 z-10">
