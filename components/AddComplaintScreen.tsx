@@ -198,7 +198,7 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
     backgroundColor: "#FFFFFF",
   }}
   dropDownContainerStyle={{
-    borderColor: "#E5E7EB",
+    borderColor: "#0a0a0bff",
     backgroundColor: "#FFFFFF",
     maxHeight: 500,  // Makes it scrollable
   }}
@@ -207,7 +207,7 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
     fontSize: 14,
   }}
   searchTextInputStyle={{
-    borderColor: "#E5E7EB",
+    borderColor: "#0c0c0cff",
     color: "#434343",
   }}
   searchContainerStyle={{

@@ -23,6 +23,7 @@ import axios from "axios";
 import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import LottieView from "lottie-react-native";
+import { useFocusEffect } from "expo-router";
 
 // ViewOrdersScreen.tsx - Updated with Pagination
 type ViewOrdersScreenNavigationProp = StackNavigationProp<RootStackParamList, "ViewOrdersScreen">;
@@ -287,6 +288,29 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
 
   const isEmpty = filteredOrders.length === 0;
 
+  useFocusEffect(
+  React.useCallback(() => {
+    console.log("Screen focused - resetting search and loading orders");
+    
+    // Reset search-related states
+    setSearchText("");
+    setSelectedFilter("All");
+    
+    // Reset pagination states
+    setCurrentPage(1);
+    setHasMore(true);
+    
+    // Load fresh orders
+    loadOrders(1, true, false);
+
+    // Cleanup function (optional)
+    return () => {
+      console.log("Screen unfocused - cleanup");
+    };
+  }, [])
+);
+  
+
   const renderFooter = () => {
     if (!hasMore && orders.length > 0) {
       return (
@@ -344,17 +368,22 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
             </LinearGradient>
 
             {/* Search Bar */}
-            <View className="flex-row items-center bg-[#F5F1FC] px-6 py-3 rounded-full mx-auto w-[90%] shadow-md mt-[-22]">
-              <TextInput
-                placeholder="Search By Order Number"
-                placeholderTextColor="#6839CF"
-                className="flex-1 text-sm text-purple"
-                onChangeText={(text) => setSearchText(text)}
-                value={searchText}
-                style={{ fontStyle: 'italic' }}
-              />
-              <Image source={require("../assets/images/search.webp")} className="w-6 h-6" resizeMode="contain" />
-            </View>
+          <View className="flex-row items-center bg-[#F5F1FC] px-6 py-3 rounded-full mx-auto w-[90%] shadow-md mt-[-22]">
+  <TextInput
+    placeholder="Search By Order Number"
+    placeholderTextColor="#6839CF"
+    className="flex-1 text-sm text-purple"
+    onChangeText={(text) => {
+      // Only allow numbers - remove all letters, special characters, and spaces
+      const numericOnly = text.replace(/[^0-9]/g, '');
+      setSearchText(numericOnly);
+    }}
+    value={searchText}
+    style={{ fontStyle: 'italic' }}
+    keyboardType="numeric" // This shows numeric keyboard on mobile
+  />
+  <Image source={require("../assets/images/search.webp")} className="w-6 h-6" resizeMode="contain" />
+</View>
 
             {/* Horizontal Scrollable Filters */}
             <View>
@@ -400,6 +429,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
 
             <View className="py-[-12%] mb-[60%]">
               {isEmpty ? (
+                <View className="">
                 <View className="flex-1 justify-center items-center px-4 mt-[60%]">
                   <LottieView
                     source={require("../assets/images/NoComplaints.json")}
@@ -407,6 +437,12 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                     autoPlay
                     loop
                   />
+
+   
+                </View>
+                <View className="justify-center items-center px-4 mt-[20%]">
+                             <Text className="text-gray-500 ">No Data Found</Text>
+                             </View>
                 </View>
               ) : (
                 <FlatList

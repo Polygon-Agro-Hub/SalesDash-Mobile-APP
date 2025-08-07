@@ -503,7 +503,13 @@ const isTimelineItemActive = (status: string) => {
     };
     console.log("=+=========",order?.reportStatus)
 
- 
+const formatPrice = (price: string | number): string => {
+  return parseFloat(price.toString()).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+};
+
 
     const confirmCancelOrder = async () => {
       try {
@@ -649,7 +655,7 @@ const isTimelineItemActive = (status: string) => {
     }
   </Text>
 
-  <Text className="text-[#808FA2] font-medium mb-1">Customer's Phone Number</Text>
+  <Text className="text-[#808FA2] font-medium mb-1">Customer's Mobile Number</Text>
   <Text className="text-black font-medium mb-3">
     {customerData?.phoneNumber || order.phoneNumber || 'Not Available'}
   </Text>
@@ -687,23 +693,27 @@ const isTimelineItemActive = (status: string) => {
   </View>
   )}
 
- {isPackage === 0 && (
-   <View className="flex-row justify-between mb-2">
+{isPackage === 0 && (
+  <View className="flex-row justify-between mb-2">
     <Text className="text-[#8492A3]">Subtotal</Text>
     <Text className="text-[#8492A3]">
-       Rs.{(parseFloat(order.total || "0") -deliveryFee -180 ).toFixed(2)}
+      Rs.{new Intl.NumberFormat('en-IN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }).format(parseFloat(order.total || "0") - deliveryFee - 180)}
     </Text>
   </View>
-  )}
-                {order.discount && parseFloat(order.discount) > 0 && (
+)}
+
+        {order.discount && parseFloat(order.discount) > 0 && (
                   <View className="flex-row justify-between mb-2">
                     <Text className="text-[#8492A3]">Discount</Text>
-                    <Text className="text-[#8492A3]">Rs.{parseFloat(order.discount).toFixed(2)}</Text>
+                    <Text className="text-[#8492A3]">Rs.{formatPrice(order.discount)}</Text>
                   </View>
                 )}
                 <View className="flex-row justify-between mb-2">
                     <Text className="text-[#8492A3]">Delivery</Text>
-                    <Text className="text-[#8492A3]">Rs.{deliveryFee.toFixed(2)}</Text>
+                    <Text className="text-[#8492A3]">Rs.{formatPrice(deliveryFee)}</Text>
                   </View>
                   {isPackage === 0 && (
                     <View className="flex-row justify-between mb-2">
@@ -716,7 +726,7 @@ const isTimelineItemActive = (status: string) => {
                 <View className="flex-row justify-between pt-2">
                   <Text className="font-semibold text-black">Grand Total</Text>
                   <Text className="font-bold text-black">
-                  Rs.{parseFloat(order.fullTotal || "0").toFixed(2)}
+                  Rs.{formatPrice(order.fullTotal || "0")}
                   </Text>
                 </View>
               </View>

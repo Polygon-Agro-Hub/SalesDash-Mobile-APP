@@ -68,6 +68,11 @@ const [token, setToken] = useState<string | null>(null);
 const [cityItems, setCityItems] = useState<{label: string, value: string}[]>([]);
 const dispatch = useDispatch();
   const isClick = useSelector((state: RootState) => state.input.isClick);
+  const [openBuildingTypeDropdown, setOpenBuildingTypeDropdown] = useState(false);
+const [buildingTypeItems, setBuildingTypeItems] = useState([
+  { label: "House", value: "House" },
+  { label: "Apartment", value: "Apartment" },
+]);
 
   const buildingOptions = [
     { key: "1", value: "House" },
@@ -78,6 +83,8 @@ const dispatch = useDispatch();
     setFirstName("");
     setLastName("");
     setPhoneNumber("");
+    setSelectedCategory("")
+    
     setEmail("");
     setHouseNo("");
     setStreetName("");
@@ -118,17 +125,18 @@ const dispatch = useDispatch();
   };
 
   // Reset form when screen comes into focus
-  useFocusEffect(
-    React.useCallback(() => {
-      resetForm();
-      fetchCity();
+ useFocusEffect(
+  React.useCallback(() => {
+    console.log("Screen focused - resetting form");
+    resetForm();
+    fetchCity();
 
-      return () => {
-        // Cleanup if needed
-        dispatch(clearInputClick());
-      };
-    }, [])
-  );
+    return () => {
+      console.log("Screen unfocused - cleanup");
+      // Additional cleanup if needed
+    };
+  }, [])
+);
   
   const sendOTP = async () => {
     if (!phoneNumber) {
@@ -387,10 +395,9 @@ useEffect(() => {
       
       if (domain === 'gmail.com' || domain === 'googlemail.com') {
         // Gmail-specific errors
-        if (localPart.length < 6) {
-          setEmailError("Gmail addresses must have at least 6 characters before @");
-        } else if (localPart.length > 30) {
+        if (localPart.length > 30) {
           setEmailError("Gmail addresses cannot exceed 30 characters before @");
+        
         } else if (/\.{2,}/.test(localPart)) {
           setEmailError("Gmail addresses cannot have consecutive dots");
         } else if (/^\.|\.$/.test(localPart)) {
@@ -622,46 +629,112 @@ const handleRegister = async () => {
   } catch (error: any) {
     console.log("Error checking customer:", error);
     
-    if (error.response && error.response.status === 400) {
-      if (error.response.data.message && 
-          error.response.data.message.includes("Phone number or email already exists")) {
-        
-        // Make two separate checks to determine which credential is duplicated
-        try {
-          // First, check just the phone number
-          const phoneCheckResponse = await axios.post(`${environment.API_BASE_URL}api/customer/check-customer`, {
-            phoneNumber,
-            email: `temp_${new Date().getTime()}@example.com`, // Use a temporary unique email
-          });
+    // Check if it's an Axios error
+    if (axios.isAxiosError(error)) {
+      if (error.response && error.response.status === 400) {
+        if (error.response.data.message && 
+            error.response.data.message.includes("Phone number or email already exists")) {
           
-          // If we get here, the phone number is unique, so email must be duplicated
-          Alert.alert(
-            "Email Already Exists",
-            "This email is already registered. Please sign in or use a different email."
-          );
-        } catch (phoneCheckError: any) { // Add type annotation here
-          // If this check fails, it means the phone number is duplicated
-          // But we should verify the error is the same duplicate error
-          if (phoneCheckError?.response?.status === 400 && 
-              phoneCheckError?.response?.data?.message?.includes("Phone number or email already exists")) {
+          // Check which credential is duplicated by making separate API calls
+          try {
+            // Check if phone number exists by using a unique temporary email
+            const tempEmail = `temp_${new Date().getTime()}_${Math.random().toString(36).substr(2, 9)}@tempcheck.com`;
             
+            await axios.post(`${environment.API_BASE_URL}api/customer/check-customer`, {
+              phoneNumber,
+              email: tempEmail,
+            });
+            
+            // If we reach here, phone number is unique, so email must be duplicated
             Alert.alert(
-              "Phone Number Already Exists",
-              "This phone number is already registered. Please sign in or use a different phone number."
+              "Email Already Exists",
+              "This email is already registered. Please sign in or use a different email."
             );
-          } else {
-            // Some other error with our check
-            Alert.alert(
-              "Account Already Exists",
-              "An account with this phone number or email already exists. Please sign in instead."
-            );
+            
+          } catch (phoneCheckError: any) {
+            if (axios.isAxiosError(phoneCheckError) && 
+                phoneCheckError.response?.status === 400 && 
+                phoneCheckError.response?.data?.message?.includes("Phone number or email already exists")) {
+              
+              // Phone number is duplicated, now check if email is also duplicated
+              try {
+                const tempPhone = `+94${new Date().getTime().toString().substr(-9)}`; // Generate unique temp phone
+                
+                await axios.post(`${environment.API_BASE_URL}api/customer/check-customer`, {
+                  phoneNumber: tempPhone,
+                  email,
+                });
+                
+                // If we reach here, email is unique, so only phone is duplicated
+                Alert.alert(
+                  "Phone Number Already Exists",
+                  "This phone number is already registered. Please sign in or use a different phone number."
+                );
+                
+              } catch (emailCheckError: any) {
+                if (axios.isAxiosError(emailCheckError) && 
+                    emailCheckError.response?.status === 400 && 
+                    emailCheckError.response?.data?.message?.includes("Phone number or email already exists")) {
+                  
+                  // Both phone and email are duplicated
+                  Alert.alert(
+                    "Account Already Exists",
+                    "Both phone number and email are already registered. Please sign in instead."
+                  );
+                } else {
+                  // Email is unique, only phone is duplicated
+                  Alert.alert(
+                    "Phone Number Already Exists",
+                    "This phone number is already registered. Please sign in or use a different phone number."
+                  );
+                }
+              }
+            } else {
+              // Some other error occurred during phone check
+              Alert.alert(
+                "Registration Error", 
+                "Unable to verify account details. Please try again."
+              );
+            }
           }
+        } else {
+          // Different 400 error message
+          Alert.alert(
+            "Registration Error", 
+            error.response.data.message || "Registration failed. Please check your details and try again."
+          );
         }
+      } else if (error.response && error.response.status === 409) {
+        // Handle conflict status if your API uses it for duplicates
+        Alert.alert(
+          "Account Already Exists",
+          "An account with this phone number or email already exists. Please sign in instead."
+        );
+      } else if (error.response && error.response.status >= 500) {
+        // Server error
+        Alert.alert(
+          "Server Error", 
+          "Our servers are experiencing issues. Please try again later."
+        );
       } else {
-        Alert.alert("Error", "Registration failed. Please try again.");
+        // Other Axios errors
+        Alert.alert(
+          "Registration Error", 
+          "Registration failed. Please try again."
+        );
       }
+    } else if (error && typeof error === 'object' && 'code' in error && error.code === 'NETWORK_ERROR') {
+      // Network error
+      Alert.alert(
+        "Network Error", 
+        "Please check your internet connection and try again."
+      );
     } else {
-      Alert.alert("Error", "Registration failed. Please try again.");
+      // Other errors
+      Alert.alert(
+        "Registration Error", 
+        "Registration failed. Please try again."
+      );
     }
   } finally {
     setIsSubmitting(false);
@@ -902,24 +975,44 @@ const capitalizeFirstLetter = (text: string) => {
               <View className="mb-4">
                 <Text className="text-gray-700 mb-1">Building Type *</Text>
              
-       <SelectList
-        setSelected={setBuildingType} 
-        data={buildingOptions} 
-         defaultOption={{ key: "", value: "" }} 
-       
-        boxStyles={{
-          backgroundColor: 'white',
-          borderColor: '#CFCFCF',
-          borderRadius: 30,
-        }}
-        dropdownTextStyles={{
-          color: '#000',
-        }}
-        search={false} 
-        placeholder="Select Building Type" 
-        save="value"
-        
-      /> 
+       <DropDownPicker
+    open={openBuildingTypeDropdown}
+    value={buildingType}
+    items={buildingTypeItems}
+    setOpen={setOpenBuildingTypeDropdown}
+    setValue={setBuildingType}
+    setItems={setBuildingTypeItems}
+    placeholder="Select Building Type"
+    style={{
+      backgroundColor: '#F6F6F6',
+      borderColor: '#F6F6F6',
+      borderRadius: 30,
+    }}
+    dropDownContainerStyle={{
+      backgroundColor: '#F6F6F6',
+      borderColor: '#F6F6F6',
+    }}
+    textStyle={{
+      fontSize: 14,
+      color: 'black',
+      marginLeft: 15,
+    }}
+    placeholderStyle={{
+      color: 'gray',
+      marginLeft: 15,
+    }}
+    listItemLabelStyle={{
+      color: 'black',
+    }}
+    showTickIcon={true}
+    activityIndicatorColor="#6E3DD1"
+    searchable={false}
+   listMode="SCROLLVIEW"
+  scrollViewProps={{
+    nestedScrollEnabled: true,
+  }}
+   
+  />
  
     
               </View>
@@ -1112,7 +1205,7 @@ const capitalizeFirstLetter = (text: string) => {
 >
   <LinearGradient 
     colors={["#854BDA", "#6E3DD1"]} 
-    className="py-3 px-4 items-center mt-6 mb-[15%] mr-[20%] ml-[20%] rounded-3xl h-15 "
+    className="py-3 px-4 items-center mt-6 mb-[2%] mr-[20%] ml-[20%] rounded-3xl h-15 "
   >
     {isSubmitting || loading ? (
       <ActivityIndicator color="#FFFFFF" />

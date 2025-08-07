@@ -379,10 +379,11 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
 
       // Calculate totals from API data
       const packagePrice = parseFloat(order?.packageInfo?.productPrice || '0');
-      const packingFee = parseFloat(order?.packageInfo?.packingFee || '0');
-      const serviceFee = parseFloat(order?.packageInfo?.serviceFee || '0');
-      const discountAmount = parseFloat(order?.discount || '0');
-      const totalAmount = parseFloat(order?.total || '0');
+const packingFee = parseFloat(order?.packageInfo?.packingFee || '0');
+const serviceFee = parseFloat(order?.packageInfo?.serviceFee || '0');
+const discountAmount = parseFloat(order?.discount || '0');
+const totalBeforeDiscount = parseFloat(order?.total || '0');
+const totalAmount = totalBeforeDiscount - discountAmount;
       
 
 // Calculate additional items total
@@ -413,16 +414,21 @@ if (order?.packageInfo?.packageDetails && order.packageInfo.packageDetails.lengt
 }
 
 // Generate additional items rows
+// Generate additional items rows with unit price calculation
 let additionalItemsRows = '';
 if (order?.additionalItems && order.additionalItems.length > 0) {
   order.additionalItems.forEach((item, index) => {
-    additionalItemsRows += 
-      `<tr>
+    const amount = parseFloat(item.price?.toString() || '0'); // This is the total amount from backend
+    const quantity = parseFloat(item.qty?.toString() || '0');
+    const unitPrice = quantity > 0 ? (amount / quantity) : 0; // Calculate unit price
+    
+    additionalItemsRows += `
+      <tr>
         <td style="text-align: center">${index + 1}</td>
         <td class="tabledata">${item.displayName || 'Item'}</td>
-        <td class="tabledata">${parseFloat(item.price || '0').toFixed(2)}</td>
-        <td class="tabledata">${item.qty || '0'} ${item.unit || ''}</td>
-        <td class="tabledata">${(parseFloat(item.price || '0'))}</td>
+        <td class="tabledata">${unitPrice.toFixed(2)}</td>
+        <td class="tabledata">${quantity} ${item.unit || 'kg'}</td>
+        <td class="tabledata">${amount.toFixed(2)}</td>
       </tr>`;
   });
 }
@@ -551,7 +557,7 @@ if (order?.additionalItems && order.additionalItems.length > 0) {
         <div>
           <p>
             <span style="font-weight: 550; font-size: 16px"
-              >Polygon Holdings (Private) Ltd.</span
+              >Polygon Agro Holdings (Private) Ltd.</span
             >
           </p>
           <p class="headerp">No. 42/46, Nawam Mawatha, Colombo 02.</p>
@@ -574,9 +580,27 @@ if (order?.additionalItems && order.additionalItems.length > 0) {
       >
         <div>
           <p class="bold">Bill To :</p>
-          <p class="headerp">${order?.customerInfo?.title || ''} ${order?.customerInfo?.firstName || ''} ${order?.customerInfo?.lastName || ''}</p>
-          <p class="headerp">${order?.fullAddress || ''}</p>
-          <p class="headerp">${order?.customerInfo?.phoneNumber || ''}</p>
+          <p class="headerp">${order?.customerInfo?.title || ''}.${order?.customerInfo?.firstName || ''} ${order?.customerInfo?.lastName || ''}</p>
+              <div style="margin-top: 10px">
+      ${order?.customerInfo?.buildingType === 'Apartment' ? 
+        `
+        <p class="headerp">House No: ${customerData?.buildingDetails?.houseNo || ''}</p>
+        <p class="headerp">Floor No: ${customerData?.buildingDetails?.floorNo || ''}</p>
+        <p class="headerp">Building No: ${customerData?.buildingDetails?.buildingNo || ''} </p>
+        <p class="headerp">Building Name: ${customerData?.buildingDetails?.buildingName || ''} </p>
+        <p class="headerp">Unit No: ${customerData?.buildingDetails?.unitNo || ''}</p>
+        <p class="headerp"> Street: ${customerData?.buildingDetails?.streetName || ''}</p>
+        <p class="headerp">City: ${customerData?.buildingDetails?.city || ''}</p>
+        `
+        : 
+        `
+        <p class="headerp">House No: ${customerData?.buildingDetails?.houseNo || ''}</p>
+        <p class="headerp">Street: ${customerData?.buildingDetails?.streetName || ''}</p>
+        <p class="headerp">City: ${customerData?.buildingDetails?.city || ''}</p>
+        `
+      }
+    </div>
+          <p class="headerp"> +94 ${order?.customerInfo?.phoneNumber || ''}</p>
           <p class="headerp">${customerData?.email || ''}</p>
         </div>
         <div>
@@ -663,8 +687,8 @@ if (order?.additionalItems && order.additionalItems.length > 0) {
             margin-top:10px
           "
         >
-          <div class="bold">Additional Items (${order?.additionalItems?.length || 0} Items)</div>
-          <div style="font-weight: 550; font-size: 16px">Rs. ${additionalItemsTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</div>
+         <div class="bold">${order?.isPackage === 1 ? 'Additional Items' : 'Custom Items'} (${order?.additionalItems?.length || 0} Items)</div>
+    <div style="font-weight: 550; font-size: 16px">Rs. ${additionalItemsTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</div>
         </div>
         <div style="border: 1px solid #ddd; border-radius: 10px">
           <table class="table">
