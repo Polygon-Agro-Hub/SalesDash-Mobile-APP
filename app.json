@@ -38,6 +38,7 @@
         "foregroundImage": "./assets/images/favicon.png",
         "backgroundColor": "#ffffff"
       },
+       "softwareKeyboardLayoutMode": "pan",
       "package": "com.polygonagro.SalesDash",
       "versionCode": 2,
       "permissions": [
