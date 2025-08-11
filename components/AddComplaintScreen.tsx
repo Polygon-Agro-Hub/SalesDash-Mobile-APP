@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Text,
   View,
@@ -11,6 +11,7 @@ import {
   SafeAreaView,
   Keyboard,
   TouchableWithoutFeedback,
+  BackHandler,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
@@ -27,6 +28,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import DropDownPicker from "react-native-dropdown-picker";
 import { SelectList } from "react-native-dropdown-select-list";
 import { AntDesign } from "@expo/vector-icons"; 
+import { useFocusEffect } from "expo-router";
 type AddComplaintScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
   "AddComplaintScreen"
@@ -161,6 +163,21 @@ const handleSearchChange = (text: string) => {
         setFilteredCategory(filtered);
     }
 };
+
+useFocusEffect(
+      useCallback(() => {
+        const onBackPress = () => {
+          // Navigate to ViewCustomerScreen instead of going back to main dashboard
+          navigation.navigate("SidebarScreen" as any);
+          return true; // Prevent default back behavior
+        };
+  
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+  
+        return () => backHandler.remove(); // Cleanup on unmount
+      }, [navigation])
+    );
+  
 
 
   useEffect(() => {
