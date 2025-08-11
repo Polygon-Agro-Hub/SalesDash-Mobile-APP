@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Keyboard, Platform, KeyboardAvoidingView, SafeAreaView, Alert, ActivityIndicator } from "react-native";
+import React, { useState, useEffect, useCallback } from "react";
+import { View, Text, ScrollView, TextInput, TouchableOpacity, Keyboard, Platform, KeyboardAvoidingView, SafeAreaView, Alert, ActivityIndicator, BackHandler } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import { LinearGradient } from "expo-linear-gradient";
@@ -12,9 +12,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SelectList } from "react-native-dropdown-select-list";
 import { AntDesign } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '../services/reducxStore'; // Adjust path as needed
-import { setInputClick, clearInputClick } from '../store/navSlice';
+
 
 
 type EditCustomerScreenNavigationProp = StackNavigationProp<
@@ -91,36 +89,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
     { label: "House", value: "House" },
     { label: "Apartment", value: "Apartment" },
   ]);
-  const dispatch = useDispatch();
-    const isClick = useSelector((state: RootState) => state.input.isClick);
 
-    useFocusEffect(
-      React.useCallback(() => {
-        // Track keyboard visibility
-        const keyboardDidShowListener = Keyboard.addListener(
-          'keyboardDidShow',
-          () => {
-            setKeyboardVisible(true);
-          }
-        );
-        const keyboardDidHideListener = Keyboard.addListener(
-          'keyboardDidHide',
-          () => {
-            setKeyboardVisible(false);
-          }
-        );
-    
-        // Only set to 0 if keyboard is not visible
-        if (!isKeyboardVisible) {
-          dispatch(setInputClick(0));
-        }
-    
-        return () => {
-          keyboardDidHideListener?.remove();
-          keyboardDidShowListener?.remove();
-        };
-      }, [isKeyboardVisible])
-    );
   
 
   // Validation regex
@@ -223,36 +192,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
     }
   };
 
-  // Add this effect to handle screen focus changes
-  useFocusEffect(
-    React.useCallback(() => {
-      let isActive = true;
 
-      const fetchData = async () => {
-        if (isActive) {
-          await resetFormToOriginalState();
-        }
-      };
-
-      fetchData();
-        return () => {
-              // Cleanup if needed
-              dispatch(clearInputClick());
-            };
-
-      
-    }, [id])
-  );
-
-    const handleInputFocus = () => {
-      dispatch(setInputClick(1));
-    };
-  
-    // Handle input blur - set isClick to 0
-    const handleInputBlur = () => {
-      dispatch(setInputClick(0));
-    };
-  
   
   const formatNameInput = (text: string) => {
     if (!text) return text;
@@ -309,35 +249,75 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
   }, [phoneNumber, touchedFields.phoneNumber]);
 
 
- useEffect(() => {
-  if (touchedFields.email) {
-    if (!email) {
-      setEmailError("Email is required");
-    } else if (!validateEmail(email)) {
-      // Provide specific error messages based on domain
-      const emailLower = email.toLowerCase();
-      const domain = emailLower.split('@')[1];
-      
-      if (domain === 'gmail.com' || domain === 'googlemail.com') {
-        const localPart = emailLower.split('@')[0];
+useEffect(() => {
+    if (touchedFields.email) {
+      if (!email) {
+        setEmailError("Email is required");
+      } else if (!validateEmail(email)) {
+        // Provide specific error messages based on domain and validation issues
+        const emailLower = email.toLowerCase();
+        const [localPart, domain] = emailLower.split('@');
         
-        if (/\.{2,}/.test(localPart)) {
-          setEmailError("Gmail addresses cannot have consecutive dots");
-        } else if (/^\.|\.$/.test(localPart)) {
-          setEmailError("Gmail addresses cannot start or end with a dot");
-        } else if (!/^[a-zA-Z0-9.+]+$/.test(localPart)) {
-          setEmailError("Gmail addresses can only contain letters, numbers, dots and plus signs");
+        // Check if email format is completely invalid
+        const generalEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!generalEmailRegex.test(email)) {
+          setEmailError("Please enter a valid email address");
+          return;
+        }
+        
+        if (domain === 'gmail.com' || domain === 'googlemail.com') {
+          // Gmail-specific errors
+          if (localPart.length > 30) {
+            setEmailError("Gmail addresses cannot exceed 30 characters before @");
+          } else if (/\.{2,}/.test(localPart)) {
+            setEmailError("Gmail addresses cannot have consecutive dots");
+          } else if (/^\.|\.$/.test(localPart)) {
+            setEmailError("Gmail addresses cannot start or end with a dot");
+          } else if (!/^[a-zA-Z0-9.+]+$/.test(localPart)) {
+            setEmailError("Gmail addresses can only contain letters, numbers, dots and plus signs");
+          } else {
+            setEmailError("Please enter a valid Gmail address");
+          }
+        } else if (domain === 'yahoo.com') {
+          // Yahoo-specific errors
+          if (localPart.length > 32) {
+            setEmailError("Yahoo addresses cannot exceed 32 characters before @");
+          } else if (/\.{2,}/.test(localPart)) {
+            setEmailError("Yahoo addresses cannot have consecutive dots");
+          } else if (/^[._-]|[._-]$/.test(localPart)) {
+            setEmailError("Yahoo addresses cannot start or end with dots, underscores or hyphens");
+          } else if (!/^[a-zA-Z0-9._-]+$/.test(localPart)) {
+            setEmailError("Yahoo addresses can only contain letters, numbers, dots, underscores and hyphens");
+          } else {
+            setEmailError("Please enter a valid Yahoo address");
+          }
         } else {
-          setEmailError("Please enter a valid Gmail address");
+          // Check if domain is supported
+          const allowedTLDs = ['.com', '.gov', '.lk'];
+          const isDomainSupported = allowedTLDs.some(tld => domain.endsWith(tld));
+          
+          if (!isDomainSupported) {
+            setEmailError("Please enter a valid email address with a supported domain (.com, .gov, .lk)");
+          } else {
+            // General validation errors
+            if (localPart.length > 64) {
+              setEmailError("Email address is too long");
+            } else if (/\.{2,}/.test(localPart)) {
+              setEmailError("Email addresses cannot have consecutive dots");
+            } else if (/^\.|\.$/.test(localPart)) {
+              setEmailError("Email addresses cannot start or end with a dot");
+            } else if (!/^[a-zA-Z0-9._%+-]+$/.test(localPart)) {
+              setEmailError("Please enter a valid email address");
+            } else {
+              setEmailError("Please enter a valid email address");
+            }
+          }
         }
       } else {
-        setEmailError("Please enter a valid email address with a supported domain (.com, .gov, .lk)");
+        setEmailError("");
       }
-    } else {
-      setEmailError("");
     }
-  }
-}, [email, touchedFields.email]);
+  }, [email, touchedFields.email]);
 
   useEffect(() => {
     if (touchedFields.buildingType) {
@@ -1105,21 +1085,25 @@ const handlePhoneNumberKeyPress = (e: any) => {
   }
 };
 
-    useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener(
-      'keyboardDidShow',
-      () => setKeyboardVisible(true)
-    );
-    const keyboardDidHideListener = Keyboard.addListener(
-      'keyboardDidHide',
-      () => setKeyboardVisible(false)
-    );
-  
-    return () => {
-      keyboardDidShowListener.remove();
-      keyboardDidHideListener.remove();
-    };
-  }, []);
+ useFocusEffect(
+     useCallback(() => {
+       const onBackPress = () => {
+         // Navigate to ViewCustomerScreen instead of going back to main dashboard
+         navigation.navigate("ViewCustomerScreen" as any, { 
+           id: id, 
+           customerId: customerId, 
+           name: name, 
+           title: title 
+         });
+         return true; // Prevent default back behavior
+       };
+ 
+       const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+ 
+       return () => backHandler.remove(); // Cleanup on unmount
+     }, [navigation, id, customerId, name, title])
+   );  
+
 
   if (loading) {
     return (
@@ -1214,11 +1198,11 @@ const handlePhoneNumberKeyPress = (e: any) => {
                     onChangeText={text => setFirstName(formatNameInput(text))}
                     // onBlur={() => handleFieldTouch("firstName") }
                     autoCapitalize="words"
-                      onFocus={handleInputFocus}
+             
                       //  onFocus={handleInputFocus}
                     onBlur={() => {
                       handleFieldTouch("firstName");
-                      handleInputBlur();
+                   
                     }}
                   />
                   {firstNameError ? (
@@ -1237,10 +1221,10 @@ const handlePhoneNumberKeyPress = (e: any) => {
                   value={lastName}
                   onChangeText={text => setLastName(formatNameInput(text))}
                   // onBlur={() => handleFieldTouch("lastName")}
-                  onFocus={handleInputFocus}
+                
                   onBlur={() => {
                     handleFieldTouch("lastName");
-                    handleInputBlur();
+                  
                   }}
                   autoCapitalize="words"
                 />
@@ -1262,7 +1246,7 @@ const handlePhoneNumberKeyPress = (e: any) => {
     onBlur={() => handleFieldTouch("phoneNumber")}
     onFocus={() => {
       handlePhoneNumberFocus();
-      handleInputFocus();
+   
     }}
     onKeyPress={handlePhoneNumberKeyPress}
     maxLength={12}
@@ -1307,10 +1291,10 @@ const handlePhoneNumberKeyPress = (e: any) => {
     autoCorrect={false}
     value={email}
     onChangeText={handleEmailChangeWithErrorClear}
-    onFocus={handleInputFocus}
+
     onBlur={() => {
       handleFieldTouch("email");
-      handleInputBlur();
+   
     }}
   />
   {emailError ? (
@@ -1372,10 +1356,10 @@ const handlePhoneNumberKeyPress = (e: any) => {
                       placeholder="Building / House No (e.g., 14/B)"
                       value={houseNo}
                       onChangeText={setHouseNo}
-                      onFocus={handleInputFocus}
+              
                         onBlur={() => {
                    
-                    handleInputBlur();
+                   
                   }}
                     />
                   </View>
@@ -1386,11 +1370,7 @@ const handlePhoneNumberKeyPress = (e: any) => {
                       placeholder="Street Name"
                       value={streetName}
                       onChangeText={setStreetName}
-                      onFocus={handleInputFocus}
-                        onBlur={() => {
                   
-                    handleInputBlur();
-                  }}
                     />
                   </View>
                   <View className="mb-4 z-10">
@@ -1445,11 +1425,7 @@ const handlePhoneNumberKeyPress = (e: any) => {
                       placeholder="Apartment / Building No"
                       value={buildingNo}
                       onChangeText={setBuildingNo}
-                      onFocus={handleInputFocus}
-                        onBlur={() => {
-                  
-                    handleInputBlur();
-                  }}
+                
                     />
                   </View>
                   <View className="mb-4">
@@ -1459,7 +1435,7 @@ const handlePhoneNumberKeyPress = (e: any) => {
                       placeholder="Apartment / Building Name"
                       value={buildingName}
                       onChangeText={setBuildingName}
-                      onFocus={handleInputFocus}
+               
                     />
                   </View>
                   <View className="mb-4">
@@ -1469,11 +1445,7 @@ const handlePhoneNumberKeyPress = (e: any) => {
                       placeholder="ex: Building B"
                       value={unitNo}
                       onChangeText={setUnitNo}
-                      onFocus={handleInputFocus}
-                        onBlur={() => {
-           
-                    handleInputBlur();
-                  }}
+                  
                     />
                   </View>
                   <View className="mb-4">
@@ -1483,11 +1455,7 @@ const handlePhoneNumberKeyPress = (e: any) => {
                       placeholder="ex: 3rd Floor"
                       value={floorNo}
                       onChangeText={setFloorNo}
-                      onFocus={handleInputFocus}
-                        onBlur={() => {
-                 
-                    handleInputBlur();
-                  }}
+                
                     />
                   </View>
                   <View className="mb-4">
@@ -1497,11 +1465,7 @@ const handlePhoneNumberKeyPress = (e: any) => {
                       placeholder="Building / House No (e.g., 14/B)"
                       value={houseNo}
                       onChangeText={setHouseNo}
-                      onFocus={handleInputFocus}
-                        onBlur={() => {
-                
-                    handleInputBlur();
-                  }}
+                  
                     />
                   </View>
                   <View className="mb-4">
@@ -1511,11 +1475,7 @@ const handlePhoneNumberKeyPress = (e: any) => {
                       placeholder="Street Name"
                       value={streetName}
                       onChangeText={setStreetName}
-                      onFocus={handleInputFocus}
-                        onBlur={() => {
-              
-                    handleInputBlur();
-                  }}
+                  
                     />
                   </View>
                   <View className="mb-4 z-10">

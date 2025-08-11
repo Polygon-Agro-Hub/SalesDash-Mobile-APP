@@ -170,6 +170,7 @@ export type RootStackParamList = {
     }
     ExcludeItemEditSummery :{ id: string, customerId:string, name: string,title:string},
     ExcludeAddMore : {id: string, customerId:string, name: string,title:string}
-
+PrivacyPolicy:undefined
+TermsConditions:undefined
   };
   

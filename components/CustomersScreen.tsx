@@ -21,9 +21,7 @@ import environment from "@/environment/environment";
 import CustomersScreenSkeleton from "../components/Skeleton/CustomerScreenSkeleton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect, useIsFocused } from "@react-navigation/native";
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '../services/reducxStore'; // Adjust path as needed
-import { setInputClick, clearInputClick } from '../store/navSlice';
+
 
 type CustomersScreenNavigationProp = StackNavigationProp<RootStackParamList, "CustomersScreen">;
 
@@ -56,46 +54,10 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const isMounted = useRef(true);
-  const dispatch = useDispatch();
-  const isClick = useSelector((state: RootState) => state.input.isClick);
 
 
-    const handleInputFocus = () => {
-      dispatch(setInputClick(1));
-    };
-  
-    // Handle input blur - set isClick to 0
-    const handleInputBlur = () => {
-      dispatch(setInputClick(0));
-    };
-
-    useFocusEffect(
-      React.useCallback(() => {
-        // Track keyboard visibility
-        const keyboardDidShowListener = Keyboard.addListener(
-          'keyboardDidShow',
-          () => {
-            setKeyboardVisible(true);
-          }
-        );
-        const keyboardDidHideListener = Keyboard.addListener(
-          'keyboardDidHide',
-          () => {
-            setKeyboardVisible(false);
-          }
-        );
     
-        // Only set to 0 if keyboard is not visible
-        if (!isKeyboardVisible) {
-          dispatch(setInputClick(0));
-        }
-    
-        return () => {
-          keyboardDidHideListener?.remove();
-          keyboardDidShowListener?.remove();
-        };
-      }, [isKeyboardVisible])
-    );
+   
 
   // Safe state setters
   const safeSetCustomers = (data: Customer[]) => {
@@ -371,11 +333,7 @@ const handleSearch = (query: string) => {
                 placeholderTextColor="#6839CF" 
                 className="flex-1 text-sm text-gray-700" 
                 style={{ fontStyle: 'italic' }}
-                 onFocus={handleInputFocus}
-                  onBlur={() => {
-            
-                    handleInputBlur();
-                  }}
+                
               />
               <Image source={require("../assets/images/search.webp")} className="w-6 h-6" resizeMode="contain" />
             </View>
