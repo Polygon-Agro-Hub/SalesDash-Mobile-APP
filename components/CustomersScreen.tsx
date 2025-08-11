@@ -306,7 +306,7 @@ const handleSearch = (query: string) => {
     <KeyboardAvoidingView 
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       enabled 
-      className="flex-1"
+       style={{ flex: 1}}
     >
       <View className="bg-white flex-1">
         

@@ -1004,7 +1004,7 @@ const handlePackageSearchChange = (text: string) => {
       <KeyboardAvoidingView 
                                behavior={Platform.OS === "ios" ? "padding" : "height"}
                                enabled 
-                               className="flex-1"
+                               style={{flex: 1}}
                              >
       <StatusBar barStyle="dark-content" backgroundColor="white" />
       

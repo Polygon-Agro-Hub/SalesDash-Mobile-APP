@@ -141,7 +141,8 @@ useFocusEffect(
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       enabled
-      className="flex-1 bg-white"
+      style={{flex: 1}}
+      className="bg-white"
     >
       <View className="flex bg-white px-3">
         <View className="bg-white flex-row items-center h-17  px-1">

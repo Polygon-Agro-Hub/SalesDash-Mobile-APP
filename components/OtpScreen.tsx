@@ -487,7 +487,7 @@ const handleKeyPress = ({ nativeEvent: { key } }: NativeSyntheticEvent<TextInput
         <KeyboardAvoidingView 
                                             behavior={Platform.OS === "ios" ? "padding" : "height"}
                                             enabled 
-                                            className="flex-1"
+                                            style={{flex: 1}}
                                           >
 
 <ScrollView 

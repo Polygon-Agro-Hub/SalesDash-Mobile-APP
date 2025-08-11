@@ -884,7 +884,8 @@ if (order?.additionalItems && order.additionalItems.length > 0) {
     <KeyboardAvoidingView 
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       enabled 
-      className="flex-1 relative"
+      style={{flex: 1}}
+      className="relative"
     >
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} 
         keyboardShouldPersistTaps="handled"

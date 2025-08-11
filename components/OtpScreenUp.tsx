@@ -757,7 +757,7 @@ const handleOtpChange = (text: string, index: number) => {
     <KeyboardAvoidingView 
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       enabled 
-      className="flex-1"
+      style={{flex: 1}}
     >
       <ScrollView 
         contentContainerStyle={{ flexGrow: 1 }} 
