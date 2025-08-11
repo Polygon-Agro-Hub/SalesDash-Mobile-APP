@@ -75,7 +75,6 @@
     "react-native-global-font": "^1.0.3",
     "react-native-image-editor": "^0.0.1",
     "react-native-image-picker": "^8.2.0",
-    "react-native-keyboard-aware-scroll-view": "^0.9.5",
     "react-native-linear-gradient": "^2.8.3",
     "react-native-modal": "^13.0.1",
     "react-native-otp-verify": "^1.1.8",

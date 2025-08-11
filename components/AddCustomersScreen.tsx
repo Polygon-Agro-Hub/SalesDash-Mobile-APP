@@ -12,7 +12,7 @@ import { SelectList } from "react-native-dropdown-select-list";
 import DropDownPicker from "react-native-dropdown-picker";
 import { useFocusEffect } from "expo-router";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+
 
 
 
@@ -822,17 +822,18 @@ const capitalizeFirstLetter = (text: string) => {
 
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-  {/* <KeyboardAvoidingView 
+  
+  <KeyboardAvoidingView 
   behavior={Platform.OS === "ios" ? "padding" : "height"}
   keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })} // Adjust this value as needed
-  style={{ flex: 1 }}
-> */}
-<KeyboardAwareScrollView
+    style={{ flex: 1 ,backgroundColor: "white" }}
+>
+    <SafeAreaView className="flex-1 bg-white">
+{/* <KeyboardAwareScrollView
   contentContainerStyle={{ flexGrow: 1 }}
   keyboardShouldPersistTaps="handled"
   enableOnAndroid={true}
->
+> */}
         <View className="flex-1 bg-white py-4 p-2">
           <View className="p-[-2]">
             <View className="bg-white flex-row items-center h-17 shadow-lg px-1">
@@ -1290,9 +1291,10 @@ const capitalizeFirstLetter = (text: string) => {
             </View>
           </ScrollView>
         </View>
-      {/* </KeyboardAvoidingView> */}
-      </KeyboardAwareScrollView>
-    </SafeAreaView>
+        </SafeAreaView>
+      </KeyboardAvoidingView>
+ 
+   
   );
 };
 

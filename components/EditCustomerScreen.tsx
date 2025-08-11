@@ -12,7 +12,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SelectList } from "react-native-dropdown-select-list";
 import { AntDesign } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+
 
 
 
@@ -1121,17 +1121,18 @@ const handlePhoneNumberKeyPress = (e: any) => {
 
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      {/* <KeyboardAvoidingView 
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        enabled 
-        className="flex-1"
-      > */}
-      <KeyboardAwareScrollView
+ 
+       <KeyboardAvoidingView 
+       behavior={Platform.OS === "ios" ? "padding" : "height"}
+       keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })} // Adjust this value as needed
+       style={{ flex: 1 ,backgroundColor: "white" }}
+     >
+           <SafeAreaView className="flex-1 bg-white">
+      {/* <KeyboardAwareScrollView
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
         enableOnAndroid={true}
-      >
+      > */}
         <View className="flex-1 bg-white py-4 p-2">
           <View className="p-[-4]">
             <View className="bg-white flex-row items-center h-17 shadow-lg px-1">
@@ -1545,9 +1546,10 @@ const handlePhoneNumberKeyPress = (e: any) => {
             </View>
           </ScrollView>
         </View>
-      {/* </KeyboardAvoidingView> */}
-      </KeyboardAwareScrollView>
-    </SafeAreaView>
+        </SafeAreaView>
+      </KeyboardAvoidingView>
+
+    
   );
 };
 

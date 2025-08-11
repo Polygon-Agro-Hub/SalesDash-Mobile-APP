@@ -12,6 +12,7 @@ import {
   Alert,
   BackHandler,
   Keyboard,
+  SafeAreaView,
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from './types';
@@ -22,7 +23,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import environment from '@/environment/environment';
 import { useFocusEffect } from 'expo-router';
 import BackButton from './BackButton';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+
 
 type ChangePasswordScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -188,11 +189,17 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
     //   enabled 
     //   className="flex-1"
     // >
-      <KeyboardAwareScrollView
-          contentContainerStyle={{ flexGrow: 1 }}
-          keyboardShouldPersistTaps="handled"
-          enableOnAndroid={true}
-        >
+      // <KeyboardAwareScrollView
+      //     contentContainerStyle={{ flexGrow: 1 }}
+      //     keyboardShouldPersistTaps="handled"
+      //     enableOnAndroid={true}
+      //   >
+       <KeyboardAvoidingView 
+              behavior={Platform.OS === "ios" ? "padding" : "height"}
+              keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })} // Adjust this value as needed
+              style={{ flex: 1 ,backgroundColor: "white" }}
+            >
+                  <SafeAreaView className="flex-1 bg-white">
       <ScrollView 
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
@@ -297,7 +304,8 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
           </LinearGradient>
         </View>
       </ScrollView>
-      </KeyboardAwareScrollView>
+       </SafeAreaView>
+           </KeyboardAvoidingView>
   
   );
 };
