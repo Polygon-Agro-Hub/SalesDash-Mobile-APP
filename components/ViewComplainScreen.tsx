@@ -246,8 +246,8 @@
 
 // export default ViewComplainScreen;
 
-import React, { useState, useEffect } from "react";
-import { View, Text, FlatList, TouchableOpacity, Image, Modal, Alert, RefreshControl } from "react-native";
+import React, { useState, useEffect, useCallback } from "react";
+import { View, Text, FlatList, TouchableOpacity, Image, Modal, Alert, RefreshControl, BackHandler } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { AntDesign } from "@expo/vector-icons";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
@@ -259,6 +259,7 @@ import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import ViewComplainScreenSkeleton from "../components/Skeleton/ViewComplainScreenSkeleton";  // Assuming skeleton loader component
 import { goBack, navigate } from "expo-router/build/global-state/routing";
+import { useFocusEffect } from "expo-router";
 
 type ViewComplainScreenNavigationProp = StackNavigationProp<RootStackParamList, "ViewComplainScreen">;
 
@@ -444,6 +445,21 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({ navigation }) =
     setSelectedComplaint(complaint);
     setModalVisible(true);
   };
+
+  useFocusEffect(
+        useCallback(() => {
+          const onBackPress = () => {
+            // Navigate to ViewCustomerScreen instead of going back to main dashboard
+            navigation.navigate("SidebarScreen" as any);
+            return true; // Prevent default back behavior
+          };
+    
+          const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    
+          return () => backHandler.remove(); // Cleanup on unmount
+        }, [navigation])
+      );
+    
 
   
   return (

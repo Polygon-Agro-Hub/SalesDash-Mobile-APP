@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, Text, Image, TouchableOpacity, Alert, ScrollView,KeyboardAvoidingView, Platform, ActivityIndicator } from "react-native";
+import { View, Text, Image, TouchableOpacity, Alert, ScrollView,KeyboardAvoidingView, Platform, ActivityIndicator, BackHandler } from "react-native";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
@@ -67,6 +67,20 @@ const handleLogout = async () => {
     setLoading(false);
   }
 };
+
+useFocusEffect(
+      useCallback(() => {
+        const onBackPress = () => {
+          // Navigate to ViewCustomerScreen instead of going back to main dashboard
+          navigation.navigate("Main" as any);
+          return true; // Prevent default back behavior
+        };
+  
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+  
+        return () => backHandler.remove(); // Cleanup on unmount
+      }, [navigation])
+    );
 
 
   return (

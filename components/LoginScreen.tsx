@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform, ScrollView, Alert, BackHandler } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform, ScrollView, Alert, BackHandler, SafeAreaView } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types"; 
 import Icon from "react-native-vector-icons/Ionicons"; 
@@ -9,6 +9,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import environment from "@/environment/environment";
 import { Keyboard } from "react-native";
 import { useFocusEffect } from "expo-router";
+
 
 // Navigation type
 type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, "LoginScreen">;
@@ -118,10 +119,18 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   );
 
   return (
-    <KeyboardAvoidingView 
-                       behavior={Platform.OS === "ios" ? "padding" : "height"}
-                       className="flex-1"
-                     >
+  
+        <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })} // Adjust this value as needed
+        style={{ flex: 1 ,backgroundColor: "white" }}
+      >
+            <SafeAreaView className="flex-1 bg-white">
+    {/* <KeyboardAwareScrollView
+      contentContainerStyle={{ flexGrow: 1 }}
+      keyboardShouldPersistTaps="handled"
+      enableOnAndroid={true}
+    > */}
     <ScrollView 
       contentContainerStyle={{ flexGrow: 1 }} 
       keyboardShouldPersistTaps="handled"
@@ -206,7 +215,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       </View>
     </View>
     </ScrollView>
-    </KeyboardAvoidingView>
+ 
+    </SafeAreaView>
+         </KeyboardAvoidingView>
   );
 };
 
