@@ -226,7 +226,12 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
                 className="flex-1 text-white py-3"
                 secureTextEntry={!showCurrentPassword}
                 value={currentPassword}
-                onChangeText={setCurrentPassword}
+              //  onChangeText={setCurrentPassword}
+                onChangeText={(text) => {
+      // Remove all spaces and prevent starting with space
+      const cleanText = text.replace(/\s/g, '');
+      setCurrentPassword(cleanText);
+    }}
               />
               <TouchableOpacity onPress={() => setShowCurrentPassword(!showCurrentPassword)}>
                 <Icon name={showCurrentPassword ? 'eye-off' : 'eye'} size={20} color="#E5E5E5" />
@@ -241,7 +246,12 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
                 className="flex-1 text-white py-3"
                 secureTextEntry={!showNewPassword}
                 value={newPassword}
-                onChangeText={setNewPassword}
+                //onChangeText={setNewPassword}
+                 onChangeText={(text) => {
+      // Remove all spaces and prevent starting with space
+      const cleanText = text.replace(/\s/g, '');
+      setNewPassword(cleanText);
+    }}
               />
               <TouchableOpacity onPress={() => setShowNewPassword(!showNewPassword)}>
                 <Icon name={showNewPassword ? 'eye-off' : 'eye'} size={20} color="#E5E5E5" />
@@ -256,7 +266,12 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
                 className="flex-1 text-white py-3"
                 secureTextEntry={!showConfirmPassword}
                 value={confirmNewPassword}
-                onChangeText={setConfirmNewPassword}
+              //  onChangeText={setConfirmNewPassword}
+               onChangeText={(text) => {
+      // Remove all spaces and prevent starting with space
+      const cleanText = text.replace(/\s/g, '');
+      setConfirmNewPassword(cleanText);
+    }}
               />
               <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
                 <Icon name={showConfirmPassword ? 'eye-off' : 'eye'} size={20} color="#E5E5E5" />

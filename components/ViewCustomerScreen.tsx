@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { 
   View, 
   Text, 
@@ -12,7 +12,8 @@ import {
   KeyboardAvoidingView, 
   ScrollView,
   ActivityIndicator,
-  RefreshControl
+  RefreshControl,
+  BackHandler
 } from "react-native";
 import { RouteProp, useFocusEffect } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -103,15 +104,20 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
   }, [id]) // Re-run when customer id changes
 );
 
-  useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
-    const keyboardDidHideListener = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false));
-
-    return () => {
-      keyboardDidShowListener.remove();
-      keyboardDidHideListener.remove();
-    };
-  }, []);
+   useFocusEffect(
+      useCallback(() => {
+        const onBackPress = () => {
+          // Navigate to ViewCustomerScreen instead of going back to main dashboard
+          navigation.navigate("CustomersScreen" as any);
+          return true; // Prevent default back behavior
+        };
+  
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+  
+        return () => backHandler.remove(); // Cleanup on unmount
+      }, [navigation])
+    );
+  
 
   const loadOrders = async (page = 1, showFullLoading = true, isLoadMore = false) => {
     try {

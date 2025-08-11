@@ -388,8 +388,14 @@ const totalAmount = totalBeforeDiscount - discountAmount;
 
 // Calculate additional items total
 // Calculate additional items total (using price directly as total price)
+// const additionalItemsTotal = order?.additionalItems?.reduce((sum, item) => {
+//   return sum + parseFloat(item.price || '0');
+// }, 0) || 0;
 const additionalItemsTotal = order?.additionalItems?.reduce((sum, item) => {
-  return sum + parseFloat(item.price || '0');
+  const price = parseFloat(item.price?.toString() || '0');
+  const discount = parseFloat(item.discount?.toString() || '0');
+  const actualAmount = price + discount; // Use actual amount (price + discount)
+  return sum + actualAmount;
 }, 0) || 0;
 
 
@@ -415,23 +421,50 @@ if (order?.packageInfo?.packageDetails && order.packageInfo.packageDetails.lengt
 
 // Generate additional items rows
 // Generate additional items rows with unit price calculation
+// let additionalItemsRows = '';
+// if (order?.additionalItems && order.additionalItems.length > 0) {
+//   order.additionalItems.forEach((item, index) => {
+//     const amount = parseFloat(item.price?.toString() || '0'); // This is the total amount from backend
+//     const quantity = parseFloat(item.qty?.toString() || '0');
+//     const unitPrice = quantity > 0 ? (amount / quantity) : 0; // Calculate unit price
+    
+//     additionalItemsRows += `
+//       <tr>
+//         <td style="text-align: center">${index + 1}</td>
+//         <td class="tabledata">${item.displayName || 'Item'}</td>
+//         <td class="tabledata">${unitPrice.toFixed(2)}</td>
+//         <td class="tabledata">${quantity} ${item.unit || 'kg'}</td>
+//         <td class="tabledata">${amount.toFixed(2)}</td>
+//       </tr>`;
+//   });
+// }
+
+// Generate additional items rows with correct unit price and amount calculation
 let additionalItemsRows = '';
 if (order?.additionalItems && order.additionalItems.length > 0) {
   order.additionalItems.forEach((item, index) => {
-    const amount = parseFloat(item.price?.toString() || '0'); // This is the total amount from backend
+    const price = parseFloat(item.price?.toString() || '0'); // This is the discounted price from backend
+    const discount = parseFloat(item.discount?.toString() || '0'); // This is the discount amount
     const quantity = parseFloat(item.qty?.toString() || '0');
-    const unitPrice = quantity > 0 ? (amount / quantity) : 0; // Calculate unit price
+    
+    // Calculate the actual amount (price + discount)
+    const actualAmount = price + discount; // 510 + 90 = 600
+    
+    // Calculate unit price (actual amount / quantity)
+    const unitPrice = quantity > 0 ? (actualAmount / quantity) : 0; // 600 / 2 = 300
     
     additionalItemsRows += `
       <tr>
         <td style="text-align: center">${index + 1}</td>
-        <td class="tabledata">${item.displayName || 'Item'}</td>
+        <td class="tabledata">${item.displayName || item.name || 'Item'}</td>
         <td class="tabledata">${unitPrice.toFixed(2)}</td>
-        <td class="tabledata">${quantity} ${item.unit || 'kg'}</td>
-        <td class="tabledata">${amount.toFixed(2)}</td>
+        <td class="tabledata">${quantity} ${item.unit || item.qty || 'kg'}</td>
+        <td class="tabledata">${actualAmount.toFixed(2)}</td>
       </tr>`;
   });
 }
+
+
 
       // Format scheduled date
       const formatScheduleDate = (dateString: string) => {
@@ -489,6 +522,15 @@ if (order?.additionalItems && order.additionalItems.length > 0) {
         font-size: 14px;
         line-height: 10px;
       }
+         .label {
+    color: #929292; /* Gray color for labels */
+    font-weight: 500;
+  }
+  
+  .value {
+    color: #000000; /* Dark color for values */
+    font-weight: normal;
+  }
       .logo {
         width: 180px;
         height: auto;
@@ -557,7 +599,7 @@ if (order?.additionalItems && order.additionalItems.length > 0) {
         <div>
           <p>
             <span style="font-weight: 550; font-size: 16px"
-              >Polygon Agro Holdings (Private) Ltd.</span
+              >Polygon Agro Holdings (Private) Ltd</span
             >
           </p>
           <p class="headerp">No. 42/46, Nawam Mawatha, Colombo 02.</p>
@@ -581,27 +623,30 @@ if (order?.additionalItems && order.additionalItems.length > 0) {
         <div>
           <p class="bold">Bill To :</p>
           <p class="headerp">${order?.customerInfo?.title || ''}.${order?.customerInfo?.firstName || ''} ${order?.customerInfo?.lastName || ''}</p>
+          <p class="headerp"> +94 ${order?.customerInfo?.phoneNumber || ''}</p>
+          <p class="headerp">${customerData?.email || ''}</p>
               <div style="margin-top: 10px">
       ${order?.customerInfo?.buildingType === 'Apartment' ? 
+         `
+        <p class="bold">Apartment Address :</p>
+        <p class="headerp"><span class="label">House No:</span> <span class="value">${customerData?.buildingDetails?.houseNo || ''}</span></p>
+        <p class="headerp"><span class="label">Floor No:</span> <span class="value">${customerData?.buildingDetails?.floorNo || ''}</span></p>
+        <p class="headerp"><span class="label">Building No:</span> <span class="value">${customerData?.buildingDetails?.buildingNo || ''}</span></p>
+        <p class="headerp"><span class="label">Building Name:</span> <span class="value">${customerData?.buildingDetails?.buildingName || ''}</span></p>
+        <p class="headerp"><span class="label">Unit No:</span> <span class="value">${customerData?.buildingDetails?.unitNo || ''}</span></p>
+        <p class="headerp"><span class="label">Street:</span> <span class="value">${customerData?.buildingDetails?.streetName || ''}</span></p>
+        <p class="headerp"><span class="label">City:</span> <span class="value">${customerData?.buildingDetails?.city || ''}</span></p>
         `
-        <p class="headerp">House No: ${customerData?.buildingDetails?.houseNo || ''}</p>
-        <p class="headerp">Floor No: ${customerData?.buildingDetails?.floorNo || ''}</p>
-        <p class="headerp">Building No: ${customerData?.buildingDetails?.buildingNo || ''} </p>
-        <p class="headerp">Building Name: ${customerData?.buildingDetails?.buildingName || ''} </p>
-        <p class="headerp">Unit No: ${customerData?.buildingDetails?.unitNo || ''}</p>
-        <p class="headerp"> Street: ${customerData?.buildingDetails?.streetName || ''}</p>
-        <p class="headerp">City: ${customerData?.buildingDetails?.city || ''}</p>
+        :
         `
-        : 
-        `
-        <p class="headerp">House No: ${customerData?.buildingDetails?.houseNo || ''}</p>
-        <p class="headerp">Street: ${customerData?.buildingDetails?.streetName || ''}</p>
-        <p class="headerp">City: ${customerData?.buildingDetails?.city || ''}</p>
+        <p class="bold">House Address :</p>
+        <p class="headerp"><span class="label">House No:</span> <span class="value">${customerData?.buildingDetails?.houseNo || ''}</span></p>
+        <p class="headerp"><span class="label">Street:</span> <span class="value">${customerData?.buildingDetails?.streetName || ''}</span></p>
+        <p class="headerp"><span class="label">City:</span> <span class="value">${customerData?.buildingDetails?.city || ''}</span></p>
         `
       }
     </div>
-          <p class="headerp"> +94 ${order?.customerInfo?.phoneNumber || ''}</p>
-          <p class="headerp">${customerData?.email || ''}</p>
+          
         </div>
         <div>
           <div style="margin-right: 55px">
@@ -718,7 +763,7 @@ if (order?.additionalItems && order.additionalItems.length > 0) {
         </div>` : ''}
         ${order?.additionalItems && order.additionalItems.length > 0 ? `
         <div style=" display: flex; justify-content: space-between; margin-right: 20px;" class="ptext" > 
-          <p>Additional Items</p>
+          <p>${order?.isPackage === 1 ? 'Additional Items' : 'Custom Items'}</p>
           <p>Rs. ${additionalItemsTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</p>
         </div>` : ''}
          ${order?.isPackage === 0 ? `
@@ -726,11 +771,11 @@ if (order?.additionalItems && order.additionalItems.length > 0) {
           <p>Service Fee</p>
           <p>Rs. 180.00</p>
         </div>` : ''}
-        ${totaldiscount > 0 ? `
+       
         <div style="display: flex; justify-content: space-between; margin-right: 20px;" class="ptext" >
           <p>Discount</p>
           <p> Rs. ${totaldiscount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</p>
-        </div>` : ''}
+        </div>
         <div style="display: flex; justify-content: space-between; margin-right: 20px;"class="ptext" >
           <p>Delivery Fee</p>
           <p>Rs. ${deliveryFee.toFixed(2)}</p>

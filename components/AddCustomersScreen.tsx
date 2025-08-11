@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Keyboard, Platform, KeyboardAvoidingView, SafeAreaView, Alert, ActivityIndicator } from "react-native";
+import React, { useState, useEffect, useCallback } from "react";
+import { View, Text, ScrollView, TextInput, TouchableOpacity, Keyboard, Platform, KeyboardAvoidingView, SafeAreaView, Alert, ActivityIndicator, BackHandler } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import { LinearGradient } from "expo-linear-gradient";
@@ -12,9 +12,8 @@ import { SelectList } from "react-native-dropdown-select-list";
 import DropDownPicker from "react-native-dropdown-picker";
 import { useFocusEffect } from "expo-router";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '../services/reducxStore'; // Adjust path as needed
-import { setInputClick, clearInputClick } from '../store/navSlice';
+
+
 
 
 type AddCustomersScreenNavigationProp = StackNavigationProp<RootStackParamList, "AddCustomersScreen">;
@@ -66,9 +65,16 @@ const [token, setToken] = useState<string | null>(null);
   const [cities, setCities] = useState<City[]>([]);
   const [openCityDropdown, setOpenCityDropdown] = useState(false);
 const [cityItems, setCityItems] = useState<{label: string, value: string}[]>([]);
-const dispatch = useDispatch();
-  const isClick = useSelector((state: RootState) => state.input.isClick);
+
   const [openBuildingTypeDropdown, setOpenBuildingTypeDropdown] = useState(false);
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+  const [titleDropdownOpen, setTitleDropdownOpen] = useState(false);
+  const [titleItems, setTitleItems] = useState([
+  { label: 'Rev', value: 'Rev' },
+  { label: 'Mr', value: 'Mr' },
+  { label: 'Ms', value: 'Ms' },
+  { label: 'Mrs', value: 'Mrs' }
+]);
 const [buildingTypeItems, setBuildingTypeItems] = useState([
   { label: "House", value: "House" },
   { label: "Apartment", value: "Apartment" },
@@ -83,8 +89,8 @@ const [buildingTypeItems, setBuildingTypeItems] = useState([
     setFirstName("");
     setLastName("");
     setPhoneNumber("");
-    setSelectedCategory("")
-    
+    setSelectedCategory('')
+    setTitleDropdownOpen(false)
     setEmail("");
     setHouseNo("");
     setStreetName("");
@@ -97,6 +103,7 @@ const [buildingTypeItems, setBuildingTypeItems] = useState([
     setSelectedCategory("");
     setLoading(false);
     setOtpSent(false);
+    setOpenBuildingTypeDropdown(false);
     setEmailError("");
     setPhoneError("");
     setFirstNameError("");
@@ -110,19 +117,42 @@ const [buildingTypeItems, setBuildingTypeItems] = useState([
       firstName: false,
       lastName: false
     });
-    // Clear input click state when form resets
-    dispatch(clearInputClick());
+
   };
 
-  // Handle input focus - set isClick to 1
-  const handleInputFocus = () => {
-    dispatch(setInputClick(1));
-  };
 
-  // Handle input blur - set isClick to 0
-  const handleInputBlur = () => {
-    dispatch(setInputClick(0));
-  };
+
+
+// useEffect(() => {
+//   const keyboardDidShowListener = Keyboard.addListener(
+//     'keyboardDidShow',
+//     () => {
+//       setKeyboardVisible(true);
+//     }
+//   );
+//   const keyboardDidHideListener = Keyboard.addListener(
+//     'keyboardDidHide',
+//     () => {
+//       setKeyboardVisible(false);
+//     }
+//   );
+
+//   return () => {
+//     keyboardDidHideListener?.remove();
+//     keyboardDidShowListener?.remove();
+//   };
+// }, []);
+
+// useFocusEffect(
+//   React.useCallback(() => {
+//     // Only set to 0 if keyboard is not visible
+//     if (!isKeyboardVisible) {
+//       dispatch(setInputClick(0));
+//     }
+//   }, [isKeyboardVisible])
+// );
+
+
 
   // Reset form when screen comes into focus
  useFocusEffect(
@@ -260,10 +290,10 @@ const validateGmailLocalPart = (localPart: string): boolean => {
   // 3. No leading or trailing dots
   // 4. Must be 6-30 characters long
   
-  // Check length
-  if (localPart.length < 6 || localPart.length > 30) {
-    return false;
-  }
+  // // Check length
+  // if (localPart.length < 6 || localPart.length > 30) {
+  //   return false;
+  // }
   
   // Check for valid characters only (a-z, 0-9, ., +)
   const validCharsRegex = /^[a-zA-Z0-9.+]+$/;
@@ -378,77 +408,74 @@ const validateGeneralLocalPart = (localPart: string): boolean => {
 
 // Updated useEffect for email validation with specific error messages
 useEffect(() => {
-  if (touchedFields.email) {
-    if (!email) {
-      setEmailError("Email is required");
-    } else if (!validateEmail(email)) {
-      // Provide specific error messages based on domain and validation issues
-      const emailLower = email.toLowerCase();
-      const [localPart, domain] = emailLower.split('@');
-      
-      // Check if email format is completely invalid
-      const generalEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-      if (!generalEmailRegex.test(email)) {
-        setEmailError("Please enter a valid email address");
-        return;
-      }
-      
-      if (domain === 'gmail.com' || domain === 'googlemail.com') {
-        // Gmail-specific errors
-        if (localPart.length > 30) {
-          setEmailError("Gmail addresses cannot exceed 30 characters before @");
+    if (touchedFields.email) {
+      if (!email) {
+        setEmailError("Email is required");
+      } else if (!validateEmail(email)) {
+        // Provide specific error messages based on domain and validation issues
+        const emailLower = email.toLowerCase();
+        const [localPart, domain] = emailLower.split('@');
         
-        } else if (/\.{2,}/.test(localPart)) {
-          setEmailError("Gmail addresses cannot have consecutive dots");
-        } else if (/^\.|\.$/.test(localPart)) {
-          setEmailError("Gmail addresses cannot start or end with a dot");
-        } else if (!/^[a-zA-Z0-9.+]+$/.test(localPart)) {
-          setEmailError("Gmail addresses can only contain letters, numbers, dots and plus signs");
-        } else {
-          setEmailError("Please enter a valid Gmail address");
+        // Check if email format is completely invalid
+        const generalEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!generalEmailRegex.test(email)) {
+          setEmailError("Please enter a valid email address");
+          return;
         }
-      } else if (domain === 'yahoo.com') {
-        // Yahoo-specific errors
-        if (localPart.length < 4) {
-          setEmailError("Yahoo addresses must have at least 4 characters before @");
-        } else if (localPart.length > 32) {
-          setEmailError("Yahoo addresses cannot exceed 32 characters before @");
-        } else if (/\.{2,}/.test(localPart)) {
-          setEmailError("Yahoo addresses cannot have consecutive dots");
-        } else if (/^[._-]|[._-]$/.test(localPart)) {
-          setEmailError("Yahoo addresses cannot start or end with dots, underscores or hyphens");
-        } else if (!/^[a-zA-Z0-9._-]+$/.test(localPart)) {
-          setEmailError("Yahoo addresses can only contain letters, numbers, dots, underscores and hyphens");
-        } else {
-          setEmailError("Please enter a valid Yahoo address");
-        }
-      } else {
-        // Check if domain is supported
-        const allowedTLDs = ['.com', '.gov', '.lk'];
-        const isDomainSupported = allowedTLDs.some(tld => domain.endsWith(tld));
         
-        if (!isDomainSupported) {
-          setEmailError("Please enter a valid email address with a supported domain (.com, .gov, .lk)");
-        } else {
-          // General validation errors
-          if (localPart.length > 64) {
-            setEmailError("Email address is too long");
+        if (domain === 'gmail.com' || domain === 'googlemail.com') {
+          // Gmail-specific errors
+          if (localPart.length > 30) {
+            setEmailError("Gmail addresses cannot exceed 30 characters before @");
           } else if (/\.{2,}/.test(localPart)) {
-            setEmailError("Email addresses cannot have consecutive dots");
+            setEmailError("Gmail addresses cannot have consecutive dots");
           } else if (/^\.|\.$/.test(localPart)) {
-            setEmailError("Email addresses cannot start or end with a dot");
-          } else if (!/^[a-zA-Z0-9._%+-]+$/.test(localPart)) {
-            setEmailError("Please enter a valid email address");
+            setEmailError("Gmail addresses cannot start or end with a dot");
+          } else if (!/^[a-zA-Z0-9.+]+$/.test(localPart)) {
+            setEmailError("Gmail addresses can only contain letters, numbers, dots and plus signs");
           } else {
-            setEmailError("Please enter a valid email address");
+            setEmailError("Please enter a valid Gmail address");
+          }
+        } else if (domain === 'yahoo.com') {
+          // Yahoo-specific errors
+          if (localPart.length > 32) {
+            setEmailError("Yahoo addresses cannot exceed 32 characters before @");
+          } else if (/\.{2,}/.test(localPart)) {
+            setEmailError("Yahoo addresses cannot have consecutive dots");
+          } else if (/^[._-]|[._-]$/.test(localPart)) {
+            setEmailError("Yahoo addresses cannot start or end with dots, underscores or hyphens");
+          } else if (!/^[a-zA-Z0-9._-]+$/.test(localPart)) {
+            setEmailError("Yahoo addresses can only contain letters, numbers, dots, underscores and hyphens");
+          } else {
+            setEmailError("Please enter a valid Yahoo address");
+          }
+        } else {
+          // Check if domain is supported
+          const allowedTLDs = ['.com', '.gov', '.lk'];
+          const isDomainSupported = allowedTLDs.some(tld => domain.endsWith(tld));
+          
+          if (!isDomainSupported) {
+            setEmailError("Please enter a valid email address with a supported domain (.com, .gov, .lk)");
+          } else {
+            // General validation errors
+            if (localPart.length > 64) {
+              setEmailError("Email address is too long");
+            } else if (/\.{2,}/.test(localPart)) {
+              setEmailError("Email addresses cannot have consecutive dots");
+            } else if (/^\.|\.$/.test(localPart)) {
+              setEmailError("Email addresses cannot start or end with a dot");
+            } else if (!/^[a-zA-Z0-9._%+-]+$/.test(localPart)) {
+              setEmailError("Please enter a valid email address");
+            } else {
+              setEmailError("Please enter a valid email address");
+            }
           }
         }
+      } else {
+        setEmailError("");
       }
-    } else {
-      setEmailError("");
     }
-  }
-}, [email, touchedFields.email]);
+  }, [email, touchedFields.email]);
   // Validate phone when it changes
   useEffect(() => {
     if (touchedFields.phoneNumber) {
@@ -749,7 +776,7 @@ const capitalizeFirstLetter = (text: string) => {
 
 
 
-  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
 
   const handlePhoneNumberChange = (text: string) => {
   // Always ensure the input starts with +94
@@ -773,22 +800,23 @@ const capitalizeFirstLetter = (text: string) => {
   
   setPhoneNumber(cleanText);
 };
-    
-  useEffect(() => {
-  const keyboardDidShowListener = Keyboard.addListener(
-    'keyboardDidShow',
-    () => setKeyboardVisible(true)
-  );
-  const keyboardDidHideListener = Keyboard.addListener(
-    'keyboardDidHide',
-    () => setKeyboardVisible(false)
+
+ useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        // Navigate to ViewCustomerScreen instead of going back to main dashboard
+        navigation.navigate("CustomersScreen" as any);
+        return true; // Prevent default back behavior
+      };
+
+      const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+      return () => backHandler.remove(); // Cleanup on unmount
+    }, [navigation])
   );
 
-  return () => {
-    keyboardDidShowListener.remove();
-    keyboardDidHideListener.remove();
-  };
-}, []);
+    
+
 
 
 
@@ -828,7 +856,7 @@ const capitalizeFirstLetter = (text: string) => {
               <View className="mb-4 mt-4 flex-row justify-between">
                 <View className="flex-[1]">
                   <Text className="text-gray-700 mb-1">Title *</Text>
-                  <SelectList
+                  {/* <SelectList
   setSelected={setSelectedCategory} 
   data={[
       { key: 'Rev', value: 'Rev' },
@@ -848,8 +876,37 @@ const capitalizeFirstLetter = (text: string) => {
   }}
   search={false} 
   placeholder="Title" 
+/> */}
+<DropDownPicker
+  open={titleDropdownOpen}
+  value={selectedCategory}
+  items={titleItems}
+  setOpen={setTitleDropdownOpen}
+  setValue={setSelectedCategory}
+  setItems={setTitleItems}
+  style={{
+    backgroundColor: '#F6F6F6',
+    borderColor: '#F6F6F6',
+    borderRadius: 30,
+    paddingVertical: 5,
+    minHeight: 40,
+  }}
+  textStyle={{
+    color: 'black',
+  }}
+  searchable={false}
+  placeholder="Title"
+  zIndex={1000}
+  zIndexInverse={3000}
+  dropDownContainerStyle={{
+      backgroundColor: '#F6F6F6',
+      borderColor: '#F6F6F6',
+    }}
+  listMode="SCROLLVIEW"
+  scrollViewProps={{
+    nestedScrollEnabled: true,
+  }}
 />
-
                 </View>
 
                 <View className="flex-[2] ml-2">
@@ -867,10 +924,10 @@ const capitalizeFirstLetter = (text: string) => {
       setFirstNameError("");
     }
   }}
-   onFocus={handleInputFocus}
+ 
                     onBlur={() => {
                       handleFieldTouch("firstName");
-                      handleInputBlur();
+               
                     }}
 />
   {firstNameError ? (
@@ -894,10 +951,10 @@ const capitalizeFirstLetter = (text: string) => {
       setLastNameError("");
     }
   }}
-  onFocus={handleInputFocus}
+
                   onBlur={() => {
                     handleFieldTouch("lastName");
-                    handleInputBlur();
+                  
                   }}
 />
   {lastNameError ? (
@@ -919,6 +976,7 @@ const capitalizeFirstLetter = (text: string) => {
       // Ensure +94 is always present when focusing
       if (!phoneNumber || phoneNumber.length < 3) {
         setPhoneNumber('+94');
+     
       }
     }}
     
@@ -961,10 +1019,11 @@ const capitalizeFirstLetter = (text: string) => {
         handleFieldTouch("email");
       }
     }}
-    onFocus={handleInputFocus}
+
+  
     onBlur={() => {
       handleFieldTouch("email");
-      handleInputBlur();
+     
     }}
   />
   {emailError ? (
@@ -1026,6 +1085,7 @@ const capitalizeFirstLetter = (text: string) => {
                       placeholder="Building / House No (e.g., 14/B)"
                       value={houseNo}
                       onChangeText={setHouseNo}
+                      
                     />
                   </View>
                   <View className="mb-4">
@@ -1035,6 +1095,7 @@ const capitalizeFirstLetter = (text: string) => {
                       placeholder="Street Name"
                       value={streetName}
                       onChangeText={setStreetName}
+                      
                     />
                   </View>
              <View className="mb-4 z-10">
@@ -1090,6 +1151,7 @@ const capitalizeFirstLetter = (text: string) => {
                       placeholder="Apartment / Building Name"
                       value={buildingNo}
                       onChangeText={setbuildingNo}
+                     
                     />
                   </View>
 
@@ -1100,6 +1162,7 @@ const capitalizeFirstLetter = (text: string) => {
                       placeholder="Apartment / Building Name"
                       value={ buildingName}
                       onChangeText={ setbuildingName}
+                      
                     />
                   </View>
                   <View className="mb-4">
@@ -1109,6 +1172,7 @@ const capitalizeFirstLetter = (text: string) => {
                       placeholder="ex : Building B"
                       value={unitNo}
                       onChangeText={setunitNo}
+                      
                     />
                   </View>
                   <View className="mb-4">
@@ -1118,6 +1182,7 @@ const capitalizeFirstLetter = (text: string) => {
                       placeholder="ex : 3rd Floor"
                       value={floorNo}
                       onChangeText={setfloorNo}
+                      
                     />
                   </View>
 
@@ -1128,6 +1193,7 @@ const capitalizeFirstLetter = (text: string) => {
                       placeholder="ex : 14"
                       value={houseNo}
                       onChangeText={setHouseNo}
+                    
                     />
                   </View>
                   <View className="mb-4">
@@ -1137,6 +1203,7 @@ const capitalizeFirstLetter = (text: string) => {
                       placeholder="Street Name"
                       value={streetName}
                       onChangeText={setStreetName}
+                      
                     />
                   </View>
               <View className="mb-4 z-10">

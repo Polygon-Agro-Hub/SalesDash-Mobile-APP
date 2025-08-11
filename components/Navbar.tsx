@@ -11,9 +11,7 @@ import { useTranslation } from "react-i18next";
 import AsyncStorage from "@react-native-async-storage/async-storage"; 
 import { useFocusEffect } from "@react-navigation/native"; 
 import { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
-// Redux imports
-import { useSelector } from 'react-redux';
-import { RootState } from '../services/reducxStore'; // Adjust path as needed
+
 
 const DashboardIcon = require("../assets/images/Home1.webp");
 const DashboardIconFocus = require("../assets/images/hut1.webp");
@@ -32,7 +30,7 @@ const NavigationBar = ({
   state: any;
 }) => {
   // Redux
-  const isClick = useSelector((state: RootState) => state.input.isClick);
+
 
   let tabs = [
     { name: "DashboardScreen", icon: DashboardIcon, focusedIcon: DashboardIconFocus, tabName: "Home" },
@@ -124,8 +122,7 @@ const NavigationBar = ({
     };
   });
 
-  // Hide navbar if keyboard is visible OR if an input field is clicked (isClick === 1)
-  if (isKeyboardVisible || isClick === 1) return null;
+  
 
   return (
     <View className="absolute bottom-0 flex-row justify-between items-center bg-white w-full p-4 rounded-t-3xl" 

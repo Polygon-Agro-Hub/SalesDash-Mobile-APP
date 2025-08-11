@@ -37,10 +37,11 @@ import ExcludeListAdd from "@/components/ExcludeListAdd"
 import ExcludeListSummery from "@/components/ExcludeListSummery"
 import ExcludeItemEditSummery from "@/components/ExcludeItemEditSummery"
 import ExcludeAddMore from '@/components/ExcludeAddMore'
+import PrivacyPolicy from '@/components/PrivacyPolicy'
+import TermsConditions from '@/components/TermsConditions'
  
-import { RootStackParamList } from '@/components/types';
-import { Provider, useSelector } from 'react-redux';
-import  store, { RootState } from "@/services/reducxStore";
+
+
 
 
 const Stack = createStackNavigator(); 
@@ -63,14 +64,27 @@ function MainTabNavigator() {
       screenOptions={({ route }) => ({
         tabBarStyle: { display: 'none' }, 
         headerShown: false,
+        tabBarHideOnKeyboard: true
       })}
+      
+
       
       tabBar={(props) => <NavigationBar {...props} />}
     >
       <Tab.Screen name="DashboardScreen" component={DashboardScreen} />
       <Tab.Screen name="ViewOrdersScreen" component={ViewOrdersScreen} />
       <Tab.Screen name="ReminderScreen" component={ReminderScreen} />
-      <Tab.Screen name="CustomersScreen" component={CustomersScreen} />
+      <Tab.Screen  
+      
+       options={{
+              tabBarHideOnKeyboard: true, // Hides tab bar for this specific screen
+                 tabBarVisibilityAnimationConfig: {
+      show: { animation: 'timing', config: { duration: 0 } },
+      hide: { animation: 'timing', config: { duration: 0 } }
+    }
+            }} 
+            name="CustomersScreen" 
+            component={CustomersScreen} />
       <Tab.Screen name="ViewComplainScreen" component={ViewComplainScreen} />
       {/* <Tab.Screen name="SidebarScreen" component={SidebarScreen} /> */}
       <Tab.Screen name="ViewScreen" component={ViewScreen as any} />
@@ -98,7 +112,7 @@ const index = () => {
     // ScreenCapture.usePreventScreenCapture()
 
   return (
-    <Provider store={store}>
+
     <LanguageProvider>
     <GestureHandlerRootView >
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -129,13 +143,15 @@ const index = () => {
       {/* <Stack.Screen name="SelectOrderType" component={SelectOrderType as any} /> */}
       <Stack.Screen name="CreateCustomPackage" component={CreateCustomPackage as any} />
       <Stack.Screen name="CratScreen" component={CratScreen as any} />
+      <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicy as any} />
+      <Stack.Screen name="TermsConditions" component={TermsConditions as any} />
       <Stack.Screen name="Main" component={MainTabNavigator} />
 
       
     </Stack.Navigator>
    </GestureHandlerRootView>
     </LanguageProvider>
-    </Provider>
+
   )
 }
 

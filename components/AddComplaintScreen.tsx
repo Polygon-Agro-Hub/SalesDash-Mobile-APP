@@ -43,6 +43,9 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
     const [category, setCategory] = useState<any[]>([]);
     const [open, setOpen] = useState(false);
+  
+    const [searchValue, setSearchValue] = useState('');
+const [filteredCategory, setFilteredCategory] = useState<any[]>([]);
 
     useEffect(() => {
       let appName = "SalesDash";
@@ -55,21 +58,17 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
             `${environment.API_BASE_URL}api/complain/get-complain/category/${appName}`
           );
           console.log("response", response.data);
-          if (response.data.status === "success") {
-            console.log(response.data.data);
-            const mappedCategories = response.data.data
-            .map((item: any) => {
-              return {
-                key: item.id,           // This will be stored in state when selected
-                value: item.categoryEnglish  // This will be displayed to the user
-              };
-            })
+        if (response.data.status === "success") {
+        const mappedCategories = response.data.data
+            .map((item: any) => ({
+                key: item.id,
+                value: item.categoryEnglish
+            }))
             .filter((item: { key: any }) => item.key);
-          
-          setCategory(mappedCategories);
-  
-            setCategory(mappedCategories);
-          }
+        
+        setCategory(mappedCategories);
+        setFilteredCategory(mappedCategories); // Initialize filtered list
+    }
         } catch (error) {
           console.error(error);
         }
@@ -123,8 +122,46 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
         }
       }
     }
-      
+  //  const handleSearchChange = (text:string) => {
+  //   // Replace special characters (example: allowing only alphanumeric)
+  //   const filteredText = text.replace(/[^a-zA-Z0-9]/g, '');
+  //   setSearchValue(filteredText);
+  //   // You would then use searchValue to filter your 'items' for the dropdown
+  // };   
+
+
+// Also add this useEffect to sync when category changes
+useEffect(() => {
+    setFilteredCategory(category);
+}, [category]);
+
+const handleSearchChange = (text: string) => {
+    let filteredText = text;
     
+    // Remove leading spaces
+    if (filteredText.startsWith(' ')) {
+        filteredText = filteredText.replace(/^\s+/, '');
+    }
+    
+    // Allow only letters, numbers, and spaces
+    filteredText = filteredText.replace(/[^a-zA-Z0-9\s]/g, '');
+    
+    // Clean up multiple spaces
+    filteredText = filteredText.replace(/\s+/g, ' ');
+    
+    setSearchValue(filteredText);
+    
+    // Filter categories based on cleaned search text
+    if (filteredText.trim() === '') {
+        setFilteredCategory(category); // Show all if search is empty
+    } else {
+        const filtered = category.filter(item => 
+            item.value.toLowerCase().includes(filteredText.toLowerCase())
+        );
+        setFilteredCategory(filtered);
+    }
+};
+
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
@@ -179,14 +216,16 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
   search={true}
 /> */}
 
+
+
 <DropDownPicker
   open={open}
   setOpen={setOpen}
   value={selectedCategory}
   setValue={setSelectedCategory}
-  items={category.map(item => ({
-    label: item.value,  // What's displayed
-    value: item.key     // What's stored in state
+  items={filteredCategory.map(item => ({
+    label: item.value,
+    value: item.key
   }))}
   searchable={true}
   searchPlaceholder="Search category..."
@@ -200,7 +239,7 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
   dropDownContainerStyle={{
     borderColor: "#0a0a0bff",
     backgroundColor: "#FFFFFF",
-    maxHeight: 500,  // Makes it scrollable
+    maxHeight: 500,
   }}
   textStyle={{
     color: "#434343",
@@ -218,9 +257,12 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
   }}
   zIndex={3000}
   zIndexInverse={1000}
-   listMode="SCROLLVIEW"
+  listMode="SCROLLVIEW"
+  searchTextInputProps={{
+    onChangeText: handleSearchChange,
+    value: searchValue,
+  }}
 />
-
               
 
                 

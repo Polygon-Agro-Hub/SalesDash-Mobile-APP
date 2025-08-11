@@ -20,7 +20,8 @@ import axios from "axios";
 import environment from "@/environment/environment";
 import CustomersScreenSkeleton from "../components/Skeleton/CustomerScreenSkeleton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useIsFocused } from "@react-navigation/native";
+import { useFocusEffect, useIsFocused } from "@react-navigation/native";
+
 
 type CustomersScreenNavigationProp = StackNavigationProp<RootStackParamList, "CustomersScreen">;
 
@@ -53,6 +54,10 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const isMounted = useRef(true);
+
+
+    
+   
 
   // Safe state setters
   const safeSetCustomers = (data: Customer[]) => {
@@ -328,6 +333,7 @@ const handleSearch = (query: string) => {
                 placeholderTextColor="#6839CF" 
                 className="flex-1 text-sm text-gray-700" 
                 style={{ fontStyle: 'italic' }}
+                
               />
               <Image source={require("../assets/images/search.webp")} className="w-6 h-6" resizeMode="contain" />
             </View>

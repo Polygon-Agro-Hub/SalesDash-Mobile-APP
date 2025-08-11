@@ -234,7 +234,7 @@ const handleLogout = async () => {
   <Ionicons name="chevron-forward-outline" size={hp(2.5)} color="#8F8F8F" style={{ marginRight: wp(2) }} />
 </TouchableOpacity>
 
-<TouchableOpacity style={{ marginBottom: hp(2) }} className="flex-row items-center py-3"> 
+<TouchableOpacity style={{ marginBottom: hp(2) }} className="flex-row items-center py-3" onPress={() => navigation.navigate("PrivacyPolicy")}> 
 
 <View
     style={{
@@ -257,7 +257,7 @@ const handleLogout = async () => {
   <Ionicons name="chevron-forward-outline" size={hp(2.5)} color="#8F8F8F" style={{ marginRight: wp(2) }} />
 </TouchableOpacity>
 
-<TouchableOpacity className="flex-row items-center py-3" onPress={() => console.log("Terms & Conditions Pressed")}> 
+<TouchableOpacity className="flex-row items-center py-3" onPress={() => navigation.navigate("TermsConditions")}> 
 <View
     style={{
       width: hp(5),
