@@ -380,7 +380,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
     }}
     value={searchText}
     style={{ fontStyle: 'italic' }}
-    keyboardType="numeric" // This shows numeric keyboard on mobile
+    keyboardType="numeric" 
   />
   <Image source={require("../assets/images/search.webp")} className="w-6 h-6" resizeMode="contain" />
 </View>

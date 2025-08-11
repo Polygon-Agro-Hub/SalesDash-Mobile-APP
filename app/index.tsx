@@ -64,7 +64,7 @@ function MainTabNavigator() {
       screenOptions={({ route }) => ({
         tabBarStyle: { display: 'none' }, 
         headerShown: false,
-        tabBarHideOnKeyboard: true
+        tabBarHideOnKeyboard: false
       })}
       
 

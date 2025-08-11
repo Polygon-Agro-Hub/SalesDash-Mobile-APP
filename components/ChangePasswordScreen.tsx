@@ -226,7 +226,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
   
         {/* Form Section */}
         <View className="flex-1">
-          <LinearGradient colors={['#854BDA', '#6E3DD1']} className="flex-1 rounded-t-3xl px-7 pt-6 pb-14">
+          <LinearGradient colors={['#854BDA', '#6E3DD1']} className="flex-1 rounded-t-3xl px-7 pt-6 pb-14 -mt-2">
             <Text className="text-white text-lg font-bold text-center mb-6 mt-[12%]">
               Change Your Password
             </Text>
@@ -290,6 +290,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
                 <Icon name={showConfirmPassword ? 'eye-off' : 'eye'} size={20} color="#E5E5E5" />
               </TouchableOpacity>
             </View>
+            
   
             {/* Update Button */}
             <TouchableOpacity
