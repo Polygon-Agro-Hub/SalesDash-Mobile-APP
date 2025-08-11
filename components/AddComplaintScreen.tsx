@@ -29,6 +29,7 @@ import DropDownPicker from "react-native-dropdown-picker";
 import { SelectList } from "react-native-dropdown-select-list";
 import { AntDesign } from "@expo/vector-icons"; 
 import { useFocusEffect } from "expo-router";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 type AddComplaintScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
   "AddComplaintScreen"
@@ -194,11 +195,17 @@ useFocusEffect(
   };
   return (
          
-        <KeyboardAvoidingView 
-    behavior={Platform.OS ==="ios" ? "padding" : "height"}
-  enabled 
-  className="flex-1 bg-white"
-> 
+//         <KeyboardAvoidingView 
+//     behavior={Platform.OS ==="ios" ? "padding" : "height"}
+//   enabled 
+//   className="flex-1 bg-white"
+// > 
+ <KeyboardAwareScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          
+          keyboardShouldPersistTaps="handled"
+          enableOnAndroid={true}
+        >
       <ScrollView 
       keyboardShouldPersistTaps="handled"
       style={{ paddingHorizontal: wp(4) }}
@@ -337,7 +344,7 @@ useFocusEffect(
             </View>
    
       </ScrollView>
-      </KeyboardAvoidingView>
+</KeyboardAwareScrollView>
   );
 };
 

@@ -39,7 +39,7 @@ import ExcludeItemEditSummery from "@/components/ExcludeItemEditSummery"
 import ExcludeAddMore from '@/components/ExcludeAddMore'
 import PrivacyPolicy from '@/components/PrivacyPolicy'
 import TermsConditions from '@/components/TermsConditions'
- 
+
 
 
 
@@ -100,7 +100,7 @@ function MainTabNavigator() {
             <Tab.Screen name="ExcludeItemEditSummery" component={ExcludeItemEditSummery as any} />
             <Tab.Screen name="ExcludeAddMore" component={ExcludeAddMore as any} />
              <Tab.Screen name="AddCustomersScreen" 
-             component={AddCustomersScreen} 
+  component={AddCustomersScreen} 
              
              />
     </Tab.Navigator>

@@ -12,6 +12,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SelectList } from "react-native-dropdown-select-list";
 import { AntDesign } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 
 
@@ -1121,10 +1122,15 @@ const handlePhoneNumberKeyPress = (e: any) => {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <KeyboardAvoidingView 
+      {/* <KeyboardAvoidingView 
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         enabled 
         className="flex-1"
+      > */}
+      <KeyboardAwareScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+        enableOnAndroid={true}
       >
         <View className="flex-1 bg-white py-4 p-2">
           <View className="p-[-4]">
@@ -1539,7 +1545,8 @@ const handlePhoneNumberKeyPress = (e: any) => {
             </View>
           </ScrollView>
         </View>
-      </KeyboardAvoidingView>
+      {/* </KeyboardAvoidingView> */}
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 };

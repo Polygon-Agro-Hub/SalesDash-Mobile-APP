@@ -22,6 +22,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import environment from '@/environment/environment';
 import { useFocusEffect } from 'expo-router';
 import BackButton from './BackButton';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 type ChangePasswordScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -182,11 +183,16 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
   );
 
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      enabled 
-      className="flex-1"
-    >
+    // <KeyboardAvoidingView 
+    //   behavior={Platform.OS === "ios" ? "padding" : "height"}
+    //   enabled 
+    //   className="flex-1"
+    // >
+      <KeyboardAwareScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          enableOnAndroid={true}
+        >
       <ScrollView 
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
@@ -291,7 +297,8 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
           </LinearGradient>
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
+  
   );
 };
 

@@ -9,6 +9,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import environment from "@/environment/environment";
 import { Keyboard } from "react-native";
 import { useFocusEffect } from "expo-router";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 // Navigation type
 type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, "LoginScreen">;
@@ -118,10 +119,15 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   );
 
   return (
-    <KeyboardAvoidingView 
-                       behavior={Platform.OS === "ios" ? "padding" : "height"}
-                       className="flex-1"
-                     >
+    // <KeyboardAvoidingView 
+    //                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+    //                    className="flex-1"
+    //                  >
+    <KeyboardAwareScrollView
+      contentContainerStyle={{ flexGrow: 1 }}
+      keyboardShouldPersistTaps="handled"
+      enableOnAndroid={true}
+    >
     <ScrollView 
       contentContainerStyle={{ flexGrow: 1 }} 
       keyboardShouldPersistTaps="handled"
@@ -206,7 +212,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       </View>
     </View>
     </ScrollView>
-    </KeyboardAvoidingView>
+    {/* </KeyboardAvoidingView> */}
+    </KeyboardAwareScrollView>
   );
 };
 
