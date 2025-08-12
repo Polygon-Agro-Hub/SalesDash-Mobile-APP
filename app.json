@@ -8,7 +8,7 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/lgooo.png",
+      "image": "./assets/images/dashicon.png",
       "resizeMode": "contain",
       "backgroundColor": "#6638CE"
     },
