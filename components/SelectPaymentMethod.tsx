@@ -306,7 +306,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, r
     <KeyboardAvoidingView 
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       enabled 
-      className="flex-1"
+      style={{flex: 1}}
     >
       <ScrollView 
         className="bg-white flex-1"

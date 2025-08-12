@@ -382,7 +382,7 @@ const fetchCustomerCount = async () => {
       <KeyboardAvoidingView 
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         enabled 
-        className="flex-1"
+        style={{flex: 1}}
       >
         <ScrollView keyboardShouldPersistTaps="handled">
           <View className="bg-[#6839CF]">

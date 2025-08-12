@@ -741,7 +741,8 @@ useEffect(() => {
     <KeyboardAvoidingView 
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       enabled 
-      className="flex-1 bg-white"
+      className=" bg-white"
+      style={{flex: 1}}
     >
       {/* Header */}
       <View className="flex-row items-center shadow-md px-3 bg-white py-3">

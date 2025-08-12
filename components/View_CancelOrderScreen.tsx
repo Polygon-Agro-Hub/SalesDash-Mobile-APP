@@ -556,7 +556,8 @@ const formatPrice = (price: string | number): string => {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      className="flex-1 bg-white"
+      className="bg-white"
+      style={{flex: 1}}
     >
       <View className="bg-white flex-1">
         <View className="flex-row items-center shadow-md px-4 py-3 bg-white">
