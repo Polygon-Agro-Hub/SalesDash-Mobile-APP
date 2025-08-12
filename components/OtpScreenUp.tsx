@@ -544,10 +544,10 @@ const verifyOTP = async () => {
             await AsyncStorage.setItem("latestCustomerId", customerId.toString());
           }
 
-          Alert.alert(
-            "Success",
-            id ? "Customer updated successfully." : "Customer created successfully."
-          );
+          // Alert.alert(
+          //   "Success",
+          //   id ? "Customer updated successfully." : "Customer created successfully."
+          // );
 
           console.log("Navigating to OtpSuccesfulScreen with customerId:", customerId);
           navigation.navigate("Main", {

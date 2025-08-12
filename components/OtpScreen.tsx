@@ -227,7 +227,7 @@ const verifyOTP = async () => {
     
     if (statusCode === "1000") {
       setIsVerified(true);
-      Alert.alert("Success", "OTP verified successfully.");
+     // Alert.alert("Success", "OTP verified successfully.");
       
       const customerDataString = await AsyncStorage.getItem("pendingCustomerData");
       console.log("Stored customer data:", customerDataString);
