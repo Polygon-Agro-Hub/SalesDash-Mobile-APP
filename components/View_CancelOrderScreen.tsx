@@ -650,7 +650,7 @@ const formatPrice = (price: string | number): string => {
   <Text className="text-[#808FA2] font-medium mb-1">Customer's Name</Text>
   <Text className="text-black font-medium mb-3">
     {customerData ? 
-      `${customerData.title || ''} ${customerData.firstName || ''} ${customerData.lastName || ''}`.trim() || 'Not Available' :
+      `${customerData.title || ''}. ${customerData.firstName || ''} ${customerData.lastName || ''}`.trim() || 'Not Available' :
       `${order.title || ''}  ${order.firstName || ''} ${order.lastName || ''}`.trim() || 'Not Available'
     }
   </Text>
@@ -665,10 +665,27 @@ const formatPrice = (price: string | number): string => {
     {customerData?.buildingType || order.buildingType || 'Not Available'}
   </Text>
 
-  <Text className="text-[#808FA2] font-medium mb-1">Address</Text>
+  {/* <Text className="text-[#808FA2] font-medium mb-1">Address</Text>
   <Text className="text-black font-medium">
     {customerData?.buildingDetails ? 
       `${customerData.buildingDetails.houseNo || ''} ${customerData.buildingDetails.streetName || ''}, ${customerData.buildingDetails.city || ''}`.trim() || order.fullAddress || 'Not Available' :
+      order.fullAddress || 'Not Available'
+    }
+  </Text> */}
+  <Text className="text-[#808FA2] font-medium mb-1">Address</Text>
+  <Text className="text-black font-medium">
+    {customerData?.buildingDetails ? 
+      (() => {
+        const buildingType = customerData?.buildingType || order.buildingType;
+        
+        if (buildingType === "Apartment") {
+          return `${customerData.buildingDetails.buildingNo || ''}, ${customerData.buildingDetails.buildingName || ''}, ${customerData.buildingDetails.unitNo || ''}, ${customerData.buildingDetails.floorNo || ''}, ${customerData.buildingDetails.houseNo || ''}, ${customerData.buildingDetails.streetName || ''}, ${customerData.buildingDetails.city || ''}`.replace(/,\s*,/g, ',').replace(/^,\s*|,\s*$/g, '').trim() || order.fullAddress || 'Not Available';
+        } else if (buildingType === "House") {
+          return `${customerData.buildingDetails.houseNo || ''}, ${customerData.buildingDetails.streetName || ''}, ${customerData.buildingDetails.city || ''}`.trim() || order.fullAddress || 'Not Available';
+        } else {
+          return order.fullAddress || 'Not Available';
+        }
+      })() :
       order.fullAddress || 'Not Available'
     }
   </Text>
@@ -688,7 +705,7 @@ const formatPrice = (price: string | number): string => {
   <View className="flex-row justify-between mb-2">
     <Text className="text-[#8492A3]">Subtotal</Text>
     <Text className="text-[#8492A3]">
-       Rs.{(parseFloat(order.total || "0") -deliveryFee ).toFixed(2)}
+       Rs.{formatPrice(parseFloat(order.total || "0") -deliveryFee )}
     </Text>
   </View>
   )}
@@ -703,6 +720,7 @@ const formatPrice = (price: string | number): string => {
       }).format(parseFloat(order.total || "0") - deliveryFee - 180)}
     </Text>
   </View>
+  
 )}
 
         {order.discount && parseFloat(order.discount) > 0 && (

@@ -387,50 +387,7 @@ useEffect(() => {
   };
 
   
-  //   const fetchCustomerData = async () => {
-  //     try {
-  //       const response = await axios.get(
-  //         `${environment.API_BASE_URL}api/customer/get-customer-data/${id}`
-  //       );
-        
-  //       if (response.status === 200) {
-  //         const customerData = response.data.customer;
-  //         const buildingData = response.data.building;
-
-  //         setSelectedCategory(customerData.title || "");
-  //         setFirstName(customerData.firstName || "");
-  //         setLastName(customerData.lastName || "");
-  //         setPhoneNumber(customerData.phoneNumber || "");
-  //         setEmail(customerData.email || "");
-  //         setBuildingType(customerData.buildingType || "");
-  //         setOriginalBuildingType(customerData.buildingType || "");
-  //         setOriginalPhoneNumber(customerData.phoneNumber || "");
-  //         setOriginalEmail(customerData.email || '');
-          
-  //         if (buildingData) {
-  //           if (customerData.buildingType === "House") {
-  //             setHouseNo(buildingData.houseNo || "");
-  //             setStreetName(buildingData.streetName || "");
-  //             setCity(buildingData.city || "");
-  //           } else if (customerData.buildingType === "Apartment") {
-  //             setBuildingNo(buildingData.buildingNo || "");
-  //             setBuildingName(buildingData.buildingName || "");
-  //             setUnitNo(buildingData.unitNo || "");
-  //             setFloorNo(buildingData.floorNo || "");
-  //             setHouseNo(buildingData.houseNo || "");
-  //             setStreetName(buildingData.streetName || "");
-  //             setCity(buildingData.city || "");
-  //           }
-  //         }
-  //       }
-  //     } catch (error) {
-  //       console.error(error);
-  //       Alert.alert("Error", "Failed to load customer data.");
-  //     }
-  //   };
-
-  //   fetchCustomerData();
-  // }, [id]);
+ 
     const fetchCustomerData = async () => {
     try {
       setLoading(true);
@@ -777,23 +734,23 @@ useEffect(() => {
 const handleRegister = async () => {
   // Mark all fields as touched to show errors
   setTouchedFields({
-    firstName: true,
-    lastName: true,
-    phoneNumber: true,
-    email: true,
-    buildingType: true,
-    title: true
-  });
+  firstName: true,
+  lastName: true,
+  phoneNumber: true,
+  email: true,  // Add this line
+  buildingType: true,
+  title: true
+});
 
   // Clear any previous validation errors
   setPhoneError("");
   setEmailError("");
 
-  // Validate required fields
-  if (!selectedCategory || !firstName || !lastName || !phoneNumber || !email || !buildingType) {
-    Alert.alert("Error", "Please fill in all required fields.");
-    return;
-  }
+ 
+if (!selectedCategory || !firstName || !lastName || !phoneNumber || !buildingType) {
+  Alert.alert("Error", "Please fill in all required fields.");
+  return;
+}
 
   // Validate formats
   if (!validatePhoneNumber(phoneNumber)) {
@@ -801,10 +758,10 @@ const handleRegister = async () => {
     return;
   }
 
-  if (!validateEmail(email)) {
-    Alert.alert("Error", "Please enter a valid email address.");
-    return;
-  }
+  // if (!validateEmail(email)) {
+  //   Alert.alert("Error", "Please enter a valid email address.");
+  //   return;
+  // }
 
   // Validate building-specific fields
   if (buildingType === "House" && (!houseNo || !streetName || !city)) {
@@ -833,7 +790,7 @@ const handleRegister = async () => {
           `${environment.API_BASE_URL}api/customer/check-customer`,
           { 
             phoneNumber, 
-            email,
+            email: email || null,
             excludeId: id // Add this to exclude current user from check
           },
           { 
@@ -1105,6 +1062,10 @@ const handlePhoneNumberKeyPress = (e: any) => {
      }, [navigation, id, customerId, name, title])
    );  
 
+   const capitalizeWords = (text :string) => {
+  return text.replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
 
   if (loading) {
     return (
@@ -1286,7 +1247,7 @@ const handlePhoneNumberKeyPress = (e: any) => {
   ) : null}
 </View> */}
 
-<View className="mb-4">
+{/* <View className="mb-4">
   <RequiredField>Email Address</RequiredField>
   <TextInput
     className={`bg-[#F6F6F6] border rounded-full px-6 h-10 ${
@@ -1302,6 +1263,26 @@ const handlePhoneNumberKeyPress = (e: any) => {
     onBlur={() => {
       handleFieldTouch("email");
    
+    }}
+  />
+  {emailError ? (
+    <Text className="text-red-500 text-xs mt-1 ml-2">{emailError}</Text>
+  ) : null}
+</View> */}
+<View className="mb-4">
+  <Text className="text-gray-700 mb-1">Email Address</Text> {/* Removed RequiredField component */}
+  <TextInput
+    className={`bg-[#F6F6F6] border rounded-full px-6 h-10 ${
+      emailError ? 'border-red-500' : 'border-[#F6F6F6]'
+    }`}
+    placeholder="Email Address "
+    keyboardType="email-address"
+    autoCapitalize="none"
+    autoCorrect={false}
+    value={email}
+    onChangeText={handleEmailChangeWithErrorClear}
+    onBlur={() => {
+      handleFieldTouch("email");
     }}
   />
   {emailError ? (
@@ -1362,8 +1343,12 @@ const handlePhoneNumberKeyPress = (e: any) => {
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="Building / House No (e.g., 14/B)"
                       value={houseNo}
-                      onChangeText={setHouseNo}
-              
+                     // onChangeText={setHouseNo}
+                 onChangeText={(text) => {
+    const capitalizedText = capitalizeWords(text);
+    setHouseNo(capitalizedText);
+  }}
+  autoCapitalize="words"
                         onBlur={() => {
                    
                    
@@ -1376,8 +1361,12 @@ const handlePhoneNumberKeyPress = (e: any) => {
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="Street Name"
                       value={streetName}
-                      onChangeText={setStreetName}
-                  
+                     // onChangeText={setStreetName}
+                  onChangeText={(text) => {
+    const capitalizedText = capitalizeWords(text);
+    setStreetName(capitalizedText);
+  }}
+  autoCapitalize="words"
                     />
                   </View>
                   <View className="mb-4 z-10">
@@ -1431,8 +1420,12 @@ const handlePhoneNumberKeyPress = (e: any) => {
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="Apartment / Building No"
                       value={buildingNo}
-                      onChangeText={setBuildingNo}
-                
+                     // onChangeText={setBuildingNo}
+                    onChangeText={(text) => {
+    const capitalizedText = capitalizeWords(text);
+    setBuildingNo(capitalizedText);
+  }}
+  autoCapitalize="words"
                     />
                   </View>
                   <View className="mb-4">
@@ -1441,8 +1434,12 @@ const handlePhoneNumberKeyPress = (e: any) => {
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="Apartment / Building Name"
                       value={buildingName}
-                      onChangeText={setBuildingName}
-               
+                   //   onChangeText={setBuildingName}
+                onChangeText={(text) => {
+    const capitalizedText = capitalizeWords(text);
+    setBuildingName(capitalizedText);
+  }}
+  autoCapitalize="words"
                     />
                   </View>
                   <View className="mb-4">
@@ -1451,8 +1448,12 @@ const handlePhoneNumberKeyPress = (e: any) => {
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="ex: Building B"
                       value={unitNo}
-                      onChangeText={setUnitNo}
-                  
+                    //  onChangeText={setUnitNo}
+                  onChangeText={(text) => {
+    const capitalizedText = capitalizeWords(text);
+    setUnitNo(capitalizedText);
+  }}
+  autoCapitalize="words"
                     />
                   </View>
                   <View className="mb-4">
@@ -1461,8 +1462,12 @@ const handlePhoneNumberKeyPress = (e: any) => {
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="ex: 3rd Floor"
                       value={floorNo}
-                      onChangeText={setFloorNo}
-                
+                    //  onChangeText={setFloorNo}
+                 onChangeText={(text) => {
+    const capitalizedText = capitalizeWords(text);
+    setFloorNo(capitalizedText);
+  }}
+  autoCapitalize="words"
                     />
                   </View>
                   <View className="mb-4">
@@ -1471,8 +1476,12 @@ const handlePhoneNumberKeyPress = (e: any) => {
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="Building / House No (e.g., 14/B)"
                       value={houseNo}
-                      onChangeText={setHouseNo}
-                  
+                    //  onChangeText={setHouseNo}
+                  onChangeText={(text) => {
+    const capitalizedText = capitalizeWords(text);
+    setHouseNo(capitalizedText);
+  }}
+  autoCapitalize="words"
                     />
                   </View>
                   <View className="mb-4">
@@ -1481,8 +1490,12 @@ const handlePhoneNumberKeyPress = (e: any) => {
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="Street Name"
                       value={streetName}
-                      onChangeText={setStreetName}
-                  
+                     // onChangeText={setStreetName}
+                   onChangeText={(text) => {
+    const capitalizedText = capitalizeWords(text);
+    setStreetName(capitalizedText);
+  }}
+  autoCapitalize="words"
                     />
                   </View>
                   <View className="mb-4 z-10">

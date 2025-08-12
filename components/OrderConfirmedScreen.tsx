@@ -458,7 +458,7 @@ if (order?.additionalItems && order.additionalItems.length > 0) {
         <td style="text-align: center">${index + 1}</td>
         <td class="tabledata">${item.displayName || item.name || 'Item'}</td>
         <td class="tabledata">${unitPrice.toFixed(2)}</td>
-        <td class="tabledata">${quantity} ${item.unit || item.qty || 'kg'}</td>
+        <td class="tabledata">${quantity} </td>
         <td class="tabledata">${actualAmount.toFixed(2)}</td>
       </tr>`;
   });
@@ -654,7 +654,7 @@ if (order?.additionalItems && order.additionalItems.length > 0) {
             <p style="font-weight: 550; font-size: 16px">Rs. ${(totalAmount ).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</p>
             <div class="section" style="margin-top: 30px">
               <p class="bold">Payment Method :</p>
-              <p class="headerp">${paymentMethod}</p>
+              <p class="headerp">Cash On Delivery</p>
             </div>
           </div>
         </div>
@@ -743,7 +743,7 @@ if (order?.additionalItems && order.additionalItems.length > 0) {
               </th>
               <th>Item Description</th>
               <th>Unit Price (Rs.)</th>
-              <th>QTY</th>
+              <th>QTY (kg)</th>
               <th style="border-top-right-radius: 10px">Amount (Rs.)</th>
             </tr>
             ${additionalItemsRows}

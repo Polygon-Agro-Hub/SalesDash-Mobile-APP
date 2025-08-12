@@ -589,12 +589,12 @@ const handleRegister = async () => {
     firstName: true,
     lastName: true,
     phoneNumber: true,
-    email: true,
+  
     buildingType: true
   });
   
   // Validate required fields
-  if (!selectedCategory || !firstName || !lastName || !phoneNumber || !email || !buildingType) {
+  if (!selectedCategory || !firstName || !lastName || !phoneNumber ||  !buildingType) {
     Alert.alert("Error", "Please fill in all required fields.");
     setIsSubmitting(false);
     return;
@@ -622,16 +622,17 @@ const handleRegister = async () => {
     return;
   }
   
-  if (!validateEmail(email)) {
-    Alert.alert("Error", "Please enter a valid email address.");
+   if (email && !validateEmail(email)) {
+  //  Alert.alert("Error", "Please enter a valid email address or leave it blank.");
     setIsSubmitting(false);
     return;
   }
   
+  
   try {
     const checkResponse = await axios.post(`${environment.API_BASE_URL}api/customer/check-customer`, {
       phoneNumber,
-      email,
+      email: email || null,
     });
     
     const customerData = {
@@ -639,7 +640,7 @@ const handleRegister = async () => {
       firstName,
       lastName,
       phoneNumber,
-      email,
+      email: email || null,
       buildingType,
       houseNo,
       streetName,
@@ -816,7 +817,9 @@ const capitalizeFirstLetter = (text: string) => {
     }, [navigation])
   );
 
-    
+const capitalizeWords = (text: string) => {
+  return text.replace(/\b\w/g, (char) => char.toUpperCase());
+};    
 
 
 
@@ -1011,7 +1014,7 @@ const capitalizeFirstLetter = (text: string) => {
                 <Text className="text-red-500 text-xs pl-4 pt-1">{emailError}</Text>
               ) : null}
             </View> */}
-           <View className="mb-4">
+           {/* <View className="mb-4">
   <Text className="text-gray-700 mb-1">Email Address *</Text>
   <TextInput
     className={`bg-[#F6F6F6] border ${emailError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
@@ -1031,6 +1034,32 @@ const capitalizeFirstLetter = (text: string) => {
     onBlur={() => {
       handleFieldTouch("email");
      
+    }}
+  />
+  {emailError ? (
+    <Text className="text-red-500 text-xs pl-4 pt-1">{emailError}</Text>
+  ) : null}
+</View> */}
+<View className="mb-4">
+  <Text className="text-gray-700 mb-1">Email Address</Text> {/* Removed * */}
+  <TextInput
+    className={`bg-[#F6F6F6] border ${emailError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+    placeholder="Email Address "
+    keyboardType="email-address"
+    autoCapitalize="none"
+    autoCorrect={false}
+    value={email}
+    onChangeText={(text) => {
+      setEmail(text.toLowerCase());
+      if (touchedFields.email) {
+        handleFieldTouch("email");
+      }
+    }}
+    onBlur={() => {
+      // Only validate if email is provided
+      if (email) {
+        handleFieldTouch("email");
+      }
     }}
   />
   {emailError ? (
@@ -1091,8 +1120,12 @@ const capitalizeFirstLetter = (text: string) => {
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="Building / House No (e.g., 14/B)"
                       value={houseNo}
-                      onChangeText={setHouseNo}
-                      
+                    //  onChangeText={setHouseNo}
+                                       onChangeText={(text) => {
+    const capitalizedText = capitalizeWords(text);
+    setHouseNo(capitalizedText);
+  }}
+                      autoCapitalize="words" 
                     />
                   </View>
                   <View className="mb-4">
@@ -1101,8 +1134,12 @@ const capitalizeFirstLetter = (text: string) => {
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="Street Name"
                       value={streetName}
-                      onChangeText={setStreetName}
-                      
+                    //  onChangeText={setStreetName}
+                     onChangeText={(text) => {
+    const capitalizedText = capitalizeWords(text);
+    setStreetName(capitalizedText);
+  }}
+                       autoCapitalize="words" 
                     />
                   </View>
              <View className="mb-4 z-10">
@@ -1157,8 +1194,12 @@ const capitalizeFirstLetter = (text: string) => {
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="Apartment / Building Name"
                       value={buildingNo}
-                      onChangeText={setbuildingNo}
-                     
+                   //   onChangeText={setbuildingNo}
+                     onChangeText={(text) => {
+    const capitalizedText = capitalizeWords(text);
+    setbuildingNo(capitalizedText);
+  }}
+                     autoCapitalize="words" 
                     />
                   </View>
 
@@ -1168,8 +1209,12 @@ const capitalizeFirstLetter = (text: string) => {
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="Apartment / Building Name"
                       value={ buildingName}
-                      onChangeText={ setbuildingName}
-                      
+                    //  onChangeText={ setbuildingName}
+                                         onChangeText={(text) => {
+    const capitalizedText = capitalizeWords(text);
+    setbuildingName(capitalizedText);
+  }}
+                      autoCapitalize="words" 
                     />
                   </View>
                   <View className="mb-4">
@@ -1178,8 +1223,12 @@ const capitalizeFirstLetter = (text: string) => {
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="ex : Building B"
                       value={unitNo}
-                      onChangeText={setunitNo}
-                      
+                    //  onChangeText={setunitNo}
+                    onChangeText={(text) => {
+    const capitalizedText = capitalizeWords(text);
+    setunitNo(capitalizedText);
+  }}
+                      autoCapitalize="words" 
                     />
                   </View>
                   <View className="mb-4">
@@ -1188,8 +1237,12 @@ const capitalizeFirstLetter = (text: string) => {
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="ex : 3rd Floor"
                       value={floorNo}
-                      onChangeText={setfloorNo}
-                      
+                   //   onChangeText={setfloorNo}
+                         onChangeText={(text) => {
+    const capitalizedText = capitalizeWords(text);
+    setfloorNo(capitalizedText);
+  }}
+                      autoCapitalize="words" 
                     />
                   </View>
 
@@ -1199,8 +1252,12 @@ const capitalizeFirstLetter = (text: string) => {
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="ex : 14"
                       value={houseNo}
-                      onChangeText={setHouseNo}
-                    
+                     // onChangeText={setHouseNo}
+                                            onChangeText={(text) => {
+    const capitalizedText = capitalizeWords(text);
+    setHouseNo(capitalizedText);
+  }}
+                    autoCapitalize="words" 
                     />
                   </View>
                   <View className="mb-4">
@@ -1209,8 +1266,12 @@ const capitalizeFirstLetter = (text: string) => {
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="Street Name"
                       value={streetName}
-                      onChangeText={setStreetName}
-                      
+                     // onChangeText={setStreetName}
+                      onChangeText={(text) => {
+    const capitalizedText = capitalizeWords(text);
+    setStreetName(capitalizedText);
+  }}
+                      autoCapitalize="words" 
                     />
                   </View>
               <View className="mb-4 z-10">
