@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, Text, Image, TouchableOpacity, Alert, ScrollView,KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, Image, TouchableOpacity, Alert, ScrollView,KeyboardAvoidingView, Platform, ActivityIndicator, BackHandler } from "react-native";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
@@ -10,6 +10,7 @@ import environment from "@/environment/environment";
 import BackButton from "./BackButton";
 import LottieView from "lottie-react-native";
 import { useFocusEffect } from "expo-router";
+import { ActionSheetIOS } from "react-native";
 
 
 type SidebarScreenNavigationProp = StackNavigationProp<RootStackParamList, "SidebarScreen">;
@@ -67,25 +68,40 @@ const handleLogout = async () => {
   }
 };
 
+useFocusEffect(
+      useCallback(() => {
+        const onBackPress = () => {
+          // Navigate to ViewCustomerScreen instead of going back to main dashboard
+          navigation.navigate("Main" as any);
+          return true; // Prevent default back behavior
+        };
+  
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+  
+        return () => backHandler.remove(); // Cleanup on unmount
+      }, [navigation])
+    );
+
 
   return (
 
     <KeyboardAvoidingView 
                     behavior={Platform.OS === "ios" ? "padding" : "height"}
                     enabled 
-                    className="flex-1"
+                    style={{flex: 1}}
                     >
     <View className="flex-1 w-full bg-white">
 
           {loading ? (
         <View className="flex-1 justify-center items-center">
-        <LottieView
+        {/* <LottieView
           source={require("../assets/images/loading.json")}
           autoPlay
           loop
           style={{ width: wp(25), height: hp(12) }}
-        />
-        <Text className="mt-4 text-lg text-[#693ACF] font-semibold">Logging out...</Text>
+        /> */}
+         <ActivityIndicator></ActivityIndicator>
+        <Text className="mt-4  text-[#693ACF] font-semibold">Logging out...</Text>
       </View>
     ) : (
       <View className=" flex-1 w-full bg-white">
@@ -232,7 +248,7 @@ const handleLogout = async () => {
   <Ionicons name="chevron-forward-outline" size={hp(2.5)} color="#8F8F8F" style={{ marginRight: wp(2) }} />
 </TouchableOpacity>
 
-<TouchableOpacity style={{ marginBottom: hp(2) }} className="flex-row items-center py-3"> 
+<TouchableOpacity style={{ marginBottom: hp(2) }} className="flex-row items-center py-3" onPress={() => navigation.navigate("PrivacyPolicy")}> 
 
 <View
     style={{
@@ -255,7 +271,7 @@ const handleLogout = async () => {
   <Ionicons name="chevron-forward-outline" size={hp(2.5)} color="#8F8F8F" style={{ marginRight: wp(2) }} />
 </TouchableOpacity>
 
-<TouchableOpacity className="flex-row items-center py-3" onPress={() => console.log("Terms & Conditions Pressed")}> 
+<TouchableOpacity className="flex-row items-center py-3" onPress={() => navigation.navigate("TermsConditions")}> 
 <View
     style={{
       width: hp(5),

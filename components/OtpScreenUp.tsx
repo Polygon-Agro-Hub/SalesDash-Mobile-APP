@@ -544,10 +544,10 @@ const verifyOTP = async () => {
             await AsyncStorage.setItem("latestCustomerId", customerId.toString());
           }
 
-          Alert.alert(
-            "Success",
-            id ? "Customer updated successfully." : "Customer created successfully."
-          );
+          // Alert.alert(
+          //   "Success",
+          //   id ? "Customer updated successfully." : "Customer created successfully."
+          // );
 
           console.log("Navigating to OtpSuccesfulScreen with customerId:", customerId);
           navigation.navigate("Main", {
@@ -652,9 +652,9 @@ const handleOtpChange = (text: string, index: number) => {
       };
 
       const body = {
-        source: "ShoutDEMO",
+        source: "AgroWorld",
         transport: "sms",
-        content: { sms: "Your code is {{code}}" },
+        content: { sms: "Thank you for registering with us a Market Place customer. Please use the bellow OTP to confirm the registration process. {{code}}" },
         destination: phoneNumber,
       };
 
@@ -757,7 +757,7 @@ const handleOtpChange = (text: string, index: number) => {
     <KeyboardAvoidingView 
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       enabled 
-      className="flex-1"
+      style={{flex: 1}}
     >
       <ScrollView 
         contentContainerStyle={{ flexGrow: 1 }} 

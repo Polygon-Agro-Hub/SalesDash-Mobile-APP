@@ -1,16 +1,18 @@
-import React from "react";
+import React, { useCallback } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   Image,
   ScrollView,
+  BackHandler,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import BackButton from "./BackButton";
 import { AntDesign } from "@expo/vector-icons";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
+import { useFocusEffect } from "expo-router";
 
 type SelectOrderTypeNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -42,6 +44,26 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({ navigation, route }) 
    
     });
   };
+
+   useFocusEffect(
+       useCallback(() => {
+         const onBackPress = () => {
+           // Navigate to ViewCustomerScreen instead of going back to main dashboard
+           navigation.navigate("ViewCustomerScreen" as any, { 
+             id: id, 
+             customerId: customerId, 
+             name: name, 
+             title: title 
+           });
+           return true; // Prevent default back behavior
+         };
+   
+         const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+   
+         return () => backHandler.remove(); // Cleanup on unmount
+       }, [navigation, id, customerId, name, title])
+     );  
+  
 
 
   const handleSelectPackage = () => {

@@ -20,7 +20,8 @@ import axios from "axios";
 import environment from "@/environment/environment";
 import CustomersScreenSkeleton from "../components/Skeleton/CustomerScreenSkeleton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useIsFocused } from "@react-navigation/native";
+import { useFocusEffect, useIsFocused } from "@react-navigation/native";
+
 
 type CustomersScreenNavigationProp = StackNavigationProp<RootStackParamList, "CustomersScreen">;
 
@@ -53,6 +54,10 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const isMounted = useRef(true);
+
+
+    
+   
 
   // Safe state setters
   const safeSetCustomers = (data: Customer[]) => {
@@ -228,28 +233,57 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
     await loadCustomers(1, false, false);
   };
 
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
+  // const handleSearch = (query: string) => {
+  //   setSearchQuery(query);
   
-    const formattedQuery = query.startsWith("+94") ? query.replace("+94", "0") : query;
+  //   const formattedQuery = query.startsWith("+94") ? query.replace("+94", "0") : query;
   
-    if (query === "") {
-      setFilteredCustomers(customers); 
-    } else {
-      const filteredData = customers.filter((customer) => {
-        const formattedPhoneNumber = formatPhoneNumber(customer.phoneNumber);
+  //   if (query === "") {
+  //     setFilteredCustomers(customers); 
+  //   } else {
+  //     const filteredData = customers.filter((customer) => {
+  //       const formattedPhoneNumber = formatPhoneNumber(customer.phoneNumber);
         
-        return (
-          customer.firstName.toLowerCase().includes(query.toLowerCase()) ||
-          customer.lastName.toLowerCase().includes(query.toLowerCase()) ||
-          formattedPhoneNumber.includes(formattedQuery)
-        );
-      });
+  //       return (
+  //         customer.firstName.toLowerCase().includes(query.toLowerCase()) ||
+  //         customer.lastName.toLowerCase().includes(query.toLowerCase()) ||
+  //         formattedPhoneNumber.includes(formattedQuery)
+  //       );
+  //     });
   
-      // Keep the filtered results sorted alphabetically
-      setFilteredCustomers(sortCustomersByName(filteredData));
-    }
-  };
+  //     // Keep the filtered results sorted alphabetically
+  //     setFilteredCustomers(sortCustomersByName(filteredData));
+  //   }
+  // };
+
+const handleSearch = (query: string) => {
+  // Only remove leading spaces, but allow spaces within the search term
+  const cleanedQuery = query.replace(/^\s+/, '');
+  
+  setSearchQuery(cleanedQuery);
+  
+  const formattedQuery = cleanedQuery.startsWith("+94") ? cleanedQuery.replace("+94", "0") : cleanedQuery;
+  
+  if (cleanedQuery === "") {
+    setFilteredCustomers(customers); 
+  } else {
+    const filteredData = customers.filter((customer) => {
+      const formattedPhoneNumber = formatPhoneNumber(customer.phoneNumber);
+      const fullName = `${customer.firstName} ${customer.lastName}`.toLowerCase();
+      const searchTerm = cleanedQuery.toLowerCase();
+      
+      return (
+        customer.firstName.toLowerCase().includes(searchTerm) ||
+        customer.lastName.toLowerCase().includes(searchTerm) ||
+        fullName.includes(searchTerm) || // This allows searching full name
+        formattedPhoneNumber.includes(formattedQuery)
+      );
+    });
+
+    // Keep the filtered results sorted alphabetically
+    setFilteredCustomers(sortCustomersByName(filteredData));
+  }
+};
 
   const formatPhoneNumber = (phoneNumber: string) => {
     return phoneNumber.startsWith("+94")
@@ -272,7 +306,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
     <KeyboardAvoidingView 
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       enabled 
-      className="flex-1"
+       style={{ flex: 1}}
     >
       <View className="bg-white flex-1">
         
@@ -299,6 +333,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                 placeholderTextColor="#6839CF" 
                 className="flex-1 text-sm text-gray-700" 
                 style={{ fontStyle: 'italic' }}
+                
               />
               <Image source={require("../assets/images/search.webp")} className="w-6 h-6" resizeMode="contain" />
             </View>

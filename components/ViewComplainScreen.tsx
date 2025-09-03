@@ -246,8 +246,8 @@
 
 // export default ViewComplainScreen;
 
-import React, { useState, useEffect } from "react";
-import { View, Text, FlatList, TouchableOpacity, Image, Modal, Alert, RefreshControl } from "react-native";
+import React, { useState, useEffect, useCallback } from "react";
+import { View, Text, FlatList, TouchableOpacity, Image, Modal, Alert, RefreshControl, BackHandler } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { AntDesign } from "@expo/vector-icons";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
@@ -259,6 +259,7 @@ import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import ViewComplainScreenSkeleton from "../components/Skeleton/ViewComplainScreenSkeleton";  // Assuming skeleton loader component
 import { goBack, navigate } from "expo-router/build/global-state/routing";
+import { useFocusEffect } from "expo-router";
 
 type ViewComplainScreenNavigationProp = StackNavigationProp<RootStackParamList, "ViewComplainScreen">;
 
@@ -290,67 +291,140 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({ navigation }) =
   );
 
 
-  const fetchComplaints = async () => {
-    try {
-      const storedToken = await AsyncStorage.getItem("authToken");
-      if (!storedToken) {
-        Alert.alert("Error", "No authentication token found");
-        return;
-      }
+  // const fetchComplaints = async () => {
+  //   try {
+  //     const storedToken = await AsyncStorage.getItem("authToken");
+  //     if (!storedToken) {
+  //       Alert.alert("Error", "No authentication token found");
+  //       return;
+  //     }
   
-      const complaintsUrl = `${environment.API_BASE_URL.replace(/\/$/, '')}/api/complain/get-complains`;
+  //     const complaintsUrl = `${environment.API_BASE_URL.replace(/\/$/, '')}/api/complain/get-complains`;
   
-      setTimeout(async () => {
-        try {
-          const complaintsResponse = await axios.get(complaintsUrl, {
-            headers: { Authorization: `Bearer ${storedToken}` },
-          });
-          console.log("complainnnnnnnn",complaintsResponse.data)
+  //     setTimeout(async () => {
+  //       try {
+  //         const complaintsResponse = await axios.get(complaintsUrl, {
+  //           headers: { Authorization: `Bearer ${storedToken}` },
+  //         });
+  //         console.log("complainnnnnnnn",complaintsResponse.data)
   
-          if (complaintsResponse.status === 404) {
+  //         if (complaintsResponse.status === 404) {
       
-            Alert.alert("No Complaints", "You have no previous complaints.");
-            setComplaints([]);
-          } else {
-            const formattedComplaints = complaintsResponse.data.map((complaint: { createdAt: string | number | Date }) => ({
-              ...complaint,
-              createdAt: new Date(complaint.createdAt).toLocaleString("en-US", {
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: true,
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-              }),
-            }));
+  //           Alert.alert("No Complaints", "You have no previous complaints.");
+  //           setComplaints([]);
+  //         } else {
+  //           const formattedComplaints = complaintsResponse.data.map((complaint: { createdAt: string | number | Date }) => ({
+  //             ...complaint,
+  //             createdAt: new Date(complaint.createdAt).toLocaleString("en-US", {
+  //               hour: "2-digit",
+  //               minute: "2-digit",
+  //               hour12: true,
+  //               day: "numeric",
+  //               month: "short",
+  //               year: "numeric",
+  //             }),
+  //           }));
   
-            setComplaints(formattedComplaints);
-          }
+  //           setComplaints(formattedComplaints);
+  //         }
   
-          setLoading(false);
+  //         setLoading(false);
   
-          const profileUrl = `${environment.API_BASE_URL.replace(/\/$/, '')}/api/auth/user/profile`;
-          const profileResponse = await axios.get(profileUrl, {
-            headers: { Authorization: `Bearer ${storedToken}` },
+  //         const profileUrl = `${environment.API_BASE_URL.replace(/\/$/, '')}/api/auth/user/profile`;
+  //         const profileResponse = await axios.get(profileUrl, {
+  //           headers: { Authorization: `Bearer ${storedToken}` },
 
             
-          });
-          console.log("data",profileResponse.data.data)
+  //         });
+  //         console.log("data",profileResponse.data.data)
   
-          setFormData(profileResponse.data.data);
-        } catch (error) {
-        //  console.error("Error fetching complaints or user profile:", error);
-          setLoading(false);
-      //    Alert.alert("Error", "Failed to fetch complaints or user profile");
-        }
-      }, 2000); 
-    } catch (error) {
-      console.error("Error fetching complaints or user profile:", error);
-      setLoading(false);
-  //    Alert.alert("Error", "Failed to fetch complaints or user profile");
+  //         setFormData(profileResponse.data.data);
+  //       } catch (error) {
+  //       //  console.error("Error fetching complaints or user profile:", error);
+  //         setLoading(false);
+  //     //    Alert.alert("Error", "Failed to fetch complaints or user profile");
+  //       }
+  //     }, 2000); 
+  //   } catch (error) {
+  //     console.error("Error fetching complaints or user profile:", error);
+  //     setLoading(false);
+  // //    Alert.alert("Error", "Failed to fetch complaints or user profile");
+  //   }
+  // };
+  const fetchComplaints = async () => {
+  try {
+    const storedToken = await AsyncStorage.getItem("authToken");
+    if (!storedToken) {
+      Alert.alert("Error", "No authentication token found");
+      return;
     }
-  };
-  
+
+    const complaintsUrl = `${environment.API_BASE_URL.replace(/\/$/, '')}/api/complain/get-complains`;
+
+    setTimeout(async () => {
+      try {
+        const complaintsResponse = await axios.get(complaintsUrl, {
+          headers: { Authorization: `Bearer ${storedToken}` },
+        });
+        console.log("complainnnnnnnn", complaintsResponse.data)
+
+        if (complaintsResponse.status === 404) {
+          Alert.alert("No Complaints", "You have no previous complaints.");
+          setComplaints([]);
+        } else {
+          const formattedComplaints = complaintsResponse.data.map((complaint: { createdAt: string | number | Date }) => {
+            const date = new Date(complaint.createdAt);
+            
+            // Format time with leading zero if needed (e.g., "09.55AM" or "12.48PM")
+            let hours = date.getHours();
+            const minutes = date.getMinutes();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12; // 0 should be 12
+            
+            const timeString = `${hours.toString().padStart(2, '0')}.${minutes.toString().padStart(2, '0')}${ampm}`;
+            
+            // Format date (e.g., "18 Jul 2025")
+            const day = date.getDate();
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const month = monthNames[date.getMonth()];
+            const year = date.getFullYear();
+            
+            const dateString = `${day} ${month} ${year}`;
+            
+            // Combine them with comma (e.g., "12.48PM,18 Jul 2025")
+            const formattedDateTime = `${timeString},${dateString}`;
+            
+            return {
+              ...complaint,
+              createdAt: formattedDateTime,
+            };
+          });
+
+          setComplaints(formattedComplaints);
+        }
+
+        setLoading(false);
+
+        const profileUrl = `${environment.API_BASE_URL.replace(/\/$/, '')}/api/auth/user/profile`;
+        const profileResponse = await axios.get(profileUrl, {
+          headers: { Authorization: `Bearer ${storedToken}` },
+        });
+        console.log("data", profileResponse.data.data)
+
+        setFormData(profileResponse.data.data);
+      } catch (error) {
+        //  console.error("Error fetching complaints or user profile:", error);
+        setLoading(false);
+        //    Alert.alert("Error", "Failed to fetch complaints or user profile");
+      }
+    }, 2000);
+  } catch (error) {
+    console.error("Error fetching complaints or user profile:", error);
+    setLoading(false);
+    //    Alert.alert("Error", "Failed to fetch complaints or user profile");
+  }
+};
 
   useEffect(() => {
     fetchComplaints(); 
@@ -371,6 +445,21 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({ navigation }) =
     setSelectedComplaint(complaint);
     setModalVisible(true);
   };
+
+  useFocusEffect(
+        useCallback(() => {
+          const onBackPress = () => {
+            // Navigate to ViewCustomerScreen instead of going back to main dashboard
+            navigation.navigate("SidebarScreen" as any);
+            return true; // Prevent default back behavior
+          };
+    
+          const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    
+          return () => backHandler.remove(); // Cleanup on unmount
+        }, [navigation])
+      );
+    
 
   
   return (

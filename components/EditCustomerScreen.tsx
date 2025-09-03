@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Keyboard, Platform, KeyboardAvoidingView, SafeAreaView, Alert, ActivityIndicator } from "react-native";
+import React, { useState, useEffect, useCallback } from "react";
+import { View, Text, ScrollView, TextInput, TouchableOpacity, Keyboard, Platform, KeyboardAvoidingView, SafeAreaView, Alert, ActivityIndicator, BackHandler } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import { LinearGradient } from "expo-linear-gradient";
@@ -11,6 +11,10 @@ import DropDownPicker from "react-native-dropdown-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SelectList } from "react-native-dropdown-select-list";
 import { AntDesign } from "@expo/vector-icons";
+import { useFocusEffect } from "expo-router";
+
+
+
 
 type EditCustomerScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -67,6 +71,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
   const [emailError, setEmailError] = useState<string>("");
   const [buildingTypeError, setBuildingTypeError] = useState<string>("");
   const [titleError, setTitleError] = useState<string>("");
+    const [isKeyboardVisible, setKeyboardVisible] = useState(false);
 
   // Dropdown states
   const [open, setOpen] = useState(false);
@@ -80,20 +85,115 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
   const [buildingTypeOpen, setBuildingTypeOpen] = useState(false);
   const [openCityDropdown, setOpenCityDropdown] = useState(false);
   const [cityItems, setCityItems] = useState<{label: string, value: string}[]>([]);
+  const [originalEmail, setOriginalEmail] = useState('');
   const [buildingTypeItems, setBuildingTypeItems] = useState([
     { label: "House", value: "House" },
     { label: "Apartment", value: "Apartment" },
   ]);
 
+  
+
   // Validation regex
   const phoneRegex = /^\+947\d{8}$/;
-  const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+ // const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
   const nameRegex = /^[A-Z][a-z]*$/;
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
   // Helper functions
   const validatePhoneNumber = (phone: string) => phoneRegex.test(phone);
-  const validateEmail = (email: string) => emailRegex.test(email);
+  // const validateEmail = (email: string) => emailRegex.test(email);
   const validateName = (name: string) => nameRegex.test(name);
+
+ const validateEmail = (email: string) => {
+  if (!emailRegex.test(email)) {
+    return false;
+  }
+  
+  const parts = email.split('@');
+  if (parts.length !== 2) return false;
+  
+  const [localPart, domainPart] = parts;
+  
+  // Check local part length
+  if (localPart.length < 1 || localPart.length > 64) return false;
+  
+  // Check domain part length
+  if (domainPart.length < 1 || domainPart.length > 255) return false;
+  
+  // Check for consecutive dots
+  if (localPart.includes('..') || domainPart.includes('..')) return false;
+  
+  // Check for special characters at start/end
+  if (/^[._-]/.test(localPart) || /[._-]$/.test(localPart)) return false;
+  
+  // Check for allowed domains
+  const allowedDomains = ['gmail.com', 'googlemail.com', 'yahoo.com', 'outlook.com'];
+  const allowedTlds = ['.com', '.lk', '.gov'];
+  
+  // Check if domain is in allowed list or has allowed TLD
+  const domainLower = domainPart.toLowerCase();
+  const hasAllowedTld = allowedTlds.some(tld => domainLower.endsWith(tld));
+  
+  if (!allowedDomains.includes(domainLower) && !hasAllowedTld) {
+    return false;
+  }
+  
+  // Additional Gmail-specific rules
+  if (domainLower === 'gmail.com' || domainLower === 'googlemail.com') {
+    // Gmail doesn't allow consecutive dots
+    if (/\.{2,}/.test(localPart)) return false;
+    
+    // Gmail doesn't allow dots at start or end
+    if (/^\.|\.$/.test(localPart)) return false;
+    
+    // Gmail only allows certain characters
+    if (!/^[a-zA-Z0-9.+]+$/.test(localPart)) return false;
+  }
+  
+  return true;
+};
+  const resetFormToOriginalState = async () => {
+    try {
+      const response = await axios.get(
+        `${environment.API_BASE_URL}api/customer/get-customer-data/${id}`
+      );
+      
+      if (response.status === 200) {
+        const customerData = response.data.customer;
+        const buildingData = response.data.building;
+
+        setSelectedCategory(customerData.title || "");
+        setFirstName(customerData.firstName || "");
+        setLastName(customerData.lastName || "");
+        setPhoneNumber(customerData.phoneNumber || "");
+        setEmail(customerData.email || "");
+        setBuildingType(customerData.buildingType || "");
+        setOriginalBuildingType(customerData.buildingType || "");
+        setOriginalPhoneNumber(customerData.phoneNumber || "");
+        setOriginalEmail(customerData.email || '');
+        
+        if (buildingData) {
+          if (customerData.buildingType === "House") {
+            setHouseNo(buildingData.houseNo || "");
+            setStreetName(buildingData.streetName || "");
+            setCity(buildingData.city || "");
+          } else if (customerData.buildingType === "Apartment") {
+            setBuildingNo(buildingData.buildingNo || "");
+            setBuildingName(buildingData.buildingName || "");
+            setUnitNo(buildingData.unitNo || "");
+            setFloorNo(buildingData.floorNo || "");
+            setHouseNo(buildingData.houseNo || "");
+            setStreetName(buildingData.streetName || "");
+            setCity(buildingData.city || "");
+          }
+        }
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+
   
   const formatNameInput = (text: string) => {
     if (!text) return text;
@@ -149,12 +249,71 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
     }
   }, [phoneNumber, touchedFields.phoneNumber]);
 
-  useEffect(() => {
+
+useEffect(() => {
     if (touchedFields.email) {
       if (!email) {
         setEmailError("Email is required");
       } else if (!validateEmail(email)) {
-        setEmailError("Please enter a valid email address");
+        // Provide specific error messages based on domain and validation issues
+        const emailLower = email.toLowerCase();
+        const [localPart, domain] = emailLower.split('@');
+        
+        // Check if email format is completely invalid
+        const generalEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!generalEmailRegex.test(email)) {
+          setEmailError("Please enter a valid email address");
+          return;
+        }
+        
+        if (domain === 'gmail.com' || domain === 'googlemail.com') {
+          // Gmail-specific errors
+          if (localPart.length > 30) {
+            setEmailError("Gmail addresses cannot exceed 30 characters before @");
+          } else if (/\.{2,}/.test(localPart)) {
+            setEmailError("Gmail addresses cannot have consecutive dots");
+          } else if (/^\.|\.$/.test(localPart)) {
+            setEmailError("Gmail addresses cannot start or end with a dot");
+          } else if (!/^[a-zA-Z0-9.+]+$/.test(localPart)) {
+            setEmailError("Gmail addresses can only contain letters, numbers, dots and plus signs");
+          } else {
+            setEmailError("Please enter a valid Gmail address");
+          }
+        } else if (domain === 'yahoo.com') {
+          // Yahoo-specific errors
+          if (localPart.length > 32) {
+            setEmailError("Yahoo addresses cannot exceed 32 characters before @");
+          } else if (/\.{2,}/.test(localPart)) {
+            setEmailError("Yahoo addresses cannot have consecutive dots");
+          } else if (/^[._-]|[._-]$/.test(localPart)) {
+            setEmailError("Yahoo addresses cannot start or end with dots, underscores or hyphens");
+          } else if (!/^[a-zA-Z0-9._-]+$/.test(localPart)) {
+            setEmailError("Yahoo addresses can only contain letters, numbers, dots, underscores and hyphens");
+          } else {
+            setEmailError("Please enter a valid Yahoo address");
+          }
+        } else {
+          // Check if domain is supported
+          const allowedTLDs = ['.com', '.gov', '.lk'];
+          const isDomainSupported = allowedTLDs.some(tld => domain.endsWith(tld));
+          
+          if (!isDomainSupported) {
+            setEmailError("Please enter a valid email address with a supported domain (.com, .gov, .lk)");
+          } else {
+            // General validation errors
+            if (localPart.length > 64) {
+              setEmailError("Email address is too long");
+            } else if (/\.{2,}/.test(localPart)) {
+              setEmailError("Email addresses cannot have consecutive dots");
+            } else if (/^\.|\.$/.test(localPart)) {
+              setEmailError("Email addresses cannot start or end with a dot");
+            } else if (!/^[a-zA-Z0-9._%+-]+$/.test(localPart)) {
+              setEmailError("Please enter a valid email address");
+            } else {
+              setEmailError("Please enter a valid email address");
+            }
+          }
+        }
       } else {
         setEmailError("");
       }
@@ -191,50 +350,108 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
     getToken();
   }, []);
 
-  useEffect(() => {
-    const fetchCustomerData = async () => {
-      try {
-        const response = await axios.get(
-          `${environment.API_BASE_URL}api/customer/get-customer-data/${id}`
-        );
-        
-        if (response.status === 200) {
-          const customerData = response.data.customer;
-          const buildingData = response.data.building;
+  const resetFormState = () => {
+    setSelectedCategory("");
+    setFirstName("");
+    setLastName("");
+    setPhoneNumber("");
+    setEmail("");
+    setHouseNo("");
+    setStreetName("");
+    setCity("");
+    setBuildingNo("");
+    setFloorNo("");
+    setUnitNo("");
+    setOpen(false)
+    setBuildingName("");
+    setBuildingType("");
+    setOriginalBuildingType("");
+    setOriginalPhoneNumber("");
+    setOriginalEmail("");
+    // Reset error states
+    setFirstNameError("");
+    setLastNameError("");
+    setPhoneError("");
+    setEmailError("");
+    setBuildingTypeError("");
+    setTitleError("");
+    // Reset touched fields
+    setTouchedFields({
+      firstName: false,
+      lastName: false,
+      phoneNumber: false,
+      email: false,
+      buildingType: false,
+      title: false
+    });
+  };
 
-          setSelectedCategory(customerData.title || "");
-          setFirstName(customerData.firstName || "");
-          setLastName(customerData.lastName || "");
-          setPhoneNumber(customerData.phoneNumber || "");
-          setEmail(customerData.email || "");
-          setBuildingType(customerData.buildingType || "");
-          setOriginalBuildingType(customerData.buildingType || "");
-          setOriginalPhoneNumber(customerData.phoneNumber || "");
-          
-          if (buildingData) {
-            if (customerData.buildingType === "House") {
-              setHouseNo(buildingData.houseNo || "");
-              setStreetName(buildingData.streetName || "");
-              setCity(buildingData.city || "");
-            } else if (customerData.buildingType === "Apartment") {
-              setBuildingNo(buildingData.buildingNo || "");
-              setBuildingName(buildingData.buildingName || "");
-              setUnitNo(buildingData.unitNo || "");
-              setFloorNo(buildingData.floorNo || "");
-              setHouseNo(buildingData.houseNo || "");
-              setStreetName(buildingData.streetName || "");
-              setCity(buildingData.city || "");
-            }
+  
+ 
+    const fetchCustomerData = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(
+        `${environment.API_BASE_URL}api/customer/get-customer-data/${id}`
+      );
+      
+      if (response.status === 200) {
+        const customerData = response.data.customer;
+        const buildingData = response.data.building;
+
+        setSelectedCategory(customerData.title || "");
+        setFirstName(customerData.firstName || "");
+        setLastName(customerData.lastName || "");
+        setPhoneNumber(customerData.phoneNumber || "");
+        setEmail(customerData.email || "");
+        setBuildingType(customerData.buildingType || "");
+        setOriginalBuildingType(customerData.buildingType || "");
+        setOriginalPhoneNumber(customerData.phoneNumber || "");
+        setOriginalEmail(customerData.email || '');
+        
+        if (buildingData) {
+          if (customerData.buildingType === "House") {
+            setHouseNo(buildingData.houseNo || "");
+            setStreetName(buildingData.streetName || "");
+            setCity(buildingData.city || "");
+          } else if (customerData.buildingType === "Apartment") {
+            setBuildingNo(buildingData.buildingNo || "");
+            setBuildingName(buildingData.buildingName || "");
+            setUnitNo(buildingData.unitNo || "");
+            setFloorNo(buildingData.floorNo || "");
+            setHouseNo(buildingData.houseNo || "");
+            setStreetName(buildingData.streetName || "");
+            setCity(buildingData.city || "");
           }
         }
-      } catch (error) {
-        console.error(error);
-        Alert.alert("Error", "Failed to load customer data.");
       }
-    };
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Error", "Failed to load customer data.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchCustomerData();
-  }, [id]);
+  // Use focus effect to handle screen navigation
+  useFocusEffect(
+    React.useCallback(() => {
+      let isActive = true;
+
+      const loadData = async () => {
+        if (isActive) {
+          resetFormState(); // Reset form first
+          await fetchCustomerData(); // Then fetch fresh data
+        }
+      };
+
+      loadData();
+
+      return () => {
+        isActive = false;
+      };
+    }, [id]) // Add any dependencies that should trigger a refetch
+  );
 
   useEffect(() => {
     const fetchCity = async () => {
@@ -295,123 +512,477 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
     }
   };
 
-  const handleRegister = async () => {
-    // Mark all fields as touched to show errors
-    setTouchedFields({
-      firstName: true,
-      lastName: true,
-      phoneNumber: true,
-      email: true,
-      buildingType: true,
-      title: true
-    });
+ // Updated handleRegister function with proper error handling
+// const handleRegister = async () => {
+//   // Mark all fields as touched to show errors
+//   setTouchedFields({
+//     firstName: true,
+//     lastName: true,
+//     phoneNumber: true,
+//     email: true,
+//     buildingType: true,
+//     title: true
+//   });
 
-    // Validate required fields
-    if (!selectedCategory || !firstName || !lastName || !phoneNumber || !email || !buildingType) {
-      Alert.alert("Error", "Please fill in all required fields.");
-      return;
-    }
+//   // Clear any previous validation errors
+//   setPhoneError("");
+//   setEmailError("");
 
-    // Validate formats
-    if (!validatePhoneNumber(phoneNumber)) {
-      Alert.alert("Error", "Please enter a valid phone number (format: +947XXXXXXXX).");
-      return;
-    }
+//   // Validate required fields
+//   if (!selectedCategory || !firstName || !lastName || !phoneNumber || !email || !buildingType) {
+//     Alert.alert("Error", "Please fill in all required fields.");
+//     return;
+//   }
 
-    if (!validateEmail(email)) {
-      Alert.alert("Error", "Please enter a valid email address.");
-      return;
-    }
+//   // Validate formats
+//   if (!validatePhoneNumber(phoneNumber)) {
+//     Alert.alert("Error", "Please enter a valid phone number (format: +947XXXXXXXX).");
+//     return;
+//   }
 
-    // Validate building-specific fields
-    if (buildingType === "House" && (!houseNo || !streetName || !city)) {
-      Alert.alert("Error", "Please fill in all required house fields.");
-      return;
-    }
+//   if (!validateEmail(email)) {
+//     Alert.alert("Error", "Please enter a valid email address.");
+//     return;
+//   }
 
-    if (buildingType === "Apartment" && (!buildingNo || !buildingName || !unitNo || !floorNo || !houseNo || !streetName || !city)) {
-      Alert.alert("Error", "Please fill in all required apartment fields.");
-      return;
-    }
+//   // Validate building-specific fields
+//   if (buildingType === "House" && (!houseNo || !streetName || !city)) {
+//     Alert.alert("Error", "Please fill in all required house fields.");
+//     return;
+//   }
 
-    setIsSubmitting(true);
+//   if (buildingType === "Apartment" && (!buildingNo || !buildingName || !unitNo || !floorNo || !houseNo || !streetName || !city)) {
+//     Alert.alert("Error", "Please fill in all required apartment fields.");
+//     return;
+//   }
 
-    try {
-      // Only check phone number if it's changed
-      if (phoneNumber !== originalPhoneNumber) {
+//   setIsSubmitting(true);
+
+//   try {
+//     // Check for existing phone/email when phone number has changed
+//  if (phoneNumber !== originalPhoneNumber) {
+//   try {
+//     console.log("Checking customer with:", { phoneNumber, email, excludeId: id });
+    
+//     const checkResponse = await axios.post(
+//       `${environment.API_BASE_URL}api/customer/check-customer`,
+//       { 
+//         phoneNumber, 
+//         email,
+//         excludeId: id // Add this to exclude current user from check
+//       },
+//       { 
+//         headers: { 'Authorization': `Bearer ${token}` },
+//         timeout: 10000
+//       }
+//     );
+
+//     console.log("Customer check response:", checkResponse.data);
+        
+//       } catch (checkError: any) {
+//         console.log("Customer check error:", checkError);
+        
+//         // Handle different types of errors
+//         if (checkError.code === 'ECONNABORTED') {
+//           Alert.alert("Error", "Request timed out. Please check your internet connection and try again.");
+//           return;
+//         }
+        
+//         if (checkError.response) {
+//           // Server responded with an error status
+//           const status = checkError.response.status;
+//           const errorData = checkError.response.data;
+          
+//           if (status === 400) {
+//             // Handle validation errors
+//             const errorMessage = errorData.message || "Validation failed";
+            
+//             if (errorMessage.includes("Mobile Number already exists")) {
+//               setPhoneError("This mobile number is already registered.");
+//               Alert.alert(
+//                 "Mobile Number Already Exists", 
+//                 "This mobile number is already registered. Please use a different mobile number."
+//               );
+//               return;
+//             } else if (errorMessage.includes("Email already exists")) {
+//               setEmailError("This email address is already registered.");
+//               Alert.alert(
+//                 "Email Already Exists", 
+//                 "This email address is already registered. Please use a different email address."
+//               );
+//               return;
+//             } else if (errorMessage.includes("Mobile Number and Email already exist")) {
+//               setPhoneError("This mobile number is already registered.");
+//               setEmailError("This email address is already registered.");
+//               Alert.alert(
+//                 "Account Already Exists", 
+//                 "Both mobile number and email are already registered. Please use different credentials."
+//               );
+//               return;
+//             } else {
+//               Alert.alert("Validation Error", errorMessage);
+//               return;
+//             }
+//           } else if (status === 500) {
+//             // Server error
+//             console.error("Server error during validation:", errorData);
+//             Alert.alert(
+//               "Server Error", 
+//               "There was a problem validating your information. Please try again in a moment."
+//             );
+//             return;
+//           } else {
+//             // Other HTTP errors
+//             Alert.alert("Error", `Validation failed (${status}). Please try again.`);
+//             return;
+//           }
+//         } else if (checkError.request) {
+//           // Network error
+//           console.error("Network error:", checkError.request);
+//           Alert.alert(
+//             "Network Error", 
+//             "Unable to connect to the server. Please check your internet connection and try again."
+//           );
+//           return;
+//         } else {
+//           // Other error
+//           console.error("Unexpected error:", checkError.message);
+//           Alert.alert("Error", "An unexpected error occurred. Please try again.");
+//           return;
+//         }
+//       }
+
+//       // Send OTP if validation passed
+//       try {
+//         const otpResponse = await sendOTP();
+//         if (otpResponse.status !== 200) {
+//           Alert.alert("Error", "Failed to send OTP. Please try again.");
+//           return;
+//         }
+//       } catch (otpError) {
+//         console.error("OTP sending error:", otpError);
+//         Alert.alert("Error", "Failed to send OTP. Please try again.");
+//         return;
+//       }
+//     }
+
+//     // Prepare data for update
+//     const customerData = {
+//       title: selectedCategory,
+//       firstName,
+//       lastName,
+//       phoneNumber,
+//       email,
+//       buildingType,
+//     };
+
+//     const buildingData = buildingType === "House" ? {
+//       houseNo,
+//       streetName,
+//       city
+//     } : {
+//       buildingNo,
+//       buildingName,
+//       unitNo,
+//       floorNo,
+//       houseNo,
+//       streetName,
+//       city
+//     };
+
+//     if (phoneNumber !== originalPhoneNumber) {
+//       // Store data and navigate to OTP screen
+//       await AsyncStorage.setItem("pendingCustomerData", JSON.stringify({ 
+//         customerData, 
+//         buildingData,
+//         originalBuildingType
+//       }));
+//       navigation.navigate("OtpScreenUp", { phoneNumber, id, token });
+//     } else {
+//       // Direct update without OTP (phone number unchanged)
+//       try {
+//         const response = await axios.put(
+//           `${environment.API_BASE_URL}api/customer/update-customer-data/${id}`,
+//           { ...customerData, buildingData, originalBuildingType },
+//           { 
+//             headers: { 'Authorization': `Bearer ${token}` },
+//             timeout: 15000 // 15 second timeout for update
+//           }
+//         );
+
+//         if (response.status === 200) {
+//           Alert.alert("Success", "Customer updated successfully.");
+//           navigation.goBack();
+//         }
+//       } catch (updateError: any) {
+//         console.error("Update error:", updateError);
+//         if (updateError.response?.status === 400) {
+//           Alert.alert("Update Error", updateError.response.data.message || "Failed to update customer data.");
+//         } else {
+//           Alert.alert("Error", "Failed to update customer. Please try again.");
+//         }
+//       }
+//     }
+//   } catch (error: any) {
+//     console.error("Unexpected error in handleRegister:", error);
+//     Alert.alert("Error", "An unexpected error occurred. Please try again.");
+//   } finally {
+//     setIsSubmitting(false);
+//   }
+// };
+
+const handleRegister = async () => {
+  // Mark all fields as touched to show errors
+  setTouchedFields({
+  firstName: true,
+  lastName: true,
+  phoneNumber: true,
+  email: true,  // Add this line
+  buildingType: true,
+  title: true
+});
+
+  // Clear any previous validation errors
+  setPhoneError("");
+  setEmailError("");
+
+ 
+if (!selectedCategory || !firstName || !lastName || !phoneNumber || !buildingType) {
+  Alert.alert("Error", "Please fill in all required fields.");
+  return;
+}
+
+  // Validate formats
+  if (!validatePhoneNumber(phoneNumber)) {
+    Alert.alert("Error", "Please enter a valid phone number (format: +947XXXXXXXX).");
+    return;
+  }
+
+  // if (!validateEmail(email)) {
+  //   Alert.alert("Error", "Please enter a valid email address.");
+  //   return;
+  // }
+
+  // Validate building-specific fields
+  if (buildingType === "House" && (!houseNo || !streetName || !city)) {
+    Alert.alert("Error", "Please fill in all required house fields.");
+    return;
+  }
+
+  if (buildingType === "Apartment" && (!buildingNo || !buildingName || !unitNo || !floorNo || !houseNo || !streetName || !city)) {
+    Alert.alert("Error", "Please fill in all required apartment fields.");
+    return;
+  }
+
+  setIsSubmitting(true);
+
+  try {
+    // Check if phone number or email has changed
+    const phoneNumberChanged = phoneNumber !== originalPhoneNumber;
+    const emailChanged = email !== originalEmail; // You need to add originalEmail to your state
+
+    // Check for existing phone/email when either has changed
+    if (phoneNumberChanged || emailChanged) {
+      try {
+        console.log("Checking customer with:", { phoneNumber, email, excludeId: id });
+        
         const checkResponse = await axios.post(
           `${environment.API_BASE_URL}api/customer/check-customer`,
-          { phoneNumber },
-          { headers: { 'Authorization': `Bearer ${token}` } }
+          { 
+            phoneNumber, 
+            email: email || null,
+            excludeId: id // Add this to exclude current user from check
+          },
+          { 
+            headers: { 'Authorization': `Bearer ${token}` },
+            timeout: 10000
+          }
         );
 
-        if (checkResponse.status === 400) {
-          Alert.alert("Error", "This phone number is already registered.");
+        console.log("Customer check response:", checkResponse.data);
+            
+      } catch (checkError: any) {
+        console.log("Customer check error:", checkError);
+        
+        // Handle different types of errors
+        if (checkError.code === 'ECONNABORTED') {
+          Alert.alert("Error", "Request timed out. Please check your internet connection and try again.");
           return;
         }
-
-        // Send OTP if phone number changed
-        const otpResponse = await sendOTP();
-        if (otpResponse.status !== 200) {
-          Alert.alert("Error", "Failed to send OTP. Please try again.");
+        
+        if (checkError.response) {
+          // Server responded with an error status
+          const status = checkError.response.status;
+          const errorData = checkError.response.data;
+          
+          if (status === 400) {
+            // Handle validation errors
+            const errorMessage = errorData.message || "Validation failed";
+            
+            if (errorMessage.includes("Mobile Number already exists")) {
+              setPhoneError("This mobile number is already registered.");
+              Alert.alert(
+                "Mobile Number Already Exists", 
+                "This mobile number is already registered. Please use a different mobile number."
+              );
+              return;
+            } else if (errorMessage.includes("Email already exists")) {
+              setEmailError("This email address is already registered.");
+              Alert.alert(
+                "Email Already Exists", 
+                "This email address is already registered. Please use a different email address."
+              );
+              return;
+            } else if (errorMessage.includes("Mobile Number and Email already exist")) {
+              setPhoneError("This mobile number is already registered.");
+              setEmailError("This email address is already registered.");
+              Alert.alert(
+                "Account Already Exists", 
+                "Both mobile number and email are already registered. Please use different credentials."
+              );
+              return;
+            } else {
+              Alert.alert("Validation Error", errorMessage);
+              return;
+            }
+          } else if (status === 500) {
+            // Server error
+            console.error("Server error during validation:", errorData);
+            Alert.alert(
+              "Server Error", 
+              "There was a problem validating your information. Please try again in a moment."
+            );
+            return;
+          } else {
+            // Other HTTP errors
+            Alert.alert("Error", `Validation failed (${status}). Please try again.`);
+            return;
+          }
+        } else if (checkError.request) {
+          // Network error
+          console.error("Network error:", checkError.request);
+          Alert.alert(
+            "Network Error", 
+            "Unable to connect to the server. Please check your internet connection and try again."
+          );
+          return;
+        } else {
+          // Other error
+          console.error("Unexpected error:", checkError.message);
+          Alert.alert("Error", "An unexpected error occurred. Please try again.");
           return;
         }
       }
 
-      // Prepare data
-      const customerData = {
-        title: selectedCategory,
-        firstName,
-        lastName,
-        phoneNumber,
-        email,
-        buildingType,
-      };
+      // Send OTP only if phone number changed
+      if (phoneNumberChanged) {
+        try {
+          const otpResponse = await sendOTP();
+          if (otpResponse.status !== 200) {
+            Alert.alert("Error", "Failed to send OTP. Please try again.");
+            return;
+          }
+        } catch (otpError) {
+          console.error("OTP sending error:", otpError);
+          Alert.alert("Error", "Failed to send OTP. Please try again.");
+          return;
+        }
+      }
+    }
 
-      const buildingData = buildingType === "House" ? {
-        houseNo,
-        streetName,
-        city
-      } : {
-        buildingNo,
-        buildingName,
-        unitNo,
-        floorNo,
-        houseNo,
-        streetName,
-        city
-      };
+    // Prepare data for update
+    const customerData = {
+      title: selectedCategory,
+      firstName,
+      lastName,
+      phoneNumber,
+      email,
+      buildingType,
+    };
 
-      if (phoneNumber !== originalPhoneNumber) {
-        await AsyncStorage.setItem("pendingCustomerData", JSON.stringify({ 
-          customerData, 
-          buildingData,
-          originalBuildingType
-        }));
-        navigation.navigate("OtpScreenUp", { phoneNumber, id, token });
-      } else {
+    const buildingData = buildingType === "House" ? {
+      houseNo,
+      streetName,
+      city
+    } : {
+      buildingNo,
+      buildingName,
+      unitNo,
+      floorNo,
+      houseNo,
+      streetName,
+      city
+    };
+
+    if (phoneNumberChanged) {
+      // Store data and navigate to OTP screen
+      await AsyncStorage.setItem("pendingCustomerData", JSON.stringify({ 
+        customerData, 
+        buildingData,
+        originalBuildingType
+      }));
+      navigation.navigate("OtpScreenUp", { phoneNumber, id, token });
+    } else {
+      // Direct update without OTP (phone number unchanged)
+      try {
         const response = await axios.put(
           `${environment.API_BASE_URL}api/customer/update-customer-data/${id}`,
           { ...customerData, buildingData, originalBuildingType },
-          { headers: { 'Authorization': `Bearer ${token}` } }
+          { 
+            headers: { 'Authorization': `Bearer ${token}` },
+            timeout: 15000 // 15 second timeout for update
+          }
         );
 
         if (response.status === 200) {
           Alert.alert("Success", "Customer updated successfully.");
           navigation.goBack();
         }
+      } catch (updateError: any) {
+        console.error("Update error:", updateError);
+        if (updateError.response?.status === 400) {
+          const errorMessage = updateError.response.data.message || "Failed to update customer data.";
+          
+          // Handle specific backend validation errors
+          if (errorMessage.includes("Email already exists")) {
+            setEmailError("This email address is already registered.");
+            Alert.alert("Email Already Exists", "This email address is already registered. Please use a different email address.");
+          } else if (errorMessage.includes("Mobile Number already exists")) {
+            setPhoneError("This mobile number is already registered.");
+            Alert.alert("Mobile Number Already Exists", "This mobile number is already registered. Please use a different mobile number.");
+          } else {
+            Alert.alert("Update Error", errorMessage);
+          }
+        } else {
+          Alert.alert("Error", "Failed to update customer. Please try again.");
+        }
       }
-    } catch (error: any) {
-      console.error(error);
-      if (error.response?.status === 400) {
-        Alert.alert("Error", error.response.data.message || "This phone number is already registered.");
-      } else {
-        Alert.alert("Error", "Failed to update customer. Please try again.");
-      }
-    } finally {
-      setIsSubmitting(false);
     }
-  };
+  } catch (error: any) {
+    console.error("Unexpected error in handleRegister:", error);
+    Alert.alert("Error", "An unexpected error occurred. Please try again.");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+// Enhanced input handlers with error clearing
+const handlePhoneNumberChangeWithErrorClear = (text: string) => {
+  if (phoneError) {
+    setPhoneError("");
+  }
+  handlePhoneNumberChange(text);
+};
+
+const handleEmailChangeWithErrorClear = (text: string) => {
+  // Clear error if present
+  if (emailError) {
+    setEmailError("");
+  }
+  
+  // Convert to lowercase and update state
+  setEmail(text.toLowerCase());
+};
 
   const handleBuildingTypeChange = (value: string) => {
     setBuildingType(value);
@@ -425,13 +996,104 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
     }
   };
 
+
+// Enhanced phone number change handler
+const handlePhoneNumberChange = (text: string) => {
+  // Always ensure +94 prefix is maintained
+  if (!text.startsWith('+94')) {
+    // If user tries to remove +94, restore it
+    if (text.length < 3) {
+      setPhoneNumber('+94');
+      return;
+    }
+    // If text doesn't start with +94, add it
+    const cleanedText = text.replace(/^\+?94?/, '');
+    setPhoneNumber('+94' + cleanedText.replace(/[^\d]/g, ''));
+    return;
+  }
+  
+  // If text starts with +94, validate the rest
+  const numberPart = text.slice(3); // Remove +94 part
+  
+  // Only allow digits after +94 and limit to 9 digits (total 12 chars)
+  const cleanedNumber = numberPart.replace(/[^\d]/g, '');
+  
+  // Limit to 9 digits after +94 (making total +94XXXXXXXXX format)
+  if (cleanedNumber.length <= 9) {
+    setPhoneNumber('+94' + cleanedNumber);
+  }
+};
+
+// Enhanced onFocus handler
+const handlePhoneNumberFocus = () => {
+  // Ensure +94 is there when focused and field is empty or too short
+  if (phoneNumber === "" || phoneNumber.length < 3) {
+    setPhoneNumber("+94");
+  }
+};
+
+// Enhanced onKeyPress handler for better control
+const handlePhoneNumberKeyPress = (e: any) => {
+  const { key } = e.nativeEvent;
+  
+  // Prevent deletion if trying to delete +94 prefix
+  if (key === 'Backspace' && phoneNumber.length <= 3) {
+    e.preventDefault();
+    return false;
+  }
+};
+
+ useFocusEffect(
+     useCallback(() => {
+       const onBackPress = () => {
+         // Navigate to ViewCustomerScreen instead of going back to main dashboard
+         navigation.navigate("ViewCustomerScreen" as any, { 
+           id: id, 
+           customerId: customerId, 
+           name: name, 
+           title: title 
+         });
+         return true; // Prevent default back behavior
+       };
+ 
+       const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+ 
+       return () => backHandler.remove(); // Cleanup on unmount
+     }, [navigation, id, customerId, name, title])
+   );  
+
+   const capitalizeWords = (text :string) => {
+  return text.replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
+
+  if (loading) {
+    return (
+      <View className="flex-1 bg-white justify-center items-center">
+        <ActivityIndicator></ActivityIndicator>
+        <Text className="text-[#6839CF]  font-semibold mt-4">
+          Loading Customer Data...
+        </Text>
+      </View>
+    );
+  }
+
+
+
+
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        enabled 
-        className="flex-1"
-      >
+ 
+       <KeyboardAvoidingView 
+       behavior={Platform.OS === "ios" ? "padding" : "height"}
+       keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })} // Adjust this value as needed
+       style={{ flex: 1 ,backgroundColor: "white" }}
+     >
+           <SafeAreaView className="flex-1 bg-white">
+      {/* <KeyboardAwareScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+        enableOnAndroid={true}
+      > */}
         <View className="flex-1 bg-white py-4 p-2">
           <View className="p-[-4]">
             <View className="bg-white flex-row items-center h-17 shadow-lg px-1">
@@ -502,8 +1164,14 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                     placeholder="First Name"
                     value={firstName}
                     onChangeText={text => setFirstName(formatNameInput(text))}
-                    onBlur={() => handleFieldTouch("firstName")}
+                    // onBlur={() => handleFieldTouch("firstName") }
                     autoCapitalize="words"
+             
+                      //  onFocus={handleInputFocus}
+                    onBlur={() => {
+                      handleFieldTouch("firstName");
+                   
+                    }}
                   />
                   {firstNameError ? (
                     <Text className="text-red-500 text-xs mt-1 ml-2">{firstNameError}</Text>
@@ -520,7 +1188,12 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                   placeholder="Last Name"
                   value={lastName}
                   onChangeText={text => setLastName(formatNameInput(text))}
-                  onBlur={() => handleFieldTouch("lastName")}
+                  // onBlur={() => handleFieldTouch("lastName")}
+                
+                  onBlur={() => {
+                    handleFieldTouch("lastName");
+                  
+                  }}
                   autoCapitalize="words"
                 />
                 {lastNameError ? (
@@ -528,46 +1201,94 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                 ) : null}
               </View>
 
-              <View className="mb-4">
-                <RequiredField> Mobile Number</RequiredField>
-                <TextInput
-                  className={`bg-[#F6F6F6] border rounded-full px-6 h-10 ${
-                    phoneError ? 'border-red-500' : 'border-[#F6F6F6]'
-                  }`}
-                  placeholder="ex: +9477XXXXXXX"
-                  keyboardType="phone-pad"
-                  value={phoneNumber}
-                  onChangeText={setPhoneNumber}
-                  onBlur={() => handleFieldTouch("phoneNumber")}
-                  maxLength={12}
-                   onFocus={() => {
-    // Ensure +94 is there when focused
-    if (phoneNumber === "") {
-      setPhoneNumber("+94");
-    }
-  }}
-                />
-                {phoneError ? (
-                  <Text className="text-red-500 text-xs mt-1 ml-2">{phoneError}</Text>
-                ) : null}
-              </View>
+       <View className="mb-4">
+  <RequiredField>Mobile Number</RequiredField>
+  <TextInput
+    className={`bg-[#F6F6F6] border rounded-full px-6 h-10 ${
+      phoneError ? 'border-red-500' : 'border-[#F6F6F6]'
+    }`}
+    placeholder="ex: +94771234567"
+    keyboardType="phone-pad"
+    value={phoneNumber}
+    onChangeText={handlePhoneNumberChangeWithErrorClear}
+    onBlur={() => handleFieldTouch("phoneNumber")}
+    onFocus={() => {
+      handlePhoneNumberFocus();
+   
+    }}
+    onKeyPress={handlePhoneNumberKeyPress}
+    maxLength={12}
+    selection={phoneNumber.length <= 3 ? { start: 3, end: 3 } : undefined}
+  />
+  {phoneError ? (
+    <Text className="text-red-500 text-xs mt-1 ml-2">{phoneError}</Text>
+  ) : null}
+</View>
 
-              <View className="mb-4">
-                <RequiredField>Email Address</RequiredField>
-                <TextInput
-                  className={`bg-[#F6F6F6] border rounded-full px-6 h-10 ${
-                    emailError ? 'border-red-500' : 'border-[#F6F6F6]'
-                  }`}
-                  placeholder="Email Address"
-                  keyboardType="email-address"
-                  value={email}
-                  onChangeText={setEmail}
-                  onBlur={() => handleFieldTouch("email")}
-                />
-                {emailError ? (
-                  <Text className="text-red-500 text-xs mt-1 ml-2">{emailError}</Text>
-                ) : null}
-              </View>
+{/* <View className="mb-4">
+  <RequiredField>Email Address</RequiredField>
+  <TextInput
+    className={`bg-[#F6F6F6] border rounded-full px-6 h-10 ${
+      emailError ? 'border-red-500' : 'border-[#F6F6F6]'
+    }`}
+    placeholder="Email Address"
+    keyboardType="email-address"
+    value={email}
+    onChangeText={handleEmailChangeWithErrorClear}
+    // onBlur={() => handleFieldTouch("email")}
+     onFocus={handleInputFocus}
+                  onBlur={() => {
+                    handleFieldTouch("email");
+                    handleInputBlur();
+                  }}
+  />
+  {emailError ? (
+    <Text className="text-red-500 text-xs mt-1 ml-2">{emailError}</Text>
+  ) : null}
+</View> */}
+
+{/* <View className="mb-4">
+  <RequiredField>Email Address</RequiredField>
+  <TextInput
+    className={`bg-[#F6F6F6] border rounded-full px-6 h-10 ${
+      emailError ? 'border-red-500' : 'border-[#F6F6F6]'
+    }`}
+    placeholder="Email Address"
+    keyboardType="email-address"
+    autoCapitalize="none"
+    autoCorrect={false}
+    value={email}
+    onChangeText={handleEmailChangeWithErrorClear}
+
+    onBlur={() => {
+      handleFieldTouch("email");
+   
+    }}
+  />
+  {emailError ? (
+    <Text className="text-red-500 text-xs mt-1 ml-2">{emailError}</Text>
+  ) : null}
+</View> */}
+<View className="mb-4">
+  <Text className="text-gray-700 mb-1">Email Address</Text> {/* Removed RequiredField component */}
+  <TextInput
+    className={`bg-[#F6F6F6] border rounded-full px-6 h-10 ${
+      emailError ? 'border-red-500' : 'border-[#F6F6F6]'
+    }`}
+    placeholder="Email Address "
+    keyboardType="email-address"
+    autoCapitalize="none"
+    autoCorrect={false}
+    value={email}
+    onChangeText={handleEmailChangeWithErrorClear}
+    onBlur={() => {
+      handleFieldTouch("email");
+    }}
+  />
+  {emailError ? (
+    <Text className="text-red-500 text-xs mt-1 ml-2">{emailError}</Text>
+  ) : null}
+</View>
 
               <View className="mb-4 z-10">
                 <RequiredField>Building Type</RequiredField>
@@ -622,7 +1343,16 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="Building / House No (e.g., 14/B)"
                       value={houseNo}
-                      onChangeText={setHouseNo}
+                     // onChangeText={setHouseNo}
+                 onChangeText={(text) => {
+    const capitalizedText = capitalizeWords(text);
+    setHouseNo(capitalizedText);
+  }}
+  autoCapitalize="words"
+                        onBlur={() => {
+                   
+                   
+                  }}
                     />
                   </View>
                   <View className="mb-4">
@@ -631,7 +1361,12 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="Street Name"
                       value={streetName}
-                      onChangeText={setStreetName}
+                     // onChangeText={setStreetName}
+                  onChangeText={(text) => {
+    const capitalizedText = capitalizeWords(text);
+    setStreetName(capitalizedText);
+  }}
+  autoCapitalize="words"
                     />
                   </View>
                   <View className="mb-4 z-10">
@@ -685,7 +1420,12 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="Apartment / Building No"
                       value={buildingNo}
-                      onChangeText={setBuildingNo}
+                     // onChangeText={setBuildingNo}
+                    onChangeText={(text) => {
+    const capitalizedText = capitalizeWords(text);
+    setBuildingNo(capitalizedText);
+  }}
+  autoCapitalize="words"
                     />
                   </View>
                   <View className="mb-4">
@@ -694,7 +1434,12 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="Apartment / Building Name"
                       value={buildingName}
-                      onChangeText={setBuildingName}
+                   //   onChangeText={setBuildingName}
+                onChangeText={(text) => {
+    const capitalizedText = capitalizeWords(text);
+    setBuildingName(capitalizedText);
+  }}
+  autoCapitalize="words"
                     />
                   </View>
                   <View className="mb-4">
@@ -703,7 +1448,12 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="ex: Building B"
                       value={unitNo}
-                      onChangeText={setUnitNo}
+                    //  onChangeText={setUnitNo}
+                  onChangeText={(text) => {
+    const capitalizedText = capitalizeWords(text);
+    setUnitNo(capitalizedText);
+  }}
+  autoCapitalize="words"
                     />
                   </View>
                   <View className="mb-4">
@@ -712,7 +1462,12 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="ex: 3rd Floor"
                       value={floorNo}
-                      onChangeText={setFloorNo}
+                    //  onChangeText={setFloorNo}
+                 onChangeText={(text) => {
+    const capitalizedText = capitalizeWords(text);
+    setFloorNo(capitalizedText);
+  }}
+  autoCapitalize="words"
                     />
                   </View>
                   <View className="mb-4">
@@ -721,7 +1476,12 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="Building / House No (e.g., 14/B)"
                       value={houseNo}
-                      onChangeText={setHouseNo}
+                    //  onChangeText={setHouseNo}
+                  onChangeText={(text) => {
+    const capitalizedText = capitalizeWords(text);
+    setHouseNo(capitalizedText);
+  }}
+  autoCapitalize="words"
                     />
                   </View>
                   <View className="mb-4">
@@ -730,7 +1490,12 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="Street Name"
                       value={streetName}
-                      onChangeText={setStreetName}
+                     // onChangeText={setStreetName}
+                   onChangeText={(text) => {
+    const capitalizedText = capitalizeWords(text);
+    setStreetName(capitalizedText);
+  }}
+  autoCapitalize="words"
                     />
                   </View>
                   <View className="mb-4 z-10">
@@ -794,8 +1559,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
             </View>
           </ScrollView>
         </View>
+        </SafeAreaView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+
+    
   );
 };
 

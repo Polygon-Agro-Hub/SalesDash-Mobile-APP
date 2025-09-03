@@ -363,13 +363,14 @@ const fetchCustomerCount = async () => {
   if (loading) {
     return (
       <View className="flex-1 bg-white justify-center items-center">
-        <LottieView
+        {/* <LottieView
           source={require("../assets/images/loading.json")}
           autoPlay
           loop
           style={{ width: wp(25), height: hp(12) }}
-        />
-        <Text className="text-[#6839CF] text-lg font-semibold mt-4">
+        /> */}
+        <ActivityIndicator></ActivityIndicator>
+        <Text className="text-[#6839CF]  font-semibold mt-4">
           Loading Profile...
         </Text>
       </View>
@@ -381,7 +382,7 @@ const fetchCustomerCount = async () => {
       <KeyboardAvoidingView 
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         enabled 
-        className="flex-1"
+        style={{flex: 1}}
       >
         <ScrollView keyboardShouldPersistTaps="handled">
           <View className="bg-[#6839CF]">

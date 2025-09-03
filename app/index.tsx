@@ -37,8 +37,11 @@ import ExcludeListAdd from "@/components/ExcludeListAdd"
 import ExcludeListSummery from "@/components/ExcludeListSummery"
 import ExcludeItemEditSummery from "@/components/ExcludeItemEditSummery"
 import ExcludeAddMore from '@/components/ExcludeAddMore'
- 
-import { RootStackParamList } from '@/components/types';
+import PrivacyPolicy from '@/components/PrivacyPolicy'
+import TermsConditions from '@/components/TermsConditions'
+
+
+
 
 
 const Stack = createStackNavigator(); 
@@ -61,14 +64,27 @@ function MainTabNavigator() {
       screenOptions={({ route }) => ({
         tabBarStyle: { display: 'none' }, 
         headerShown: false,
+        tabBarHideOnKeyboard: false
       })}
+      
+
       
       tabBar={(props) => <NavigationBar {...props} />}
     >
       <Tab.Screen name="DashboardScreen" component={DashboardScreen} />
       <Tab.Screen name="ViewOrdersScreen" component={ViewOrdersScreen} />
       <Tab.Screen name="ReminderScreen" component={ReminderScreen} />
-      <Tab.Screen name="CustomersScreen" component={CustomersScreen} />
+      <Tab.Screen  
+      
+       options={{
+              tabBarHideOnKeyboard: true, // Hides tab bar for this specific screen
+                 tabBarVisibilityAnimationConfig: {
+      show: { animation: 'timing', config: { duration: 0 } },
+      hide: { animation: 'timing', config: { duration: 0 } }
+    }
+            }} 
+            name="CustomersScreen" 
+            component={CustomersScreen} />
       <Tab.Screen name="ViewComplainScreen" component={ViewComplainScreen} />
       {/* <Tab.Screen name="SidebarScreen" component={SidebarScreen} /> */}
       <Tab.Screen name="ViewScreen" component={ViewScreen as any} />
@@ -83,6 +99,10 @@ function MainTabNavigator() {
             <Tab.Screen name="ExcludeListSummery" component={ExcludeListSummery as any} />
             <Tab.Screen name="ExcludeItemEditSummery" component={ExcludeItemEditSummery as any} />
             <Tab.Screen name="ExcludeAddMore" component={ExcludeAddMore as any} />
+             <Tab.Screen name="AddCustomersScreen" 
+  component={AddCustomersScreen} 
+             
+             />
     </Tab.Navigator>
   );
 }
@@ -92,6 +112,7 @@ const index = () => {
     // ScreenCapture.usePreventScreenCapture()
 
   return (
+
     <LanguageProvider>
     <GestureHandlerRootView >
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -107,7 +128,7 @@ const index = () => {
       {/* <Stack.Screen name="ViewComplainScreen" component={ViewComplainScreen} /> */}
       {/* <Stack.Screen name="ViewCustomerScreen" component={ViewCustomerScreen as any} /> */}
       {/* <Stack.Screen name="ReminderScreen" component={ReminderScreen} /> */}
-      <Stack.Screen name="AddCustomersScreen" component={AddCustomersScreen} />
+      {/* <Stack.Screen name="AddCustomersScreen" component={AddCustomersScreen} /> */}
       <Stack.Screen name="OtpScreen" component={OtpScreen} />
       <Stack.Screen name="OtpScreenUp" component={OtpScreenUp} />
       {/* <Stack.Screen name="OtpSuccesfulScreen" component={OtpSuccesfulScreen as any} /> */}
@@ -122,12 +143,15 @@ const index = () => {
       {/* <Stack.Screen name="SelectOrderType" component={SelectOrderType as any} /> */}
       <Stack.Screen name="CreateCustomPackage" component={CreateCustomPackage as any} />
       <Stack.Screen name="CratScreen" component={CratScreen as any} />
+      <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicy as any} />
+      <Stack.Screen name="TermsConditions" component={TermsConditions as any} />
       <Stack.Screen name="Main" component={MainTabNavigator} />
 
       
     </Stack.Navigator>
    </GestureHandlerRootView>
     </LanguageProvider>
+
   )
 }
 

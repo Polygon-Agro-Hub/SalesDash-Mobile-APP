@@ -101,15 +101,50 @@ useFocusEffect(
   }, [id])
 );
 
-   const handleSearch = (query: string) => {
-  setSearchQuery(query);
+//   const handleSearch = (query: string) => {
+//   // Only remove leading spaces, but allow numbers and special characters within the text
+//   const cleanedQuery = query.replace(/^\s+/, '');
+  
+//   setSearchQuery(cleanedQuery);
+//   setSearchError(null); // Clear any previous error
+  
+//   if (cleanedQuery === "") {
+//     setFilteredCrops(crops);
+//   } else {
+//     const filtered = crops.filter((crop) =>
+//       crop.displayName.toLowerCase().includes(cleanedQuery.toLowerCase())
+//     );
+//     setFilteredCrops(filtered);
+    
+//     // Set error if no results found
+//     if (filtered.length === 0) {
+//       setSearchError("No products found matching your search");
+//     }
+//   }
+// };
+
+const handleSearch = (query: string) => {
+  let cleanedQuery = query;
+  
+  // Remove special characters, keep only letters (a-z, A-Z), numbers (0-9), and spaces
+  cleanedQuery = cleanedQuery.replace(/[^a-zA-Z0-9\s]/g, '');
+  
+  // If the query starts with space and there's no letter/number before it, remove the leading space
+  if (cleanedQuery.length > 0 && cleanedQuery[0] === ' ') {
+    cleanedQuery = cleanedQuery.replace(/^\s+/, '');
+  }
+  
+  // Prevent multiple consecutive spaces
+  cleanedQuery = cleanedQuery.replace(/\s+/g, ' ');
+  
+  setSearchQuery(cleanedQuery);
   setSearchError(null); // Clear any previous error
   
-  if (query === "") {
+  if (cleanedQuery === "") {
     setFilteredCrops(crops);
   } else {
     const filtered = crops.filter((crop) =>
-      crop.displayName.toLowerCase().includes(query.toLowerCase())
+      crop.displayName.toLowerCase().includes(cleanedQuery.toLowerCase())
     );
     setFilteredCrops(filtered);
     
@@ -119,6 +154,21 @@ useFocusEffect(
     }
   }
 };
+
+
+useEffect(() => {
+  const unsubscribe = navigation.addListener('focus', () => {
+    // Clear search state when screen comes into focus
+    setSearchQuery("");
+    setSearchError(null);
+    // Reset filtered crops to show all crops
+    if (crops.length > 0) {
+      setFilteredCrops(crops);
+    }
+  });
+
+  return unsubscribe;
+}, [navigation, crops]);
 
   const handlesubmitexcludelist = async () => {
 
@@ -194,7 +244,8 @@ useFocusEffect(
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       enabled
-      className="flex-1  bg-white"
+       style={{ flex: 1}}
+      className=" bg-white"
     >
       <View className="flex-1 ">
   
@@ -261,20 +312,19 @@ useFocusEffect(
 </View>
 
     {searchError && (
-                    <View>
-                      <View className="bg-red-50 px-4 py-2 mt-2 rounded-lg border border-red-200">
-                        <Text className="text-red-600 text-center">{searchError}</Text>
-                      </View>
-                      <View className="justify-center items-center mt-4">
-                        <LottieView
-                          source={require("../assets/images/NoComplaints.json")}
-                          style={{ width: wp(50), height: hp(50) }}
-                          autoPlay
-                          loop
-                        />
-                      
-                      </View>
-                    </View>
+                   <View className="flex-1">
+    <View className="justify-center items-center mt-4">
+      <LottieView
+        source={require("../assets/images/NoComplaints.json")}
+        style={{ width: wp(50), height: hp(50) }}
+        autoPlay
+        loop
+      />
+    </View>
+    <View className="justify-center items-center mt-[-50]">
+      <Text className="text-red-600 text-center text-base">{searchError}</Text>
+    </View>
+  </View>
                   )}
                 {/* <ScrollView
           className="flex-1  px-3 mb-[45%]"

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform, ScrollView, Alert, BackHandler } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform, ScrollView, Alert, BackHandler, SafeAreaView } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types"; 
 import Icon from "react-native-vector-icons/Ionicons"; 
@@ -9,6 +9,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import environment from "@/environment/environment";
 import { Keyboard } from "react-native";
 import { useFocusEffect } from "expo-router";
+
 
 // Navigation type
 type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, "LoginScreen">;
@@ -118,24 +119,30 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   );
 
   return (
-    <KeyboardAvoidingView 
-                       behavior={Platform.OS === "ios" ? "padding" : "height"}
-                       className="flex-1"
-                     >
+  
+        <KeyboardAvoidingView 
+        enabled
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 ,backgroundColor: "white" }}
+        className="bg-white"
+      >
+
     <ScrollView 
+    
       contentContainerStyle={{ flexGrow: 1 }} 
       keyboardShouldPersistTaps="handled"
     >
-    <View className="flex-1 bg-white">
-      <View className="h-96">
-      <LinearGradient colors={["#854BDA", "#6E3DD1"]} className="flex-1 items-center justify-center">
+            <View className="h-96 ">
+      <LinearGradient colors={["#854BDA", "#6E3DD1"]} className="flex-1 items-center justify-center mb-20">
         <Image source={require("../assets/images/lgooo.webp")} className="w-auto h-[60%]" resizeMode="contain" />
       </LinearGradient>
       </View>
 
+    <View className="flex-1 bg-white">
+
       {/* Form Section */}
 
-      <View className="flex-1 bg-white px-9 py-8 rounded-t-3xl shadow-lg -mt-8">
+      <View className="flex-1 bg-white px-9 py-8 rounded-t-3xl shadow-lg -mt-28 pt-10">
         <Text className="text-center text-xl font-bold text-[#6C3CD1] mb-6 mt-[6%]">Welcome to Sign in</Text>
 
         {error1.length > 0 && (
@@ -150,14 +157,18 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         )}
         <View className="border border-gray-300 rounded-full px-4 mb-4 flex-row items-center bg-gray-100 mt-5">
 
-          <TextInput
-            placeholder="Employee ID"
-            placeholderTextColor="#A3A3A3"
-            className="flex-1 py-3 text-gray-800"
-            value={empId}
-               onChangeText={(text) => setEmpId(text)}
-    autoCapitalize="characters"  // Automatically capitalizes all letters
-  />
+  <TextInput
+  placeholder="Employee ID"
+  placeholderTextColor="#A3A3A3"
+  className="flex-1 py-3 text-gray-800"
+  value={empId}
+  onChangeText={(text) => {
+    // Convert to uppercase automatically
+    const upperCaseText = text.toUpperCase();
+    setEmpId(upperCaseText);
+  }}
+  autoCapitalize="characters"  // This helps with keyboard suggestions
+/>
         </View>
         {error2.length > 0 && (
           <View className="-mb-3">
@@ -194,7 +205,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       </View>
     </View>
     </ScrollView>
-    </KeyboardAvoidingView>
+ 
+         </KeyboardAvoidingView>
   );
 };
 

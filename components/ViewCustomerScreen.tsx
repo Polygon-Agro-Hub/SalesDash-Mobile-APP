@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { 
   View, 
   Text, 
@@ -12,9 +12,10 @@ import {
   KeyboardAvoidingView, 
   ScrollView,
   ActivityIndicator,
-  RefreshControl
+  RefreshControl,
+  BackHandler
 } from "react-native";
-import { RouteProp } from "@react-navigation/native";
+import { RouteProp, useFocusEffect } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
@@ -77,15 +78,46 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
   const { name, number, id, customerId, title } = route.params;
   console.log("parid",id)
 
-  useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
-    const keyboardDidHideListener = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false));
+  useFocusEffect(
+  React.useCallback(() => {
+    console.log("Screen focused - resetting states");
+    const resetStates = () => {
+      setSearchText("");
+      setSelectedFilter("Ordered");
+      setOrders([]);
+      setCurrentPage(1);
+      setHasMore(true);
+      setTotalCount(0);
+      setLoading(true);
+      setLoadingMore(false);
+      setError(null);
+      setSearchError(null);
+    };
+
+    resetStates();
+    loadOrders(1, true, false);
 
     return () => {
-      keyboardDidShowListener.remove();
-      keyboardDidHideListener.remove();
+      console.log("Screen unfocused - cleanup");
+      // Any cleanup if needed when screen loses focus
     };
-  }, []);
+  }, [id]) // Re-run when customer id changes
+);
+
+   useFocusEffect(
+      useCallback(() => {
+        const onBackPress = () => {
+          // Navigate to ViewCustomerScreen instead of going back to main dashboard
+          navigation.navigate("CustomersScreen" as any);
+          return true; // Prevent default back behavior
+        };
+  
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+  
+        return () => backHandler.remove(); // Cleanup on unmount
+      }, [navigation])
+    );
+  
 
   const loadOrders = async (page = 1, showFullLoading = true, isLoadMore = false) => {
     try {
@@ -262,6 +294,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
     // Initial load
     loadOrders(1, true, false);
 
+
     // Cleanup function
     return () => {
       console.log("Component unmounting");
@@ -287,7 +320,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
     <KeyboardAvoidingView 
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       enabled 
-      className="flex-1"
+      style={{flex: 1}}
     >
       <View className="flex-1 bg-white">
         {/* Header Section */}
@@ -384,7 +417,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
         {/* Search and Filters */}
         <View className="mx-5">
           <View className="flex-row items-center bg-[#F5F1FC] px-8 py-2 border border-[#6B3BCF] rounded-full mt-4 shadow-sm">
-            <TextInput
+            {/* <TextInput
               placeholder="Search By Order Number"
               placeholderTextColor="#000000"
               className="flex-1 text-sm text-black"
@@ -393,7 +426,21 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
               style={{ fontStyle: 'italic' }}
               onSubmitEditing={handleSearch}
               returnKeyType="search"
-            />
+              
+            /> */}
+             <TextInput
+    placeholder="Search By Order Number"
+    placeholderTextColor="#6839CF"
+    className="flex-1 text-sm text-purple"
+    onChangeText={(text) => {
+      // Only allow numbers - remove all letters, special characters, and spaces
+      const numericOnly = text.replace(/[^0-9]/g, '');
+      setSearchText(numericOnly);
+    }}
+    value={searchText}
+    style={{ fontStyle: 'italic' }}
+    keyboardType="numeric" // This shows numeric keyboard on mobile
+  />
             <TouchableOpacity onPress={handleSearch}>
               <Image source={require("../assets/images/search.webp")} className="w-8 h-8" />
             </TouchableOpacity>
@@ -402,23 +449,24 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
           {/* Search Error Message - Show when typing and no results found */}
           {searchError && (
             <View>
-              <View className="bg-red-50 px-4 py-2 mt-2 rounded-lg border border-red-200">
-                <Text className="text-red-600 text-center">{searchError}</Text>
-              </View>
+             
               <View className="justify-center items-center mt-4">
                 <LottieView
-                  source={require("../assets/images/NoComplaints.json")}
-                  style={{ width: wp(50), height: hp(50) }}
-                  autoPlay
-                  loop
-                />
-                <Text className="text-gray-500 mt-2">No data found</Text>
-              </View>
+                                          source={require("../assets/images/NoComplaints.json")}
+                                          style={{ width: wp(50), height: hp(50) }}
+                                          autoPlay
+                                          loop
+                                        />
+                                     
+                                      </View>
+                                      <View className="mt-[-80]">
+                                        <Text className="text-red-600 text-center text-base">No data Found</Text>
+                                      </View>
             </View>
           )}
         </View>
 
-        <View className="mt-4">
+        {/* <View className="mt-4">
           <ScrollView 
             horizontal 
             showsHorizontalScrollIndicator={false}
@@ -445,7 +493,37 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
               </TouchableOpacity>
             ))}
           </ScrollView>
-        </View>
+        </View> */}
+        { !searchError && (
+  <View className="mt-4">
+    <ScrollView 
+      horizontal 
+      showsHorizontalScrollIndicator={false}
+      className="flex-row flex-wrap mt-[2%] mb-[1%] mx-[2%]"
+      contentContainerStyle={{ paddingHorizontal: wp('1%') }}
+    >
+      {filters.map((filter) => (
+        <TouchableOpacity
+          key={filter}
+          className={`px-4 py-2 rounded-full border mr-2 ${
+            selectedFilter === filter 
+              ? "bg-[#6B3BCF] border-[#6B3BCF]" 
+              : "border-[#6B3BCF]"
+          }`}
+          onPress={() => setSelectedFilter(filter)}
+        >
+          <Text className={`text-center text-sm ${
+            selectedFilter === filter 
+              ? "text-white font-bold" 
+              : "text-[#6B3BCF]"
+          }`}>
+            {filter}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
+  </View>
+)}
 
         <View className="flex-1 mt-3">
           {/* Orders List */}
@@ -474,7 +552,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
               renderItem={({ item }) => (
                 <TouchableOpacity 
                   onPress={() => navigation.navigate("View_CancelOrderScreen" as any, { 
-                    orderId: item.orderId
+                    orderId: item.orderId,
+                    status:item.status
                   })}
                 >
                   <View className="bg-white rounded-2xl p-4 mb-4 border border-gray-200 mx-4 shadow-sm mt-4">

@@ -1,15 +1,21 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Keyboard, Platform, KeyboardAvoidingView, SafeAreaView, Alert, ActivityIndicator } from "react-native";
+import React, { useState, useEffect, useCallback } from "react";
+import { View, Text, ScrollView, TextInput, TouchableOpacity, Keyboard, Platform, KeyboardAvoidingView, SafeAreaView, Alert, ActivityIndicator, BackHandler } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import { LinearGradient } from "expo-linear-gradient";
-import { widthPercentageToDP as wp } from "react-native-responsive-screen";
+import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
 import BackButton from "./BackButton";
 import axios from "axios";
 import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SelectList } from "react-native-dropdown-select-list";
 import DropDownPicker from "react-native-dropdown-picker";
+import { useFocusEffect } from "expo-router";
+import { AntDesign, Ionicons } from "@expo/vector-icons";
+
+
+
+
 
 type AddCustomersScreenNavigationProp = StackNavigationProp<RootStackParamList, "AddCustomersScreen">;
 
@@ -61,10 +67,107 @@ const [token, setToken] = useState<string | null>(null);
   const [openCityDropdown, setOpenCityDropdown] = useState(false);
 const [cityItems, setCityItems] = useState<{label: string, value: string}[]>([]);
 
+  const [openBuildingTypeDropdown, setOpenBuildingTypeDropdown] = useState(false);
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+  const [titleDropdownOpen, setTitleDropdownOpen] = useState(false);
+  const [titleItems, setTitleItems] = useState([
+  { label: 'Rev', value: 'Rev' },
+  { label: 'Mr', value: 'Mr' },
+  { label: 'Ms', value: 'Ms' },
+  { label: 'Mrs', value: 'Mrs' }
+]);
+const [buildingTypeItems, setBuildingTypeItems] = useState([
+  { label: "House", value: "House" },
+  { label: "Apartment", value: "Apartment" },
+]);
+
   const buildingOptions = [
     { key: "1", value: "House" },
     { key: "2", value: "Apartment" },
   ];
+
+    const resetForm = () => {
+    setFirstName("");
+    setLastName("");
+    setPhoneNumber("");
+    setSelectedCategory('')
+    setTitleDropdownOpen(false)
+    setEmail("");
+    setHouseNo("");
+    setStreetName("");
+    setCity("");
+    setbuildingNo("");
+    setfloorNo("");
+    setunitNo("");
+    setbuildingName("");
+    setBuildingType("");
+    setSelectedCategory("");
+    setLoading(false);
+    setOtpSent(false);
+    setOpenBuildingTypeDropdown(false);
+    setEmailError("");
+    setPhoneError("");
+    setFirstNameError("");
+    setLastNameError("");
+    setBuildingTypeError("");
+    setTitleError("");
+    setIsSubmitting(false);
+    setTouchedFields({
+      email: false,
+      phoneNumber: false,
+      firstName: false,
+      lastName: false
+    });
+
+  };
+
+
+
+
+// useEffect(() => {
+//   const keyboardDidShowListener = Keyboard.addListener(
+//     'keyboardDidShow',
+//     () => {
+//       setKeyboardVisible(true);
+//     }
+//   );
+//   const keyboardDidHideListener = Keyboard.addListener(
+//     'keyboardDidHide',
+//     () => {
+//       setKeyboardVisible(false);
+//     }
+//   );
+
+//   return () => {
+//     keyboardDidHideListener?.remove();
+//     keyboardDidShowListener?.remove();
+//   };
+// }, []);
+
+// useFocusEffect(
+//   React.useCallback(() => {
+//     // Only set to 0 if keyboard is not visible
+//     if (!isKeyboardVisible) {
+//       dispatch(setInputClick(0));
+//     }
+//   }, [isKeyboardVisible])
+// );
+
+
+
+  // Reset form when screen comes into focus
+ useFocusEffect(
+  React.useCallback(() => {
+    console.log("Screen focused - resetting form");
+    resetForm();
+    fetchCity();
+
+    return () => {
+      console.log("Screen unfocused - cleanup");
+      // Additional cleanup if needed
+    };
+  }, [])
+);
   
   const sendOTP = async () => {
     if (!phoneNumber) {
@@ -141,9 +244,145 @@ const [cityItems, setCityItems] = useState<{label: string, value: string}[]>([])
 const validateName = (name: string) => {
   return /^[A-Z][a-z]*$/.test(name);
 };
-  const validateEmail = (email: string) => emailRegex.test(email);
+  // const validateEmail = (email: string) => emailRegex.test(email);
 
-  // Validate email when it changes
+ // Enhanced Email Validation Functions
+const validateEmail = (email: string): boolean => {
+  // Basic email format check
+  const generalEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  
+  if (!generalEmailRegex.test(email)) {
+    return false;
+  }
+  
+  // Extract local part and domain
+  const emailLower = email.toLowerCase();
+  const [localPart, domain] = emailLower.split('@');
+  
+  // Check for specific allowed domains
+  const allowedSpecificDomains = ['gmail.com', 'googlemail.com', 'yahoo.com'];
+  const allowedTLDs = ['.com', '.gov', '.lk'];
+  
+  // Gmail/Googlemail specific validation
+  if (domain === 'gmail.com' || domain === 'googlemail.com') {
+    return validateGmailLocalPart(localPart);
+  }
+  
+  // Yahoo validation (standard email rules)
+  if (domain === 'yahoo.com') {
+    return validateYahooLocalPart(localPart);
+  }
+  
+  // Check for other allowed domains (.com, .gov, .lk)
+  for (const tld of allowedTLDs) {
+    if (domain.endsWith(tld)) {
+      return validateGeneralLocalPart(localPart);
+    }
+  }
+  
+  return false;
+};
+
+// Gmail-specific local part validation
+const validateGmailLocalPart = (localPart: string): boolean => {
+  // Gmail rules:
+  // 1. Only alphanumeric characters, dots (.), and plus signs (+) allowed
+  // 2. No consecutive dots
+  // 3. No leading or trailing dots
+  // 4. Must be 6-30 characters long
+  
+  // // Check length
+  // if (localPart.length < 6 || localPart.length > 30) {
+  //   return false;
+  // }
+  
+  // Check for valid characters only (a-z, 0-9, ., +)
+  const validCharsRegex = /^[a-zA-Z0-9.+]+$/;
+  if (!validCharsRegex.test(localPart)) {
+    return false;
+  }
+  
+  // Check for leading or trailing dots
+  if (localPart.startsWith('.') || localPart.endsWith('.')) {
+    return false;
+  }
+  
+  // Check for consecutive dots
+  if (localPart.includes('..')) {
+    return false;
+  }
+  
+  // Must have at least one character
+  if (localPart.length === 0) {
+    return false;
+  }
+  
+  return true;
+};
+
+// Yahoo-specific local part validation
+const validateYahooLocalPart = (localPart: string): boolean => {
+  // Yahoo rules:
+  // 1. Only alphanumeric characters, dots (.), underscores (_), and hyphens (-) allowed
+  // 2. No consecutive dots
+  // 3. No leading or trailing dots/underscores/hyphens
+  // 4. Must be 4-32 characters long
+  
+  // Check length
+  if (localPart.length < 4 || localPart.length > 32) {
+    return false;
+  }
+  
+  // Check for valid characters only
+  const validCharsRegex = /^[a-zA-Z0-9._-]+$/;
+  if (!validCharsRegex.test(localPart)) {
+    return false;
+  }
+  
+  // Check for leading or trailing special characters
+  if (/^[._-]|[._-]$/.test(localPart)) {
+    return false;
+  }
+  
+  // Check for consecutive dots
+  if (localPart.includes('..')) {
+    return false;
+  }
+  
+  return true;
+};
+
+// General local part validation for other domains
+const validateGeneralLocalPart = (localPart: string): boolean => {
+  // General rules:
+  // 1. Only alphanumeric characters, dots (.), underscores (_), hyphens (-), and plus signs (+) allowed
+  // 2. No consecutive dots
+  // 3. No leading or trailing dots
+  // 4. Must be 1-64 characters long
+  
+  // Check length
+  if (localPart.length < 1 || localPart.length > 64) {
+    return false;
+  }
+  
+  // Check for valid characters
+  const validCharsRegex = /^[a-zA-Z0-9._%+-]+$/;
+  if (!validCharsRegex.test(localPart)) {
+    return false;
+  }
+  
+  // Check for leading or trailing dots
+  if (localPart.startsWith('.') || localPart.endsWith('.')) {
+    return false;
+  }
+  
+  // Check for consecutive dots
+  if (localPart.includes('..')) {
+    return false;
+  }
+  
+  return true;
+};
 
 
   useEffect(() => {
@@ -156,18 +395,88 @@ const validateName = (name: string) => {
     }
   }, [selectedCategory, touchedFields.title]);
   
-  useEffect(() => {
+  // useEffect(() => {
+  //   if (touchedFields.email) {
+  //     if (!email) {
+  //       setEmailError("Email is required");
+  //     } else if (!validateEmail(email)) {
+  //       setEmailError("Please enter a valid email address");
+  //     } else {
+  //       setEmailError("");
+  //     }
+  //   }
+  // }, [email, touchedFields.email]);
+
+// Updated useEffect for email validation with specific error messages
+useEffect(() => {
     if (touchedFields.email) {
       if (!email) {
         setEmailError("Email is required");
       } else if (!validateEmail(email)) {
-        setEmailError("Please enter a valid email address");
+        // Provide specific error messages based on domain and validation issues
+        const emailLower = email.toLowerCase();
+        const [localPart, domain] = emailLower.split('@');
+        
+        // Check if email format is completely invalid
+        const generalEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!generalEmailRegex.test(email)) {
+          setEmailError("Please enter a valid email address");
+          return;
+        }
+        
+        if (domain === 'gmail.com' || domain === 'googlemail.com') {
+          // Gmail-specific errors
+          if (localPart.length > 30) {
+            setEmailError("Gmail addresses cannot exceed 30 characters before @");
+          } else if (/\.{2,}/.test(localPart)) {
+            setEmailError("Gmail addresses cannot have consecutive dots");
+          } else if (/^\.|\.$/.test(localPart)) {
+            setEmailError("Gmail addresses cannot start or end with a dot");
+          } else if (!/^[a-zA-Z0-9.+]+$/.test(localPart)) {
+            setEmailError("Gmail addresses can only contain letters, numbers, dots and plus signs");
+          } else {
+            setEmailError("Please enter a valid Gmail address");
+          }
+        } else if (domain === 'yahoo.com') {
+          // Yahoo-specific errors
+          if (localPart.length > 32) {
+            setEmailError("Yahoo addresses cannot exceed 32 characters before @");
+          } else if (/\.{2,}/.test(localPart)) {
+            setEmailError("Yahoo addresses cannot have consecutive dots");
+          } else if (/^[._-]|[._-]$/.test(localPart)) {
+            setEmailError("Yahoo addresses cannot start or end with dots, underscores or hyphens");
+          } else if (!/^[a-zA-Z0-9._-]+$/.test(localPart)) {
+            setEmailError("Yahoo addresses can only contain letters, numbers, dots, underscores and hyphens");
+          } else {
+            setEmailError("Please enter a valid Yahoo address");
+          }
+        } else {
+          // Check if domain is supported
+          const allowedTLDs = ['.com', '.gov', '.lk'];
+          const isDomainSupported = allowedTLDs.some(tld => domain.endsWith(tld));
+          
+          if (!isDomainSupported) {
+            setEmailError("Please enter a valid email address with a supported domain (.com, .gov, .lk)");
+          } else {
+            // General validation errors
+            if (localPart.length > 64) {
+              setEmailError("Email address is too long");
+            } else if (/\.{2,}/.test(localPart)) {
+              setEmailError("Email addresses cannot have consecutive dots");
+            } else if (/^\.|\.$/.test(localPart)) {
+              setEmailError("Email addresses cannot start or end with a dot");
+            } else if (!/^[a-zA-Z0-9._%+-]+$/.test(localPart)) {
+              setEmailError("Please enter a valid email address");
+            } else {
+              setEmailError("Please enter a valid email address");
+            }
+          }
+        }
       } else {
         setEmailError("");
       }
     }
   }, [email, touchedFields.email]);
-
   // Validate phone when it changes
   useEffect(() => {
     if (touchedFields.phoneNumber) {
@@ -280,12 +589,12 @@ const handleRegister = async () => {
     firstName: true,
     lastName: true,
     phoneNumber: true,
-    email: true,
+  
     buildingType: true
   });
   
   // Validate required fields
-  if (!selectedCategory || !firstName || !lastName || !phoneNumber || !email || !buildingType) {
+  if (!selectedCategory || !firstName || !lastName || !phoneNumber ||  !buildingType) {
     Alert.alert("Error", "Please fill in all required fields.");
     setIsSubmitting(false);
     return;
@@ -313,16 +622,17 @@ const handleRegister = async () => {
     return;
   }
   
-  if (!validateEmail(email)) {
-    Alert.alert("Error", "Please enter a valid email address.");
+   if (email && !validateEmail(email)) {
+  //  Alert.alert("Error", "Please enter a valid email address or leave it blank.");
     setIsSubmitting(false);
     return;
   }
   
+  
   try {
     const checkResponse = await axios.post(`${environment.API_BASE_URL}api/customer/check-customer`, {
       phoneNumber,
-      email,
+      email: email || null,
     });
     
     const customerData = {
@@ -330,7 +640,7 @@ const handleRegister = async () => {
       firstName,
       lastName,
       phoneNumber,
-      email,
+      email: email || null,
       buildingType,
       houseNo,
       streetName,
@@ -348,46 +658,112 @@ const handleRegister = async () => {
   } catch (error: any) {
     console.log("Error checking customer:", error);
     
-    if (error.response && error.response.status === 400) {
-      if (error.response.data.message && 
-          error.response.data.message.includes("Phone number or email already exists")) {
-        
-        // Make two separate checks to determine which credential is duplicated
-        try {
-          // First, check just the phone number
-          const phoneCheckResponse = await axios.post(`${environment.API_BASE_URL}api/customer/check-customer`, {
-            phoneNumber,
-            email: `temp_${new Date().getTime()}@example.com`, // Use a temporary unique email
-          });
+    // Check if it's an Axios error
+    if (axios.isAxiosError(error)) {
+      if (error.response && error.response.status === 400) {
+        if (error.response.data.message && 
+            error.response.data.message.includes("Phone number or email already exists")) {
           
-          // If we get here, the phone number is unique, so email must be duplicated
-          Alert.alert(
-            "Email Already Exists",
-            "This email is already registered. Please sign in or use a different email."
-          );
-        } catch (phoneCheckError: any) { // Add type annotation here
-          // If this check fails, it means the phone number is duplicated
-          // But we should verify the error is the same duplicate error
-          if (phoneCheckError?.response?.status === 400 && 
-              phoneCheckError?.response?.data?.message?.includes("Phone number or email already exists")) {
+          // Check which credential is duplicated by making separate API calls
+          try {
+            // Check if phone number exists by using a unique temporary email
+            const tempEmail = `temp_${new Date().getTime()}_${Math.random().toString(36).substr(2, 9)}@tempcheck.com`;
             
+            await axios.post(`${environment.API_BASE_URL}api/customer/check-customer`, {
+              phoneNumber,
+              email: tempEmail,
+            });
+            
+            // If we reach here, phone number is unique, so email must be duplicated
             Alert.alert(
-              "Phone Number Already Exists",
-              "This phone number is already registered. Please sign in or use a different phone number."
+              "Email Already Exists",
+              "This email is already registered. Please sign in or use a different email."
             );
-          } else {
-            // Some other error with our check
-            Alert.alert(
-              "Account Already Exists",
-              "An account with this phone number or email already exists. Please sign in instead."
-            );
+            
+          } catch (phoneCheckError: any) {
+            if (axios.isAxiosError(phoneCheckError) && 
+                phoneCheckError.response?.status === 400 && 
+                phoneCheckError.response?.data?.message?.includes("Phone number or email already exists")) {
+              
+              // Phone number is duplicated, now check if email is also duplicated
+              try {
+                const tempPhone = `+94${new Date().getTime().toString().substr(-9)}`; // Generate unique temp phone
+                
+                await axios.post(`${environment.API_BASE_URL}api/customer/check-customer`, {
+                  phoneNumber: tempPhone,
+                  email,
+                });
+                
+                // If we reach here, email is unique, so only phone is duplicated
+                Alert.alert(
+                  "Phone Number Already Exists",
+                  "This phone number is already registered. Please sign in or use a different phone number."
+                );
+                
+              } catch (emailCheckError: any) {
+                if (axios.isAxiosError(emailCheckError) && 
+                    emailCheckError.response?.status === 400 && 
+                    emailCheckError.response?.data?.message?.includes("Phone number or email already exists")) {
+                  
+                  // Both phone and email are duplicated
+                  Alert.alert(
+                    "Account Already Exists",
+                    "Both phone number and email are already registered. Please sign in instead."
+                  );
+                } else {
+                  // Email is unique, only phone is duplicated
+                  Alert.alert(
+                    "Phone Number Already Exists",
+                    "This phone number is already registered. Please sign in or use a different phone number."
+                  );
+                }
+              }
+            } else {
+              // Some other error occurred during phone check
+              Alert.alert(
+                "Registration Error", 
+                "Unable to verify account details. Please try again."
+              );
+            }
           }
+        } else {
+          // Different 400 error message
+          Alert.alert(
+            "Registration Error", 
+            error.response.data.message || "Registration failed. Please check your details and try again."
+          );
         }
+      } else if (error.response && error.response.status === 409) {
+        // Handle conflict status if your API uses it for duplicates
+        Alert.alert(
+          "Account Already Exists",
+          "An account with this phone number or email already exists. Please sign in instead."
+        );
+      } else if (error.response && error.response.status >= 500) {
+        // Server error
+        Alert.alert(
+          "Server Error", 
+          "Our servers are experiencing issues. Please try again later."
+        );
       } else {
-        Alert.alert("Error", "Registration failed. Please try again.");
+        // Other Axios errors
+        Alert.alert(
+          "Registration Error", 
+          "Registration failed. Please try again."
+        );
       }
+    } else if (error && typeof error === 'object' && 'code' in error && error.code === 'NETWORK_ERROR') {
+      // Network error
+      Alert.alert(
+        "Network Error", 
+        "Please check your internet connection and try again."
+      );
     } else {
-      Alert.alert("Error", "Registration failed. Please try again.");
+      // Other errors
+      Alert.alert(
+        "Registration Error", 
+        "Registration failed. Please try again."
+      );
     }
   } finally {
     setIsSubmitting(false);
@@ -402,40 +778,95 @@ const capitalizeFirstLetter = (text: string) => {
 
 
 
-  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
-    
-  useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
-    const keyboardDidHideListener = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false));
-    return () => {
-      keyboardDidShowListener.remove();
-      keyboardDidHideListener.remove();
-    };
-  }, []);
+
+
+  const handlePhoneNumberChange = (text: string) => {
+  // Always ensure the input starts with +94
+  if (!text.startsWith('+94')) {
+    // If user tries to delete +94, restore it
+    if (text.length < 3) {
+      setPhoneNumber('+94');
+      return;
+    }
+    // If user types without +94, add it
+    text = '+94' + text.replace(/^\+?94?/, '');
+  }
+  
+  // Limit to 12 characters total (+94 + 9 digits)
+  if (text.length > 12) {
+    text = text.substring(0, 12);
+  }
+  
+  // Only allow numbers after +94
+  const cleanText = text.substring(0, 3) + text.substring(3).replace(/[^0-9]/g, '');
+  
+  setPhoneNumber(cleanText);
+};
+
+ useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        // Navigate to ViewCustomerScreen instead of going back to main dashboard
+        navigation.navigate("CustomersScreen" as any);
+        return true; // Prevent default back behavior
+      };
+
+      const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+      return () => backHandler.remove(); // Cleanup on unmount
+    }, [navigation])
+  );
+
+const capitalizeWords = (text: string) => {
+  return text.replace(/\b\w/g, (char) => char.toUpperCase());
+};    
+
+
+
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-       <KeyboardAvoidingView 
-    behavior={Platform.OS ==="ios" ? "padding" : "height"}
-  enabled 
-  className="flex-1"
+  
+  <KeyboardAvoidingView 
+  behavior={Platform.OS === "ios" ? "padding" : "height"}
+  keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })} // Adjust this value as needed
+    style={{ flex: 1 ,backgroundColor: "white" }}
 >
+    <SafeAreaView className="flex-1 bg-white">
+{/* <KeyboardAwareScrollView
+  contentContainerStyle={{ flexGrow: 1 }}
+  keyboardShouldPersistTaps="handled"
+  enableOnAndroid={true}
+> */}
         <View className="flex-1 bg-white py-4 p-2">
           <View className="p-[-2]">
             <View className="bg-white flex-row items-center h-17 shadow-lg px-1">
-              <BackButton navigation={navigation} />
+              {/* <BackButton navigation={navigation} /> */}
+               <TouchableOpacity 
+                              style={{ paddingHorizontal: wp(2), paddingVertical: hp(2) }}
+                              onPress={() => navigation.navigate("CustomersScreen")}>
+                              <View className="w-9 h-9 bg-[#F6F6F680] rounded-full justify-center items-center">
+                                <AntDesign name="left" size={20} color="black" />
+                              </View>
+                            </TouchableOpacity> 
+              
               <Text style={{ fontSize: 18 }} className="font-bold text-center text-purple-600 flex-grow mr-9">
                 New Customer Registration
               </Text>
             </View>
           </View>
 
-          <ScrollView className="flex-1 " keyboardShouldPersistTaps="handled">
+          {/* <ScrollView className="flex-1 " keyboardShouldPersistTaps="handled"> */}
+          <ScrollView 
+  contentContainerStyle={{ 
+    paddingBottom: isKeyboardVisible ? 200 : 0 // Adjust this value as needed
+  }}
+  keyboardShouldPersistTaps="handled"
+>
             <View className="p-3 px-6">
               <View className="mb-4 mt-4 flex-row justify-between">
                 <View className="flex-[1]">
                   <Text className="text-gray-700 mb-1">Title *</Text>
-                  <SelectList
+                  {/* <SelectList
   setSelected={setSelectedCategory} 
   data={[
       { key: 'Rev', value: 'Rev' },
@@ -455,26 +886,42 @@ const capitalizeFirstLetter = (text: string) => {
   }}
   search={false} 
   placeholder="Title" 
+/> */}
+<DropDownPicker
+  open={titleDropdownOpen}
+  value={selectedCategory}
+  items={titleItems}
+  setOpen={setTitleDropdownOpen}
+  setValue={setSelectedCategory}
+  setItems={setTitleItems}
+  style={{
+    backgroundColor: '#F6F6F6',
+    borderColor: '#F6F6F6',
+    borderRadius: 30,
+    paddingVertical: 5,
+    minHeight: 40,
+  }}
+  textStyle={{
+    color: 'black',
+  }}
+  searchable={false}
+  placeholder="Title"
+  zIndex={1000}
+  zIndexInverse={3000}
+  dropDownContainerStyle={{
+      backgroundColor: '#F6F6F6',
+      borderColor: '#F6F6F6',
+    }}
+  listMode="SCROLLVIEW"
+  scrollViewProps={{
+    nestedScrollEnabled: true,
+  }}
 />
-
                 </View>
 
                 <View className="flex-[2] ml-2">
   <Text className="text-gray-700 mb-1">First Name *</Text>
-  {/* <TextInput
-    className={`bg-[#F6F6F6] border ${firstNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
-    placeholder="First Name"
-    value={firstName}
-    onChangeText={(text) => {
-      setFirstName(text);
-      if (touchedFields.firstName && !text) {
-        setFirstNameError("First name is required");
-      } else if (touchedFields.firstName) {
-        setFirstNameError("");
-      }
-    }}
-    onBlur={() => handleFieldTouch("firstName")}
-  /> */}
+
  <TextInput
   className={`bg-[#F6F6F6] border ${firstNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
   placeholder="First Name"
@@ -487,7 +934,11 @@ const capitalizeFirstLetter = (text: string) => {
       setFirstNameError("");
     }
   }}
-  onBlur={() => handleFieldTouch("firstName")}
+ 
+                    onBlur={() => {
+                      handleFieldTouch("firstName");
+               
+                    }}
 />
   {firstNameError ? (
     <Text className="text-red-500 text-xs pl-4 pt-1">{firstNameError}</Text>
@@ -497,20 +948,7 @@ const capitalizeFirstLetter = (text: string) => {
 
               <View className="mb-4">
   <Text className="text-gray-700 mb-1">Last Name *</Text>
-  {/* <TextInput
-    className={`bg-[#F6F6F6] border ${lastNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
-    placeholder="Last Name"
-    value={lastName}
-    onChangeText={(text) => {
-      setLastName(text);
-      if (touchedFields.lastName && !text) {
-        setLastNameError("Last name is required");
-      } else if (touchedFields.lastName) {
-        setLastNameError("");
-      }
-    }}
-    onBlur={() => handleFieldTouch("lastName")}
-  /> */}
+
   <TextInput
   className={`bg-[#F6F6F6] border ${lastNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
   placeholder="Last Name"
@@ -523,37 +961,42 @@ const capitalizeFirstLetter = (text: string) => {
       setLastNameError("");
     }
   }}
-  onBlur={() => handleFieldTouch("lastName")}
+
+                  onBlur={() => {
+                    handleFieldTouch("lastName");
+                  
+                  }}
 />
   {lastNameError ? (
     <Text className="text-red-500 text-xs pl-4 pt-1">{lastNameError}</Text>
   ) : null}
 </View>
 
-              <View className="mb-4">
-              <Text className="text-gray-700 mb-1"> Mobile Number *</Text>
-              <TextInput
-                className={`bg-[#F6F6F6] border ${phoneError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
-                placeholder="ex: +9477 XXXXXXX"
-                keyboardType="phone-pad"
-                value={phoneNumber}
-                onChangeText={setPhoneNumber}
-                maxLength={12} 
-                onBlur={() => handleFieldTouch("phoneNumber")}
-                onFocus={() => {
-    // Ensure +94 is there when focused
-    if (phoneNumber === "") {
-      setPhoneNumber("+94");
-    }
-  }}
-              />
-              {phoneError ? (
-                <Text className="text-red-500 text-xs pl-4 pt-1">{phoneError}</Text>
-              ) : null}
-            </View>
+          <View className="mb-4">
+  <Text className="text-gray-700 mb-1">Mobile Number *</Text>
+  <TextInput
+    className={`bg-[#F6F6F6] border ${phoneError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+    placeholder="+947XXXXXXXX"
+    value={phoneNumber}
+    onChangeText={handlePhoneNumberChange}
+    onBlur={() => handleFieldTouch("phoneNumber")}
+    keyboardType="phone-pad"
+    maxLength={12}
+    onFocus={() => {
+      // Ensure +94 is always present when focusing
+      if (!phoneNumber || phoneNumber.length < 3) {
+        setPhoneNumber('+94');
+     
+      }
+    }}
+    
+  />
+  {phoneError ? (
+    <Text className="text-red-500 text-xs pl-4 pt-1">{phoneError}</Text>
+  ) : null}
+</View>
 
-
-              <View className="mb-4">
+              {/* <View className="mb-4">
               <Text className="text-gray-700 mb-1">Email Address *</Text>
               <TextInput
                 className={`bg-[#F6F6F6] border ${emailError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
@@ -561,34 +1004,110 @@ const capitalizeFirstLetter = (text: string) => {
                 keyboardType="email-address"
                 value={email}
                 onChangeText={setEmail}
-                onBlur={() => handleFieldTouch("email")}
+                onFocus={handleInputFocus}
+                  onBlur={() => {
+                    handleFieldTouch("email");
+                    handleInputBlur();
+                  }}
               />
               {emailError ? (
                 <Text className="text-red-500 text-xs pl-4 pt-1">{emailError}</Text>
               ) : null}
-            </View>
+            </View> */}
+           {/* <View className="mb-4">
+  <Text className="text-gray-700 mb-1">Email Address *</Text>
+  <TextInput
+    className={`bg-[#F6F6F6] border ${emailError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+    placeholder="Email Address"
+    keyboardType="email-address"
+    autoCapitalize="none"
+    autoCorrect={false}
+    value={email}
+    onChangeText={(text) => {
+      setEmail(text.toLowerCase()); // Normalize to lowercase
+      if (touchedFields.email) {
+        handleFieldTouch("email");
+      }
+    }}
+
+  
+    onBlur={() => {
+      handleFieldTouch("email");
+     
+    }}
+  />
+  {emailError ? (
+    <Text className="text-red-500 text-xs pl-4 pt-1">{emailError}</Text>
+  ) : null}
+</View> */}
+<View className="mb-4">
+  <Text className="text-gray-700 mb-1">Email Address</Text> {/* Removed * */}
+  <TextInput
+    className={`bg-[#F6F6F6] border ${emailError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+    placeholder="Email Address "
+    keyboardType="email-address"
+    autoCapitalize="none"
+    autoCorrect={false}
+    value={email}
+    onChangeText={(text) => {
+      setEmail(text.toLowerCase());
+      if (touchedFields.email) {
+        handleFieldTouch("email");
+      }
+    }}
+    onBlur={() => {
+      // Only validate if email is provided
+      if (email) {
+        handleFieldTouch("email");
+      }
+    }}
+  />
+  {emailError ? (
+    <Text className="text-red-500 text-xs pl-4 pt-1">{emailError}</Text>
+  ) : null}
+</View>
 
               <View className="mb-4">
                 <Text className="text-gray-700 mb-1">Building Type *</Text>
              
-       <SelectList
-        setSelected={setBuildingType} 
-        data={buildingOptions} 
-         defaultOption={{ key: "", value: "" }} 
-       
-        boxStyles={{
-          backgroundColor: 'white',
-          borderColor: '#CFCFCF',
-          borderRadius: 30,
-        }}
-        dropdownTextStyles={{
-          color: '#000',
-        }}
-        search={false} 
-        placeholder="Select Building Type" 
-        save="value"
-        
-      /> 
+       <DropDownPicker
+    open={openBuildingTypeDropdown}
+    value={buildingType}
+    items={buildingTypeItems}
+    setOpen={setOpenBuildingTypeDropdown}
+    setValue={setBuildingType}
+    setItems={setBuildingTypeItems}
+    placeholder="Select Building Type"
+    style={{
+      backgroundColor: '#F6F6F6',
+      borderColor: '#F6F6F6',
+      borderRadius: 30,
+    }}
+    dropDownContainerStyle={{
+      backgroundColor: '#F6F6F6',
+      borderColor: '#F6F6F6',
+    }}
+    textStyle={{
+      fontSize: 14,
+      color: 'black',
+      marginLeft: 15,
+    }}
+    placeholderStyle={{
+      color: 'gray',
+      marginLeft: 15,
+    }}
+    listItemLabelStyle={{
+      color: 'black',
+    }}
+    showTickIcon={true}
+    activityIndicatorColor="#6E3DD1"
+    searchable={false}
+   listMode="SCROLLVIEW"
+  scrollViewProps={{
+    nestedScrollEnabled: true,
+  }}
+   
+  />
  
     
               </View>
@@ -601,7 +1120,12 @@ const capitalizeFirstLetter = (text: string) => {
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="Building / House No (e.g., 14/B)"
                       value={houseNo}
-                      onChangeText={setHouseNo}
+                    //  onChangeText={setHouseNo}
+                                       onChangeText={(text) => {
+    const capitalizedText = capitalizeWords(text);
+    setHouseNo(capitalizedText);
+  }}
+                      autoCapitalize="words" 
                     />
                   </View>
                   <View className="mb-4">
@@ -610,7 +1134,12 @@ const capitalizeFirstLetter = (text: string) => {
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="Street Name"
                       value={streetName}
-                      onChangeText={setStreetName}
+                    //  onChangeText={setStreetName}
+                     onChangeText={(text) => {
+    const capitalizedText = capitalizeWords(text);
+    setStreetName(capitalizedText);
+  }}
+                       autoCapitalize="words" 
                     />
                   </View>
              <View className="mb-4 z-10">
@@ -665,7 +1194,12 @@ const capitalizeFirstLetter = (text: string) => {
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="Apartment / Building Name"
                       value={buildingNo}
-                      onChangeText={setbuildingNo}
+                   //   onChangeText={setbuildingNo}
+                     onChangeText={(text) => {
+    const capitalizedText = capitalizeWords(text);
+    setbuildingNo(capitalizedText);
+  }}
+                     autoCapitalize="words" 
                     />
                   </View>
 
@@ -675,7 +1209,12 @@ const capitalizeFirstLetter = (text: string) => {
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="Apartment / Building Name"
                       value={ buildingName}
-                      onChangeText={ setbuildingName}
+                    //  onChangeText={ setbuildingName}
+                                         onChangeText={(text) => {
+    const capitalizedText = capitalizeWords(text);
+    setbuildingName(capitalizedText);
+  }}
+                      autoCapitalize="words" 
                     />
                   </View>
                   <View className="mb-4">
@@ -684,7 +1223,12 @@ const capitalizeFirstLetter = (text: string) => {
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="ex : Building B"
                       value={unitNo}
-                      onChangeText={setunitNo}
+                    //  onChangeText={setunitNo}
+                    onChangeText={(text) => {
+    const capitalizedText = capitalizeWords(text);
+    setunitNo(capitalizedText);
+  }}
+                      autoCapitalize="words" 
                     />
                   </View>
                   <View className="mb-4">
@@ -693,7 +1237,12 @@ const capitalizeFirstLetter = (text: string) => {
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="ex : 3rd Floor"
                       value={floorNo}
-                      onChangeText={setfloorNo}
+                   //   onChangeText={setfloorNo}
+                         onChangeText={(text) => {
+    const capitalizedText = capitalizeWords(text);
+    setfloorNo(capitalizedText);
+  }}
+                      autoCapitalize="words" 
                     />
                   </View>
 
@@ -703,7 +1252,12 @@ const capitalizeFirstLetter = (text: string) => {
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="ex : 14"
                       value={houseNo}
-                      onChangeText={setHouseNo}
+                     // onChangeText={setHouseNo}
+                                            onChangeText={(text) => {
+    const capitalizedText = capitalizeWords(text);
+    setHouseNo(capitalizedText);
+  }}
+                    autoCapitalize="words" 
                     />
                   </View>
                   <View className="mb-4">
@@ -712,7 +1266,12 @@ const capitalizeFirstLetter = (text: string) => {
                       className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
                       placeholder="Street Name"
                       value={streetName}
-                      onChangeText={setStreetName}
+                     // onChangeText={setStreetName}
+                      onChangeText={(text) => {
+    const capitalizedText = capitalizeWords(text);
+    setStreetName(capitalizedText);
+  }}
+                      autoCapitalize="words" 
                     />
                   </View>
               <View className="mb-4 z-10">
@@ -777,10 +1336,11 @@ const capitalizeFirstLetter = (text: string) => {
 <TouchableOpacity 
   onPress={handleRegister}
   disabled={isSubmitting || loading}
+  className="mb-[40%]"
 >
   <LinearGradient 
     colors={["#854BDA", "#6E3DD1"]} 
-    className="py-3 px-4 items-center mt-6 mb-[15%] mr-[20%] ml-[20%] rounded-3xl h-15"
+    className="py-3 px-4 items-center mt-6 mb-[2%] mr-[20%] ml-[20%] rounded-3xl h-15 "
   >
     {isSubmitting || loading ? (
       <ActivityIndicator color="#FFFFFF" />
@@ -792,8 +1352,10 @@ const capitalizeFirstLetter = (text: string) => {
             </View>
           </ScrollView>
         </View>
+        </SafeAreaView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+ 
+   
   );
 };
 

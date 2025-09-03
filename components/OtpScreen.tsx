@@ -227,7 +227,7 @@ const verifyOTP = async () => {
     
     if (statusCode === "1000") {
       setIsVerified(true);
-      Alert.alert("Success", "OTP verified successfully.");
+     // Alert.alert("Success", "OTP verified successfully.");
       
       const customerDataString = await AsyncStorage.getItem("pendingCustomerData");
       console.log("Stored customer data:", customerDataString);
@@ -487,7 +487,7 @@ const handleKeyPress = ({ nativeEvent: { key } }: NativeSyntheticEvent<TextInput
         <KeyboardAvoidingView 
                                             behavior={Platform.OS === "ios" ? "padding" : "height"}
                                             enabled 
-                                            className="flex-1"
+                                            style={{flex: 1}}
                                           >
 
 <ScrollView 

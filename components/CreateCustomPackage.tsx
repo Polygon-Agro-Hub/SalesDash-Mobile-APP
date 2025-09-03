@@ -126,6 +126,23 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation, r
     );
   };
 
+  const handleSearch = (query: string) => {
+  let cleanedQuery = query;
+  
+  // Remove special characters, keep only letters (a-z, A-Z), numbers (0-9), and spaces
+  cleanedQuery = cleanedQuery.replace(/[^a-zA-Z0-9\s]/g, '');
+  
+  // Prevent leading spaces - if first character is space, remove it
+  if (cleanedQuery.length > 0 && cleanedQuery[0] === ' ') {
+    cleanedQuery = cleanedQuery.replace(/^\s+/, '');
+  }
+  
+  // Prevent multiple consecutive spaces
+  cleanedQuery = cleanedQuery.replace(/\s+/g, ' ');
+  
+  setSearchQuery(cleanedQuery);
+};
+
  
 
   // Check if any products are selected
@@ -191,7 +208,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation, r
     <SafeAreaView className="flex-1 bg-white">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1"
+        style={{ flex: 1}}
       >
                   <View className="flex-row items-center h-16  bg-white px-4">
             <BackButton navigation={navigation} />
@@ -204,7 +221,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation, r
 
 
           {/* Search Bar */}
-          <View className="mb-4 bg-[#F5F1FC] rounded-full flex-row items-center px-4 py-2 mt-2">
+          {/* <View className="mb-4 bg-[#F5F1FC] rounded-full flex-row items-center px-4 py-2 mt-2">
             <TextInput
               className="flex-1 text-gray-700"
               placeholder="Search By Product Name"
@@ -213,7 +230,17 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation, r
               onChangeText={setSearchQuery}
             />
             <Ionicons name="search" size={20} color="#6839CF" />
-          </View>
+          </View> */}
+          <View className="mb-4 bg-[#F5F1FC] rounded-full flex-row items-center px-4 py-2 mt-2">
+  <TextInput
+    className="flex-1 text-gray-700"
+    placeholder="Search By Product Name"
+    placeholderTextColor="#6839CF"
+    value={searchQuery}
+    onChangeText={handleSearch}
+  />
+  <Ionicons name="search" size={20} color="#6839CF" />
+</View>
 
           {/* Product List */}
           <ScrollView className="flex-1 px-2" showsVerticalScrollIndicator={false}>

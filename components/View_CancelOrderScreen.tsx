@@ -503,7 +503,13 @@ const isTimelineItemActive = (status: string) => {
     };
     console.log("=+=========",order?.reportStatus)
 
- 
+const formatPrice = (price: string | number): string => {
+  return parseFloat(price.toString()).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+};
+
 
     const confirmCancelOrder = async () => {
       try {
@@ -550,7 +556,8 @@ const isTimelineItemActive = (status: string) => {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      className="flex-1 bg-white"
+      className="bg-white"
+      style={{flex: 1}}
     >
       <View className="bg-white flex-1">
         <View className="flex-row items-center shadow-md px-4 py-3 bg-white">
@@ -644,12 +651,12 @@ const isTimelineItemActive = (status: string) => {
   <Text className="text-[#808FA2] font-medium mb-1">Customer's Name</Text>
   <Text className="text-black font-medium mb-3">
     {customerData ? 
-      `${customerData.title || ''} ${customerData.firstName || ''} ${customerData.lastName || ''}`.trim() || 'Not Available' :
+      `${customerData.title || ''}. ${customerData.firstName || ''} ${customerData.lastName || ''}`.trim() || 'Not Available' :
       `${order.title || ''}  ${order.firstName || ''} ${order.lastName || ''}`.trim() || 'Not Available'
     }
   </Text>
 
-  <Text className="text-[#808FA2] font-medium mb-1">Customer's Phone Number</Text>
+  <Text className="text-[#808FA2] font-medium mb-1">Customer's Mobile Number</Text>
   <Text className="text-black font-medium mb-3">
     {customerData?.phoneNumber || order.phoneNumber || 'Not Available'}
   </Text>
@@ -659,10 +666,27 @@ const isTimelineItemActive = (status: string) => {
     {customerData?.buildingType || order.buildingType || 'Not Available'}
   </Text>
 
-  <Text className="text-[#808FA2] font-medium mb-1">Address</Text>
+  {/* <Text className="text-[#808FA2] font-medium mb-1">Address</Text>
   <Text className="text-black font-medium">
     {customerData?.buildingDetails ? 
       `${customerData.buildingDetails.houseNo || ''} ${customerData.buildingDetails.streetName || ''}, ${customerData.buildingDetails.city || ''}`.trim() || order.fullAddress || 'Not Available' :
+      order.fullAddress || 'Not Available'
+    }
+  </Text> */}
+  <Text className="text-[#808FA2] font-medium mb-1">Address</Text>
+  <Text className="text-black font-medium">
+    {customerData?.buildingDetails ? 
+      (() => {
+        const buildingType = customerData?.buildingType || order.buildingType;
+        
+        if (buildingType === "Apartment") {
+          return `${customerData.buildingDetails.buildingNo || ''}, ${customerData.buildingDetails.buildingName || ''}, ${customerData.buildingDetails.unitNo || ''}, ${customerData.buildingDetails.floorNo || ''}, ${customerData.buildingDetails.houseNo || ''}, ${customerData.buildingDetails.streetName || ''}, ${customerData.buildingDetails.city || ''}`.replace(/,\s*,/g, ',').replace(/^,\s*|,\s*$/g, '').trim() || order.fullAddress || 'Not Available';
+        } else if (buildingType === "House") {
+          return `${customerData.buildingDetails.houseNo || ''}, ${customerData.buildingDetails.streetName || ''}, ${customerData.buildingDetails.city || ''}`.trim() || order.fullAddress || 'Not Available';
+        } else {
+          return order.fullAddress || 'Not Available';
+        }
+      })() :
       order.fullAddress || 'Not Available'
     }
   </Text>
@@ -682,28 +706,33 @@ const isTimelineItemActive = (status: string) => {
   <View className="flex-row justify-between mb-2">
     <Text className="text-[#8492A3]">Subtotal</Text>
     <Text className="text-[#8492A3]">
-       Rs.{(parseFloat(order.total || "0") -deliveryFee ).toFixed(2)}
+       Rs.{formatPrice(parseFloat(order.total || "0") -deliveryFee )}
     </Text>
   </View>
   )}
 
- {isPackage === 0 && (
-   <View className="flex-row justify-between mb-2">
+{isPackage === 0 && (
+  <View className="flex-row justify-between mb-2">
     <Text className="text-[#8492A3]">Subtotal</Text>
     <Text className="text-[#8492A3]">
-       Rs.{(parseFloat(order.total || "0") -deliveryFee -180 ).toFixed(2)}
+      Rs.{new Intl.NumberFormat('en-IN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }).format(parseFloat(order.total || "0") - deliveryFee - 180)}
     </Text>
   </View>
-  )}
-                {order.discount && parseFloat(order.discount) > 0 && (
+  
+)}
+
+        {order.discount && parseFloat(order.discount) > 0 && (
                   <View className="flex-row justify-between mb-2">
                     <Text className="text-[#8492A3]">Discount</Text>
-                    <Text className="text-[#8492A3]">Rs.{parseFloat(order.discount).toFixed(2)}</Text>
+                    <Text className="text-[#8492A3]">Rs.{formatPrice(order.discount)}</Text>
                   </View>
                 )}
                 <View className="flex-row justify-between mb-2">
                     <Text className="text-[#8492A3]">Delivery</Text>
-                    <Text className="text-[#8492A3]">Rs.{deliveryFee.toFixed(2)}</Text>
+                    <Text className="text-[#8492A3]">Rs.{formatPrice(deliveryFee)}</Text>
                   </View>
                   {isPackage === 0 && (
                     <View className="flex-row justify-between mb-2">
@@ -716,7 +745,7 @@ const isTimelineItemActive = (status: string) => {
                 <View className="flex-row justify-between pt-2">
                   <Text className="font-semibold text-black">Grand Total</Text>
                   <Text className="font-bold text-black">
-                  Rs.{parseFloat(order.fullTotal || "0").toFixed(2)}
+                  Rs.{formatPrice(order.fullTotal || "0")}
                   </Text>
                 </View>
               </View>
@@ -766,8 +795,8 @@ const isTimelineItemActive = (status: string) => {
               className={`mx-5 mb-5 px-14 rounded-full ${isCancelDisabled() ? "opacity-70" : ""}`}
             >
               {isCancelDisabled() ? (
-                <View className="bg-[#D9D9D9] py-3 rounded-full items-center">
-                  <Text className="text-black text-center font-semibold">Cancel Order</Text>
+                <View className="bg-white py-3 rounded-full items-center">
+                  <Text className="text-white text-center font-semibold">Cancel Order</Text>
                 </View>
               ) : (
                 <View className="bg-[#000000] py-3 rounded-full items-center">

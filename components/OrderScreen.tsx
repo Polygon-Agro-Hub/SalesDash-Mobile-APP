@@ -171,6 +171,8 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
   const [packageItems, setPackageItems] = useState<{label: string, value: string}[]>([]);
   const [unitOpen, setUnitOpen] = useState<boolean>(false);
   const [selectedUnit, setSelectedUnit] = useState<string>('g');
+  const [packageSearchValue, setPackageSearchValue] = useState('');
+const [filteredPackageItems, setFilteredPackageItems] = useState(packageItems);
 
   const [items, setItems] = useState<{ name: string; qty: string}[]>([]);
 const [selectedItems, setSelectedItems] = useState<number[]>([]);
@@ -187,6 +189,8 @@ const [selectedItems, setSelectedItems] = useState<number[]>([]);
 const [open, setOpen] = useState(false); // For edit modal dropdown
   const products = ['Kiwi', 'Apple', 'Mango', 'Orange', 'Banana'];
   const [token, setToken] = useState<string | null>(null);
+  const [productSearchValue, setProductSearchValue] = useState('');
+const [filteredProductItems, setFilteredProductItems] = useState(productItems);
   const [packages, setPackages] = useState<Package[]>([]);
   const [crops, setCrops] = useState<Crop[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -222,6 +226,8 @@ useEffect(() => {
     setSelectedUnit('Kg');
     setProductOpen(false);
     setUnitOpen(false);
+    handleProductSearchChange('')
+    handlePackageSearchChange('')
   }
 }, [showAddModal]);
 
@@ -920,23 +926,87 @@ const handleEditUnitConversion = (newUnit: string) => {
   setEditSelectedUnit(newUnit);
 };
 
+useEffect(() => {
+    const filtered = productItems.filter(
+        product => !additionalItems.some(item => item.id === product.id)
+    );
+    setFilteredProductItems(filtered);
+}, [productItems, additionalItems]);
+
+const handleProductSearchChange = (text: string) => {
+    let filteredText = text;
+    
+    // Remove leading spaces
+    if (filteredText.startsWith(' ')) {
+        filteredText = filteredText.replace(/^\s+/, '');
+    }
+    
+    // Allow only letters, numbers, and spaces
+    filteredText = filteredText.replace(/[^a-zA-Z0-9\s]/g, '');
+    
+    // Clean up multiple spaces
+    filteredText = filteredText.replace(/\s+/g, ' ');
+    
+    setProductSearchValue(filteredText);
+    
+    // Get base filtered items (excluding already added items)
+    const baseFiltered = productItems.filter(
+        product => !additionalItems.some(item => item.id === product.id)
+    );
+    
+    // Apply search filter
+    if (filteredText.trim() === '') {
+        setFilteredProductItems(baseFiltered);
+    } else {
+        const searchFiltered = baseFiltered.filter(item => 
+            item.label.toLowerCase().includes(filteredText.toLowerCase())
+        );
+        setFilteredProductItems(searchFiltered);
+    }
+};
+
+
+ 
 
   useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
-    const keyboardDidHideListener = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false));
-    return () => {
-      keyboardDidShowListener.remove();
-      keyboardDidHideListener.remove();
-    };
-  }, []);
+    setFilteredPackageItems(packageItems);
+}, [packageItems]);
+
+const handlePackageSearchChange = (text: string) => {
+    let filteredText = text;
+    
+    // Remove leading spaces
+    if (filteredText.startsWith(' ')) {
+        filteredText = filteredText.replace(/^\s+/, '');
+    }
+    
+    // Allow only letters, numbers, and spaces
+    filteredText = filteredText.replace(/[^a-zA-Z0-9\s]/g, '');
+    
+    // Clean up multiple spaces
+    filteredText = filteredText.replace(/\s+/g, ' ');
+    
+    setPackageSearchValue(filteredText);
+    
+    // Filter package items based on cleaned search text
+    if (filteredText.trim() === '') {
+        setFilteredPackageItems(packageItems); // Show all if search is empty
+    } else {
+        const filtered = packageItems.filter(item => 
+            item.label.toLowerCase().includes(filteredText.toLowerCase())
+        );
+        setFilteredPackageItems(filtered);
+    }
+};
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+
       <KeyboardAvoidingView 
                                behavior={Platform.OS === "ios" ? "padding" : "height"}
                                enabled 
-                               className="flex-1"
+                               style={{ flex: 1}}
                              >
+                                  <SafeAreaView className="flex-1 bg-white">
       <StatusBar barStyle="dark-content" backgroundColor="white" />
       
       {/* Header */}
@@ -950,7 +1020,7 @@ const handleEditUnitConversion = (newUnit: string) => {
         {/* Package Selection */}
        <View className="mb-6" >
   <Text className="font-medium text-gray-700 mb-2 rounded-full">Package</Text>
-  <DropDownPicker
+  {/* <DropDownPicker
     open={packageOpen}
     value={packageValue}
     items={packageItems}
@@ -1002,7 +1072,64 @@ const handleEditUnitConversion = (newUnit: string) => {
       showsVerticalScrollIndicator: true,
     }}
     zIndex={3000}                   // Move zIndex here instead of View style
-  />
+  /> */}
+  <DropDownPicker
+    open={packageOpen}
+    value={packageValue}
+    items={filteredPackageItems} // Use filtered items instead of packageItems
+    setOpen={setPackageOpen}
+    setValue={setPackageValue}
+    setItems={setFilteredPackageItems} // Update this too
+    onChangeValue={handlePackageChange}
+    placeholder="Select a package"
+    placeholderStyle={{ color: '#000000' }}
+    style={{
+        backgroundColor: '#F6F6F6',
+        borderColor: '#F6F6F6',
+        borderRadius: 20,
+        minHeight: 48,
+        borderWidth: 1,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+    }}
+    textStyle={{
+        fontSize: 14,
+        color: '#111827',
+    }}
+    dropDownContainerStyle={{
+        backgroundColor: '#FFFFFF',
+        borderColor: '#E5E7EB',
+        borderRadius: 8,
+        borderWidth: 1,
+        maxHeight: 300,
+        minHeight: 200,
+    }}
+    arrowIconStyle={{
+        width: 20,
+        height: 20,
+    }}
+    tickIconStyle={{
+        width: 20,
+        height: 20,
+    }}
+    labelStyle={{
+        fontWeight: '500',
+        color: '#111827',
+    }}
+    searchable={true}
+    searchPlaceholder="Search package..."
+    listMode="SCROLLVIEW"
+    scrollViewProps={{
+        nestedScrollEnabled: true,
+        keyboardShouldPersistTaps: 'handled',
+        showsVerticalScrollIndicator: true,
+    }}
+    searchTextInputProps={{
+        onChangeText: handlePackageSearchChange,
+        value: packageSearchValue,
+    }}
+    zIndex={3000}
+/>
 </View>
 
 
@@ -1198,7 +1325,7 @@ const handleEditUnitConversion = (newUnit: string) => {
       {/* Product Section */}
       <View className="mb-4" >
         <Text className="text-gray-700 mb-3">Product</Text>
-      <DropDownPicker
+      {/* <DropDownPicker
   open={productOpen}
   setOpen={(open) =>{setProductOpen(open); setUnitOpen(false)}}
   value={productValue}
@@ -1246,8 +1373,64 @@ const handleEditUnitConversion = (newUnit: string) => {
     fontSize: 14,
     color: '#111827',
   }}
+  
   zIndex={80000}
 
+/> */}
+<DropDownPicker
+    open={productOpen}
+    setOpen={(open) => {
+        setProductOpen(open); 
+        setUnitOpen(false);
+    }}
+    value={productValue}
+    setValue={setProductValue}
+    items={filteredProductItems} // Use filtered items
+    onSelectItem={(item) => {
+        if (item && item.label && item.value) {
+            setSelectedProduct(item.label);
+            const selectedItem = productItems.find(p => p.value === item.value);
+            if (selectedItem) {
+                const discountedPrice = selectedItem.discountedPrice
+                    ? parseFloat(selectedItem.discountedPrice)
+                    : parseFloat(selectedItem.price);
+                setPricePerKg(discountedPrice);
+                
+                // Set initial quantity based on product's startValue
+                const startValue = selectedItem.startValue ? Number(selectedItem.startValue) : 1;
+                const adjustedStartValue = selectedUnit === 'Kg' ? startValue : startValue * 1000;
+                setQuantity(adjustedStartValue);
+            }
+        }
+    }}
+    searchable={true}
+    searchPlaceholder="Search product..."
+    placeholder="Select a product..."
+    dropDownContainerStyle={{
+        borderColor: "#F6F6F6",
+        borderWidth: 1,
+        backgroundColor: "#F6F6F6",
+        maxHeight: 300,
+        minHeight: 350,
+    }}
+    style={{
+        borderWidth: 1,
+        borderColor: "#F6F6F6",
+        backgroundColor: "#F6F6F6",
+        borderRadius: 15,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        minHeight: 0,
+    }}
+    textStyle={{
+        fontSize: 14,
+        color: '#111827',
+    }}
+    searchTextInputProps={{
+        onChangeText: handleProductSearchChange,
+        value: productSearchValue,
+    }}
+    zIndex={80000}
 />
       </View>
 
@@ -1271,9 +1454,12 @@ const handleEditUnitConversion = (newUnit: string) => {
               <Text className="text-gray-700 text-xl font-bold">-</Text>
             </TouchableOpacity>
             
-            <Text className="flex-1 text-center text-gray-700">
+            {/* <Text className="flex-1 text-center text-gray-700">
               {quantity || "0"}
-            </Text>
+            </Text> */}
+              <Text className="flex-1 text-center text-gray-700">
+    {(quantity || 0).toFixed(2)}
+  </Text>
             
             <TouchableOpacity 
               className="w-10 h-10 flex items-center justify-center"
@@ -1455,8 +1641,9 @@ const handleEditUnitConversion = (newUnit: string) => {
     </View>
   </View>
 </Modal>
-      </KeyboardAvoidingView>
     </SafeAreaView>
+      </KeyboardAvoidingView>
+
   );
 };
 

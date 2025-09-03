@@ -8,7 +8,7 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/lgooo.png",
+      "image": "./assets/images/dashicon.png",
       "resizeMode": "contain",
       "backgroundColor": "#6638CE"
     },
@@ -35,11 +35,12 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/favicon.png",
         "backgroundColor": "#ffffff"
       },
+      "softwareKeyboardLayoutMode": "pan",
       "package": "com.polygonagro.SalesDash",
-      "versionCode": 2,
+      "versionCode": 3,
       "permissions": [
         "INTERNET",
         "WRITE_EXTERNAL_STORAGE",
@@ -69,17 +70,6 @@
         {
           "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone."
         }
-      ],
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "targetSdkVersion": 35
-          },
-          "ios": {
-            "deploymentTarget": "15.1"
-          }
-        }
       ]
     ],
     "experiments": {
@@ -90,7 +80,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "81b07a7c-5c59-4e53-b722-3138282a18f1"
+        "projectId": "b4d7688a-edd8-46c6-88ee-01a99409c46b"
       }
     }
   }

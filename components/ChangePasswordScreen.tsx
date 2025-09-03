@@ -12,6 +12,7 @@ import {
   Alert,
   BackHandler,
   Keyboard,
+  SafeAreaView,
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from './types';
@@ -22,6 +23,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import environment from '@/environment/environment';
 import { useFocusEffect } from 'expo-router';
 import BackButton from './BackButton';
+
 
 type ChangePasswordScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -182,11 +184,22 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
   );
 
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      enabled 
-      className="flex-1"
-    >
+    // <KeyboardAvoidingView 
+    //   behavior={Platform.OS === "ios" ? "padding" : "height"}
+    //   enabled 
+    //   className="flex-1"
+    // >
+      // <KeyboardAwareScrollView
+      //     contentContainerStyle={{ flexGrow: 1 }}
+      //     keyboardShouldPersistTaps="handled"
+      //     enableOnAndroid={true}
+      //   >
+       <KeyboardAvoidingView 
+              behavior={Platform.OS === "ios" ? "padding" : "height"}
+              keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })} // Adjust this value as needed
+              style={{ flex: 1 ,backgroundColor: "white" }}
+            >
+                  <SafeAreaView className="flex-1 bg-white">
       <ScrollView 
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
@@ -213,7 +226,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
   
         {/* Form Section */}
         <View className="flex-1">
-          <LinearGradient colors={['#854BDA', '#6E3DD1']} className="flex-1 rounded-t-3xl px-7 pt-6 pb-14">
+          <LinearGradient colors={['#854BDA', '#6E3DD1']} className="flex-1 rounded-t-3xl px-7 pt-6 pb-14 -mt-2">
             <Text className="text-white text-lg font-bold text-center mb-6 mt-[12%]">
               Change Your Password
             </Text>
@@ -226,7 +239,12 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
                 className="flex-1 text-white py-3"
                 secureTextEntry={!showCurrentPassword}
                 value={currentPassword}
-                onChangeText={setCurrentPassword}
+              //  onChangeText={setCurrentPassword}
+                onChangeText={(text) => {
+      // Remove all spaces and prevent starting with space
+      const cleanText = text.replace(/\s/g, '');
+      setCurrentPassword(cleanText);
+    }}
               />
               <TouchableOpacity onPress={() => setShowCurrentPassword(!showCurrentPassword)}>
                 <Icon name={showCurrentPassword ? 'eye-off' : 'eye'} size={20} color="#E5E5E5" />
@@ -241,7 +259,12 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
                 className="flex-1 text-white py-3"
                 secureTextEntry={!showNewPassword}
                 value={newPassword}
-                onChangeText={setNewPassword}
+                //onChangeText={setNewPassword}
+                 onChangeText={(text) => {
+      // Remove all spaces and prevent starting with space
+      const cleanText = text.replace(/\s/g, '');
+      setNewPassword(cleanText);
+    }}
               />
               <TouchableOpacity onPress={() => setShowNewPassword(!showNewPassword)}>
                 <Icon name={showNewPassword ? 'eye-off' : 'eye'} size={20} color="#E5E5E5" />
@@ -256,12 +279,18 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
                 className="flex-1 text-white py-3"
                 secureTextEntry={!showConfirmPassword}
                 value={confirmNewPassword}
-                onChangeText={setConfirmNewPassword}
+              //  onChangeText={setConfirmNewPassword}
+               onChangeText={(text) => {
+      // Remove all spaces and prevent starting with space
+      const cleanText = text.replace(/\s/g, '');
+      setConfirmNewPassword(cleanText);
+    }}
               />
               <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
                 <Icon name={showConfirmPassword ? 'eye-off' : 'eye'} size={20} color="#E5E5E5" />
               </TouchableOpacity>
             </View>
+            
   
             {/* Update Button */}
             <TouchableOpacity
@@ -276,7 +305,9 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
           </LinearGradient>
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+       </SafeAreaView>
+           </KeyboardAvoidingView>
+  
   );
 };
 

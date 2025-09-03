@@ -146,11 +146,31 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
     ]);
   };
 
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        // Navigate to ViewCustomerScreen instead of going back to main dashboard
+        navigation.navigate("ViewCustomerScreen" as any, { 
+          id: id, 
+          customerId: customerId, 
+          name: name, 
+          title: title 
+        });
+        return true; // Prevent default back behavior
+      };
+
+      const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+      return () => backHandler.remove(); // Cleanup on unmount
+    }, [navigation, id, customerId, name, title])
+  );
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       enabled
-      className="flex-1 bg-white"
+       style={{ flex: 1}}
+      className="bg-white"
     >
       <View className="flex bg-white px-3">
         <View className="bg-white flex-row items-center h-17  px-1">
@@ -192,17 +212,15 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
         <ScrollView keyboardShouldPersistTaps="handled" className="mb-[90%]">
           <View className="px-6 mt-4">
           {crops.length === 0 || crops.every((crop) => crop.excludeId === null) ? (
-              //    <View
-              //   style={{
-              //     flex: 1,
-              //     justifyContent: "center",
-              //     alignItems: "center",
-              //     height: hp("60%"),
-              //   }}
-              // >
-              //   <Text className="text-center text-lg text-gray-500">No exclude list</Text>
-              // </View>
-              <View className="flex-1 justify-center items-center px-4 ">
+                 <View
+                style={{
+                  flex: 1,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  height: hp("60%"),
+                }}
+              >
+                  <View className="flex-1 justify-center items-center px-4 ">
                 <LottieView
                   source={require("../assets/images/NoComplaints.json")}
                   style={{ width: wp(50), height: hp(50) }}
@@ -210,6 +228,19 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
                   loop
                 />
               </View>
+              <View className="mt-[-20]">
+                <Text className="text-center text-lg text-gray-500 mt-[-40%]">No Exclude Item Found</Text>
+                </View>
+              </View>
+              // <View className="flex-1 justify-center items-center px-4 ">
+              //   <LottieView
+              //     source={require("../assets/images/NoComplaints.json")}
+              //     style={{ width: wp(50), height: hp(50) }}
+              //     autoPlay
+              //     loop
+              //   />
+              // </View>
+              
             ) : (
               crops.map((crop) => (
                 <View
