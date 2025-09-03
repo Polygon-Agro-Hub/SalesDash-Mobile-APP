@@ -191,9 +191,10 @@ const [buildingTypeItems, setBuildingTypeItems] = useState([
       const body = {
         source: "PolygonAgro", 
         transport: "sms",   
-        content: {
-          sms: "Your code is {{code}}",  
-        },
+        // content: {
+        //   sms: "Your code is {{code}}",  
+        // },
+         content: { sms: "Thank you for registering with us a Market Place customer. Please use the bellow OTP to confirm the registration process. {{code}}" },
         destination: cleanedPhoneNumber, 
       };
   
