@@ -305,7 +305,7 @@ const handleResendOtp = async () => {
     };
 
     const body = {
-      source: "ShoutDEMO",
+      source: "PolygonAgro",
       transport: "sms",
       content: { sms: "Your code is {{code}}" },
       destination: phoneNumber,
