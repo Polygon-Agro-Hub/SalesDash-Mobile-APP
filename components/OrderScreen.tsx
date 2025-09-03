@@ -1000,12 +1000,13 @@ const handlePackageSearchChange = (text: string) => {
 };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+
       <KeyboardAvoidingView 
                                behavior={Platform.OS === "ios" ? "padding" : "height"}
                                enabled 
-                               className="flex-1"
+                               style={{ flex: 1}}
                              >
+                                  <SafeAreaView className="flex-1 bg-white">
       <StatusBar barStyle="dark-content" backgroundColor="white" />
       
       {/* Header */}
@@ -1640,8 +1641,9 @@ const handlePackageSearchChange = (text: string) => {
     </View>
   </View>
 </Modal>
-      </KeyboardAvoidingView>
     </SafeAreaView>
+      </KeyboardAvoidingView>
+
   );
 };
 

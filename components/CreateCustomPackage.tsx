@@ -208,7 +208,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation, r
     <SafeAreaView className="flex-1 bg-white">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1"
+        style={{ flex: 1}}
       >
                   <View className="flex-row items-center h-16  bg-white px-4">
             <BackButton navigation={navigation} />

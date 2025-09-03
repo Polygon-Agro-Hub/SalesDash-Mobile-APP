@@ -121,30 +121,28 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   return (
   
         <KeyboardAvoidingView 
+        enabled
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })} // Adjust this value as needed
         style={{ flex: 1 ,backgroundColor: "white" }}
+        className="bg-white"
       >
-            <SafeAreaView className="flex-1 bg-white">
-    {/* <KeyboardAwareScrollView
-      contentContainerStyle={{ flexGrow: 1 }}
-      keyboardShouldPersistTaps="handled"
-      enableOnAndroid={true}
-    > */}
+
     <ScrollView 
+    
       contentContainerStyle={{ flexGrow: 1 }} 
       keyboardShouldPersistTaps="handled"
     >
-    <View className="flex-1 bg-white">
-      <View className="h-96">
-      <LinearGradient colors={["#854BDA", "#6E3DD1"]} className="flex-1 items-center justify-center">
+            <View className="h-96 ">
+      <LinearGradient colors={["#854BDA", "#6E3DD1"]} className="flex-1 items-center justify-center mb-20">
         <Image source={require("../assets/images/lgooo.webp")} className="w-auto h-[60%]" resizeMode="contain" />
       </LinearGradient>
       </View>
 
+    <View className="flex-1 bg-white">
+
       {/* Form Section */}
 
-      <View className="flex-1 bg-white px-9 py-8 rounded-t-3xl shadow-lg -mt-8">
+      <View className="flex-1 bg-white px-9 py-8 rounded-t-3xl shadow-lg -mt-28 pt-10">
         <Text className="text-center text-xl font-bold text-[#6C3CD1] mb-6 mt-[6%]">Welcome to Sign in</Text>
 
         {error1.length > 0 && (
@@ -159,14 +157,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         )}
         <View className="border border-gray-300 rounded-full px-4 mb-4 flex-row items-center bg-gray-100 mt-5">
 
-          {/* <TextInput
-            placeholder="Employee ID"
-            placeholderTextColor="#A3A3A3"
-            className="flex-1 py-3 text-gray-800"
-            value={empId}
-               onChangeText={(text) => setEmpId(text)}
-    autoCapitalize="characters"  // Automatically capitalizes all letters
-  /> */}
   <TextInput
   placeholder="Employee ID"
   placeholderTextColor="#A3A3A3"
@@ -216,7 +206,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     </View>
     </ScrollView>
  
-    </SafeAreaView>
          </KeyboardAvoidingView>
   );
 };
