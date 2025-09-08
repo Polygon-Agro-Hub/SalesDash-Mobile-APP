@@ -304,12 +304,19 @@ const handleResendOtp = async () => {
       "Content-Type": "application/json",
     };
 
+    // const body = {
+    //   source: "PolygonAgro",
+    //   transport: "sms",
+    //   content: { sms: "Your code is {{code}}" },
+    //   destination: phoneNumber,
+    // };
+    
     const body = {
-      source: "PolygonAgro",
-      transport: "sms",
-      content: { sms: "Your code is {{code}}" },
-      destination: phoneNumber,
-    };
+        source: "PolygonAgro",
+        transport: "sms",
+        content: { sms: "Thank you for registering with us a Market Place customer. Please use the bellow OTP to confirm the registration process. {{code}}" },
+        destination: phoneNumber,
+      };
 
     const response = await axios.post(apiUrl, body, { headers });
 
