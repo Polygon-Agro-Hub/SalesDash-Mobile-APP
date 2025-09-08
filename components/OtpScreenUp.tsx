@@ -652,7 +652,7 @@ const handleOtpChange = (text: string, index: number) => {
       };
 
       const body = {
-        source: "AgroWorld",
+        source: "PolygonAgro",
         transport: "sms",
         content: { sms: "Thank you for registering with us a Market Place customer. Please use the bellow OTP to confirm the registration process. {{code}}" },
         destination: phoneNumber,
