@@ -11,7 +11,7 @@ import { useTranslation } from "react-i18next";
 import AsyncStorage from "@react-native-async-storage/async-storage"; 
 import { useFocusEffect } from "@react-navigation/native"; 
 import { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
-
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const DashboardIcon = require("../assets/images/Home1.webp");
 const DashboardIconFocus = require("../assets/images/hut1.webp");
@@ -43,7 +43,7 @@ const NavigationBar = ({
   const [activeTab, setActiveTab] = useState<string>("DashboardScreen");
   const { t } = useTranslation();
   const [scales] = useState(() => tabs.map(() => new Animated.Value(1)));
-
+ const insets = useSafeAreaInsets();
   useFocusEffect(
     React.useCallback(() => {
       const keyboardDidShowListener = Keyboard.addListener(
@@ -125,12 +125,13 @@ const NavigationBar = ({
   
 
   return (
-    <View className="absolute bottom-0 flex-row justify-between items-center bg-white w-full p-4 rounded-t-3xl" 
+    <View className="absolute bottom-0 flex-row justify-between items-center bg-white w-full p-4 rounded-t-3xl " 
       style={{
         shadowColor: "#000",
         shadowOpacity: 0.5,
         shadowRadius: 10,
         elevation: 15, 
+        // paddingBottom: 10 + insets.bottom, // Add bottom inset for safe area
         borderTopWidth: 2,
         borderTopColor: 'rgba(6, 6, 6, 0.1)',
       }}

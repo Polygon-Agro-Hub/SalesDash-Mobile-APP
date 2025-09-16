@@ -1,9 +1,11 @@
 import React from 'react'
+import 'react-native-reanimated';
+import 'react-native-gesture-handler';
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Splash from '@/components/Splash';
 import { GestureHandlerRootView, TextInput } from 'react-native-gesture-handler';
-import * as ScreenCapture from 'expo-screen-capture';
+// import * as ScreenCapture from 'expo-screen-capture';
 import { LanguageProvider } from '@/context/LanguageContext';
 import ChangePasswordScreen from '@/components/ChangePasswordScreen';
 import LoginScreen from '@/components/LoginScreen';
@@ -39,6 +41,7 @@ import ExcludeItemEditSummery from "@/components/ExcludeItemEditSummery"
 import ExcludeAddMore from '@/components/ExcludeAddMore'
 import PrivacyPolicy from '@/components/PrivacyPolicy'
 import TermsConditions from '@/components/TermsConditions'
+import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 
 
@@ -62,9 +65,9 @@ function MainTabNavigator() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        tabBarStyle: { display: 'none' }, 
         headerShown: false,
-        tabBarHideOnKeyboard: false
+        tabBarHideOnKeyboard: false,
+        tabBarStyle: { position: "absolute", backgroundColor: "#fff" },
       })}
       
 
@@ -107,14 +110,16 @@ function MainTabNavigator() {
   );
 }
 const index = () => {
+   const insets = useSafeAreaInsets();
   
     // Prevent screenshots and screen recording
     // ScreenCapture.usePreventScreenCapture()
 
   return (
-
+ <SafeAreaProvider>
     <LanguageProvider>
     <GestureHandlerRootView >
+       <SafeAreaView style={{ flex: 1, paddingBottom: insets.bottom,  backgroundColor: "#fff"  }} edges={['top', 'right', 'left']}>
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Splash" component={Splash} />
       <Stack.Screen name="LoginScreen" component={LoginScreen} />
@@ -149,9 +154,10 @@ const index = () => {
 
       
     </Stack.Navigator>
+    </SafeAreaView>
    </GestureHandlerRootView>
     </LanguageProvider>
-
+</SafeAreaProvider>
   )
 }
 

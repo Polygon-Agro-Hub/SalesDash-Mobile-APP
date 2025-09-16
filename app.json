@@ -4,7 +4,7 @@
     "slug": "SalesDash",
     "version": "1.0.0",
     "orientation": "portrait",
-    "scheme": "myapp",
+    "scheme": "SalesDash",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -78,8 +78,10 @@
     "extra": {
       "router": {
         "origin": false
+      },
+      "eas": {
+        "projectId": "9b396235-72a1-40ba-be56-54aae8ff801c"
       }
-    
     }
   }
 }
