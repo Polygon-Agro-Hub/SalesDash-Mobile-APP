@@ -177,12 +177,13 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
         return false; // Allow back navigation
       };
       
-      BackHandler.addEventListener("hardwareBackPress", onBackPress);
-      return () =>
-        BackHandler.removeEventListener("hardwareBackPress", onBackPress);
+      const subscription = BackHandler.addEventListener("hardwareBackPress", onBackPress);
+      return () => subscription.remove();
     }, [passwordUpdate]) // Added passwordUpdate as dependency
   );
 
+
+  
   return (
     // <KeyboardAvoidingView 
     //   behavior={Platform.OS === "ios" ? "padding" : "height"}

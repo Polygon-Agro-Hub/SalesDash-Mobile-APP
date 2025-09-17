@@ -334,7 +334,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
       }
 
       const base64 = await FileSystem.readAsStringAsync(asset.localUri, {
-        encoding: FileSystem.EncodingType.Base64,
+          encoding: "base64",
       });
 
       return `data:image/webp;base64,${base64}`;
@@ -354,7 +354,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
         
         if (asset.localUri) {
           const base64 = await FileSystem.readAsStringAsync(asset.localUri, {
-            encoding: FileSystem.EncodingType.Base64,
+            encoding: "base64",
           });
           return `data:image/webp;base64,${base64}`;
         }
@@ -826,7 +826,8 @@ if (order?.additionalItems && order.additionalItems.length > 0) {
       });
 
       const fileName = `Invoice_${invoiceNumber}.pdf`;
-      const tempFilePath = `${FileSystem.cacheDirectory}${fileName}`;
+      const tempFilePath = `${(FileSystem as any).cacheDirectory}${fileName}`;
+
 
       await FileSystem.copyAsync({
         from: pdfUri,
