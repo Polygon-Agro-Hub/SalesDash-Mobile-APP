@@ -29,7 +29,9 @@ interface ApiErrorResponse {
 const OtpScreenUp: React.FC = () => {
   const navigation = useNavigation<OtpScreenUpNavigationProp>();
   const [otp, setOtp] = useState<string[]>(["", "", "", "", ""]);
-  const inputRefs = useRef<TextInput[]>([]);
+  // const inputRefs = useRef<TextInput[]>([]);
+    const inputRefs = useRef<(TextInput | null)[]>([]);
+
   const [timer, setTimer] = useState(60);
   const [resendDisabled, setResendDisabled] = useState(true);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
@@ -819,7 +821,10 @@ const handleOtpChange = (text: string, index: number) => {
               {otp.map((digit, index) => (
                 <TextInput
                   key={index}
-                  ref={(el) => (inputRefs.current[index] = el as TextInput)}
+                  // ref={(el) => (inputRefs.current[index] = el as TextInput)}
+                    ref={(el: TextInput | null) => {
+                    inputRefs.current[index] = el;
+                  }}
                   className={`w-12 h-12 text-lg text-center rounded-lg 
                     ${digit ? "bg-[#874DDB] text-[#FFFFFF]" : "bg-[#E7D7FF] text-pink-900"}`}
                   keyboardType="numeric"
