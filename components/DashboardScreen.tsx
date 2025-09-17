@@ -390,7 +390,7 @@ const formattedTotalPrice = totalPrice.toLocaleString('en-US', {
 
         {/* Packages Section with Pull to Refresh */}
         <ScrollView 
-          className="flex-1 mb-20"
+          className="flex-1 mb-10"
           refreshControl={
             <RefreshControl
               refreshing={isLoading}

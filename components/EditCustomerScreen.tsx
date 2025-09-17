@@ -205,12 +205,17 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
     setTouchedFields(prev => ({ ...prev, [fieldName]: true }));
   };
 
-  // Required Field Indicator Component
+
+  // const RequiredField = ({ children }: { children: React.ReactNode }) => (
+  //   <Text className="text-gray-700 mb-1">
+  //     {children} <Text className="">*</Text>
+  //   </Text>
+  // );
   const RequiredField = ({ children }: { children: React.ReactNode }) => (
-    <Text className="text-gray-700 mb-1">
-      {children} <Text className="">*</Text>
-    </Text>
-  );
+  <Text className="text-gray-700 mb-1">
+    {children} <Text className="text-red-500">*</Text>
+  </Text>
+);
 
   // Validation effects
   useEffect(() => {
@@ -1271,7 +1276,7 @@ const handlePhoneNumberKeyPress = (e: any) => {
   ) : null}
 </View> */}
 <View className="mb-4">
-  <Text className="text-gray-700 mb-1">Email Address</Text> {/* Removed RequiredField component */}
+  <Text className="text-gray-700 mb-1">Email Address</Text> 
   <TextInput
     className={`bg-[#F6F6F6] border rounded-full px-6 h-10 ${
       emailError ? 'border-red-500' : 'border-[#F6F6F6]'
