@@ -4,7 +4,7 @@
     "slug": "SalesDash",
     "version": "1.0.0",
     "orientation": "portrait",
-    "scheme": "myapp",
+    "scheme": "SalesDash",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -79,7 +79,7 @@
       "router": {
         "origin": false
       }
-    
+     
     }
   }
 }

@@ -1042,7 +1042,7 @@ const capitalizeWords = (text: string) => {
   ) : null}
 </View> */}
 <View className="mb-4">
-  <Text className="text-gray-700 mb-1">Email Address</Text> {/* Removed * */}
+  <Text className="text-gray-700 mb-1">Email Address</Text>
   <TextInput
     className={`bg-[#F6F6F6] border ${emailError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
     placeholder="Email Address "
