@@ -832,7 +832,6 @@ const capitalizeWords = (text: string) => {
   keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })} // Adjust this value as needed
     style={{ flex: 1 ,backgroundColor: "white" }}
 >
-    <SafeAreaView className="flex-1 bg-white">
 {/* <KeyboardAwareScrollView
   contentContainerStyle={{ flexGrow: 1 }}
   keyboardShouldPersistTaps="handled"
@@ -1353,7 +1352,6 @@ const capitalizeWords = (text: string) => {
             </View>
           </ScrollView>
         </View>
-        </SafeAreaView>
       </KeyboardAvoidingView>
  
    

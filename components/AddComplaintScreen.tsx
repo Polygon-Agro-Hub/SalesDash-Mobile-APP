@@ -211,7 +211,6 @@ useFocusEffect(
               keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })} // Adjust this value as needed
               style={{ flex: 1 ,backgroundColor: "white" }}
             >
-                  <SafeAreaView className="flex-1 bg-white">
       <ScrollView 
       keyboardShouldPersistTaps="handled"
       style={{ paddingHorizontal: wp(4) }}
@@ -350,7 +349,6 @@ useFocusEffect(
             </View>
    
       </ScrollView>
-  </SafeAreaView>
       </KeyboardAvoidingView>
   );
 };

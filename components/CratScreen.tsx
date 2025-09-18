@@ -435,8 +435,7 @@ if (unitType === 'g' && !fromOrderSummary) {
 };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <View className="flex-1 px-4">
+      <View className="flex-1 px-4 bg-white">
         <View className="flex-row items-center">
           <BackButton navigation={navigation} />
           <Text className="text-lg font-medium text-[#6C3CD1] flex-1 text-center mr-10">
@@ -600,7 +599,6 @@ if (unitType === 'g' && !fromOrderSummary) {
             </TouchableOpacity>
         </View>
       </View>
-    </SafeAreaView>
   );
 };
 
