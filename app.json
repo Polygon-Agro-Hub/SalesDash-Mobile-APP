@@ -4,13 +4,18 @@
     "slug": "SalesDash",
     "version": "1.0.0",
     "orientation": "portrait",
-    "scheme": "SalesDash",
+    "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/dashicon.png",
       "resizeMode": "contain",
       "backgroundColor": "#6638CE"
+    },
+    
+    "autolinking": {
+      "legacy_shallowReactNativeLinking": true,
+      "searchPaths": ["/node_modules", "node_modules"]
     },
     "ios": {
       "supportsTablet": true,
@@ -80,7 +85,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "9b396235-72a1-40ba-be56-54aae8ff801c"
+        "projectId": "852b5b33-ba0b-4aa7-beda-caaae811f4cb"
       }
     }
   }

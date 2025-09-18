@@ -11,8 +11,7 @@ import {
   ImageBackground,
   Alert,
   BackHandler,
-  Keyboard,
-  SafeAreaView,
+  Keyboard
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from './types';

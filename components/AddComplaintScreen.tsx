@@ -8,7 +8,6 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   Keyboard,
   TouchableWithoutFeedback,
   BackHandler,
