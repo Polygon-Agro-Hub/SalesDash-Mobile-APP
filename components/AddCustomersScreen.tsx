@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Keyboard, Platform, KeyboardAvoidingView, SafeAreaView, Alert, ActivityIndicator, BackHandler } from "react-native";
+import { View, Text, ScrollView, TextInput, TouchableOpacity, Keyboard, Platform, KeyboardAvoidingView, Alert, ActivityIndicator, BackHandler } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import { LinearGradient } from "expo-linear-gradient";
@@ -10,7 +10,7 @@ import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SelectList } from "react-native-dropdown-select-list";
 import DropDownPicker from "react-native-dropdown-picker";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect } from '@react-navigation/native';
 import { AntDesign, Ionicons } from "@expo/vector-icons";
 
 
@@ -832,7 +832,6 @@ const capitalizeWords = (text: string) => {
   keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })} // Adjust this value as needed
     style={{ flex: 1 ,backgroundColor: "white" }}
 >
-    <SafeAreaView className="flex-1 bg-white">
 {/* <KeyboardAwareScrollView
   contentContainerStyle={{ flexGrow: 1 }}
   keyboardShouldPersistTaps="handled"
@@ -1353,7 +1352,6 @@ const capitalizeWords = (text: string) => {
             </View>
           </ScrollView>
         </View>
-        </SafeAreaView>
       </KeyboardAvoidingView>
  
    

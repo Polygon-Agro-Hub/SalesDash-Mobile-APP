@@ -7,7 +7,6 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ActivityIndicator
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -184,15 +183,15 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation, r
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-white justify-center items-center">
+      <View className="flex-1 bg-white justify-center items-center">
         <ActivityIndicator size="large" color="#6C3CD1" />
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-white justify-center items-center">
+      <View className="flex-1 bg-white justify-center items-center">
         <Text className="text-red-500 text-lg">{error}</Text>
         <TouchableOpacity 
           className="mt-4 bg-purple-600 px-4 py-2 rounded-full"
@@ -200,15 +199,14 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation, r
         >
           <Text className="text-white">Go Back</Text>
         </TouchableOpacity>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1}}
+        style={{ flex: 1, backgroundColor: "white" }}
       >
                   <View className="flex-row items-center h-16  bg-white px-4">
             <BackButton navigation={navigation} />
@@ -317,7 +315,6 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation, r
         
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
   );
 };
 

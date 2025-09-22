@@ -24,7 +24,7 @@ import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from "react-native-responsive-screen";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from "react-native-safe-area-context";
 
 

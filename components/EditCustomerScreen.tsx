@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Keyboard, Platform, KeyboardAvoidingView, SafeAreaView, Alert, ActivityIndicator, BackHandler } from "react-native";
+import { View, Text, ScrollView, TextInput, TouchableOpacity, Keyboard, Platform, KeyboardAvoidingView,  Alert, ActivityIndicator, BackHandler } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import { LinearGradient } from "expo-linear-gradient";
@@ -11,8 +11,7 @@ import DropDownPicker from "react-native-dropdown-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SelectList } from "react-native-dropdown-select-list";
 import { AntDesign } from "@expo/vector-icons";
-import { useFocusEffect } from "expo-router";
-
+import { useFocusEffect } from '@react-navigation/native';
 
 
 
@@ -1094,7 +1093,7 @@ const handlePhoneNumberKeyPress = (e: any) => {
        keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })} // Adjust this value as needed
        style={{ flex: 1 ,backgroundColor: "white" }}
      >
-           <SafeAreaView className="flex-1 bg-white">
+           <View className="flex-1 bg-white">
       {/* <KeyboardAwareScrollView
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
@@ -1565,7 +1564,7 @@ const handlePhoneNumberKeyPress = (e: any) => {
             </View>
           </ScrollView>
         </View>
-        </SafeAreaView>
+        </View>
       </KeyboardAvoidingView>
 
     

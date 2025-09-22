@@ -4,8 +4,8 @@
     "slug": "SalesDash",
     "version": "1.0.0",
     "orientation": "portrait",
-    "scheme": "SalesDash",
-    "userInterfaceStyle": "automatic",
+    "icon": "./assets/images/favicon.png",
+    "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/dashicon.png",
@@ -13,31 +13,15 @@
       "backgroundColor": "#6638CE"
     },
     "ios": {
-      "supportsTablet": true,
-      "infoPlist": {
-        "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": true
-        }
-      },
-      "permissions": [
-        "CAMERA",
-        "NOTIFICATIONS",
-        "CALENDAR",
-        "CONTACTS",
-        "ACCESS_WIFI_STATE",
-        "CHANGE_WIFI_STATE",
-        "ACCESS_NETWORK_STATE",
-        "CHANGE_NETWORK_STATE",
-        "VIBRATE",
-        "WRITE_EXTERNAL_STORAGE"
-      ],
-      "bundleIdentifier": "com.polygonagro.SalesDash"
+      "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/favicon.png",
         "backgroundColor": "#ffffff"
       },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "pan",
       "package": "com.polygonagro.SalesDash",
       "versionCode": 3,
@@ -66,6 +50,12 @@
       "expo-router",
       "expo-font",
       [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone."
+        }
+      ],
+      [
         "expo-av",
         {
           "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone."
@@ -78,8 +68,10 @@
     "extra": {
       "router": {
         "origin": false
+      },
+      "eas": {
+        "projectId": "102149a8-f198-485e-8310-812b472a1670"
       }
-     
     }
   }
 }

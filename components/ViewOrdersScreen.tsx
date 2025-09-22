@@ -23,8 +23,7 @@ import axios from "axios";
 import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import LottieView from "lottie-react-native";
-import { useFocusEffect } from "expo-router";
-
+import { useFocusEffect } from '@react-navigation/native';
 // ViewOrdersScreen.tsx - Updated with Pagination
 type ViewOrdersScreenNavigationProp = StackNavigationProp<RootStackParamList, "ViewOrdersScreen">;
 
