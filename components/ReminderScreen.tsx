@@ -12,6 +12,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import environment from "@/environment/environment";
 import { Audio } from "expo-av";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Global state management
 let globalUnreadCount = 0;
@@ -63,6 +64,7 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
   const [error, setError] = useState<string | null>(null);
   const [isAudioInitialized, setIsAudioInitialized] = useState(false);
   const [ status ,setStatus] = useState('')
+  const insets = useSafeAreaInsets();
   
   const previousNotificationsCount = useRef(0);
   const sound = useRef<Audio.Sound | null>(null);
@@ -431,6 +433,11 @@ const fetchNotifications = async () => {
             transparent={true} 
             visible={modalVisible} 
             onRequestClose={() => setModalVisible(false)}
+           style={{ 
+       
+          paddingBottom:  insets.bottom , 
+         
+        }}
           >
             <View className="flex-1 justify-end bg-[#00000033]">
               <View className="bg-white w-full p-2 rounded-t-lg mr-4">

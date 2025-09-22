@@ -331,7 +331,7 @@ const handleSearch = (query: string) => {
                 onChangeText={handleSearch} 
                 placeholder="Search By Name, Phone Number" 
                 placeholderTextColor="#6839CF" 
-                className="flex-1 text-sm text-gray-700" 
+                className="flex-1 text-sm text-gray-700 h-10" 
                 style={{ fontStyle: 'italic' }}
                 
               />
@@ -361,12 +361,23 @@ const handleSearch = (query: string) => {
                   </TouchableOpacity>
                 </View>
               ) : isEmpty ? (
-                <View className="flex-1 justify-center items-center px-4 mt-[-20%]">
-                  <Image source={require("../assets/images/searchr.webp")} style={{ width: wp("60%"), height: hp("30%"), resizeMode: "contain" }} />
-                  {searchQuery && (
-                    <Text className="text-gray-500 text-center mt-4">No customers found for "{searchQuery}"</Text>
-                  )}
-                </View>
+                 <View className="flex-1 justify-center items-center px-4 mt-[-20%]">
+      <Image 
+        source={require("../assets/images/searchr.webp")} 
+        style={{ width: wp("60%"), height: hp("30%"), resizeMode: "contain" }} 
+      />
+      {searchQuery ? (
+        // When user is searching and no results found
+        <Text className="text-gray-500 text-center mt-4">
+          No customers found for "{searchQuery}"
+        </Text>
+      ) : (
+        // When there are genuinely no registered customers
+        <Text className="text-gray-600 text-center ">
+          No registered customers yet
+        </Text>
+      )}
+    </View>
               ) : (
                 <FlatList
                   data={filteredCustomers}
