@@ -8,8 +8,7 @@ import axios  from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage"; 
 import environment from "@/environment/environment";
 import { Keyboard } from "react-native";
-import { useFocusEffect } from "expo-router";
-
+import { useFocusEffect } from '@react-navigation/native';
 
 // Navigation type
 type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, "LoginScreen">;
@@ -112,7 +111,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => true;
-     const subscription = BackHandler.addEventListener("hardwareBackPress", onBackPress);
+      const subscription = BackHandler.addEventListener("hardwareBackPress", onBackPress);
       return () => subscription.remove();
     }, [])
   );

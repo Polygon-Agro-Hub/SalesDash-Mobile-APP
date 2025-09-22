@@ -27,8 +27,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import DropDownPicker from "react-native-dropdown-picker";
 import { SelectList } from "react-native-dropdown-select-list";
 import { AntDesign } from "@expo/vector-icons"; 
-import { useFocusEffect } from "expo-router";
-
+import { useFocusEffect } from '@react-navigation/native';
 type AddComplaintScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
   "AddComplaintScreen"

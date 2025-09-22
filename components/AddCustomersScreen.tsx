@@ -10,7 +10,7 @@ import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SelectList } from "react-native-dropdown-select-list";
 import DropDownPicker from "react-native-dropdown-picker";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect } from '@react-navigation/native';
 import { AntDesign, Ionicons } from "@expo/vector-icons";
 
 

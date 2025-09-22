@@ -11,8 +11,7 @@ import DropDownPicker from "react-native-dropdown-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SelectList } from "react-native-dropdown-select-list";
 import { AntDesign } from "@expo/vector-icons";
-import { useFocusEffect } from "expo-router";
-
+import { useFocusEffect } from '@react-navigation/native';
 
 
 

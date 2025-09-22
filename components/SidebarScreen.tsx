@@ -9,7 +9,7 @@ import axios from "axios";
 import environment from "@/environment/environment";
 import BackButton from "./BackButton";
 import LottieView from "lottie-react-native";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect } from '@react-navigation/native';
 import { ActionSheetIOS } from "react-native";
 
 
