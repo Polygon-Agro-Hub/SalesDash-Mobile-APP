@@ -23,8 +23,7 @@ import axios from "axios";
 import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import LottieView from "lottie-react-native";
-import { useFocusEffect } from "expo-router";
-
+import { useFocusEffect } from '@react-navigation/native';
 // ViewOrdersScreen.tsx - Updated with Pagination
 type ViewOrdersScreenNavigationProp = StackNavigationProp<RootStackParamList, "ViewOrdersScreen">;
 
@@ -372,7 +371,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
   <TextInput
     placeholder="Search By Order Number"
     placeholderTextColor="#6839CF"
-    className="flex-1 text-sm text-purple"
+    className="flex-1 text-sm text-purple h-10"
     onChangeText={(text) => {
       // Only allow numbers - remove all letters, special characters, and spaces
       const numericOnly = text.replace(/[^0-9]/g, '');

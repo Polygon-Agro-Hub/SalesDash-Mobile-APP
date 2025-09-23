@@ -12,6 +12,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import environment from "@/environment/environment";
 import { Audio } from "expo-av";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Global state management
 let globalUnreadCount = 0;
@@ -63,6 +64,7 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
   const [error, setError] = useState<string | null>(null);
   const [isAudioInitialized, setIsAudioInitialized] = useState(false);
   const [ status ,setStatus] = useState('')
+  const insets = useSafeAreaInsets();
   
   const previousNotificationsCount = useRef(0);
   const sound = useRef<Audio.Sound | null>(null);
@@ -426,13 +428,19 @@ const fetchNotifications = async () => {
             )}
           </View>
 
-          <Modal 
+          {/* <Modal 
             animationType="fade" 
             transparent={true} 
             visible={modalVisible} 
             onRequestClose={() => setModalVisible(false)}
+           style={{ 
+       
+          paddingBottom:  insets.bottom , 
+          
+         
+        }}
           >
-            <View className="flex-1 justify-end bg-[#00000033]">
+            <View className="flex-1 justify-end bg-[#00000033] z-20">
               <View className="bg-white w-full p-2 rounded-t-lg mr-4">
                 <View className="flex-row justify-between mt-3">
                   <TouchableOpacity 
@@ -452,7 +460,43 @@ const fetchNotifications = async () => {
                 </View>
               </View>
             </View>
-          </Modal>
+          </Modal> */}
+          <Modal
+  animationType="fade"
+  transparent={true}
+  visible={modalVisible}
+  onRequestClose={() => setModalVisible(false)}
+  statusBarTranslucent={true}
+>
+  <View 
+    className="flex-1 justify-end bg-black/20"
+    style={{ paddingBottom: insets.bottom }}
+  >
+    {/* Backdrop - tap to close */}
+    <TouchableOpacity 
+      className="flex-1" 
+      activeOpacity={1} 
+      onPress={() => setModalVisible(false)}
+    />
+    
+    {/* Modal content */}
+    <View className="bg-white rounded-t-3xl px-4 py-5">
+      <TouchableOpacity
+        className="flex-row items-center p-3 rounded-lg active:bg-gray-100"
+        onPress={deleteNotification}
+        activeOpacity={0.7}
+      >
+        <Image
+          source={require("../assets/images/cancel.webp")}
+          className="w-6 h-6"
+        />
+        <Text className="ml-4 text-base font-semibold text-gray-800">
+          Remove this notification
+        </Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+</Modal>
         </>
       )}
     </View>

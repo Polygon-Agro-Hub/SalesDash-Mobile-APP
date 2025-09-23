@@ -26,7 +26,9 @@ interface OtpScreenProps {
 const OtpScreen: React.FC = () => {
   const navigation = useNavigation<OtpScreenNavigationProp>();
   const [otp, setOtp] = useState<string[]>(["", "", "", "",""]);
-  const inputRefs = useRef<TextInput[]>([]);
+  // const inputRefs = useRef<TextInput[]>([]);
+  const inputRefs = useRef<(TextInput | null)[]>([]);
+
   const [timer, setTimer] = useState(60);
   const [resendDisabled, setResendDisabled] = useState(true);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
@@ -556,7 +558,10 @@ const handleKeyPress = ({ nativeEvent: { key } }: NativeSyntheticEvent<TextInput
 <View className="flex-row justify-center gap-3 mb-4 mt-1 px-4 ">
 {otp.map((digit, index) => (
   <TextInput
-    ref={(el) => (inputRefs.current[index] = el as TextInput)}
+  ref={(el: TextInput | null) => {
+  inputRefs.current[index] = el;
+}}
+
     className={`w-12 h-12 text-lg text-center rounded-lg border-2 ${
       digit 
         ? "bg-[#874DDB] text-white border-[#874DDB]" 

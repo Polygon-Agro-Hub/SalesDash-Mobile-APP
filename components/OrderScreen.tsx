@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  SafeAreaView,
   ScrollView,
   ActivityIndicator,
   StatusBar,
@@ -1004,9 +1003,8 @@ const handlePackageSearchChange = (text: string) => {
       <KeyboardAvoidingView 
                                behavior={Platform.OS === "ios" ? "padding" : "height"}
                                enabled 
-                               style={{ flex: 1}}
+                               style={{ flex: 1, backgroundColor: 'white' }}
                              >
-                                  <SafeAreaView className="flex-1 bg-white">
       <StatusBar barStyle="dark-content" backgroundColor="white" />
       
       {/* Header */}
@@ -1641,7 +1639,6 @@ const handlePackageSearchChange = (text: string) => {
     </View>
   </View>
 </Modal>
-    </SafeAreaView>
       </KeyboardAvoidingView>
 
   );
