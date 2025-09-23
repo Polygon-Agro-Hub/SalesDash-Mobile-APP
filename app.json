@@ -24,7 +24,10 @@
       "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "pan",
       "package": "com.polygonagro.SalesDash",
-      "versionCode": 3,
+      "versionCode": 5,
+      "compileSdkVersion": 35,
+      "targetSdkVersion": 35,
+      "minSdkVersion": 24,
       "permissions": [
         "INTERNET",
         "WRITE_EXTERNAL_STORAGE",
@@ -60,6 +63,16 @@
         {
           "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone."
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "minSdkVersion": 24
+          }
+        }
       ]
     ],
     "experiments": {
@@ -70,7 +83,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "4dc00e7d-cc1f-4f43-b1a7-529f3ebdd3f5"
+        "projectId": "7d1420e3-e355-4e7f-85a2-cbe175c965b1"
       }
     }
   }
