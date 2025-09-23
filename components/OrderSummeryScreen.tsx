@@ -735,6 +735,24 @@ useEffect(() => {
   }
 }, [customerId, route.params?.customerId, route.params?.customerid]);
 
+const formatPrice = (amount: number) => {
+  // Check if the number has decimal places
+  const hasDecimals = amount % 1 !== 0;
+  
+  if (hasDecimals) {
+    // If has decimals, show them without .00
+    return amount.toLocaleString('en-US', {
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 2
+    });
+  } else {
+    // If no decimals, show .00
+    return amount.toLocaleString('en-US', {
+      maximumFractionDigits: 0,
+      minimumFractionDigits: 0
+    }) + '.00';
+  }
+};
 
 
   return (
@@ -1098,7 +1116,7 @@ else if (isPackage === 1) {
   </View>
   
   {/* Rest of the payment summary remains the same */}
-  {isPackage === 1 && (
+  {/* {isPackage === 1 && (
   <View className="flex-row justify-between mt-3">
   <Text className="text-[#8492A3] font-medium">Subtotal</Text>
   <Text className="text-black font-medium mr-14">
@@ -1164,7 +1182,55 @@ else if (isPackage === 1) {
       minimumFractionDigits: 0
     })}.00
   </Text>
-</View>
+</View> */}
+
+ {isPackage === 1 && (
+    <View className="flex-row justify-between mt-3">
+      <Text className="text-[#8492A3] font-medium">Subtotal</Text>
+      <Text className="text-black font-medium mr-14">
+        Rs.{formatPrice(subTotalDeliveryPlus - deliveryFee)}
+      </Text>
+    </View>
+  )}
+
+  {isPackage === 0 && (
+    <View className="flex-row justify-between mt-3">
+      <Text className="text-[#8492A3] font-medium">Subtotal</Text>
+      <Text className="text-black font-medium mr-14">
+        Rs.{formatPrice(subTotalDeliveryPlus - 180 - deliveryFee)}
+      </Text>
+    </View>
+  )}
+
+  <View className="flex-row justify-between mt-2">
+    <Text className="text-[#8492A3]">Discount</Text>
+    <Text className="text-gray-500 mr-14">
+      Rs.{formatPrice(discount)}
+    </Text>
+  </View>
+
+  <View className="flex-row justify-between mt-2">
+    <Text className="text-[#8492A3]">Delivery Fee</Text>
+    <Text className="text-gray-500 mr-14">
+      Rs.{formatPrice(deliveryFee)}
+    </Text>
+  </View>
+
+  {isPackage === 0 && (
+    <View className="flex-row justify-between mt-2">
+      <Text className="text-[#8492A3]">Service Fee</Text>
+      <Text className="text-gray-500 mr-14">
+        Rs.180.00
+      </Text>
+    </View>
+  )}
+
+  <View className="flex-row justify-between mt-2">
+    <Text className="text-black font-semibold">Grand Total</Text>
+    <Text className="text-black font-semibold mr-14">
+      Rs.{formatPrice(totalDeliveryPlus)}
+    </Text>
+  </View>
 </View>
           {/* Payment Method */}
           {/* <View className="bg-white border border-gray-300 rounded-lg p-4 mt-3 shadow-sm">
