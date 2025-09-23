@@ -97,7 +97,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       if (errorMessage === "Invalid password") {
         Alert.alert("Login Error", "Invalid password, please try again.");
       } else {
-        Alert.alert("Error", "Invalid employee ID or credentials");
+        Alert.alert("Error", "Invalid Employee ID, please try again.");
       }
     } else {
       setErrors(["Something went wrong. Please try again."]);

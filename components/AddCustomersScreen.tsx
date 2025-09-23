@@ -40,6 +40,13 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
   const [houseNo, setHouseNo] = useState<string>("");
   const [streetName, setStreetName] = useState<string>("");
   const [city, setCity] = useState<string>("");
+  const [houseNoError, setHouseNoError] = useState<string>("");
+const [streetNameError, setStreetNameError] = useState<string>("");
+const [cityError, setCityError] = useState<string>("");
+const [buildingNoError, setBuildingNoError] = useState<string>("");
+const [buildingNameError, setBuildingNameError] = useState<string>("");
+const [unitNoError, setUnitNoError] = useState<string>("");
+const [floorNoError, setFloorNoError] = useState<string>("");
   const [buildingNo, setbuildingNo] = useState<string>("");
   const [floorNo, setfloorNo] = useState<string>("");
   const [unitNo, setunitNo] = useState<string>("");
@@ -52,11 +59,20 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation }) =
   const [emailError, setEmailError] = useState<string>("");
   const [phoneError, setPhoneError] = useState<string>("");
   const [touchedFields, setTouchedFields] = useState<{[key: string]: boolean}>({
-    email: false,
-    phoneNumber: false,
-    firstName: false,
-    lastName: false
-  });
+  email: false,
+  phoneNumber: false,
+  firstName: false,
+  lastName: false,
+  title: false,
+  buildingType: false,
+  houseNo: false,
+  streetName: false,
+  city: false,
+  buildingNo: false,
+  buildingName: false,
+  unitNo: false,
+  floorNo: false
+});
   const [firstNameError, setFirstNameError] = useState<string>("");
 const [lastNameError, setLastNameError] = useState<string>("");
 const [buildingTypeError, setBuildingTypeError] = useState<string>("");
@@ -86,40 +102,55 @@ const [buildingTypeItems, setBuildingTypeItems] = useState([
     { key: "2", value: "Apartment" },
   ];
 
-    const resetForm = () => {
-    setFirstName("");
-    setLastName("");
-    setPhoneNumber("");
-    setSelectedCategory('')
-    setTitleDropdownOpen(false)
-    setEmail("");
-    setHouseNo("");
-    setStreetName("");
-    setCity("");
-    setbuildingNo("");
-    setfloorNo("");
-    setunitNo("");
-    setbuildingName("");
-    setBuildingType("");
-    setSelectedCategory("");
-    setLoading(false);
-    setOtpSent(false);
-    setOpenBuildingTypeDropdown(false);
-    setEmailError("");
-    setPhoneError("");
-    setFirstNameError("");
-    setLastNameError("");
-    setBuildingTypeError("");
-    setTitleError("");
-    setIsSubmitting(false);
-    setTouchedFields({
-      email: false,
-      phoneNumber: false,
-      firstName: false,
-      lastName: false
-    });
-
-  };
+   const resetForm = () => {
+  setFirstName("");
+  setLastName("");
+  setPhoneNumber("");
+  setSelectedCategory('')
+  setTitleDropdownOpen(false)
+  setEmail("");
+  setHouseNo("");
+  setStreetName("");
+  setCity("");
+  setbuildingNo("");
+  setfloorNo("");
+  setunitNo("");
+  setbuildingName("");
+  setBuildingType("");
+  setSelectedCategory("");
+  setLoading(false);
+  setOtpSent(false);
+  setOpenBuildingTypeDropdown(false);
+  setEmailError("");
+  setPhoneError("");
+  setFirstNameError("");
+  setLastNameError("");
+  setBuildingTypeError("");
+  setTitleError("");
+  setHouseNoError("");
+  setStreetNameError("");
+  setCityError("");
+  setBuildingNoError("");
+  setBuildingNameError("");
+  setUnitNoError("");
+  setFloorNoError("");
+  setIsSubmitting(false);
+  setTouchedFields({
+    email: false,
+    phoneNumber: false,
+    firstName: false,
+    lastName: false,
+    title: false,
+    buildingType: false,
+    houseNo: false,
+    streetName: false,
+    city: false,
+    buildingNo: false,
+    buildingName: false,
+    unitNo: false,
+    floorNo: false
+  });
+};
 
 
 
@@ -171,7 +202,7 @@ const [buildingTypeItems, setBuildingTypeItems] = useState([
   
   const sendOTP = async () => {
     if (!phoneNumber) {
-      Alert.alert('Error', 'Please enter a phone number.');
+      Alert.alert('Error', 'Please enter a mobile number.');
       return;
     }
     console.log("----check----",phoneNumber)
@@ -482,9 +513,9 @@ useEffect(() => {
   useEffect(() => {
     if (touchedFields.phoneNumber) {
       if (!phoneNumber) {
-        setPhoneError("Phone number is required");
+        setPhoneError("Mobile number is required");
       } else if (!validatePhoneNumber(phoneNumber)) {
-        setPhoneError("Please enter a valid phone number (format: +947XXXXXXXX)");
+        setPhoneError("Please enter a valid mobile number (format: +947XXXXXXXX)");
       } else {
         setPhoneError("");
       }
@@ -524,6 +555,76 @@ useEffect(() => {
       }
     }
   }, [buildingType, touchedFields.buildingType]);
+
+  useEffect(() => {
+  if (touchedFields.houseNo) {
+    if (!houseNo) {
+      setHouseNoError("House number is required");
+    } else {
+      setHouseNoError("");
+    }
+  }
+}, [houseNo, touchedFields.houseNo]);
+
+useEffect(() => {
+  if (touchedFields.streetName) {
+    if (!streetName) {
+      setStreetNameError("Street name is required");
+    } else {
+      setStreetNameError("");
+    }
+  }
+}, [streetName, touchedFields.streetName]);
+
+useEffect(() => {
+  if (touchedFields.city) {
+    if (!city) {
+      setCityError("City is required");
+    } else {
+      setCityError("");
+    }
+  }
+}, [city, touchedFields.city]);
+
+useEffect(() => {
+  if (touchedFields.buildingNo) {
+    if (!buildingNo) {
+      setBuildingNoError("Building number is required");
+    } else {
+      setBuildingNoError("");
+    }
+  }
+}, [buildingNo, touchedFields.buildingNo]);
+
+useEffect(() => {
+  if (touchedFields.buildingName) {
+    if (!buildingName) {
+      setBuildingNameError("Building name is required");
+    } else {
+      setBuildingNameError("");
+    }
+  }
+}, [buildingName, touchedFields.buildingName]);
+
+useEffect(() => {
+  if (touchedFields.unitNo) {
+    if (!unitNo) {
+      setUnitNoError("Unit number is required");
+    } else {
+      setUnitNoError("");
+    }
+  }
+}, [unitNo, touchedFields.unitNo]);
+
+useEffect(() => {
+  if (touchedFields.floorNo) {
+    if (!floorNo) {
+      setFloorNoError("Floor number is required");
+    } else {
+      setFloorNoError("");
+    }
+  }
+}, [floorNo, touchedFields.floorNo]);
 
  // Helper function to capitalize first letter and remove special characters
 const formatNameInput = (text: string) => {
@@ -585,21 +686,28 @@ const handleRegister = async () => {
   
   setIsSubmitting(true);
   // Mark all fields as touched to show errors
-  setTouchedFields({
-    ...touchedFields,
+ setTouchedFields({
+    email: true,
+    phoneNumber: true,
     firstName: true,
     lastName: true,
-    phoneNumber: true,
-  
-    buildingType: true
+    title: true,
+    buildingType: true,
+    houseNo: true,
+    streetName: true,
+    city: true,
+    buildingNo: true,
+    buildingName: true,
+    unitNo: true,
+    floorNo: true
   });
   
   // Validate required fields
-  if (!selectedCategory || !firstName || !lastName || !phoneNumber ||  !buildingType) {
-    Alert.alert("Error", "Please fill in all required fields.");
-    setIsSubmitting(false);
-    return;
-  }
+  if (!selectedCategory || !firstName || !lastName || !phoneNumber || !email || !buildingType) {
+  Alert.alert("Error", "Please fill in all required fields.");
+  setIsSubmitting(false);
+  return;
+}
   
   // Validate building-specific fields
   if (buildingType === "House") {
@@ -618,7 +726,7 @@ const handleRegister = async () => {
   
   // Validate phone and email formats
   if (!validatePhoneNumber(phoneNumber)) {
-    Alert.alert("Error", "Please enter a valid phone number.");
+    Alert.alert("Error", "Please enter a valid mobile number.");
     setIsSubmitting(false);
     return;
   }
@@ -633,7 +741,7 @@ const handleRegister = async () => {
   try {
     const checkResponse = await axios.post(`${environment.API_BASE_URL}api/customer/check-customer`, {
       phoneNumber,
-      email: email || null,
+      email: email ,
     });
     
     const customerData = {
@@ -641,7 +749,7 @@ const handleRegister = async () => {
       firstName,
       lastName,
       phoneNumber,
-      email: email || null,
+      email: email,
       buildingType,
       houseNo,
       streetName,
@@ -663,7 +771,7 @@ const handleRegister = async () => {
     if (axios.isAxiosError(error)) {
       if (error.response && error.response.status === 400) {
         if (error.response.data.message && 
-            error.response.data.message.includes("Phone number or email already exists")) {
+            error.response.data.message.includes("Mobile number or email already exists")) {
           
           // Check which credential is duplicated by making separate API calls
           try {
@@ -684,7 +792,7 @@ const handleRegister = async () => {
           } catch (phoneCheckError: any) {
             if (axios.isAxiosError(phoneCheckError) && 
                 phoneCheckError.response?.status === 400 && 
-                phoneCheckError.response?.data?.message?.includes("Phone number or email already exists")) {
+                phoneCheckError.response?.data?.message?.includes("Mobile number or email already exists")) {
               
               // Phone number is duplicated, now check if email is also duplicated
               try {
@@ -697,25 +805,25 @@ const handleRegister = async () => {
                 
                 // If we reach here, email is unique, so only phone is duplicated
                 Alert.alert(
-                  "Phone Number Already Exists",
-                  "This phone number is already registered. Please sign in or use a different phone number."
+                  "Mobile Number Already Exists",
+                  "This Mobile number is already registered. Please sign in or use a different mobile number."
                 );
                 
               } catch (emailCheckError: any) {
                 if (axios.isAxiosError(emailCheckError) && 
                     emailCheckError.response?.status === 400 && 
-                    emailCheckError.response?.data?.message?.includes("Phone number or email already exists")) {
+                    emailCheckError.response?.data?.message?.includes("Mobile number or email already exists")) {
                   
                   // Both phone and email are duplicated
                   Alert.alert(
                     "Account Already Exists",
-                    "Both phone number and email are already registered. Please sign in instead."
+                    "Both Mobile number and email are already registered. Please sign in instead."
                   );
                 } else {
                   // Email is unique, only phone is duplicated
                   Alert.alert(
-                    "Phone Number Already Exists",
-                    "This phone number is already registered. Please sign in or use a different phone number."
+                    "Mobile Number Already Exists",
+                    "This Mobile number is already registered. Please sign in or use a different mobile number."
                   );
                 }
               }
@@ -738,7 +846,7 @@ const handleRegister = async () => {
         // Handle conflict status if your API uses it for duplicates
         Alert.alert(
           "Account Already Exists",
-          "An account with this phone number or email already exists. Please sign in instead."
+          "An account with this mobile number or email already exists. Please sign in instead."
         );
       } else if (error.response && error.response.status >= 500) {
         // Server error
@@ -888,35 +996,41 @@ const capitalizeWords = (text: string) => {
   placeholder="Title" 
 /> */}
 <DropDownPicker
-  open={titleDropdownOpen}
-  value={selectedCategory}
-  items={titleItems}
-  setOpen={setTitleDropdownOpen}
-  setValue={setSelectedCategory}
-  setItems={setTitleItems}
-  style={{
-    backgroundColor: '#F6F6F6',
-    borderColor: '#F6F6F6',
-    borderRadius: 30,
-    paddingVertical: 5,
-    minHeight: 40,
-  }}
-  textStyle={{
-    color: 'black',
-  }}
-  searchable={false}
-  placeholder="Title"
-  zIndex={1000}
-  zIndexInverse={3000}
-  dropDownContainerStyle={{
+    open={titleDropdownOpen}
+    value={selectedCategory}
+    items={titleItems}
+    setOpen={setTitleDropdownOpen}
+    setValue={setSelectedCategory}
+    setItems={setTitleItems}
+    style={{
       backgroundColor: '#F6F6F6',
-      borderColor: '#F6F6F6',
+      borderColor: titleError ? '#EF4444' : '#F6F6F6',
+      borderWidth: titleError ? 1 : 1,
+      borderRadius: 30,
+      paddingVertical: 5,
+      minHeight: 40,
     }}
-  listMode="SCROLLVIEW"
-  scrollViewProps={{
-    nestedScrollEnabled: true,
-  }}
-/>
+    textStyle={{
+      color: 'black',
+    }}
+    searchable={false}
+    placeholder="Title"
+    zIndex={1000}
+    zIndexInverse={3000}
+    dropDownContainerStyle={{
+      backgroundColor: '#F6F6F6',
+      borderColor: titleError ? '#EF4444' : '#F6F6F6',
+    }}
+    listMode="SCROLLVIEW"
+    scrollViewProps={{
+      nestedScrollEnabled: true,
+    }}
+    onClose={() => {
+      if (!selectedCategory) {
+        handleFieldTouch("title");
+      }
+    }}
+  />
                 </View>
 
                 <View className="flex-[2] ml-2">
@@ -1014,7 +1128,7 @@ const capitalizeWords = (text: string) => {
                 <Text className="text-red-500 text-xs pl-4 pt-1">{emailError}</Text>
               ) : null}
             </View> */}
-           {/* <View className="mb-4">
+           <View className="mb-4">
   <Text className="text-gray-700 mb-1">Email Address *</Text>
   <TextInput
     className={`bg-[#F6F6F6] border ${emailError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
@@ -1039,9 +1153,9 @@ const capitalizeWords = (text: string) => {
   {emailError ? (
     <Text className="text-red-500 text-xs pl-4 pt-1">{emailError}</Text>
   ) : null}
-</View> */}
-<View className="mb-4">
-  <Text className="text-gray-700 mb-1">Email Address</Text>
+</View>
+{/* <View className="mb-4">
+  <Text className="text-gray-700 mb-1">Email Address *</Text>
   <TextInput
     className={`bg-[#F6F6F6] border ${emailError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
     placeholder="Email Address "
@@ -1065,12 +1179,11 @@ const capitalizeWords = (text: string) => {
   {emailError ? (
     <Text className="text-red-500 text-xs pl-4 pt-1">{emailError}</Text>
   ) : null}
-</View>
+</View> */}
 
-              <View className="mb-4">
-                <Text className="text-gray-700 mb-1">Building Type *</Text>
-             
-       <DropDownPicker
+<View className="mb-4">
+  <Text className="text-gray-700 mb-1">Building Type *</Text>
+  <DropDownPicker
     open={openBuildingTypeDropdown}
     value={buildingType}
     items={buildingTypeItems}
@@ -1080,12 +1193,13 @@ const capitalizeWords = (text: string) => {
     placeholder="Select Building Type"
     style={{
       backgroundColor: '#F6F6F6',
-      borderColor: '#F6F6F6',
+      borderColor: buildingTypeError ? '#EF4444' : '#F6F6F6',
+      borderWidth: buildingTypeError ? 1 : 1,
       borderRadius: 30,
     }}
     dropDownContainerStyle={{
       backgroundColor: '#F6F6F6',
-      borderColor: '#F6F6F6',
+      borderColor: buildingTypeError ? '#EF4444' : '#F6F6F6',
     }}
     textStyle={{
       fontSize: 14,
@@ -1102,220 +1216,312 @@ const capitalizeWords = (text: string) => {
     showTickIcon={true}
     activityIndicatorColor="#6E3DD1"
     searchable={false}
-   listMode="SCROLLVIEW"
-  scrollViewProps={{
-    nestedScrollEnabled: true,
-  }}
-   
+    listMode="SCROLLVIEW"
+    scrollViewProps={{
+      nestedScrollEnabled: true,
+    }}
+    onClose={() => {
+      if (!buildingType) {
+        handleFieldTouch("buildingType");
+      }
+    }}
   />
- 
+  {buildingTypeError ? (
+    <Text className="text-red-500 text-xs pl-4 pt-1">{buildingTypeError}</Text>
+  ) : null}
+</View>
+
+             {buildingType === "House" && (
+  <>
+    <View className="mb-4">
+      <Text className="text-gray-700 mb-1">Building / House No *</Text>
+      <TextInput
+        className={`bg-[#F6F6F6] border ${houseNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+        placeholder="Building / House No (e.g., 14/B)"
+        value={houseNo}
+        onChangeText={(text) => {
+          const capitalizedText = capitalizeWords(text);
+          setHouseNo(capitalizedText);
+          if (touchedFields.houseNo && !text) {
+            setHouseNoError("House number is required");
+          } else if (touchedFields.houseNo) {
+            setHouseNoError("");
+          }
+        }}
+        onBlur={() => handleFieldTouch("houseNo")}
+        autoCapitalize="words"
+      />
+      {houseNoError ? (
+        <Text className="text-red-500 text-xs pl-4 pt-1">{houseNoError}</Text>
+      ) : null}
+    </View>
     
-              </View>
+    <View className="mb-4">
+      <Text className="text-gray-700 mb-1">Street Name *</Text>
+      <TextInput
+        className={`bg-[#F6F6F6] border ${streetNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+        placeholder="Street Name"
+        value={streetName}
+        onChangeText={(text) => {
+          const capitalizedText = capitalizeWords(text);
+          setStreetName(capitalizedText);
+          if (touchedFields.streetName && !text) {
+            setStreetNameError("Street name is required");
+          } else if (touchedFields.streetName) {
+            setStreetNameError("");
+          }
+        }}
+        onBlur={() => handleFieldTouch("streetName")}
+        autoCapitalize="words"
+      />
+      {streetNameError ? (
+        <Text className="text-red-500 text-xs pl-4 pt-1">{streetNameError}</Text>
+      ) : null}
+    </View>
+    
+    <View className="mb-4 z-10">
+      <Text className="text-gray-700 mb-1">Nearest City *</Text>
+      <DropDownPicker
+        open={openCityDropdown}
+        value={city}
+        items={cityItems}
+        setOpen={setOpenCityDropdown}
+        setValue={setCity}
+        setItems={setCityItems}
+        placeholder="Select Nearest City"
+        style={{
+          backgroundColor: '#F6F6F6',
+          borderColor: cityError ? '#EF4444' : '#F6F6F6',
+          borderWidth: cityError ? 1 : 1,
+          borderRadius: 30,
+        }}
+        dropDownContainerStyle={{
+          backgroundColor: '#F6F6F6',
+          borderColor: cityError ? '#EF4444' : '#F6F6F6',
+        }}
+        textStyle={{
+          fontSize: 14,
+          color: 'black',
+          marginLeft: 15
+        }}
+        placeholderStyle={{
+          color: 'gray',
+          marginLeft: 15,
+        }}
+        listItemLabelStyle={{
+          color: 'black',
+        }}
+        showTickIcon={true}
+        activityIndicatorColor="#6E3DD1"
+        searchable={true}
+        modalProps={{
+          animationType: "fade",
+        }}
+        listMode="MODAL"
+        onClose={() => {
+          if (!city) {
+            handleFieldTouch("city");
+          }
+        }}
+      />
+      {cityError ? (
+        <Text className="text-red-500 text-xs pl-4 pt-1">{cityError}</Text>
+      ) : null}
+    </View>
+  </>
+)}
 
-              {buildingType === "House" && (
-                <>
-                  <View className="mb-4">
-                    <Text className="text-gray-700 mb-1">Building / House No *</Text>
-                    <TextInput
-                      className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
-                      placeholder="Building / House No (e.g., 14/B)"
-                      value={houseNo}
-                    //  onChangeText={setHouseNo}
-                                       onChangeText={(text) => {
-    const capitalizedText = capitalizeWords(text);
-    setHouseNo(capitalizedText);
-  }}
-                      autoCapitalize="words" 
-                    />
-                  </View>
-                  <View className="mb-4">
-                    <Text className="text-gray-700 mb-1">Street Name *</Text>
-                    <TextInput
-                      className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
-                      placeholder="Street Name"
-                      value={streetName}
-                    //  onChangeText={setStreetName}
-                     onChangeText={(text) => {
-    const capitalizedText = capitalizeWords(text);
-    setStreetName(capitalizedText);
-  }}
-                       autoCapitalize="words" 
-                    />
-                  </View>
-             <View className="mb-4 z-10">
-  <Text className="text-gray-700 mb-1">Nearest City *</Text>
-  <DropDownPicker
-    open={openCityDropdown}
-    value={city}
-    items={cityItems}
-    setOpen={setOpenCityDropdown}
-    setValue={setCity}
-    setItems={setCityItems}
-    placeholder="Select Nearest City"
-    style={{
-      backgroundColor: '#F6F6F6',
-      borderColor: '#F6F6F6',
-      borderRadius: 30,
-    }}
-    dropDownContainerStyle={{
-      backgroundColor: '#F6F6F6',
-      borderColor: '#F6F6F6',
-    }}
-    textStyle={{
-      fontSize: 14,
-      color: 'black',
-      marginLeft:15
-    }}
-   placeholderStyle={{
-  color: 'gray',
-  marginLeft: 15,
-}}
+{buildingType === "Apartment" && (
+  <>
+    <View className="mb-4">
+      <Text className="text-gray-700 mb-1">Apartment / Building No *</Text>
+      <TextInput
+        className={`bg-[#F6F6F6] border ${buildingNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+        placeholder="Apartment / Building Name"
+        value={buildingNo}
+        onChangeText={(text) => {
+          const capitalizedText = capitalizeWords(text);
+          setbuildingNo(capitalizedText);
+          if (touchedFields.buildingNo && !text) {
+            setBuildingNoError("Building number is required");
+          } else if (touchedFields.buildingNo) {
+            setBuildingNoError("");
+          }
+        }}
+        onBlur={() => handleFieldTouch("buildingNo")}
+        autoCapitalize="words"
+      />
+      {buildingNoError ? (
+        <Text className="text-red-500 text-xs pl-4 pt-1">{buildingNoError}</Text>
+      ) : null}
+    </View>
 
-    listItemLabelStyle={{
-      color: 'black',
-    }}
-    showTickIcon={true}
-    activityIndicatorColor="#6E3DD1"
-    searchable={true}
-    modalProps={{
-      animationType: "fade",
-    }}
-    listMode="MODAL"
-  />
-</View>
-                </>
-              )}
+    <View className="mb-4">
+      <Text className="text-gray-700 mb-1">Apartment / Building Name *</Text>
+      <TextInput
+        className={`bg-[#F6F6F6] border ${buildingNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+        placeholder="Apartment / Building Name"
+        value={buildingName}
+        onChangeText={(text) => {
+          const capitalizedText = capitalizeWords(text);
+          setbuildingName(capitalizedText);
+          if (touchedFields.buildingName && !text) {
+            setBuildingNameError("Building name is required");
+          } else if (touchedFields.buildingName) {
+            setBuildingNameError("");
+          }
+        }}
+        onBlur={() => handleFieldTouch("buildingName")}
+        autoCapitalize="words"
+      />
+      {buildingNameError ? (
+        <Text className="text-red-500 text-xs pl-4 pt-1">{buildingNameError}</Text>
+      ) : null}
+    </View>
+    
+    <View className="mb-4">
+      <Text className="text-gray-700 mb-1">Flat / Unit Number *</Text>
+      <TextInput
+        className={`bg-[#F6F6F6] border ${unitNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+        placeholder="ex : Building B"
+        value={unitNo}
+        onChangeText={(text) => {
+          const capitalizedText = capitalizeWords(text);
+          setunitNo(capitalizedText);
+          if (touchedFields.unitNo && !text) {
+            setUnitNoError("Unit number is required");
+          } else if (touchedFields.unitNo) {
+            setUnitNoError("");
+          }
+        }}
+        onBlur={() => handleFieldTouch("unitNo")}
+        autoCapitalize="words"
+      />
+      {unitNoError ? (
+        <Text className="text-red-500 text-xs pl-4 pt-1">{unitNoError}</Text>
+      ) : null}
+    </View>
+    
+    <View className="mb-4">
+      <Text className="text-gray-700 mb-1">Floor Number *</Text>
+      <TextInput
+        className={`bg-[#F6F6F6] border ${floorNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+        placeholder="ex : 3rd Floor"
+        value={floorNo}
+        onChangeText={(text) => {
+          const capitalizedText = capitalizeWords(text);
+          setfloorNo(capitalizedText);
+          if (touchedFields.floorNo && !text) {
+            setFloorNoError("Floor number is required");
+          } else if (touchedFields.floorNo) {
+            setFloorNoError("");
+          }
+        }}
+        onBlur={() => handleFieldTouch("floorNo")}
+        autoCapitalize="words"
+      />
+      {floorNoError ? (
+        <Text className="text-red-500 text-xs pl-4 pt-1">{floorNoError}</Text>
+      ) : null}
+    </View>
 
-              {buildingType === "Apartment" && (
-                <>
-                  <View className="mb-4">
-                   <Text className="text-gray-700 mb-1">Apartment / Building No *</Text>
-                    <TextInput
-                      className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
-                      placeholder="Apartment / Building Name"
-                      value={buildingNo}
-                   //   onChangeText={setbuildingNo}
-                     onChangeText={(text) => {
-    const capitalizedText = capitalizeWords(text);
-    setbuildingNo(capitalizedText);
-  }}
-                     autoCapitalize="words" 
-                    />
-                  </View>
-
-                  <View className="mb-4">
-                    <Text className="text-gray-700 mb-1">Apartment / Building Name *</Text>
-                    <TextInput
-                      className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
-                      placeholder="Apartment / Building Name"
-                      value={ buildingName}
-                    //  onChangeText={ setbuildingName}
-                                         onChangeText={(text) => {
-    const capitalizedText = capitalizeWords(text);
-    setbuildingName(capitalizedText);
-  }}
-                      autoCapitalize="words" 
-                    />
-                  </View>
-                  <View className="mb-4">
-                    <Text className="text-gray-700 mb-1">Flat / Unit Number *</Text>
-                    <TextInput
-                      className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
-                      placeholder="ex : Building B"
-                      value={unitNo}
-                    //  onChangeText={setunitNo}
-                    onChangeText={(text) => {
-    const capitalizedText = capitalizeWords(text);
-    setunitNo(capitalizedText);
-  }}
-                      autoCapitalize="words" 
-                    />
-                  </View>
-                  <View className="mb-4">
-                    <Text className="text-gray-700 mb-1">Floor Number *</Text>
-                    <TextInput
-                      className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
-                      placeholder="ex : 3rd Floor"
-                      value={floorNo}
-                   //   onChangeText={setfloorNo}
-                         onChangeText={(text) => {
-    const capitalizedText = capitalizeWords(text);
-    setfloorNo(capitalizedText);
-  }}
-                      autoCapitalize="words" 
-                    />
-                  </View>
-
-                  <View className="mb-4">
-                    <Text className="text-gray-700 mb-1">House No *</Text>
-                    <TextInput
-                      className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
-                      placeholder="ex : 14"
-                      value={houseNo}
-                     // onChangeText={setHouseNo}
-                                            onChangeText={(text) => {
-    const capitalizedText = capitalizeWords(text);
-    setHouseNo(capitalizedText);
-  }}
-                    autoCapitalize="words" 
-                    />
-                  </View>
-                  <View className="mb-4">
-                    <Text className="text-gray-700 mb-1">Street Name *</Text>
-                    <TextInput
-                      className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-6 h-10"
-                      placeholder="Street Name"
-                      value={streetName}
-                     // onChangeText={setStreetName}
-                      onChangeText={(text) => {
-    const capitalizedText = capitalizeWords(text);
-    setStreetName(capitalizedText);
-  }}
-                      autoCapitalize="words" 
-                    />
-                  </View>
-              <View className="mb-4 z-10">
-  <Text className="text-gray-700 mb-1">Nearest City *</Text>
-  <DropDownPicker
-    open={openCityDropdown}
-    value={city}
-    items={cityItems}
-    setOpen={setOpenCityDropdown}
-    setValue={setCity}
-    setItems={setCityItems}
-    placeholder="Select Nearest City"
-    style={{
-      backgroundColor: '#F6F6F6',
-      borderColor: '#F6F6F6',
-      borderRadius: 30,
-    }}
-    dropDownContainerStyle={{
-      backgroundColor: '#F6F6F6',
-      borderColor: '#F6F6F6',
-    }}
-    textStyle={{
-      fontSize: 14,
-      color: 'black',
-      marginLeft:15
-    }}
-    placeholderStyle={{
-      color: 'gray',
-      marginLeft:15
-    }}
-    listItemLabelStyle={{
-      color: 'black',
-    }}
-    showTickIcon={true}
-    activityIndicatorColor="#6E3DD1"
-    searchable={true}
-    modalProps={{
-      animationType: "fade",
-    }}
-    listMode="MODAL"
-  />
-</View>
-                </>
-              )}
+    <View className="mb-4">
+      <Text className="text-gray-700 mb-1">House No *</Text>
+      <TextInput
+        className={`bg-[#F6F6F6] border ${houseNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+        placeholder="ex : 14"
+        value={houseNo}
+        onChangeText={(text) => {
+          const capitalizedText = capitalizeWords(text);
+          setHouseNo(capitalizedText);
+          if (touchedFields.houseNo && !text) {
+            setHouseNoError("House number is required");
+          } else if (touchedFields.houseNo) {
+            setHouseNoError("");
+          }
+        }}
+        onBlur={() => handleFieldTouch("houseNo")}
+        autoCapitalize="words"
+      />
+      {houseNoError ? (
+        <Text className="text-red-500 text-xs pl-4 pt-1">{houseNoError}</Text>
+      ) : null}
+    </View>
+    
+    <View className="mb-4">
+      <Text className="text-gray-700 mb-1">Street Name *</Text>
+      <TextInput
+        className={`bg-[#F6F6F6] border ${streetNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+        placeholder="Street Name"
+        value={streetName}
+        onChangeText={(text) => {
+          const capitalizedText = capitalizeWords(text);
+          setStreetName(capitalizedText);
+          if (touchedFields.streetName && !text) {
+            setStreetNameError("Street name is required");
+          } else if (touchedFields.streetName) {
+            setStreetNameError("");
+          }
+        }}
+        onBlur={() => handleFieldTouch("streetName")}
+        autoCapitalize="words"
+      />
+      {streetNameError ? (
+        <Text className="text-red-500 text-xs pl-4 pt-1">{streetNameError}</Text>
+      ) : null}
+    </View>
+    
+    <View className="mb-4 z-10">
+      <Text className="text-gray-700 mb-1">Nearest City *</Text>
+      <DropDownPicker
+        open={openCityDropdown}
+        value={city}
+        items={cityItems}
+        setOpen={setOpenCityDropdown}
+        setValue={setCity}
+        setItems={setCityItems}
+        placeholder="Select Nearest City"
+        style={{
+          backgroundColor: '#F6F6F6',
+          borderColor: cityError ? '#EF4444' : '#F6F6F6',
+          borderWidth: cityError ? 1 : 1,
+          borderRadius: 30,
+        }}
+        dropDownContainerStyle={{
+          backgroundColor: '#F6F6F6',
+          borderColor: cityError ? '#EF4444' : '#F6F6F6',
+        }}
+        textStyle={{
+          fontSize: 14,
+          color: 'black',
+          marginLeft: 15
+        }}
+        placeholderStyle={{
+          color: 'gray',
+          marginLeft: 15
+        }}
+        listItemLabelStyle={{
+          color: 'black',
+        }}
+        showTickIcon={true}
+        activityIndicatorColor="#6E3DD1"
+        searchable={true}
+        modalProps={{
+          animationType: "fade",
+        }}
+        listMode="MODAL"
+        onClose={() => {
+          if (!city) {
+            handleFieldTouch("city");
+          }
+        }}
+      />
+      {cityError ? (
+        <Text className="text-red-500 text-xs pl-4 pt-1">{cityError}</Text>
+      ) : null}
+    </View>
+  </>
+)}
 
              
 {/* <TouchableOpacity 

@@ -157,7 +157,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
           Alert.alert('Error', errorMsg);
         }
       } else {
-        Alert.alert('Error', 'Failed to update password. Please try again.');
+        Alert.alert('Error', 'Current Password does not match. Please Re-enter');
       }
     } finally {
       setLoading(false);

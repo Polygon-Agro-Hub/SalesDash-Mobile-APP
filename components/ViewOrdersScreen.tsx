@@ -371,7 +371,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
   <TextInput
     placeholder="Search By Order Number"
     placeholderTextColor="#6839CF"
-    className="flex-1 text-sm text-purple"
+    className="flex-1 text-sm text-purple h-10"
     onChangeText={(text) => {
       // Only allow numbers - remove all letters, special characters, and spaces
       const numericOnly = text.replace(/[^0-9]/g, '');

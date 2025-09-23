@@ -1,5 +1,5 @@
-import React from "react";
-import { Text, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Alert, StatusBar, Text, View } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
@@ -41,6 +41,8 @@ import ExcludeItemEditSummery from "@/components/ExcludeItemEditSummery"
 import ExcludeAddMore from '@/components/ExcludeAddMore'
 import PrivacyPolicy from '@/components/PrivacyPolicy'
 import TermsConditions from '@/components/TermsConditions'
+import NetInfo from '@react-native-community/netinfo';
+
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
@@ -105,15 +107,45 @@ function MainTabNavigator() {
 
 function AppContent() {
   const insets = useSafeAreaInsets();
+  const [isOfflineAlertShown, setIsOfflineAlertShown] = useState(false);
+
+  useEffect(() => {
+    const unsubscribeNetInfo = NetInfo.addEventListener(state => {
+      if (!state.isConnected && !isOfflineAlertShown) {
+        setIsOfflineAlertShown(true);
+        Alert.alert(
+          "No Internet Connection",
+          "Please check your connection and try again.",
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                setIsOfflineAlertShown(false);
+              },
+            },
+          ]
+        );
+      }
+    });
+
+    return () => {
+      unsubscribeNetInfo();
+    };
+  }, [isOfflineAlertShown]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView
-        style={{ flex: 1, paddingBottom: insets.bottom, backgroundColor: "#fff" }}
+        style={{ 
+          flex: 1, 
+          paddingBottom: insets ? insets.bottom : 0, 
+          backgroundColor: "#fff" 
+        }}
         edges={["top", "right", "left"]}
       >
+        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
         <NavigationContainer>
-          <Stack.Navigator screenOptions={{ headerShown: false }}>
+           <Stack.Navigator screenOptions={{ headerShown: false }}>
                <Stack.Screen name="Splash" component={Splash} />
                      <Stack.Screen name="LoginScreen" component={LoginScreen} />
       <Stack.Screen name="ChangePasswordScreen" component={ChangePasswordScreen} />
@@ -137,6 +169,7 @@ function AppContent() {
     </GestureHandlerRootView>
   );
 }
+
 export default function App() {
   return (
     <SafeAreaProvider>

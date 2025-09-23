@@ -537,7 +537,7 @@ if (unitType === 'g' && !fromOrderSummary) {
                     />
                   </TouchableOpacity>
                   
-                  <Text className="mx-2 text-base w-14 text-center">
+                  <Text className="mx-2 text-sm w-14 text-center">
                     {formatQuantity(item)}
                   </Text>
                   
