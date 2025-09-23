@@ -703,11 +703,11 @@ const handleRegister = async () => {
   });
   
   // Validate required fields
-  if (!selectedCategory || !firstName || !lastName || !phoneNumber ||  !buildingType) {
-    Alert.alert("Error", "Please fill in all required fields.");
-    setIsSubmitting(false);
-    return;
-  }
+  if (!selectedCategory || !firstName || !lastName || !phoneNumber || !email || !buildingType) {
+  Alert.alert("Error", "Please fill in all required fields.");
+  setIsSubmitting(false);
+  return;
+}
   
   // Validate building-specific fields
   if (buildingType === "House") {
@@ -741,7 +741,7 @@ const handleRegister = async () => {
   try {
     const checkResponse = await axios.post(`${environment.API_BASE_URL}api/customer/check-customer`, {
       phoneNumber,
-      email: email || null,
+      email: email ,
     });
     
     const customerData = {
@@ -749,7 +749,7 @@ const handleRegister = async () => {
       firstName,
       lastName,
       phoneNumber,
-      email: email || null,
+      email: email,
       buildingType,
       houseNo,
       streetName,
@@ -1128,7 +1128,7 @@ const capitalizeWords = (text: string) => {
                 <Text className="text-red-500 text-xs pl-4 pt-1">{emailError}</Text>
               ) : null}
             </View> */}
-           {/* <View className="mb-4">
+           <View className="mb-4">
   <Text className="text-gray-700 mb-1">Email Address *</Text>
   <TextInput
     className={`bg-[#F6F6F6] border ${emailError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
@@ -1153,8 +1153,8 @@ const capitalizeWords = (text: string) => {
   {emailError ? (
     <Text className="text-red-500 text-xs pl-4 pt-1">{emailError}</Text>
   ) : null}
-</View> */}
-<View className="mb-4">
+</View>
+{/* <View className="mb-4">
   <Text className="text-gray-700 mb-1">Email Address *</Text>
   <TextInput
     className={`bg-[#F6F6F6] border ${emailError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
@@ -1179,7 +1179,7 @@ const capitalizeWords = (text: string) => {
   {emailError ? (
     <Text className="text-red-500 text-xs pl-4 pt-1">{emailError}</Text>
   ) : null}
-</View>
+</View> */}
 
 <View className="mb-4">
   <Text className="text-gray-700 mb-1">Building Type *</Text>
