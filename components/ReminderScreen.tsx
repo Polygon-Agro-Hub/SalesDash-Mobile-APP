@@ -11,7 +11,7 @@ import ReminderScreenSkeleton from "../components/Skeleton/ReminderSkeleton";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import environment from "@/environment/environment";
-import { Audio } from "expo-av";
+import {  useAudioPlayer,setAudioModeAsync } from 'expo-audio';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Global state management
@@ -67,8 +67,8 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   
   const previousNotificationsCount = useRef(0);
-  const sound = useRef<Audio.Sound | null>(null);
-  const highestNotificationId = useRef(0);
+ const player = useAudioPlayer(require("../assets/sounds/p2.mp3"));
+   const highestNotificationId = useRef(0);
   const isFirstLoad = useRef(true);
 
   // Update global unread count whenever local unreadCount changes
@@ -80,14 +80,15 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
   const initializeAudio = async () => {
     try {
       console.log(" Initializing audio...");
-      
-      await Audio.setAudioModeAsync({
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: false,
-        shouldDuckAndroid: true,
-        playThroughEarpieceAndroid: false,
-        allowsRecordingIOS: false,
-      });
+
+      await setAudioModeAsync({
+  playsInSilentMode: true,
+  shouldPlayInBackground: true,
+  interruptionModeAndroid: 'duckOthers',
+  interruptionMode: 'mixWithOthers',
+  allowsRecording: false,
+  
+});
       
       setIsAudioInitialized(true);
       console.log(" Audio initialized successfully");
@@ -97,55 +98,65 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
   };
 
   // Improved notification sound function
+//   const playNotificationSound = async () => {
+//     try {
+//       console.log(" Attempting to play notification sound...");
+      
+//       if (!isAudioInitialized) {
+//         console.log(" Audio not initialized, initializing now...");
+//         await initializeAudio();
+//       }
+
+//       // Unload previous sound if exists
+//       if (sound.current) {
+//         console.log(" Unloading previous sound...");
+//         await sound.current.unloadAsync();
+//         sound.current = null;
+//       }
+      
+//       console.log(" Loading sound file...");
+//       const { sound: newSound } = await Audio.Sound.createAsync(
+//         require('../assets/sounds/p2.mp3'),
+//         { 
+//           shouldPlay: true,
+//           isLooping: false,
+//           volume: 1.0,
+//         }
+//       );
+      
+//       sound.current = newSound;
+//       console.log(" Sound loaded and playing!");
+      
+//       // Set up playback status listener
+//       newSound.setOnPlaybackStatusUpdate((status) => {
+//         if (status.isLoaded) {
+//           if (status.didJustFinish) {
+//             console.log(" Sound finished playing");
+//             sound.current?.unloadAsync();
+//             sound.current = null;
+//           }
+//         } else if (!status.isLoaded && status.error) {
+//           console.error('❌ Playback error:', status.error);
+//         }
+//       });
+      
+//     } catch (error) {
+//       console.error('❌ Error playing notification sound:', error);
+//       // Try alternative approach for debugging
+//       console.log(" Sound file path issue? Checking...");
+//     }
+//   };
   const playNotificationSound = async () => {
     try {
-      console.log(" Attempting to play notification sound...");
-      
-      if (!isAudioInitialized) {
-        console.log(" Audio not initialized, initializing now...");
-        await initializeAudio();
-      }
+      if (!isAudioInitialized) await initializeAudio();
 
-      // Unload previous sound if exists
-      if (sound.current) {
-        console.log(" Unloading previous sound...");
-        await sound.current.unloadAsync();
-        sound.current = null;
-      }
-      
-      console.log(" Loading sound file...");
-      const { sound: newSound } = await Audio.Sound.createAsync(
-        require('../assets/sounds/p2.mp3'),
-        { 
-          shouldPlay: true,
-          isLooping: false,
-          volume: 1.0,
-        }
-      );
-      
-      sound.current = newSound;
-      console.log(" Sound loaded and playing!");
-      
-      // Set up playback status listener
-      newSound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded) {
-          if (status.didJustFinish) {
-            console.log(" Sound finished playing");
-            sound.current?.unloadAsync();
-            sound.current = null;
-          }
-        } else if (!status.isLoaded && status.error) {
-          console.error('❌ Playback error:', status.error);
-        }
-      });
-      
+      // If already at end, reset to beginning
+      player.seekTo(0);
+      await player.play();
     } catch (error) {
-      console.error('❌ Error playing notification sound:', error);
-      // Try alternative approach for debugging
-      console.log(" Sound file path issue? Checking...");
+      console.error("Error playing sound via expo-audio:", error);
     }
   };
-
 const fetchNotifications = async () => {
   try {
     console.log("🔄 Fetching notifications...");
@@ -197,25 +208,45 @@ const fetchNotifications = async () => {
 };
 
 
-  useEffect(() => {
-    const setupComponent = async () => {
-      await initializeAudio();
-      await fetchNotifications();
-    };
+//   useEffect(() => {
+//     const setupComponent = async () => {
+//       await initializeAudio();
+//       await fetchNotifications();
+//     };
 
-    setupComponent();
+//     setupComponent();
   
-    const intervalId = setInterval(() => {
-      fetchNotifications();
-    }, 12000);
+//     const intervalId = setInterval(() => {
+//       fetchNotifications();
+//     }, 12000);
   
-    return () => {
-      clearInterval(intervalId);
-      if (sound.current) {
-        sound.current.unloadAsync();
-      }
-    };
-  }, []);
+//     return () => {
+//       clearInterval(intervalId);
+//       if (sound.current) {
+//         sound.current.unloadAsync();
+//       }
+//     };
+//   }, []);
+
+useEffect(() => {
+  const setupComponent = async () => {
+    await initializeAudio();
+    await fetchNotifications();
+  };
+
+  setupComponent();
+
+  const intervalId = setInterval(() => {
+    fetchNotifications();
+  }, 12000);
+
+  return () => {
+    clearInterval(intervalId);
+    player.pause();
+    player.seekTo(0);
+  };
+}, []);
+
 
   // Test sound function (you can call this from a button for testing)
   const testSound = async () => {
@@ -225,28 +256,28 @@ const fetchNotifications = async () => {
   };
 
   // Force sound test (bypasses all checks)
-  const forceTestSound = async () => {
-    console.log(" FORCE testing sound - bypassing all checks...");
-    try {
-      // Directly create and play sound
-      const { sound: testSound } = await Audio.Sound.createAsync(
-        require('../assets/sounds/p2.mp3'),
-        { shouldPlay: true, volume: 1.0 }
-      );
+//   const forceTestSound = async () => {
+//     console.log(" FORCE testing sound - bypassing all checks...");
+//     try {
+//       // Directly create and play sound
+//       const { sound: testSound } = await Audio.Sound.createAsync(
+//         require('../assets/sounds/p2.mp3'),
+//         { shouldPlay: true, volume: 1.0 }
+//       );
       
-      console.log(" Force test sound created and playing");
+//       console.log(" Force test sound created and playing");
       
-      testSound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded && status.didJustFinish) {
-          console.log(" Force test sound finished");
-          testSound.unloadAsync();
-        }
-      });
+//       testSound.setOnPlaybackStatusUpdate((status) => {
+//         if (status.isLoaded && status.didJustFinish) {
+//           console.log(" Force test sound finished");
+//           testSound.unloadAsync();
+//         }
+//       });
       
-    } catch (error) {
-      console.error("❌ Force test sound failed:", error);
-    }
-  };
+//     } catch (error) {
+//       console.error("❌ Force test sound failed:", error);
+//     }
+//   };
 
   const showDeleteModal = (notification: Notification) => {
     setSelectedNotification(notification);
