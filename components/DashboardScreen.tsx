@@ -24,7 +24,8 @@ import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from "react-native-responsive-screen";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect } from '@react-navigation/native';
+import { SafeAreaView } from "react-native-safe-area-context";
 
 
 type DashboardScreenNavigationProp = StackNavigationProp<RootStackParamList, "DashboardScreen">;
@@ -242,9 +243,8 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => true;
-      BackHandler.addEventListener("hardwareBackPress", onBackPress);
-      return () =>
-        BackHandler.removeEventListener("hardwareBackPress", onBackPress);
+      const subscription = BackHandler.addEventListener("hardwareBackPress", onBackPress);
+      return () => subscription.remove();
     }, [])
   );
   
@@ -263,6 +263,7 @@ const formattedTotalPrice = totalPrice.toLocaleString('en-US', {
 });
 
   return (
+    
     <View
       className="bg-white rounded-xl m-3 p-3 w-[45%] items-center mb-6"
       style={{
@@ -389,7 +390,7 @@ const formattedTotalPrice = totalPrice.toLocaleString('en-US', {
 
         {/* Packages Section with Pull to Refresh */}
         <ScrollView 
-          className="flex-1"
+          className="flex-1 mb-10"
           refreshControl={
             <RefreshControl
               refreshing={isLoading}

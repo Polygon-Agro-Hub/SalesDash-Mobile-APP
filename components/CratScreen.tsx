@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, SafeAreaView,Image } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -435,8 +435,7 @@ if (unitType === 'g' && !fromOrderSummary) {
 };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <View className="flex-1 px-4">
+      <View className="flex-1 px-4 bg-white">
         <View className="flex-row items-center">
           <BackButton navigation={navigation} />
           <Text className="text-lg font-medium text-[#6C3CD1] flex-1 text-center mr-10">
@@ -538,7 +537,7 @@ if (unitType === 'g' && !fromOrderSummary) {
                     />
                   </TouchableOpacity>
                   
-                  <Text className="mx-2 text-base w-14 text-center">
+                  <Text className="mx-2 text-sm w-14 text-center">
                     {formatQuantity(item)}
                   </Text>
                   
@@ -600,7 +599,6 @@ if (unitType === 'g' && !fromOrderSummary) {
             </TouchableOpacity>
         </View>
       </View>
-    </SafeAreaView>
   );
 };
 

@@ -8,7 +8,6 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   Keyboard,
   TouchableWithoutFeedback,
   BackHandler,
@@ -28,8 +27,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import DropDownPicker from "react-native-dropdown-picker";
 import { SelectList } from "react-native-dropdown-select-list";
 import { AntDesign } from "@expo/vector-icons"; 
-import { useFocusEffect } from "expo-router";
-
+import { useFocusEffect } from '@react-navigation/native';
 type AddComplaintScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
   "AddComplaintScreen"
@@ -211,7 +209,6 @@ useFocusEffect(
               keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })} // Adjust this value as needed
               style={{ flex: 1 ,backgroundColor: "white" }}
             >
-                  <SafeAreaView className="flex-1 bg-white">
       <ScrollView 
       keyboardShouldPersistTaps="handled"
       style={{ paddingHorizontal: wp(4) }}
@@ -350,7 +347,6 @@ useFocusEffect(
             </View>
    
       </ScrollView>
-  </SafeAreaView>
       </KeyboardAvoidingView>
   );
 };

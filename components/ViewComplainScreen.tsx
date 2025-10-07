@@ -259,8 +259,7 @@ import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import ViewComplainScreenSkeleton from "../components/Skeleton/ViewComplainScreenSkeleton";  // Assuming skeleton loader component
 import { goBack, navigate } from "expo-router/build/global-state/routing";
-import { useFocusEffect } from "expo-router";
-
+import { useFocusEffect } from '@react-navigation/native';
 type ViewComplainScreenNavigationProp = StackNavigationProp<RootStackParamList, "ViewComplainScreen">;
 
 interface ViewComplainScreenProps {
@@ -544,7 +543,7 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({ navigation }) =
           <View className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
             {/* Close Button */}
             <TouchableOpacity className="absolute top-3 right-3" onPress={() => setModalVisible(false)}>
-              <AntDesign name="closecircle" size={24} color="gray" />
+              <AntDesign name="close-circle" size={24} color="gray" />
             </TouchableOpacity>
   
             {/* Complaint Response Content */}

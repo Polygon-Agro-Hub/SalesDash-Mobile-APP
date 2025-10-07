@@ -12,8 +12,7 @@ import { RootStackParamList } from "./types";
 import BackButton from "./BackButton";
 import { AntDesign } from "@expo/vector-icons";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
-import { useFocusEffect } from "expo-router";
-
+import { useFocusEffect } from '@react-navigation/native';
 type SelectOrderTypeNavigationProp = StackNavigationProp<
   RootStackParamList,
   "SelectOrderType"

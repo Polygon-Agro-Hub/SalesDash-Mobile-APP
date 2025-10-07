@@ -8,7 +8,6 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack"; 
 import BackButton from "./BackButton";
@@ -16,6 +15,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import environment from "@/environment/environment";
 import { RouteProp } from "@react-navigation/native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
 
 type ViewScreenNavigationProp = StackNavigationProp<RootStackParamList, "ViewScreen">;
 
@@ -86,7 +87,7 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
   };
 
  return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
       <View style={{ flex: 1 }}>
         {/* Top Section with Background Image */}
         <ImageBackground
@@ -169,7 +170,7 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
           </ScrollView>
         </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 

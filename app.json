@@ -4,8 +4,8 @@
     "slug": "SalesDash",
     "version": "1.0.0",
     "orientation": "portrait",
-    "scheme": "myapp",
-    "userInterfaceStyle": "automatic",
+    "icon": "./assets/images/favicon.png",
+    "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/dashicon.png",
@@ -13,34 +13,21 @@
       "backgroundColor": "#6638CE"
     },
     "ios": {
-      "supportsTablet": true,
-      "infoPlist": {
-        "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": true
-        }
-      },
-      "permissions": [
-        "CAMERA",
-        "NOTIFICATIONS",
-        "CALENDAR",
-        "CONTACTS",
-        "ACCESS_WIFI_STATE",
-        "CHANGE_WIFI_STATE",
-        "ACCESS_NETWORK_STATE",
-        "CHANGE_NETWORK_STATE",
-        "VIBRATE",
-        "WRITE_EXTERNAL_STORAGE"
-      ],
-      "bundleIdentifier": "com.polygonagro.SalesDash"
+      "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/favicon.png",
         "backgroundColor": "#ffffff"
       },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "pan",
       "package": "com.polygonagro.SalesDash",
-      "versionCode": 3,
+      "versionCode": 8,
+      "compileSdkVersion": 35,
+      "targetSdkVersion": 35,
+      "minSdkVersion": 24,
       "permissions": [
         "INTERNET",
         "WRITE_EXTERNAL_STORAGE",
@@ -66,11 +53,37 @@
       "expo-router",
       "expo-font",
       [
-        "expo-av",
+        "expo-audio",
         {
           "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone."
         }
-      ]
+      ],
+[
+  "expo-build-properties",
+  {
+    "android": {
+      "compileSdkVersion": 35,
+      "targetSdkVersion": 35,
+      "minSdkVersion": 24,
+
+      "ndkVersion": "28.0.12433566",
+
+      "enableProguardInReleaseBuilds": true,
+
+      "packagingOptions": {
+        "jniLibs": {
+          "useLegacyPackaging": false
+        }
+      },
+
+      "gradleProperties": {
+        "android.useAndroidX": "true",
+        "android.enableJetifier": "true",
+        "ANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES": "true"
+      }
+    }
+  }
+]
     ],
     "experiments": {
       "typedRoutes": true
@@ -78,8 +91,10 @@
     "extra": {
       "router": {
         "origin": false
+      },
+      "eas": {
+        "projectId": "ba824bd7-6653-4e0c-b712-d0c058919d42"
       }
-    
     }
   }
 }

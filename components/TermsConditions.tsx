@@ -16,7 +16,7 @@ interface TermsConditionsProps {
 
 const TermsConditions: React.FC<TermsConditionsProps> = ({ navigation }) => {
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <View className="flex-1 bg-white">
       <ScrollView 
         className="flex-1"
         showsVerticalScrollIndicator={false}
@@ -302,7 +302,7 @@ const TermsConditions: React.FC<TermsConditionsProps> = ({ navigation }) => {
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 

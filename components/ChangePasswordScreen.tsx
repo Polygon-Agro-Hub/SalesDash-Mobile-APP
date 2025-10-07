@@ -11,8 +11,7 @@ import {
   ImageBackground,
   Alert,
   BackHandler,
-  Keyboard,
-  SafeAreaView,
+  Keyboard
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from './types';
@@ -21,7 +20,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import environment from '@/environment/environment';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import BackButton from './BackButton';
 
 
@@ -158,7 +157,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
           Alert.alert('Error', errorMsg);
         }
       } else {
-        Alert.alert('Error', 'Failed to update password. Please try again.');
+        Alert.alert('Error', 'Current Password does not match. Please Re-enter');
       }
     } finally {
       setLoading(false);
@@ -177,12 +176,13 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
         return false; // Allow back navigation
       };
       
-      BackHandler.addEventListener("hardwareBackPress", onBackPress);
-      return () =>
-        BackHandler.removeEventListener("hardwareBackPress", onBackPress);
+      const subscription = BackHandler.addEventListener("hardwareBackPress", onBackPress);
+      return () => subscription.remove();
     }, [passwordUpdate]) // Added passwordUpdate as dependency
   );
 
+
+  
   return (
     // <KeyboardAvoidingView 
     //   behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -199,7 +199,6 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
               keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })} // Adjust this value as needed
               style={{ flex: 1 ,backgroundColor: "white" }}
             >
-                  <SafeAreaView className="flex-1 bg-white">
       <ScrollView 
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
@@ -305,7 +304,6 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
           </LinearGradient>
         </View>
       </ScrollView>
-       </SafeAreaView>
            </KeyboardAvoidingView>
   
   );
