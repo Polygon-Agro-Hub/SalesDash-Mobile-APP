@@ -24,7 +24,10 @@
       "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "pan",
       "package": "com.polygonagro.SalesDash",
-      "versionCode": 3,
+      "versionCode": 8,
+      "compileSdkVersion": 35,
+      "targetSdkVersion": 35,
+      "minSdkVersion": 24,
       "permissions": [
         "INTERNET",
         "WRITE_EXTERNAL_STORAGE",
@@ -55,12 +58,32 @@
           "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone."
         }
       ],
-      [
-        "expo-av",
-        {
-          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone."
+[
+  "expo-build-properties",
+  {
+    "android": {
+      "compileSdkVersion": 35,
+      "targetSdkVersion": 35,
+      "minSdkVersion": 24,
+
+      "ndkVersion": "28.0.12433566",
+
+      "enableProguardInReleaseBuilds": true,
+
+      "packagingOptions": {
+        "jniLibs": {
+          "useLegacyPackaging": false
         }
-      ]
+      },
+
+      "gradleProperties": {
+        "android.useAndroidX": "true",
+        "android.enableJetifier": "true",
+        "ANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES": "true"
+      }
+    }
+  }
+]
     ],
     "experiments": {
       "typedRoutes": true
@@ -70,7 +93,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "4dc00e7d-cc1f-4f43-b1a7-529f3ebdd3f5"
+        "projectId": "ba824bd7-6653-4e0c-b712-d0c058919d42"
       }
     }
   }
