@@ -58,32 +58,29 @@
           "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone."
         }
       ],
-[
-  "expo-build-properties",
-  {
-    "android": {
-      "compileSdkVersion": 35,
-      "targetSdkVersion": 35,
-      "minSdkVersion": 24,
-
-      "ndkVersion": "28.0.12433566",
-
-      "enableProguardInReleaseBuilds": true,
-
-      "packagingOptions": {
-        "jniLibs": {
-          "useLegacyPackaging": false
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "minSdkVersion": 24,
+            "ndkVersion": "28.0.12433566",
+            "enableProguardInReleaseBuilds": true,
+            "packagingOptions": {
+              "jniLibs": {
+                "useLegacyPackaging": false
+              }
+            },
+            "gradleProperties": {
+              "android.useAndroidX": "true",
+              "android.enableJetifier": "true",
+              "ANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES": "true"
+            },
+            "enableMinifyInReleaseBuilds": true
+          }
         }
-      },
-
-      "gradleProperties": {
-        "android.useAndroidX": "true",
-        "android.enableJetifier": "true",
-        "ANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES": "true"
-      }
-    }
-  }
-]
+      ]
     ],
     "experiments": {
       "typedRoutes": true
@@ -93,7 +90,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "ba824bd7-6653-4e0c-b712-d0c058919d42"
+        "projectId": "c2a07b6e-f489-4a5b-9ca8-f32a077fbbef"
       }
     }
   }
