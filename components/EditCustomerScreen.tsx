@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Keyboard, Platform, KeyboardAvoidingView,  Alert, ActivityIndicator, BackHandler } from "react-native";
+import { View, Text, ScrollView, TextInput, TouchableOpacity, Keyboard, KeyboardAvoidingView,  Alert, ActivityIndicator, BackHandler } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import { LinearGradient } from "expo-linear-gradient";
@@ -12,7 +12,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SelectList } from "react-native-dropdown-select-list";
 import { AntDesign } from "@expo/vector-icons";
 import { useFocusEffect } from '@react-navigation/native';
-
+import { StatusBar, Platform } from "react-native";
 
 
 type EditCustomerScreenNavigationProp = StackNavigationProp<
@@ -500,7 +500,9 @@ const resetFormState = () => {
   });
 };
 
-  
+  const dismissKeyboard = () => {
+      Keyboard.dismiss();
+    };
  
     const fetchCustomerData = async () => {
     try {
@@ -1544,15 +1546,28 @@ const handlePhoneNumberKeyPress = (e: any) => {
           color: city ? '#333' : '#999',
           fontSize: 14,
         }}
-        zIndex={3000}
+      //  zIndex={3000}
         zIndexInverse={1000}
-        modalProps={{ animationType: "fade" }}
+       
         listMode="MODAL"
         scrollViewProps={{ nestedScrollEnabled: true }}
         onClose={() => {
           if (!city) {
             handleFieldTouch("city");
           }
+        }}
+         onOpen={dismissKeyboard}
+                        zIndex={7900}
+                     modalProps={{
+          animationType: "slide",
+          transparent: false,
+          presentationStyle: "fullScreen",
+          statusBarTranslucent: true,
+        }}
+        modalContentContainerStyle={{
+          paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 20 : 0,
+          backgroundColor: '#fff',
+          flex: 1,
         }}
       />
       {cityError ? (
@@ -1735,9 +1750,9 @@ const handlePhoneNumberKeyPress = (e: any) => {
           color: city ? '#333' : '#999',
           fontSize: 14,
         }}
-        zIndex={3000}
+     //   zIndex={3000}
         zIndexInverse={1000}
-        modalProps={{ animationType: "fade" }}
+     //   modalProps={{ animationType: "fade" }}
         listMode="MODAL"
         scrollViewProps={{ nestedScrollEnabled: true }}
         onClose={() => {
@@ -1745,6 +1760,19 @@ const handlePhoneNumberKeyPress = (e: any) => {
             handleFieldTouch("city");
           }
         }}
+             onOpen={dismissKeyboard}
+                                   zIndex={7900}
+                                modalProps={{
+                     animationType: "slide",
+                     transparent: false,
+                     presentationStyle: "fullScreen",
+                     statusBarTranslucent: true,
+                   }}
+                   modalContentContainerStyle={{
+                     paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 20 : 0,
+                     backgroundColor: '#fff',
+                     flex: 1,
+                   }}
       />
       {cityError ? (
         <Text className="text-red-500 text-xs mt-1 ml-2">{cityError}</Text>

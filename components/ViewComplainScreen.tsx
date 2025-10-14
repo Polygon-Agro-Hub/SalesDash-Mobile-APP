@@ -260,6 +260,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import ViewComplainScreenSkeleton from "../components/Skeleton/ViewComplainScreenSkeleton";  // Assuming skeleton loader component
 import { goBack, navigate } from "expo-router/build/global-state/routing";
 import { useFocusEffect } from '@react-navigation/native';
+import { ScrollView } from "react-native-gesture-handler";
 type ViewComplainScreenNavigationProp = StackNavigationProp<RootStackParamList, "ViewComplainScreen">;
 
 interface ViewComplainScreenProps {
@@ -548,7 +549,7 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({ navigation }) =
   
             {/* Complaint Response Content */}
             {selectedComplaint ? (
-              <View className="mt-4">
+              <ScrollView className="mt-4">
                 <Text className="text-gray-800 text-base leading-relaxed text-left">
                   <Text className="font-">Dear {formData.firstName || "User"} {formData.lastName},</Text>
                   {"\n\n"}
@@ -578,7 +579,7 @@ Thank you for your patience and understanding.
                 ) : (
                   <Text className="text-gray-600 text-sm">No reply time available</Text>
                 )}
-              </View>
+              </ScrollView>
             ) : (
               <Text className="text-gray-700">No response available.</Text>
             )}
