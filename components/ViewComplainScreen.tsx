@@ -225,7 +225,7 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({ navigation }) =
         onRequestClose={() => setModalVisible(false)}
       >
         <View className="flex-1 items-center bg-white bg-opacity-50" style={{ paddingTop: statusBarHeight }}>
-          <View className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md" style={{ marginTop: 12 }}>
+          <View className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md" style={{ marginTop: 12}}>
             {/* Close Button */}
             <TouchableOpacity 
               className="absolute top-3 right-3 z-10" 
@@ -237,7 +237,7 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({ navigation }) =
   
             {/* Complaint Response Content */}
             {selectedComplaint ? (
-              <ScrollView className="mt-4">
+              <ScrollView className="mt-4 mb-7">
                 <Text className="text-gray-800 text-base leading-relaxed text-left">
                   <Text className="font-">Dear {formData.firstName || "User"} {formData.lastName},</Text>
                   {"\n\n"}

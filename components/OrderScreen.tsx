@@ -1667,15 +1667,17 @@ const handlePackageSearchChange = (text: string) => {
   ]}
   dropDownDirection="BOTTOM"
   containerStyle={{ width: 100 }}
-  style={{
+ style={{
     backgroundColor: "#F6F6F6",
     borderColor: "#F6F6F6",
-    borderRadius: 50,
+    borderRadius: 30,
     paddingHorizontal: 10,
+    paddingVertical: 10,
   }}
   dropDownContainerStyle={{
-    backgroundColor: "#FFFFFF",
-    borderColor: "#FFFFFF",
+    backgroundColor: "#F6F6F6",
+    borderColor: "#F6F6F6",
+    marginLeft: 8
   }}
 />
         </View>
