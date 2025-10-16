@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Keyboard, Platform, KeyboardAvoidingView, Alert, ActivityIndicator, BackHandler } from "react-native";
+import { View, Text, ScrollView, TextInput, TouchableOpacity, Keyboard,  KeyboardAvoidingView, Alert, ActivityIndicator, BackHandler } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import { LinearGradient } from "expo-linear-gradient";
@@ -12,6 +12,7 @@ import { SelectList } from "react-native-dropdown-select-list";
 import DropDownPicker from "react-native-dropdown-picker";
 import { useFocusEffect } from '@react-navigation/native';
 import { AntDesign, Ionicons } from "@expo/vector-icons";
+import { StatusBar, Platform } from "react-native";
 
 
 
@@ -152,7 +153,9 @@ const [buildingTypeItems, setBuildingTypeItems] = useState([
   });
 };
 
-
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+  };
 
 
 // useEffect(() => {
@@ -225,7 +228,7 @@ const [buildingTypeItems, setBuildingTypeItems] = useState([
         // content: {
         //   sms: "Your code is {{code}}",  
         // },
-         content: { sms: "Thank you for registering with us a Market Place customer. Please use the bellow OTP to confirm the registration process. {{code}}" },
+         content: { sms: "Thank you for registering with us a GoviMart customer. Please use the bellow OTP to confirm the registration process. {{code}}" },
         destination: cleanedPhoneNumber, 
       };
   
@@ -1314,15 +1317,26 @@ const capitalizeWords = (text: string) => {
         showTickIcon={true}
         activityIndicatorColor="#6E3DD1"
         searchable={true}
-        modalProps={{
-          animationType: "fade",
-        }}
+        
         listMode="MODAL"
         onClose={() => {
           if (!city) {
             handleFieldTouch("city");
           }
         }}
+             onOpen={dismissKeyboard}
+                           zIndex={7900}
+                        modalProps={{
+             animationType: "slide",
+             transparent: false,
+             presentationStyle: "fullScreen",
+             statusBarTranslucent: true,
+           }}
+           modalContentContainerStyle={{
+             paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 20 : 0,
+             backgroundColor: '#fff',
+             flex: 1,
+           }}
       />
       {cityError ? (
         <Text className="text-red-500 text-xs pl-4 pt-1">{cityError}</Text>
@@ -1480,41 +1494,54 @@ const capitalizeWords = (text: string) => {
         setOpen={setOpenCityDropdown}
         setValue={setCity}
         setItems={setCityItems}
-        placeholder="Select Nearest City"
-        style={{
-          backgroundColor: '#F6F6F6',
-          borderColor: cityError ? '#EF4444' : '#F6F6F6',
-          borderWidth: cityError ? 1 : 1,
-          borderRadius: 30,
-        }}
-        dropDownContainerStyle={{
-          backgroundColor: '#F6F6F6',
-          borderColor: cityError ? '#EF4444' : '#F6F6F6',
-        }}
-        textStyle={{
-          fontSize: 14,
-          color: 'black',
-          marginLeft: 15
-        }}
-        placeholderStyle={{
-          color: 'gray',
-          marginLeft: 15
-        }}
-        listItemLabelStyle={{
-          color: 'black',
-        }}
-        showTickIcon={true}
-        activityIndicatorColor="#6E3DD1"
-        searchable={true}
-        modalProps={{
-          animationType: "fade",
-        }}
-        listMode="MODAL"
-        onClose={() => {
-          if (!city) {
-            handleFieldTouch("city");
-          }
-        }}
+        placeholder={city || "Select Nearest City"}
+           searchable={true}
+           searchPlaceholder="Search city..."
+           style={{
+             backgroundColor: '#F6F6F6',
+             borderColor: cityError ? '#EF4444' : '#F6F6F6',
+             borderWidth: cityError ? 1 : 1,
+             borderRadius: 30,
+             minHeight: 40,
+           }}
+           dropDownContainerStyle={{
+             backgroundColor: '#ffffff',
+             borderColor: cityError ? '#EF4444' : '#F6F6F6',
+             borderRadius: 10,
+             zIndex: 1000,
+           }}
+           textStyle={{
+             color: '#333',
+             fontSize: 14,
+             paddingLeft: 5,
+           }}
+           placeholderStyle={{
+             color: city ? '#333' : '#999',
+             fontSize: 14,
+           }}
+         //  zIndex={3000}
+           zIndexInverse={1000}
+          
+           listMode="MODAL"
+           scrollViewProps={{ nestedScrollEnabled: true }}
+           onClose={() => {
+             if (!city) {
+               handleFieldTouch("city");
+             }
+           }}
+            onOpen={dismissKeyboard}
+                           zIndex={7900}
+                        modalProps={{
+             animationType: "slide",
+             transparent: false,
+             presentationStyle: "fullScreen",
+             statusBarTranslucent: true,
+           }}
+           modalContentContainerStyle={{
+             paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 20 : 0,
+             backgroundColor: '#fff',
+             flex: 1,
+           }}
       />
       {cityError ? (
         <Text className="text-red-500 text-xs pl-4 pt-1">{cityError}</Text>
