@@ -742,7 +742,7 @@ const deleteSelectedItems = () => {
   //   setQuantity(prev => prev > adjustedStartValue ? prev - adjustedChangeBy : adjustedStartValue);
   // };
 
- const incrementQuantity = () => {
+const incrementQuantity = () => {
   const selectedProductData = productItems.find(item => item.value === productValue);
   const changeBy = selectedProductData?.changeby ? Number(selectedProductData.changeby) : 1;
   
@@ -750,7 +750,11 @@ const deleteSelectedItems = () => {
   // For g, multiply by 1000 to get gram increments
   const adjustedChangeBy = selectedUnit === 'Kg' ? changeBy : changeBy * 1000;
   
-  setQuantity(prev => prev + adjustedChangeBy);
+  setQuantity(prev => {
+    const newValue = prev + adjustedChangeBy;
+    // Round to 2 decimal places for Kg, 0 for grams
+    return selectedUnit === 'Kg' ? Math.round(newValue * 100) / 100 : Math.round(newValue);
+  });
 };
 
 const decrementQuantity = () => {
@@ -763,10 +767,35 @@ const decrementQuantity = () => {
   const adjustedChangeBy = selectedUnit === 'Kg' ? changeBy : changeBy * 1000;
   const adjustedStartValue = selectedUnit === 'Kg' ? startValue : startValue * 1000;
   
-  setQuantity(prev => Math.max(adjustedStartValue, prev - adjustedChangeBy));
+  setQuantity(prev => {
+    const newValue = prev - adjustedChangeBy;
+    const roundedValue = selectedUnit === 'Kg' ? Math.round(newValue * 100) / 100 : Math.round(newValue);
+    return Math.max(adjustedStartValue, roundedValue);
+  });
 };
 
 // Update the edit modal increment/decrement functions
+// const updateQuantity = (changeBy: number, increase: boolean) => {
+//   if (!editingItem) return;
+  
+//   // Get the product data to access changeby and startValue
+//   const productData = productItems.find(item => item.id === editingItem.id);
+//   const dynamicChangeBy = productData?.changeby ? Number(productData.changeby) : changeBy;
+//   const startValue = productData?.startValue ? Number(productData.startValue) : 1;
+  
+//   // For Kg, use values as is (could be decimal)
+//   // For g, multiply by 1000
+//   const adjustedChangeBy = editSelectedUnit === 'Kg' ? dynamicChangeBy : dynamicChangeBy * 1000;
+//   const adjustedStartValue = editSelectedUnit === 'Kg' ? startValue : startValue * 1000;
+  
+//   if (increase) {
+//     setNewItemQuantity(prev => prev + adjustedChangeBy);
+//   } else {
+//     setNewItemQuantity(prev => Math.max(adjustedStartValue, prev - adjustedChangeBy));
+//   }
+// };
+
+// Update the edit modal increment/decrement functions - FIXED for floating point precision
 const updateQuantity = (changeBy: number, increase: boolean) => {
   if (!editingItem) return;
   
@@ -781,9 +810,17 @@ const updateQuantity = (changeBy: number, increase: boolean) => {
   const adjustedStartValue = editSelectedUnit === 'Kg' ? startValue : startValue * 1000;
   
   if (increase) {
-    setNewItemQuantity(prev => prev + adjustedChangeBy);
+    setNewItemQuantity(prev => {
+      const newValue = prev + adjustedChangeBy;
+      // Round to 3 decimal places for Kg to avoid floating point errors
+      return editSelectedUnit === 'Kg' ? Math.round(newValue * 1000) / 1000 : Math.round(newValue);
+    });
   } else {
-    setNewItemQuantity(prev => Math.max(adjustedStartValue, prev - adjustedChangeBy));
+    setNewItemQuantity(prev => {
+      const newValue = prev - adjustedChangeBy;
+      const roundedValue = editSelectedUnit === 'Kg' ? Math.round(newValue * 1000) / 1000 : Math.round(newValue);
+      return Math.max(adjustedStartValue, roundedValue);
+    });
   }
 };
 
@@ -792,25 +829,62 @@ const updateQuantity = (changeBy: number, increase: boolean) => {
     setEditSelectedUnit(unit);
   };
 
+// const saveUpdatedItem = () => {
+//   if (!editingItem) return;
+
+//   const unit = editSelectedUnit;
+//   const quantityInKg = unit === 'Kg' ? newItemQuantity : newItemQuantity / 1000;
+  
+//   // Calculate using discounted price
+//   const totalAmount = quantityInKg * editingItem.discountedPricePerKg;
+//   const discountAmount = (editingItem.pricePerKg - editingItem.discountedPricePerKg) * quantityInKg;
+
+//   const updatedItem: AdditionalItem = {
+//     ...editingItem,
+//     quantity: newItemQuantity,
+//     unit: unit,
+//     totalAmount: totalAmount,
+//     discount: discountAmount
+//   };
+
+// console.log("hgfsjka",updatedItem)
+
+//   setAdditionalItems(items => 
+//     items.map(item => 
+//       item.id === editingItem.id ? updatedItem : item
+//     )
+//   );
+
+//   setModalVisible(false);
+//   setEditingItem(null);
+// };
+
 const saveUpdatedItem = () => {
   if (!editingItem) return;
 
   const unit = editSelectedUnit;
-  const quantityInKg = unit === 'Kg' ? newItemQuantity : newItemQuantity / 1000;
   
-  // Calculate using discounted price
-  const totalAmount = quantityInKg * editingItem.discountedPricePerKg;
-  const discountAmount = (editingItem.pricePerKg - editingItem.discountedPricePerKg) * quantityInKg;
+  // Use Math.round to avoid floating point precision issues
+  // Round to 3 decimal places for Kg, whole numbers for grams
+  const roundedQuantity = unit === 'Kg' 
+    ? Math.round(newItemQuantity * 1000) / 1000 
+    : Math.round(newItemQuantity);
+  
+  const quantityInKg = unit === 'Kg' ? roundedQuantity : roundedQuantity / 1000;
+  
+  // Calculate using discounted price with proper rounding
+  const totalAmount = Math.round(quantityInKg * editingItem.discountedPricePerKg * 100) / 100;
+  const discountAmount = Math.round((editingItem.pricePerKg - editingItem.discountedPricePerKg) * quantityInKg * 100) / 100;
 
   const updatedItem: AdditionalItem = {
     ...editingItem,
-    quantity: newItemQuantity,
+    quantity: roundedQuantity,
     unit: unit,
     totalAmount: totalAmount,
     discount: discountAmount
   };
 
-console.log("hgfsjka",updatedItem)
+  console.log("Updated item:", updatedItem);
 
   setAdditionalItems(items => 
     items.map(item => 
