@@ -490,6 +490,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                               item.status === "On the way" ? "#FFFD99" :
                               item.status === "Processing" ? "#CFE1FF" : 
                               item.status === "Delivered" ? "#CCFBF1" : 
+                              item.status === "Out For Delivery" ? "#FFE9F8" :
                               item.status === "Cancelled" ? "#FCE7F3" : "#EAEAEA",
                           }}>
                             <Text style={{
@@ -500,7 +501,8 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                                 item.status === "On the way" ? "#A6A100" :
                                 item.status === "Processing" ? "#3B82F6" : 
                                 item.status === "Delivered" ? "#0D9488" : 
-                                item.status === "Cancelled" ? "#BE185D" : "#393939",
+                                item.status === "Cancelled" ? "#BE185D" :
+                                item.status === "Out For Delivery" ? "#BE185D" : "#393939"
                             }}>
                               {item.status}
                             </Text>

@@ -279,7 +279,7 @@ const formattedTotalPrice = totalPrice.toLocaleString('en-US', {
       <Image source={{ uri: item.image }} className="w-20 h-20 mb-3 " resizeMode="contain" />
       <Text className="font-bold text-[#6A3AD0] text-center">{item.displayName}</Text>
       <Text className="text-sm font-medium text-gray-500">
-        Rs. {formattedTotalPrice}
+        Rs.{formattedTotalPrice}
       </Text>
     
       <TouchableOpacity

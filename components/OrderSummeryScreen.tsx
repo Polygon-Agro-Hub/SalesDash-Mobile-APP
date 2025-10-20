@@ -787,7 +787,12 @@ const formatPrice = (amount: number) => {
                 <View>
                   <View className="flex-row justify-between">
                     <Text className="text-base font-semibold">Delivery - One Time</Text>
-                <TouchableOpacity 
+               
+                  </View>
+                  <Text className="text-[#808FA2] text-sm">Scheduled to {selectedDate}</Text>
+                  <Text className="text-[#808FA2] text-sm">Within {timeDisplay}</Text>
+                </View>
+                 <TouchableOpacity 
   onPress={() => {
     console.log("Navigating to ScheduleScreen with data:", {
       total,
@@ -821,16 +826,12 @@ const formatPrice = (amount: number) => {
 
 
 
-                  //    className="border border-[#6C3CD1] px-3 rounded-full ml-12 py-[-2]"
+                     className="mb-10"
                       >
-                        <View className="border border-[#6C3CD1] px-3 rounded-full ml-11">
+                        <View className="border border-[#6C3CD1] px-3 rounded-full ml-11 ">
                       <Text className="text-[#6C3CD1] font-medium">Edit</Text>
                       </View>
                     </TouchableOpacity>
-                  </View>
-                  <Text className="text-[#808FA2] text-sm">Scheduled to {selectedDate}</Text>
-                  <Text className="text-[#808FA2] text-sm">Within {timeDisplay}</Text>
-                </View>
               </View>
             </View>
           </View>
