@@ -819,7 +819,8 @@ const formatPrice = (amount: number) => {
     });
   }}
 
-
+ disabled={isSubmitting || isSubmitted}
+          style={{ opacity: (isSubmitting || isSubmitted) ? 0.6 : 1 }}
 
                   //    className="border border-[#6C3CD1] px-3 rounded-full ml-12 py-[-2]"
                       >
@@ -1110,6 +1111,8 @@ else if (isPackage === 1) {
     }
   }}
   className="border border-[#6C3CD1] px-3 rounded-full"
+   disabled={isSubmitting || isSubmitted}
+          style={{ opacity: (isSubmitting || isSubmitted) ? 0.6 : 1 }}
 >
       <Text className="text-[#6C3CD1] font-medium">Edit</Text>
     </TouchableOpacity>
@@ -1297,6 +1300,8 @@ else if (isPackage === 1) {
         selectedMethod: paymentMethod 
       })}
       className="border border-[#6C3CD1] px-3 rounded-full"
+       disabled={isSubmitting || isSubmitted}
+          style={{ opacity: (isSubmitting || isSubmitted) ? 0.6 : 1 }}
     >
       <Text className="text-[#6C3CD1] font-medium">Edit</Text>
     </TouchableOpacity>
