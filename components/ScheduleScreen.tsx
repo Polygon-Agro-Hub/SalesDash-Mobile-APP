@@ -1267,7 +1267,7 @@ const handleProceed = () => {
             <View className="flex-row justify-between mt-2">
               <Text className="font-semibold text-lg">Full Total :</Text>
               <Text className="font-bold text-lg">
-                Rs. {fullTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                Rs.{fullTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </Text>
             </View>
           </View>
