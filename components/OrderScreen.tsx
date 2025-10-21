@@ -1344,7 +1344,7 @@ const handlePackageSearchChange = (text: string) => {
     </Text>
 
 <Text className="text-base font-semibold text-[#5C5C5C] mr-10">
-  Rs. {Number(calculateGrandTotal()).toLocaleString('en-US', {
+  Rs.{Number(calculateGrandTotal()).toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}
