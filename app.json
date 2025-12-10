@@ -90,7 +90,11 @@
         "origin": false
       },
       "eas": {
+<<<<<<< HEAD
         "projectId": "7c4e58c4-2fe1-4b99-88fe-2462568d0459"
+=======
+        "projectId": "3b6a2028-7552-4b98-8ba2-55cbf31b9c8f"
+>>>>>>> cd0961e0aa211f05569450fe9cbd11f014f11210
       }
     }
   }

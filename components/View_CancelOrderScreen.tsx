@@ -316,6 +316,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   // Disable cancel button for these statuses
   return actualStatus === "On the way" || 
          actualStatus === "Processing" || 
+         actualStatus === "Out For Delivery" ||
          actualStatus === "Delivered" || 
          actualStatus === "Cancelled";
 };
@@ -417,7 +418,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
  
 const isTimelineItemActive = (status: string) => {
   if (!order) return false;
-  const orderStatuses = ["Ordered", "Processing", "On the way", "Delivered"];
+  const orderStatuses = ["Ordered", "Processing", "Out For Delivery", "On the way", "Delivered"];
   const actualStatus = getActualStatus();
   
 
@@ -595,7 +596,7 @@ const formatPrice = (price: string | number): string => {
     {/* Order Placed */}
     <View className="flex-row items-center mb-10">
       <View 
-        className={`w-4 h-4 rounded-full absolute -left-7 ${isTimelineItemActive("Ordered") ? "bg-[#6C3CD1]" : "bg-[#D9D9D9]"}`} 
+        className={`p-1.5 rounded-full absolute -left-8 ${isTimelineItemActive("Ordered") ? "bg-[#6C3CD1]  border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`} 
       />
       <Text className="text-gray-800 font-medium">
         Order Placed {formatDateShort(order.createdAt)}
@@ -605,17 +606,27 @@ const formatPrice = (price: string | number): string => {
     {/* Processing */}
     <View className="flex-row items-center mb-10">
       <View 
-        className={`w-4 h-4 rounded-full absolute -left-7 ${isTimelineItemActive("Processing") ? "bg-[#6C3CD1]" : "bg-[#D9D9D9]"}`} 
+        className={`p-1.5 rounded-full  absolute -left-8 ${isTimelineItemActive("Processing") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`} 
       />
       <Text className="text-gray-800 font-medium">
         Order is Processing
       </Text>
     </View>
+    <View className="flex-row items-center mb-10">
+      <View 
+        className={`p-1.5 rounded-full  absolute -left-8 ${isTimelineItemActive("Out For Delivery") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`} 
+      />
+      <Text className="text-gray-800 font-medium">
+        Order is Out for Delivery
+      </Text>
+    </View>
+
+    
 
     {/* On the way */}
     <View className="flex-row items-center mb-10">
       <View 
-        className={`w-4 h-4 rounded-full absolute -left-7 ${isTimelineItemActive("On the way") ? "bg-[#6C3CD1]" : "bg-[#D9D9D9]"}`} 
+        className={`p-1.5 rounded-full  absolute -left-8 ${isTimelineItemActive("On the way") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`} 
       />
       <Text className="text-gray-800 font-medium">
         Order is On the way
@@ -625,7 +636,7 @@ const formatPrice = (price: string | number): string => {
     {/* Delivered - Last item in normal flow */}
     <View className={`flex-row items-center ${status === "Cancelled" ? "mb-10" : ""}`}>
       <View 
-        className={`w-4 h-4 rounded-full absolute -left-7 ${isTimelineItemActive("Delivered") ? "bg-[#6C3CD1]" : "bg-[#D9D9D9]"}`} 
+        className={`p-1.5 rounded-full  absolute -left-8 ${isTimelineItemActive("Delivered") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`} 
       />
       <Text className="text-gray-800 font-medium">
         Order is Delivered
@@ -636,7 +647,7 @@ const formatPrice = (price: string | number): string => {
     {status === "Cancelled" && (
       <View className="flex-row items-center">
         <View 
-          className="w-4 h-4 rounded-full absolute -left-7 bg-[#6C3CD1]"
+          className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]"
         />
         <Text className="text-red-500 font-medium">
           Order is Cancelled

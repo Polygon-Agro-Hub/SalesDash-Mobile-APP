@@ -232,7 +232,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
     Linking.openURL(phoneNumber).catch((err) => console.error("Error opening dialer", err));
   };
 
-  const filters = ["Ordered", "Processing", "On the way", "Delivered", "Cancelled"];
+  const filters = ["Ordered", "Processing","Out For Delivery", "On the way", "Delivered", "Cancelled"];
 
   const formatsheduleDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -565,6 +565,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
                         item.status === "Ordered" ? "bg-[#E0E0E0]" 
                         : item.status === "On the way" ? "bg-[#FFFD99]" 
                         : item.status === "Processing" ? "bg-[#CFE1FF]"
+                        : item.status === "Out For Delivery" ? "bg-[#FFE9F8]"
                         : item.status === "Delivered" ? "bg-[#CCFBF1]"
                         : item.status === "Cancelled" ? "bg-[#FFE4E1]"
                         : "bg-[#EAEAEA]"
@@ -573,6 +574,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
                           item.status === "Ordered" ? "text-[#3F3F3F]"
                           : item.status === "On the way" ? "text-[#A6A100]"
                           : item.status === "Processing" ? "text-[#3B82F6]"
+                          : item.status === "Out For Delivery" ? "text-[#FF4AAA]"
                           : item.status === "Delivered" ? "text-[#0D9488]"
                           : item.status === "Cancelled" ? "text-[#FF0000]"
                           : "text-[#393939]"
