@@ -43,7 +43,8 @@ import PrivacyPolicy from '@/components/PrivacyPolicy'
 import TermsConditions from '@/components/TermsConditions'
 import NetInfo from '@react-native-community/netinfo';
 import AttachGeoLocationScreen from '@/components/AttachGeoLocationScreen';
-import ViewLocationScreen from '@/components/ViewLocationScreen'
+import ViewLocationScreen from '@/components/ViewLocationScreen';
+import AttachGeoLocationScreenEdit from '@/components/AttachGeoLocationScreenEdit'
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -163,6 +164,7 @@ function AppContent() {
       <Stack.Screen name="CratScreen" component={CratScreen as any} />
       <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicy as any} />
       <Stack.Screen name="ViewLocationScreen" component={ViewLocationScreen as any} />
+            <Stack.Screen name="AttachGeoLocationScreenEdit" component={AttachGeoLocationScreenEdit as any} />
       <Stack.Screen name="AttachGeoLocationScreen" component={AttachGeoLocationScreen as any} />
       <Stack.Screen name="TermsConditions" component={TermsConditions as any} /> 
             <Stack.Screen name="Main" component={MainTabNavigator} />

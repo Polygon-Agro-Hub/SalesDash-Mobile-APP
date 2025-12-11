@@ -126,6 +126,11 @@ export type RootStackParamList = {
   currentLongitude?: number;
   onLocationSelect?: (latitude: number, longitude: number, locationName: string) => void;
 };
+AttachGeoLocationScreenEdit:{
+   currentLatitude?: number;
+  currentLongitude?: number;
+  onLocationSelect?: (latitude: number, longitude: number, locationName: string) => void;
+}
     SelectOrderTypeNewCustomer : undefined;
     CreateCustomPackage :{id: string; isCustomPackage:string; isSelectPackage:string;};
    CratScreen: {
