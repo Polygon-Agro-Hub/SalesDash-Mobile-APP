@@ -810,10 +810,15 @@ const minimumDate = getMinimumSelectableDate();
 
 
   
+  // const timeSlots = [
+  //   { key: "Within 8-12 PM", value: "Within 8-12 PM" },
+  //   { key: "Within 12-4 PM", value: "Within 12-4 PM" },
+  //   { key: "Within 4-8 PM", value: "Within 4-8 PM" },
+  // ];
   const timeSlots = [
-    { key: "Within 8-12 PM", value: "Within 8-12 PM" },
-    { key: "Within 12-4 PM", value: "Within 12-4 PM" },
-    { key: "Within 4-8 PM", value: "Within 4-8 PM" },
+    { key: "Within 8AM - 2PM", value: "Within 8AM - 2PM" },
+    { key: "Within 2PM - 8PM", value: "Within 2PM - 8PM" }
+ 
   ];
 
   useEffect(() => {
