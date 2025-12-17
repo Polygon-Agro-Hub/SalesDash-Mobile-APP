@@ -108,6 +108,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
   const [deliveryFee, setDeliveryFee] = useState<number>(0);
   const [isPackage , setIsPackage] = useState();
+   const [returnReason, setReturnReason] = useState<string | null>(null);
 
   console.log("Route params:", route.params);
 
@@ -258,6 +259,41 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   };
 
   console.log("Current delivery fee:", deliveryFee);
+
+
+    useEffect(() => {
+    const fetchReturnReason = async () => {
+
+      console.log("retun reqon000000000000")
+      if (status === "Return") {
+        try {
+          const storedToken = await AsyncStorage.getItem("authToken");
+          
+          if (!storedToken) {
+            console.log("No authentication token found for return reason");
+            return;
+          }
+console.log("before----------------")
+          const response = await axios.get(
+            `${environment.API_BASE_URL}api/orders/get-return-reason/${orderId}`,
+            { headers: { Authorization: `Bearer ${storedToken}` }}
+          );
+          
+          console.log("Return reason API response:", response.data);
+          
+          if (response.data.success && response.data.data) {
+            setReturnReason(response.data.data.returnReason);
+          }
+        } catch (error) {
+          console.error("Error fetching return reason:", error);
+          // Don't show error to user, just log it
+        }
+      }
+    };
+
+    fetchReturnReason();
+  }, [orderId, status]);
+
   
 
   const formatDateShort = (dateString: string) => {
@@ -317,7 +353,9 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   return actualStatus === "On the way" || 
          actualStatus === "Processing" || 
          actualStatus === "Out For Delivery" ||
+         actualStatus === "Collected" ||
          actualStatus === "Delivered" || 
+         actualStatus === "Return"||
          actualStatus === "Cancelled";
 };
 
@@ -418,7 +456,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
  
 const isTimelineItemActive = (status: string) => {
   if (!order) return false;
-  const orderStatuses = ["Ordered", "Processing", "Out For Delivery", "On the way", "Delivered"];
+  const orderStatuses = ["Ordered", "Processing", "Out For Delivery", "Collected","On the way", "Delivered","Hold", "Return"];
   const actualStatus = getActualStatus();
   
 
@@ -598,7 +636,7 @@ const formatPrice = (price: string | number): string => {
       <View 
         className={`p-1.5 rounded-full absolute -left-8 ${isTimelineItemActive("Ordered") ? "bg-[#6C3CD1]  border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`} 
       />
-      <Text className="text-gray-800 font-medium">
+      <Text className="text-[#5E5E5E] font-medium">
         Order Placed {formatDateShort(order.createdAt)}
       </Text>
     </View>
@@ -608,7 +646,7 @@ const formatPrice = (price: string | number): string => {
       <View 
         className={`p-1.5 rounded-full  absolute -left-8 ${isTimelineItemActive("Processing") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`} 
       />
-      <Text className="text-gray-800 font-medium">
+      <Text className="text-[#5E5E5E] font-medium">
         Order is Processing
       </Text>
     </View>
@@ -616,8 +654,18 @@ const formatPrice = (price: string | number): string => {
       <View 
         className={`p-1.5 rounded-full  absolute -left-8 ${isTimelineItemActive("Out For Delivery") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`} 
       />
-      <Text className="text-gray-800 font-medium">
+      <Text className="text-[#5E5E5E] font-medium">
         Order is Out for Delivery
+      </Text>
+    </View>
+
+
+     <View className="flex-row items-center mb-10">
+      <View 
+        className={`p-1.5 rounded-full  absolute -left-8 ${isTimelineItemActive("Collected") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`} 
+      />
+      <Text className="text-[#5E5E5E] font-medium">
+        Driver has Collected the order
       </Text>
     </View>
 
@@ -628,20 +676,48 @@ const formatPrice = (price: string | number): string => {
       <View 
         className={`p-1.5 rounded-full  absolute -left-8 ${isTimelineItemActive("On the way") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`} 
       />
-      <Text className="text-gray-800 font-medium">
+      <Text className="text-[#5E5E5E] font-medium">
         Order is On the way
       </Text>
     </View>
 
     {/* Delivered - Last item in normal flow */}
-    <View className={`flex-row items-center ${status === "Cancelled" ? "mb-10" : ""}`}>
+     <View className={`flex-row items-center ${status === "Cancelled" ? "mb-10" : ""}`}>
+    {status !== "Return" &&  status !== "Hold" &&(
+   
+         <View className={`flex-row items-center`}>
+      
       <View 
         className={`p-1.5 rounded-full  absolute -left-8 ${isTimelineItemActive("Delivered") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`} 
       />
-      <Text className="text-gray-800 font-medium">
+      <Text className="text-[#5E5E5E] font-medium">
         Order is Delivered
       </Text>
     </View>
+    )}
+    </View>
+
+    {status === "Return" && (
+      <View className="flex-row items-center">
+        <View 
+          className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]"
+        />
+        <Text className=" font-medium text-[#5E5E5E]">
+          Order marked as Return
+        </Text>
+      </View>
+    )}
+
+      {status === "Hold" && (
+      <View className="flex-row items-center">
+        <View 
+          className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]"
+        />
+        <Text className=" font-medium text-[#5E5E5E]">
+          Driver marked order as Hold 
+        </Text>
+      </View>
+    )}
 
     {/* Order Cancelled - Show ONLY if order is cancelled */}
     {status === "Cancelled" && (
@@ -654,7 +730,16 @@ const formatPrice = (price: string | number): string => {
         </Text>
       </View>
     )}
+
+    
   </View>
+
+  {status === "Return" && returnReason && (
+                <View className="mt-[-7] ml-2 p-4 ">
+                  <Text className=" font-semibold mb-1 text-[#5E5E5E]">Reason: <Text className="text-black"> "{returnReason}"</Text></Text>
+                
+                </View>
+              )}
 </View>
 
             {/* Customer Information */}
