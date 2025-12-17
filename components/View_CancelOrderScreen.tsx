@@ -109,6 +109,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   const [deliveryFee, setDeliveryFee] = useState<number>(0);
   const [isPackage , setIsPackage] = useState();
    const [returnReason, setReturnReason] = useState<string | null>(null);
+   const [isHoldOrder, setIsHoldOrder] = useState<boolean>(false);
 
   console.log("Route params:", route.params);
 
@@ -142,6 +143,46 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
 
     fetchOrderDetails();
   }, [orderId]);
+
+
+  useEffect(() => {
+  const fetchHoldStatus = async () => {
+    console.log("Fetching hold status for orderId:", orderId);
+    
+    // Check hold status for ALL orders, not just those with status "Hold"
+    // An order might have been held and then resumed to "On the way" or "Delivered"
+    try {
+      const storedToken = await AsyncStorage.getItem("authToken");
+      
+      if (!storedToken) {
+        console.log("No authentication token found for hold status");
+        return;
+      }
+
+      const response = await axios.get(
+        `${environment.API_BASE_URL}api/orders/get-hold-reason/${orderId}`,
+        { headers: { Authorization: `Bearer ${storedToken}` }}
+      );
+      
+      console.log("Hold status API response:", response.data);
+      
+      if (response.data.success && response.data.data) {
+        // Set isHoldOrder to true if the order was ever held (isHold from backend)
+        setIsHoldOrder(response.data.data.isHold);
+        console.log("Order hold history - isHold:", response.data.data.isHold);
+      } else {
+        // If no hold data found, set to false
+        setIsHoldOrder(false);
+      }
+    } catch (error) {
+      console.error("Error fetching hold status:", error);
+      // On error, default to false to prevent UI issues
+      setIsHoldOrder(false);
+    }
+  };
+
+  fetchHoldStatus();
+}, [orderId]);
 
   const fetchDeliveryFee = async (fullAddress: string, customerUserId?: number) => {
     try {
@@ -293,6 +334,9 @@ console.log("before----------------")
 
     fetchReturnReason();
   }, [orderId, status]);
+
+
+  console.log("/////////////////",isHoldOrder)
 
   
 
@@ -454,21 +498,70 @@ console.log("before----------------")
   };
   
  
-const isTimelineItemActive = (status: string) => {
-  if (!order) return false;
-  const orderStatuses = ["Ordered", "Processing", "Out For Delivery", "Collected","On the way", "Delivered","Hold", "Return"];
-  const actualStatus = getActualStatus();
+// const isTimelineItemActive = (status: string) => {
+//   if (!order) return false;
+//   const orderStatuses = ["Ordered", "Processing", "Out For Delivery", "Collected","On the way", "Delivered","Hold", "Return"];
+//   const actualStatus = getActualStatus();
   
 
+//   if (actualStatus === "Cancelled") {
+//     return status === "Ordered" || status === "Cancelled";
+//   }
+  
+
+//   const currentIndex = orderStatuses.indexOf(actualStatus);
+//   const itemIndex = orderStatuses.indexOf(status);
+  
+
+//   if (itemIndex === -1) return false;
+  
+//   return itemIndex <= currentIndex;
+// };
+const isTimelineItemActive = (status: string) => {
+  if (!order) return false;
+  
+  const orderStatuses = [
+    "Ordered", 
+    "Processing", 
+    "Out For Delivery", 
+    "Collected",
+    "On the way", 
+    "Hold",
+    "Delivered"
+  ];
+  
+  const actualStatus = getActualStatus();
+  
+  // Handle Cancelled orders - only show Ordered and Cancelled as active
   if (actualStatus === "Cancelled") {
     return status === "Ordered" || status === "Cancelled";
   }
   
-
+  // Handle Return orders - show all steps up to and including Return
+  if (actualStatus === "Return") {
+    return status !== "Delivered" && status !== "Cancelled";
+  }
+  
+  // Special handling for Hold status
+  if (status === "Hold") {
+    // Show Hold as active if:
+    // 1. Current status is "Hold"
+    // 2. Status is "On the way" AND isHoldOrder is true (was held, then resumed)
+    // 3. Status is "Delivered" AND isHoldOrder is true (was held during delivery)
+    return actualStatus === "Hold" || 
+           (actualStatus === "On the way" && isHoldOrder) ||
+           (actualStatus === "Delivered" && isHoldOrder);
+  }
+  
+  // For Delivered status with hold history
+  if (status === "Delivered" && isHoldOrder && actualStatus === "Delivered") {
+    return true;
+  }
+  
+  // Standard timeline progression
   const currentIndex = orderStatuses.indexOf(actualStatus);
   const itemIndex = orderStatuses.indexOf(status);
   
-
   if (itemIndex === -1) return false;
   
   return itemIndex <= currentIndex;
@@ -683,7 +776,7 @@ const formatPrice = (price: string | number): string => {
 
     {/* Delivered - Last item in normal flow */}
      <View className={`flex-row items-center ${status === "Cancelled" ? "mb-10" : ""}`}>
-    {status !== "Return" &&  status !== "Hold" &&(
+    {status !== "Return" &&  status !== "Hold" &&  !isHoldOrder &&(
    
          <View className={`flex-row items-center`}>
       
@@ -708,17 +801,91 @@ const formatPrice = (price: string | number): string => {
       </View>
     )}
 
-      {status === "Hold" && (
-      <View className="flex-row items-center">
+
+
+      {(status === "Hold" || (status === "On the way" && isHoldOrder) || (status === "Delivered" && isHoldOrder)) && (
+      <View className="flex-row items-center mb-10">
         <View 
           className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]"
         />
-        <Text className=" font-medium text-[#5E5E5E]">
-          Driver marked order as Hold 
+        <Text className="text-[#5E5E5E] font-medium">
+          Driver marked order as Hold
         </Text>
       </View>
     )}
 
+    { status === "Hold" && (
+    
+      <View className="flex-row items-center mb-10">
+        <View 
+          className="p-1.5 rounded-full absolute -left-8 bg-[#CDCDCD] border-4 border-[#F4EDFF]"
+        />
+        <Text className="text-[#5E5E5E] font-medium">
+         Order is On the way
+        </Text>
+      </View>
+    )}
+
+        {status === "Hold" && (
+    
+      <View className="flex-row items-center">
+        <View 
+          className="p-1.5 rounded-full absolute -left-8 bg-[#CDCDCD] border-4 border-[#F4EDFF]"
+        />
+        <Text className="text-[#5E5E5E] font-medium">
+          Order is Delivered
+        </Text>
+      </View>
+    )}
+
+
+
+   {isHoldOrder && status === "On the way" && (
+      <View className="flex-row items-center mb-10">
+        <View 
+          className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]"
+        />
+        <Text className="text-[#5E5E5E] font-medium">
+          Order is On the way
+        </Text>
+      </View>
+    )}
+
+     {isHoldOrder && status === "On the way" && (
+    
+      <View className="flex-row items-center">
+        <View 
+          className="p-1.5 rounded-full absolute -left-8 bg-[#CDCDCD] border-4 border-[#F4EDFF]"
+        />
+        <Text className="text-[#5E5E5E] font-medium">
+          Order is Delivered
+        </Text>
+      </View>
+    )}
+
+       {isHoldOrder && status === "Delivered" && (
+      <View className="flex-row items-center mb-10">
+        <View 
+          className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]"
+        />
+        <Text className="text-[#5E5E5E] font-medium">
+          Order is On the way
+        </Text>
+      </View>
+    )}
+
+    
+   {isHoldOrder && status === "Delivered" && (
+    
+      <View className="flex-row items-center">
+        <View 
+          className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]"
+        />
+        <Text className="text-[#5E5E5E] font-medium">
+          Order is Delivered
+        </Text>
+      </View>
+    )}
     {/* Order Cancelled - Show ONLY if order is cancelled */}
     {status === "Cancelled" && (
       <View className="flex-row items-center">
