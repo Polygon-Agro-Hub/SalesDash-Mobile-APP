@@ -108,6 +108,8 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
   const [deliveryFee, setDeliveryFee] = useState<number>(0);
   const [isPackage , setIsPackage] = useState();
+   const [returnReason, setReturnReason] = useState<string | null>(null);
+   const [isHoldOrder, setIsHoldOrder] = useState<boolean>(false);
 
   console.log("Route params:", route.params);
 
@@ -141,6 +143,46 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
 
     fetchOrderDetails();
   }, [orderId]);
+
+
+  useEffect(() => {
+  const fetchHoldStatus = async () => {
+    console.log("Fetching hold status for orderId:", orderId);
+    
+    // Check hold status for ALL orders, not just those with status "Hold"
+    // An order might have been held and then resumed to "On the way" or "Delivered"
+    try {
+      const storedToken = await AsyncStorage.getItem("authToken");
+      
+      if (!storedToken) {
+        console.log("No authentication token found for hold status");
+        return;
+      }
+
+      const response = await axios.get(
+        `${environment.API_BASE_URL}api/orders/get-hold-reason/${orderId}`,
+        { headers: { Authorization: `Bearer ${storedToken}` }}
+      );
+      
+      console.log("Hold status API response:", response.data);
+      
+      if (response.data.success && response.data.data) {
+        // Set isHoldOrder to true if the order was ever held (isHold from backend)
+        setIsHoldOrder(response.data.data.isHold);
+        console.log("Order hold history - isHold:", response.data.data.isHold);
+      } else {
+        // If no hold data found, set to false
+        setIsHoldOrder(false);
+      }
+    } catch (error) {
+      console.error("Error fetching hold status:", error);
+      // On error, default to false to prevent UI issues
+      setIsHoldOrder(false);
+    }
+  };
+
+  fetchHoldStatus();
+}, [orderId]);
 
   const fetchDeliveryFee = async (fullAddress: string, customerUserId?: number) => {
     try {
@@ -258,6 +300,44 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   };
 
   console.log("Current delivery fee:", deliveryFee);
+
+
+    useEffect(() => {
+    const fetchReturnReason = async () => {
+
+      console.log("retun reqon000000000000")
+      if (status === "Return") {
+        try {
+          const storedToken = await AsyncStorage.getItem("authToken");
+          
+          if (!storedToken) {
+            console.log("No authentication token found for return reason");
+            return;
+          }
+console.log("before----------------")
+          const response = await axios.get(
+            `${environment.API_BASE_URL}api/orders/get-return-reason/${orderId}`,
+            { headers: { Authorization: `Bearer ${storedToken}` }}
+          );
+          
+          console.log("Return reason API response:", response.data);
+          
+          if (response.data.success && response.data.data) {
+            setReturnReason(response.data.data.returnReason);
+          }
+        } catch (error) {
+          console.error("Error fetching return reason:", error);
+          // Don't show error to user, just log it
+        }
+      }
+    };
+
+    fetchReturnReason();
+  }, [orderId, status]);
+
+
+  console.log("/////////////////",isHoldOrder)
+
   
 
   const formatDateShort = (dateString: string) => {
@@ -317,7 +397,9 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   return actualStatus === "On the way" || 
          actualStatus === "Processing" || 
          actualStatus === "Out For Delivery" ||
+         actualStatus === "Collected" ||
          actualStatus === "Delivered" || 
+         actualStatus === "Return"||
          actualStatus === "Cancelled";
 };
 
@@ -416,21 +498,70 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   };
   
  
-const isTimelineItemActive = (status: string) => {
-  if (!order) return false;
-  const orderStatuses = ["Ordered", "Processing", "Out For Delivery", "On the way", "Delivered"];
-  const actualStatus = getActualStatus();
+// const isTimelineItemActive = (status: string) => {
+//   if (!order) return false;
+//   const orderStatuses = ["Ordered", "Processing", "Out For Delivery", "Collected","On the way", "Delivered","Hold", "Return"];
+//   const actualStatus = getActualStatus();
   
 
+//   if (actualStatus === "Cancelled") {
+//     return status === "Ordered" || status === "Cancelled";
+//   }
+  
+
+//   const currentIndex = orderStatuses.indexOf(actualStatus);
+//   const itemIndex = orderStatuses.indexOf(status);
+  
+
+//   if (itemIndex === -1) return false;
+  
+//   return itemIndex <= currentIndex;
+// };
+const isTimelineItemActive = (status: string) => {
+  if (!order) return false;
+  
+  const orderStatuses = [
+    "Ordered", 
+    "Processing", 
+    "Out For Delivery", 
+    "Collected",
+    "On the way", 
+    "Hold",
+    "Delivered"
+  ];
+  
+  const actualStatus = getActualStatus();
+  
+  // Handle Cancelled orders - only show Ordered and Cancelled as active
   if (actualStatus === "Cancelled") {
     return status === "Ordered" || status === "Cancelled";
   }
   
-
+  // Handle Return orders - show all steps up to and including Return
+  if (actualStatus === "Return") {
+    return status !== "Delivered" && status !== "Cancelled";
+  }
+  
+  // Special handling for Hold status
+  if (status === "Hold") {
+    // Show Hold as active if:
+    // 1. Current status is "Hold"
+    // 2. Status is "On the way" AND isHoldOrder is true (was held, then resumed)
+    // 3. Status is "Delivered" AND isHoldOrder is true (was held during delivery)
+    return actualStatus === "Hold" || 
+           (actualStatus === "On the way" && isHoldOrder) ||
+           (actualStatus === "Delivered" && isHoldOrder);
+  }
+  
+  // For Delivered status with hold history
+  if (status === "Delivered" && isHoldOrder && actualStatus === "Delivered") {
+    return true;
+  }
+  
+  // Standard timeline progression
   const currentIndex = orderStatuses.indexOf(actualStatus);
   const itemIndex = orderStatuses.indexOf(status);
   
-
   if (itemIndex === -1) return false;
   
   return itemIndex <= currentIndex;
@@ -598,7 +729,7 @@ const formatPrice = (price: string | number): string => {
       <View 
         className={`p-1.5 rounded-full absolute -left-8 ${isTimelineItemActive("Ordered") ? "bg-[#6C3CD1]  border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`} 
       />
-      <Text className="text-gray-800 font-medium">
+      <Text className="text-[#5E5E5E] font-medium">
         Order Placed {formatDateShort(order.createdAt)}
       </Text>
     </View>
@@ -608,7 +739,7 @@ const formatPrice = (price: string | number): string => {
       <View 
         className={`p-1.5 rounded-full  absolute -left-8 ${isTimelineItemActive("Processing") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`} 
       />
-      <Text className="text-gray-800 font-medium">
+      <Text className="text-[#5E5E5E] font-medium">
         Order is Processing
       </Text>
     </View>
@@ -616,8 +747,18 @@ const formatPrice = (price: string | number): string => {
       <View 
         className={`p-1.5 rounded-full  absolute -left-8 ${isTimelineItemActive("Out For Delivery") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`} 
       />
-      <Text className="text-gray-800 font-medium">
+      <Text className="text-[#5E5E5E] font-medium">
         Order is Out for Delivery
+      </Text>
+    </View>
+
+
+     <View className="flex-row items-center mb-10">
+      <View 
+        className={`p-1.5 rounded-full  absolute -left-8 ${isTimelineItemActive("Collected") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`} 
+      />
+      <Text className="text-[#5E5E5E] font-medium">
+        Driver has Collected the order
       </Text>
     </View>
 
@@ -628,21 +769,123 @@ const formatPrice = (price: string | number): string => {
       <View 
         className={`p-1.5 rounded-full  absolute -left-8 ${isTimelineItemActive("On the way") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`} 
       />
-      <Text className="text-gray-800 font-medium">
+      <Text className="text-[#5E5E5E] font-medium">
         Order is On the way
       </Text>
     </View>
 
     {/* Delivered - Last item in normal flow */}
-    <View className={`flex-row items-center ${status === "Cancelled" ? "mb-10" : ""}`}>
+     <View className={`flex-row items-center ${status === "Cancelled" ? "mb-10" : ""}`}>
+    {status !== "Return" &&  status !== "Hold" &&  !isHoldOrder &&(
+   
+         <View className={`flex-row items-center`}>
+      
       <View 
         className={`p-1.5 rounded-full  absolute -left-8 ${isTimelineItemActive("Delivered") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`} 
       />
-      <Text className="text-gray-800 font-medium">
+      <Text className="text-[#5E5E5E] font-medium">
         Order is Delivered
       </Text>
     </View>
+    )}
+    </View>
 
+    {status === "Return" && (
+      <View className="flex-row items-center">
+        <View 
+          className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]"
+        />
+        <Text className=" font-medium text-[#5E5E5E]">
+          Order marked as Return
+        </Text>
+      </View>
+    )}
+
+
+
+      {(status === "Hold" || (status === "On the way" && isHoldOrder) || (status === "Delivered" && isHoldOrder)) && (
+      <View className="flex-row items-center mb-10">
+        <View 
+          className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]"
+        />
+        <Text className="text-[#5E5E5E] font-medium">
+          Driver marked order as Hold
+        </Text>
+      </View>
+    )}
+
+    { status === "Hold" && (
+    
+      <View className="flex-row items-center mb-10">
+        <View 
+          className="p-1.5 rounded-full absolute -left-8 bg-[#CDCDCD] border-4 border-[#F4EDFF]"
+        />
+        <Text className="text-[#5E5E5E] font-medium">
+         Order is On the way
+        </Text>
+      </View>
+    )}
+
+        {status === "Hold" && (
+    
+      <View className="flex-row items-center">
+        <View 
+          className="p-1.5 rounded-full absolute -left-8 bg-[#CDCDCD] border-4 border-[#F4EDFF]"
+        />
+        <Text className="text-[#5E5E5E] font-medium">
+          Order is Delivered
+        </Text>
+      </View>
+    )}
+
+
+
+   {isHoldOrder && status === "On the way" && (
+      <View className="flex-row items-center mb-10">
+        <View 
+          className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]"
+        />
+        <Text className="text-[#5E5E5E] font-medium">
+          Order is On the way
+        </Text>
+      </View>
+    )}
+
+     {isHoldOrder && status === "On the way" && (
+    
+      <View className="flex-row items-center">
+        <View 
+          className="p-1.5 rounded-full absolute -left-8 bg-[#CDCDCD] border-4 border-[#F4EDFF]"
+        />
+        <Text className="text-[#5E5E5E] font-medium">
+          Order is Delivered
+        </Text>
+      </View>
+    )}
+
+       {isHoldOrder && status === "Delivered" && (
+      <View className="flex-row items-center mb-10">
+        <View 
+          className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]"
+        />
+        <Text className="text-[#5E5E5E] font-medium">
+          Order is On the way
+        </Text>
+      </View>
+    )}
+
+    
+   {isHoldOrder && status === "Delivered" && (
+    
+      <View className="flex-row items-center">
+        <View 
+          className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]"
+        />
+        <Text className="text-[#5E5E5E] font-medium">
+          Order is Delivered
+        </Text>
+      </View>
+    )}
     {/* Order Cancelled - Show ONLY if order is cancelled */}
     {status === "Cancelled" && (
       <View className="flex-row items-center">
@@ -654,7 +897,16 @@ const formatPrice = (price: string | number): string => {
         </Text>
       </View>
     )}
+
+    
   </View>
+
+  {status === "Return" && returnReason && (
+                <View className="mt-[-7] ml-2 p-4 ">
+                  <Text className=" font-semibold mb-1 text-[#5E5E5E]">Reason: <Text className="text-black"> "{returnReason}"</Text></Text>
+                
+                </View>
+              )}
 </View>
 
             {/* Customer Information */}
