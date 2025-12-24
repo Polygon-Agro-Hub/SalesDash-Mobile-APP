@@ -43,7 +43,7 @@
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "ACCESS_FINE_LOCATION",
-  "ACCESS_COARSE_LOCATION"
+        "ACCESS_COARSE_LOCATION"
       ]
     },
     "web": {
@@ -92,7 +92,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "a57cf249-af72-49aa-9923-34b4dbe701d3"
+        "projectId": "5df34383-1459-4cf6-890f-41961385e33b"
       }
     }
   }
