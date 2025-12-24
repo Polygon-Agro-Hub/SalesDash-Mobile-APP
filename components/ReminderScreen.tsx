@@ -351,6 +351,8 @@ useEffect(() => {
         return require("../assets/images/fast-shipping.webp");
       case 'Order is Cancelled':
         return require("../assets/images/OrderisCancelled.webp");
+      case 'Driver has collected the order':
+        return require("../assets/images/delivery-courier.webp")
       default:
         return require("../assets/images/notification.webp");
     }
