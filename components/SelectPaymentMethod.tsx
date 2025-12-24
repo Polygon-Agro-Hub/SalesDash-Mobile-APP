@@ -33,69 +33,106 @@ interface AdditionalItem {
 interface SelectPaymentMethodProps {
   navigation: StackNavigationProp<RootStackParamList, "SelectPaymentMethod">;
   route: SelectPaymentMethodRouteProp & {
-   
-      params: {
-        items?: Array<{
-          id: number;
-          name: string;
-          price: number;
-          normalPrice: number;
-          discountedPrice: number;
-          quantity: number;
-          selected: boolean;
-          customerId:string;
-          unitType: string;
-          startValue: number;
-          changeby: number;
-        }>;
-        total?: number;
-        subtotal?: number;
-        discount?: number;
-        id?: string;
-        isPackage?: string;
+    params: {
+      items?: Array<{
+        id: number;
+        name: string;
+        price: number;
+        normalPrice: number;
+        discountedPrice: number;
+        quantity: number;
+        selected: boolean;
+        customerId: string;
+        unitType: string;
+        startValue: number;
+        changeby: number;
+      }>;
+      total?: number;
+      subtotal?: number;
+      discount?: number;
+      fullTotal?: number; // ADD THIS
+      id?: string;
+      customerId?: string; // ADD THIS
+      isPackage?: number | string; // UPDATE THIS
+      packageId?: number; // ADD THIS
+      customerid?: string;
+      selectedMethod?: "Card" | "Cash" | null;
+      selectedDate?: string; // ADD THIS
+      selectedTimeSlot?: string; // ADD THIS
       
-        customerid?: string; 
-        selectedMethod?: "Card" | "Cash" | null; // Add this property
-        
-        orderItems?: Array<{
-          additionalItems?: Array<AdditionalItem>;
-          isAdditionalItems: boolean;
-          customerid?: string; 
-          isModifiedMin: boolean;
-          isModifiedPlus: boolean;
-          modifiedMinItems: Array<{
-            additionalDiscount: number;
-            additionalPrice: number;
-            modifiedQuantity: number;
-            originalPrice: string;
-            originalQuantity: number;
-            packageDetailsId: number;
-          }>;
-          modifiedPlusItems: Array<{
-            additionalDiscount: number;
-            additionalPrice: number;
-            modifiedQuantity: number;
-            originalPrice: string;
-            originalQuantity: number;
-            packageDetailsId: number;
-          }>;
-          packageDiscount: number;
-          packageId: number;
-          
-          packageTotal: number;
+      // ADD THIS - Critical for package orders with additional items
+      orderData?: {
+        userId: number;
+        isPackage: number;
+        packageId: number | null;
+        total: number;
+        fullTotal: number;
+        discount: number;
+        additionalItems: Array<{
+          productId: number;
+          qty: number;
+          unit: string;
+          price: number;
+          discount: number;
         }>;
       };
+      
+      orderItems?: Array<{
+        additionalItems?: Array<AdditionalItem>;
+        isAdditionalItems: boolean;
+        customerid?: string;
+        isModifiedMin: boolean;
+        isModifiedPlus: boolean;
+        modifiedMinItems: Array<{
+          additionalDiscount: number;
+          additionalPrice: number;
+          modifiedQuantity: number;
+          originalPrice: string;
+          originalQuantity: number;
+          packageDetailsId: number;
+        }>;
+        modifiedPlusItems: Array<{
+          additionalDiscount: number;
+          additionalPrice: number;
+          modifiedQuantity: number;
+          originalPrice: string;
+          originalQuantity: number;
+          packageDetailsId: number;
+        }>;
+        packageDiscount: number;
+        packageId: number;
+        packageTotal: number;
+      }>;
     };
-  
+  };
 }
 
-// const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, route }) => {
-//   const { customerid, isCustomPackage, isSelectPackage} = route.params || {};
-//   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
-//   const [selectedMethod, setSelectedMethod] = useState<"Online Payment" | "Pay By Cash" | null>("Online Payment");
 
- 
+
+// const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, route }) => {
+//   const { 
+//     customerid, 
+//     isPackage, 
+   
+//     selectedMethod: previousSelectedMethod, 
+//     // Extract all other previously passed params
+//     items,
+//     subtotal,
+//     discount,
+//     total,
+//     fullTotal,
+//     selectedDate,
+//     selectedTimeSlot,
+//    // timeDisplay,
+//     orderItems
+//   } = route.params || {};
   
+//   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+//   // Initialize with the previously selected method if available
+//   const [selectedMethod, setSelectedMethod] = useState<"Cash" | "Card" | null>(
+//     previousSelectedMethod || "Cash"
+//   );
+
 //   useEffect(() => {
 //     const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
 //     const keyboardDidHideListener = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false));
@@ -106,49 +143,45 @@ interface SelectPaymentMethodProps {
 //     };
 //   }, []);
 
+//   const handleProceed = () => {
+//     if (!selectedMethod) {
+//       Alert.alert("Required", "Please select a payment method");
+//       return;
+//     }
 
+//     if (!route.params) {
+//       Alert.alert("Error", "Order data is missing");
+//       return;
+//     }
 
+//     // Preserve all previous params while updating payment method
+//     const navigationData = {
+//       ...route.params,
+//       paymentMethod: selectedMethod,
+//       isPackage: isPackage
+  
+//     };
+
+//     console.log("Navigation data to OrderSummeryScreen:", JSON.stringify(navigationData, null, 2));
+//     console.log("Items:", navigationData.items);
+//     console.log("Subtotal:", navigationData.subtotal);
+//     console.log("Discount:", navigationData.discount);
+//     console.log("Total:", navigationData.total);
+//     console.log("Full Total:", navigationData.fullTotal);
+//     console.log("Selected Date:", navigationData.selectedDate);
+//     console.log("Selected Time Slot:", navigationData.selectedTimeSlot);
+//     console.log("Payment Method:", navigationData.paymentMethod);
+//     console.log("isPackage",isPackage);
  
-// const handleProceed = () => {
-//   if (!selectedMethod) {
-//     Alert.alert("Required", "Please select a payment method");
-//     return;
-//   }
 
-//   if (!route.params) {
-//     Alert.alert("Error", "Order data is missing");
-//     return;
-//   }
-
- 
-//   const navigationData = {
-//     ...route.params,
-//     paymentMethod: selectedMethod,
- 
-//     isSelectPackage: isSelectPackage,
-//     isCustomPackage:isCustomPackage
+//     navigation.navigate("OrderSummeryScreen" as any, navigationData);
 //   };
-
-
-//   console.log("Navigation data to OrderSummeryScreen:", JSON.stringify(navigationData, null, 2));
-//   console.log("Items:", navigationData.items);
-//   console.log("Subtotal:", navigationData.subtotal);
-//   console.log("Discount:", navigationData.discount);
-//   console.log("Total:", navigationData.total);
-//   console.log("Full Total:", navigationData.fullTotal);
-//   console.log("Selected Date:", navigationData.selectedDate);
-//   console.log("Selected Time Slot:", navigationData.selectedTimeSlot);
-//   console.log("Payment Method:", navigationData.paymentMethod);
-//   console.log("isCustomPackage",isCustomPackage);
-//   console.log('isSelectPackage',isSelectPackage)
-
-//   navigation.navigate("OrderSummeryScreen" as any, navigationData);
-// };
+  
 //   return (
 //     <KeyboardAvoidingView 
 //       behavior={Platform.OS === "ios" ? "padding" : "height"}
 //       enabled 
-//       className="flex-1"
+//       style={{flex: 1}}
 //     >
 //       <ScrollView 
 //         className="bg-white flex-1"
@@ -165,7 +198,7 @@ interface SelectPaymentMethodProps {
 
 //         <View className="flex items-center justify-center mt-3">
 //           <Image
-//             source={require("../assets/images/payment.png")}
+//             source={require("../assets/images/payment.webp")}
 //             className="w-84 h-60"
 //             resizeMode="contain"
 //           />
@@ -174,40 +207,40 @@ interface SelectPaymentMethodProps {
  
 //         <View className="flex-1 w-full items-center space-y-5 p-12 mt-[-10]">
      
-//           <TouchableOpacity
-//             onPress={() => setSelectedMethod("Online Payment")}
+//           {/* <TouchableOpacity
+//             onPress={() => setSelectedMethod("Card")}
 //             className={`w-full py-5 px-5 rounded-lg flex-row items-center justify-between border border-[#5D5D5D] ${
-//               selectedMethod === "Online Payment" ? "bg-[#6C3CD1] border-[#6C3CD1]" : "bg-white border-[#5D5D5D]"
+//               selectedMethod === "Card" ? "bg-[#6C3CD1] border-[#6C3CD1]" : "bg-white border-[#5D5D5D]"
 //             }`}
 //           >
-//             <Text className={`text-lg ${selectedMethod === "Online Payment" ? "text-white font-bold" : "text-gray-700 font-medium"}`}>
+//             <Text className={`text-lg ${selectedMethod === "Card" ? "text-white font-bold" : "text-gray-700 font-medium"}`}>
 //               Online Payment 
 //             </Text>
-//             {selectedMethod === "Online Payment" && (
+//             {selectedMethod === "Card" && (
 //               <View className="w-7 h-7 bg-white rounded-full flex items-center justify-center">
 //                 <Image 
-//                   source={require("../assets/images/DonePurple.png")} 
+//                   source={require("../assets/images/DonePurple.webp")} 
 //                   className="w-5 h-5"
 //                   resizeMode="contain"
 //                 />
 //               </View>
 //             )}
-//           </TouchableOpacity>
+//           </TouchableOpacity> */}
 
      
 //           <TouchableOpacity
-//             onPress={() => setSelectedMethod("Pay By Cash")}
+//             onPress={() => setSelectedMethod("Cash")}
 //             className={`w-full py-5 px-5 rounded-lg flex-row items-center justify-between border border-[#5D5D5D] ${
-//               selectedMethod === "Pay By Cash" ? "bg-[#6C3CD1] border-[#6C3CD1]" : "bg-white border-[#5D5D5D]"
+//               selectedMethod === "Cash" ? "bg-[#6C3CD1] border-[#6C3CD1]" : "bg-white border-[#5D5D5D]"
 //             }`}
 //           >
-//             <Text className={`text-lg ${selectedMethod === "Pay By Cash" ? "text-white font-bold" : "text-gray-700 font-medium"}`}>
-//               Pay By Cash
+//             <Text className={`text-lg ${selectedMethod === "Cash" ? "text-white font-bold" : "text-gray-700 font-medium"}`}>
+//               Cash On Delivery
 //             </Text>
-//             {selectedMethod === "Pay By Cash" && (
+//             {selectedMethod === "Cash" && (
 //               <View className="w-7 h-7 bg-white rounded-full flex items-center justify-center">
 //                 <Image 
-//                   source={require("../assets/images/DonePurple.png")} 
+//                   source={require("../assets/images/DonePurple.webp")} 
 //                   className="w-5 h-5"
 //                   resizeMode="contain"
 //                 />
@@ -220,7 +253,7 @@ interface SelectPaymentMethodProps {
 //         <TouchableOpacity onPress={handleProceed}>
 //         <LinearGradient 
 //           colors={["#6839CF", "#874DDB"]} 
-//           className="py-3 px-4 rounded-lg items-center mb-[22%] mr-[25%] ml-[25%] rounded-3xl h-15"
+//           className="py-3 px-4  items-center mb-[22%] mr-[25%] ml-[25%] rounded-3xl h-15"
 //         >
           
 //             <Text className="text-center text-white font-bold">Proceed</Text>
@@ -236,11 +269,11 @@ interface SelectPaymentMethodProps {
 
 const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, route }) => {
   const { 
-    customerid, 
+    customerid,
+    customerId, // Extract this
     isPackage, 
-   
-    selectedMethod: previousSelectedMethod, 
-    // Extract all other previously passed params
+    packageId, // Extract this
+    selectedMethod: previousSelectedMethod,
     items,
     subtotal,
     discount,
@@ -248,12 +281,11 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, r
     fullTotal,
     selectedDate,
     selectedTimeSlot,
-   // timeDisplay,
-    orderItems
+    orderItems,
+    orderData // Extract this - CRITICAL!
   } = route.params || {};
   
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
-  // Initialize with the previously selected method if available
   const [selectedMethod, setSelectedMethod] = useState<"Cash" | "Card" | null>(
     previousSelectedMethod || "Cash"
   );
@@ -279,16 +311,22 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, r
       return;
     }
 
-    // Preserve all previous params while updating payment method
+    // Preserve ALL previous params including orderData
     const navigationData = {
-      ...route.params,
+      ...route.params, // This spreads all params including orderData
       paymentMethod: selectedMethod,
-      isPackage: isPackage
-  
+      isPackage: isPackage,
+      
+      // Explicitly ensure these critical fields are included
+      customerId: customerId || customerid,
+      customerid: customerid || customerId,
+      packageId: packageId, // Explicitly pass packageId
+      orderData: orderData, // Explicitly pass orderData - CRITICAL!
     };
 
+    console.log("=== SelectPaymentMethod Navigation Debug ===");
     console.log("Navigation data to OrderSummeryScreen:", JSON.stringify(navigationData, null, 2));
-    console.log("Items:", navigationData.items);
+    console.log("Items:", navigationData.items?.length || 0);
     console.log("Subtotal:", navigationData.subtotal);
     console.log("Discount:", navigationData.discount);
     console.log("Total:", navigationData.total);
@@ -296,8 +334,11 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, r
     console.log("Selected Date:", navigationData.selectedDate);
     console.log("Selected Time Slot:", navigationData.selectedTimeSlot);
     console.log("Payment Method:", navigationData.paymentMethod);
-    console.log("isPackage",isPackage);
- 
+    console.log("isPackage:", navigationData.isPackage);
+    console.log("packageId:", navigationData.packageId);
+    console.log("orderData:", navigationData.orderData ? "EXISTS" : "MISSING");
+    console.log("orderData.additionalItems:", navigationData.orderData?.additionalItems?.length || 0);
+    console.log("==========================================");
 
     navigation.navigate("OrderSummeryScreen" as any, navigationData);
   };
@@ -312,14 +353,12 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, r
         className="bg-white flex-1"
         keyboardShouldPersistTaps="handled"
       >
- 
         <View className="flex-row items-center shadow-md px-3 bg-white">
           <BackButton navigation={navigation} />
           <Text className="text-lg font-bold text-[#6C3CD1] flex-grow text-center mr-8">
             Select Payment Method
           </Text>
         </View>
-
 
         <View className="flex items-center justify-center mt-3">
           <Image
@@ -329,30 +368,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, r
           />
         </View>
 
- 
         <View className="flex-1 w-full items-center space-y-5 p-12 mt-[-10]">
-     
-          {/* <TouchableOpacity
-            onPress={() => setSelectedMethod("Card")}
-            className={`w-full py-5 px-5 rounded-lg flex-row items-center justify-between border border-[#5D5D5D] ${
-              selectedMethod === "Card" ? "bg-[#6C3CD1] border-[#6C3CD1]" : "bg-white border-[#5D5D5D]"
-            }`}
-          >
-            <Text className={`text-lg ${selectedMethod === "Card" ? "text-white font-bold" : "text-gray-700 font-medium"}`}>
-              Online Payment 
-            </Text>
-            {selectedMethod === "Card" && (
-              <View className="w-7 h-7 bg-white rounded-full flex items-center justify-center">
-                <Image 
-                  source={require("../assets/images/DonePurple.webp")} 
-                  className="w-5 h-5"
-                  resizeMode="contain"
-                />
-              </View>
-            )}
-          </TouchableOpacity> */}
-
-     
           <TouchableOpacity
             onPress={() => setSelectedMethod("Cash")}
             className={`w-full py-5 px-5 rounded-lg flex-row items-center justify-between border border-[#5D5D5D] ${
@@ -374,16 +390,13 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, r
           </TouchableOpacity>
         </View>
 
-
         <TouchableOpacity onPress={handleProceed}>
-        <LinearGradient 
-          colors={["#6839CF", "#874DDB"]} 
-          className="py-3 px-4  items-center mb-[22%] mr-[25%] ml-[25%] rounded-3xl h-15"
-        >
-          
+          <LinearGradient 
+            colors={["#6839CF", "#874DDB"]} 
+            className="py-3 px-4 items-center mb-[22%] mr-[25%] ml-[25%] rounded-3xl h-15"
+          >
             <Text className="text-center text-white font-bold">Proceed</Text>
-      
-        </LinearGradient>
+          </LinearGradient>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>

@@ -790,46 +790,48 @@ const formatPrice = (amount: number) => {
                
                   </View>
                   <Text className="text-[#808FA2] text-sm">Scheduled to {selectedDate}</Text>
-                  <Text className="text-[#808FA2] text-sm">Within {timeDisplay}</Text>
+                  <Text className="text-[#808FA2] text-sm">{timeDisplay}</Text>
                 </View>
                  <TouchableOpacity 
-  onPress={() => {
-    console.log("Navigating to ScheduleScreen with data:", {
-      total,
-      customerId,
-      items,
-      subtotal,
-      discount,
-      selectedDate,
-      timeDisplay,
-      isPackage,
-      packageId:  route.params?.packageId,
-      customerid,
-      orderItems
-    });
+// In OrderSummeryScreen - Update the Schedule Edit button's onPress handler
 
-    navigation.navigate("ScheduleScreen" as any, {
-      total,
-      packageId:  route.params?.packageId,
-      items,
-      subtotal,
-      discount,
-      selectedDate,
-      timeDisplay,
-      isPackage,
-    
-     customerId,  // This is the numeric ID (7)
-  customerid: customerid.toString() || customerId.toString(),
-      orderItems
-    });
-  }}
+onPress={() => {
+  console.log("Navigating to ScheduleScreen with data:", {
+    total,
+    customerId,
+    items,
+    subtotal,
+    discount,
+    selectedDate,
+    timeDisplay,
+    isPackage,
+    packageId: route.params?.packageId,
+    customerid,
+    orderItems,
+    orderData: route.params?.orderData // ADD THIS LINE
+  });
 
+  navigation.navigate("ScheduleScreen" as any, {
+    total,
+    packageId: route.params?.packageId,
+    items,
+    subtotal,
+    discount,
+    selectedDate,
+    timeDisplay,
+    isPackage,
+    customerId,
+    customerid: customerid.toString() || customerId.toString(),
+    orderItems,
+    orderData: route.params?.orderData // ADD THIS LINE
+  });
+}}
  disabled={isSubmitting || isSubmitted}
           style={{ opacity: (isSubmitting || isSubmitted) ? 0.6 : 1 }}
 
                      className="mb-10"
                       >
-                        <View className="border border-[#6C3CD1] px-3 rounded-full ml-11 ">
+                        <View className="border border-[#6C3CD1] px-3 rounded-full ml-2 ">
                       <Text className="text-[#6C3CD1] font-medium">Edit</Text>
                       </View>
                     </TouchableOpacity>

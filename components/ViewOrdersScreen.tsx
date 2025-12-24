@@ -43,7 +43,7 @@ interface Order {
   status: string;
   createdAt: string;
   InvNo: string;
-  reportStatus: string;
+  reportStatus: string |null;
   fullTotal: string | null;
   fullDiscount: string | null;
   firstName: string;
@@ -461,7 +461,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                   onEndReachedThreshold={0.1}
                   renderItem={({ item }) => (
                     <TouchableOpacity 
-                      onPress={() => navigation.navigate("View_CancelOrderScreen" as any, { orderId: item.orderId , status:item.status})} 
+                      onPress={() => navigation.navigate("View_CancelOrderScreen" as any, { orderId: item.orderId , status:item.status , reportStatus:item.reportStatus})} 
                       activeOpacity={0.7}
                     >
                       <View style={{
@@ -479,34 +479,45 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                         elevation: 5,
                       }}>
                         {/* Order number and status */}
-                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}
+                        className=""
+                        >
                           <Text style={{ fontSize: wp(4.5), fontWeight: "600", color: "#393939" }}>Order: {item.InvNo}</Text>
-                          <View style={{
-                            paddingHorizontal: wp(3),
-                            paddingVertical: hp(0.5),
-                            borderRadius: wp(5),
-                            backgroundColor:
-                              item.status === "Ordered" ? "#EAEAEA" :
-                              item.status === "On the way" ? "#FFFD99" :
-                              item.status === "Processing" ? "#CFE1FF" : 
-                              item.status === "Delivered" ? "#CCFBF1" : 
-                              item.status === "Out For Delivery" ? "#FFE9F8" :
-                              item.status === "Cancelled" ? "#FCE7F3" : "#EAEAEA",
-                          }}>
-                            <Text style={{
-                              fontSize: wp(3),
-                              fontWeight: "600",
-                              color:
-                                item.status === "Ordered" ? "#393939" :
-                                item.status === "On the way" ? "#A6A100" :
-                                item.status === "Processing" ? "#3B82F6" : 
-                                item.status === "Delivered" ? "#0D9488" : 
-                                item.status === "Cancelled" ? "#BE185D" :
-                                item.status === "Out For Delivery" ? "#BE185D" : "#393939"
-                            }}>
-                              {item.status}
-                            </Text>
-                          </View>
+<View style={{
+  paddingHorizontal: wp(3),
+  paddingVertical: hp(0.5),
+  borderRadius: wp(5),
+  minWidth: wp(24), // Fixed minimum width for consistency
+  alignItems: 'center', // Center the text
+  backgroundColor:
+    item.status === "Ordered" ? "#F5FF85" :
+    item.status === "On the way" ? "#FFEDCF" :
+    item.status === "Processing" ? "#CFE1FF" : 
+    item.status === "Delivered" ? "#BBFFC6" : 
+    item.status === "Collected" ? "#F8FEA5" :
+    item.status === "Hold" ? "#FFEDCF" : 
+    item.status === "Out For Delivery" ? "#FCD4FF" :
+    item.status === "Return" ? "#FFDCDA" : 
+    item.status === "Cancelled" ? "#DFDFDF" : "#EAEAEA",
+}}>
+  <Text style={{
+    fontSize: wp(3),
+    fontWeight: "600",
+    textAlign: 'center', // Center align text
+    color:
+      item.status === "Ordered" ? "#878216" :
+      item.status === "On the way" ? "#D17A00" :
+      item.status === "Processing" ? "#3B82F6" : 
+      item.status === "Delivered" ? "#308233" : 
+      item.status === "Collected" ? "#7E8700" : 
+      item.status === "Hold" ? "#D17A00" : 
+      item.status === "Cancelled" ? "#5C5C5C" :
+      item.status === "Return" ? "#FF1100" : 
+      item.status === "Out For Delivery" ? "#80118A" : "#393939"
+  }}>
+    {item.status}
+  </Text>
+</View>
                         </View>
 
                         <Text style={{ fontSize: wp(3.6), color: "#808FA2" }}>

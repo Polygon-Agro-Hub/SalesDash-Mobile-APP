@@ -269,55 +269,104 @@ const fetchProductPrices = useCallback(async (productIds: number[]) => {
       if (route.params?.isEdit && route.params?.additionalItems) {
         const productIds = route.params.additionalItems.map(item => item.productId).filter(Boolean);
         const productPrices = await fetchProductPrices(productIds);
-        
+
         const mappedAdditionalItems = route.params.additionalItems.map((item, index) => {
-          const productId = item.productId || item.mpItemId || item.cropId;
-          const quantity = parseInt(item.quantity) || 1;
-          const unit = item.quantityType === 'kg' ? 'Kg' : 'g';
-          const quantityInKg = unit === 'Kg' ? quantity : quantity / 1000;
+  const productId = item.productId || item.mpItemId || item.cropId;
+  const quantity = parseFloat(item.quantity) || 1; // ✅ FIX: parseFloat("0.25") = 0.25
+  const unit = item.quantityType === 'kg' ? 'Kg' : 'g';
+  const quantityInKg = unit === 'Kg' ? quantity : quantity / 1000;
+  
+  // Get correct prices from API or fallback to passed data
+  const productPrice = productPrices[productId.toString()];
+  let pricePerKg, discountedPricePerKg, discountAmount, displayName;
+  
+  if (productPrice) {
+    // Use API prices (most accurate)
+    pricePerKg = productPrice.normalPrice;
+    discountedPricePerKg = productPrice.discountedPrice;
+    discountAmount = (pricePerKg - discountedPricePerKg) * quantityInKg;
+    displayName = productPrice.displayName;
+  } else if (item.pricePerKg && item.discountedPricePerKg) {
+    // Use per-kg prices if provided
+    pricePerKg = Number(item.pricePerKg) || 0;
+    discountedPricePerKg = Number(item.discountedPricePerKg) || 0;
+    discountAmount = (pricePerKg - discountedPricePerKg) * quantityInKg;
+    displayName = item.name;
+  } else {
+    // Fallback: calculate from total prices
+    const totalPrice = Number(item.price || item.totalPrice) || 0;
+    const totalDiscount = parseFloat(item.discount) || 0;
+    
+    discountedPricePerKg = quantityInKg > 0 ? totalPrice / quantityInKg : 0;
+    const discountPerKg = quantityInKg > 0 ? totalDiscount / quantityInKg : 0;
+    pricePerKg = discountedPricePerKg + discountPerKg;
+    discountAmount = totalDiscount;
+    displayName = item.name;
+  }
+  
+  const totalAmount = quantityInKg * discountedPricePerKg;
+  
+  return {
+    id: productId,
+    name: displayName,
+    quantity: quantity, // ✅ Now correctly preserves decimals
+    unit: unit,
+    pricePerKg: pricePerKg,
+    discountedPricePerKg: Math.max(0, discountedPricePerKg),
+    discount: discountAmount,
+    totalAmount: totalAmount,
+    selected: false
+  };
+});
+        
+        // const mappedAdditionalItems = route.params.additionalItems.map((item, index) => {
+        //   const productId = item.productId || item.mpItemId || item.cropId;
+        //   const quantity = parseInt(item.quantity) || 1;
+        //   const unit = item.quantityType === 'kg' ? 'Kg' : 'g';
+        //   const quantityInKg = unit === 'Kg' ? quantity : quantity / 1000;
           
-          // Get correct prices from API or fallback to passed data
-          const productPrice = productPrices[productId.toString()];
-          let pricePerKg, discountedPricePerKg, discountAmount, displayName;
+        //   // Get correct prices from API or fallback to passed data
+        //   const productPrice = productPrices[productId.toString()];
+        //   let pricePerKg, discountedPricePerKg, discountAmount, displayName;
           
-          if (productPrice) {
-            // Use API prices (most accurate)
-            pricePerKg = productPrice.normalPrice;
-            discountedPricePerKg = productPrice.discountedPrice;
-            discountAmount = (pricePerKg - discountedPricePerKg) * quantityInKg;
-            displayName = productPrice.displayName;
-          } else if (item.pricePerKg && item.discountedPricePerKg) {
-            // Use per-kg prices if provided
-            pricePerKg = Number(item.pricePerKg) || 0;
-            discountedPricePerKg = Number(item.discountedPricePerKg) || 0;
-            discountAmount = (pricePerKg - discountedPricePerKg) * quantityInKg;
-            displayName = item.name;
-          } else {
-            // Fallback: calculate from total prices
-            const totalPrice = Number(item.price || item.totalPrice) || 0;
-            const totalDiscount = parseFloat(item.discount) || 0;
+        //   if (productPrice) {
+        //     // Use API prices (most accurate)
+        //     pricePerKg = productPrice.normalPrice;
+        //     discountedPricePerKg = productPrice.discountedPrice;
+        //     discountAmount = (pricePerKg - discountedPricePerKg) * quantityInKg;
+        //     displayName = productPrice.displayName;
+        //   } else if (item.pricePerKg && item.discountedPricePerKg) {
+        //     // Use per-kg prices if provided
+        //     pricePerKg = Number(item.pricePerKg) || 0;
+        //     discountedPricePerKg = Number(item.discountedPricePerKg) || 0;
+        //     discountAmount = (pricePerKg - discountedPricePerKg) * quantityInKg;
+        //     displayName = item.name;
+        //   } else {
+        //     // Fallback: calculate from total prices
+        //     const totalPrice = Number(item.price || item.totalPrice) || 0;
+        //     const totalDiscount = parseFloat(item.discount) || 0;
             
-            discountedPricePerKg = quantityInKg > 0 ? totalPrice / quantityInKg : 0;
-            const discountPerKg = quantityInKg > 0 ? totalDiscount / quantityInKg : 0;
-            pricePerKg = discountedPricePerKg + discountPerKg;
-            discountAmount = totalDiscount;
-            displayName = item.name;
-          }
+        //     discountedPricePerKg = quantityInKg > 0 ? totalPrice / quantityInKg : 0;
+        //     const discountPerKg = quantityInKg > 0 ? totalDiscount / quantityInKg : 0;
+        //     pricePerKg = discountedPricePerKg + discountPerKg;
+        //     discountAmount = totalDiscount;
+        //     displayName = item.name;
+        //   }
           
-          const totalAmount = quantityInKg * discountedPricePerKg;
+        //   const totalAmount = quantityInKg * discountedPricePerKg;
           
-          return {
-            id: productId,
-            name: displayName,
-            quantity: quantity,
-            unit: unit,
-            pricePerKg: pricePerKg,
-            discountedPricePerKg: Math.max(0, discountedPricePerKg),
-            discount: discountAmount,
-            totalAmount: totalAmount,
-            selected: false
-          };
-        });
+        //   return {
+        //     id: productId,
+        //     name: displayName,
+        //     quantity: quantity,
+        //     unit: unit,
+        //     pricePerKg: pricePerKg,
+        //     discountedPricePerKg: Math.max(0, discountedPricePerKg),
+        //     discount: discountAmount,
+        //     totalAmount: totalAmount,
+        //     selected: false
+        //   };
+        // });
         
         setAdditionalItems(mappedAdditionalItems);
       }

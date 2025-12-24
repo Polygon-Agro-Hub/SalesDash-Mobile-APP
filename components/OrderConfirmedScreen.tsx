@@ -843,11 +843,11 @@ if (order?.additionalItems && order.additionalItems.length > 0) {
       if (Platform.OS === 'android') {
         if (await Sharing.isAvailableAsync()) {
           await Sharing.shareAsync(tempFilePath, shareOptions);
-          Alert.alert(
-            ('Invoice Ready'),
-            ('To save to Downloads, select "Save to device" from the share menu'),
-            [{ text: "OK" }]
-          );
+          // Alert.alert(
+          //   ('Invoice Ready'),
+          //   ('To save to Downloads, select "Save to device" from the share menu'),
+          //   [{ text: "OK" }]
+          // );
         } else {
           Alert.alert(('Error'), ('Sharing is not available on this device'));
         }

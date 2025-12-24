@@ -119,7 +119,7 @@ export type RootStackParamList = {
     OrderScreen: {id: string; isCustomPackage:string; isSelectPackage:string;};
     ScheduleScreen: {totalPrice: Number };
     ViewOrdersScreen:undefined;
-    View_CancelOrderScreen:{orderId:number ,userId:number, status:string};
+    View_CancelOrderScreen:{orderId:number, userId:number, status:string, reportStatus:string | null};
     SelectOrderType:undefined;
     AttachGeoLocationScreen: {
   currentLatitude?: number;
