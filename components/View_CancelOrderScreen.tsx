@@ -96,7 +96,7 @@ interface CustomerData {
 const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   navigation, route
 }) => {
-  const { orderId, userId ,status } = route.params;
+  const { orderId, userId ,status,reportStatus } = route.params;
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -112,6 +112,13 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
    const [isHoldOrder, setIsHoldOrder] = useState<boolean>(false);
 
   console.log("Route params:", route.params);
+
+  useEffect(() => {
+  // Initialize selectedReportOption with reportStatus from route params
+  if (reportStatus) {
+    setSelectedReportOption(reportStatus);
+  }
+}, [reportStatus]);
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
@@ -1023,15 +1030,26 @@ const formatPrice = (price: string | number): string => {
             </View>
             
 
-            {showStatusMessage && (
-              <View className="mx-4 mt-2 p-2 rounded-lg">
-                <Text className="text-red-500 font-medium text-center">
-                  {selectedReportOption}
-                </Text>
-                
-              </View>
-            )}
-            <Text className="text-red-500 font-medium text-center mb-2">{order.reportStatus}</Text>
+     
+            {/* {order.reportStatus && (
+  <View className="mx-4 mb-3 p-3 bg-gray-100 rounded-lg">
+    <Text className="text-red-500 font-medium text-center">
+      {order.reportStatus}
+    </Text>
+  </View>
+)}
+  )} */}
+
+            <Text className="text-red-500 font-medium text-center mb-2">{selectedReportOption} </Text>
+
+{/* Display report status - priority: order.reportStatus > route param reportStatus */}
+{/* {order?.reportStatus || reportStatus ? (
+  <View className="mx-4 mb-3 p-3 ">
+    <Text className="text-red-500 font-medium text-center">
+      {order?.reportStatus || reportStatus}
+    </Text>
+  </View>
+) : null} */}
             
 
             {/* Report Status Button - Only shown when not Ordered or Cancelled */}
@@ -1050,6 +1068,29 @@ const formatPrice = (price: string | number): string => {
     </LinearGradient>
   </TouchableOpacity>
 )}
+
+{/* {status !== "Cancelled" && (
+  <TouchableOpacity 
+    onPress={handleReportStatus}
+    disabled={reportStatus !== null}
+    className={`mx-5 mb-3 rounded-full px-14 ${reportStatus !== null ? 'opacity-50' : ''}`}
+  >
+    {reportStatus !== null ? (
+      <View className="bg-gray-400 py-3 rounded-full items-center">
+        <Text className="text-white text-center font-semibold">Report Status</Text>
+      </View>
+    ) : (
+      <LinearGradient
+        colors={["#6839CF", "#874DDB"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        className="py-3 rounded-full items-center"
+      >
+        <Text className="text-white text-center font-semibold">Report Status</Text>
+      </LinearGradient>
+    )}
+  </TouchableOpacity>
+)} */}
 
             {/* Cancel Order Button */}
             <TouchableOpacity 
@@ -1116,63 +1157,89 @@ const formatPrice = (price: string | number): string => {
 </Modal>
 
 <Modal
-        animationType="slide"
-        transparent={true}
-        visible={reportModalVisible}
-        onRequestClose={() => setReportModalVisible(false)}
-      >
-        <View className="flex-1 justify-center items-center bg-black/50">
-          <View className="bg-white rounded-lg p-5 w-5/6 max-w-md">
-            
+  animationType="slide"
+  transparent={true}
+  visible={reportModalVisible}
+  onRequestClose={() => setReportModalVisible(false)}
+>
+  <View className="flex-1 justify-center items-center bg-black/50">
+    <View className="bg-white rounded-lg p-5 w-5/6 max-w-md">
+    
 
-            {/* Status Options */}
-            <View className="mb-4">
-              <TouchableOpacity 
-                className="flex-row items-center justify-between p-3 mb-2" 
-                onPress={() => setSelectedReportOption("Confirmed")}
-              >
-                <Text className="text-black font-medium">Confirmed</Text>
-                <View className={`w-6 h-6 border border-gray-400 rounded ${selectedReportOption === "Confirmed" ? "bg-[#6C3CD1]" : "bg-white"}`} />
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                className="flex-row items-center justify-between p-3 mb-2" 
-                onPress={() => setSelectedReportOption("Not-Confirmed")}
-              >
-                <Text className="text-black font-medium">Not-Confirmed</Text>
-                <View className={`w-6 h-6 border border-gray-400 rounded ${selectedReportOption === "Not-Confirmed" ? "bg-[#6C3CD1]" : "bg-white"}`} />
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                className="flex-row items-center justify-between p-3 mb-6" 
-                onPress={() => setSelectedReportOption("Not-Answered")}
-              >
-                <Text className="text-black font-medium">Not-Answered</Text>
-                <View className={`w-6 h-6 border border-gray-400 rounded ${selectedReportOption === "Not-Answered" ? "bg-[#6C3CD1]" : "bg-white"}`} />
-              </TouchableOpacity>
-            </View>
-
-            {/* Buttons */}
-            <TouchableOpacity 
-              onPress={handleConfirmReport}
-              className="mb-3 rounded-lg overflow-hidden"
-            >
-              <View className="bg-black py-3 rounded-lg items-center">
-                <Text className="text-white text-center font-semibold">Confirm</Text>
+      {/* Status Options */}
+      <View className="mb-4">
+        <TouchableOpacity 
+          className="flex-row items-center justify-between p-3 mb-2 rounded-lg" 
+          onPress={() => setSelectedReportOption("Confirmed")}
+        >
+          <Text className="text-black font-medium">Confirmed</Text>
+          <View className={`w-6 h-6 rounded-lg border-2 ${selectedReportOption === "Confirmed" ? "border-[#6C3CD1] bg-[#6C3CD1]" : "border-gray-400 bg-white"}`}>
+            {selectedReportOption === "Confirmed" && (
+              <View className="flex-1 items-center justify-center">
+                <Feather name="check" size={16} color="white" />
               </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              onPress={() => setReportModalVisible(false)}
-              className="rounded-lg"
-            >
-              <View className="bg-gray-200 py-3 rounded-lg items-center">
-                <Text className="text-black text-center font-semibold">Cancel</Text>
-              </View>
-            </TouchableOpacity>
+            )}
           </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          className="flex-row items-center justify-between p-3 mb-2  rounded-lg" 
+          onPress={() => setSelectedReportOption("Not-Confirmed")}
+        >
+          <Text className="text-black font-medium">Not-Confirmed</Text>
+          <View className={`w-6 h-6 rounded-lg border-2 ${selectedReportOption === "Not-Confirmed" ? "border-[#6C3CD1] bg-[#6C3CD1]" : "border-gray-400 bg-white"}`}>
+            {selectedReportOption === "Not-Confirmed" && (
+              <View className="flex-1 items-center justify-center">
+                <Feather name="check" size={16} color="white" />
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          className="flex-row items-center justify-between p-3 mb-6 " 
+          onPress={() => setSelectedReportOption("Not-Answered")}
+        >
+          <Text className="text-black font-medium">Not-Answered</Text>
+          <View className={`w-6 h-6 rounded-lg border border-black border-2 ${selectedReportOption === "Not-Answered" ? "border-[#6C3CD1] bg-[#6C3CD1]" : "border-gray-400 bg-white"}`}>
+            {selectedReportOption === "Not-Answered" && (
+              <View className="flex-1 items-center justify-center">
+                <Feather name="check" size={16} color="white" />
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+      </View>
+
+      {/* Buttons */}
+      <TouchableOpacity 
+        onPress={handleConfirmReport}
+        className="mb-3 rounded-full mx-7 overflow-hidden"
+        disabled={!selectedReportOption}
+      >
+        <LinearGradient
+          colors={selectedReportOption ? ["#040404ff", "#030203ff"] : ["#CCCCCC", "#CCCCCC"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          className="py-3 rounded-full items-center"
+        >
+          <Text className={`text-center font-semibold ${selectedReportOption ? "text-white" : "text-gray-600"}`}>
+            Confirm
+          </Text>
+        </LinearGradient>
+      </TouchableOpacity>
+
+      <TouchableOpacity 
+        onPress={() => setReportModalVisible(false)}
+        className="rounded-full mx-7"
+      >
+        <View className="bg-gray-200 py-3 rounded-full items-center">
+          <Text className="text-black text-center font-semibold">Cancel</Text>
         </View>
-      </Modal>
+      </TouchableOpacity>
+    </View>
+  </View>
+</Modal>
     </KeyboardAvoidingView>
   );
 };

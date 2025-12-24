@@ -13,7 +13,8 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
-  BackHandler
+  BackHandler,
+  Alert
 } from "react-native";
 import { RouteProp, useFocusEffect } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -24,8 +25,9 @@ import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-nat
 import BackButton from "./BackButton";
 import axios from "axios";
 import environment from "@/environment/environment";
-import { AntDesign, Ionicons } from "@expo/vector-icons";
+import { AntDesign, Entypo, Ionicons } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type ViewCustomerScreenNavigationProp = StackNavigationProp<RootStackParamList, "ViewCustomerScreen">;
 type ViewCustomerScreenRouteProp = RouteProp<RootStackParamList, "ViewCustomerScreen">;
@@ -44,6 +46,7 @@ interface Order {
   InvNo: string;
   fullTotal: string | null;
   fullDiscount: string | null;
+  reportStatus:string |null;
 }
 
 interface OrdersResponse {
@@ -71,14 +74,48 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
   const [hasMore, setHasMore] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+    const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [selectedLocationName, setSelectedLocationName] = useState<string>("");
+  const [loadingCustomerData, setLoadingCustomerData] = useState(false);
   const isMounted = useRef(true);
 
+  console.log("222222222222222",latitude,longitude,selectedLocationName)
+
   const ORDERS_PER_PAGE = 5;
+
+ // console.log("111111111111111111111",orders)
 
   const { name, number, id, customerId, title } = route.params;
   console.log("parid",id)
 
-  useFocusEffect(
+//   useFocusEffect(
+//   React.useCallback(() => {
+//     console.log("Screen focused - resetting states");
+//     const resetStates = () => {
+//       setSearchText("");
+//       setSelectedFilter("Ordered");
+//       setOrders([]);
+//       setCurrentPage(1);
+//       setHasMore(true);
+//       setTotalCount(0);
+//       setLoading(true);
+//       setLoadingMore(false);
+//       setError(null);
+//       setSearchError(null);
+//     };
+
+//     resetStates();
+//     loadOrders(1, true, false);
+
+//     return () => {
+//       console.log("Screen unfocused - cleanup");
+//       // Any cleanup if needed when screen loses focus
+//     };
+//   }, [id]) // Re-run when customer id changes
+// );
+
+useFocusEffect(
   React.useCallback(() => {
     console.log("Screen focused - resetting states");
     const resetStates = () => {
@@ -96,13 +133,71 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
 
     resetStates();
     loadOrders(1, true, false);
+    getUserProfile(); // Add this line to fetch customer data
 
     return () => {
       console.log("Screen unfocused - cleanup");
-      // Any cleanup if needed when screen loses focus
     };
-  }, [id]) // Re-run when customer id changes
+  }, [id, customerId]) // Add customerId to dependencies
 );
+
+
+const getUserProfile = async () => {
+  try {
+    setLoadingCustomerData(true);
+    const storedToken = await AsyncStorage.getItem("authToken");  
+    if (!storedToken) {
+      Alert.alert("Error", "No authentication token found");
+      return null;  
+    }
+
+    console.log("11111111111",)
+    
+    const response = await axios.get(
+      `${environment.API_BASE_URL}api/customer/customerData/${customerId}`, 
+      {
+        headers: { Authorization: `Bearer ${storedToken}` },
+      }
+    );
+    
+    console.log("Customer data response:", response.data);
+    
+    // Store the latitude and longitude from response
+    // if (response.data) {
+    //   setLatitude(response.data.latitude);
+    //   setLongitude(response.data.longitude);
+      
+    //   // Create location name from customer details
+    //   const locationName = `${title || ''} ${response.data.firstName || ''} ${response.data.lastName || ''}`.trim();
+    //   setSelectedLocationName(locationName || "Customer Location");
+    // }
+    if (response.data) {
+  const lat = Number(response.data.latitude);
+  const lng = Number(response.data.longitude);
+
+  if (!isNaN(lat) && !isNaN(lng)) {
+    setLatitude(lat);
+    setLongitude(lng);
+  } else {
+    setLatitude(null);
+    setLongitude(null);
+  }
+
+  const locationName = `${title || ''} ${response.data.firstName || ''} ${response.data.lastName || ''}`.trim();
+  setSelectedLocationName(locationName || "Customer Location");
+}
+
+    
+    return storedToken;  
+  } catch (error) {
+    Alert.alert("Error", "Failed to fetch customer location data");
+    console.error("Error fetching customer data:", error);
+    return null;  
+  } finally {
+    setLoadingCustomerData(false);
+  }
+};
+
 
    useFocusEffect(
       useCallback(() => {
@@ -226,6 +321,9 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
       }
     }
   }, [searchText, selectedFilter, orders]);
+
+
+  console.log("nameeeeeeeee", name)
 
   const handleGetACall = () => {
     const phoneNumber = `tel:${number}`;
@@ -361,9 +459,33 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
                 title: title 
               })}
 >
-  <View className="flex-row justify-center items-center gap-2 mt-[1%]">
+  <View className="flex-row justify-center items-center gap-2 mt-[%]">
     <Text className=" text-base font-semibold text-[#7240D3] underline">Exclude Item List</Text>
     <AntIcons name="external-link" size={20} color="#6C3CD1" />
+  </View>
+</TouchableOpacity>
+
+<TouchableOpacity
+  onPress={() => {
+    // Only navigate if we have valid latitude and longitude
+    if (latitude !== null && longitude !== null) {
+      navigation.navigate("ViewLocationScreen", {
+        latitude: latitude,
+        longitude: longitude,
+        locationName: selectedLocationName,
+      });
+    } else {
+      // Show an alert or handle the case when location data is not available
+      Alert.alert("Location Unavailable", "Customer location data is not available.");
+    }
+  }}
+ // disabled={!latitude || !longitude || loadingCustomerData}
+>
+  <View className="flex-row justify-center items-center gap-1 mb-[1%]">
+    <Entypo name="location-pin" size={20} color="#FF0000" />
+    <Text className="text-base font-semibold text-[#FF0000] underline">
+      {loadingCustomerData ? "Loading Location..." : "View Geo Location"}
+    </Text>
   </View>
 </TouchableOpacity>
           
@@ -553,7 +675,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
                 <TouchableOpacity 
                   onPress={() => navigation.navigate("View_CancelOrderScreen" as any, { 
                     orderId: item.orderId,
-                    status:item.status
+                    status:item.status,
+                   reportStatus:item.reportStatus
                   })}
                 >
                   <View className="bg-white rounded-2xl p-4 mb-4 border border-gray-200 mx-4 shadow-sm mt-4">

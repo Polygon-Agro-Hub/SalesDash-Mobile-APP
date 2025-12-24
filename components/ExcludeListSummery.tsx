@@ -181,7 +181,7 @@ useFocusEffect(
 
         <View className="px-6 mt-10">
           <Text className="text-[#874CDB] text-sm font-semibold">
-            Preferred Items to Exclue
+            Preferred Items to Exclude
           </Text>
           <View className="bg-gray-300 h-[1px] mt-2" />
         </View>

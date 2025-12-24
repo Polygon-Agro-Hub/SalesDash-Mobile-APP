@@ -165,6 +165,13 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
     }, [navigation, id, customerId, name, title])
   );
 
+   const hasExcludedItems = () => {
+    return crops.length > 0 && crops.some((crop) => crop.excludeId !== null);
+  };
+    const getButtonText = () => {
+    return hasExcludedItems() ? "Add more" : "Add";
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -204,7 +211,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
 
         <View className="px-6 mt-10">
           <Text className="text-[#874CDB] text-sm font-semibold">
-            Preferred Items to Exclue
+            Preferred Items to Exclude
           </Text>
           <View className="bg-gray-300 h-[1px] mt-2" />
         </View>
@@ -295,8 +302,11 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
             justifyContent: "center",
           }}
         >
-          <Text style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}>
+          {/* <Text style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}>
             Add More
+          </Text> */}
+          <Text style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}>
+            {getButtonText()}
           </Text>
         </LinearGradient>
       </TouchableOpacity>
