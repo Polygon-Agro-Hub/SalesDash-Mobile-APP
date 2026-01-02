@@ -39,15 +39,15 @@ type OrderScreenRouteProp = RouteProp<RootStackParamList, "OrderScreen">;
 // }
 
 interface ProductItem {
-  changeby(changeby: any): unknown;
-  startValue: ProductItem | undefined;
   label: string;
   discount: string;
   value: string; // This is varietyId
-  id: number;    // Add this for marketplaceitems.id
+  id: number;    // marketplaceitems.id
   price: string;
   discountedPrice?: string;
   unitType?: string;
+  changeby?: string;  // Add this
+  startValue?: string; // Add this
 }
 
 interface AdditionalItem {
@@ -56,10 +56,12 @@ interface AdditionalItem {
   quantity: number;
   unit: string;
   pricePerKg: number;
-  discountedPricePerKg: number; // Add this
-  discount: number; // Add this
+  discountedPricePerKg: number;
+  discount: number;
   totalAmount: number;
   selected: boolean;
+  changeby?: string; // Add this
+  startValue?: string; // Add this
 }
 
 
@@ -121,20 +123,23 @@ interface OrderScreenProps {
         price: number;
       }>;
       additionalItems?: Array<{
-        pricePerKg(pricePerKg: any): any;
-        discountedPricePerKg(discountedPricePerKg: any): any;
-        totalPrice: number;
-        mpItemId: any;
-        productId: any;
+        pricePerKg?: number;  // Change from function to optional number
+        discountedPricePerKg?: number;  // Change from function to optional number
+        totalPrice?: number;
+        mpItemId?: number;
+        productId?: number;
         id: number;
         name: string;
         quantity: string;
         quantityType: string;
         price: number;
         discount: string;
-        cropId: number;
+        cropId?: number;
+        changeby?: string;  // Add this
+        startValue?: string; // Add this
+        unitType?: string;  // Add this
       }>;
-      orderItems?: any[]; // Add this
+      orderItems?: any[];
       subtotal?: number;
       discount?: number;
       total?: number;
@@ -177,6 +182,7 @@ const [filteredPackageItems, setFilteredPackageItems] = useState(packageItems);
 const [selectedItems, setSelectedItems] = useState<number[]>([]);
   // Product dropdown states (for modal)
   const [productOpen, setProductOpen] = useState<boolean>(false);
+  const [productDropdownLoading, setProductDropdownLoading] = useState<boolean>(false);
   const [productValue, setProductValue] = useState<string>('kiwi');
   // const [productItems, setProductItems] = useState<{
   //   price: string;label: string, value: string
@@ -232,148 +238,285 @@ useEffect(() => {
 
 
    // In OrderScreen.tsx, update the useEffect for handling initial data:
+// const fetchProductPrices = useCallback(async (productIds: number[]) => {
+//     try {
+//       const storedToken = await AsyncStorage.getItem("authToken");
+//       if (!storedToken || productIds.length === 0) return {};
+      
+//       const response = await axios.get(`${environment.API_BASE_URL}api/packages/crops/all`, {
+//         headers: { Authorization: `Bearer ${storedToken}` },
+//         params: {id}
+//       });
+
+//       const productPrices: Record<string, { normalPrice: number; discountedPrice: number; displayName: string }> = {};
+      
+//       response.data.data.forEach((item: any) => {
+//         if (productIds.includes(item.id)) {
+//           productPrices[item.id.toString()] = {
+//             normalPrice: parseFloat(item.normalPrice) || 0,
+//             discountedPrice: parseFloat(item.discountedPrice) || parseFloat(item.normalPrice) || 0,
+//             displayName: item.displayName || `Item ${item.id}`
+//           };
+//         }
+//       });
+      
+//       return productPrices;
+//     } catch (error) {
+//       console.error("Error fetching product prices:", error);
+//       return {};
+//     }
+//   }, []);
+
 const fetchProductPrices = useCallback(async (productIds: number[]) => {
-    try {
-      const storedToken = await AsyncStorage.getItem("authToken");
-      if (!storedToken || productIds.length === 0) return {};
-      
-      const response = await axios.get(`${environment.API_BASE_URL}api/packages/crops/all`, {
-        headers: { Authorization: `Bearer ${storedToken}` },
-        params: {id}
-      });
-
-      const productPrices: Record<string, { normalPrice: number; discountedPrice: number; displayName: string }> = {};
-      
-      response.data.data.forEach((item: any) => {
-        if (productIds.includes(item.id)) {
-          productPrices[item.id.toString()] = {
-            normalPrice: parseFloat(item.normalPrice) || 0,
-            discountedPrice: parseFloat(item.discountedPrice) || parseFloat(item.normalPrice) || 0,
-            displayName: item.displayName || `Item ${item.id}`
-          };
-        }
-      });
-      
-      return productPrices;
-    } catch (error) {
-      console.error("Error fetching product prices:", error);
-      return {};
-    }
-  }, []);
-
-  // Separate useEffect for initializing additional items
-  useEffect(() => {
-      console.log("hittttttttttttttttttttt1")
-
-    const initializeAdditionalItems = async () => {
-      if (route.params?.isEdit && route.params?.additionalItems) {
-        const productIds = route.params.additionalItems.map(item => item.productId).filter(Boolean);
-        const productPrices = await fetchProductPrices(productIds);
-
-        const mappedAdditionalItems = route.params.additionalItems.map((item, index) => {
-  const productId = item.productId || item.mpItemId || item.cropId;
-  const quantity = parseFloat(item.quantity) || 1; // ✅ FIX: parseFloat("0.25") = 0.25
-  const unit = item.quantityType === 'kg' ? 'Kg' : 'g';
-  const quantityInKg = unit === 'Kg' ? quantity : quantity / 1000;
-  
-  // Get correct prices from API or fallback to passed data
-  const productPrice = productPrices[productId.toString()];
-  let pricePerKg, discountedPricePerKg, discountAmount, displayName;
-  
-  if (productPrice) {
-    // Use API prices (most accurate)
-    pricePerKg = productPrice.normalPrice;
-    discountedPricePerKg = productPrice.discountedPrice;
-    discountAmount = (pricePerKg - discountedPricePerKg) * quantityInKg;
-    displayName = productPrice.displayName;
-  } else if (item.pricePerKg && item.discountedPricePerKg) {
-    // Use per-kg prices if provided
-    pricePerKg = Number(item.pricePerKg) || 0;
-    discountedPricePerKg = Number(item.discountedPricePerKg) || 0;
-    discountAmount = (pricePerKg - discountedPricePerKg) * quantityInKg;
-    displayName = item.name;
-  } else {
-    // Fallback: calculate from total prices
-    const totalPrice = Number(item.price || item.totalPrice) || 0;
-    const totalDiscount = parseFloat(item.discount) || 0;
+  try {
+    const storedToken = await AsyncStorage.getItem("authToken");
+    if (!storedToken || productIds.length === 0) return {};
     
-    discountedPricePerKg = quantityInKg > 0 ? totalPrice / quantityInKg : 0;
-    const discountPerKg = quantityInKg > 0 ? totalDiscount / quantityInKg : 0;
-    pricePerKg = discountedPricePerKg + discountPerKg;
-    discountAmount = totalDiscount;
-    displayName = item.name;
-  }
-  
-  const totalAmount = quantityInKg * discountedPricePerKg;
-  
-  return {
-    id: productId,
-    name: displayName,
-    quantity: quantity, // ✅ Now correctly preserves decimals
-    unit: unit,
-    pricePerKg: pricePerKg,
-    discountedPricePerKg: Math.max(0, discountedPricePerKg),
-    discount: discountAmount,
-    totalAmount: totalAmount,
-    selected: false
-  };
-});
-        
-        // const mappedAdditionalItems = route.params.additionalItems.map((item, index) => {
-        //   const productId = item.productId || item.mpItemId || item.cropId;
-        //   const quantity = parseInt(item.quantity) || 1;
-        //   const unit = item.quantityType === 'kg' ? 'Kg' : 'g';
-        //   const quantityInKg = unit === 'Kg' ? quantity : quantity / 1000;
-          
-        //   // Get correct prices from API or fallback to passed data
-        //   const productPrice = productPrices[productId.toString()];
-        //   let pricePerKg, discountedPricePerKg, discountAmount, displayName;
-          
-        //   if (productPrice) {
-        //     // Use API prices (most accurate)
-        //     pricePerKg = productPrice.normalPrice;
-        //     discountedPricePerKg = productPrice.discountedPrice;
-        //     discountAmount = (pricePerKg - discountedPricePerKg) * quantityInKg;
-        //     displayName = productPrice.displayName;
-        //   } else if (item.pricePerKg && item.discountedPricePerKg) {
-        //     // Use per-kg prices if provided
-        //     pricePerKg = Number(item.pricePerKg) || 0;
-        //     discountedPricePerKg = Number(item.discountedPricePerKg) || 0;
-        //     discountAmount = (pricePerKg - discountedPricePerKg) * quantityInKg;
-        //     displayName = item.name;
-        //   } else {
-        //     // Fallback: calculate from total prices
-        //     const totalPrice = Number(item.price || item.totalPrice) || 0;
-        //     const totalDiscount = parseFloat(item.discount) || 0;
-            
-        //     discountedPricePerKg = quantityInKg > 0 ? totalPrice / quantityInKg : 0;
-        //     const discountPerKg = quantityInKg > 0 ? totalDiscount / quantityInKg : 0;
-        //     pricePerKg = discountedPricePerKg + discountPerKg;
-        //     discountAmount = totalDiscount;
-        //     displayName = item.name;
-        //   }
-          
-        //   const totalAmount = quantityInKg * discountedPricePerKg;
-          
-        //   return {
-        //     id: productId,
-        //     name: displayName,
-        //     quantity: quantity,
-        //     unit: unit,
-        //     pricePerKg: pricePerKg,
-        //     discountedPricePerKg: Math.max(0, discountedPricePerKg),
-        //     discount: discountAmount,
-        //     totalAmount: totalAmount,
-        //     selected: false
-        //   };
-        // });
-        
-        setAdditionalItems(mappedAdditionalItems);
-      }
-    };
+    const response = await axios.get(`${environment.API_BASE_URL}api/packages/crops/all`, {
+      headers: { Authorization: `Bearer ${storedToken}` },
+      params: {id}
+    });
 
-    initializeAdditionalItems();
-  }, [route.params?.isEdit, route.params?.additionalItems, fetchProductPrices]);
+    const productPrices: Record<string, { 
+      normalPrice: number; 
+      discountedPrice: number; 
+      displayName: string;
+      changeby: string; // Add this
+      startValue: string; // Add this
+    }> = {};
+    
+    response.data.data.forEach((item: any) => {
+      if (productIds.includes(item.id)) {
+        productPrices[item.id.toString()] = {
+          normalPrice: parseFloat(item.normalPrice) || 0,
+          discountedPrice: parseFloat(item.discountedPrice) || parseFloat(item.normalPrice) || 0,
+          displayName: item.displayName || `Item ${item.id}`,
+          changeby: item.changeby || '1', // Add this
+          startValue: item.startValue || '1' // Add this
+        };
+      }
+    });
+    
+    return productPrices;
+  } catch (error) {
+    console.error("Error fetching product prices:", error);
+    return {};
+  }
+}, []);
+  // Separate useEffect for initializing additional items
+//   useEffect(() => {
+//       console.log("hittttttttttttttttttttt1")
+
+//     const initializeAdditionalItems = async () => {
+//       if (route.params?.isEdit && route.params?.additionalItems) {
+//         const productIds = route.params.additionalItems.map(item => item.productId).filter(Boolean);
+//         const productPrices = await fetchProductPrices(productIds);
+
+//         const mappedAdditionalItems = route.params.additionalItems.map((item, index) => {
+//   const productId = item.productId || item.mpItemId || item.cropId;
+//   const quantity = parseFloat(item.quantity) || 1; // ✅ FIX: parseFloat("0.25") = 0.25
+//   const unit = item.quantityType === 'kg' ? 'Kg' : 'g';
+//   const quantityInKg = unit === 'Kg' ? quantity : quantity / 1000;
+  
+//   // Get correct prices from API or fallback to passed data
+//   const productPrice = productPrices[productId.toString()];
+//   let pricePerKg, discountedPricePerKg, discountAmount, displayName;
+  
+//   if (productPrice) {
+//     // Use API prices (most accurate)
+//     pricePerKg = productPrice.normalPrice;
+//     discountedPricePerKg = productPrice.discountedPrice;
+//     discountAmount = (pricePerKg - discountedPricePerKg) * quantityInKg;
+//     displayName = productPrice.displayName;
+//   } else if (item.pricePerKg && item.discountedPricePerKg) {
+//     // Use per-kg prices if provided
+//     pricePerKg = Number(item.pricePerKg) || 0;
+//     discountedPricePerKg = Number(item.discountedPricePerKg) || 0;
+//     discountAmount = (pricePerKg - discountedPricePerKg) * quantityInKg;
+//     displayName = item.name;
+//   } else {
+//     // Fallback: calculate from total prices
+//     const totalPrice = Number(item.price || item.totalPrice) || 0;
+//     const totalDiscount = parseFloat(item.discount) || 0;
+    
+//     discountedPricePerKg = quantityInKg > 0 ? totalPrice / quantityInKg : 0;
+//     const discountPerKg = quantityInKg > 0 ? totalDiscount / quantityInKg : 0;
+//     pricePerKg = discountedPricePerKg + discountPerKg;
+//     discountAmount = totalDiscount;
+//     displayName = item.name;
+//   }
+  
+//   const totalAmount = quantityInKg * discountedPricePerKg;
+  
+//   return {
+//     id: productId,
+//     name: displayName,
+//     quantity: quantity, // ✅ Now correctly preserves decimals
+//     unit: unit,
+//     pricePerKg: pricePerKg,
+//     discountedPricePerKg: Math.max(0, discountedPricePerKg),
+//     discount: discountAmount,
+//     totalAmount: totalAmount,
+//     selected: false
+//   };
+// });
+        
+//         // const mappedAdditionalItems = route.params.additionalItems.map((item, index) => {
+//         //   const productId = item.productId || item.mpItemId || item.cropId;
+//         //   const quantity = parseInt(item.quantity) || 1;
+//         //   const unit = item.quantityType === 'kg' ? 'Kg' : 'g';
+//         //   const quantityInKg = unit === 'Kg' ? quantity : quantity / 1000;
+          
+//         //   // Get correct prices from API or fallback to passed data
+//         //   const productPrice = productPrices[productId.toString()];
+//         //   let pricePerKg, discountedPricePerKg, discountAmount, displayName;
+          
+//         //   if (productPrice) {
+//         //     // Use API prices (most accurate)
+//         //     pricePerKg = productPrice.normalPrice;
+//         //     discountedPricePerKg = productPrice.discountedPrice;
+//         //     discountAmount = (pricePerKg - discountedPricePerKg) * quantityInKg;
+//         //     displayName = productPrice.displayName;
+//         //   } else if (item.pricePerKg && item.discountedPricePerKg) {
+//         //     // Use per-kg prices if provided
+//         //     pricePerKg = Number(item.pricePerKg) || 0;
+//         //     discountedPricePerKg = Number(item.discountedPricePerKg) || 0;
+//         //     discountAmount = (pricePerKg - discountedPricePerKg) * quantityInKg;
+//         //     displayName = item.name;
+//         //   } else {
+//         //     // Fallback: calculate from total prices
+//         //     const totalPrice = Number(item.price || item.totalPrice) || 0;
+//         //     const totalDiscount = parseFloat(item.discount) || 0;
+            
+//         //     discountedPricePerKg = quantityInKg > 0 ? totalPrice / quantityInKg : 0;
+//         //     const discountPerKg = quantityInKg > 0 ? totalDiscount / quantityInKg : 0;
+//         //     pricePerKg = discountedPricePerKg + discountPerKg;
+//         //     discountAmount = totalDiscount;
+//         //     displayName = item.name;
+//         //   }
+          
+//         //   const totalAmount = quantityInKg * discountedPricePerKg;
+          
+//         //   return {
+//         //     id: productId,
+//         //     name: displayName,
+//         //     quantity: quantity,
+//         //     unit: unit,
+//         //     pricePerKg: pricePerKg,
+//         //     discountedPricePerKg: Math.max(0, discountedPricePerKg),
+//         //     discount: discountAmount,
+//         //     totalAmount: totalAmount,
+//         //     selected: false
+//         //   };
+//         // });
+        
+//         setAdditionalItems(mappedAdditionalItems);
+//       }
+//     };
+
+//     initializeAdditionalItems();
+//   }, [route.params?.isEdit, route.params?.additionalItems, fetchProductPrices]);
+
+
+// In OrderScreen.tsx
+// Replace the useEffect for initializing additional items (around line 420-512)
+
+useEffect(() => {
+  console.log("Initializing additional items from edit mode");
+
+  const initializeAdditionalItems = async () => {
+    if (route.params?.isEdit && route.params?.additionalItems) {
+      // Filter out items without valid productId and map to numbers
+      const productIds = route.params.additionalItems
+        .map(item => item.productId)
+        .filter((id): id is number => typeof id === 'number' && id !== undefined);
+      
+      const productPrices = await fetchProductPrices(productIds);
+
+      const mappedAdditionalItems: AdditionalItem[] = route.params.additionalItems
+        .filter(item => item.productId !== undefined)
+        .map((item) => {
+          const productId = item.productId || item.mpItemId || item.cropId;
+          
+          // Ensure productId is a number
+          if (!productId || typeof productId !== 'number') {
+            console.warn('Skipping item with invalid productId:', item);
+            return null;
+          }
+          
+          const quantity = parseFloat(item.quantity) || 1;
+          const unit = (item.quantityType || 'kg').toLowerCase() === 'kg' ? 'Kg' : 'g';
+          const quantityInKg = unit === 'Kg' ? quantity : quantity / 1000;
+          
+          const productPrice = productPrices[productId.toString()];
+          let pricePerKg, discountedPricePerKg, discountAmount, displayName;
+          let changeby = '1';
+          let startValue = '1';
+          
+          if (productPrice) {
+            pricePerKg = productPrice.normalPrice;
+            discountedPricePerKg = productPrice.discountedPrice;
+            discountAmount = (pricePerKg - discountedPricePerKg) * quantityInKg;
+            displayName = productPrice.displayName;
+            changeby = productPrice.changeby;
+            startValue = productPrice.startValue;
+          } else if (item.pricePerKg && item.discountedPricePerKg) {
+            pricePerKg = Number(item.pricePerKg);
+            discountedPricePerKg = Number(item.discountedPricePerKg);
+            discountAmount = (pricePerKg - discountedPricePerKg) * quantityInKg;
+            displayName = item.name;
+            changeby = item.changeby || '1';
+            startValue = item.startValue || '1';
+          } else {
+            const totalPrice = Number(item.price || item.totalPrice) || 0;
+            const totalDiscount = Number(item.discount) || 0;
+            
+            discountedPricePerKg = quantityInKg > 0 ? totalPrice / quantityInKg : 0;
+            pricePerKg = quantityInKg > 0 ? (totalPrice + totalDiscount) / quantityInKg : 0;
+            discountAmount = totalDiscount;
+            displayName = item.name;
+            changeby = item.changeby || '1';
+            startValue = item.startValue || '1';
+          }
+          
+          const totalAmount = quantityInKg * discountedPricePerKg;
+          
+          console.log(`Initializing item ${displayName}:`, {
+            quantity,
+            unit,
+            quantityInKg,
+            pricePerKg,
+            discountedPricePerKg,
+            totalAmount,
+            discountAmount,
+            changeby,
+            startValue
+          });
+          
+          // Return AdditionalItem type with all required properties
+          return {
+            id: productId,
+            name: displayName,
+            quantity: quantity,
+            unit: unit,
+            pricePerKg: pricePerKg,
+            discountedPricePerKg: Math.max(0, discountedPricePerKg),
+            discount: discountAmount,
+            totalAmount: totalAmount,
+            selected: false,
+            changeby: changeby,    // Always a string
+            startValue: startValue  // Always a string
+          } as AdditionalItem; // Explicitly cast to AdditionalItem
+        })
+        .filter((item): item is AdditionalItem => item !== null); // Type guard
+      
+      console.log("Mapped additional items:", mappedAdditionalItems);
+      setAdditionalItems(mappedAdditionalItems);
+    }
+  };
+
+  initializeAdditionalItems();
+}, [route.params?.isEdit, route.params?.additionalItems, fetchProductPrices]);
 
   // Main useEffect for handling initial data
   useEffect(() => {
@@ -453,7 +596,55 @@ const fetchProductPrices = useCallback(async (productIds: number[]) => {
 }, [isPackage, packageValue, additionalItems, navigation, route.params?.id, selectedPackage]);
 
   // Updated handleSaveItem function with dynamic quantity initialization
-  const handleSaveItem = useCallback(() => {
+//   const handleSaveItem = useCallback(() => {
+//   const selectedProductData = productItems.find(item => item.value === productValue);
+  
+//   if (!selectedProductData) {
+//     Alert.alert("Error", "Please select a product");
+//     return;
+//   }
+
+//   // Check if this product is already in additionalItems
+//   const isProductAlreadyAdded = additionalItems.some(item => item.id === selectedProductData.id);
+  
+//   if (isProductAlreadyAdded) {
+//     Alert.alert("Error", "This product is already added");
+//     return;
+//   }
+
+//   const unit = selectedUnit === 'Kg' ? 'Kg' : 'g';
+//   const quantityInKg = unit === 'Kg' ? quantity : quantity / 1000;
+  
+//   // Get both normal and discounted prices
+//   const normalPrice = parseFloat(selectedProductData.price);
+//   const discountedPrice = selectedProductData.discountedPrice 
+//     ? parseFloat(selectedProductData.discountedPrice) 
+//     : normalPrice;
+//   const discountPerKg = normalPrice - discountedPrice;
+//   const totalDiscountForQuantity = discountPerKg * quantityInKg;
+  
+//   const totalAmount = quantityInKg * discountedPrice;
+ 
+//   const newItem = {
+//     id: selectedProductData.id || Date.now(), // Use product ID or timestamp as fallback
+//     name: selectedProductData.label,
+//     quantity: quantity,
+//     unit: unit,
+//     pricePerKg: normalPrice,
+//     discountedPricePerKg: discountedPrice,
+//     discount: totalDiscountForQuantity,
+//     totalAmount: totalAmount,
+//     selected: false
+//   };
+
+//   setAdditionalItems(prev => [...prev, newItem]);
+//   setShowAddModal(false);
+//   setQuantity(1);
+//   setSelectedUnit('g');
+//   setPricePerKg(discountedPrice);
+// }, [productItems, productValue, selectedUnit, quantity, additionalItems]);
+
+const handleSaveItem = useCallback(() => {
   const selectedProductData = productItems.find(item => item.value === productValue);
   
   if (!selectedProductData) {
@@ -461,7 +652,6 @@ const fetchProductPrices = useCallback(async (productIds: number[]) => {
     return;
   }
 
-  // Check if this product is already in additionalItems
   const isProductAlreadyAdded = additionalItems.some(item => item.id === selectedProductData.id);
   
   if (isProductAlreadyAdded) {
@@ -472,7 +662,6 @@ const fetchProductPrices = useCallback(async (productIds: number[]) => {
   const unit = selectedUnit === 'Kg' ? 'Kg' : 'g';
   const quantityInKg = unit === 'Kg' ? quantity : quantity / 1000;
   
-  // Get both normal and discounted prices
   const normalPrice = parseFloat(selectedProductData.price);
   const discountedPrice = selectedProductData.discountedPrice 
     ? parseFloat(selectedProductData.discountedPrice) 
@@ -483,7 +672,7 @@ const fetchProductPrices = useCallback(async (productIds: number[]) => {
   const totalAmount = quantityInKg * discountedPrice;
  
   const newItem = {
-    id: selectedProductData.id || Date.now(), // Use product ID or timestamp as fallback
+    id: selectedProductData.id || Date.now(),
     name: selectedProductData.label,
     quantity: quantity,
     unit: unit,
@@ -491,7 +680,9 @@ const fetchProductPrices = useCallback(async (productIds: number[]) => {
     discountedPricePerKg: discountedPrice,
     discount: totalDiscountForQuantity,
     totalAmount: totalAmount,
-    selected: false
+    selected: false,
+    changeby: selectedProductData.changeby || '1', // Add this
+    startValue: selectedProductData.startValue || '1' // Add this
   };
 
   setAdditionalItems(prev => [...prev, newItem]);
@@ -500,6 +691,7 @@ const fetchProductPrices = useCallback(async (productIds: number[]) => {
   setSelectedUnit('g');
   setPricePerKg(discountedPrice);
 }, [productItems, productValue, selectedUnit, quantity, additionalItems]);
+
 
 const availableProducts = productItems.filter(
   item => !additionalItems.some(addedItem => addedItem.id === item.id)
@@ -635,11 +827,9 @@ const productDropdownItems = productItems.map(item => ({
     }
   }, [packages, packageValue]);
 
-
-
 const fetchCrops = async () => {
   try {
-    setLoading(true);
+    setProductDropdownLoading(true); // Add this
     const response = await axios.get(`${environment.API_BASE_URL}api/packages/crops/all`, {
       headers: { Authorization: `Bearer ${token}` },
       params: {id}
@@ -650,12 +840,11 @@ const fetchCrops = async () => {
       .map((item: CropItem) => ({
         label: item.displayName,
         value: item.varietyId.toString(),
-        id: item.id, // Add marketplaceitems.id here
+        id: item.id,
         unitType: item.unitType,
         price: item.normalPrice,
         discountedPrice: item.discountedPrice,
         discount: (parseFloat(item.normalPrice) - parseFloat(item.discountedPrice)).toFixed(2),
-        // Add new fields for dynamic quantity handling
         changeby: item.changeby || '1',
         startValue: item.startValue || '1',
       }));
@@ -663,10 +852,42 @@ const fetchCrops = async () => {
     setProductItems(retailItems);
   } catch (error) {
     console.error("Error fetching crops:", error);
+    Alert.alert("Error", "Failed to load products");
   } finally {
-    setLoading(false);
+    setProductDropdownLoading(false); // Add this
   }
 };
+
+// const fetchCrops = async () => {
+//   try {
+//     setLoading(true);
+//     const response = await axios.get(`${environment.API_BASE_URL}api/packages/crops/all`, {
+//       headers: { Authorization: `Bearer ${token}` },
+//       params: {id}
+//     });
+
+//     const retailItems = response.data.data
+//       .filter((item: CropItem) => item.category === "Retail")
+//       .map((item: CropItem) => ({
+//         label: item.displayName,
+//         value: item.varietyId.toString(),
+//         id: item.id, // Add marketplaceitems.id here
+//         unitType: item.unitType,
+//         price: item.normalPrice,
+//         discountedPrice: item.discountedPrice,
+//         discount: (parseFloat(item.normalPrice) - parseFloat(item.discountedPrice)).toFixed(2),
+//         // Add new fields for dynamic quantity handling
+//         changeby: item.changeby || '1',
+//         startValue: item.startValue || '1',
+//       }));
+
+//     setProductItems(retailItems);
+//   } catch (error) {
+//     console.error("Error fetching crops:", error);
+//   } finally {
+//     setLoading(false);
+//   }
+// };
 
   useEffect(() => {
     if (productOpen) {
@@ -765,31 +986,7 @@ const deleteSelectedItems = () => {
     setAdditionalItems(items => items.filter(item => item.id !== id));
   };
 
-  // Updated increment function with dynamic changeBy value
-  // const incrementQuantity = () => {
-  //   const selectedProductData = productItems.find(item => item.value === productValue);
-  //   const changeBy = selectedProductData?.changeby ? Number(selectedProductData.changeby) : 1;
-    
-  //   // Adjust changeBy based on unit type
-  //   const adjustedChangeBy = selectedUnit === 'Kg' ? changeBy : changeBy * 1000;
-    
-  //   setQuantity(prev => prev + adjustedChangeBy);
-  // };
 
-  // // Updated decrement function with dynamic changeBy value
-  // const decrementQuantity = () => {
-  //   const selectedProductData = productItems.find(item => item.value === productValue);
-  //   const changeBy = selectedProductData?.changeby ? Number(selectedProductData.changeby) : 1;
-    
-  //   // Adjust changeBy based on unit type
-  //   const adjustedChangeBy = selectedUnit === 'Kg' ? changeBy : changeBy * 1000;
-  //   const startValue = selectedProductData?.startValue ? Number(selectedProductData.startValue) : 1;
-    
-  //   // Adjust startValue based on unit type
-  //   const adjustedStartValue = selectedUnit === 'Kg' ? startValue : startValue * 1000;
-    
-  //   setQuantity(prev => prev > adjustedStartValue ? prev - adjustedChangeBy : adjustedStartValue);
-  // };
 
 const incrementQuantity = () => {
   const selectedProductData = productItems.find(item => item.value === productValue);
@@ -823,7 +1020,8 @@ const decrementQuantity = () => {
   });
 };
 
-// Update the edit modal increment/decrement functions
+
+// Update the edit modal increment/decrement functions - FIXED for floating point precision
 // const updateQuantity = (changeBy: number, increase: boolean) => {
 //   if (!editingItem) return;
   
@@ -838,20 +1036,26 @@ const decrementQuantity = () => {
 //   const adjustedStartValue = editSelectedUnit === 'Kg' ? startValue : startValue * 1000;
   
 //   if (increase) {
-//     setNewItemQuantity(prev => prev + adjustedChangeBy);
+//     setNewItemQuantity(prev => {
+//       const newValue = prev + adjustedChangeBy;
+//       // Round to 3 decimal places for Kg to avoid floating point errors
+//       return editSelectedUnit === 'Kg' ? Math.round(newValue * 1000) / 1000 : Math.round(newValue);
+//     });
 //   } else {
-//     setNewItemQuantity(prev => Math.max(adjustedStartValue, prev - adjustedChangeBy));
+//     setNewItemQuantity(prev => {
+//       const newValue = prev - adjustedChangeBy;
+//       const roundedValue = editSelectedUnit === 'Kg' ? Math.round(newValue * 1000) / 1000 : Math.round(newValue);
+//       return Math.max(adjustedStartValue, roundedValue);
+//     });
 //   }
 // };
 
-// Update the edit modal increment/decrement functions - FIXED for floating point precision
 const updateQuantity = (changeBy: number, increase: boolean) => {
   if (!editingItem) return;
   
-  // Get the product data to access changeby and startValue
-  const productData = productItems.find(item => item.id === editingItem.id);
-  const dynamicChangeBy = productData?.changeby ? Number(productData.changeby) : changeBy;
-  const startValue = productData?.startValue ? Number(productData.startValue) : 1;
+  // Use the changeby and startValue from the editingItem itself
+  const dynamicChangeBy = editingItem.changeby ? Number(editingItem.changeby) : changeBy;
+  const startValue = editingItem.startValue ? Number(editingItem.startValue) : 1;
   
   // For Kg, use values as is (could be decimal)
   // For g, multiply by 1000
@@ -861,7 +1065,6 @@ const updateQuantity = (changeBy: number, increase: boolean) => {
   if (increase) {
     setNewItemQuantity(prev => {
       const newValue = prev + adjustedChangeBy;
-      // Round to 3 decimal places for Kg to avoid floating point errors
       return editSelectedUnit === 'Kg' ? Math.round(newValue * 1000) / 1000 : Math.round(newValue);
     });
   } else {
@@ -878,25 +1081,34 @@ const updateQuantity = (changeBy: number, increase: boolean) => {
     setEditSelectedUnit(unit);
   };
 
+
+
 // const saveUpdatedItem = () => {
 //   if (!editingItem) return;
 
 //   const unit = editSelectedUnit;
-//   const quantityInKg = unit === 'Kg' ? newItemQuantity : newItemQuantity / 1000;
   
-//   // Calculate using discounted price
-//   const totalAmount = quantityInKg * editingItem.discountedPricePerKg;
-//   const discountAmount = (editingItem.pricePerKg - editingItem.discountedPricePerKg) * quantityInKg;
+//   // Use Math.round to avoid floating point precision issues
+//   // Round to 3 decimal places for Kg, whole numbers for grams
+//   const roundedQuantity = unit === 'Kg' 
+//     ? Math.round(newItemQuantity * 1000) / 1000 
+//     : Math.round(newItemQuantity);
+  
+//   const quantityInKg = unit === 'Kg' ? roundedQuantity : roundedQuantity / 1000;
+  
+//   // Calculate using discounted price with proper rounding
+//   const totalAmount = Math.round(quantityInKg * editingItem.discountedPricePerKg * 100) / 100;
+//   const discountAmount = Math.round((editingItem.pricePerKg - editingItem.discountedPricePerKg) * quantityInKg * 100) / 100;
 
 //   const updatedItem: AdditionalItem = {
 //     ...editingItem,
-//     quantity: newItemQuantity,
+//     quantity: roundedQuantity,
 //     unit: unit,
 //     totalAmount: totalAmount,
 //     discount: discountAmount
 //   };
 
-// console.log("hgfsjka",updatedItem)
+//   console.log("Updated item:", updatedItem);
 
 //   setAdditionalItems(items => 
 //     items.map(item => 
@@ -908,20 +1120,25 @@ const updateQuantity = (changeBy: number, increase: boolean) => {
 //   setEditingItem(null);
 // };
 
+// In OrderScreen.tsx
+// Replace the saveUpdatedItem function (around line 750)
+
 const saveUpdatedItem = () => {
   if (!editingItem) return;
 
   const unit = editSelectedUnit;
   
-  // Use Math.round to avoid floating point precision issues
-  // Round to 3 decimal places for Kg, whole numbers for grams
+  // Round properly based on unit
+  // For Kg: round to 3 decimal places to handle values like 0.25, 0.5, 0.75
+  // For g: round to whole numbers
   const roundedQuantity = unit === 'Kg' 
     ? Math.round(newItemQuantity * 1000) / 1000 
     : Math.round(newItemQuantity);
   
+  // Convert to kg for price calculations
   const quantityInKg = unit === 'Kg' ? roundedQuantity : roundedQuantity / 1000;
   
-  // Calculate using discounted price with proper rounding
+  // Calculate totals with proper rounding
   const totalAmount = Math.round(quantityInKg * editingItem.discountedPricePerKg * 100) / 100;
   const discountAmount = Math.round((editingItem.pricePerKg - editingItem.discountedPricePerKg) * quantityInKg * 100) / 100;
 
@@ -933,7 +1150,16 @@ const saveUpdatedItem = () => {
     discount: discountAmount
   };
 
-  console.log("Updated item:", updatedItem);
+  console.log("Saving updated item:", {
+    name: updatedItem.name,
+    quantity: updatedItem.quantity,
+    unit: updatedItem.unit,
+    quantityInKg,
+    pricePerKg: editingItem.pricePerKg,
+    discountedPricePerKg: editingItem.discountedPricePerKg,
+    totalAmount,
+    discountAmount
+  });
 
   setAdditionalItems(items => 
     items.map(item => 
@@ -944,26 +1170,6 @@ const saveUpdatedItem = () => {
   setModalVisible(false);
   setEditingItem(null);
 };
-
-// Updated updateQuantity function for edit modal with dynamic values
-// const updateQuantity = (changeBy: number, increase: boolean) => {
-//   if (!editingItem) return;
-  
-//   // Get the product data to access changeby and startValue
-//   const productData = productItems.find(item => item.id === editingItem.id);
-//   const dynamicChangeBy = productData?.changeby ? Number(productData.changeby) : changeBy;
-//   const startValue = productData?.startValue ? Number(productData.startValue) : 1;
-  
-//   // Adjust values based on unit type
-//   const adjustedChangeBy = editSelectedUnit === 'Kg' ? dynamicChangeBy : dynamicChangeBy * 1000;
-//   const adjustedStartValue = editSelectedUnit === 'Kg' ? startValue : startValue * 1000;
-  
-//   if (increase) {
-//     setNewItemQuantity(prev => prev + adjustedChangeBy);
-//   } else {
-//     setNewItemQuantity(prev => Math.max(adjustedStartValue, prev - adjustedChangeBy));
-//   }
-// };
 
   // Calculate total items count
   const getTotalItemsCount = () => {
@@ -1446,59 +1652,8 @@ const handlePackageSearchChange = (text: string) => {
       {/* Product Section */}
       <View className="mb-4" >
         <Text className="text-gray-700 mb-3">Product</Text>
-      {/* <DropDownPicker
-  open={productOpen}
-  setOpen={(open) =>{setProductOpen(open); setUnitOpen(false)}}
-  value={productValue}
-  setValue={setProductValue}
-  items={productItems.filter(
-    product => !additionalItems.some(item => item.id === product.id)
-  )}
-  onSelectItem={(item) => {
-    if (item && item.label && item.value) {
-      setSelectedProduct(item.label);
-      const selectedItem = productItems.find(p => p.value === item.value);
-      if (selectedItem) {
-        const discountedPrice = selectedItem.discountedPrice 
-          ? parseFloat(selectedItem.discountedPrice) 
-          : parseFloat(selectedItem.price);
-        setPricePerKg(discountedPrice);
-        
-        // Set initial quantity based on product's startValue
-        const startValue = selectedItem.startValue ? Number(selectedItem.startValue) : 1;
-        const adjustedStartValue = selectedUnit === 'Kg' ? startValue : startValue * 1000;
-        setQuantity(adjustedStartValue);
-      }
-    }
-  }}
-  searchable={true}
-  searchPlaceholder="Search product..."
-  placeholder="Select a product..."
-  dropDownContainerStyle={{
-    borderColor: "#F6F6F6",
-    borderWidth: 1,
-    backgroundColor: "#F6F6F6",
-    maxHeight: 300,
-    minHeight: 350,
-  }}
-  style={{
-    borderWidth: 1,
-    borderColor: "#F6F6F6",
-    backgroundColor: "#F6F6F6",
-    borderRadius: 15,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    minHeight: 0,
-  }}
-  textStyle={{
-    fontSize: 14,
-    color: '#111827',
-  }}
-  
-  zIndex={80000}
-
-/> */}
-<DropDownPicker
+ 
+{/* <DropDownPicker
     open={productOpen}
     setOpen={(open) => {
         setProductOpen(open); 
@@ -1552,10 +1707,80 @@ const handlePackageSearchChange = (text: string) => {
         value: productSearchValue,
     }}
     zIndex={80000}
+/> */}
+
+<DropDownPicker
+    open={productOpen}
+    setOpen={(open) => {
+        setProductOpen(open); 
+        setUnitOpen(false);
+    }}
+    value={productValue}
+    setValue={setProductValue}
+    items={filteredProductItems}
+    loading={productDropdownLoading} // Add this prop
+    onSelectItem={(item) => {
+        if (item && item.label && item.value) {
+            setSelectedProduct(item.label);
+            const selectedItem = productItems.find(p => p.value === item.value);
+            if (selectedItem) {
+                const discountedPrice = selectedItem.discountedPrice
+                    ? parseFloat(selectedItem.discountedPrice)
+                    : parseFloat(selectedItem.price);
+                setPricePerKg(discountedPrice);
+                
+                const startValue = selectedItem.startValue ? Number(selectedItem.startValue) : 1;
+                const adjustedStartValue = selectedUnit === 'Kg' ? startValue : startValue * 1000;
+                setQuantity(adjustedStartValue);
+            }
+        }
+    }}
+    searchable={true}
+    searchPlaceholder="Search product..."
+    placeholder="Select a product..."
+    dropDownContainerStyle={{
+        borderColor: "#F6F6F6",
+        borderWidth: 1,
+        backgroundColor: "#F6F6F6",
+        maxHeight: 300,
+        minHeight: 350,
+    }}
+    style={{
+        borderWidth: 1,
+        borderColor: "#F6F6F6",
+        backgroundColor: "#F6F6F6",
+        borderRadius: 15,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        minHeight: 0,
+    }}
+    textStyle={{
+        fontSize: 14,
+        color: '#111827',
+    }}
+    searchTextInputProps={{
+        onChangeText: handleProductSearchChange,
+        value: productSearchValue,
+    }}
+    // Add these props for better loading experience
+    listMessageTextStyle={{
+        color: '#9CA3AF',
+        fontSize: 14,
+    }}
+    ActivityIndicatorComponent={() => (
+        <ActivityIndicator size="small" color="#7C3AED" />
+    )}
+    ListEmptyComponent={() => (
+        <View className="py-8 items-center">
+            <Text className="text-gray-500 text-sm">
+                {productDropdownLoading ? "Loading products..." : "No products available"}
+            </Text>
+        </View>
+    )}
+    zIndex={80000}
 />
       </View>
 
-      {/* Price per kg Section */}
       <View className="mb-4">
         <Text className="text-gray-700 mb-">Price per 1kg</Text>
         <View className="bg-gray-50 rounded-xl p-3">

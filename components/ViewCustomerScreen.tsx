@@ -423,7 +423,7 @@ const getUserProfile = async () => {
       <View className="flex-1 bg-white">
         {/* Header Section */}
         <View className="relative">
-          <View className="bg-white flex-row rounded-b-[35px] items-center justify-between h-28 z-50 shadow-lg px-5">
+          <View className="bg-white flex-row rounded-b-[35px] items-center justify-between h-30 z-50 shadow-lg px-5">
             <View className="mt-[-8%] ml-[-2%]">
               <TouchableOpacity 
                 style={{ paddingHorizontal: wp(2), paddingVertical: hp(2) }}
@@ -538,7 +538,7 @@ const getUserProfile = async () => {
 
         {/* Search and Filters */}
         <View className="mx-5">
-          <View className="flex-row items-center bg-[#F5F1FC] px-8 py-2 border border-[#6B3BCF] rounded-full mt-4 shadow-sm">
+          <View className="flex-row items-center bg-[#F5F1FC] px-8 py-1 border border-[#6B3BCF] rounded-full mt-4 shadow-sm">
             {/* <TextInput
               placeholder="Search By Order Number"
               placeholderTextColor="#000000"
