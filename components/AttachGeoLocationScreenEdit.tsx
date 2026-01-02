@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { View, Text, TouchableOpacity, Alert, ActivityIndicator, Platform, StatusBar, Modal } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RouteProp } from "@react-navigation/native";
-import MapView, { Marker } from "react-native-maps";
+import { WebView } from "react-native-webview";
 import * as Location from "expo-location";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
@@ -28,20 +28,11 @@ const AttachGeoLocationScreenEdit: React.FC<AttachGeoLocationScreenEditProps> = 
   navigation,
   route,
 }) => {
-  const mapRef = useRef<MapView>(null);
+  const webViewRef = useRef<WebView>(null);
 
-  // Get params from navigation (if coming from registration screen)
   const currentLatitude = route.params?.currentLatitude;
   const currentLongitude = route.params?.currentLongitude;
   const onLocationSelect = route.params?.onLocationSelect;
-
-  // Default to Negombo, Sri Lanka if no initial coordinates
-  const [region, setRegion] = useState({
-    latitude: currentLatitude || 7.2008,
-    longitude: currentLongitude || 79.8358,
-    latitudeDelta: 0.0922,
-    longitudeDelta: 0.0421,
-  });
 
   const [markerPosition, setMarkerPosition] = useState({
     latitude: currentLatitude || 7.2008,
@@ -49,10 +40,9 @@ const AttachGeoLocationScreenEdit: React.FC<AttachGeoLocationScreenEditProps> = 
   });
 
   const [isLoading, setIsLoading] = useState(false);
-  const [isAttaching, setIsAttaching] = useState(false); // New state for confirm loading
+  const [isAttaching, setIsAttaching] = useState(false);
   const [locationName, setLocationName] = useState("Tap on the map to select a location");
 
-  // Get current location on mount
   useEffect(() => {
     if (!currentLatitude || !currentLongitude) {
       getCurrentLocation();
@@ -76,25 +66,21 @@ const AttachGeoLocationScreenEdit: React.FC<AttachGeoLocationScreenEditProps> = 
         accuracy: Location.Accuracy.High,
       });
 
-      const newRegion = {
+      const newPosition = {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
-        latitudeDelta: 0.0922,
-        longitudeDelta: 0.0421,
       };
 
-      setRegion(newRegion);
-      setMarkerPosition({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      });
+      setMarkerPosition(newPosition);
 
-      // Animate to new location
-      if (mapRef.current) {
-        mapRef.current.animateToRegion(newRegion, 1000);
+      // Update map via WebView
+      if (webViewRef.current) {
+        webViewRef.current.injectJavaScript(`
+          updateMarkerPosition(${newPosition.latitude}, ${newPosition.longitude});
+          true;
+        `);
       }
 
-      // Get address
       await getAddressFromCoordinates(
         location.coords.latitude,
         location.coords.longitude
@@ -132,20 +118,10 @@ const AttachGeoLocationScreenEdit: React.FC<AttachGeoLocationScreenEditProps> = 
     }
   };
 
-  const handleMapPress = (event: any) => {
-    const { latitude, longitude } = event.nativeEvent.coordinate;
-    setMarkerPosition({ latitude, longitude });
-    getAddressFromCoordinates(latitude, longitude);
-  };
-
   const handleConfirmLocation = async () => {
-    // Show loading modal
     setIsAttaching(true);
-
-    // Simulate processing delay (you can adjust or remove this)
     await new Promise(resolve => setTimeout(resolve, 1500));
 
-    // Pass the location data back to the previous screen
     if (route.params?.onLocationSelect) {
       route.params.onLocationSelect(
         markerPosition.latitude,
@@ -154,16 +130,93 @@ const AttachGeoLocationScreenEdit: React.FC<AttachGeoLocationScreenEditProps> = 
       );
     }
     
-    // Hide loading modal
     setIsAttaching(false);
-    
-    // Go back to previous screen
     navigation.goBack();
   };
 
+  const handleWebViewMessage = (event: any) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      if (data.type === 'mapClick') {
+        const { lat, lng } = data;
+        setMarkerPosition({ latitude: lat, longitude: lng });
+        getAddressFromCoordinates(lat, lng);
+      }
+    } catch (error) {
+      console.error("Error parsing WebView message:", error);
+    }
+  };
+
+  const leafletHTML = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+      <style>
+        body, html {
+          margin: 0;
+          padding: 0;
+          height: 100%;
+          width: 100%;
+        }
+        #map {
+          height: 100%;
+          width: 100%;
+        }
+      </style>
+    </head>
+    <body>
+      <div id="map"></div>
+      <script>
+        // Initialize map
+        var map = L.map('map').setView([${markerPosition.latitude}, ${markerPosition.longitude}], 13);
+        
+        // Add tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors',
+          maxZoom: 19
+        }).addTo(map);
+        
+        // Add marker
+        var marker = L.marker([${markerPosition.latitude}, ${markerPosition.longitude}], {
+          draggable: false
+        }).addTo(map);
+        
+        // Handle map clicks
+        map.on('click', function(e) {
+          var lat = e.latlng.lat;
+          var lng = e.latlng.lng;
+          
+          // Update marker position
+          marker.setLatLng([lat, lng]);
+          
+          // Send coordinates to React Native
+          window.ReactNativeWebView.postMessage(JSON.stringify({
+            type: 'mapClick',
+            lat: lat,
+            lng: lng
+          }));
+        });
+        
+        // Function to update marker from React Native
+        function updateMarkerPosition(lat, lng) {
+          marker.setLatLng([lat, lng]);
+          map.setView([lat, lng], 13);
+        }
+        
+        // Disable scroll zoom on mobile for better UX
+        if (window.innerWidth < 768) {
+          map.scrollWheelZoom.disable();
+        }
+      </script>
+    </body>
+    </html>
+  `;
+
   return (
     <View style={{ flex: 1, backgroundColor: "#fff" }}>
-      {/* Status Bar */}
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
       {/* Header */}
@@ -191,20 +244,20 @@ const AttachGeoLocationScreenEdit: React.FC<AttachGeoLocationScreenEditProps> = 
         <Text className="text-[#828282]">Tap on the map to select a location.</Text>
       </View>
 
-      {/* Map */}
+      {/* Map WebView */}
       <View style={{ flex: 1, marginTop: hp(2), marginHorizontal: wp(4) }}>
-        <MapView
-          ref={mapRef}
-          style={{ flex: 1, borderRadius: 12 }}
-          initialRegion={region}
-          onPress={(e) => {
-            const { latitude, longitude } = e.nativeEvent.coordinate;
-            setMarkerPosition({ latitude, longitude });
-            getAddressFromCoordinates(latitude, longitude);
-          }}
-        >
-          <Marker coordinate={markerPosition} />
-        </MapView>
+        <View style={{ flex: 1, borderRadius: 12, overflow: 'hidden' }}>
+          <WebView
+            ref={webViewRef}
+            originWhitelist={['*']}
+            source={{ html: leafletHTML }}
+            onMessage={handleWebViewMessage}
+            javaScriptEnabled={true}
+            domStorageEnabled={true}
+            scrollEnabled={false}
+            style={{ flex: 1 }}
+          />
+        </View>
 
         {/* Use My Location Floating Button */}
         <TouchableOpacity
@@ -237,7 +290,6 @@ const AttachGeoLocationScreenEdit: React.FC<AttachGeoLocationScreenEditProps> = 
 
       {/* Bottom Buttons */}
       <View className="bg-white px-4 py-4 border-t border-gray-200 flex-row justify-between">
-        {/* Use My Location Button */}
         <TouchableOpacity
           onPress={getCurrentLocation}
           disabled={isLoading || isAttaching}
@@ -257,7 +309,6 @@ const AttachGeoLocationScreenEdit: React.FC<AttachGeoLocationScreenEditProps> = 
           </View>
         </TouchableOpacity>
 
-        {/* Confirm Now Button */}
         <TouchableOpacity
           onPress={handleConfirmLocation}
           disabled={isAttaching}
@@ -301,16 +352,12 @@ const AttachGeoLocationScreenEdit: React.FC<AttachGeoLocationScreenEditProps> = 
               elevation: 5,
             }}
           >
-            {/* Custom Loader */}
-            {/* <View style={{ marginBottom: 20 }}>
-              <ActivityIndicator size="large" color="#6C3CD1" />
-            </View> */}
-               <LottieView
-                          source={require("../assets/images/loading.json")}
-                          style={{ width: wp(20), height: hp(20) }}
-                          autoPlay
-                          loop
-                        />
+            <LottieView
+              source={require("../assets/images/loading.json")}
+              style={{ width: wp(20), height: hp(20) }}
+              autoPlay
+              loop
+            />
             
             <Text 
               style={{
