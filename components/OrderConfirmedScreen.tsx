@@ -905,7 +905,7 @@ if (order?.additionalItems && order.additionalItems.length > 0) {
                 Order is Confirmed!
               </Text>
               <Text style={{ fontSize: 18 }} className="text-[#3F3F3F] text-center mt-2">
-                Order No: {order?.orderStatus?.invoiceNumber}
+                Order No: #{order?.orderStatus?.invoiceNumber}
               </Text>
               <Text style={{ fontSize: 16 }} className="text-[#747474] text-center mt-5">
                 Order Confirmation message and Payment Gateway Link has been sent to your Customer
