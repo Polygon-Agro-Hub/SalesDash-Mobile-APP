@@ -841,7 +841,7 @@ const handleOtpChange = (text: string, index: number) => {
             <View className="justify-center items-center bg-white">
               {/* Timer */}
               <Text className="text-black">
-                {timer > 0 ? `00:${timer < 10 ? `0${timer}` : timer}` : "Time expired"}
+                {timer > 0 ? `00:${timer < 10 ? `0${timer}` : timer}` : "OTP expired"}
               </Text>
 
               {/* Resend OTP */}
