@@ -1448,16 +1448,22 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
             <View className="mb-6">
               <Text className="text-gray-700 mb-3">Total Amount</Text>
               <View className="bg-gray-50 rounded-xl px-4 py-4">
-                <Text className="text-gray-900">
+                {/* <Text className="text-gray-900">
                   Rs.{((selectedUnit === 'Kg' ? quantity : quantity / 1000) * pricePerKg).toFixed(2)}
-                </Text>
+                </Text> */}
+                 <Text className="text-gray-900">
+      Rs.{((selectedUnit === 'Kg' ? quantity : quantity / 1000) * pricePerKg).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+    </Text>
               </View>
             </View>
 
             {/* Dynamic Discount Message */}
             <View className="mb-4">
-              <Text className="text-purple-600 text-center text-sm font-medium">
+              {/* <Text className="text-purple-600 text-center text-sm font-medium">
                 You received a discount of Rs.{calculateDiscountForQuantity()} for this product
+              </Text> */}
+             <Text className="text-purple-600 text-center text-sm font-medium">
+                   You received a discount of Rs.{Number(calculateDiscountForQuantity()).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} for this product
               </Text>
             </View>
 
@@ -1555,12 +1561,18 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
             <View className="mb-6 mt-4">
               <Text className="text-gray-700 font-medium mb-3">Total Amount</Text>
               <View className="bg-gray-50 rounded-xl px-4 py-4">
-                <Text className="text-gray-900  ">
+                {/* <Text className="text-gray-900  ">
                   Rs.{(
                     (editSelectedUnit === 'Kg' ? newItemQuantity : newItemQuantity / 1000) *
                     (editingItem?.discountedPricePerKg || 0)
                   ).toFixed(2)}
-                </Text>
+                </Text> */}
+                <Text className="text-gray-900">
+                 Rs.{(
+                    (editSelectedUnit === 'Kg' ? newItemQuantity : newItemQuantity / 1000) *
+                   (editingItem?.discountedPricePerKg || 0)
+                 ).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </Text>
               </View>
             </View>
 

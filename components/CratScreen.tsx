@@ -415,9 +415,12 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
             
             <View className="flex-1">
               <Text className="text-base font-medium text-gray-800">{item.name}</Text>
-              <Text className="text-sm text-gray-600">
+              {/* <Text className="text-sm text-gray-600">
                 Rs.{item.discountedPrice.toFixed(2)} per kg
-              </Text>
+              </Text> */}
+              <Text className="text-sm text-gray-600">
+  Rs.{item.discountedPrice.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} per kg
+</Text>
             </View>
             
             <View className="flex-row items-center mt-[-5%]">
@@ -504,13 +507,16 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
           <View className="flex-row justify-between py-2">
             <Text className="text-gray-500">Subtotal</Text>
             <Text className="font-medium">Rs.
-              {currentSubtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {currentSubtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </Text>
           </View>
           
           <View className="flex-row justify-between py-2">
             <Text className="text-gray-500">Discount</Text>
-            <Text className="font-medium text-[#686868]">Rs.{discount.toFixed(2)}</Text>
+            {/* <Text className="font-medium text-[#686868]">Rs.{discount.toFixed(2)}</Text> */}
+            <Text className="font-medium text-[#686868]">
+  Rs.{discount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+</Text>
           </View>
 
           <View className="flex-row justify-between py-2">

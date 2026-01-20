@@ -1,7 +1,7 @@
-import React, { useEffect, useRef } from "react";
-import { View, Text, TouchableOpacity, Platform, StatusBar } from "react-native";
+import React, { useCallback, useEffect, useRef } from "react";
+import { View, Text, TouchableOpacity, Platform, StatusBar, BackHandler } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
-import { RouteProp } from "@react-navigation/native";
+import { RouteProp, useFocusEffect } from "@react-navigation/native";
 import { WebView } from "react-native-webview";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
@@ -30,6 +30,19 @@ const ViewLocationScreen: React.FC<ViewLocationScreenProps> = ({
   
   // Get location data from params
   const { latitude, longitude, locationName } = route.params;
+
+    useFocusEffect(
+      useCallback(() => {
+          const onBackPress = () => {
+              navigation.goBack();
+              return true;
+          };
+      
+          const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      
+          return () => backHandler.remove();
+      }, [navigation])
+    );
 
   const lat = latitude || 7.2008;
   const lng = longitude || 79.8358;

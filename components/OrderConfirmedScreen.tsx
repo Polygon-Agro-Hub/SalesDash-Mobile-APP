@@ -730,7 +730,7 @@ if (order?.additionalItems && order.additionalItems.length > 0) {
             margin-top:10px
           "
         >
-         <div class="bold">${order?.isPackage === 1 ? 'Additional Items' : 'Custom Items'} (${order?.additionalItems?.length || 0} Items)</div>
+         <div class="bold">${order?.isPackage === 1 ? 'Additional Items' : 'Custom Items'} (${order?.additionalItems?.length || 0} ${order?.additionalItems?.length === 1 ? 'Item' : 'Items'})</div>
     <div style="font-weight: 550; font-size: 16px">Rs. ${additionalItemsTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</div>
         </div>
         <div style="border: 1px solid #ddd; border-radius: 10px">
