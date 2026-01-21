@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -10,17 +10,19 @@ import {
   Alert,
   Modal,
   Linking,
+  BackHandler
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import BackButton from "./BackButton";
 import { LinearGradient } from "expo-linear-gradient";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
-import { RouteProp } from "@react-navigation/native";
+import { RouteProp, useFocusEffect } from "@react-navigation/native";
 import axios from "axios";
 import environment from "@/environment/environment";
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { goBack } from "expo-router/build/global-state/routing";
 
 type View_CancelOrderScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -504,26 +506,7 @@ console.log("before----------------")
     }
   };
   
- 
-// const isTimelineItemActive = (status: string) => {
-//   if (!order) return false;
-//   const orderStatuses = ["Ordered", "Processing", "Out For Delivery", "Collected","On the way", "Delivered","Hold", "Return"];
-//   const actualStatus = getActualStatus();
-  
 
-//   if (actualStatus === "Cancelled") {
-//     return status === "Ordered" || status === "Cancelled";
-//   }
-  
-
-//   const currentIndex = orderStatuses.indexOf(actualStatus);
-//   const itemIndex = orderStatuses.indexOf(status);
-  
-
-//   if (itemIndex === -1) return false;
-  
-//   return itemIndex <= currentIndex;
-// };
 const isTimelineItemActive = (status: string) => {
   if (!order) return false;
   
@@ -551,10 +534,7 @@ const isTimelineItemActive = (status: string) => {
   
   // Special handling for Hold status
   if (status === "Hold") {
-    // Show Hold as active if:
-    // 1. Current status is "Hold"
-    // 2. Status is "On the way" AND isHoldOrder is true (was held, then resumed)
-    // 3. Status is "Delivered" AND isHoldOrder is true (was held during delivery)
+ 
     return actualStatus === "Hold" || 
            (actualStatus === "On the way" && isHoldOrder) ||
            (actualStatus === "Delivered" && isHoldOrder);
@@ -692,6 +672,20 @@ const formatPrice = (price: string | number): string => {
         setLoading(false);
       }
     };
+
+      useFocusEffect(
+        useCallback(() => {
+          const onBackPress = () => {
+            navigation.goBack();
+            return true;
+          };
+    
+          const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    
+          return () => backHandler.remove();
+        }, [navigation])
+      );
+      
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}

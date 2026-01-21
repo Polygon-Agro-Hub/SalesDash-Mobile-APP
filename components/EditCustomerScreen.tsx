@@ -1363,7 +1363,7 @@ const handlePhoneNumberKeyPress = (e: any) => {
         minHeight: 40,
       }}
       textStyle={{
-        fontSize: 12,
+        fontSize: 14,
         textAlignVertical: "center",
       }}
       dropDownContainerStyle={{

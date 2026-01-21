@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  BackHandler,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import BackButton from "./BackButton";
@@ -91,6 +92,19 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
       Alert.alert("Error", "Failed to fetch items for the package");
     }
   };
+
+  useFocusEffect(
+      useCallback(() => {
+        const onBackPress = () => {
+            navigation.goBack();
+            return true;
+          };
+      
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      
+          return () => backHandler.remove();
+        }, [navigation])
+  );
 
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
