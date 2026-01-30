@@ -97,7 +97,17 @@ export type RootStackParamList = {
     ViewComplainScreen: undefined;
     ViewCustomerScreen: {number:string,name:string, customerId:string , id: string , title:string}; // Update this type
     ReminderScreen: undefined;
-    AddCustomersScreen: undefined;
+   // AddCustomersScreen: undefined;
+   AddCustomersScreen: {
+    selectedLatitude?: number;
+    selectedLongitude?: number;
+    selectedLocationName?: string;
+  };
+  ViewLocationScreen: {
+  latitude: number;
+  longitude: number;
+  locationName?: string;
+}
     OtpScreen:{phoneNumber:string , id: string};
    // OtpSuccesfulScreen:undefined;
    OtpSuccesfulScreen: {
@@ -109,8 +119,18 @@ export type RootStackParamList = {
     OrderScreen: {id: string; isCustomPackage:string; isSelectPackage:string;};
     ScheduleScreen: {totalPrice: Number };
     ViewOrdersScreen:undefined;
-    View_CancelOrderScreen:{orderId:number ,userId:number, status:string};
+    View_CancelOrderScreen:{orderId:number, userId:number, status:string, reportStatus:string | null};
     SelectOrderType:undefined;
+    AttachGeoLocationScreen: {
+  currentLatitude?: number;
+  currentLongitude?: number;
+  onLocationSelect?: (latitude: number, longitude: number, locationName: string) => void;
+};
+AttachGeoLocationScreenEdit:{
+   currentLatitude?: number;
+  currentLongitude?: number;
+  onLocationSelect?: (latitude: number, longitude: number, locationName: string) => void;
+}
     SelectOrderTypeNewCustomer : undefined;
     CreateCustomPackage :{id: string; isCustomPackage:string; isSelectPackage:string;};
    CratScreen: {

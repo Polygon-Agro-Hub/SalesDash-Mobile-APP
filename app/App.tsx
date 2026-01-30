@@ -42,6 +42,9 @@ import ExcludeAddMore from '@/components/ExcludeAddMore'
 import PrivacyPolicy from '@/components/PrivacyPolicy'
 import TermsConditions from '@/components/TermsConditions'
 import NetInfo from '@react-native-community/netinfo';
+import AttachGeoLocationScreen from '@/components/AttachGeoLocationScreen';
+import ViewLocationScreen from '@/components/ViewLocationScreen';
+import AttachGeoLocationScreenEdit from '@/components/AttachGeoLocationScreenEdit'
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -96,8 +99,7 @@ function MainTabNavigator() {
             <Tab.Screen name="ExcludeListSummery" component={ExcludeListSummery as any} />
             <Tab.Screen name="ExcludeItemEditSummery" component={ExcludeItemEditSummery as any} />
             <Tab.Screen name="ExcludeAddMore" component={ExcludeAddMore as any} />
-             <Tab.Screen name="AddCustomersScreen" 
-  component={AddCustomersScreen} 
+             <Tab.Screen name="AddCustomersScreen" component={AddCustomersScreen as any} 
              
              />
 
@@ -161,6 +163,9 @@ function AppContent() {
       <Stack.Screen name="CreateCustomPackage" component={CreateCustomPackage as any} />
       <Stack.Screen name="CratScreen" component={CratScreen as any} />
       <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicy as any} />
+      <Stack.Screen name="ViewLocationScreen" component={ViewLocationScreen as any} />
+            <Stack.Screen name="AttachGeoLocationScreenEdit" component={AttachGeoLocationScreenEdit as any} />
+      <Stack.Screen name="AttachGeoLocationScreen" component={AttachGeoLocationScreen as any} />
       <Stack.Screen name="TermsConditions" component={TermsConditions as any} /> 
             <Stack.Screen name="Main" component={MainTabNavigator} />
           </Stack.Navigator>

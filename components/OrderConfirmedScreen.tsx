@@ -136,14 +136,17 @@ interface AdditionalItem {
 }
 
 const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation, route }) => {
-  const [order, setOrder] = useState<Order | null>(null);
-  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [deliveryFee, setDeliveryFee] = useState<number>(0);
-  const [customerData, setCustomerData] = useState<CustomerData | null>(null);
+
+  
   const [isDataLoaded, setIsDataLoaded] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
+ 
+  const [order, setOrder] = useState<Order | null>(null);
+const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState<string | null>(null);
+const [deliveryFee, setDeliveryFee] = useState<number>(0);
+const [customerData, setCustomerData] = useState<CustomerData | null>(null);
+const [isDownloading, setIsDownloading] = useState(false);
 
   const { 
     orderId = "N/A", 
@@ -176,139 +179,134 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({ navigation,
   }, []);
 
   useEffect(() => {
-    let isMounted = true;
-    let timeoutId = null;
-    
-    const fetchOrderDetails = async () => {
-      try {
-        setLoading(true);
-        console.log("orderid", orderId);
-        
-        const response = await axios.get(
-          `${environment.API_BASE_URL}api/orders/get-order/${orderId}`,
-          { timeout: 30000 } 
-        );
-        
-        if (!isMounted) return;
-        
-        console.log("mkk", response.data);
-        if (response.data.success) {
-          setOrder(response.data.data);
-        } else {
-          setError("Failed to load order details");
-        }
-      } catch (err) {
-        if (!isMounted) return;
-        
-        console.error("Error fetching order details:", err);
-        setError("An error occurred while fetching order details");
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+  let isMounted = true;
+  let timeoutId = null;
+  
+  const fetchOrderDetails = async () => {
+    try {
+      // Don't set loading to true here on retry
+      console.log("orderid", orderId);
+      
+      const response = await axios.get(
+        `${environment.API_BASE_URL}api/orders/get-order/${orderId}`,
+        { timeout: 30000 } 
+      );
+      
+      if (!isMounted) return;
+      
+      console.log("mkk", response.data);
+      if (response.data.success) {
+        setOrder(response.data.data);
+      } else {
+        setError("Failed to load order details");
+        setLoading(false); // Stop loading on error
       }
-    };
+    } catch (err) {
+      if (!isMounted) return;
+      
+      console.error("Error fetching order details:", err);
+      setError("An error occurred while fetching order details");
+      setLoading(false); // Stop loading on error
+    }
+  };
 
-    fetchOrderDetails();
+  fetchOrderDetails();
 
-    timeoutId = setTimeout(() => {
-      if (isMounted) {
-        console.log("Retrying order fetch after timeout...");
-        fetchOrderDetails();
-      }
-    }, 10000);
-    
-    return () => {
-      isMounted = false;
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, [orderId]);
+  timeoutId = setTimeout(() => {
+    if (isMounted && !order) {
+      console.log("Retrying order fetch after timeout...");
+      fetchOrderDetails();
+    }
+  }, 10000);
+  
+  return () => {
+    isMounted = false;
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  };
+}, [orderId]);
 
   // Fetch customer data and delivery fee after order is loaded
-  useEffect(() => {
-    const fetchCustomerDataAndDeliveryFee = async () => {
-      if (!order?.userId) {
-        console.log("No userId found in order data");
+useEffect(() => {
+  const fetchCustomerDataAndDeliveryFee = async () => {
+    if (!order?.userId) {
+      console.log("No userId found in order data");
+      return;
+    }
+
+    try {
+      console.log("Fetching customer data for userId:", order.userId);
+      
+      const storedToken = await AsyncStorage.getItem("authToken");
+      if (!storedToken) {
+        console.log("No authentication token found");
+        setError("No authentication token found");
+        setLoading(false);
         return;
       }
-
-      try {
-        console.log("Fetching customer data for userId:", order.userId);
-        
-        const storedToken = await AsyncStorage.getItem("authToken");
-        if (!storedToken) {
-          console.log("No authentication token found");
-          setError("No authentication token found");
-          return;
+      
+      const customerResponse = await axios.get(
+        `${environment.API_BASE_URL}api/orders/get-customer-data/${order.userId}`,
+        {
+          headers: { Authorization: `Bearer ${storedToken}` },
         }
+      );
+      
+      console.log("Customer API response:", customerResponse.data);
+      
+      if (customerResponse.data && customerResponse.data.success) {
+        console.log("Customer data received:", customerResponse.data.data);
+        setCustomerData(customerResponse.data.data);
         
-        // Fetch customer data using userId from order
-        const customerResponse = await axios.get(
-          `${environment.API_BASE_URL}api/orders/get-customer-data/${order.userId}`,
-          {
-            headers: { Authorization: `Bearer ${storedToken}` },
-          }
-        );
+        const customerCity = customerResponse.data.data.buildingDetails?.city;
+        console.log("Customer city:", customerCity);
         
-        console.log("Customer API response:", customerResponse.data);
-        
-        if (customerResponse.data && customerResponse.data.success) {
-          console.log("Customer data received:", customerResponse.data.data);
-          setCustomerData(customerResponse.data.data);
+        if (customerCity) {
+          const cityResponse = await axios.get<{ data: City[] }>(
+            `${environment.API_BASE_URL}api/customer/get-city`,
+            { headers: { Authorization: `Bearer ${storedToken}` }}
+          );
           
-          // Extract city from customer data
-          const customerCity = customerResponse.data.data.buildingDetails?.city;
-          console.log("Customer city:", customerCity);
+          console.log("Cities API response:", cityResponse.data);
           
-          if (customerCity) {
-            // Fetch cities to get delivery charge
-            const cityResponse = await axios.get<{ data: City[] }>(
-              `${environment.API_BASE_URL}api/customer/get-city`,
-              { headers: { Authorization: `Bearer ${storedToken}` }}
-            );
-            
-            console.log("Cities API response:", cityResponse.data);
-            
-            if (cityResponse.data && cityResponse.data.data) {
-              const cityData = cityResponse.data.data.find(c => c.city === customerCity);
-              if (cityData) {
-                const fee = parseFloat(cityData.charge) || 0;
-                setDeliveryFee(fee);
-                console.log(`Setting delivery fee to ${fee} for city ${customerCity}`);
-              } else {
-                console.log(`City ${customerCity} not found in cities list`);
-              }
+          if (cityResponse.data && cityResponse.data.data) {
+            const cityData = cityResponse.data.data.find(c => c.city === customerCity);
+            if (cityData) {
+              const fee = parseFloat(cityData.charge) || 0;
+              setDeliveryFee(fee);
+              console.log(`Setting delivery fee to ${fee} for city ${customerCity}`);
+            } else {
+              console.log(`City ${customerCity} not found in cities list`);
             }
           }
-          
-          // Set data loaded to true after all data is fetched
-          setIsDataLoaded(true);
-        } else {
-          const errorMsg = customerResponse.data?.message || "Failed to fetch customer data";
-          console.log("Customer API error:", errorMsg);
-          setError(errorMsg);
-          setIsDataLoaded(true); // Set to true even on error to show the page
         }
-      } catch (error: any) {
-        console.error("Error fetching customer data:", error);
-        if (axios.isAxiosError(error)) {
-          const errorMsg = error.response?.data?.message || error.message;
-          console.log("Axios error details:", errorMsg);
-          setError(errorMsg);
-        } else {
-          setError("Failed to fetch customer data");
-        }
-        setIsDataLoaded(true); // Set to true even on error to show the page
+        
+        // Stop loading after all data is fetched successfully
+        setLoading(false);
+      } else {
+        const errorMsg = customerResponse.data?.message || "Failed to fetch customer data";
+        console.log("Customer API error:", errorMsg);
+        setError(errorMsg);
+        setLoading(false);
       }
-    };
-
-    // Only fetch customer data when order is available
-    if (order && order.userId) {
-      fetchCustomerDataAndDeliveryFee();
+    } catch (error: any) {
+      console.error("Error fetching customer data:", error);
+      if (axios.isAxiosError(error)) {
+        const errorMsg = error.response?.data?.message || error.message;
+        console.log("Axios error details:", errorMsg);
+        setError(errorMsg);
+      } else {
+        setError("Failed to fetch customer data");
+      }
+      setLoading(false);
     }
-  }, [order]); // Dependency on order object
+  };
+
+  if (order && order.userId) {
+    fetchCustomerDataAndDeliveryFee();
+  }
+}, [order]); // Dependency on order object
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
@@ -732,7 +730,7 @@ if (order?.additionalItems && order.additionalItems.length > 0) {
             margin-top:10px
           "
         >
-         <div class="bold">${order?.isPackage === 1 ? 'Additional Items' : 'Custom Items'} (${order?.additionalItems?.length || 0} Items)</div>
+         <div class="bold">${order?.isPackage === 1 ? 'Additional Items' : 'Custom Items'} (${order?.additionalItems?.length || 0} ${order?.additionalItems?.length === 1 ? 'Item' : 'Items'})</div>
     <div style="font-weight: 550; font-size: 16px">Rs. ${additionalItemsTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</div>
         </div>
         <div style="border: 1px solid #ddd; border-radius: 10px">
@@ -843,11 +841,11 @@ if (order?.additionalItems && order.additionalItems.length > 0) {
       if (Platform.OS === 'android') {
         if (await Sharing.isAvailableAsync()) {
           await Sharing.shareAsync(tempFilePath, shareOptions);
-          Alert.alert(
-            ('Invoice Ready'),
-            ('To save to Downloads, select "Save to device" from the share menu'),
-            [{ text: "OK" }]
-          );
+          // Alert.alert(
+          //   ('Invoice Ready'),
+          //   ('To save to Downloads, select "Save to device" from the share menu'),
+          //   [{ text: "OK" }]
+          // );
         } else {
           Alert.alert(('Error'), ('Sharing is not available on this device'));
         }
@@ -872,14 +870,23 @@ if (order?.additionalItems && order.additionalItems.length > 0) {
     }
   };
 
-  if (loading || !isDataLoaded) {
-    return (
-      <View className="flex-1 inset-0 bg-white/20 bg-white justify-center items-center">
-        <ActivityIndicator size="large" color="#6839CF" />
-        <Text className="mt-4 text-lg text-gray-600">Loading order details...</Text>
-      </View>
-    );
-  }
+  // if (loading || !isDataLoaded) {
+  //   return (
+  //     <View className="flex-1 inset-0 bg-white/20 bg-white justify-center items-center">
+  //       <ActivityIndicator size="large" color="#6839CF" />
+  //       <Text className="mt-4 text-lg text-gray-600">Loading order details...</Text>
+  //     </View>
+  //   );
+  // }
+
+  if (loading) {
+  return (
+    <View className="flex-1 inset-0 bg-white/20 bg-white justify-center items-center">
+      <ActivityIndicator size="large" color="#6839CF" />
+      <Text className="mt-4 text-lg text-gray-600">Loading order details...</Text>
+    </View>
+  );
+}
 
   return (
     <KeyboardAvoidingView 
@@ -898,7 +905,7 @@ if (order?.additionalItems && order.additionalItems.length > 0) {
                 Order is Confirmed!
               </Text>
               <Text style={{ fontSize: 18 }} className="text-[#3F3F3F] text-center mt-2">
-                Order No: {order?.orderStatus?.invoiceNumber}
+                Order No: #{order?.orderStatus?.invoiceNumber}
               </Text>
               <Text style={{ fontSize: 16 }} className="text-[#747474] text-center mt-5">
                 Order Confirmation message and Payment Gateway Link has been sent to your Customer

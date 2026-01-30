@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -10,17 +10,19 @@ import {
   Alert,
   Modal,
   Linking,
+  BackHandler
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import BackButton from "./BackButton";
 import { LinearGradient } from "expo-linear-gradient";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
-import { RouteProp } from "@react-navigation/native";
+import { RouteProp, useFocusEffect } from "@react-navigation/native";
 import axios from "axios";
 import environment from "@/environment/environment";
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { goBack } from "expo-router/build/global-state/routing";
 
 type View_CancelOrderScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -96,7 +98,7 @@ interface CustomerData {
 const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   navigation, route
 }) => {
-  const { orderId, userId ,status } = route.params;
+  const { orderId, userId ,status,reportStatus } = route.params;
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -108,8 +110,17 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
   const [deliveryFee, setDeliveryFee] = useState<number>(0);
   const [isPackage , setIsPackage] = useState();
+   const [returnReason, setReturnReason] = useState<string | null>(null);
+   const [isHoldOrder, setIsHoldOrder] = useState<boolean>(false);
 
   console.log("Route params:", route.params);
+
+  useEffect(() => {
+  // Initialize selectedReportOption with reportStatus from route params
+  if (reportStatus) {
+    setSelectedReportOption(reportStatus);
+  }
+}, [reportStatus]);
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
@@ -141,6 +152,46 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
 
     fetchOrderDetails();
   }, [orderId]);
+
+
+  useEffect(() => {
+  const fetchHoldStatus = async () => {
+    console.log("Fetching hold status for orderId:", orderId);
+    
+    // Check hold status for ALL orders, not just those with status "Hold"
+    // An order might have been held and then resumed to "On the way" or "Delivered"
+    try {
+      const storedToken = await AsyncStorage.getItem("authToken");
+      
+      if (!storedToken) {
+        console.log("No authentication token found for hold status");
+        return;
+      }
+
+      const response = await axios.get(
+        `${environment.API_BASE_URL}api/orders/get-hold-reason/${orderId}`,
+        { headers: { Authorization: `Bearer ${storedToken}` }}
+      );
+      
+      console.log("Hold status API response:", response.data);
+      
+      if (response.data.success && response.data.data) {
+        // Set isHoldOrder to true if the order was ever held (isHold from backend)
+        setIsHoldOrder(response.data.data.isHold);
+        console.log("Order hold history - isHold:", response.data.data.isHold);
+      } else {
+        // If no hold data found, set to false
+        setIsHoldOrder(false);
+      }
+    } catch (error) {
+      console.error("Error fetching hold status:", error);
+      // On error, default to false to prevent UI issues
+      setIsHoldOrder(false);
+    }
+  };
+
+  fetchHoldStatus();
+}, [orderId]);
 
   const fetchDeliveryFee = async (fullAddress: string, customerUserId?: number) => {
     try {
@@ -258,6 +309,44 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   };
 
   console.log("Current delivery fee:", deliveryFee);
+
+
+    useEffect(() => {
+    const fetchReturnReason = async () => {
+
+      console.log("retun reqon000000000000")
+      if (status === "Return") {
+        try {
+          const storedToken = await AsyncStorage.getItem("authToken");
+          
+          if (!storedToken) {
+            console.log("No authentication token found for return reason");
+            return;
+          }
+console.log("before----------------")
+          const response = await axios.get(
+            `${environment.API_BASE_URL}api/orders/get-return-reason/${orderId}`,
+            { headers: { Authorization: `Bearer ${storedToken}` }}
+          );
+          
+          console.log("Return reason API response:", response.data);
+          
+          if (response.data.success && response.data.data) {
+            setReturnReason(response.data.data.returnReason);
+          }
+        } catch (error) {
+          console.error("Error fetching return reason:", error);
+          // Don't show error to user, just log it
+        }
+      }
+    };
+
+    fetchReturnReason();
+  }, [orderId, status]);
+
+
+  console.log("/////////////////",isHoldOrder)
+
   
 
   const formatDateShort = (dateString: string) => {
@@ -317,7 +406,9 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   return actualStatus === "On the way" || 
          actualStatus === "Processing" || 
          actualStatus === "Out For Delivery" ||
+         actualStatus === "Collected" ||
          actualStatus === "Delivered" || 
+         actualStatus === "Return"||
          actualStatus === "Cancelled";
 };
 
@@ -415,22 +506,49 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
     }
   };
   
- 
+
 const isTimelineItemActive = (status: string) => {
   if (!order) return false;
-  const orderStatuses = ["Ordered", "Processing", "Out For Delivery", "On the way", "Delivered"];
+  
+  const orderStatuses = [
+    "Ordered", 
+    "Processing", 
+    "Out For Delivery", 
+    "Collected",
+    "On the way", 
+    "Hold",
+    "Delivered"
+  ];
+  
   const actualStatus = getActualStatus();
   
-
+  // Handle Cancelled orders - only show Ordered and Cancelled as active
   if (actualStatus === "Cancelled") {
     return status === "Ordered" || status === "Cancelled";
   }
   
-
+  // Handle Return orders - show all steps up to and including Return
+  if (actualStatus === "Return") {
+    return status !== "Delivered" && status !== "Cancelled";
+  }
+  
+  // Special handling for Hold status
+  if (status === "Hold") {
+ 
+    return actualStatus === "Hold" || 
+           (actualStatus === "On the way" && isHoldOrder) ||
+           (actualStatus === "Delivered" && isHoldOrder);
+  }
+  
+  // For Delivered status with hold history
+  if (status === "Delivered" && isHoldOrder && actualStatus === "Delivered") {
+    return true;
+  }
+  
+  // Standard timeline progression
   const currentIndex = orderStatuses.indexOf(actualStatus);
   const itemIndex = orderStatuses.indexOf(status);
   
-
   if (itemIndex === -1) return false;
   
   return itemIndex <= currentIndex;
@@ -554,6 +672,20 @@ const formatPrice = (price: string | number): string => {
         setLoading(false);
       }
     };
+
+      useFocusEffect(
+        useCallback(() => {
+          const onBackPress = () => {
+            navigation.goBack();
+            return true;
+          };
+    
+          const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    
+          return () => backHandler.remove();
+        }, [navigation])
+      );
+      
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -598,7 +730,7 @@ const formatPrice = (price: string | number): string => {
       <View 
         className={`p-1.5 rounded-full absolute -left-8 ${isTimelineItemActive("Ordered") ? "bg-[#6C3CD1]  border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`} 
       />
-      <Text className="text-gray-800 font-medium">
+      <Text className="text-[#5E5E5E] font-medium">
         Order Placed {formatDateShort(order.createdAt)}
       </Text>
     </View>
@@ -608,7 +740,7 @@ const formatPrice = (price: string | number): string => {
       <View 
         className={`p-1.5 rounded-full  absolute -left-8 ${isTimelineItemActive("Processing") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`} 
       />
-      <Text className="text-gray-800 font-medium">
+      <Text className="text-[#5E5E5E] font-medium">
         Order is Processing
       </Text>
     </View>
@@ -616,8 +748,18 @@ const formatPrice = (price: string | number): string => {
       <View 
         className={`p-1.5 rounded-full  absolute -left-8 ${isTimelineItemActive("Out For Delivery") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`} 
       />
-      <Text className="text-gray-800 font-medium">
+      <Text className="text-[#5E5E5E] font-medium">
         Order is Out for Delivery
+      </Text>
+    </View>
+
+
+     <View className="flex-row items-center mb-10">
+      <View 
+        className={`p-1.5 rounded-full  absolute -left-8 ${isTimelineItemActive("Collected") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`} 
+      />
+      <Text className="text-[#5E5E5E] font-medium">
+        Driver has Collected the order
       </Text>
     </View>
 
@@ -628,21 +770,123 @@ const formatPrice = (price: string | number): string => {
       <View 
         className={`p-1.5 rounded-full  absolute -left-8 ${isTimelineItemActive("On the way") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`} 
       />
-      <Text className="text-gray-800 font-medium">
+      <Text className="text-[#5E5E5E] font-medium">
         Order is On the way
       </Text>
     </View>
 
     {/* Delivered - Last item in normal flow */}
-    <View className={`flex-row items-center ${status === "Cancelled" ? "mb-10" : ""}`}>
+     <View className={`flex-row items-center ${status === "Cancelled" ? "mb-10" : ""}`}>
+    {status !== "Return" &&  status !== "Hold" &&  !isHoldOrder &&(
+   
+         <View className={`flex-row items-center`}>
+      
       <View 
         className={`p-1.5 rounded-full  absolute -left-8 ${isTimelineItemActive("Delivered") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`} 
       />
-      <Text className="text-gray-800 font-medium">
+      <Text className="text-[#5E5E5E] font-medium">
         Order is Delivered
       </Text>
     </View>
+    )}
+    </View>
 
+    {status === "Return" && (
+      <View className="flex-row items-center">
+        <View 
+          className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]"
+        />
+        <Text className=" font-medium text-[#5E5E5E]">
+          Order marked as Return
+        </Text>
+      </View>
+    )}
+
+
+
+      {(status === "Hold" || (status === "On the way" && isHoldOrder) || (status === "Delivered" && isHoldOrder)) && (
+      <View className="flex-row items-center mb-10">
+        <View 
+          className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]"
+        />
+        <Text className="text-[#5E5E5E] font-medium">
+          Driver marked order as Hold
+        </Text>
+      </View>
+    )}
+
+    { status === "Hold" && (
+    
+      <View className="flex-row items-center mb-10">
+        <View 
+          className="p-1.5 rounded-full absolute -left-8 bg-[#CDCDCD] border-4 border-[#F4EDFF]"
+        />
+        <Text className="text-[#5E5E5E] font-medium">
+         Order is On the way
+        </Text>
+      </View>
+    )}
+
+        {status === "Hold" && (
+    
+      <View className="flex-row items-center">
+        <View 
+          className="p-1.5 rounded-full absolute -left-8 bg-[#CDCDCD] border-4 border-[#F4EDFF]"
+        />
+        <Text className="text-[#5E5E5E] font-medium">
+          Order is Delivered
+        </Text>
+      </View>
+    )}
+
+
+
+   {isHoldOrder && status === "On the way" && (
+      <View className="flex-row items-center mb-10">
+        <View 
+          className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]"
+        />
+        <Text className="text-[#5E5E5E] font-medium">
+          Order is On the way
+        </Text>
+      </View>
+    )}
+
+     {isHoldOrder && status === "On the way" && (
+    
+      <View className="flex-row items-center">
+        <View 
+          className="p-1.5 rounded-full absolute -left-8 bg-[#CDCDCD] border-4 border-[#F4EDFF]"
+        />
+        <Text className="text-[#5E5E5E] font-medium">
+          Order is Delivered
+        </Text>
+      </View>
+    )}
+
+       {isHoldOrder && status === "Delivered" && (
+      <View className="flex-row items-center mb-10">
+        <View 
+          className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]"
+        />
+        <Text className="text-[#5E5E5E] font-medium">
+          Order is On the way
+        </Text>
+      </View>
+    )}
+
+    
+   {isHoldOrder && status === "Delivered" && (
+    
+      <View className="flex-row items-center">
+        <View 
+          className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]"
+        />
+        <Text className="text-[#5E5E5E] font-medium">
+          Order is Delivered
+        </Text>
+      </View>
+    )}
     {/* Order Cancelled - Show ONLY if order is cancelled */}
     {status === "Cancelled" && (
       <View className="flex-row items-center">
@@ -654,7 +898,16 @@ const formatPrice = (price: string | number): string => {
         </Text>
       </View>
     )}
+
+    
   </View>
+
+  {status === "Return" && returnReason && (
+                <View className="mt-[-7] ml-2 p-4 ">
+                  <Text className=" font-semibold mb-1 text-[#5E5E5E]">Reason: <Text className="text-black"> "{returnReason}"</Text></Text>
+                
+                </View>
+              )}
 </View>
 
             {/* Customer Information */}
@@ -771,15 +1024,26 @@ const formatPrice = (price: string | number): string => {
             </View>
             
 
-            {showStatusMessage && (
-              <View className="mx-4 mt-2 p-2 rounded-lg">
-                <Text className="text-red-500 font-medium text-center">
-                  {selectedReportOption}
-                </Text>
-                
-              </View>
-            )}
-            <Text className="text-red-500 font-medium text-center mb-2">{order.reportStatus}</Text>
+     
+            {/* {order.reportStatus && (
+  <View className="mx-4 mb-3 p-3 bg-gray-100 rounded-lg">
+    <Text className="text-red-500 font-medium text-center">
+      {order.reportStatus}
+    </Text>
+  </View>
+)}
+  )} */}
+
+            <Text className="text-red-500 font-medium text-center mb-2">{selectedReportOption} </Text>
+
+{/* Display report status - priority: order.reportStatus > route param reportStatus */}
+{/* {order?.reportStatus || reportStatus ? (
+  <View className="mx-4 mb-3 p-3 ">
+    <Text className="text-red-500 font-medium text-center">
+      {order?.reportStatus || reportStatus}
+    </Text>
+  </View>
+) : null} */}
             
 
             {/* Report Status Button - Only shown when not Ordered or Cancelled */}
@@ -798,6 +1062,29 @@ const formatPrice = (price: string | number): string => {
     </LinearGradient>
   </TouchableOpacity>
 )}
+
+{/* {status !== "Cancelled" && (
+  <TouchableOpacity 
+    onPress={handleReportStatus}
+    disabled={reportStatus !== null}
+    className={`mx-5 mb-3 rounded-full px-14 ${reportStatus !== null ? 'opacity-50' : ''}`}
+  >
+    {reportStatus !== null ? (
+      <View className="bg-gray-400 py-3 rounded-full items-center">
+        <Text className="text-white text-center font-semibold">Report Status</Text>
+      </View>
+    ) : (
+      <LinearGradient
+        colors={["#6839CF", "#874DDB"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        className="py-3 rounded-full items-center"
+      >
+        <Text className="text-white text-center font-semibold">Report Status</Text>
+      </LinearGradient>
+    )}
+  </TouchableOpacity>
+)} */}
 
             {/* Cancel Order Button */}
             <TouchableOpacity 
@@ -864,63 +1151,89 @@ const formatPrice = (price: string | number): string => {
 </Modal>
 
 <Modal
-        animationType="slide"
-        transparent={true}
-        visible={reportModalVisible}
-        onRequestClose={() => setReportModalVisible(false)}
-      >
-        <View className="flex-1 justify-center items-center bg-black/50">
-          <View className="bg-white rounded-lg p-5 w-5/6 max-w-md">
-            
+  animationType="slide"
+  transparent={true}
+  visible={reportModalVisible}
+  onRequestClose={() => setReportModalVisible(false)}
+>
+  <View className="flex-1 justify-center items-center bg-black/50">
+    <View className="bg-white rounded-lg p-5 w-5/6 max-w-md">
+    
 
-            {/* Status Options */}
-            <View className="mb-4">
-              <TouchableOpacity 
-                className="flex-row items-center justify-between p-3 mb-2" 
-                onPress={() => setSelectedReportOption("Confirmed")}
-              >
-                <Text className="text-black font-medium">Confirmed</Text>
-                <View className={`w-6 h-6 border border-gray-400 rounded ${selectedReportOption === "Confirmed" ? "bg-[#6C3CD1]" : "bg-white"}`} />
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                className="flex-row items-center justify-between p-3 mb-2" 
-                onPress={() => setSelectedReportOption("Not-Confirmed")}
-              >
-                <Text className="text-black font-medium">Not-Confirmed</Text>
-                <View className={`w-6 h-6 border border-gray-400 rounded ${selectedReportOption === "Not-Confirmed" ? "bg-[#6C3CD1]" : "bg-white"}`} />
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                className="flex-row items-center justify-between p-3 mb-6" 
-                onPress={() => setSelectedReportOption("Not-Answered")}
-              >
-                <Text className="text-black font-medium">Not-Answered</Text>
-                <View className={`w-6 h-6 border border-gray-400 rounded ${selectedReportOption === "Not-Answered" ? "bg-[#6C3CD1]" : "bg-white"}`} />
-              </TouchableOpacity>
-            </View>
-
-            {/* Buttons */}
-            <TouchableOpacity 
-              onPress={handleConfirmReport}
-              className="mb-3 rounded-lg overflow-hidden"
-            >
-              <View className="bg-black py-3 rounded-lg items-center">
-                <Text className="text-white text-center font-semibold">Confirm</Text>
+      {/* Status Options */}
+      <View className="mb-4">
+        <TouchableOpacity 
+          className="flex-row items-center justify-between p-3 mb-2 rounded-lg" 
+          onPress={() => setSelectedReportOption("Confirmed")}
+        >
+          <Text className="text-black font-medium">Confirmed</Text>
+          <View className={`w-6 h-6 rounded-lg border-2 ${selectedReportOption === "Confirmed" ? "border-[#6C3CD1] bg-[#6C3CD1]" : "border-gray-400 bg-white"}`}>
+            {selectedReportOption === "Confirmed" && (
+              <View className="flex-1 items-center justify-center">
+                <Feather name="check" size={16} color="white" />
               </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              onPress={() => setReportModalVisible(false)}
-              className="rounded-lg"
-            >
-              <View className="bg-gray-200 py-3 rounded-lg items-center">
-                <Text className="text-black text-center font-semibold">Cancel</Text>
-              </View>
-            </TouchableOpacity>
+            )}
           </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          className="flex-row items-center justify-between p-3 mb-2  rounded-lg" 
+          onPress={() => setSelectedReportOption("Not-Confirmed")}
+        >
+          <Text className="text-black font-medium">Not-Confirmed</Text>
+          <View className={`w-6 h-6 rounded-lg border-2 ${selectedReportOption === "Not-Confirmed" ? "border-[#6C3CD1] bg-[#6C3CD1]" : "border-gray-400 bg-white"}`}>
+            {selectedReportOption === "Not-Confirmed" && (
+              <View className="flex-1 items-center justify-center">
+                <Feather name="check" size={16} color="white" />
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          className="flex-row items-center justify-between p-3 mb-6 " 
+          onPress={() => setSelectedReportOption("Not-Answered")}
+        >
+          <Text className="text-black font-medium">Not-Answered</Text>
+          <View className={`w-6 h-6 rounded-lg border border-black border-2 ${selectedReportOption === "Not-Answered" ? "border-[#6C3CD1] bg-[#6C3CD1]" : "border-gray-400 bg-white"}`}>
+            {selectedReportOption === "Not-Answered" && (
+              <View className="flex-1 items-center justify-center">
+                <Feather name="check" size={16} color="white" />
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+      </View>
+
+      {/* Buttons */}
+      <TouchableOpacity 
+        onPress={handleConfirmReport}
+        className="mb-3 rounded-full mx-7 overflow-hidden"
+        disabled={!selectedReportOption}
+      >
+        <LinearGradient
+          colors={selectedReportOption ? ["#040404ff", "#030203ff"] : ["#CCCCCC", "#CCCCCC"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          className="py-3 rounded-full items-center"
+        >
+          <Text className={`text-center font-semibold ${selectedReportOption ? "text-white" : "text-gray-600"}`}>
+            Confirm
+          </Text>
+        </LinearGradient>
+      </TouchableOpacity>
+
+      <TouchableOpacity 
+        onPress={() => setReportModalVisible(false)}
+        className="rounded-full mx-7"
+      >
+        <View className="bg-gray-200 py-3 rounded-full items-center">
+          <Text className="text-black text-center font-semibold">Cancel</Text>
         </View>
-      </Modal>
+      </TouchableOpacity>
+    </View>
+  </View>
+</Modal>
     </KeyboardAvoidingView>
   );
 };

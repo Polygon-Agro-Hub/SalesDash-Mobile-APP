@@ -41,7 +41,9 @@
         "SYSTEM_ALERT_WINDOW",
         "NOTIFICATIONS",
         "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS"
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
       ]
     },
     "web": {
@@ -90,7 +92,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "3b6a2028-7552-4b98-8ba2-55cbf31b9c8f"
+        "projectId": "9381cace-57ce-4e1e-82d4-1207a81ed50e"
       }
     }
   }

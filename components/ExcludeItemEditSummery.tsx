@@ -27,6 +27,7 @@ import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { AntDesign } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
 import { navigate } from "expo-router/build/global-state/routing";
+
 type ExcludeItemEditSummeryNavigationProp = StackNavigationProp<
   RootStackParamList,
   "ExcludeItemEditSummery"
@@ -41,9 +42,10 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
   route,
   navigation,
 }) => {
-   const { id , customerId,name, title} = route.params;
-   console.log("customer IDccccccccccc",id)
+  const { id, customerId, name, title } = route.params;
+  console.log("customer IDccccccccccc", id)
   const [crops, setCrops] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [customerName, setCustomerName] = useState<{
     firstName: string;
     lastName: string;
@@ -59,26 +61,24 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
   useFocusEffect(
     useCallback(() => {
       const fetchProducts = async () => {
-    setCrops([]);
-      setCustomerName({
-        firstName: "",
-        lastName: "",
-        title: "",
-        cusId: "",
-      });
+        setLoading(true); // Set loading to true when starting fetch
+        setCrops([]);
+        setCustomerName({
+          firstName: "",
+          lastName: "",
+          title: "",
+          cusId: "",
+        });
         try {
-          // setLoading(true);
-
           const storedToken = await AsyncStorage.getItem("authToken");
           if (!storedToken) {
-            //   setError("No authentication token found");
-            //   setLoading(false);
+            setLoading(false);
             return;
           }
 
           const apiUrl = `${environment.API_BASE_URL}api/customer/excludelist`;
           const response = await axios.get(apiUrl, {
-            params: { customerId:id },
+            params: { customerId: id },
             headers: { Authorization: `Bearer ${storedToken}` },
           });
 
@@ -88,21 +88,18 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
             setCrops(response.data.data);
           }
           if (response.data && response.data.data.length > 0) {
-            const { firstName, lastName, title, cusId } = response.data.data[0]; // Assuming first crop contains the name
+            const { firstName, lastName, title, cusId } = response.data.data[0];
             setCustomerName({ firstName, lastName, title, cusId });
           }
         } catch (err) {
           console.error("Failed to fetch products:", err);
-          // setError("Failed to load products. Please try again.");
         } finally {
-          // setLoading(false);
+          setLoading(false); // Set loading to false when done
         }
       };
 
       fetchProducts();
-      return () => {
-        // Optionally clean up if needed (e.g., abort requests or reset state)
-      };
+      return () => { };
     }, [id])
   );
 
@@ -150,11 +147,11 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
     useCallback(() => {
       const onBackPress = () => {
         // Navigate to ViewCustomerScreen instead of going back to main dashboard
-        navigation.navigate("ViewCustomerScreen" as any, { 
-          id: id, 
-          customerId: customerId, 
-          name: name, 
-          title: title 
+        navigation.navigate("ViewCustomerScreen" as any, {
+          id: id,
+          customerId: customerId,
+          name: name,
+          title: title
         });
         return true; // Prevent default back behavior
       };
@@ -165,18 +162,25 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
     }, [navigation, id, customerId, name, title])
   );
 
+  const hasExcludedItems = () => {
+    return crops.length > 0 && crops.some((crop) => crop.excludeId !== null);
+  };
+  const getButtonText = () => {
+    return hasExcludedItems() ? "Add more" : "Add";
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       enabled
-       style={{ flex: 1}}
+      style={{ flex: 1 }}
       className="bg-white"
     >
       <View className="flex bg-white px-3">
         <View className="bg-white flex-row items-center h-17  px-1">
           <TouchableOpacity
             style={{ paddingHorizontal: wp(2), paddingVertical: hp(2) }}
-                onPress={() => navigation.navigate("ViewCustomerScreen" as any, { id: id, customerId:customerId, name: name, title:title })}
+            onPress={() => navigation.navigate("ViewCustomerScreen" as any, { id: id, customerId: customerId, name: name, title: title })}
           >
             <View className="w-9 h-9 bg-[#F6F6F680] rounded-full justify-center items-center">
               <AntDesign name="left" size={20} color="black" />
@@ -204,15 +208,15 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
 
         <View className="px-6 mt-10">
           <Text className="text-[#874CDB] text-sm font-semibold">
-            Preferred Items to Exclue
+            Preferred Items to Exclude
           </Text>
           <View className="bg-gray-300 h-[1px] mt-2" />
         </View>
 
         <ScrollView keyboardShouldPersistTaps="handled" className="mb-[90%]">
           <View className="px-6 mt-4">
-          {crops.length === 0 || crops.every((crop) => crop.excludeId === null) ? (
-                 <View
+            {loading ? (
+              <View
                 style={{
                   flex: 1,
                   justifyContent: "center",
@@ -220,28 +224,41 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
                   height: hp("60%"),
                 }}
               >
-                  <View className="flex-1 justify-center items-center px-4 ">
                 <LottieView
-                  source={require("../assets/images/NoComplaints.json")}
-                  style={{ width: wp(50), height: hp(50) }}
+                  source={require("../assets/images/loading.json")} 
+                  style={{ width: wp(40), height: hp(40) }}
                   autoPlay
                   loop
                 />
+                <Text className="text-center text-lg text-gray-500 mt-4">
+                  Loading...
+                </Text>
               </View>
-              <View className="mt-[-20]">
-                <Text className="text-center text-lg text-gray-500 mt-[-40%]">No Exclude Item Found</Text>
+            ) : crops.length === 0 || crops.every((crop) => crop.excludeId === null) ? (
+              <View
+                style={{
+                  flex: 1,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  height: hp("60%"),
+                }}
+              >
+                <View className="flex-1 justify-center items-center px-4 ">
+                  <LottieView
+                    source={require("../assets/images/NoComplaints.json")}
+                    style={{ width: wp(50), height: hp(50) }}
+                    autoPlay
+                    loop
+                  />
+                </View>
+                <View className="mt-[-20]">
+                  <Text className="text-center text-lg text-gray-500 mt-[-40%]">
+                    No Exclude Item Found
+                  </Text>
                 </View>
               </View>
-              // <View className="flex-1 justify-center items-center px-4 ">
-              //   <LottieView
-              //     source={require("../assets/images/NoComplaints.json")}
-              //     style={{ width: wp(50), height: hp(50) }}
-              //     autoPlay
-              //     loop
-              //   />
-              // </View>
-              
             ) : (
+              // Show crops list
               crops.map((crop) => (
                 <View
                   key={crop.excludeId}
@@ -270,18 +287,18 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
                   </TouchableOpacity>
                 </View>
               ))
-            )}
+            )}0
           </View>
         </ScrollView>
       </View>
       <TouchableOpacity
         className="absolute bottom-[14%] left-0 right-0 items-center "
-        onPress={() => navigation.navigate("ExcludeAddMore", { 
-                id:id,                   
-                customerId: customerId,
-                name: name,
-                title: title 
-              })}
+        onPress={() => navigation.navigate("ExcludeAddMore", {
+          id: id,
+          customerId: customerId,
+          name: name,
+          title: title
+        })}
       >
         <LinearGradient
           colors={["#6C3CD1", "#9B65D6"]}
@@ -295,8 +312,11 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
             justifyContent: "center",
           }}
         >
-          <Text style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}>
+          {/* <Text style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}>
             Add More
+          </Text> */}
+          <Text style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}>
+            {getButtonText()}
           </Text>
         </LinearGradient>
       </TouchableOpacity>

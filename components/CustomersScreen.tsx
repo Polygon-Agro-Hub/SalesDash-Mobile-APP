@@ -343,7 +343,7 @@ const handleSearch = (query: string) => {
               <TouchableOpacity
                 style={{ zIndex: 1000 }}
                 className="absolute bottom-20 right-6 bg-[#7743D4] w-14 h-14 rounded-full items-center justify-center shadow-lg mb-1"
-                onPress={() => navigation.navigate("AddCustomersScreen")}
+                onPress={() => navigation.navigate("AddCustomersScreen" as any)}
               >
                 <Image source={require("../assets/images/plus.webp")} className="w-6 h-6" resizeMode="contain" />
               </TouchableOpacity>
@@ -394,7 +394,7 @@ const handleSearch = (query: string) => {
                     <TouchableOpacity
                       onPress={() =>
                         navigation.navigate("ViewCustomerScreen", {
-                          name: item.firstName,
+                          name: `${item.firstName} ${item.lastName}`,
                           title: item.title,
                           number: item.phoneNumber,
                           customerId: item.cusId,
@@ -402,12 +402,23 @@ const handleSearch = (query: string) => {
                         })
                       }
                     >
-                      <View className="bg-white shadow-md p-4 mb-3 mx-3 flex-row justify-between items-center rounded-lg border border-gray-200">
+                      {/* <View className="bg-white shadow-md p-4 mb-3 mx-3 flex-row justify-between items-center rounded-lg border border-gray-200">
                         <View>
                           <Text className="text-gray-700 font-semibold">{item.title}.{item.firstName} {item.lastName}</Text>
                           <Text className="text-gray-500 text-sm">{formatPhoneNumber(item.phoneNumber)}</Text>
                         </View>
                         <Text className="text-gray-700 font-semibold">#{item.orderCount < 10 ? `0${item.orderCount}` : item.orderCount}</Text>
+                      </View> */}
+                      <View className="bg-white shadow-md p-4 mb-3 mx-3 flex-row justify-between items-center rounded-lg border border-gray-200">
+                        <View className="flex-1 mr-3">
+                          <Text className="text-gray-700 font-semibold" numberOfLines={2} ellipsizeMode="tail">
+                            {item.title}.{item.firstName} {item.lastName}
+                          </Text>
+                          <Text className="text-gray-500 text-sm">{formatPhoneNumber(item.phoneNumber)}</Text>
+                        </View>
+                        <View className="items-end justify-center" style={{ minWidth: 45 }}>
+                          <Text className="text-gray-700 font-semibold">#{item.orderCount < 10 ? `0${item.orderCount}` : item.orderCount}</Text>
+                        </View>
                       </View>
                     </TouchableOpacity>
                   )}

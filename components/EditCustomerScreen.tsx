@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Keyboard, KeyboardAvoidingView,  Alert, ActivityIndicator, BackHandler } from "react-native";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { View, Text, ScrollView, TextInput, TouchableOpacity, Keyboard, KeyboardAvoidingView,  Alert, ActivityIndicator, BackHandler, Linking } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./types";
 import { LinearGradient } from "expo-linear-gradient";
@@ -10,7 +10,7 @@ import environment from "@/environment/environment";
 import DropDownPicker from "react-native-dropdown-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SelectList } from "react-native-dropdown-select-list";
-import { AntDesign } from "@expo/vector-icons";
+import { AntDesign, Entypo, FontAwesome6 } from "@expo/vector-icons";
 import { useFocusEffect } from '@react-navigation/native';
 import { StatusBar, Platform } from "react-native";
 
@@ -50,6 +50,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
   const [buildingType, setBuildingType] = useState<string>("");
   const [originalBuildingType, setOriginalBuildingType] = useState<string>("");
   const [originalPhoneNumber, setOriginalPhoneNumber] = useState<string>("");
+
   
   // UI & Validation state
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -107,6 +108,14 @@ const [floorNoError, setFloorNoError] = useState<string>("");
   const [openCityDropdown, setOpenCityDropdown] = useState(false);
   const [cityItems, setCityItems] = useState<{label: string, value: string}[]>([]);
   const [originalEmail, setOriginalEmail] = useState('');
+
+  const isReturningFromMapRef = useRef(false);
+const lastFetchedIdRef = useRef<string | null>(null);
+const hasLoadedOnce = useRef(false);
+  // Add these states after line 44 (after originalPhoneNumber state)
+const [latitude, setLatitude] = useState<string>("");
+const [longitude, setLongitude] = useState<string>("");
+const [locationName, setLocationName] = useState<string>("");
   const [buildingTypeItems, setBuildingTypeItems] = useState([
     { label: "House", value: "House" },
     { label: "Apartment", value: "Apartment" },
@@ -448,6 +457,9 @@ useEffect(() => {
     getToken();
   }, []);
 
+
+
+
 const resetFormState = () => {
   setSelectedCategory("");
   setFirstName("");
@@ -466,6 +478,11 @@ const resetFormState = () => {
   setOriginalBuildingType("");
   setOriginalPhoneNumber("");
   setOriginalEmail("");
+  
+  // Add these lines
+  setLatitude("");
+  setLongitude("");
+  setLocationName("");
   
   // Reset ALL error states
   setFirstNameError("");
@@ -500,74 +517,148 @@ const resetFormState = () => {
   });
 };
 
+  // Add this after your other useEffects (around line 450)
+useEffect(() => {
+  console.log("Location state updated:", {
+    latitude,
+    longitude,
+    locationName,
+    hasLocation: !!(latitude && longitude)
+  });
+}, [latitude, longitude, locationName]);
+
+
   const dismissKeyboard = () => {
       Keyboard.dismiss();
     };
  
-    const fetchCustomerData = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get(
-        `${environment.API_BASE_URL}api/customer/get-customer-data/${id}`
-      );
-      
-      if (response.status === 200) {
-        const customerData = response.data.customer;
-        const buildingData = response.data.building;
+const fetchCustomerData = async () => {
+  try {
+    setLoading(true);
+    const response = await axios.get(
+      `${environment.API_BASE_URL}api/customer/get-customer-data/${id}`
+    );
+    
+    if (response.status === 200) {
+      const customerData = response.data.customer;
+      const buildingData = response.data.building;
 
-        setSelectedCategory(customerData.title || "");
-        setFirstName(customerData.firstName || "");
-        setLastName(customerData.lastName || "");
-        setPhoneNumber(customerData.phoneNumber || "");
-        setEmail(customerData.email || "");
-        setBuildingType(customerData.buildingType || "");
-        setOriginalBuildingType(customerData.buildingType || "");
-        setOriginalPhoneNumber(customerData.phoneNumber || "");
-        setOriginalEmail(customerData.email || '');
-        
-        if (buildingData) {
-          if (customerData.buildingType === "House") {
-            setHouseNo(buildingData.houseNo || "");
-            setStreetName(buildingData.streetName || "");
-            setCity(buildingData.city || "");
-          } else if (customerData.buildingType === "Apartment") {
-            setBuildingNo(buildingData.buildingNo || "");
-            setBuildingName(buildingData.buildingName || "");
-            setUnitNo(buildingData.unitNo || "");
-            setFloorNo(buildingData.floorNo || "");
-            setHouseNo(buildingData.houseNo || "");
-            setStreetName(buildingData.streetName || "");
-            setCity(buildingData.city || "");
-          }
+      setSelectedCategory(customerData.title || "");
+      setFirstName(customerData.firstName || "");
+      setLastName(customerData.lastName || "");
+      setPhoneNumber(customerData.phoneNumber || "");
+      setEmail(customerData.email || "");
+      setBuildingType(customerData.buildingType || "");
+      setOriginalBuildingType(customerData.buildingType || "");
+      setOriginalPhoneNumber(customerData.phoneNumber || "");
+      setOriginalEmail(customerData.email || '');
+      
+      // Add these lines to load geolocation data
+      setLatitude(customerData.latitude || "");
+      setLongitude(customerData.longitude || "");
+      
+      if (buildingData) {
+        if (customerData.buildingType === "House") {
+          setHouseNo(buildingData.houseNo || "");
+          setStreetName(buildingData.streetName || "");
+          setCity(buildingData.city || "");
+        } else if (customerData.buildingType === "Apartment") {
+          setBuildingNo(buildingData.buildingNo || "");
+          setBuildingName(buildingData.buildingName || "");
+          setUnitNo(buildingData.unitNo || "");
+          setFloorNo(buildingData.floorNo || "");
+          setHouseNo(buildingData.houseNo || "");
+          setStreetName(buildingData.streetName || "");
+          setCity(buildingData.city || "");
         }
       }
-    } catch (error) {
-      console.error(error);
-      Alert.alert("Error", "Failed to load customer data.");
-    } finally {
-      setLoading(false);
     }
-  };
+  } catch (error) {
+    console.error(error);
+    Alert.alert("Error", "Failed to load customer data.");
+  } finally {
+    setLoading(false);
+  }
+};
+  const handleLocationSelect = (lat: number, lng: number, name: string) => {
+  console.log("handleLocationSelect called with:", { lat, lng, name });
+  setLatitude(lat.toString());
+  setLongitude(lng.toString());
+  setLocationName(name);
+  isReturningFromMapRef.current = true; // Mark as returning from map
+};
 
-  // Use focus effect to handle screen navigation
+
   useFocusEffect(
-    React.useCallback(() => {
-      let isActive = true;
-
+  React.useCallback(() => {
+    console.log("🏠 EditCustomerScreen focused - id:", id);
+    console.log("🗺️ Returning from map?:", isReturningFromMapRef.current);
+    
+    // 1. If returning from map, keep all data including location
+    if (isReturningFromMapRef.current) {
+      console.log("📍 Preserving map data for customer:", id);
+      isReturningFromMapRef.current = false; // Reset flag
+      return; // Exit early - don't reload data
+    }
+    
+    // 2. Check if we need to load data
+    const shouldLoadData = !hasLoadedOnce.current || lastFetchedIdRef.current !== id;
+    
+    if (shouldLoadData) {
+      console.log("🔄 Loading fresh data for customer:", id);
+      
       const loadData = async () => {
-        if (isActive) {
-          resetFormState(); // Reset form first
-          await fetchCustomerData(); // Then fetch fresh data
+        try {
+          setLoading(true);
+          
+          // Clear all fields before loading new customer data
+          resetFormState();
+          
+          // Fetch the data
+          await fetchCustomerData();
+          
+          // Mark as loaded
+          hasLoadedOnce.current = true;
+          lastFetchedIdRef.current = id;
+          
+          console.log("✅ Data loaded for customer:", id);
+        } catch (error) {
+          console.error("❌ Error loading customer data:", error);
+          Alert.alert("Error", "Failed to load customer data.");
+        } finally {
+          setLoading(false);
         }
       };
-
+      
       loadData();
+    } else {
+      console.log("✅ Already have data for customer:", id);
+    }
+    
+    return () => {
+      console.log("👋 EditCustomerScreen blurred");
+    };
+  }, [id]) // This will reload when customer ID changes
+);
 
-      return () => {
-        isActive = false;
-      };
-    }, [id]) // Add any dependencies that should trigger a refetch
-  );
+// Also add this useEffect to handle component unmount
+useEffect(() => {
+  return () => {
+    // Reset the map flag when component unmounts
+    isReturningFromMapRef.current = false;
+  };
+}, []);
+
+
+  const navigateToMapScreen = () => {
+    console.log("Navigating to map with:", { latitude, longitude });
+    isReturningFromMapRef.current = true; // Mark before navigation
+    navigation.navigate("AttachGeoLocationScreenEdit" as any, {
+      currentLatitude: latitude ? parseFloat(latitude) : undefined,
+      currentLongitude: longitude ? parseFloat(longitude) : undefined,
+      onLocationSelect: handleLocationSelect,
+    });
+  };
 
   useEffect(() => {
     const fetchCity = async () => {
@@ -1018,14 +1109,16 @@ if (!selectedCategory || !firstName || !lastName || !phoneNumber || !buildingTyp
     }
 
     // Prepare data for update
-    const customerData = {
-      title: selectedCategory,
-      firstName,
-      lastName,
-      phoneNumber,
-      email,
-      buildingType,
-    };
+const customerData = {
+  title: selectedCategory,
+  firstName,
+  lastName,
+  phoneNumber,
+  email,
+  buildingType,
+  latitude: latitude || null,
+  longitude: longitude || null,
+};
 
     const buildingData = buildingType === "House" ? {
       houseNo,
@@ -1063,7 +1156,13 @@ if (!selectedCategory || !firstName || !lastName || !phoneNumber || !buildingTyp
 
         if (response.status === 200) {
           Alert.alert("Success", "Customer updated successfully.");
-          navigation.goBack();
+        //  navigation.goBack();
+          navigation.navigate("ViewCustomerScreen" as any, { 
+           id: id, 
+           customerId: customerId, 
+           name: name, 
+           title: title 
+         });
         }
       } catch (updateError: any) {
         console.error("Update error:", updateError);
@@ -1264,7 +1363,7 @@ const handlePhoneNumberKeyPress = (e: any) => {
         minHeight: 40,
       }}
       textStyle={{
-        fontSize: 12,
+        fontSize: 14,
         textAlignVertical: "center",
       }}
       dropDownContainerStyle={{
@@ -1780,7 +1879,42 @@ const handlePhoneNumberKeyPress = (e: any) => {
     </View>
   </>
 )}
-              <TouchableOpacity 
+
+
+<View className="mt-6 mb-4">
+          <TouchableOpacity 
+            onPress={navigateToMapScreen}
+            className="items-center rounded-full mb-3"
+          >
+            <View className="border border-[#6C3CD1] rounded-full py-3 px-9 flex-row items-center justify-center">
+              <FontAwesome6 name="location-crosshairs" size={20} color="#7C3AED" />
+              <Text className="text-[#6C3CD1] font-medium ml-2">Geo Location</Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* View Location Link */}
+          {(latitude && longitude) && (
+            <TouchableOpacity 
+              onPress={() => {
+                navigation.navigate("ViewLocationScreen" as any, {
+                  latitude: parseFloat(latitude),
+                  longitude: parseFloat(longitude),
+                  locationName: locationName || `${firstName} ${lastName}'s Location`,
+                });
+              }}
+              className="mb-3"
+            >
+              <View className="flex-row items-center justify-center">
+                <Entypo name="location-pin" size={16} color="#DC2626" />
+                <Text className="text-red-600 font-semibold ml-1 underline">
+                  View Here
+                </Text>
+              </View>
+            </TouchableOpacity>
+          )}
+        </View>
+
+              {/* <TouchableOpacity 
                 onPress={handleRegister}
                 disabled={isSubmitting}
               >
@@ -1794,7 +1928,22 @@ const handlePhoneNumberKeyPress = (e: any) => {
                     <Text className="text-center text-white font-bold">Save</Text>
                   )}
                 </LinearGradient>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
+              <TouchableOpacity 
+  onPress={handleRegister}
+  disabled={isSubmitting}
+>
+  <LinearGradient 
+    colors={["#854BDA", "#6E3DD1"]} 
+    className="py-3 px-4 items-center mb-[15%] mr-[20%] ml-[20%] h-15 rounded-full"
+  >
+    {isSubmitting ? (
+      <ActivityIndicator color="#FFFFFF" />
+    ) : (
+      <Text className="text-center text-white font-bold">Save</Text>
+    )}
+  </LinearGradient>
+</TouchableOpacity>
             </View>
           </ScrollView>
         </View>

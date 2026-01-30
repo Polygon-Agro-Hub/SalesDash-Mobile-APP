@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,14 +8,15 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  BackHandler,
 } from "react-native";
-import { StackNavigationProp } from "@react-navigation/stack"; 
+import { StackNavigationProp } from "@react-navigation/stack";
 import BackButton from "./BackButton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import environment from "@/environment/environment";
 import { RouteProp } from "@react-navigation/native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 
 
 type ViewScreenNavigationProp = StackNavigationProp<RootStackParamList, "ViewScreen">;
@@ -26,12 +27,12 @@ type RootStackParamList = {
     selectedPackageName: string;
     selectedPackageImage: string;
     selectedPackageTotal: string;
-    selectedPackageDescription:string;
-    selectedPackageportion: string;  
+    selectedPackageDescription: string;
+    selectedPackageportion: string;
     selectedPackageperiod: string;
     selectedPackageServiceFee: string;
-    selectedPackagePackingFee: string ;
-    selectedPackageProductPrice : string;
+    selectedPackagePackingFee: string;
+    selectedPackageProductPrice: string;
   };
 };
 
@@ -48,16 +49,22 @@ interface ViewScreenProps {
 
 
 const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
-  const { selectedPackageId, selectedPackageName, selectedPackageImage ,selectedPackageTotal,selectedPackageDescription,selectedPackageportion ,selectedPackageperiod,selectedPackagePackingFee ,selectedPackageProductPrice,selectedPackageServiceFee } = route.params;
+  const { selectedPackageId, selectedPackageName, selectedPackageImage, selectedPackageTotal, selectedPackageDescription, selectedPackageportion, selectedPackageperiod, selectedPackagePackingFee, selectedPackageProductPrice, selectedPackageServiceFee } = route.params;
 
-  const [items, setItems] = useState<{ name: string; quantity: string; quantityType: string;  portion: number; period :number; qty: string }[]>([]);
+  const [items, setItems] = useState<{ name: string; quantity: string; quantityType: string; portion: number; period: number; qty: string }[]>([]);
+  const scrollViewRef = useRef<ScrollView>(null);
 
-  
   useEffect(() => {
     if (selectedPackageId) {
-      fetchItemsForPackage(selectedPackageId); 
+      fetchItemsForPackage(selectedPackageId);
     }
   }, [selectedPackageId]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+    }, [])
+  );
 
   const fetchItemsForPackage = async (packageId: number) => {
     try {
@@ -67,7 +74,7 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
         return;
       }
 
-      const response = await axios.get<{ data: { name: string; quantity: string, quantityType: string, portion: number; period :number; qty: string }[] }>(
+      const response = await axios.get<{ data: { name: string; quantity: string, quantityType: string, portion: number; period: number; qty: string }[] }>(
         `${environment.API_BASE_URL}api/packages/${packageId}/items`,
         {
           headers: { Authorization: `Bearer ${storedToken}` },
@@ -75,8 +82,8 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
       );
 
       if (response.data && response.data.data) {
-        setItems(response.data.data);  
-        console.log("Items state updated:", response.data.data);  
+        setItems(response.data.data);
+        console.log("Items state updated:", response.data.data);
       } else {
         console.log("No items found for this package.");
       }
@@ -86,7 +93,20 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
     }
   };
 
- return (
+  useFocusEffect(
+      useCallback(() => {
+        const onBackPress = () => {
+            navigation.goBack();
+            return true;
+          };
+      
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      
+          return () => backHandler.remove();
+        }, [navigation])
+  );
+
+  return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
       <View style={{ flex: 1 }}>
         {/* Top Section with Background Image */}
@@ -107,9 +127,10 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
         </ImageBackground>
 
         {/* Content Section */}
-        <View style={{ flex: 1, marginTop: -28 , marginBottom: 50 }}>
+        <View style={{ flex: 1, marginTop: -28, marginBottom: 50 }}>
           <ScrollView
-            contentContainerStyle={{ 
+            ref={scrollViewRef}
+            contentContainerStyle={{
               flexGrow: 1,
               paddingHorizontal: 24,
               paddingTop: 24,
@@ -127,27 +148,27 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
             </View> */}
 
             <View className="flex-row justify-between items-start mb-4 px-2">
-  <View className="flex-1 mr-4">
-    <Text 
-      className="text-xl font-bold text-purple-600"
-      numberOfLines={2}
-      style={{ lineHeight: 24 }}
-    >
-      {selectedPackageName}
-    </Text>
-  </View>
-  <View className="flex-shrink-0">
-    <Text className="text-lg font-bold text-gray-800">
-      Rs.{selectedPackageTotal}
-    </Text>
-  </View>
-</View>
+              <View className="flex-1 mr-4">
+                <Text
+                  className="text-xl font-bold text-purple-600"
+                  numberOfLines={2}
+                  style={{ lineHeight: 24 }}
+                >
+                  {selectedPackageName}
+                </Text>
+              </View>
+              <View className="flex-shrink-0">
+                <Text className="text-lg font-bold text-gray-800">
+                  Rs.{selectedPackageTotal}
+                </Text>
+              </View>
+            </View>
 
             {/* Description */}
             <View className="flex-row items-start mb-6">
               {/* Vertical Line */}
               <View className="bg-purple-600 w-1 mr-3" style={{ height: '100%' }}></View>
-              
+
               {/* Paragraph Text */}
               <Text className="text-gray-600 text-sm leading-6 mr-2">
                 {selectedPackageDescription}
@@ -155,16 +176,16 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
             </View>
 
             {/* Items List */}
-        <Text className="text-gray-800 text-lg font-bold p-4">
-  All ({items.reduce((total, item) => total + parseInt(item.qty), 0)} items)
-</Text>
+            <Text className="text-gray-800 text-lg font-bold p-4">
+              All ({items.reduce((total, item) => total + parseInt(item.qty), 0)} items)
+            </Text>
             {items.map((item, index) => (
               <View key={index} className="flex-row justify-between items-center border-b border-gray-200 py-3 px-4">
                 <Text className="text-gray-700 text-sm">{item.name}</Text>
                 <Text className="text-[#5D5D5D] text-sm">{item.qty}</Text>
               </View>
             ))}
-            
+
             {/* Add some bottom padding for scrolling */}
             <View style={{ height: 20 }} />
           </ScrollView>
