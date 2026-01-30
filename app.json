@@ -24,7 +24,7 @@
       "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "pan",
       "package": "com.polygonagro.SalesDash",
-      "versionCode": 8,
+      "versionCode": 10,
       "compileSdkVersion": 35,
       "targetSdkVersion": 35,
       "minSdkVersion": 24,
@@ -92,7 +92,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "9381cace-57ce-4e1e-82d4-1207a81ed50e"
+        "projectId": "92abedee-8573-4b56-9f54-68a0202e13b4"
       }
     }
   }
