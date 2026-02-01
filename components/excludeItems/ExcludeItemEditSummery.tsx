@@ -43,7 +43,6 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
   navigation,
 }) => {
   const { id, customerId, name, title } = route.params;
-  console.log("customer IDccccccccccc", id)
   const [crops, setCrops] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [customerName, setCustomerName] = useState<{
@@ -82,7 +81,6 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
             headers: { Authorization: `Bearer ${storedToken}` },
           });
 
-          console.log(response.data);
 
           if (response.data && response.data.data) {
             setCrops(response.data.data);
@@ -131,7 +129,6 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
               setCrops((prevCrops) =>
                 prevCrops.filter((crop) => crop.excludeId !== excludeId)
               );
-              console.log("Item deleted successfully");
             } else {
               console.error("Failed to delete item");
             }
@@ -312,9 +309,6 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
             justifyContent: "center",
           }}
         >
-          {/* <Text style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}>
-            Add More
-          </Text> */}
           <Text style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}>
             {getButtonText()}
           </Text>

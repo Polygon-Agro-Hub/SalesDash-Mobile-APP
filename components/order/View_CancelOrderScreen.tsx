@@ -113,8 +113,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
    const [returnReason, setReturnReason] = useState<string | null>(null);
    const [isHoldOrder, setIsHoldOrder] = useState<boolean>(false);
 
-  console.log("Route params:", route.params);
-
   useEffect(() => {
   // Initialize selectedReportOption with reportStatus from route params
   if (reportStatus) {
@@ -127,14 +125,12 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
       try {
         setLoading(true);
         const response = await axios.get(`${environment.API_BASE_URL}api/orders/get-order/${orderId}`);
-        console.log("Order API response:", response.data);
         
         if (response.data.success) {
           setOrder(response.data.data);
           
           // Extract city from fullAddress and fetch delivery fee
           const orderData = response.data.data;
-          console.log("ispackagehjdjjdkdkd",orderData.isPackage)
           if (orderData.fullAddress) {
             await fetchDeliveryFee(orderData.fullAddress, orderData.userId || userId);
             setIsPackage(orderData.isPackage)
@@ -156,15 +152,11 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
 
   useEffect(() => {
   const fetchHoldStatus = async () => {
-    console.log("Fetching hold status for orderId:", orderId);
     
-    // Check hold status for ALL orders, not just those with status "Hold"
-    // An order might have been held and then resumed to "On the way" or "Delivered"
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
       
       if (!storedToken) {
-        console.log("No authentication token found for hold status");
         return;
       }
 
@@ -173,12 +165,10 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
         { headers: { Authorization: `Bearer ${storedToken}` }}
       );
       
-      console.log("Hold status API response:", response.data);
       
       if (response.data.success && response.data.data) {
         // Set isHoldOrder to true if the order was ever held (isHold from backend)
         setIsHoldOrder(response.data.data.isHold);
-        console.log("Order hold history - isHold:", response.data.data.isHold);
       } else {
         // If no hold data found, set to false
         setIsHoldOrder(false);
@@ -198,7 +188,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
       const storedToken = await AsyncStorage.getItem("authToken");
       
       if (!storedToken) {
-        console.log("No authentication token found");
         return;
       }
 
@@ -209,7 +198,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
         // Use city from customer data if available
         if (customerData && customerData.buildingDetails?.city) {
           const cityName = customerData.buildingDetails.city;
-          console.log("Using city from customer data:", cityName);
           
           // Fetch cities to get delivery charge
           const cityResponse = await axios.get<{ data: City[] }>(
@@ -217,7 +205,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
             { headers: { Authorization: `Bearer ${storedToken}` }}
           );
           
-          console.log("Cities API response:", cityResponse.data);
           
           if (cityResponse.data && cityResponse.data.data) {
             const cityData = cityResponse.data.data.find(c => 
@@ -226,7 +213,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
             
             if (cityData) {
               const fee = parseFloat(cityData.charge) || 0;
-              console.log(`Setting delivery fee to ${fee} for city ${cityName}`);
               setDeliveryFee(fee);
             } else {
               console.log(`City ${cityName} not found in cities list`);
@@ -245,7 +231,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
         cityName = addressParts[addressParts.length - 2].trim();
       }
       
-      console.log("Fallback: Extracted city from address:", cityName);
       
       if (cityName) {
         // Fetch cities to get delivery charge
@@ -261,7 +246,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
           
           if (cityData) {
             const fee = parseFloat(cityData.charge) || 0;
-            console.log(`Setting delivery fee to ${fee} for city ${cityName}`);
             setDeliveryFee(fee);
           }
         }
@@ -277,7 +261,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
       const storedToken = await AsyncStorage.getItem("authToken");
       
       if (!storedToken) {
-        console.log("No authentication token found");
         return null;
       }
       
@@ -286,11 +269,9 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
       const response = await axios.get(apiUrl, {
         headers: { Authorization: `Bearer ${storedToken}` },
       });
-      
-      console.log("Customer data API response:", response.data);
+
       
       if (response.data && response.data.success) {
-        console.log("Customer data received:", response.data.data);
         setCustomerData(response.data.data);
         return response.data.data;
       } else {
@@ -308,28 +289,23 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
     }
   };
 
-  console.log("Current delivery fee:", deliveryFee);
 
 
     useEffect(() => {
     const fetchReturnReason = async () => {
 
-      console.log("retun reqon000000000000")
       if (status === "Return") {
         try {
           const storedToken = await AsyncStorage.getItem("authToken");
           
           if (!storedToken) {
-            console.log("No authentication token found for return reason");
             return;
           }
-console.log("before----------------")
           const response = await axios.get(
             `${environment.API_BASE_URL}api/orders/get-return-reason/${orderId}`,
             { headers: { Authorization: `Bearer ${storedToken}` }}
           );
           
-          console.log("Return reason API response:", response.data);
           
           if (response.data.success && response.data.data) {
             setReturnReason(response.data.data.returnReason);
@@ -345,9 +321,6 @@ console.log("before----------------")
   }, [orderId, status]);
 
 
-  console.log("/////////////////",isHoldOrder)
-
-  
 
   const formatDateShort = (dateString: string) => {
     if (!dateString) return "";
@@ -390,17 +363,13 @@ console.log("before----------------")
     return status;
   };
 
-  // const isCancelDisabled = () => {
-  //   if (!order) return true;
-  //   return status === "On the way" || status === "Processing" || status === "Delivered" || status === "Cancelled";
-  // };
   const isCancelDisabled = () => {
   if (!order) return true;
   
     
   // Get the actual status using the same logic as getActualStatus
   const actualStatus = getActualStatus();
-    console.log("-----------actuacl status-------", status)
+
   
   // Disable cancel button for these statuses
   return actualStatus === "On the way" || 
@@ -462,9 +431,7 @@ console.log("before----------------")
     }
   };
 
-  console.log(subtotal)
  
-
   const handleConfirmReport = async () => {
     if (!selectedReportOption) {
       Alert.alert("Please select an option", "You must select a report status option.");
@@ -554,10 +521,7 @@ const isTimelineItemActive = (status: string) => {
   return itemIndex <= currentIndex;
 };
 
-    // const handleGetACall = () => {
-    //   const phoneNumber = `tel:${order?.phoneNumber}`;
-    //   Linking.openURL(phoneNumber).catch((err) => console.error("Error opening dialer", err));
-    // };
+
 
   const handleGetACall = () => {
   // Get phone number from customer data first, fallback to order data
@@ -592,13 +556,11 @@ const isTimelineItemActive = (status: string) => {
     cleanedNumber = `+94${cleanedNumber}`;
   }
 
-  // Final validation - should be +94 followed by 9 digits
   if (!/^\+94\d{9}$/.test(cleanedNumber)) {
     Alert.alert("Error", "Invalid phone number format");
     return;
   }
 
-  console.log("Dialing:", cleanedNumber); // For debugging
   
   const telUrl = `tel:${cleanedNumber}`;
   Linking.openURL(telUrl).catch((err) => {
@@ -620,7 +582,6 @@ const isTimelineItemActive = (status: string) => {
 
       setCancelModalVisible(true);
     };
-    console.log("=+=========",order?.reportStatus)
 
 const formatPrice = (price: string | number): string => {
   return parseFloat(price.toString()).toLocaleString('en-US', {
@@ -930,13 +891,6 @@ const formatPrice = (price: string | number): string => {
     {customerData?.buildingType || order.buildingType || 'Not Available'}
   </Text>
 
-  {/* <Text className="text-[#808FA2] font-medium mb-1">Address</Text>
-  <Text className="text-black font-medium">
-    {customerData?.buildingDetails ? 
-      `${customerData.buildingDetails.houseNo || ''} ${customerData.buildingDetails.streetName || ''}, ${customerData.buildingDetails.city || ''}`.trim() || order.fullAddress || 'Not Available' :
-      order.fullAddress || 'Not Available'
-    }
-  </Text> */}
   <Text className="text-[#808FA2] font-medium mb-1">Address</Text>
   <Text className="text-black font-medium">
     {customerData?.buildingDetails ? 
@@ -959,13 +913,6 @@ const formatPrice = (price: string | number): string => {
             {order.fullTotal && (
               <View className="bg-white border border-gray-200 rounded-lg shadow-sm mx-4 p-4 mb-4">
                 <Text className="text-black font-semibold mb-2">Payment Summary</Text>
-                {/* <View className="flex-row justify-between mb-2">
-  <Text className="text-[#8492A3]">Subtotal</Text>
-  <Text className="text-black font-medium">
-    Rs.{(parseFloat(order.total || "0") -deliveryFee ).toFixed(2)}
-  </Text>
-</View> */}
-
  {isPackage === 1 && (
   <View className="flex-row justify-between mb-2">
     <Text className="text-[#8492A3]">Subtotal</Text>
@@ -1024,29 +971,9 @@ const formatPrice = (price: string | number): string => {
             </View>
             
 
-     
-            {/* {order.reportStatus && (
-  <View className="mx-4 mb-3 p-3 bg-gray-100 rounded-lg">
-    <Text className="text-red-500 font-medium text-center">
-      {order.reportStatus}
-    </Text>
-  </View>
-)}
-  )} */}
 
             <Text className="text-red-500 font-medium text-center mb-2">{selectedReportOption} </Text>
 
-{/* Display report status - priority: order.reportStatus > route param reportStatus */}
-{/* {order?.reportStatus || reportStatus ? (
-  <View className="mx-4 mb-3 p-3 ">
-    <Text className="text-red-500 font-medium text-center">
-      {order?.reportStatus || reportStatus}
-    </Text>
-  </View>
-) : null} */}
-            
-
-            {/* Report Status Button - Only shown when not Ordered or Cancelled */}
 { status !== "Cancelled" && (
   <TouchableOpacity 
     onPress={handleReportStatus}
@@ -1063,28 +990,6 @@ const formatPrice = (price: string | number): string => {
   </TouchableOpacity>
 )}
 
-{/* {status !== "Cancelled" && (
-  <TouchableOpacity 
-    onPress={handleReportStatus}
-    disabled={reportStatus !== null}
-    className={`mx-5 mb-3 rounded-full px-14 ${reportStatus !== null ? 'opacity-50' : ''}`}
-  >
-    {reportStatus !== null ? (
-      <View className="bg-gray-400 py-3 rounded-full items-center">
-        <Text className="text-white text-center font-semibold">Report Status</Text>
-      </View>
-    ) : (
-      <LinearGradient
-        colors={["#6839CF", "#874DDB"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        className="py-3 rounded-full items-center"
-      >
-        <Text className="text-white text-center font-semibold">Report Status</Text>
-      </LinearGradient>
-    )}
-  </TouchableOpacity>
-)} */}
 
             {/* Cancel Order Button */}
             <TouchableOpacity 

@@ -51,7 +51,6 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({ navigation, route }) 
     });
   };
 
-  console.log("----------",id)
   return (
     <View className="flex-1 bg-white">
       <View className="flex-row items-center h-16 shadow-md px-4 bg-white">

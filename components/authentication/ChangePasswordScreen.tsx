@@ -95,9 +95,6 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
 
       // Fixed: Access the nested passwordUpdate value correctly
       setPasswordUpdate(response.data.data.passwordUpdate);
-
-      console.log("update password status", response.data);
-      console.log("update password status-------", response.data.data.passwordUpdate);
     } catch (error) {
       console.error("Error fetching password update status:", error);
     }
@@ -184,16 +181,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
 
   
   return (
-    // <KeyboardAvoidingView 
-    //   behavior={Platform.OS === "ios" ? "padding" : "height"}
-    //   enabled 
-    //   className="flex-1"
-    // >
-      // <KeyboardAwareScrollView
-      //     contentContainerStyle={{ flexGrow: 1 }}
-      //     keyboardShouldPersistTaps="handled"
-      //     enableOnAndroid={true}
-      //   >
+
        <KeyboardAvoidingView 
               behavior={Platform.OS === "ios" ? "padding" : "height"}
               keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })} // Adjust this value as needed

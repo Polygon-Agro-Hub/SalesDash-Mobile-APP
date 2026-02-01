@@ -22,7 +22,6 @@ const OtpSuccesfulScreen: React.FC<OtpSuccesfulScreenProps> = ({ route, navigati
 
   const { customerId} = route.params || {};
   
-  //console.log("Received customer ID:", customerId);
 
   useFocusEffect(
       useCallback(() => {
@@ -48,10 +47,7 @@ const OtpSuccesfulScreen: React.FC<OtpSuccesfulScreenProps> = ({ route, navigati
       >
         {/* Header */}
         <View className="bg-white flex-row items-center h-17 shadow-lg px-1">
-          {/* Back Button */}
-          {/* <BackButton navigation={navigation} /> */}
-          {/* Title */}
-        
+
         </View>
 
      
@@ -89,12 +85,6 @@ Successfully Verified!
             colors={["#6839CF", "#874DDB"]}
             className="py-2 px-10 items-center mt-[55%] mb-[5%] mr-[20%] ml-[20%] rounded-3xl h-15"
           >
-{/* <TouchableOpacity onPress={() => navigation.navigate("Main", {
-  screen: "SelectOrderTypeNewCustomer",
-  params: { id: customerId } 
-})}>
-  <Text className="text-center text-white font-bold text-lg">Order Now</Text>
-</TouchableOpacity> */}
 
   <Text className="text-center text-white font-bold text-lg">Order Now</Text>
 

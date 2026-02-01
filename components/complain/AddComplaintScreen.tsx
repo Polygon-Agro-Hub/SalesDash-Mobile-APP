@@ -40,7 +40,6 @@ interface AddComplaintScreenProps {
 
 const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>("");
-  console.log(selectedCategory)
   const [complaintText, setComplaintText] = useState<string>("");
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [category, setCategory] = useState<any[]>([]);
@@ -50,14 +49,12 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
 
   useEffect(() => {
     let appName = "SalesDash";
-    console.log("appName", appName);
     
     const fetchComplainCategory = async () => {
       try {
         const response = await axios.get(
           `${environment.API_BASE_URL}api/complain/get-complain/category/${appName}`
         );
-        console.log("response", response.data);
         if (response.data.status === "success") {
           const mappedCategories = response.data.data
             .map((item: any) => ({
@@ -96,7 +93,6 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
         return;
       }
   
-      console.log(selectedCategory, complaintText);     
   
       const apiUrl = `${environment.API_BASE_URL}api/complain/add-complain`;
   

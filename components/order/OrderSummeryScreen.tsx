@@ -51,12 +51,6 @@ interface ModifiedMinItem {
   additionalPrice: number;
   additionalDiscount: number;
 }
-// type ItemDetails = {
-//   name: string;
-//   displayName: string;
-//   price: number;
-//   mpItemId?: number | null; // Add this property
-// };
 
 interface AdditionalItem {
   mpItemId: number;
@@ -301,7 +295,6 @@ const handleConfirmOrder = async () => {
       };
     }
 
-    console.log("Sending order data to API:", JSON.stringify(orderPayload, null, 2));
 
     const apiUrl = `${environment.API_BASE_URL}api/orders/create-order`;
     const response = await axios.post(apiUrl, orderPayload, {
@@ -315,7 +308,6 @@ const handleConfirmOrder = async () => {
       setIsSubmitted(true);
       setIsSubmitting(false);
 
-      console.log("Order created successfully:", response.data);
 
       navigation.navigate("Main", {
         screen: "OrderConfirmedScreen",
@@ -393,150 +385,6 @@ const handleConfirmOrder = async () => {
   
   const customerInfo = getCustomerInfo();
 
-
-
-// const fetchItemDetails = async () => {
-//   if (isPackage !== 1 || !safeOrderItems.length) return;
-  
-//   const packageItem = safeOrderItems[0];
-  
-//   try {
-//     const storedToken = await AsyncStorage.getItem("authToken");
-//     if (!storedToken) return;
-    
-//     // Create objects to store the details
-//     const additionalDetails: Record<string, ItemDetails> = {};
-//     const packageItemDetails: Record<string, ItemDetails> = {};
-//     let packageDisplayName = "";
-    
-//     // First, fetch the package details to get the display name
-//     if (packageItem.packageId) {
-//       try {
-//         const response = await axios.get(
-//           `${environment.API_BASE_URL}api/packages/marketplace-package/${packageItem.packageId}`,
-//           {
-//             headers: { Authorization: `Bearer ${storedToken}` },
-//           }
-//         );
-        
-//         if (response.data && response.data.data) {
-//           packageDisplayName = response.data.data.displayName  ;
-//           console.log(`Package ${packageItem.packageId} Details:`, response.data.data);
-//           console.log("99999999999999999999999999999999999999Package Display Name:", packageDisplayName);
-//         }
-
-        
-//       } catch (error) {
-//        console.error(`Error fetching package ${packageItem.packageId} details:`, error);
-//         packageDisplayName = `Package ${packageItem.packageId}`;
-//       }
-//     }
-    
-//     // Fetch details for package items from finalOrderPackageList
-//     // Use the new endpoint that fetches by packageId and item.id
-//  // Fetch details for package items from finalOrderPackageList
-// if (packageItem.finalOrderPackageList && packageItem.finalOrderPackageList.length > 0) {
-//   console.log("finalOrderPackageList structure:", JSON.stringify(packageItem.finalOrderPackageList, null, 2));
-  
-//   for (const item of packageItem.finalOrderPackageList) {
-//     try {
-//       const productId = item.productId;
-      
-//       if (!productId) {
-//         console.error("No productId found for item:", item);
-//         continue;
-//       }
-      
-//       console.log(`Fetching details for packageId: ${packageItem.packageId}, productId: ${productId}`);
-      
-//       // Use the endpoint that searches by productId (mpItemId)
-//       const response = await axios.get(
-//         `${environment.API_BASE_URL}api/packages/package-item-by-product/${packageItem.packageId}/${productId}`,
-//         {
-//           headers: { Authorization: `Bearer ${storedToken}` },
-//         }
-//       );
-      
-//       console.log("API Response:", response.data);
-      
-//       if (response.data && response.data.data) {
-//         // Use the packagedetails table ID as the key (response.data.data.id)
-//         const itemIdKey = response.data.data.id.toString();
-        
-//         packageItemDetails[itemIdKey] = {
-//           name: response.data.data.name || response.data.data.displayName || `Item ${response.data.data.id}`,
-//           displayName: response.data.data.displayName || response.data.data.name || `Item ${response.data.data.id}`,
-//           price: response.data.data.discountedPrice || response.data.data.normalPrice || 0,
-//           mpItemId: response.data.data.mpItemId // Store the marketplace item ID for reference
-//         };
-        
-//         console.log(`Package Item ${response.data.data.id} Details:`, response.data.data);
-//       }
-//     } catch (error) {
-//       console.error(`Error fetching package item ${item.productId} details:`, error);
-     
-     
-      
-//       // Set fallback data if API call fails
-//       // Use productId as the key since we don't have the packagedetails ID
-//       const itemIdKey = item.productId.toString();
-//       packageItemDetails[itemIdKey] = {
-//         name: `Item ${item.productId}`,
-//         displayName: `Item ${item.productId}`,
-//         price: 0,
-//         mpItemId: item.productId
-//       };
-//     }
-//   }
-// }
-    
-//     // Fetch details for additional items (keep existing logic for marketplace items)
-//     if (packageItem.additionalItems && packageItem.additionalItems.length > 0) {
-//       for (const item of packageItem.additionalItems) {
-//         try {
-//           const response = await axios.get(
-//             `${environment.API_BASE_URL}api/packages/marketplace-item/${item.id}`,
-//             {
-//               headers: { Authorization: `Bearer ${storedToken}` },
-//             }
-//           );
-          
-//           if (response.data && response.data.data) {
-//             const itemIdKey = item.id.toString();
-
-//             console.log("daatatta-------",response.data)
-            
-//             additionalDetails[itemIdKey] = {
-//               name: response.data.data.name || response.data.data.displayName || `Item ${item.id}`,
-//               displayName: response.data.data.displayName || response.data.data.name || `Item ${item.id}`,
-//               price: response.data.data.discountedPrice || response.data.data.normalPrice || 0
-//             };
-            
-//             console.log(`Additional Item ${item.id} Details:`, response.data.data);
-//           }
-//         } catch (error) {
-//           console.error(`Error fetching additional item ${item.id} details:`, error);
-//           // Set fallback data if API call fails
-//           const itemIdKey = item.id.toString();
-//           additionalDetails[itemIdKey] = {
-//             name: `Item ${item.id}`,
-//             displayName: `Item ${item.id}`,
-//             price: 0
-//           };
-//         }
-//       }
-//     }
-    
-//     // Update state variables
-//     setAdditionalItemDetails(additionalDetails);
-//     setPackageItemDetails(packageItemDetails);
-//     setPackageDisplayName(packageDisplayName);
-    
-//   } catch (error) {
-//     console.error("Error fetching item details:", error);
-//   }
-// };
-
 const fetchItemDetails = async () => {
   if (isPackage !== 1 || !safeOrderItems.length) return;
   
@@ -592,7 +440,6 @@ if (response.data && response.data.data) {
     unitType: response.data.data.unitType || 'kg'      // ✅ ADD THIS (if not already there)
   };
   
-  console.log(`Additional Item ${item.id} Details:`, response.data.data);
 }
         } catch (error) {
           console.error(`Error fetching additional item ${item.id} details:`, error);
@@ -631,16 +478,14 @@ useEffect(() => {
     const customerIdValue = customerId || route.params?.customerId || route.params?.customerid;
     
     if (!customerIdValue) {
-      console.log("No customer ID found");
       return;
     }
 
     try {
-      console.log("Fetching customer data for userId:", customerIdValue);
+  
       
       const storedToken = await AsyncStorage.getItem("authToken");
       if (!storedToken) {
-        console.log("No authentication token found");
         setError("No authentication token found");
         return;
       }
@@ -653,7 +498,6 @@ useEffect(() => {
         }
       );
       
-      console.log("Customer API response:", customerResponse.data);
       
       if (customerResponse.data?.success) {
         const customerData = customerResponse.data.data;
@@ -661,7 +505,6 @@ useEffect(() => {
         
         // Extract city from customer data
         const customerCity = customerData.buildingDetails?.city;
-        console.log("Customer city:", customerCity);
         
         if (customerCity) {
           try {
@@ -671,16 +514,13 @@ useEffect(() => {
               { headers: { Authorization: `Bearer ${storedToken}` }}
             );
             
-            console.log("Cities API response:", cityResponse.data);
             
             if (cityResponse.data?.data) {
               const cityData = cityResponse.data.data.find(c => c.city === customerCity);
               if (cityData) {
                 const fee = parseFloat(cityData.charge) || 0;
                 setDeliveryFee(fee);
-                console.log(`Setting delivery fee to ${fee} for city ${customerCity}`);
               } else {
-                console.log(`City ${customerCity} not found in cities list`);
                 setDeliveryFee(0); // Default fee if city not found
               }
             }
@@ -689,7 +529,6 @@ useEffect(() => {
             setDeliveryFee(0); // Default fee on error
           }
         } else {
-          console.log("No city found in customer data");
           setDeliveryFee(0); // Default fee if no city
         }
       } else {
@@ -778,20 +617,6 @@ const formatPrice = (amount: number) => {
 // In OrderSummeryScreen - Update the Schedule Edit button's onPress handler
 
 onPress={() => {
-  console.log("Navigating to ScheduleScreen with data:", {
-    total,
-    customerId,
-    items,
-    subtotal,
-    discount,
-    selectedDate,
-    timeDisplay,
-    isPackage,
-    packageId: route.params?.packageId,
-    customerid,
-    orderItems,
-    orderData: route.params?.orderData // ADD THIS LINE
-  });
 
   navigation.navigate("ScheduleScreen" as any, {
     total,
@@ -913,7 +738,6 @@ onPress={() => {
     paymentMethod
   };
   
-  console.log("Navigation data to CratScreen:", JSON.stringify(regularItemsData, null, 2));
   
   navigation.navigate("CratScreen" as any, { 
     id: customerId || customerid,
@@ -1019,7 +843,6 @@ else if (isPackage === 1) {
     orderData: route.params?.orderData
   };
 
-  console.log("Navigation data with changeby:", JSON.stringify(navigationData, null, 2));
   navigation.navigate("OrderScreen" as any, navigationData);
 }else {
       // For Regular Items - CratScreen
@@ -1058,10 +881,6 @@ else if (isPackage === 1) {
         },
         paymentMethod
       };
-      
-      console.log("========== NAVIGATION DATA LOG ==========");
-      console.log(JSON.stringify(regularItemsData, null, 2));
-      console.log("=========================================");
       
       navigation.navigate("CratScreen" as any, { 
         id: customerId || customerid,

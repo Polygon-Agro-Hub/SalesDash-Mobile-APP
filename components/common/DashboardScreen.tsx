@@ -85,16 +85,6 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     }
   });
 
-  // useEffect(() => {
-  //   // Handle hardware back button (Android)
-  //   const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-  //     // Return true to prevent default behavior (going back)
-  //     return true;
-  //   });
-  
-  //   return () => backHandler.remove();
-  // }, []);
-
 
   
   
@@ -132,7 +122,6 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       });
 
       setFormData(response.data.data);
-     // console.log("''''''",response.data)
     } catch (error) {
       console.error("Profile fetch error:", error);
 
@@ -168,9 +157,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
           const tokenExpiry = new Date(expirationTime);
 
           if (currentTime < tokenExpiry) {
-            console.log("Token is valid");
           } else {
-            console.log("Token expired, clearing storage.");
             await AsyncStorage.multiRemove([
               "userToken",
               "tokenStoredTime",
@@ -210,7 +197,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
         }
         
       );
-  console.log(response.data)
+
 
       setPackages(response.data.data);
     } catch (error) {

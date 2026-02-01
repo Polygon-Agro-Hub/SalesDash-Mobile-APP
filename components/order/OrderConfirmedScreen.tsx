@@ -161,9 +161,6 @@ const [isDownloading, setIsDownloading] = useState(false);
     isPackage = "",
   } = route.params || {};
 
-  console.log("ispackage", isPackage);
-  console.log("vhalkdz", order?.orderStatus?.invoiceNumber);
-  console.log("kacsbhm", customerId);
 
   useEffect(() => {
     const handleBackPress = () => {
@@ -184,8 +181,7 @@ const [isDownloading, setIsDownloading] = useState(false);
   
   const fetchOrderDetails = async () => {
     try {
-      // Don't set loading to true here on retry
-      console.log("orderid", orderId);
+
       
       const response = await axios.get(
         `${environment.API_BASE_URL}api/orders/get-order/${orderId}`,
@@ -194,7 +190,6 @@ const [isDownloading, setIsDownloading] = useState(false);
       
       if (!isMounted) return;
       
-      console.log("mkk", response.data);
       if (response.data.success) {
         setOrder(response.data.data);
       } else {
@@ -214,7 +209,6 @@ const [isDownloading, setIsDownloading] = useState(false);
 
   timeoutId = setTimeout(() => {
     if (isMounted && !order) {
-      console.log("Retrying order fetch after timeout...");
       fetchOrderDetails();
     }
   }, 10000);
@@ -231,16 +225,15 @@ const [isDownloading, setIsDownloading] = useState(false);
 useEffect(() => {
   const fetchCustomerDataAndDeliveryFee = async () => {
     if (!order?.userId) {
-      console.log("No userId found in order data");
+
       return;
     }
 
     try {
-      console.log("Fetching customer data for userId:", order.userId);
+
       
       const storedToken = await AsyncStorage.getItem("authToken");
       if (!storedToken) {
-        console.log("No authentication token found");
         setError("No authentication token found");
         setLoading(false);
         return;
@@ -253,14 +246,11 @@ useEffect(() => {
         }
       );
       
-      console.log("Customer API response:", customerResponse.data);
       
       if (customerResponse.data && customerResponse.data.success) {
-        console.log("Customer data received:", customerResponse.data.data);
         setCustomerData(customerResponse.data.data);
         
         const customerCity = customerResponse.data.data.buildingDetails?.city;
-        console.log("Customer city:", customerCity);
         
         if (customerCity) {
           const cityResponse = await axios.get<{ data: City[] }>(
@@ -268,14 +258,12 @@ useEffect(() => {
             { headers: { Authorization: `Bearer ${storedToken}` }}
           );
           
-          console.log("Cities API response:", cityResponse.data);
           
           if (cityResponse.data && cityResponse.data.data) {
             const cityData = cityResponse.data.data.find(c => c.city === customerCity);
             if (cityData) {
               const fee = parseFloat(cityData.charge) || 0;
               setDeliveryFee(fee);
-              console.log(`Setting delivery fee to ${fee} for city ${customerCity}`);
             } else {
               console.log(`City ${customerCity} not found in cities list`);
             }
@@ -320,7 +308,7 @@ useEffect(() => {
 
   const convertImageToBase64 = async () => {
     try {
-      const asset = Asset.fromModule(require("../assets/images/Watermark.webp"));
+      const asset = Asset.fromModule(require("../../assets/images/Watermark.webp"));
       
       if (!asset.downloaded) {
         await asset.downloadAsync();
@@ -344,7 +332,7 @@ useEffect(() => {
 
   const convertImageAlternative = async () => {
     try {
-      const assetInfo = require("../assets/images/Watermark.webp");
+      const assetInfo = require("../../assets/images/Watermark.webp");
       
       if (typeof assetInfo === 'number') {
         const asset = Asset.fromModule(assetInfo);
@@ -383,12 +371,6 @@ const discountAmount = parseFloat(order?.discount || '0');
 const totalBeforeDiscount = parseFloat(order?.total || '0');
 const totalAmount = totalBeforeDiscount - discountAmount;
       
-
-// Calculate additional items total
-// Calculate additional items total (using price directly as total price)
-// const additionalItemsTotal = order?.additionalItems?.reduce((sum, item) => {
-//   return sum + parseFloat(item.price || '0');
-// }, 0) || 0;
 const additionalItemsTotal = order?.additionalItems?.reduce((sum, item) => {
   const price = parseFloat(item.price?.toString() || '0');
   const discount = parseFloat(item.discount?.toString() || '0');
@@ -417,27 +399,6 @@ if (order?.packageInfo?.packageDetails && order.packageInfo.packageDetails.lengt
   });
 }
 
-// Generate additional items rows
-// Generate additional items rows with unit price calculation
-// let additionalItemsRows = '';
-// if (order?.additionalItems && order.additionalItems.length > 0) {
-//   order.additionalItems.forEach((item, index) => {
-//     const amount = parseFloat(item.price?.toString() || '0'); // This is the total amount from backend
-//     const quantity = parseFloat(item.qty?.toString() || '0');
-//     const unitPrice = quantity > 0 ? (amount / quantity) : 0; // Calculate unit price
-    
-//     additionalItemsRows += `
-//       <tr>
-//         <td style="text-align: center">${index + 1}</td>
-//         <td class="tabledata">${item.displayName || 'Item'}</td>
-//         <td class="tabledata">${unitPrice.toFixed(2)}</td>
-//         <td class="tabledata">${quantity} ${item.unit || 'kg'}</td>
-//         <td class="tabledata">${amount.toFixed(2)}</td>
-//       </tr>`;
-//   });
-// }
-
-// Generate additional items rows with correct unit price and amount calculation
 let additionalItemsRows = '';
 if (order?.additionalItems && order.additionalItems.length > 0) {
   order.additionalItems.forEach((item, index) => {
@@ -869,15 +830,6 @@ if (order?.additionalItems && order.additionalItems.length > 0) {
       setIsDownloading(false);
     }
   };
-
-  // if (loading || !isDataLoaded) {
-  //   return (
-  //     <View className="flex-1 inset-0 bg-white/20 bg-white justify-center items-center">
-  //       <ActivityIndicator size="large" color="#6839CF" />
-  //       <Text className="mt-4 text-lg text-gray-600">Loading order details...</Text>
-  //     </View>
-  //   );
-  // }
 
   if (loading) {
   return (

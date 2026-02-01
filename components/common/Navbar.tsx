@@ -67,7 +67,6 @@ const NavigationBar = ({
   );
 
   let currentTabName = state?.routes?.[state.index]?.name || "DashboardScreen";
-  console.log('Current tab:', currentTabName);
   if (currentTabName === 'ViewCustomerScreen' || currentTabName === 'EditCustomerScreen' || currentTabName === 'SelectOrderType' || currentTabName ==='ExcludeListAdd' || currentTabName ==='AddCustomersScreen' ) {
     currentTabName = 'CustomersScreen';
   }
@@ -112,7 +111,6 @@ const NavigationBar = ({
     });
 
     navigation.navigate(tabName);
-    console.log("tabName", tabName);
   };
 
   const tabPositionX = useSharedValue(0);

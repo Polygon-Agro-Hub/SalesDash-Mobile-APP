@@ -51,7 +51,6 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
     const [searchError, setSearchError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false)
-  console.log("selected Crop", selectedCrops)
   const toggleSelect = (id: number) => {
     setSelectedCrops(
       (prevSelected) =>
@@ -81,7 +80,6 @@ useFocusEffect(
           params: { customerId:id },
         });
 
-        console.log(response.data);
 
         if (response.data && response.data.data) {
           setCrops(response.data.data);
@@ -100,28 +98,6 @@ useFocusEffect(
     };
   }, [id])
 );
-
-//   const handleSearch = (query: string) => {
-//   // Only remove leading spaces, but allow numbers and special characters within the text
-//   const cleanedQuery = query.replace(/^\s+/, '');
-  
-//   setSearchQuery(cleanedQuery);
-//   setSearchError(null); // Clear any previous error
-  
-//   if (cleanedQuery === "") {
-//     setFilteredCrops(crops);
-//   } else {
-//     const filtered = crops.filter((crop) =>
-//       crop.displayName.toLowerCase().includes(cleanedQuery.toLowerCase())
-//     );
-//     setFilteredCrops(filtered);
-    
-//     // Set error if no results found
-//     if (filtered.length === 0) {
-//       setSearchError("No products found matching your search");
-//     }
-//   }
-// };
 
 const handleSearch = (query: string) => {
   let cleanedQuery = query;
@@ -197,9 +173,7 @@ useEffect(() => {
             }
           );
 
-        console.log("Response:", checkResponse.data);
       if (checkResponse.status === 200) {
-      console.log("Exclude list updated successfully");
      navigation.navigate("ExcludeItemEditSummery" as any, { id: id, customerId:customerId, name: name, title:title })
     } else if (checkResponse.status === 400) {
       console.error("Bad request:", checkResponse.data.message);
@@ -273,21 +247,6 @@ useEffect(() => {
               Simply tap on the Products they want to remove.
             </Text>
           </View>
-{/* 
-<View className="px-6">
-          <View className="p-1 px-6 mt-8 flex-row justify-between items-center border border-[#6B3BCF] rounded-full">
-            <TextInput className="   " placeholder="Search Products" value={searchQuery}
-            onChangeText={handleSearch}>
-
-            </TextInput>
- <Ionicons
-            name="search"
-            size={24}
-            color="#6C3CD1"
-          />
-
-          </View>
-</View> */}
 
 <View className="px-6 mt-6 mb-6">
         <View className="relative">
@@ -326,52 +285,6 @@ useEffect(() => {
     </View>
   </View>
                   )}
-                {/* <ScrollView
-          className="flex-1  px-3 mb-[45%]"
-          keyboardShouldPersistTaps="handled"
-        >
-          <View className="px-4 mt-8">
-            {crops.map((crop) => (
-              <View
-                key={crop.id}
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginVertical: 4,
-                }}
-              >
-                <View className="flex-row justify-center items-center gap-6 ">
-                  <TouchableOpacity onPress={() => toggleSelect(crop.id)}>
-                    <View
-                      className={`w-6 h-6 rounded-full border justify-center items-center ${
-                        selectedCrops.includes(crop.id)
-                          ? "bg-[#FF0000] border-[#FF0000]"
-                          : "border-gray-400"
-                      }`}
-                    >
-                      {selectedCrops.includes(crop.id) && (
-                        <Ionicons name="close" size={16} color="white" />
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                  <Text style={{ fontSize: 16, color: "#000", marginLeft: 10 }}>
-                    {crop.displayName}
-                  </Text>
-                </View>
-
-                <Image
-                  source={{ uri: crop.image }}
-                  style={{ width: 60, height: 60, marginRight: 10 }}
-                  resizeMode="contain"
-                />
-              </View>
-            ))}
-          
-          </View>
-          
-             
-        </ScrollView> */}
         <View className="flex-1  " >
             
     
@@ -434,9 +347,6 @@ useEffect(() => {
             </Text>
           </View>
         )}
-              {/* <Text style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}>
-                Continue
-              </Text> */}
             </LinearGradient>
           </TouchableOpacity>
           </View>

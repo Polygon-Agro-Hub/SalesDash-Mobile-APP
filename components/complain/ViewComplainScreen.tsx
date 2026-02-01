@@ -58,7 +58,6 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({ navigation }) =
           const complaintsResponse = await axios.get(complaintsUrl, {
             headers: { Authorization: `Bearer ${storedToken}` },
           });
-          console.log("complainnnnnnnn", complaintsResponse.data)
 
           if (complaintsResponse.status === 404) {
             Alert.alert("No Complaints", "You have no previous complaints.");
@@ -99,7 +98,6 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({ navigation }) =
           const profileResponse = await axios.get(profileUrl, {
             headers: { Authorization: `Bearer ${storedToken}` },
           });
-          console.log("data", profileResponse.data.data)
 
           setFormData(profileResponse.data.data);
         } catch (error) {

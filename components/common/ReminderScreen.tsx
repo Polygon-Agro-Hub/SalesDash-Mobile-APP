@@ -79,7 +79,6 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
   // Initialize audio properly
   const initializeAudio = async () => {
     try {
-      console.log(" Initializing audio...");
 
       await setAudioModeAsync({
   playsInSilentMode: true,
@@ -91,61 +90,12 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
 });
       
       setIsAudioInitialized(true);
-      console.log(" Audio initialized successfully");
     } catch (error) {
       console.error('❌ Failed to initialize audio:', error);
     }
   };
 
-  // Improved notification sound function
-//   const playNotificationSound = async () => {
-//     try {
-//       console.log(" Attempting to play notification sound...");
-      
-//       if (!isAudioInitialized) {
-//         console.log(" Audio not initialized, initializing now...");
-//         await initializeAudio();
-//       }
 
-//       // Unload previous sound if exists
-//       if (sound.current) {
-//         console.log(" Unloading previous sound...");
-//         await sound.current.unloadAsync();
-//         sound.current = null;
-//       }
-      
-//       console.log(" Loading sound file...");
-//       const { sound: newSound } = await Audio.Sound.createAsync(
-//         require('../assets/sounds/p2.mp3'),
-//         { 
-//           shouldPlay: true,
-//           isLooping: false,
-//           volume: 1.0,
-//         }
-//       );
-      
-//       sound.current = newSound;
-//       console.log(" Sound loaded and playing!");
-      
-//       // Set up playback status listener
-//       newSound.setOnPlaybackStatusUpdate((status) => {
-//         if (status.isLoaded) {
-//           if (status.didJustFinish) {
-//             console.log(" Sound finished playing");
-//             sound.current?.unloadAsync();
-//             sound.current = null;
-//           }
-//         } else if (!status.isLoaded && status.error) {
-//           console.error('❌ Playback error:', status.error);
-//         }
-//       });
-      
-//     } catch (error) {
-//       console.error('❌ Error playing notification sound:', error);
-//       // Try alternative approach for debugging
-//       console.log(" Sound file path issue? Checking...");
-//     }
-//   };
   const playNotificationSound = async () => {
     try {
       if (!isAudioInitialized) await initializeAudio();
@@ -159,7 +109,6 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
   };
 const fetchNotifications = async () => {
   try {
-    console.log("🔄 Fetching notifications...");
     setError(null);
     
     const storedToken = await AsyncStorage.getItem("authToken");
@@ -173,7 +122,6 @@ const fetchNotifications = async () => {
     const newNotifications = data.notifications || [];
     const newUnreadCount = data.unreadCount || 0;
     
-    console.log(`📱 Fetched ${newNotifications.length} notifications, ${newUnreadCount} unread`);
     
     // Update state
     setNotifications(newNotifications);
@@ -183,10 +131,8 @@ const fetchNotifications = async () => {
     // Check for new notifications and play sound if needed
     if (newNotifications.length > 0) {
       const maxId = Math.max(...newNotifications.map((n: Notification) => n.id));
-      console.log(`🆔 Current max ID: ${maxId}, Previous: ${highestNotificationId.current}`);
       
       if (!isFirstLoad.current && maxId > highestNotificationId.current) {
-        console.log("🔊 NEW NOTIFICATION DETECTED! Playing sound...");
         await playNotificationSound();
       }
       
@@ -201,32 +147,12 @@ const fetchNotifications = async () => {
     setIsLoading(false);
   } finally {
     if (isFirstLoad.current) {
-      console.log("✅ First load completed, future notifications will play sound");
       isFirstLoad.current = false;
     }
   }
 };
 
 
-//   useEffect(() => {
-//     const setupComponent = async () => {
-//       await initializeAudio();
-//       await fetchNotifications();
-//     };
-
-//     setupComponent();
-  
-//     const intervalId = setInterval(() => {
-//       fetchNotifications();
-//     }, 12000);
-  
-//     return () => {
-//       clearInterval(intervalId);
-//       if (sound.current) {
-//         sound.current.unloadAsync();
-//       }
-//     };
-//   }, []);
 
 useEffect(() => {
   const setupComponent = async () => {
@@ -248,36 +174,7 @@ useEffect(() => {
 }, []);
 
 
-  // Test sound function (you can call this from a button for testing)
-  const testSound = async () => {
-    console.log(" Testing sound manually...");
-    console.log(" Audio initialized:", isAudioInitialized);
-    await playNotificationSound();
-  };
 
-  // Force sound test (bypasses all checks)
-//   const forceTestSound = async () => {
-//     console.log(" FORCE testing sound - bypassing all checks...");
-//     try {
-//       // Directly create and play sound
-//       const { sound: testSound } = await Audio.Sound.createAsync(
-//         require('../assets/sounds/p2.mp3'),
-//         { shouldPlay: true, volume: 1.0 }
-//       );
-      
-//       console.log(" Force test sound created and playing");
-      
-//       testSound.setOnPlaybackStatusUpdate((status) => {
-//         if (status.isLoaded && status.didJustFinish) {
-//           console.log(" Force test sound finished");
-//           testSound.unloadAsync();
-//         }
-//       });
-      
-//     } catch (error) {
-//       console.error("❌ Force test sound failed:", error);
-//     }
-//   };
 
   const showDeleteModal = (notification: Notification) => {
     setSelectedNotification(notification);
@@ -373,19 +270,6 @@ useEffect(() => {
           >
             <Text className="text-white">Retry</Text>
           </TouchableOpacity>
-          {/* Add test sound buttons for debugging */}
-          {/* <TouchableOpacity 
-            onPress={testSound}
-            className="mt-2 bg-green-500 px-4 py-2 rounded"
-          >
-            <Text className="text-white">Test Sound</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            onPress={forceTestSound}
-            className="mt-2 bg-red-500 px-4 py-2 rounded"
-          >
-            <Text className="text-white">Force Test Sound</Text>
-          </TouchableOpacity> */}
         </View>
       ) : (
         <>
@@ -413,19 +297,6 @@ useEffect(() => {
                 <Text className="text-black text-center mt-4 font-bold text-1xl">
                   No Notification Yet
                 </Text>
-                {/* Add test sound buttons for debugging */}
-                {/* <TouchableOpacity 
-                  onPress={testSound}
-                  className="mt-4 bg-green-500 px-4 py-2 rounded"
-                >
-                  <Text className="text-white">Test Sound</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  onPress={forceTestSound}
-                  className="mt-2 bg-red-500 px-4 py-2 rounded"
-                >
-                  <Text className="text-white">Force Test Sound</Text>
-                </TouchableOpacity> */}
               </View>
             ) : (
               <FlatList

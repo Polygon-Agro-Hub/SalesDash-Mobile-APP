@@ -41,7 +41,6 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
   navigation,
 }) => {
   const { customerId } = route.params || {};
-  console.log("hit");
   const [crops, setCrops] = useState<any[]>([]);
   const [customerName, setCustomerName] = useState<{
     firstName: string;
@@ -70,7 +69,6 @@ useFocusEffect(
           headers: { Authorization: `Bearer ${storedToken}` },
         });
 
-        console.log("API Response:", response.data);
 
         if (response.data && response.data.data) {
           // Set customer name from first item (regardless of crop validity)
@@ -125,7 +123,6 @@ useFocusEffect(
               setCrops((prevCrops) =>
                 prevCrops.filter((crop) => crop.excludeId !== excludeId)
               );
-              console.log("Item deleted successfully");
             } else {
               console.error("Failed to delete item");
             }

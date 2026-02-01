@@ -75,8 +75,6 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
   const [listLoading, setListLoading] = useState(true);
     const [searchError, setSearchError] = useState<string | null>(null);
   
-  console.log("selected Crop", selectedCrops);
-  console.log("Customer Data:", customerData);
   
   const toggleSelect = (id: number) => {
     setSelectedCrops(
@@ -140,7 +138,6 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
           }
         );
         
-        console.log("Customer data response:", response.data);
         
         if (response.data && response.data.data) {
           setCustomerData(response.data.data);
@@ -195,7 +192,6 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
       params: { customerId: customerId },
     });
 
-    console.log("Crops response:", response.data);
 
     if (response.data && response.data.data) {
       setCrops(response.data.data);
@@ -216,18 +212,6 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
       };
     }, [navigation, customerData, customerId, number, name, id, title])
   );
-
-  // const handleSearch = (query: string) => {
-  //   setSearchQuery(query);
-  //   if (query === "") {
-  //     setFilteredCrops(crops);
-  //   } else {
-  //     const filtered = crops.filter((crop) =>
-  //       crop.displayName.toLowerCase().includes(query.toLowerCase())
-  //     );
-  //     setFilteredCrops(filtered);
-  //   }
-  // };
 
   const handlesubmitexcludelist = async () => {
 
@@ -256,9 +240,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
             }
           );
 
-        console.log("Response:", checkResponse.data);
       if (checkResponse.status === 200) {
-      console.log("Exclude list updated successfully");
       navigation.navigate("Main", {
         screen: "ExcludeListSummery",
         params : {customerId: customerId}
@@ -274,25 +256,6 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
         setLoading(false)
     }
   }
-
-// const handleSearch = (query: string) => {
-//   setSearchQuery(query);
-//   setSearchError(null); // Clear any previous error
-  
-//   if (query === "") {
-//     setFilteredCrops(crops);
-//   } else {
-//     const filtered = crops.filter((crop) =>
-//       crop.displayName.toLowerCase().includes(query.toLowerCase())
-//     );
-//     setFilteredCrops(filtered);
-    
-//     // Set error if no results found
-//     if (filtered.length === 0) {
-//       setSearchError("No products found matching your search");
-//     }
-//   }
-// };
 
 const handleSearch = (query: string) => {
   let cleanedQuery = query;
@@ -458,39 +421,7 @@ const handleSearch = (query: string) => {
              
         
         <View className="flex-1 ">
-          {/* <FlatList
-            keyboardShouldPersistTaps='handled'
-            data={filteredCrops}
-            renderItem={({ item }) => (
-              <View className="flex-row justify-between items-center my-1 px-6 mb">
-                <View className="flex-row items-center space-x-6">
-                  <TouchableOpacity onPress={() => toggleSelect(item.id)}>
-                    <View
-                      className={`w-6 h-6 rounded-full border-2 justify-center items-center ${
-                        selectedCrops.includes(item.id) ? "bg-red-600 border-red-600" : "bg-white border-gray-400"
-                      }`}
-                    >
-                      {selectedCrops.includes(item.id) && (
-                        <Ionicons name="close" size={16} color="white" />
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                  <Text className="text-black">{item.displayName}</Text>
-                </View>
-
-                <Image 
-                  source={{ uri: item.image }} 
-                  style={{ width: 60, height: 60, marginRight: 10 }} 
-                  resizeMode="contain" 
-                />
-              </View>
-            )}
-            keyExtractor={(item) => item.id.toString()}
-         contentContainerStyle={{ 
-        paddingBottom: 200, // Adds space at the bottom for the button
-        paddingTop: 10 
-      }}
-          /> */}
+       
             <FlatList          
             keyboardShouldPersistTaps='handled'       
             data={filteredCrops}       

@@ -121,7 +121,6 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
         }
       );
 
-      console.log("data", response.data);
       
       if (response.data.success && response.data.data) {
         if (isLoadMore) {
@@ -140,7 +139,6 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
           setTotalCount(response.data.totalCount);
         }
         
-        console.log("Orders loaded:", response.data.data.length);
       } else {
         if (!isLoadMore) {
           safeSetOrders([]);
@@ -148,7 +146,6 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
         if (isMounted.current) {
           setHasMore(false);
         }
-        console.log("No orders data or success is false");
       }
     } catch (error) {
       console.error("Failed to fetch orders:", error);
@@ -188,11 +185,10 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
   }, []);
 
   useEffect(() => {
-    console.log("Component mounted");
+
     
     // Set up listeners
     const unsubscribe = navigation.addListener('focus', () => {
-      console.log("Screen focused - loading orders");
       if (isMounted.current) {
         setCurrentPage(1);
         setHasMore(true);
@@ -212,7 +208,6 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
 
     // Cleanup function
     return () => {
-      console.log("Component unmounting");
       isMounted.current = false;
       unsubscribe();
       keyboardDidShowListener.remove();
@@ -224,10 +219,8 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
 
   // Safe implementation with null check
   const filteredOrders = useMemo(() => {
-    console.log("Computing filtered orders. Orders length:", orders?.length || 0);
     
     if (!orders || !Array.isArray(orders)) {
-      console.log("Orders is undefined or not an array");
       return [];
     }
     
@@ -289,8 +282,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
 
   useFocusEffect(
   React.useCallback(() => {
-    console.log("Screen focused - resetting search and loading orders");
-    
+ 
     // Reset search-related states
     setSearchText("");
     setSelectedFilter("All");
@@ -304,7 +296,6 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
 
     // Cleanup function (optional)
     return () => {
-      console.log("Screen unfocused - cleanup");
     };
   }, [])
 );

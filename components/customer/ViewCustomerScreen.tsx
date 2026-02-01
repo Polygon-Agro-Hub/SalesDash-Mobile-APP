@@ -80,44 +80,16 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({ route, navigati
   const [loadingCustomerData, setLoadingCustomerData] = useState(false);
   const isMounted = useRef(true);
 
-  console.log("222222222222222",latitude,longitude,selectedLocationName)
+
 
   const ORDERS_PER_PAGE = 5;
 
- // console.log("111111111111111111111",orders)
 
   const { name, number, id, customerId, title } = route.params;
-  console.log("parid",id)
 
-//   useFocusEffect(
-//   React.useCallback(() => {
-//     console.log("Screen focused - resetting states");
-//     const resetStates = () => {
-//       setSearchText("");
-//       setSelectedFilter("Ordered");
-//       setOrders([]);
-//       setCurrentPage(1);
-//       setHasMore(true);
-//       setTotalCount(0);
-//       setLoading(true);
-//       setLoadingMore(false);
-//       setError(null);
-//       setSearchError(null);
-//     };
-
-//     resetStates();
-//     loadOrders(1, true, false);
-
-//     return () => {
-//       console.log("Screen unfocused - cleanup");
-//       // Any cleanup if needed when screen loses focus
-//     };
-//   }, [id]) // Re-run when customer id changes
-// );
 
 useFocusEffect(
   React.useCallback(() => {
-    console.log("Screen focused - resetting states");
     const resetStates = () => {
       setSearchText("");
       setSelectedFilter("Ordered");
@@ -136,7 +108,6 @@ useFocusEffect(
     getUserProfile(); // Add this line to fetch customer data
 
     return () => {
-      console.log("Screen unfocused - cleanup");
     };
   }, [id, customerId]) // Add customerId to dependencies
 );
@@ -151,7 +122,6 @@ const getUserProfile = async () => {
       return null;  
     }
 
-    console.log("11111111111",)
     
     const response = await axios.get(
       `${environment.API_BASE_URL}api/customer/customerData/${customerId}`, 
@@ -160,17 +130,7 @@ const getUserProfile = async () => {
       }
     );
     
-    console.log("Customer data response:", response.data);
-    
-    // Store the latitude and longitude from response
-    // if (response.data) {
-    //   setLatitude(response.data.latitude);
-    //   setLongitude(response.data.longitude);
-      
-    //   // Create location name from customer details
-    //   const locationName = `${title || ''} ${response.data.firstName || ''} ${response.data.lastName || ''}`.trim();
-    //   setSelectedLocationName(locationName || "Customer Location");
-    // }
+  
     if (response.data) {
   const lat = Number(response.data.latitude);
   const lng = Number(response.data.longitude);
@@ -216,7 +176,6 @@ const getUserProfile = async () => {
 
   const loadOrders = async (page = 1, showFullLoading = true, isLoadMore = false) => {
     try {
-      console.log(`Loading orders for customer ${id}, page ${page}, isLoadMore: ${isLoadMore}`);
       
       if (showFullLoading) {
         setLoading(true);
@@ -230,13 +189,6 @@ const getUserProfile = async () => {
         `${environment.API_BASE_URL}api/orders/get-order-bycustomerId/${id}?page=${page}&limit=${ORDERS_PER_PAGE}`
       );
 
-      console.log("Orders response:", {
-        customerId: id,
-        page,
-        ordersCount: response.data.data?.length || 0,
-        totalCount: response.data.totalCount,
-        hasMore: response.data.hasMore
-      });
 
       if (response.data.success) {
         const newOrders = response.data.data;
@@ -245,13 +197,11 @@ const getUserProfile = async () => {
           // Append new orders to existing ones
           setOrders(prevOrders => {
             const combined = [...prevOrders, ...newOrders];
-            console.log(`Combined orders count: ${combined.length}`);
             return combined;
           });
         } else {
           // Replace orders for initial load or refresh
           setOrders(newOrders);
-          console.log(`Set new orders count: ${newOrders.length}`);
         }
         
         // Update pagination state
@@ -259,7 +209,7 @@ const getUserProfile = async () => {
         setHasMore(response.data.hasMore || false);
         setCurrentPage(page);
         
-        console.log(`Pagination state updated - hasMore: ${response.data.hasMore}, totalCount: ${response.data.totalCount}`);
+
         
       } else {
         setError(response.data.message || "Failed to load orders");
@@ -269,7 +219,6 @@ const getUserProfile = async () => {
       
       // Handle 404 as "no orders found" instead of an error
       if (err.response && err.response.status === 404) {
-        console.log("No orders found for this customer (404) - this is normal");
         setOrders([]); // Set empty orders array
         setError(null); // Don't set error for 404
         setHasMore(false);
@@ -288,7 +237,6 @@ const getUserProfile = async () => {
   const loadMoreOrders = () => {
     if (!loadingMore && hasMore && !loading) {
       const nextPage = currentPage + 1;
-      console.log(`Loading more orders - next page: ${nextPage}`);
       loadOrders(nextPage, false, true);
     } else {
       console.log(`Cannot load more - loadingMore: ${loadingMore}, hasMore: ${hasMore}, loading: ${loading}`);
@@ -296,7 +244,6 @@ const getUserProfile = async () => {
   };
 
   const handleRefresh = () => {
-    console.log("Refreshing orders for customer:", id);
     setCurrentPage(1);
     setHasMore(true);
     setOrders([]); // Clear existing orders
@@ -322,8 +269,6 @@ const getUserProfile = async () => {
     }
   }, [searchText, selectedFilter, orders]);
 
-
-  console.log("nameeeeeeeee", name)
 
   const handleGetACall = () => {
     const phoneNumber = `tel:${number}`;
@@ -368,14 +313,12 @@ const getUserProfile = async () => {
   };
 
   useEffect(() => {
-    console.log("Component mounted or customer changed");
     
     // Reset pagination state when customer changes
     resetPaginationState();
     
     // Set up listeners
     const unsubscribe = navigation.addListener('focus', () => {
-      console.log("Screen focused - loading orders");
       if (isMounted.current) {
         resetPaginationState();
         loadOrders(1, true, false);
@@ -395,7 +338,6 @@ const getUserProfile = async () => {
 
     // Cleanup function
     return () => {
-      console.log("Component unmounting");
       isMounted.current = false;
       unsubscribe();
       keyboardDidShowListener.remove();
@@ -443,15 +385,6 @@ const getUserProfile = async () => {
               </Text>
 
 <TouchableOpacity
-//  onPress={() => navigation.navigate("Main", {
-//   screen: "ExcludeItemEditSummery",
-//   params: {
-//     id,
-//     customerId: customerId,
-//     name: name,
-//     title: title
-//   }
-// })}
  onPress={() => navigation.navigate("ExcludeItemEditSummery", { 
                 id:id,                   
                 customerId: customerId,
@@ -539,17 +472,7 @@ const getUserProfile = async () => {
         {/* Search and Filters */}
         <View className="mx-5">
           <View className="flex-row items-center bg-[#F5F1FC] px-8 py-1 border border-[#6B3BCF] rounded-full mt-4 shadow-sm">
-            {/* <TextInput
-              placeholder="Search By Order Number"
-              placeholderTextColor="#000000"
-              className="flex-1 text-sm text-black"
-              onChangeText={setSearchText}
-              value={searchText}
-              style={{ fontStyle: 'italic' }}
-              onSubmitEditing={handleSearch}
-              returnKeyType="search"
-              
-            /> */}
+
              <TextInput
     placeholder="Search By Order Number"
     placeholderTextColor="#6839CF"
@@ -588,34 +511,6 @@ const getUserProfile = async () => {
           )}
         </View>
 
-        {/* <View className="mt-4">
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            className="flex-row flex-wrap mt-[2%] mb-[1%] mx-[2%]"
-            contentContainerStyle={{ paddingHorizontal: wp('1%') }}
-          >
-            {filters.map((filter) => (
-              <TouchableOpacity
-                key={filter}
-                className={`px-4 py-2 rounded-full border mr-2 ${
-                  selectedFilter === filter 
-                    ? "bg-[#6B3BCF] border-[#6B3BCF]" 
-                    : "border-[#6B3BCF]"
-                }`}
-                onPress={() => setSelectedFilter(filter)}
-              >
-                <Text className={`text-center text-sm ${
-                  selectedFilter === filter 
-                    ? "text-white font-bold" 
-                    : "text-[#6B3BCF]"
-                }`}>
-                  {filter}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View> */}
         { !searchError && (
   <View className="mt-4">
     <ScrollView 

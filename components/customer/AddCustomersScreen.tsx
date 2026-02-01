@@ -185,7 +185,6 @@ const openMapForLocation = () => {
       setSelectedLocationName(name);
       setLocationError("");
       
-      console.log("Location received from map:", { lat, lng, name });
     },
   });
 };
@@ -260,11 +259,9 @@ setLongitude(undefined);
       // Don't reset if coming back from AttachGeoLocationScreen or ViewLocationScreen
       if (previousRoute?.name === 'AttachGeoLocationScreen' || 
           previousRoute?.name === 'ViewLocationScreen') {
-        console.log("Returning from location screen - preserving data");
         return;
       }
       
-      console.log("Screen focused - resetting form");
       resetForm();
     });
 
@@ -272,7 +269,6 @@ setLongitude(undefined);
 
     return () => {
       unsubscribe();
-      console.log("Screen unfocused - cleanup");
     };
   }, [navigation])
 );
@@ -752,7 +748,6 @@ setLongitude(undefined);
       await sendOTP();
       navigation.navigate("OtpScreen", { phoneNumber, id });
     } catch (error: any) {
-      console.log("Error checking customer:", error);
       
       if (axios.isAxiosError(error)) {
         if (error.response && error.response.status === 400) {

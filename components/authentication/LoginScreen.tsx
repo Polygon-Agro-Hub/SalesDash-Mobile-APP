@@ -62,7 +62,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
       if (response.data.success) {
         const { token, passwordUpdate } = response.data.data;
-        console.log(token)
 
         if (token) {
           const timestamp = new Date();

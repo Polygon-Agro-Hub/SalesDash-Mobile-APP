@@ -83,7 +83,6 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
 
       if (response.data && response.data.data) {
         setItems(response.data.data);
-        console.log("Items state updated:", response.data.data);
       } else {
         console.log("No items found for this package.");
       }
@@ -141,12 +140,7 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
             }}
             showsVerticalScrollIndicator={true}
           >
-            {/* Title and Price */}
-            {/* <View className="flex-row justify-between items-center mb-4">
-              <Text className="text-xl font-bold text-purple-600">{selectedPackageName}</Text>
-              <Text className="text-lg font-bold text-gray-800">Rs. {selectedPackageTotal}</Text>
-            </View> */}
-
+]
             <View className="flex-row justify-between items-start mb-4 px-2">
               <View className="flex-1 mr-4">
                 <Text

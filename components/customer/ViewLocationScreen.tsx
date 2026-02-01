@@ -163,52 +163,6 @@ const ViewLocationScreen: React.FC<ViewLocationScreenProps> = ({
         </Text>
       </View>
 
-      {/* Location Info Card - Commented out as in original */}
-      {/* <View
-        style={{
-          backgroundColor: "#f8f9fa",
-          marginHorizontal: wp(4),
-          marginTop: hp(2),
-          padding: wp(4),
-          borderRadius: 12,
-          borderWidth: 1,
-          borderColor: "#e0e0e0",
-        }}
-      >
-        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: hp(0.5) }}>
-          <Ionicons name="location" size={20} color="#059669" />
-          <Text
-            style={{
-              fontSize: wp(3.5),
-              fontWeight: "600",
-              color: "#059669",
-              marginLeft: wp(2),
-            }}
-          >
-            Selected Location
-          </Text>
-        </View>
-        
-        {locationName && (
-          <Text
-            style={{
-              fontSize: wp(4),
-              fontWeight: "500",
-              color: "#000",
-              marginBottom: hp(1),
-              marginLeft: wp(7),
-            }}
-          >
-            {locationName}
-          </Text>
-        )}
-        
-        <Text style={{ fontSize: wp(3.2), color: "#888", marginLeft: wp(7) }}>
-          Lat: {latitude?.toFixed(6)} • Lng: {longitude?.toFixed(6)}
-        </Text>
-      </View> */}
-
-      {/* Map WebView */}
       <View style={{ flex: 1, marginTop: hp(2), marginHorizontal: wp(4), marginBottom: hp(2) }}>
         <View style={{ flex: 1, borderRadius: 12, overflow: 'hidden' }}>
           <WebView
@@ -223,36 +177,6 @@ const ViewLocationScreen: React.FC<ViewLocationScreenProps> = ({
         </View>
       </View>
 
-      {/* Bottom Button - Commented out as in original */}
-      {/* <View
-        style={{
-          paddingHorizontal: wp(4),
-          paddingVertical: hp(2),
-          backgroundColor: "#fff",
-          borderTopWidth: 1,
-          borderTopColor: "#e0e0e0",
-        }}
-      >
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={{
-            backgroundColor: "#7C3AED",
-            paddingVertical: hp(1.8),
-            borderRadius: 10,
-            alignItems: "center",
-          }}
-        >
-          <Text
-            style={{
-              color: "#fff",
-              fontSize: wp(4),
-              fontWeight: "600",
-            }}
-          >
-            Back to Registration
-          </Text>
-        </TouchableOpacity>
-      </View> */}
     </View>
   );
 };

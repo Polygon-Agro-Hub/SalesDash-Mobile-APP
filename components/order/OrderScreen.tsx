@@ -28,16 +28,6 @@ import { RouteProp, useFocusEffect } from '@react-navigation/native';
 type OrderScreenNavigationProp = StackNavigationProp<RootStackParamList, "OrderScreen">;
 type OrderScreenRouteProp = RouteProp<RootStackParamList, "OrderScreen">;
 
-// interface OrderScreenProps {
-//   navigation: OrderScreenNavigationProp;
-//   route: {
-//     params: {
-//       id: string; 
-//       isPackage:string;
-//     };
-//   };
-// }
-
 interface ProductItem {
   label: string;
   discount: string;
@@ -276,7 +266,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
 
 
   useEffect(() => {
-    console.log("Initializing additional items from edit mode");
 
     const initializeAdditionalItems = async () => {
       if (route.params?.isEdit && route.params?.additionalItems) {
@@ -335,18 +324,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
 
             const totalAmount = quantityInKg * discountedPricePerKg;
 
-            console.log(`Initializing item ${displayName}:`, {
-              quantity,
-              unit,
-              quantityInKg,
-              pricePerKg,
-              discountedPricePerKg,
-              totalAmount,
-              discountAmount,
-              changeby,
-              startValue
-            });
-
             // Return AdditionalItem type with all required properties
             return {
               id: productId,
@@ -364,7 +341,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
           })
           .filter((item): item is AdditionalItem => item !== null); // Type guard
 
-        console.log("Mapped additional items:", mappedAdditionalItems);
         setAdditionalItems(mappedAdditionalItems);
       }
     };
@@ -433,7 +409,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         }))
       };
 
-      console.log("orderData--------", orderData);
 
       navigation.navigate("ScheduleScreen" as any, {
         orderData,
@@ -563,8 +538,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
           headers: { Authorization: `Bearer ${storedToken}` },
         }
       );
-
-      //console.log("packagedata", response.data);
       setPackages(response.data.data);
 
       // Transform packages for dropdown
@@ -586,10 +559,8 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
   }, []);
 
 
-  // console.log("ispackage--------", isPackage)
 
   useEffect(() => {
-    console.log("Route params received:", route.params);
   }, [route.params]);
 
 
@@ -604,7 +575,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         if (packages.length > 0) {
           fetchItemsForPackage(packageId);
         } else {
-          console.log("Packages not loaded yet, waiting...");
           // You might want to add a loading state here
           setItems([]);
           setSelectedPackage(null);
@@ -673,13 +643,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
   }, [productOpen]);
 
 
-
-
-
-  const handleBack = () => {
-    console.log('Navigate back');
-  };
-
   const handleAddMore = () => {
     setShowAddModal(true);
     // Reset quantity to startValue when opening modal
@@ -731,17 +694,12 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
 
 
 
-
-
-  // const handleGoBack = () => {
-  //   setShowAddModal(false);
-  // };
   const handleGoBack = () => {
     setShowAddModal(false);
     setProductValue('');
     setSelectedProduct('');
   };
-  //console.log("dissssssssssssssss",discountprice)
+
 
   const toggleItemSelection = (id: number) => {
     setSelectedItems(prev => {
@@ -853,16 +811,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
       discount: discountAmount
     };
 
-    console.log("Saving updated item:", {
-      name: updatedItem.name,
-      quantity: updatedItem.quantity,
-      unit: updatedItem.unit,
-      quantityInKg,
-      pricePerKg: editingItem.pricePerKg,
-      discountedPricePerKg: editingItem.discountedPricePerKg,
-      totalAmount,
-      discountAmount
-    });
 
     setAdditionalItems(items =>
       items.map(item =>

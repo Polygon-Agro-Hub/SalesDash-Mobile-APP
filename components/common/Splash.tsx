@@ -39,10 +39,8 @@ const Splash: React.FC<SplashProps> = ({ navigation }) => {
 
     if (response.ok && data.success) {
       if (data.data.passwordUpdate === 1) {
-        console.log("Password updated, navigating to Dashboard.");
         navigation.navigate("Main", { screen: 'DashboardScreen' });
       } else {
-        console.log("Password not updated, navigating to Login.");
         await AsyncStorage.multiRemove([
           "authToken",
           "tokenStoredTime",
@@ -51,7 +49,6 @@ const Splash: React.FC<SplashProps> = ({ navigation }) => {
         navigation.navigate('LoginScreen');
       }
     } else {
-      console.log("API error or invalid token, navigating to Login.");
       await AsyncStorage.multiRemove([
         "authToken",
         "tokenStoredTime",
@@ -84,11 +81,8 @@ const Splash: React.FC<SplashProps> = ({ navigation }) => {
             const tokenExpiry = new Date(expirationTime);
     
             if (currentTime < tokenExpiry) {
-              console.log("Token is valid, checking password update status...");
-              // Token is valid, now check password update status
               await checkPasswordUpdateStatus(authToken);
             } else {
-              console.log("Token expired, clearing storage.");
               await AsyncStorage.multiRemove([
                 "authToken",
                 "tokenStoredTime",
@@ -97,7 +91,6 @@ const Splash: React.FC<SplashProps> = ({ navigation }) => {
               navigation.navigate('LoginScreen');
             }
           } else {
-            console.log("No token found, navigating to Login.");
             navigation.navigate('LoginScreen');
           }
         }, 3000);

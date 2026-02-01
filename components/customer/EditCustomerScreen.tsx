@@ -57,14 +57,6 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({ navigation, rou
   const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [token, setToken] = useState<string>("");
-  // const [touchedFields, setTouchedFields] = useState({
-  //   firstName: false,
-  //   lastName: false,
-  //   phoneNumber: false,
-  //   email: false,
-  //   buildingType: false,
-  //   title: false
-  // });
   const [touchedFields, setTouchedFields] = useState({
   firstName: false,
   lastName: false,
@@ -236,11 +228,6 @@ const [locationName, setLocationName] = useState<string>("");
   };
 
 
-  // const RequiredField = ({ children }: { children: React.ReactNode }) => (
-  //   <Text className="text-gray-700 mb-1">
-  //     {children} <Text className="">*</Text>
-  //   </Text>
-  // );
   const RequiredField = ({ children }: { children: React.ReactNode }) => (
   <Text className="text-gray-700 mb-1">
     {children} <Text className="">*</Text>
@@ -517,14 +504,9 @@ const resetFormState = () => {
   });
 };
 
-  // Add this after your other useEffects (around line 450)
+
 useEffect(() => {
-  console.log("Location state updated:", {
-    latitude,
-    longitude,
-    locationName,
-    hasLocation: !!(latitude && longitude)
-  });
+
 }, [latitude, longitude, locationName]);
 
 
@@ -581,7 +563,6 @@ const fetchCustomerData = async () => {
   }
 };
   const handleLocationSelect = (lat: number, lng: number, name: string) => {
-  console.log("handleLocationSelect called with:", { lat, lng, name });
   setLatitude(lat.toString());
   setLongitude(lng.toString());
   setLocationName(name);
@@ -591,21 +572,16 @@ const fetchCustomerData = async () => {
 
   useFocusEffect(
   React.useCallback(() => {
-    console.log("🏠 EditCustomerScreen focused - id:", id);
-    console.log("🗺️ Returning from map?:", isReturningFromMapRef.current);
+
     
-    // 1. If returning from map, keep all data including location
     if (isReturningFromMapRef.current) {
-      console.log("📍 Preserving map data for customer:", id);
       isReturningFromMapRef.current = false; // Reset flag
-      return; // Exit early - don't reload data
+      return; 
     }
     
-    // 2. Check if we need to load data
     const shouldLoadData = !hasLoadedOnce.current || lastFetchedIdRef.current !== id;
     
     if (shouldLoadData) {
-      console.log("🔄 Loading fresh data for customer:", id);
       
       const loadData = async () => {
         try {
@@ -621,7 +597,6 @@ const fetchCustomerData = async () => {
           hasLoadedOnce.current = true;
           lastFetchedIdRef.current = id;
           
-          console.log("✅ Data loaded for customer:", id);
         } catch (error) {
           console.error("❌ Error loading customer data:", error);
           Alert.alert("Error", "Failed to load customer data.");
@@ -638,20 +613,17 @@ const fetchCustomerData = async () => {
     return () => {
       console.log("👋 EditCustomerScreen blurred");
     };
-  }, [id]) // This will reload when customer ID changes
+  }, [id]) 
 );
 
-// Also add this useEffect to handle component unmount
 useEffect(() => {
   return () => {
-    // Reset the map flag when component unmounts
     isReturningFromMapRef.current = false;
   };
 }, []);
 
 
   const navigateToMapScreen = () => {
-    console.log("Navigating to map with:", { latitude, longitude });
     isReturningFromMapRef.current = true; // Mark before navigation
     navigation.navigate("AttachGeoLocationScreenEdit" as any, {
       currentLatitude: latitude ? parseFloat(latitude) : undefined,
@@ -720,227 +692,9 @@ useEffect(() => {
     }
   };
 
- // Updated handleRegister function with proper error handling
-// const handleRegister = async () => {
-//   // Mark all fields as touched to show errors
-//   setTouchedFields({
-//     firstName: true,
-//     lastName: true,
-//     phoneNumber: true,
-//     email: true,
-//     buildingType: true,
-//     title: true
-//   });
 
-//   // Clear any previous validation errors
-//   setPhoneError("");
-//   setEmailError("");
-
-//   // Validate required fields
-//   if (!selectedCategory || !firstName || !lastName || !phoneNumber || !email || !buildingType) {
-//     Alert.alert("Error", "Please fill in all required fields.");
-//     return;
-//   }
-
-//   // Validate formats
-//   if (!validatePhoneNumber(phoneNumber)) {
-//     Alert.alert("Error", "Please enter a valid phone number (format: +947XXXXXXXX).");
-//     return;
-//   }
-
-//   if (!validateEmail(email)) {
-//     Alert.alert("Error", "Please enter a valid email address.");
-//     return;
-//   }
-
-//   // Validate building-specific fields
-//   if (buildingType === "House" && (!houseNo || !streetName || !city)) {
-//     Alert.alert("Error", "Please fill in all required house fields.");
-//     return;
-//   }
-
-//   if (buildingType === "Apartment" && (!buildingNo || !buildingName || !unitNo || !floorNo || !houseNo || !streetName || !city)) {
-//     Alert.alert("Error", "Please fill in all required apartment fields.");
-//     return;
-//   }
-
-//   setIsSubmitting(true);
-
-//   try {
-//     // Check for existing phone/email when phone number has changed
-//  if (phoneNumber !== originalPhoneNumber) {
-//   try {
-//     console.log("Checking customer with:", { phoneNumber, email, excludeId: id });
-    
-//     const checkResponse = await axios.post(
-//       `${environment.API_BASE_URL}api/customer/check-customer`,
-//       { 
-//         phoneNumber, 
-//         email,
-//         excludeId: id // Add this to exclude current user from check
-//       },
-//       { 
-//         headers: { 'Authorization': `Bearer ${token}` },
-//         timeout: 10000
-//       }
-//     );
-
-//     console.log("Customer check response:", checkResponse.data);
-        
-//       } catch (checkError: any) {
-//         console.log("Customer check error:", checkError);
-        
-//         // Handle different types of errors
-//         if (checkError.code === 'ECONNABORTED') {
-//           Alert.alert("Error", "Request timed out. Please check your internet connection and try again.");
-//           return;
-//         }
-        
-//         if (checkError.response) {
-//           // Server responded with an error status
-//           const status = checkError.response.status;
-//           const errorData = checkError.response.data;
-          
-//           if (status === 400) {
-//             // Handle validation errors
-//             const errorMessage = errorData.message || "Validation failed";
-            
-//             if (errorMessage.includes("Mobile Number already exists")) {
-//               setPhoneError("This mobile number is already registered.");
-//               Alert.alert(
-//                 "Mobile Number Already Exists", 
-//                 "This mobile number is already registered. Please use a different mobile number."
-//               );
-//               return;
-//             } else if (errorMessage.includes("Email already exists")) {
-//               setEmailError("This email address is already registered.");
-//               Alert.alert(
-//                 "Email Already Exists", 
-//                 "This email address is already registered. Please use a different email address."
-//               );
-//               return;
-//             } else if (errorMessage.includes("Mobile Number and Email already exist")) {
-//               setPhoneError("This mobile number is already registered.");
-//               setEmailError("This email address is already registered.");
-//               Alert.alert(
-//                 "Account Already Exists", 
-//                 "Both mobile number and email are already registered. Please use different credentials."
-//               );
-//               return;
-//             } else {
-//               Alert.alert("Validation Error", errorMessage);
-//               return;
-//             }
-//           } else if (status === 500) {
-//             // Server error
-//             console.error("Server error during validation:", errorData);
-//             Alert.alert(
-//               "Server Error", 
-//               "There was a problem validating your information. Please try again in a moment."
-//             );
-//             return;
-//           } else {
-//             // Other HTTP errors
-//             Alert.alert("Error", `Validation failed (${status}). Please try again.`);
-//             return;
-//           }
-//         } else if (checkError.request) {
-//           // Network error
-//           console.error("Network error:", checkError.request);
-//           Alert.alert(
-//             "Network Error", 
-//             "Unable to connect to the server. Please check your internet connection and try again."
-//           );
-//           return;
-//         } else {
-//           // Other error
-//           console.error("Unexpected error:", checkError.message);
-//           Alert.alert("Error", "An unexpected error occurred. Please try again.");
-//           return;
-//         }
-//       }
-
-//       // Send OTP if validation passed
-//       try {
-//         const otpResponse = await sendOTP();
-//         if (otpResponse.status !== 200) {
-//           Alert.alert("Error", "Failed to send OTP. Please try again.");
-//           return;
-//         }
-//       } catch (otpError) {
-//         console.error("OTP sending error:", otpError);
-//         Alert.alert("Error", "Failed to send OTP. Please try again.");
-//         return;
-//       }
-//     }
-
-//     // Prepare data for update
-//     const customerData = {
-//       title: selectedCategory,
-//       firstName,
-//       lastName,
-//       phoneNumber,
-//       email,
-//       buildingType,
-//     };
-
-//     const buildingData = buildingType === "House" ? {
-//       houseNo,
-//       streetName,
-//       city
-//     } : {
-//       buildingNo,
-//       buildingName,
-//       unitNo,
-//       floorNo,
-//       houseNo,
-//       streetName,
-//       city
-//     };
-
-//     if (phoneNumber !== originalPhoneNumber) {
-//       // Store data and navigate to OTP screen
-//       await AsyncStorage.setItem("pendingCustomerData", JSON.stringify({ 
-//         customerData, 
-//         buildingData,
-//         originalBuildingType
-//       }));
-//       navigation.navigate("OtpScreenUp", { phoneNumber, id, token });
-//     } else {
-//       // Direct update without OTP (phone number unchanged)
-//       try {
-//         const response = await axios.put(
-//           `${environment.API_BASE_URL}api/customer/update-customer-data/${id}`,
-//           { ...customerData, buildingData, originalBuildingType },
-//           { 
-//             headers: { 'Authorization': `Bearer ${token}` },
-//             timeout: 15000 // 15 second timeout for update
-//           }
-//         );
-
-//         if (response.status === 200) {
-//           Alert.alert("Success", "Customer updated successfully.");
-//           navigation.goBack();
-//         }
-//       } catch (updateError: any) {
-//         console.error("Update error:", updateError);
-//         if (updateError.response?.status === 400) {
-//           Alert.alert("Update Error", updateError.response.data.message || "Failed to update customer data.");
-//         } else {
-//           Alert.alert("Error", "Failed to update customer. Please try again.");
-//         }
-//       }
-//     }
-//   } catch (error: any) {
-//     console.error("Unexpected error in handleRegister:", error);
-//     Alert.alert("Error", "An unexpected error occurred. Please try again.");
-//   } finally {
-//     setIsSubmitting(false);
-//   }
-// };
 
 const handleRegister = async () => {
-  // Mark all fields as touched to show errors
   const touchedFieldsToUpdate = {
     firstName: true,
     lastName: true,
@@ -1002,7 +756,7 @@ if (!selectedCategory || !firstName || !lastName || !phoneNumber || !buildingTyp
     // Check for existing phone/email when either has changed
     if (phoneNumberChanged || emailChanged) {
       try {
-        console.log("Checking customer with:", { phoneNumber, email, excludeId: id });
+
         
         const checkResponse = await axios.post(
           `${environment.API_BASE_URL}api/customer/check-customer`,
@@ -1017,7 +771,6 @@ if (!selectedCategory || !firstName || !lastName || !phoneNumber || !buildingTyp
           }
         );
 
-        console.log("Customer check response:", checkResponse.data);
             
       } catch (checkError: any) {
         console.log("Customer check error:", checkError);
@@ -1315,11 +1068,6 @@ const handlePhoneNumberKeyPress = (e: any) => {
        style={{ flex: 1 ,backgroundColor: "white" }}
      >
            <View className="flex-1 bg-white">
-      {/* <KeyboardAwareScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
-        keyboardShouldPersistTaps="handled"
-        enableOnAndroid={true}
-      > */}
         <View className="flex-1 bg-white py-4 p-2">
           <View className="p-[-4]">
             <View className="bg-white flex-row items-center h-17 shadow-lg px-1">
@@ -1452,50 +1200,6 @@ const handlePhoneNumberKeyPress = (e: any) => {
   ) : null}
 </View>
 
-{/* <View className="mb-4">
-  <RequiredField>Email Address</RequiredField>
-  <TextInput
-    className={`bg-[#F6F6F6] border rounded-full px-6 h-10 ${
-      emailError ? 'border-red-500' : 'border-[#F6F6F6]'
-    }`}
-    placeholder="Email Address"
-    keyboardType="email-address"
-    value={email}
-    onChangeText={handleEmailChangeWithErrorClear}
-    // onBlur={() => handleFieldTouch("email")}
-     onFocus={handleInputFocus}
-                  onBlur={() => {
-                    handleFieldTouch("email");
-                    handleInputBlur();
-                  }}
-  />
-  {emailError ? (
-    <Text className="text-red-500 text-xs mt-1 ml-2">{emailError}</Text>
-  ) : null}
-</View> */}
-
-{/* <View className="mb-4">
-  <RequiredField>Email Address</RequiredField>
-  <TextInput
-    className={`bg-[#F6F6F6] border rounded-full px-6 h-10 ${
-      emailError ? 'border-red-500' : 'border-[#F6F6F6]'
-    }`}
-    placeholder="Email Address"
-    keyboardType="email-address"
-    autoCapitalize="none"
-    autoCorrect={false}
-    value={email}
-    onChangeText={handleEmailChangeWithErrorClear}
-
-    onBlur={() => {
-      handleFieldTouch("email");
-   
-    }}
-  />
-  {emailError ? (
-    <Text className="text-red-500 text-xs mt-1 ml-2">{emailError}</Text>
-  ) : null}
-</View> */}
 <View className="mb-4">
  <RequiredField>Email Address</RequiredField>
   <TextInput
@@ -1914,21 +1618,6 @@ const handlePhoneNumberKeyPress = (e: any) => {
           )}
         </View>
 
-              {/* <TouchableOpacity 
-                onPress={handleRegister}
-                disabled={isSubmitting}
-              >
-                <LinearGradient 
-                  colors={["#854BDA", "#6E3DD1"]} 
-                  className="py-3 px-4 items-center mt-6 mb-[15%] mr-[20%] ml-[20%] h-15 rounded-full"
-                >
-                  {isSubmitting ? (
-                    <ActivityIndicator color="#FFFFFF" />
-                  ) : (
-                    <Text className="text-center text-white font-bold">Save</Text>
-                  )}
-                </LinearGradient>
-              </TouchableOpacity> */}
               <TouchableOpacity 
   onPress={handleRegister}
   disabled={isSubmitting}

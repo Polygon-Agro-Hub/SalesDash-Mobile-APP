@@ -220,23 +220,13 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({ navigation, route }) =>
     return new Date();
   });
 
-  console.log("ispackage--------", isPackage);
-  console.log("orderData--------", orderData);
 
-  // Calculate minimum date (2 days from today)
-  // const getMinimumSelectableDate = () => {
-  //   const minDate = new Date();
-  //   minDate.setDate(minDate.getDate() + 3);
-  //   return minDate;
-  // };
 
-  // const minimumDate = getMinimumSelectableDate();
 
   const getMinimumSelectableDate = () => {
   const today = new Date(); // Current date and time 
   const currentHour = today.getHours(); // Get the current hour before modifying the date
   
-  console.log("current hour:", currentHour); // Log current hour for debugging
 
   const minDate = new Date(today); // Create a new date object for minDate
   
@@ -262,10 +252,8 @@ const minimumDate = getMinimumSelectableDate();
         
         const customerIdi = route.params?.customerid || customerId;
 
-        console.log("fbkad",customerIdi)
         
         if (!customerIdi) {
-          console.log("No customer ID found in route params");
           setError("No customer ID found");
           setLoading(false);
           return;
@@ -274,7 +262,6 @@ const minimumDate = getMinimumSelectableDate();
         const storedToken = await AsyncStorage.getItem("authToken");
         
         if (!storedToken) {
-          console.log("No authentication token found");
           setError("No authentication token found");
           setLoading(false);
           return;
@@ -286,10 +273,8 @@ const minimumDate = getMinimumSelectableDate();
           headers: { Authorization: `Bearer ${storedToken}` },
         });
         
-        console.log("Full API response:", response.data);
         
         if (response.data && response.data.success) {
-          console.log("Customer data received:", response.data.data);
           setCustomerData(response.data.data);
           
           // Fetch cities to get delivery charge
@@ -305,7 +290,6 @@ const minimumDate = getMinimumSelectableDate();
               if (cityData) {
                 const fee = parseFloat(cityData.charge) || 0;
                 setDeliveryFee(fee);
-                console.log(`Setting delivery fee to ${fee} for city ${customerCity}`);
               }
             }
           }
@@ -329,7 +313,6 @@ const minimumDate = getMinimumSelectableDate();
     };
 
     if (customerid || customerId) {
-      console.log("Fetching data for customer ID:", route.params?.customerid || customerId);
       fetchCustomerData();
     } else {
       console.log("No customer ID in route params");
@@ -339,12 +322,6 @@ const minimumDate = getMinimumSelectableDate();
   const fullTotal = total + deliveryFee;
 
 
-  
-  // const timeSlots = [
-  //   { key: "Within 8-12 PM", value: "Within 8-12 PM" },
-  //   { key: "Within 12-4 PM", value: "Within 12-4 PM" },
-  //   { key: "Within 4-8 PM", value: "Within 4-8 PM" },
-  // ];
   const timeSlots = [
     { key: "Within 8AM - 2PM", value: "Within 8AM - 2PM" },
     { key: "Within 2PM - 8PM", value: "Within 2PM - 8PM" }
@@ -403,22 +380,11 @@ const minimumDate = getMinimumSelectableDate();
     setShowDatePicker(true);
   };
 
-  // const getSelectableDates = () => {
-  //   const today = new Date();
-  //   today.setHours(0, 0, 0, 0);
-    
-  //   const minDate = new Date(today);
-  //   minDate.setDate(today.getDate() + 3);
-    
-  //   return { minDate };
-  // };
 
-  // const { minDate } = getSelectableDates();
   const getSelectableDates = () => {
   const today = new Date();
     const currentHour = today.getHours(); // Get the current hour before resetting to midnight
   
-  console.log("current hour:", currentHour);
   today.setHours(0, 0, 0, 0); // Reset to midnight
   
 
@@ -430,7 +396,6 @@ const minimumDate = getMinimumSelectableDate();
     minDate.setDate(today.getDate() + 4); // Set the minimum date to 4 days from today
   } else {
     minDate.setDate(today.getDate() + 3); // Set the minimum date to 3 days from today
-    console.log("hit")
   }
 
   return { minDate };
@@ -445,10 +410,7 @@ const { minDate } = getSelectableDates();
     if (selectedDate) {
       const selectedWithoutTime = new Date(selectedDate);
       selectedWithoutTime.setHours(0, 0, 0, 0);
-      
-      console.log(`Selected date: ${selectedWithoutTime.toDateString()}`);
-      console.log(`Min date: ${minDate.toDateString()}`);
-      console.log(`Is >= min: ${selectedWithoutTime >= minDate}`);
+
       
       if (selectedWithoutTime.getTime() >= minDate.getTime()) {
         setDate(selectedDate);
@@ -503,7 +465,6 @@ const { minDate } = getSelectableDates();
   const handleTimeSlotSelection = (val: string) => {
     if (val !== selectedTimeSlot) {
       setSelectedTimeSlot(val);
-      console.log("Selected time slot:", val);
     }
   };
   
@@ -520,61 +481,6 @@ const { minDate } = getSelectableDates();
         return "12:00"; // Default fallback
     }
   };
-  
-//   const handleProceed = () => {
-//     if (!selectedDate && !selectedTimeSlot) {
-//       Alert.alert("Required", "Please select a delivery date & time slot");
-//       return;
-//     }
-//     if (!selectedDate) {
-//       Alert.alert("Required", "Please select a delivery date");
-//       return;
-//     }
-  
-//     if (!selectedTimeSlot) {
-//       Alert.alert("Required", "Please select a time slot");
-//       return;
-//     }
-
-//     // Convert selected time slot to 24-hour format
-//     const scheduleTime = convertTimeSlotTo24Hour(selectedTimeSlot);
-    
-//     // Prepare the data to pass to SelectPaymentMethod
-//     const packageId = orderItems && orderItems.length > 0 ? orderItems[0].packageId : 
-//                      (orderData ? orderData.packageId : undefined);
-    
-//     const navigationParams = {
-//       items: items,
-//       subtotal: subtotal,
-//       discount: discount,
-//       total: total,
-//       fullTotal: fullTotal,
-//       selectedDate: selectedDate,
-//       selectedTimeSlot: selectedTimeSlot,
-//       customerId: customerId,
-//       isPackage: isPackage,
-//       packageId: packageId,
-//       customerid: customerid,
-//       orderItems: orderItems,
-      
-//       // Add the formatted schedule data
-//       sheduleDate: selectedDate, // Using the same format as your requirement
-//       sheduleTime: scheduleTime, // 24-hour format time
-      
-//       // Include orderData if it exists (for the first navigation flow)
-//       ...(orderData && { orderData: orderData })
-//     };
-    
-//     navigation.navigate("SelectPaymentMethod" as any, navigationParams);
-    
-//     console.log("Data passed to payment:", navigationParams);
-//     console.log("Schedule Date:", selectedDate);
-//     console.log("Schedule Time (24hr):", scheduleTime);
-//     console.log("Time Slot:", selectedTimeSlot);
-//   };
-//   useEffect(() => {
-//   console.log('Route params:', route.params);
-// }, []);
 
 const handleProceed = () => {
   if (!selectedDate && !selectedTimeSlot) {
@@ -624,7 +530,6 @@ const handleProceed = () => {
   
   navigation.navigate("SelectPaymentMethod" as any, navigationParams);
   
-  console.log("Data passed to payment:", navigationParams);
 };
 
 

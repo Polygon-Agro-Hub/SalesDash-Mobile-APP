@@ -62,7 +62,6 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  console.log("============",isPackage)
 
   useEffect(() => {
     const initializeCartItems = async () => {
@@ -74,8 +73,6 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
               let changebyValue = item.changeby;
               let startValue = item.startValue;
               
-              console.log(`Item ${item.id}: changeby=${changebyValue}, startValue=${startValue}`);
-              console.log(`fromOrderSummary: ${fromOrderSummary}`);
               
               const needsApiFetch = true;
               
@@ -83,25 +80,21 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
                 try {
                   const storedToken = await AsyncStorage.getItem("authToken");
 
-                  console.log(`Making API call for item ${item.id}`);
                   const apiUrl = `${environment.API_BASE_URL}api/packages/getChnageby/${item.id}`;
-                  console.log(`API URL: ${apiUrl}`);
                   
                   const response = await axios.get(apiUrl, {
                     headers: { Authorization: `Bearer ${storedToken}` },
                   });
-                  console.log("API Response for item", item.id, ":", response.data);
                   
                   if (response.data.data) {
                     changebyValue = response.data.data.changeby;
                     startValue = response.data.data.startValue;
-                    console.log(`Using API values: changeby=${changebyValue}, startValue=${startValue}`);
                   } else {
                     console.log("No data in API response, using existing values");
                   }
                 } catch (error) {
                   console.error(`Error fetching changeby for item ${item.id}:`, error);
-                  console.log("API failed, falling back to existing values");
+
                 }
               }
 
@@ -118,12 +111,11 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
               let initialQuantity;
 
               if (fromOrderSummary) {
-                console.log(`Order Summary mode: preserving quantity ${item.quantity}`);
+
                 initialQuantity = typeof item.quantity === 'string'
                   ? parseFloat(item.quantity)
                   : (item.quantity || startValueNum);
               } else {
-                console.log(`New selection mode: using startValue ${startValueNum} as initial quantity`);
                 initialQuantity = startValueNum;
               }
 
@@ -165,7 +157,6 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
                 minValue: startValueNum 
               };
               
-              console.log(`Final processed item ${item.id}:`, finalItem);
               return finalItem;
             })
           );
@@ -284,7 +275,6 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
         // Ensure quantity doesn't go below minimum
         const newValue = Math.max(minValue, item.changeby - decrementAmount);
         
-        console.log(`Item ${item.id}: Current=${item.changeby}, Min=${minValue}, Decrement=${decrementAmount}, New=${newValue}`);
         
         return { 
           ...item, 

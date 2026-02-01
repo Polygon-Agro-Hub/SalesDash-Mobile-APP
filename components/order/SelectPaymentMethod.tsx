@@ -164,21 +164,6 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, r
       orderData: orderData, // Explicitly pass orderData - CRITICAL!
     };
 
-    console.log("=== SelectPaymentMethod Navigation Debug ===");
-    console.log("Navigation data to OrderSummeryScreen:", JSON.stringify(navigationData, null, 2));
-    console.log("Items:", navigationData.items?.length || 0);
-    console.log("Subtotal:", navigationData.subtotal);
-    console.log("Discount:", navigationData.discount);
-    console.log("Total:", navigationData.total);
-    console.log("Full Total:", navigationData.fullTotal);
-    console.log("Selected Date:", navigationData.selectedDate);
-    console.log("Selected Time Slot:", navigationData.selectedTimeSlot);
-    console.log("Payment Method:", navigationData.paymentMethod);
-    console.log("isPackage:", navigationData.isPackage);
-    console.log("packageId:", navigationData.packageId);
-    console.log("orderData:", navigationData.orderData ? "EXISTS" : "MISSING");
-    console.log("orderData.additionalItems:", navigationData.orderData?.additionalItems?.length || 0);
-    console.log("==========================================");
 
     navigation.navigate("OrderSummeryScreen" as any, navigationData);
   };

@@ -76,7 +76,6 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation, r
           params: {id}
         });
 
-        console.log(response.data)
       
         if (response.data && response.data.data) {
           setProducts(response.data.data.map((item: any) => ({
@@ -98,13 +97,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation, r
     fetchProducts();
   }, []);
 
-  // const filteredProducts = products
-  // .filter(product => 
-  //   product.category === "Retail" && 
-  //   (searchQuery 
-  //     ? product.displayName.toLowerCase().includes(searchQuery.toLowerCase())
-  //     : true)
-  // );
+
 
   const filteredProducts = products
     .filter(product => 
@@ -173,7 +166,6 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation, r
       });
   
     if (selectedProducts.length > 0) {
-      console.log("navitate-------------",selectedProducts, id, isPackage)
       navigation.navigate("CratScreen" as any, { selectedProducts, id, isPackage });
       
     } else {
@@ -215,20 +207,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({ navigation, r
             </Text>
           </View>
         <View className="flex-1 px-6">
-          {/* Header */}
 
-
-          {/* Search Bar */}
-          {/* <View className="mb-4 bg-[#F5F1FC] rounded-full flex-row items-center px-4 py-2 mt-2">
-            <TextInput
-              className="flex-1 text-gray-700"
-              placeholder="Search By Product Name"
-              placeholderTextColor="#6839CF"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-            <Ionicons name="search" size={20} color="#6839CF" />
-          </View> */}
           <View className="mb-4 bg-[#F5F1FC] rounded-full flex-row items-center px-4 py-2 mt-2">
   <TextInput
     className="flex-1 text-gray-700"

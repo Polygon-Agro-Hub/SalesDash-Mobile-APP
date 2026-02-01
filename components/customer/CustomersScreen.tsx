@@ -125,7 +125,6 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
         },
       });
 
-      console.log("API Response:", response.data);
 
       if (response.data.success && response.data.data) {
         const sortedCustomers = sortCustomersByName(response.data.data);
@@ -150,7 +149,6 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
           setTotalCount(response.data.totalCount);
         }
         
-        console.log("Customers loaded:", response.data.data.length);
       } else {
         if (!isLoadMore) {
           safeSetCustomers([]);
@@ -158,7 +156,6 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
         if (isMounted.current) {
           setHasMore(false);
         }
-        console.log("No customers data or success is false");
       }
     } catch (error) {
       console.error("Failed to fetch customers:", error);
@@ -185,17 +182,14 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
 
   const loadMoreCustomers = () => {
     if (!loadingMore && hasMore && searchQuery === "") {
-      console.log("Loading more customers, page:", currentPage + 1);
       loadCustomers(currentPage + 1, false, true);
     }
   };
 
   useEffect(() => {
-    console.log("Component mounted");
     
     // Set up listeners
     const unsubscribe = navigation.addListener('focus', () => {
-      console.log("Screen focused - loading customers");
       if (isMounted.current) {
         setCurrentPage(1);
         setHasMore(true);
@@ -216,7 +210,6 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
 
     // Cleanup function
     return () => {
-      console.log("Component unmounting");
       isMounted.current = false;
       unsubscribe();
       keyboardDidShowListener.remove();
@@ -225,39 +218,14 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   }, [navigation]);
 
   const handleRefresh = async () => {
-    console.log("Refreshing customers");
     setRefreshing(true);
     setCurrentPage(1);
     setHasMore(true);
-  //  setError(null);
     await loadCustomers(1, false, false);
   };
 
-  // const handleSearch = (query: string) => {
-  //   setSearchQuery(query);
-  
-  //   const formattedQuery = query.startsWith("+94") ? query.replace("+94", "0") : query;
-  
-  //   if (query === "") {
-  //     setFilteredCustomers(customers); 
-  //   } else {
-  //     const filteredData = customers.filter((customer) => {
-  //       const formattedPhoneNumber = formatPhoneNumber(customer.phoneNumber);
-        
-  //       return (
-  //         customer.firstName.toLowerCase().includes(query.toLowerCase()) ||
-  //         customer.lastName.toLowerCase().includes(query.toLowerCase()) ||
-  //         formattedPhoneNumber.includes(formattedQuery)
-  //       );
-  //     });
-  
-  //     // Keep the filtered results sorted alphabetically
-  //     setFilteredCustomers(sortCustomersByName(filteredData));
-  //   }
-  // };
-
+ 
 const handleSearch = (query: string) => {
-  // Only remove leading spaces, but allow spaces within the search term
   const cleanedQuery = query.replace(/^\s+/, '');
   
   setSearchQuery(cleanedQuery);
@@ -402,13 +370,6 @@ const handleSearch = (query: string) => {
                         })
                       }
                     >
-                      {/* <View className="bg-white shadow-md p-4 mb-3 mx-3 flex-row justify-between items-center rounded-lg border border-gray-200">
-                        <View>
-                          <Text className="text-gray-700 font-semibold">{item.title}.{item.firstName} {item.lastName}</Text>
-                          <Text className="text-gray-500 text-sm">{formatPhoneNumber(item.phoneNumber)}</Text>
-                        </View>
-                        <Text className="text-gray-700 font-semibold">#{item.orderCount < 10 ? `0${item.orderCount}` : item.orderCount}</Text>
-                      </View> */}
                       <View className="bg-white shadow-md p-4 mb-3 mx-3 flex-row justify-between items-center rounded-lg border border-gray-200">
                         <View className="flex-1 mr-3">
                           <Text className="text-gray-700 font-semibold" numberOfLines={2} ellipsizeMode="tail">

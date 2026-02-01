@@ -169,8 +169,6 @@ const fetchOrderCount = async () => {
       },
     });
     
-    // Debug: Log the response structure
-    console.log("Order count response:", JSON.stringify(response.data, null, 2));
     
     if (response.data.success) {
       // Since your backend returns a single object, not an array
@@ -208,8 +206,6 @@ const fetchCustomerCount = async () => {
       },
     });
     
-    // Debug: Log the entire response to understand the structure
-    console.log("Full response:", JSON.stringify(response.data, null, 2));
     
     if (response.data.success) {
       // Try different possible structures
@@ -222,7 +218,6 @@ const fetchCustomerCount = async () => {
       } else if (response.data.data && typeof response.data.data === 'object') {
         // If data is an object, check if it has array properties
         const keys = Object.keys(response.data.data);
-        console.log("Data object keys:", keys);
         
         // Look for array properties in the object
         for (const key of keys) {
@@ -242,7 +237,6 @@ const fetchCustomerCount = async () => {
         return;
       }
       
-      console.log("Processing data array:", dataArray);
       
       if (Array.isArray(dataArray)) {
         const customerData = dataArray.find(
@@ -363,12 +357,6 @@ const fetchCustomerCount = async () => {
   if (loading) {
     return (
       <View className="flex-1 bg-white justify-center items-center">
-        {/* <LottieView
-          source={require("../assets/images/loading.json")}
-          autoPlay
-          loop
-          style={{ width: wp(25), height: hp(12) }}
-        /> */}
         <ActivityIndicator></ActivityIndicator>
         <Text className="text-[#6839CF]  font-semibold mt-4">
           Loading Profile...
@@ -489,12 +477,6 @@ const fetchCustomerCount = async () => {
               <Text className="text-black mb-1">
                   First Name
                 </Text>
-                 {/* <TextInput
-                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2"
-                  value={formData.firstName}
-                  onChangeText={(text) => handleInputChange("firstName", text)}
-                  placeholder="Enter First Name"
-                /> */}
                  <Text
                   className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2 text-[#8492A3]"
                 >
@@ -506,12 +488,6 @@ const fetchCustomerCount = async () => {
               <Text className="text-black mb-1">
                   Last Name
                 </Text>
-                  {/* <TextInput
-                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2"
-                  value={formData.lastName}
-                  onChangeText={(text) => handleInputChange("lastName", text)}
-                  placeholder="Enter Last Name"
-                /> */}
                  <Text
                   className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-2 text-[#8492A3]"
                 >
