@@ -5,6 +5,9 @@ import environment from '@/environment/environment';
 import { useAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import axios from 'axios';
 
+
+const POPUP_DISPLAY_DURATION = 20000; 
+
 // ========================== TYPES ==========================
 interface Notification {
   id: number;
@@ -67,6 +70,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const socketRef = useRef<Socket | null>(null);
   const isMounted = useRef(true);
   const isFirstLoad = useRef(true);
+  const popupTimerRef = useRef<NodeJS.Timeout | number | null>(null);
   const player = useAudioPlayer(require("@/assets/sounds/p2.mp3"));
 
   // ========================== AUDIO FUNCTIONS ==========================
@@ -526,11 +530,11 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     console.log('   - Popup state updated');
     console.log('   - Sound triggered');
     
-    // Restore isFirstLoad state after 5 seconds
+    // Restore isFirstLoad state after popup duration
     setTimeout(() => {
       isFirstLoad.current = wasFirstLoad;
       console.log('   - Restored isFirstLoad state');
-    }, 5000);
+    }, POPUP_DISPLAY_DURATION);
     
     console.log('=========================================');
   };
@@ -570,6 +574,13 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       
       isMounted.current = false;
       
+      // Clear popup timer
+      if (popupTimerRef.current) {
+        clearTimeout(popupTimerRef.current);
+        popupTimerRef.current = null;
+        console.log('⏰ Popup timer cleared');
+      }
+      
       if (socketRef.current) {
         socketRef.current.disconnect();
         console.log('🔌 Socket disconnected on unmount');
@@ -589,6 +600,35 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
   }, []);
 
+  /**
+   * Auto-dismiss popup notification after display duration
+   */
+  useEffect(() => {
+    if (popupNotification) {
+      console.log(`⏰ Popup will auto-dismiss in ${POPUP_DISPLAY_DURATION}ms`);
+      
+      // Clear any existing timer
+      if (popupTimerRef.current) {
+        clearTimeout(popupTimerRef.current);
+      }
+      
+      // Set new timer to auto-dismiss
+      popupTimerRef.current = setTimeout(() => {
+        console.log('⏰ Auto-dismissing popup notification');
+        setPopupNotification(null);
+        popupTimerRef.current = null;
+      }, POPUP_DISPLAY_DURATION);
+    }
+
+    // Cleanup timer if popup is manually dismissed
+    return () => {
+      if (popupTimerRef.current) {
+        clearTimeout(popupTimerRef.current);
+        popupTimerRef.current = null;
+      }
+    };
+  }, [popupNotification]);
+
   // ========================== UTILITIES ==========================
   
   /**
@@ -596,6 +636,13 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
    */
   const clearPopup = () => {
     console.log('🗑️ Clearing popup notification');
+    
+    // Clear the timer
+    if (popupTimerRef.current) {
+      clearTimeout(popupTimerRef.current);
+      popupTimerRef.current = null;
+    }
+    
     setPopupNotification(null);
   };
 
