@@ -45,6 +45,7 @@ import NetInfo from '@react-native-community/netinfo';
 import AttachGeoLocationScreen from '@/components/customer/AttachGeoLocationScreen';
 import ViewLocationScreen from '@/components/customer/ViewLocationScreen';
 import AttachGeoLocationScreenEdit from '@/components/customer/AttachGeoLocationScreenEdit'
+import { SocketProvider } from "@/context/SocketContext";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -179,7 +180,9 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <LanguageProvider>
+         <SocketProvider>
         <AppContent />
+        </SocketProvider>
       </LanguageProvider>
     </SafeAreaProvider>
   );
