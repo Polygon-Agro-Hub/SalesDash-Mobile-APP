@@ -4,9 +4,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import environment from '@/environment/environment';
 import { useAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import axios from 'axios';
+import { AppState, AppStateStatus, Platform } from 'react-native';
 
-
-const POPUP_DISPLAY_DURATION = 20000; 
+const POPUP_DISPLAY_DURATION = 20000;
+const BACKGROUND_POLL_INTERVAL = 30000; // 30 seconds
 
 // ========================== TYPES ==========================
 interface Notification {
@@ -71,6 +72,9 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const isMounted = useRef(true);
   const isFirstLoad = useRef(true);
   const popupTimerRef = useRef<NodeJS.Timeout | number | null>(null);
+  const backgroundPollRef = useRef<NodeJS.Timeout | number | null>(null);
+  const appState = useRef<AppStateStatus>(AppState.currentState);
+  const lastNotificationId = useRef<number | null>(null);
   const player = useAudioPlayer(require("@/assets/sounds/p2.mp3"));
 
   // ========================== AUDIO FUNCTIONS ==========================
@@ -136,6 +140,84 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     await playNotificationSound();
   };
 
+  // ========================== BACKGROUND POLLING ==========================
+  
+  /**
+   * Poll for new notifications when app is in background
+   */
+  const pollNotifications = async () => {
+    try {
+      const storedToken = await AsyncStorage.getItem("authToken");
+      if (!storedToken) return;
+
+      console.log('🔄 [Background Poll] Checking for notifications...');
+
+      const response = await axios.get(
+        `${environment.API_BASE_URL}api/notifications/`,
+        {
+          headers: {
+            Authorization: `Bearer ${storedToken}`
+          }
+        }
+      );
+
+      const data = response.data.data || {};
+      const fetchedNotifications = data.notifications || [];
+      const fetchedUnreadCount = data.unreadCount || 0;
+
+      if (fetchedNotifications.length > 0) {
+        const latestNotification = fetchedNotifications[0];
+        
+        // Check if this is a new notification
+        if (lastNotificationId.current !== latestNotification.id) {
+          console.log('🆕 [Background Poll] New notification detected!');
+          console.log('   - Title:', latestNotification.title);
+          console.log('   - Customer:', latestNotification.customerName);
+          
+          // Update state
+          if (isMounted.current) {
+            setNotifications(fetchedNotifications);
+            setUnreadCount(fetchedUnreadCount);
+            
+            // Show popup and play sound even in background
+            setPopupNotification(latestNotification);
+            await playNotificationSound();
+          }
+          
+          // Update last notification ID
+          lastNotificationId.current = latestNotification.id;
+        } else {
+          console.log('✅ [Background Poll] No new notifications');
+        }
+      }
+    } catch (error) {
+      console.error('❌ [Background Poll] Error:', error);
+    }
+  };
+
+  /**
+   * Start background polling
+   */
+  const startBackgroundPolling = () => {
+    if (backgroundPollRef.current) {
+      clearInterval(backgroundPollRef.current);
+    }
+
+    console.log('🔁 Starting background polling...');
+    backgroundPollRef.current = setInterval(pollNotifications, BACKGROUND_POLL_INTERVAL);
+  };
+
+  /**
+   * Stop background polling
+   */
+  const stopBackgroundPolling = () => {
+    if (backgroundPollRef.current) {
+      console.log('⏸️ Stopping background polling...');
+      clearInterval(backgroundPollRef.current);
+      backgroundPollRef.current = null;
+    }
+  };
+
   // ========================== API FUNCTIONS ==========================
   
   /**
@@ -179,6 +261,11 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setUnreadCount(fetchedUnreadCount);
       setIsLoading(false);
       setError(null);
+      
+      // Update last notification ID
+      if (fetchedNotifications.length > 0) {
+        lastNotificationId.current = fetchedNotifications[0].id;
+      }
       
       console.log(`✅ Fetched ${fetchedNotifications.length} notifications, ${fetchedUnreadCount} unread`);
       
@@ -257,7 +344,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         auth: {
           token: token
         },
-        transports: ['polling', 'websocket'], // Try polling first
+        transports: ['polling', 'websocket'],
         reconnection: true,
         reconnectionDelay: 1000,
         reconnectionDelayMax: 5000,
@@ -271,9 +358,6 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       // ============ EVENT HANDLERS ============
       
-      /**
-       * Socket connected successfully
-       */
       newSocket.on('connect', async () => {
         console.log('✅ ========== SOCKET CONNECTED ==========');
         console.log('   - Socket ID:', newSocket.id);
@@ -285,15 +369,11 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           setIsConnected(true);
           setError(null);
           
-          // IMPORTANT: Fetch notifications when socket connects
           console.log('📥 Fetching notifications after socket connection...');
           await fetchNotificationsFromAPI();
         }
       });
 
-      /**
-       * Received connection confirmation from server
-       */
       newSocket.on('connected', async (data) => {
         console.log('📱 ========== SERVER CONNECTION CONFIRMED ==========');
         console.log('   - Message:', data.message);
@@ -302,16 +382,12 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         console.log('   - Timestamp:', data.timestamp);
         console.log('===================================================');
         
-        // Fetch notifications on server confirmation
         if (isMounted.current) {
           console.log('📥 Fetching notifications after server confirmation...');
           await fetchNotificationsFromAPI();
         }
       });
 
-      /**
-       * Socket disconnected
-       */
       newSocket.on('disconnect', (reason) => {
         console.log('❌ ========== SOCKET DISCONNECTED ==========');
         console.log('   - Reason:', reason);
@@ -321,16 +397,12 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (isMounted.current) {
           setIsConnected(false);
           if (reason === 'io server disconnect') {
-            // Server disconnected, try to reconnect
             console.log('🔄 Server initiated disconnect, attempting reconnection...');
             newSocket.connect();
           }
         }
       });
 
-      /**
-       * Connection error
-       */
       newSocket.on('connect_error', (error) => {
         console.error('❌ ========== SOCKET CONNECTION ERROR ==========');
         console.error('   - Message:', error.message);
@@ -343,16 +415,10 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
       });
 
-      /**
-       * Reconnection attempt
-       */
       newSocket.on('reconnect_attempt', (attemptNumber) => {
         console.log(`🔄 Reconnection attempt ${attemptNumber}...`);
       });
 
-      /**
-       * Successfully reconnected
-       */
       newSocket.on('reconnect', (attemptNumber) => {
         console.log(`✅ ========== RECONNECTED ==========`);
         console.log(`   - After ${attemptNumber} attempts`);
@@ -365,9 +431,6 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
       });
 
-      /**
-       * Failed to reconnect after all attempts
-       */
       newSocket.on('reconnect_failed', () => {
         console.error('❌ Failed to reconnect after all attempts');
         if (isMounted.current) {
@@ -375,9 +438,6 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
       });
 
-      /**
-       * New notification received in real-time
-       */
       newSocket.on('new_notification', async (data) => {
         console.log('🔔 ========== NEW NOTIFICATION EVENT ==========');
         console.log('🔔 Received at:', new Date().toISOString());
@@ -421,6 +481,9 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           console.log('   - Notification title:', data.notification.title);
           console.log('   - Notification ID:', data.notification.id);
           
+          // Update last notification ID
+          lastNotificationId.current = data.notification.id;
+          
           setPopupNotification(data.notification);
           console.log('🎨 Popup state updated');
           
@@ -439,9 +502,6 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         console.log('🔔 ==============================================');
       });
 
-      /**
-       * Notifications list updated (from fetch_notifications response)
-       */
       newSocket.on('notifications_update', (data) => {
         console.log('🔄 ========== NOTIFICATIONS UPDATE ==========');
         console.log('   - Notifications count:', data.notifications?.length || 0);
@@ -458,9 +518,6 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
       });
 
-      /**
-       * Notification error from server
-       */
       newSocket.on('notification_error', (error) => {
         console.error('❌ ========== NOTIFICATION ERROR ==========');
         console.error('   - Message:', error.message);
@@ -472,9 +529,6 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
       });
 
-      /**
-       * Transport changed (polling -> websocket or vice versa)
-       */
       newSocket.io.engine.on('upgrade', (transport) => {
         console.log('🔄 ========== TRANSPORT UPGRADE ==========');
         console.log('   - New transport:', transport.name);
@@ -520,7 +574,6 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     console.log('   - Creating test notification:', testNotif);
     console.log('   - isFirstLoad:', isFirstLoad.current);
     
-    // Temporarily set isFirstLoad to false for testing
     const wasFirstLoad = isFirstLoad.current;
     isFirstLoad.current = false;
     
@@ -530,7 +583,6 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     console.log('   - Popup state updated');
     console.log('   - Sound triggered');
     
-    // Restore isFirstLoad state after popup duration
     setTimeout(() => {
       isFirstLoad.current = wasFirstLoad;
       console.log('   - Restored isFirstLoad state');
@@ -538,6 +590,34 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     
     console.log('=========================================');
   };
+
+  // ========================== APP STATE HANDLING ==========================
+  
+  /**
+   * Handle app state changes (foreground/background)
+   */
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      console.log('📱 App state changed:', appState.current, '→', nextAppState);
+      
+      if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+        // App came to foreground
+        console.log('🌟 App came to foreground - refreshing notifications...');
+        refreshNotifications();
+        stopBackgroundPolling();
+      } else if (nextAppState.match(/inactive|background/)) {
+        // App went to background
+        console.log('🌙 App went to background - starting background polling...');
+        startBackgroundPolling();
+      }
+
+      appState.current = nextAppState;
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   // ========================== LIFECYCLE ==========================
   
@@ -554,6 +634,9 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       
       await initializeAudio();
       await initializeSocket();
+      
+      // Start background polling
+      startBackgroundPolling();
       
       // Mark as not first load after delay
       setTimeout(() => {
@@ -573,6 +656,9 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       console.log('   - Time:', new Date().toISOString());
       
       isMounted.current = false;
+      
+      // Stop background polling
+      stopBackgroundPolling();
       
       // Clear popup timer
       if (popupTimerRef.current) {
@@ -607,12 +693,10 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (popupNotification) {
       console.log(`⏰ Popup will auto-dismiss in ${POPUP_DISPLAY_DURATION}ms`);
       
-      // Clear any existing timer
       if (popupTimerRef.current) {
         clearTimeout(popupTimerRef.current);
       }
       
-      // Set new timer to auto-dismiss
       popupTimerRef.current = setTimeout(() => {
         console.log('⏰ Auto-dismissing popup notification');
         setPopupNotification(null);
@@ -620,7 +704,6 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }, POPUP_DISPLAY_DURATION);
     }
 
-    // Cleanup timer if popup is manually dismissed
     return () => {
       if (popupTimerRef.current) {
         clearTimeout(popupTimerRef.current);
@@ -637,7 +720,6 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const clearPopup = () => {
     console.log('🗑️ Clearing popup notification');
     
-    // Clear the timer
     if (popupTimerRef.current) {
       clearTimeout(popupTimerRef.current);
       popupTimerRef.current = null;
