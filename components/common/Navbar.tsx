@@ -12,6 +12,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native"; 
 import { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSocket } from "@/context/SocketContext"; 
 
 const DashboardIcon = require("../../assets/images/Home1.webp");
 const DashboardIconFocus = require("../../assets/images/hut1.webp");
@@ -29,10 +30,10 @@ const NavigationBar = ({
   navigation: any;
   state: any;
 }) => {
-  // Redux
+  // GET UNREAD COUNT FROM SOCKET CONTEXT
+  const { unreadCount } = useSocket();
 
-
-  let tabs = [
+  const tabs = [
     { name: "DashboardScreen", icon: DashboardIcon, focusedIcon: DashboardIconFocus, tabName: "Home" },
     { name: "ViewOrdersScreen", icon: ViewOrdersIcon, focusedIcon: ViewOrdersIconFocus, tabName: "Orders" },
     { name: "ReminderScreen", icon: ReminderIcon, focusedIcon: ReminderIconFocus , tabName: "Reminders"},
@@ -43,7 +44,8 @@ const NavigationBar = ({
   const [activeTab, setActiveTab] = useState<string>("DashboardScreen");
   const { t } = useTranslation();
   const [scales] = useState(() => tabs.map(() => new Animated.Value(1)));
- const insets = useSafeAreaInsets();
+  const insets = useSafeAreaInsets();
+
   useFocusEffect(
     React.useCallback(() => {
       const keyboardDidShowListener = Keyboard.addListener(
@@ -63,7 +65,7 @@ const NavigationBar = ({
         keyboardDidShowListener.remove();
         keyboardDidHideListener.remove();
       };
-    }, []) // Empty dependency array
+    }, [])
   );
 
   let currentTabName = state?.routes?.[state.index]?.name || "DashboardScreen";
@@ -120,8 +122,6 @@ const NavigationBar = ({
     };
   });
 
-  
-
   return (
     <View className="absolute bottom-0 flex-row justify-between items-center bg-white w-full p-4 rounded-t-3xl " 
       style={{
@@ -129,13 +129,15 @@ const NavigationBar = ({
         shadowOpacity: 0.5,
         shadowRadius: 10,
         elevation: 15, 
-        // paddingBottom: 10 + insets.bottom, // Add bottom inset for safe area
         borderTopWidth: 2,
         borderTopColor: 'rgba(6, 6, 6, 0.1)',
       }}
     >
       {tabs.map((tab, index) => {
         const isFocused = currentTabName === tab.name;
+        const isReminderTab = tab.name === "ReminderScreen";
+        const showBadge = isReminderTab && unreadCount > 0;
+
         return (
           <Animated.View
             style={{
@@ -154,6 +156,7 @@ const NavigationBar = ({
                 borderRadius: 9999, 
                 alignItems: "center",
                 justifyContent: "center",
+                position: "relative", // ADD THIS for badge positioning
               }}
             >
               <Image
@@ -165,6 +168,36 @@ const NavigationBar = ({
                 source={isFocused ? tab.icon : tab.focusedIcon}
                 style={{ width: 20, height: 20 }}
               />
+              
+              {/* NOTIFICATION BADGE */}
+              {showBadge && (
+                <View
+                  style={{
+                    position: "absolute",
+                    top: -4,
+                    right: -4,
+                    backgroundColor: "#EF4444", // red-500
+                    borderRadius: 10,
+                    minWidth: 20,
+                    height: 20,
+                    justifyContent: "center",
+                    alignItems: "center",
+                    paddingHorizontal: 4,
+                    borderWidth: 2,
+                    borderColor: "#FFFFFF",
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: "#FFFFFF",
+                      fontSize: 10,
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </Text>
+                </View>
+              )}
             </TouchableOpacity>
             <Text
               className={`${

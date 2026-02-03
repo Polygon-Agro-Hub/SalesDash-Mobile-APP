@@ -16,7 +16,6 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
 import BackButton from "../common/BackButton";
 import { LinearGradient } from "expo-linear-gradient";
-import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
 import { RouteProp, useFocusEffect } from "@react-navigation/native";
 import axios from "axios";
 import environment from "@/environment/environment";
