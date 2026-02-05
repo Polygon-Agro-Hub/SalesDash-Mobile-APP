@@ -366,7 +366,7 @@ const getUserProfile = async () => {
         {/* Header Section */}
         <View className="relative">
           <View className="bg-white flex-row rounded-b-[35px] items-center justify-between h-30 z-50 shadow-lg px-5">
-            <View className="mt-[-8%] ml-[-2%]">
+            <View className="mt-[-18%] ml-[-2%]">
               <TouchableOpacity 
                 style={{ paddingHorizontal: wp(2), paddingVertical: hp(2) }}
                 onPress={() => navigation.navigate("CustomersScreen")}>
@@ -376,7 +376,7 @@ const getUserProfile = async () => {
               </TouchableOpacity> 
             </View> 
 
-            <View className="flex-1 justify-center items-center mt-[3%]">
+            <View className="flex-1 justify-center items-center mt-[6%]">
               <Text className="text-lg font-bold text-gray-800" style={{ textAlign: 'center' }}>
                 {title}.{name}
               </Text>
@@ -393,7 +393,7 @@ const getUserProfile = async () => {
               })}
 >
   <View className="flex-row justify-center items-center gap-2 mt-[%]">
-    <Text className=" text-base font-semibold text-[#7240D3] underline">Exclude Item List</Text>
+    <Text className=" font-semibold text-[#7240D3] underline">Exclude Item List</Text>
     <AntIcons name="external-link" size={20} color="#6C3CD1" />
   </View>
 </TouchableOpacity>
@@ -428,7 +428,7 @@ const getUserProfile = async () => {
         
 
             <TouchableOpacity 
-              className="px-6 mt-[-9%] mr-[-10%]"
+              className="px-6 mt-[-28%] mr-[-10%]"
               onPress={() => navigation.navigate("EditCustomerScreen", { 
                 id,                   
                 customerId: customerId,
@@ -436,7 +436,7 @@ const getUserProfile = async () => {
                 title: title 
               })}
             >
-              <MaterialIcons name="edit" size={28} color="#6839CF" />
+              <MaterialIcons name="edit" size={24} color="#6839CF" />
             </TouchableOpacity>
             
           </View>
