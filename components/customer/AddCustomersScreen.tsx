@@ -1,21 +1,33 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Keyboard, KeyboardAvoidingView, Alert, ActivityIndicator, BackHandler } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  Keyboard,
+  KeyboardAvoidingView,
+  Alert,
+  ActivityIndicator,
+  BackHandler,
+  StatusBar,
+} from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
 import { LinearGradient } from "expo-linear-gradient";
-import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
-import BackButton from "../common/BackButton";
 import axios from "axios";
 import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { SelectList } from "react-native-dropdown-select-list";
-import DropDownPicker from "react-native-dropdown-picker";
-import { useFocusEffect } from '@react-navigation/native';
-import { AntDesign, Entypo, FontAwesome6, Ionicons } from "@expo/vector-icons";
-import { StatusBar, Platform } from "react-native";
-import * as Location from 'expo-location';
+import { useFocusEffect } from "@react-navigation/native";
+import { Entypo, FontAwesome6, MaterialIcons } from "@expo/vector-icons";
+import { Platform } from "react-native";
+import CustomHeader from "../common/CustomHeader";
+import GlobalSearchModal from "../common/GlobalSearchModal";
 
-type AddCustomersScreenNavigationProp = StackNavigationProp<RootStackParamList, "AddCustomersScreen">;
+type AddCustomersScreenNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  "AddCustomersScreen"
+>;
 
 interface AddCustomersScreenProps {
   params: any;
@@ -30,7 +42,10 @@ interface City {
   createdAt?: string;
 }
 
-const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation ,route}) => {
+const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
+  navigation,
+  route,
+}) => {
   const [firstName, setFirstName] = useState<string>("");
   const [lastName, setLastName] = useState<string>("");
   const [phoneNumber, setPhoneNumber] = useState<string>("");
@@ -52,17 +67,12 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation ,rou
   const [buildingType, setBuildingType] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [loading, setLoading] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
   const [emailError, setEmailError] = useState<string>("");
   const [phoneError, setPhoneError] = useState<string>("");
-  
-  // Geolocation states
-
   const [locationError, setLocationError] = useState<string>("");
-  const [hasLocationPermission, setHasLocationPermission] = useState<boolean>(false);
-  const [isLocationLoading, setIsLocationLoading] = useState<boolean>(false);
-
-  const [touchedFields, setTouchedFields] = useState<{[key: string]: boolean}>({
+  const [touchedFields, setTouchedFields] = useState<{
+    [key: string]: boolean;
+  }>({
     email: false,
     phoneNumber: false,
     firstName: false,
@@ -75,128 +85,58 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({ navigation ,rou
     buildingNo: false,
     buildingName: false,
     unitNo: false,
-    floorNo: false
+    floorNo: false,
   });
-  
+
   const [firstNameError, setFirstNameError] = useState<string>("");
   const [lastNameError, setLastNameError] = useState<string>("");
   const [buildingTypeError, setBuildingTypeError] = useState<string>("");
   const [titleError, setTitleError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [token, setToken] = useState<string | null>(null);
-  const [cities, setCities] = useState<City[]>([]);
-  const [openCityDropdown, setOpenCityDropdown] = useState(false);
-  const [cityItems, setCityItems] = useState<{label: string, value: string}[]>([]);
-  const [openBuildingTypeDropdown, setOpenBuildingTypeDropdown] = useState(false);
-  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
-  const [titleDropdownOpen, setTitleDropdownOpen] = useState(false);
-  const [selectedLatitude, setSelectedLatitude] = useState<number | undefined>();
-  const [selectedLongitude, setSelectedLongitude] = useState<number | undefined>();
+  const [cityItems, setCityItems] = useState<
+    { label: string; value: string }[]
+  >([]);
   const [selectedLocationName, setSelectedLocationName] = useState<string>("");
   const [latitude, setLatitude] = useState<number | undefined>(undefined);
-const [longitude, setLongitude] = useState<number | undefined>(undefined);
-  
+  const [longitude, setLongitude] = useState<number | undefined>(undefined);
+
+  // Add modal state variables
+  const [titleModalVisible, setTitleModalVisible] = useState(false);
+  const [buildingTypeModalVisible, setBuildingTypeModalVisible] =
+    useState(false);
+  const [cityModalVisible, setCityModalVisible] = useState(false);
+
   const [titleItems, setTitleItems] = useState([
-    { label: 'Rev', value: 'Rev' },
-    { label: 'Mr', value: 'Mr' },
-    { label: 'Ms', value: 'Ms' },
-    { label: 'Mrs', value: 'Mrs' }
+    { label: "Rev", value: "Rev" },
+    { label: "Mr", value: "Mr" },
+    { label: "Ms", value: "Ms" },
+    { label: "Mrs", value: "Mrs" },
   ]);
-
-
 
   const [buildingTypeItems, setBuildingTypeItems] = useState([
     { label: "House", value: "House" },
     { label: "Apartment", value: "Apartment" },
   ]);
 
-  // Request location permissions
-  const requestLocationPermission = async () => {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      
-      if (status !== 'granted') {
-        setLocationError('Location permission denied');
-        Alert.alert(
-          'Permission Required',
-          'Please enable location permissions to use this feature.',
-          [{ text: 'OK' }]
-        );
-        return false;
-      }
-      
-      setHasLocationPermission(true);
-      return true;
-    } catch (error) {
-      console.error('Error requesting location permission:', error);
-      setLocationError('Failed to request location permission');
-      return false;
-    }
-  };
-
-  // Get current location
-  const getCurrentLocation = async () => {
-    setIsLocationLoading(true);
-    setLocationError("");
-    
-    try {
-      const hasPermission = await requestLocationPermission();
-      
-      if (!hasPermission) {
-        setIsLocationLoading(false);
-        return;
-      }
-
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
-
-      setLatitude(location.coords.latitude);
-      setLongitude(location.coords.longitude);
-      
-      Alert.alert(
-        'Location Captured',
-        `Latitude: ${location.coords.latitude.toFixed(6)}\nLongitude: ${location.coords.longitude.toFixed(6)}`,
-        [{ text: 'OK' }]
-      );
-      
-    } catch (error) {
-      console.error('Error getting location:', error);
-      setLocationError('Failed to get current location');
-      Alert.alert(
-        'Location Error',
-        'Unable to fetch your current location. Please try again or select manually on map.',
-        [{ text: 'OK' }]
-      );
-    } finally {
-      setIsLocationLoading(false);
-    }
-  };
-
   // Navigate to map screen for manual selection
-const openMapForLocation = () => {
-  navigation.navigate("AttachGeoLocationScreen", {
-    currentLatitude: latitude,
-    currentLongitude: longitude,
-    onLocationSelect: (lat: number, lng: number, name: string) => {
-      // This callback will be triggered when user clicks "Confirm Now"
-      setLatitude(lat);
-      setLongitude(lng);
-      setSelectedLocationName(name);
-      setLocationError("");
-      
-    },
-  });
-};
-
-
+  const openMapForLocation = () => {
+    navigation.navigate("AttachGeoLocationScreen", {
+      currentLatitude: latitude,
+      currentLongitude: longitude,
+      onLocationSelect: (lat: number, lng: number, name: string) => {
+        setLatitude(lat);
+        setLongitude(lng);
+        setSelectedLocationName(name);
+        setLocationError("");
+      },
+    });
+  };
 
   const resetForm = () => {
     setFirstName("");
     setLastName("");
     setPhoneNumber("");
-    setSelectedCategory('');
-    setTitleDropdownOpen(false);
+    setSelectedCategory("");
     setEmail("");
     setHouseNo("");
     setStreetName("");
@@ -208,8 +148,6 @@ const openMapForLocation = () => {
     setBuildingType("");
     setSelectedCategory("");
     setLoading(false);
-    setOtpSent(false);
-    setOpenBuildingTypeDropdown(false);
     setEmailError("");
     setPhoneError("");
     setFirstNameError("");
@@ -224,8 +162,8 @@ const openMapForLocation = () => {
     setUnitNoError("");
     setFloorNoError("");
     setIsSubmitting(false);
-   setLatitude(undefined);
-setLongitude(undefined);
+    setLatitude(undefined);
+    setLongitude(undefined);
     setLocationError("");
     setTouchedFields({
       email: false,
@@ -240,7 +178,7 @@ setLongitude(undefined);
       buildingNo: false,
       buildingName: false,
       unitNo: false,
-      floorNo: false
+      floorNo: false,
     });
   };
 
@@ -248,37 +186,38 @@ setLongitude(undefined);
     Keyboard.dismiss();
   };
 
- useFocusEffect(
-  React.useCallback(() => {
-    // Only reset form on initial mount, not when returning from other screens
-    const unsubscribe = navigation.addListener('focus', () => {
-      // Check if we're coming from the geolocation screen
-      const routes = navigation.getState()?.routes;
-      const previousRoute = routes?.[routes.length - 2];
-      
-      // Don't reset if coming back from AttachGeoLocationScreen or ViewLocationScreen
-      if (previousRoute?.name === 'AttachGeoLocationScreen' || 
-          previousRoute?.name === 'ViewLocationScreen') {
-        return;
-      }
-      
-      resetForm();
-    });
+  useFocusEffect(
+    React.useCallback(() => {
+      // Only reset form on initial mount, not when returning from other screens
+      const unsubscribe = navigation.addListener("focus", () => {
+        // Check if we're coming from the geolocation screen
+        const routes = navigation.getState()?.routes;
+        const previousRoute = routes?.[routes.length - 2];
 
-    fetchCity();
+        if (
+          previousRoute?.name === "AttachGeoLocationScreen" ||
+          previousRoute?.name === "ViewLocationScreen"
+        ) {
+          return;
+        }
 
-    return () => {
-      unsubscribe();
-    };
-  }, [navigation])
-);
+        resetForm();
+      });
+
+      fetchCity();
+
+      return () => {
+        unsubscribe();
+      };
+    }, [navigation]),
+  );
 
   const sendOTP = async () => {
     if (!phoneNumber) {
-      Alert.alert('Error', 'Please enter a mobile number.');
+      Alert.alert("Error", "Please enter a mobile number.");
       return;
     }
-  
+
     try {
       setLoading(true);
       const cleanedPhoneNumber = phoneNumber.replace(/[^\d]/g, "");
@@ -287,30 +226,37 @@ setLongitude(undefined);
         Authorization: `Apikey ${environment.SHOUTOUT_API_KEY}`,
         "Content-Type": "application/json",
       };
-  
+
       const body = {
-        source: "PolygonAgro", 
+        source: "PolygonAgro",
         transport: "sms",
-        content: { sms: "Thank you for registering with us a GoviMart customer. Please use the bellow OTP to confirm the registration process. {{code}}" },
-        destination: cleanedPhoneNumber, 
+        content: {
+          sms: "Thank you for registering with us a GoviMart customer. Please use the bellow OTP to confirm the registration process. {{code}}",
+        },
+        destination: cleanedPhoneNumber,
       };
-  
+
       const response = await axios.post(apiUrl, body, { headers });
       await AsyncStorage.setItem("referenceId", response.data.referenceId);
 
       if (response.status === 200) {
-        setOtpSent(true);
-        Alert.alert('Success', 'OTP sent successfully.');
+        Alert.alert("Success", "OTP sent successfully.");
       } else {
-        Alert.alert('Error', 'Failed to send OTP.');
+        Alert.alert("Error", "Failed to send OTP.");
       }
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        console.log('Axios error details:', error.response ? error.response.data : error.message);
-        Alert.alert('Error', `Error: ${error.response ? error.response.data.message : error.message}`);
+        console.log(
+          "Axios error details:",
+          error.response ? error.response.data : error.message,
+        );
+        Alert.alert(
+          "Error",
+          `Error: ${error.response ? error.response.data.message : error.message}`,
+        );
       } else {
-        console.log('Unexpected error:', error);
-        Alert.alert('Error', 'An unexpected error occurred.');
+        console.log("Unexpected error:", error);
+        Alert.alert("Error", "An unexpected error occurred.");
       }
     } finally {
       setLoading(false);
@@ -318,7 +264,6 @@ setLongitude(undefined);
   };
 
   const phoneRegex = /^\+947\d{8}$/;
-  const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
 
   const validatePhoneNumber = (phone: string) => {
     if (phone.length > 12) return false;
@@ -330,32 +275,32 @@ setLongitude(undefined);
   };
 
   const validateEmail = (email: string): boolean => {
-    const generalEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    
+    const generalEmailRegex =
+      /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
     if (!generalEmailRegex.test(email)) {
       return false;
     }
-    
+
     const emailLower = email.toLowerCase();
-    const [localPart, domain] = emailLower.split('@');
-    
-    const allowedSpecificDomains = ['gmail.com', 'googlemail.com', 'yahoo.com'];
-    const allowedTLDs = ['.com', '.gov', '.lk'];
-    
-    if (domain === 'gmail.com' || domain === 'googlemail.com') {
+    const [localPart, domain] = emailLower.split("@");
+
+    const allowedTLDs = [".com", ".gov", ".lk"];
+
+    if (domain === "gmail.com" || domain === "googlemail.com") {
       return validateGmailLocalPart(localPart);
     }
-    
-    if (domain === 'yahoo.com') {
+
+    if (domain === "yahoo.com") {
       return validateYahooLocalPart(localPart);
     }
-    
+
     for (const tld of allowedTLDs) {
       if (domain.endsWith(tld)) {
         return validateGeneralLocalPart(localPart);
       }
     }
-    
+
     return false;
   };
 
@@ -364,19 +309,19 @@ setLongitude(undefined);
     if (!validCharsRegex.test(localPart)) {
       return false;
     }
-    
-    if (localPart.startsWith('.') || localPart.endsWith('.')) {
+
+    if (localPart.startsWith(".") || localPart.endsWith(".")) {
       return false;
     }
-    
-    if (localPart.includes('..')) {
+
+    if (localPart.includes("..")) {
       return false;
     }
-    
+
     if (localPart.length === 0) {
       return false;
     }
-    
+
     return true;
   };
 
@@ -384,20 +329,20 @@ setLongitude(undefined);
     if (localPart.length < 4 || localPart.length > 32) {
       return false;
     }
-    
+
     const validCharsRegex = /^[a-zA-Z0-9._-]+$/;
     if (!validCharsRegex.test(localPart)) {
       return false;
     }
-    
+
     if (/^[._-]|[._-]$/.test(localPart)) {
       return false;
     }
-    
-    if (localPart.includes('..')) {
+
+    if (localPart.includes("..")) {
       return false;
     }
-    
+
     return true;
   };
 
@@ -405,20 +350,20 @@ setLongitude(undefined);
     if (localPart.length < 1 || localPart.length > 64) {
       return false;
     }
-    
+
     const validCharsRegex = /^[a-zA-Z0-9._%+-]+$/;
     if (!validCharsRegex.test(localPart)) {
       return false;
     }
-    
-    if (localPart.startsWith('.') || localPart.endsWith('.')) {
+
+    if (localPart.startsWith(".") || localPart.endsWith(".")) {
       return false;
     }
-    
-    if (localPart.includes('..')) {
+
+    if (localPart.includes("..")) {
       return false;
     }
-    
+
     return true;
   };
 
@@ -439,44 +384,59 @@ setLongitude(undefined);
         setEmailError("Email is required");
       } else if (!validateEmail(email)) {
         const emailLower = email.toLowerCase();
-        const [localPart, domain] = emailLower.split('@');
-        
-        const generalEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        const [localPart, domain] = emailLower.split("@");
+
+        const generalEmailRegex =
+          /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         if (!generalEmailRegex.test(email)) {
           setEmailError("Please enter a valid email address");
           return;
         }
-        
-        if (domain === 'gmail.com' || domain === 'googlemail.com') {
+
+        if (domain === "gmail.com" || domain === "googlemail.com") {
           if (localPart.length > 30) {
-            setEmailError("Gmail addresses cannot exceed 30 characters before @");
+            setEmailError(
+              "Gmail addresses cannot exceed 30 characters before @",
+            );
           } else if (/\.{2,}/.test(localPart)) {
             setEmailError("Gmail addresses cannot have consecutive dots");
           } else if (/^\.|\.$/.test(localPart)) {
             setEmailError("Gmail addresses cannot start or end with a dot");
           } else if (!/^[a-zA-Z0-9.+]+$/.test(localPart)) {
-            setEmailError("Gmail addresses can only contain letters, numbers, dots and plus signs");
+            setEmailError(
+              "Gmail addresses can only contain letters, numbers, dots and plus signs",
+            );
           } else {
             setEmailError("Please enter a valid Gmail address");
           }
-        } else if (domain === 'yahoo.com') {
+        } else if (domain === "yahoo.com") {
           if (localPart.length > 32) {
-            setEmailError("Yahoo addresses cannot exceed 32 characters before @");
+            setEmailError(
+              "Yahoo addresses cannot exceed 32 characters before @",
+            );
           } else if (/\.{2,}/.test(localPart)) {
             setEmailError("Yahoo addresses cannot have consecutive dots");
           } else if (/^[._-]|[._-]$/.test(localPart)) {
-            setEmailError("Yahoo addresses cannot start or end with dots, underscores or hyphens");
+            setEmailError(
+              "Yahoo addresses cannot start or end with dots, underscores or hyphens",
+            );
           } else if (!/^[a-zA-Z0-9._-]+$/.test(localPart)) {
-            setEmailError("Yahoo addresses can only contain letters, numbers, dots, underscores and hyphens");
+            setEmailError(
+              "Yahoo addresses can only contain letters, numbers, dots, underscores and hyphens",
+            );
           } else {
             setEmailError("Please enter a valid Yahoo address");
           }
         } else {
-          const allowedTLDs = ['.com', '.gov', '.lk'];
-          const isDomainSupported = allowedTLDs.some(tld => domain.endsWith(tld));
-          
+          const allowedTLDs = [".com", ".gov", ".lk"];
+          const isDomainSupported = allowedTLDs.some((tld) =>
+            domain.endsWith(tld),
+          );
+
           if (!isDomainSupported) {
-            setEmailError("Please enter a valid email address with a supported domain (.com, .gov, .lk)");
+            setEmailError(
+              "Please enter a valid email address with a supported domain (.com, .gov, .lk)",
+            );
           } else {
             if (localPart.length > 64) {
               setEmailError("Email address is too long");
@@ -502,7 +462,9 @@ setLongitude(undefined);
       if (!phoneNumber) {
         setPhoneError("Mobile number is required");
       } else if (!validatePhoneNumber(phoneNumber)) {
-        setPhoneError("Please enter a valid mobile number (format: +947XXXXXXXX)");
+        setPhoneError(
+          "Please enter a valid mobile number (format: +947XXXXXXXX)",
+        );
       } else {
         setPhoneError("");
       }
@@ -615,14 +577,16 @@ setLongitude(undefined);
 
   const formatNameInput = (text: string) => {
     if (!text) return text;
-    const filteredText = text.replace(/[^a-zA-Z]/g, '');
-    return filteredText.charAt(0).toUpperCase() + filteredText.slice(1).toLowerCase();
+    const filteredText = text.replace(/[^a-zA-Z]/g, "");
+    return (
+      filteredText.charAt(0).toUpperCase() + filteredText.slice(1).toLowerCase()
+    );
   };
 
   const handleFieldTouch = (fieldName: string) => {
-    setTouchedFields(prev => ({
+    setTouchedFields((prev) => ({
       ...prev,
-      [fieldName]: true
+      [fieldName]: true,
     }));
   };
 
@@ -631,19 +595,17 @@ setLongitude(undefined);
       const storedToken = await AsyncStorage.getItem("authToken");
       if (!storedToken) return;
 
-      setToken(storedToken);
-
       const response = await axios.get<{ data: City[] }>(
         `${environment.API_BASE_URL}api/customer/get-city`,
         {
           headers: { Authorization: `Bearer ${storedToken}` },
-        }
+        },
       );
-      
+
       if (response.data && response.data.data) {
-        const formattedCities = response.data.data.map(city => ({
+        const formattedCities = response.data.data.map((city) => ({
           label: city.city,
-          value: city.city
+          value: city.city,
         }));
         setCityItems(formattedCities);
       }
@@ -658,9 +620,9 @@ setLongitude(undefined);
 
   const handleRegister = async () => {
     if (isSubmitting) return;
-    
+
     setIsSubmitting(true);
-    
+
     setTouchedFields({
       email: true,
       phoneNumber: true,
@@ -674,15 +636,22 @@ setLongitude(undefined);
       buildingNo: true,
       buildingName: true,
       unitNo: true,
-      floorNo: true
+      floorNo: true,
     });
-    
-    if (!selectedCategory || !firstName || !lastName || !phoneNumber || !email || !buildingType) {
+
+    if (
+      !selectedCategory ||
+      !firstName ||
+      !lastName ||
+      !phoneNumber ||
+      !email ||
+      !buildingType
+    ) {
       Alert.alert("Error", "Please fill in all required fields.");
       setIsSubmitting(false);
       return;
     }
-    
+
     if (buildingType === "House") {
       if (!houseNo || !streetName || !city) {
         Alert.alert("Error", "Please fill in all required house fields");
@@ -690,19 +659,27 @@ setLongitude(undefined);
         return;
       }
     } else if (buildingType === "Apartment") {
-      if (!buildingNo || !buildingName || !unitNo || !floorNo || !houseNo || !streetName || !city) {
+      if (
+        !buildingNo ||
+        !buildingName ||
+        !unitNo ||
+        !floorNo ||
+        !houseNo ||
+        !streetName ||
+        !city
+      ) {
         Alert.alert("Error", "Please fill in all required apartment fields");
         setIsSubmitting(false);
         return;
       }
     }
-    
+
     if (!validatePhoneNumber(phoneNumber)) {
       Alert.alert("Error", "Please enter a valid mobile number.");
       setIsSubmitting(false);
       return;
     }
-    
+
     if (email && !validateEmail(email)) {
       setIsSubmitting(false);
       return;
@@ -713,18 +690,21 @@ setLongitude(undefined);
       Alert.alert(
         "Location Required",
         "Please capture your location before registering.",
-        [{ text: "OK" }]
+        [{ text: "OK" }],
       );
       setIsSubmitting(false);
       return;
     }
-    
+
     try {
-      const checkResponse = await axios.post(`${environment.API_BASE_URL}api/customer/check-customer`, {
-        phoneNumber,
-        email: email,
-      });
-      
+      await axios.post(
+        `${environment.API_BASE_URL}api/customer/check-customer`,
+        {
+          phoneNumber,
+          email: email,
+        },
+      );
+
       const customerData = {
         title: selectedCategory,
         firstName,
@@ -739,106 +719,127 @@ setLongitude(undefined);
         floorNo,
         unitNo,
         buildingName,
-        latitude,  // Add latitude
-        longitude  // Add longitude
+        latitude,
+        longitude,
       };
-      
-      await AsyncStorage.setItem("pendingCustomerData", JSON.stringify(customerData));
+
+      await AsyncStorage.setItem(
+        "pendingCustomerData",
+        JSON.stringify(customerData),
+      );
       const id = new Date().getTime().toString();
       await sendOTP();
       navigation.navigate("OtpScreen", { phoneNumber, id });
     } catch (error: any) {
-      
       if (axios.isAxiosError(error)) {
         if (error.response && error.response.status === 400) {
-          if (error.response.data.message && 
-              error.response.data.message.includes("Mobile number or email already exists")) {
-            
+          if (
+            error.response.data.message &&
+            error.response.data.message.includes(
+              "Mobile number or email already exists",
+            )
+          ) {
             try {
               const tempEmail = `temp_${new Date().getTime()}_${Math.random().toString(36).substr(2, 9)}@tempcheck.com`;
-              
-              await axios.post(`${environment.API_BASE_URL}api/customer/check-customer`, {
-                phoneNumber,
-                email: tempEmail,
-              });
-              
+
+              await axios.post(
+                `${environment.API_BASE_URL}api/customer/check-customer`,
+                {
+                  phoneNumber,
+                  email: tempEmail,
+                },
+              );
+
               Alert.alert(
                 "Email Already Exists",
-                "This email is already registered. Please sign in or use a different email."
+                "This email is already registered. Please sign in or use a different email.",
               );
-              
             } catch (phoneCheckError: any) {
-              if (axios.isAxiosError(phoneCheckError) && 
-                  phoneCheckError.response?.status === 400 && 
-                  phoneCheckError.response?.data?.message?.includes("Mobile number or email already exists")) {
-                
+              if (
+                axios.isAxiosError(phoneCheckError) &&
+                phoneCheckError.response?.status === 400 &&
+                phoneCheckError.response?.data?.message?.includes(
+                  "Mobile number or email already exists",
+                )
+              ) {
                 try {
                   const tempPhone = `+94${new Date().getTime().toString().substr(-9)}`;
-                  
-                  await axios.post(`${environment.API_BASE_URL}api/customer/check-customer`, {
-                    phoneNumber: tempPhone,
-                    email,
-                  });
-                  
+
+                  await axios.post(
+                    `${environment.API_BASE_URL}api/customer/check-customer`,
+                    {
+                      phoneNumber: tempPhone,
+                      email,
+                    },
+                  );
+
                   Alert.alert(
                     "Mobile Number Already Exists",
-                    "This Mobile number is already registered. Please sign in or use a different mobile number."
+                    "This Mobile number is already registered. Please sign in or use a different mobile number.",
                   );
-                  
                 } catch (emailCheckError: any) {
-                  if (axios.isAxiosError(emailCheckError) && 
-                      emailCheckError.response?.status === 400 && 
-                      emailCheckError.response?.data?.message?.includes("Mobile number or email already exists")) {
-                    
+                  if (
+                    axios.isAxiosError(emailCheckError) &&
+                    emailCheckError.response?.status === 400 &&
+                    emailCheckError.response?.data?.message?.includes(
+                      "Mobile number or email already exists",
+                    )
+                  ) {
                     Alert.alert(
                       "Account Already Exists",
-                      "Both Mobile number and email are already registered. Please sign in instead."
+                      "Both Mobile number and email are already registered. Please sign in instead.",
                     );
                   } else {
                     Alert.alert(
                       "Mobile Number Already Exists",
-                      "This Mobile number is already registered. Please sign in or use a different mobile number."
+                      "This Mobile number is already registered. Please sign in or use a different mobile number.",
                     );
                   }
                 }
               } else {
                 Alert.alert(
-                  "Registration Error", 
-                  "Unable to verify account details. Please try again."
+                  "Registration Error",
+                  "Unable to verify account details. Please try again.",
                 );
               }
             }
           } else {
             Alert.alert(
-              "Registration Error", 
-              error.response.data.message || "Registration failed. Please check your details and try again."
+              "Registration Error",
+              error.response.data.message ||
+                "Registration failed. Please check your details and try again.",
             );
           }
         } else if (error.response && error.response.status === 409) {
           Alert.alert(
             "Account Already Exists",
-            "An account with this mobile number or email already exists. Please sign in instead."
+            "An account with this mobile number or email already exists. Please sign in instead.",
           );
         } else if (error.response && error.response.status >= 500) {
           Alert.alert(
-            "Server Error", 
-            "Our servers are experiencing issues. Please try again later."
+            "Server Error",
+            "Our servers are experiencing issues. Please try again later.",
           );
         } else {
           Alert.alert(
-            "Registration Error", 
-            "Registration failed. Please try again."
+            "Registration Error",
+            "Registration failed. Please try again.",
           );
         }
-      } else if (error && typeof error === 'object' && 'code' in error && error.code === 'NETWORK_ERROR') {
+      } else if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "NETWORK_ERROR"
+      ) {
         Alert.alert(
-          "Network Error", 
-          "Please check your internet connection and try again."
+          "Network Error",
+          "Please check your internet connection and try again.",
         );
       } else {
         Alert.alert(
-          "Registration Error", 
-          "Registration failed. Please try again."
+          "Registration Error",
+          "Registration failed. Please try again.",
         );
       }
     } finally {
@@ -847,20 +848,21 @@ setLongitude(undefined);
   };
 
   const handlePhoneNumberChange = (text: string) => {
-    if (!text.startsWith('+94')) {
+    if (!text.startsWith("+94")) {
       if (text.length < 3) {
-        setPhoneNumber('+94');
+        setPhoneNumber("+94");
         return;
       }
-      text = '+94' + text.replace(/^\+?94?/, '');
+      text = "+94" + text.replace(/^\+?94?/, "");
     }
-    
+
     if (text.length > 12) {
       text = text.substring(0, 12);
     }
-    
-    const cleanText = text.substring(0, 3) + text.substring(3).replace(/[^0-9]/g, '');
-    
+
+    const cleanText =
+      text.substring(0, 3) + text.substring(3).replace(/[^0-9]/g, "");
+
     setPhoneNumber(cleanText);
   };
 
@@ -871,10 +873,13 @@ setLongitude(undefined);
         return true;
       };
 
-      const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress,
+      );
 
       return () => backHandler.remove();
-    }, [navigation])
+    }, [navigation]),
   );
 
   const capitalizeWords = (text: string) => {
@@ -882,76 +887,53 @@ setLongitude(undefined);
   };
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })}
       style={{ flex: 1, backgroundColor: "white" }}
     >
-      <View className="flex-1 bg-white py-4 p-2">
-        <View className="p-[-2]">
-          <View className="bg-white flex-row items-center h-17 shadow-lg px-1">
-            <TouchableOpacity 
-              style={{ paddingHorizontal: wp(2), paddingVertical: hp(2) }}
-              onPress={() => navigation.navigate("CustomersScreen")}
-            >
-              <View className="w-9 h-9 bg-[#F6F6F680] rounded-full justify-center items-center">
-                <AntDesign name="left" size={20} color="black" />
-              </View>
-            </TouchableOpacity> 
-            
-            <Text style={{ fontSize: 18 }} className="font-bold text-center text-purple-600 flex-grow mr-9">
-              New Customer Registration
-            </Text>
-          </View>
-        </View>
-
-        <ScrollView 
-          contentContainerStyle={{ 
-            paddingBottom: isKeyboardVisible ? 200 : 0
-          }}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View className="p-3 px-6">
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <CustomHeader
+        title="New Customer Registration"
+        titleColor="#6C3CD1"
+        showBackButton={true}
+        navigation={navigation}
+        onBackPress={() => navigation.navigate("CustomersScreen")}
+      />
+      <View className="flex-1 bg-white">
+        <ScrollView keyboardShouldPersistTaps="handled">
+          <View className="py-2 px-6">
             {/* Title and First Name */}
             <View className="mb-4 mt-4 flex-row justify-between">
               <View className="flex-[1]">
                 <Text className="text-gray-700 mb-1">Title *</Text>
-                <DropDownPicker
-                  open={titleDropdownOpen}
-                  value={selectedCategory}
-                  items={titleItems}
-                  setOpen={setTitleDropdownOpen}
-                  setValue={setSelectedCategory}
-                  setItems={setTitleItems}
-                  style={{
-                    backgroundColor: '#F6F6F6',
-                    borderColor: titleError ? '#EF4444' : '#F6F6F6',
-                    borderWidth: titleError ? 1 : 1,
-                    borderRadius: 30,
-                    paddingVertical: 5,
-                    minHeight: 40,
+                <TouchableOpacity
+                  onPress={() => {
+                    setTitleModalVisible(true);
+                    handleFieldTouch("title");
                   }}
-                  textStyle={{
-                    color: 'black',
-                  }}
-                  searchable={false}
-                  placeholder="Title"
-                  zIndex={1000}
-                  zIndexInverse={3000}
-                  dropDownContainerStyle={{
-                    backgroundColor: '#F6F6F6',
-                    borderColor: titleError ? '#EF4444' : '#F6F6F6',
-                  }}
-                  listMode="SCROLLVIEW"
-                  scrollViewProps={{
-                    nestedScrollEnabled: true,
-                  }}
-                  onClose={() => {
-                    if (!selectedCategory) {
-                      handleFieldTouch("title");
+                  className={`bg-[#F6F6F6] border flex-row justify-between items-center ${
+                    titleError ? "border-red-500" : "border-[#F6F6F6]"
+                  } rounded-full px-4 h-10`}
+                >
+                  <Text
+                    className={
+                      selectedCategory ? "text-black" : "text-gray-400"
                     }
-                  }}
-                />
+                  >
+                    {selectedCategory || "Title"}
+                  </Text>
+                  <MaterialIcons
+                    name="keyboard-arrow-down"
+                    size={24}
+                    color="#666"
+                  />
+                </TouchableOpacity>
+                {titleError ? (
+                  <Text className="text-red-500 text-xs pl-4 pt-1">
+                    {titleError}
+                  </Text>
+                ) : null}
               </View>
 
               <View className="flex-[2] ml-2">
@@ -973,7 +955,9 @@ setLongitude(undefined);
                   }}
                 />
                 {firstNameError ? (
-                  <Text className="text-red-500 text-xs pl-4 pt-1">{firstNameError}</Text>
+                  <Text className="text-red-500 text-xs pl-4 pt-1">
+                    {firstNameError}
+                  </Text>
                 ) : null}
               </View>
             </View>
@@ -998,7 +982,9 @@ setLongitude(undefined);
                 }}
               />
               {lastNameError ? (
-                <Text className="text-red-500 text-xs pl-4 pt-1">{lastNameError}</Text>
+                <Text className="text-red-500 text-xs pl-4 pt-1">
+                  {lastNameError}
+                </Text>
               ) : null}
             </View>
 
@@ -1015,12 +1001,14 @@ setLongitude(undefined);
                 maxLength={12}
                 onFocus={() => {
                   if (!phoneNumber || phoneNumber.length < 3) {
-                    setPhoneNumber('+94');
+                    setPhoneNumber("+94");
                   }
                 }}
               />
               {phoneError ? (
-                <Text className="text-red-500 text-xs pl-4 pt-1">{phoneError}</Text>
+                <Text className="text-red-500 text-xs pl-4 pt-1">
+                  {phoneError}
+                </Text>
               ) : null}
             </View>
 
@@ -1045,58 +1033,30 @@ setLongitude(undefined);
                 }}
               />
               {emailError ? (
-                <Text className="text-red-500 text-xs pl-4 pt-1">{emailError}</Text>
+                <Text className="text-red-500 text-xs pl-4 pt-1">
+                  {emailError}
+                </Text>
               ) : null}
             </View>
 
             {/* Building Type */}
             <View className="mb-4">
               <Text className="text-gray-700 mb-1">Building Type *</Text>
-              <DropDownPicker
-                open={openBuildingTypeDropdown}
-                value={buildingType}
-                items={buildingTypeItems}
-                setOpen={setOpenBuildingTypeDropdown}
-                setValue={setBuildingType}
-                setItems={setBuildingTypeItems}
-                placeholder="Select Building Type"
-                style={{
-                  backgroundColor: '#F6F6F6',
-                  borderColor: buildingTypeError ? '#EF4444' : '#F6F6F6',
-                  borderWidth: buildingTypeError ? 1 : 1,
-                  borderRadius: 30,
+              <TouchableOpacity
+                onPress={() => {
+                  setBuildingTypeModalVisible(true);
+                  handleFieldTouch("buildingType");
                 }}
-                dropDownContainerStyle={{
-                  backgroundColor: '#F6F6F6',
-                  borderColor: buildingTypeError ? '#EF4444' : '#F6F6F6',
-                }}
-                textStyle={{
-                  fontSize: 14,
-                  color: 'black',
-                  marginLeft: 15,
-                }}
-                placeholderStyle={{
-                  color: 'gray',
-                  marginLeft: 15,
-                }}
-                listItemLabelStyle={{
-                  color: 'black',
-                }}
-                showTickIcon={true}
-                activityIndicatorColor="#6E3DD1"
-                searchable={false}
-                listMode="SCROLLVIEW"
-                scrollViewProps={{
-                  nestedScrollEnabled: true,
-                }}
-                onClose={() => {
-                  if (!buildingType) {
-                    handleFieldTouch("buildingType");
-                  }
-                }}
-              />
+                className={`bg-[#F6F6F6] border ${buildingTypeError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 justify-center`}
+              >
+                <Text className={buildingType ? "text-black" : "text-gray-400"}>
+                  {buildingType || "Select Building Type"}
+                </Text>
+              </TouchableOpacity>
               {buildingTypeError ? (
-                <Text className="text-red-500 text-xs pl-4 pt-1">{buildingTypeError}</Text>
+                <Text className="text-red-500 text-xs pl-4 pt-1">
+                  {buildingTypeError}
+                </Text>
               ) : null}
             </View>
 
@@ -1104,7 +1064,9 @@ setLongitude(undefined);
             {buildingType === "House" && (
               <>
                 <View className="mb-4">
-                  <Text className="text-gray-700 mb-1">Building / House No *</Text>
+                  <Text className="text-gray-700 mb-1">
+                    Building / House No *
+                  </Text>
                   <TextInput
                     className={`bg-[#F6F6F6] border ${houseNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
                     placeholder="Building / House No (e.g., 14/B)"
@@ -1122,10 +1084,12 @@ setLongitude(undefined);
                     autoCapitalize="words"
                   />
                   {houseNoError ? (
-                    <Text className="text-red-500 text-xs pl-4 pt-1">{houseNoError}</Text>
+                    <Text className="text-red-500 text-xs pl-4 pt-1">
+                      {houseNoError}
+                    </Text>
                   ) : null}
                 </View>
-                
+
                 <View className="mb-4">
                   <Text className="text-gray-700 mb-1">Street Name *</Text>
                   <TextInput
@@ -1145,67 +1109,29 @@ setLongitude(undefined);
                     autoCapitalize="words"
                   />
                   {streetNameError ? (
-                    <Text className="text-red-500 text-xs pl-4 pt-1">{streetNameError}</Text>
+                    <Text className="text-red-500 text-xs pl-4 pt-1">
+                      {streetNameError}
+                    </Text>
                   ) : null}
                 </View>
-                
-                <View className="mb-4 z-10">
+
+                <View className="mb-4">
                   <Text className="text-gray-700 mb-1">Nearest City *</Text>
-                  <DropDownPicker
-                    open={openCityDropdown}
-                    value={city}
-                    items={cityItems}
-                    setOpen={setOpenCityDropdown}
-                    setValue={setCity}
-                    setItems={setCityItems}
-                    placeholder="Select Nearest City"
-                    style={{
-                      backgroundColor: '#F6F6F6',
-                      borderColor: cityError ? '#EF4444' : '#F6F6F6',
-                      borderWidth: cityError ? 1 : 1,
-                      borderRadius: 30,
+                  <TouchableOpacity
+                    onPress={() => {
+                      setCityModalVisible(true);
+                      handleFieldTouch("city");
                     }}
-                    dropDownContainerStyle={{
-                      backgroundColor: '#F6F6F6',
-                      borderColor: cityError ? '#EF4444' : '#F6F6F6',
-                    }}
-                    textStyle={{
-                      fontSize: 14,
-                      color: 'black',
-                      marginLeft: 15
-                    }}
-                    placeholderStyle={{
-                      color: 'gray',
-                      marginLeft: 15,
-                    }}
-                    listItemLabelStyle={{
-                      color: 'black',
-                    }}
-                    showTickIcon={true}
-                    activityIndicatorColor="#6E3DD1"
-                    searchable={true}
-                    listMode="MODAL"
-                    onClose={() => {
-                      if (!city) {
-                        handleFieldTouch("city");
-                      }
-                    }}
-                    onOpen={dismissKeyboard}
-                    zIndex={7900}
-                    modalProps={{
-                      animationType: "slide",
-                      transparent: false,
-                      presentationStyle: "fullScreen",
-                      statusBarTranslucent: true,
-                    }}
-                    modalContentContainerStyle={{
-                      paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 20 : 0,
-                      backgroundColor: '#fff',
-                      flex: 1,
-                    }}
-                  />
+                    className={`bg-[#F6F6F6] border ${cityError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 justify-center`}
+                  >
+                    <Text className={city ? "text-black" : "text-gray-400"}>
+                      {city || "Select Nearest City"}
+                    </Text>
+                  </TouchableOpacity>
                   {cityError ? (
-                    <Text className="text-red-500 text-xs pl-4 pt-1">{cityError}</Text>
+                    <Text className="text-red-500 text-xs pl-4 pt-1">
+                      {cityError}
+                    </Text>
                   ) : null}
                 </View>
               </>
@@ -1215,7 +1141,9 @@ setLongitude(undefined);
             {buildingType === "Apartment" && (
               <>
                 <View className="mb-4">
-                  <Text className="text-gray-700 mb-1">Apartment / Building No *</Text>
+                  <Text className="text-gray-700 mb-1">
+                    Apartment / Building No *
+                  </Text>
                   <TextInput
                     className={`bg-[#F6F6F6] border ${buildingNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
                     placeholder="Apartment / Building Name"
@@ -1233,12 +1161,16 @@ setLongitude(undefined);
                     autoCapitalize="words"
                   />
                   {buildingNoError ? (
-                    <Text className="text-red-500 text-xs pl-4 pt-1">{buildingNoError}</Text>
+                    <Text className="text-red-500 text-xs pl-4 pt-1">
+                      {buildingNoError}
+                    </Text>
                   ) : null}
                 </View>
 
                 <View className="mb-4">
-                  <Text className="text-gray-700 mb-1">Apartment / Building Name *</Text>
+                  <Text className="text-gray-700 mb-1">
+                    Apartment / Building Name *
+                  </Text>
                   <TextInput
                     className={`bg-[#F6F6F6] border ${buildingNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
                     placeholder="Apartment / Building Name"
@@ -1256,12 +1188,16 @@ setLongitude(undefined);
                     autoCapitalize="words"
                   />
                   {buildingNameError ? (
-                    <Text className="text-red-500 text-xs pl-4 pt-1">{buildingNameError}</Text>
+                    <Text className="text-red-500 text-xs pl-4 pt-1">
+                      {buildingNameError}
+                    </Text>
                   ) : null}
                 </View>
-                
+
                 <View className="mb-4">
-                  <Text className="text-gray-700 mb-1">Flat / Unit Number *</Text>
+                  <Text className="text-gray-700 mb-1">
+                    Flat / Unit Number *
+                  </Text>
                   <TextInput
                     className={`bg-[#F6F6F6] border ${unitNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
                     placeholder="ex : Building B"
@@ -1279,10 +1215,12 @@ setLongitude(undefined);
                     autoCapitalize="words"
                   />
                   {unitNoError ? (
-                    <Text className="text-red-500 text-xs pl-4 pt-1">{unitNoError}</Text>
+                    <Text className="text-red-500 text-xs pl-4 pt-1">
+                      {unitNoError}
+                    </Text>
                   ) : null}
                 </View>
-                
+
                 <View className="mb-4">
                   <Text className="text-gray-700 mb-1">Floor Number *</Text>
                   <TextInput
@@ -1302,7 +1240,9 @@ setLongitude(undefined);
                     autoCapitalize="words"
                   />
                   {floorNoError ? (
-                    <Text className="text-red-500 text-xs pl-4 pt-1">{floorNoError}</Text>
+                    <Text className="text-red-500 text-xs pl-4 pt-1">
+                      {floorNoError}
+                    </Text>
                   ) : null}
                 </View>
 
@@ -1325,10 +1265,12 @@ setLongitude(undefined);
                     autoCapitalize="words"
                   />
                   {houseNoError ? (
-                    <Text className="text-red-500 text-xs pl-4 pt-1">{houseNoError}</Text>
+                    <Text className="text-red-500 text-xs pl-4 pt-1">
+                      {houseNoError}
+                    </Text>
                   ) : null}
                 </View>
-                
+
                 <View className="mb-4">
                   <Text className="text-gray-700 mb-1">Street Name *</Text>
                   <TextInput
@@ -1348,68 +1290,29 @@ setLongitude(undefined);
                     autoCapitalize="words"
                   />
                   {streetNameError ? (
-                    <Text className="text-red-500 text-xs pl-4 pt-1">{streetNameError}</Text>
+                    <Text className="text-red-500 text-xs pl-4 pt-1">
+                      {streetNameError}
+                    </Text>
                   ) : null}
                 </View>
-                
-                <View className="mb-4 z-10">
+
+                <View className="mb-4">
                   <Text className="text-gray-700 mb-1">Nearest City *</Text>
-                  <DropDownPicker
-                    open={openCityDropdown}
-                    value={city}
-                    items={cityItems}
-                    setOpen={setOpenCityDropdown}
-                    setValue={setCity}
-                    setItems={setCityItems}
-                    placeholder={city || "Select Nearest City"}
-                    searchable={true}
-                    searchPlaceholder="Search city..."
-                    style={{
-                      backgroundColor: '#F6F6F6',
-                      borderColor: cityError ? '#EF4444' : '#F6F6F6',
-                      borderWidth: cityError ? 1 : 1,
-                      borderRadius: 30,
-                      minHeight: 40,
+                  <TouchableOpacity
+                    onPress={() => {
+                      setCityModalVisible(true);
+                      handleFieldTouch("city");
                     }}
-                    dropDownContainerStyle={{
-                      backgroundColor: '#ffffff',
-                      borderColor: cityError ? '#EF4444' : '#F6F6F6',
-                      borderRadius: 10,
-                      zIndex: 1000,
-                    }}
-                    textStyle={{
-                      color: '#333',
-                      fontSize: 14,
-                      paddingLeft: 5,
-                    }}
-                    placeholderStyle={{
-                      color: city ? '#333' : '#999',
-                      fontSize: 14,
-                    }}
-                    zIndexInverse={1000}
-                    listMode="MODAL"
-                    scrollViewProps={{ nestedScrollEnabled: true }}
-                    onClose={() => {
-                      if (!city) {
-                        handleFieldTouch("city");
-                      }
-                    }}
-                    onOpen={dismissKeyboard}
-                    zIndex={7900}
-                    modalProps={{
-                      animationType: "slide",
-                      transparent: false,
-                      presentationStyle: "fullScreen",
-                      statusBarTranslucent: true,
-                    }}
-                    modalContentContainerStyle={{
-                      paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 20 : 0,
-                      backgroundColor: '#fff',
-                      flex: 1,
-                    }}
-                  />
+                    className={`bg-[#F6F6F6] border ${cityError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 justify-center`}
+                  >
+                    <Text className={city ? "text-black" : "text-gray-400"}>
+                      {city || "Select Nearest City"}
+                    </Text>
+                  </TouchableOpacity>
                   {cityError ? (
-                    <Text className="text-red-500 text-xs pl-4 pt-1">{cityError}</Text>
+                    <Text className="text-red-500 text-xs pl-4 pt-1">
+                      {cityError}
+                    </Text>
                   ) : null}
                 </View>
               </>
@@ -1417,104 +1320,129 @@ setLongitude(undefined);
 
             {/* Geolocation Section */}
             <View className="mb-4 mt-2">
-              <Text className="text-gray-700 mb-2 font-semibold">Location *</Text>
-              
-              {/* Location Display */}
-              {/* {latitude && longitude && (
-                <View className="bg-green-50 border border-green-200 rounded-2xl p-3 mb-3">
-                  <View className="flex-row items-center">
-                    <Ionicons name="location" size={20} color="#059669" />
-                    <Text className="text-green-700 ml-2 font-medium">Location Captured</Text>
-                  </View>
-                  <Text className="text-gray-600 text-xs mt-1 ml-7">
-                    Lat: {latitude.toFixed(6)}, Lng: {longitude.toFixed(6)}
-                  </Text>
-                </View>
-              )} */}
-
               {/* Location Buttons */}
               <View className="flex-row justify-between">
-             
-                {/* <TouchableOpacity
-                  onPress={getCurrentLocation}
-                  disabled={isLocationLoading}
-                  className="flex-1 mr-2"
-                >
-                  <View className={`bg-blue-50 border border-blue-200 rounded-full py-3 px-4 flex-row items-center justify-center ${isLocationLoading ? 'opacity-50' : ''}`}>
-                    {isLocationLoading ? (
-                      <ActivityIndicator size="small" color="#2563EB" />
-                    ) : (
-                      <>
-                        <Ionicons name="locate" size={20} color="#2563EB" />
-                        <Text className="text-blue-600 font-medium ml-2">Use My Location</Text>
-                      </>
-                    )}
-                  </View>
-                </TouchableOpacity> */}
-
                 {/* Geo Location Button */}
                 <TouchableOpacity
                   onPress={openMapForLocation}
-                  className="flex-1 ml-2 px-9"
+                  className="flex-1 items-center"
                 >
-                  <View className=" border border-[#6C3CD1] rounded-full py-3  flex-row items-center justify-center">
-                    <FontAwesome6 name="location-crosshairs" size={20} color="#7C3AED" />
-                    <Text className="text-[#6C3CD1] font-medium ml-2">Geo Location</Text>
+                  <View className="w-1/2 border border-[#6C3CD1] rounded-full py-3 flex-row items-center justify-center">
+                    <FontAwesome6
+                      name="location-crosshairs"
+                      size={20}
+                      color="#7C3AED"
+                    />
+                    <Text className="text-[#6C3CD1] font-medium ml-2">
+                      Geo Location
+                    </Text>
                   </View>
                 </TouchableOpacity>
               </View>
 
               {/* Location Error */}
               {locationError ? (
-                <Text className="text-red-500 text-xs pl-4 pt-2">{locationError}</Text>
+                <Text className="text-red-500 text-xs pl-4 pt-2">
+                  {locationError}
+                </Text>
               ) : null}
             </View>
- {latitude && longitude && (
-    <View className="items-center justify-center rounded-2xl p-3 mb-3">
-     
-      
-      {/* View Here Link */}
-      <TouchableOpacity
-        onPress={() => {
-          navigation.navigate("ViewLocationScreen", {
-            latitude: latitude,
-            longitude: longitude,
-            locationName: selectedLocationName,
-          });
-        }}
-        className="mt-[-8] "
-      >
-        <View className="flex-row items-center">
-          <Entypo name="location-pin" size={16} color="#DC2626" />
-          <Text className="text-red-600 font-semibold ml-1 underline">
-            View Here
-          </Text>
-        </View>
-      </TouchableOpacity>
-    </View>
-  )}
-            
+            {latitude && longitude && (
+              <View className="items-center justify-center rounded-2xl p-3 mb-3">
+                {/* View Here Link */}
+                <TouchableOpacity
+                  onPress={() => {
+                    navigation.navigate("ViewLocationScreen", {
+                      latitude: latitude,
+                      longitude: longitude,
+                      locationName: selectedLocationName,
+                    });
+                  }}
+                  className="mt-[-8]"
+                >
+                  <View className="flex-row items-center">
+                    <Entypo name="location-pin" size={16} color="#DC2626" />
+                    <Text className="text-red-600 font-semibold ml-1 underline">
+                      View Here
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            )}
 
             {/* Register Button */}
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={handleRegister}
               disabled={isSubmitting || loading}
               className="mb-[40%]"
             >
-              <LinearGradient 
-                colors={["#854BDA", "#6E3DD1"]} 
+              <LinearGradient
+                colors={["#854BDA", "#6E3DD1"]}
                 className="py-3 px-4 items-center mt-6 mb-[2%] mr-[20%] ml-[20%] rounded-3xl h-15"
               >
                 {isSubmitting || loading ? (
                   <ActivityIndicator color="#FFFFFF" />
                 ) : (
-                  <Text className="text-center text-white font-bold">Register</Text>
+                  <Text className="text-center text-white font-bold">
+                    Register
+                  </Text>
                 )}
               </LinearGradient>
             </TouchableOpacity>
           </View>
         </ScrollView>
       </View>
+
+      {/* Title Selection Modal */}
+      <GlobalSearchModal
+        visible={titleModalVisible}
+        onClose={() => setTitleModalVisible(false)}
+        title="Select Title"
+        data={titleItems}
+        selectedItems={selectedCategory ? [selectedCategory] : []}
+        onSelect={(items) => {
+          if (items.length > 0) {
+            setSelectedCategory(items[0]);
+          }
+          handleFieldTouch("title");
+        }}
+        searchPlaceholder="Search title..."
+        multiSelect={false}
+      />
+
+      {/* Building Type Selection Modal */}
+      <GlobalSearchModal
+        visible={buildingTypeModalVisible}
+        onClose={() => setBuildingTypeModalVisible(false)}
+        title="Select Building Type"
+        data={buildingTypeItems}
+        selectedItems={buildingType ? [buildingType] : []}
+        onSelect={(items) => {
+          if (items.length > 0) {
+            setBuildingType(items[0]);
+          }
+          handleFieldTouch("buildingType");
+        }}
+        searchPlaceholder="Search building type..."
+        multiSelect={false}
+      />
+
+      {/* City Selection Modal */}
+      <GlobalSearchModal
+        visible={cityModalVisible}
+        onClose={() => setCityModalVisible(false)}
+        title="Select Nearest City"
+        data={cityItems}
+        selectedItems={city ? [city] : []}
+        onSelect={(items) => {
+          if (items.length > 0) {
+            setCity(items[0]);
+          }
+          handleFieldTouch("city");
+        }}
+        searchPlaceholder="Search city..."
+        multiSelect={false}
+      />
     </KeyboardAvoidingView>
   );
 };

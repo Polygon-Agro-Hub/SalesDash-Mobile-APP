@@ -2,7 +2,7 @@ export interface CartItem {
   id: number;
   name: string;
   price: number;
-  discount:  number;
+  discount: number;
   qty: string;
   normalPrice: number;
   discountedPrice: number;
@@ -64,133 +64,173 @@ interface AdditionalItem {
   quantity: number;
   price: number;
   discount: number;
-
 }
 
-
 export type RootStackParamList = {
-    Splash: undefined;
-    LoginScreen: undefined;
-    ChangePasswordScreen: undefined;
-    DashboardScreen: undefined;
-
-   
-    
-
- ViewScreen: { 
+  Splash: undefined;
+  LoginScreen: undefined;
+  ChangePasswordScreen: undefined;
+  DashboardScreen: undefined;
+  CustomersScreen: undefined;
+  SidebarScreen: undefined;
+  ProfileScreen: undefined;
+  AddComplaintScreen: undefined;
+  ViewComplainScreen: undefined;
+  ViewOrdersScreen: undefined;
+  ReminderScreen: undefined;
+  SelectOrderType: undefined;
+  PrivacyPolicy: undefined;
+  TermsConditions: undefined;
+  SelectOrderTypeNewCustomer: undefined;
+  Main: {
+    screen: keyof RootStackParamList;
+    params?: any;
+  };
+  ViewScreen: {
     selectedPackageId: number;
     selectedPackageName: string;
     selectedPackageImage: string;
     selectedPackageproductPrice: string;
     selectedPackagepackingFee: string;
     selectedPackageserviceFee: string;
-    selectedPackageDescription:string;
-    selectedPackageportion:number;
-    selectedPackageperiod:number;
-  
+    selectedPackageDescription: string;
+    selectedPackageportion: number;
+    selectedPackageperiod: number;
   };
-  
-    CustomersScreen: undefined;
-    SidebarScreen: undefined;
-    ProfileScreen: undefined;
-    AddComplaintScreen: undefined;
-    ViewComplainScreen: undefined;
-    ViewCustomerScreen: {number:string,name:string, customerId:string , id: string , title:string}; // Update this type
-    ReminderScreen: undefined;
-   // AddCustomersScreen: undefined;
-   AddCustomersScreen: {
+  ViewCustomerScreen: {
+    number: string;
+    name: string;
+    customerId: string;
+    id: string;
+    title: string;
+  };
+  AddCustomersScreen: {
     selectedLatitude?: number;
     selectedLongitude?: number;
     selectedLocationName?: string;
   };
   ViewLocationScreen: {
-  latitude: number;
-  longitude: number;
-  locationName?: string;
-}
-    OtpScreen:{phoneNumber:string , id: string};
-   // OtpSuccesfulScreen:undefined;
-   OtpSuccesfulScreen: {
+    latitude: number;
+    longitude: number;
+    locationName?: string;
+  };
+  OtpScreen: {
+    phoneNumber: string;
+    id: string;
+  };
+  OtpSuccesfulScreen: {
     customerId?: number | string;
-   // customerData?: any; // Or define a more specific type for your customer data
   };
-    EditCustomerScreen:{ id: string, customerId:string, name: string,title:string}; 
-    OtpScreenUp:{phoneNumber:string , id: string, token:string};      
-    OrderScreen: {id: string; isCustomPackage:string; isSelectPackage:string;};
-    ScheduleScreen: {totalPrice: Number };
-    ViewOrdersScreen:undefined;
-    View_CancelOrderScreen:{orderId:number, userId:number, status:string, reportStatus:string | null};
-    SelectOrderType:undefined;
-    AttachGeoLocationScreen: {
-  currentLatitude?: number;
-  currentLongitude?: number;
-  onLocationSelect?: (latitude: number, longitude: number, locationName: string) => void;
-};
-AttachGeoLocationScreenEdit:{
-   currentLatitude?: number;
-  currentLongitude?: number;
-  onLocationSelect?: (latitude: number, longitude: number, locationName: string) => void;
-}
-    SelectOrderTypeNewCustomer : undefined;
-    CreateCustomPackage :{id: string; isCustomPackage:string; isSelectPackage:string;};
-   CratScreen: {
+  EditCustomerScreen: {
+    id: string;
+    customerId: string;
+    name: string;
+    title: string;
+  };
+  OtpScreenUp: {
+    phoneNumber: string;
+    id: string;
+    token: string;
+  };
+  OrderScreen: {
+    id: string;
+    isCustomPackage: string;
+    isSelectPackage: string;
+  };
+  ScheduleScreen: {
+    totalPrice: Number;
+  };
+  View_CancelOrderScreen: {
+    orderId: number;
+    userId: number;
+    status: string;
+    reportStatus: string | null;
+  };
+  AttachGeoLocationScreen: {
+    currentLatitude?: number;
+    currentLongitude?: number;
+    onLocationSelect?: (
+      latitude: number,
+      longitude: number,
+      locationName: string,
+    ) => void;
+  };
+  AttachGeoLocationScreenEdit: {
+    currentLatitude?: number;
+    currentLongitude?: number;
+    onLocationSelect?: (
+      latitude: number,
+      longitude: number,
+      locationName: string,
+    ) => void;
+  };
+  CreateCustomPackage: {
+    id: string;
+    isCustomPackage: string;
+    isSelectPackage: string;
+  };
+  CratScreen: {
     selectedProducts: CartItem[];
-    id: string; 
+    id: string;
   };
-    Main: { screen: keyof RootStackParamList; params?: any };
-    SelectPaymentMethod: {
-      items: CartItem[];
-      subtotal: number;
-      discount: number;
-      total: number;
-      fullTotal: number;
-      selectedDate: string;
-      selectedTimeSlot: string;
-    };
-    OrderSummeryScreen: {
-      items?: CartItem[];
-      subtotal?: number;
-      discount?: number;
-      total?: number;
-      fullTotal?: number;
-      selectedDate?: string;
-      selectedTimeSlot?: string;
-      paymentMethod?: string;
-      customerId?: string | number;
-      customerid?: string | number;
-      isPackage?: number;
- 
-      packageId?: number;
-      orderItems?: PackageItem[]; 
-      orderData?: {  // Add this new property
+  SelectPaymentMethod: {
+    items: CartItem[];
+    subtotal: number;
+    discount: number;
+    total: number;
+    fullTotal: number;
+    selectedDate: string;
+    selectedTimeSlot: string;
+  };
+  OrderSummeryScreen: {
+    items?: CartItem[];
+    subtotal?: number;
+    discount?: number;
+    total?: number;
+    fullTotal?: number;
+    selectedDate?: string;
+    selectedTimeSlot?: string;
+    paymentMethod?: string;
+    customerId?: string | number;
+    customerid?: string | number;
+    isPackage?: number;
+    packageId?: number;
+    orderItems?: PackageItem[];
+    orderData?: {
       additionalItems?: AdditionalItem[];
-      // Add any other properties that might exist in orderData
       [key: string]: any;
     };
-    };
-    OrderConfirmedScreen: {
-      orderId: number;
-      total: number;
-      subtotal:number,
-      discount:number,
-      paymentMethod: string;
-      customerId: string | number;
-      customerid?: string | number;
-      items?: Array<CartItem>;
-      selectedDate: string;
-      selectedTimeSlot: string;
-      orderData?: any;
-     isPackage: number;
-    };
-    ExcludeListAdd:{
-      customerId : number
-    },
-    ExcludeListSummery :{
-      customerId : number
-    }
-    ExcludeItemEditSummery :{ id: string, customerId:string, name: string,title:string},
-    ExcludeAddMore : {id: string, customerId:string, name: string,title:string}
-PrivacyPolicy:undefined
-TermsConditions:undefined
   };
-  
+  OrderConfirmedScreen: {
+    orderId: number;
+    total: number;
+    subtotal: number;
+    discount: number;
+    paymentMethod: string;
+    customerId: string | number;
+    customerid?: string | number;
+    items?: Array<CartItem>;
+    selectedDate: string;
+    selectedTimeSlot: string;
+    orderData?: any;
+    isPackage: number;
+  };
+  ExcludeListAdd: {
+    customerId: number;
+  };
+  ExcludeListSummery: {
+    customerId: number;
+  };
+  ExcludeItemEditSummery: {
+    id: string;
+    customerId: string;
+    name: string;
+    title: string;
+  };
+  ExcludeAddMore: {
+    id: string;
+    customerId: string;
+    name: string;
+    title: string;
+  };
+};
