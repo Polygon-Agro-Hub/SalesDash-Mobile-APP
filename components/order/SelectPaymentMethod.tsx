@@ -9,15 +9,19 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  StatusBar,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
-import BackButton from "../common/BackButton";
 import { LinearGradient } from "expo-linear-gradient";
 import { RouteProp } from "@react-navigation/native";
+import CustomHeader from "../common/CustomHeader";
+import { Feather } from "@expo/vector-icons";
 
-
-type SelectPaymentMethodRouteProp = RouteProp<RootStackParamList, "SelectPaymentMethod">;
+type SelectPaymentMethodRouteProp = RouteProp<
+  RootStackParamList,
+  "SelectPaymentMethod"
+>;
 
 interface AdditionalItem {
   discount: number;
@@ -25,10 +29,6 @@ interface AdditionalItem {
   price: number;
   quantity: number;
 }
-
-
-
-
 
 interface SelectPaymentMethodProps {
   navigation: StackNavigationProp<RootStackParamList, "SelectPaymentMethod">;
@@ -50,17 +50,15 @@ interface SelectPaymentMethodProps {
       total?: number;
       subtotal?: number;
       discount?: number;
-      fullTotal?: number; // ADD THIS
+      fullTotal?: number;
       id?: string;
-      customerId?: string; // ADD THIS
-      isPackage?: number | string; // UPDATE THIS
-      packageId?: number; // ADD THIS
+      customerId?: string;
+      isPackage?: number | string;
+      packageId?: number;
       customerid?: string;
       selectedMethod?: "Card" | "Cash" | null;
-      selectedDate?: string; // ADD THIS
-      selectedTimeSlot?: string; // ADD THIS
-      
-      // ADD THIS - Critical for package orders with additional items
+      selectedDate?: string;
+      selectedTimeSlot?: string;
       orderData?: {
         userId: number;
         isPackage: number;
@@ -76,7 +74,6 @@ interface SelectPaymentMethodProps {
           discount: number;
         }>;
       };
-      
       orderItems?: Array<{
         additionalItems?: Array<AdditionalItem>;
         isAdditionalItems: boolean;
@@ -107,12 +104,15 @@ interface SelectPaymentMethodProps {
   };
 }
 
-const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, route }) => {
-  const { 
+const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
+  navigation,
+  route,
+}) => {
+  const {
     customerid,
-    customerId, // Extract this
-    isPackage, 
-    packageId, // Extract this
+    customerId,
+    isPackage,
+    packageId,
     selectedMethod: previousSelectedMethod,
     items,
     subtotal,
@@ -122,17 +122,23 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, r
     selectedDate,
     selectedTimeSlot,
     orderItems,
-    orderData // Extract this - CRITICAL!
+    orderData,
   } = route.params || {};
-  
+
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<"Cash" | "Card" | null>(
-    previousSelectedMethod || "Cash"
+    previousSelectedMethod || "Cash",
   );
 
   useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
-    const keyboardDidHideListener = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false));
+    const keyboardDidShowListener = Keyboard.addListener(
+      "keyboardDidShow",
+      () => setKeyboardVisible(true),
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      "keyboardDidHide",
+      () => setKeyboardVisible(false),
+    );
 
     return () => {
       keyboardDidShowListener.remove();
@@ -151,78 +157,78 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({ navigation, r
       return;
     }
 
-    // Preserve ALL previous params including orderData
     const navigationData = {
-      ...route.params, // This spreads all params including orderData
+      ...route.params,
       paymentMethod: selectedMethod,
       isPackage: isPackage,
-      
-      // Explicitly ensure these critical fields are included
+
       customerId: customerId || customerid,
       customerid: customerid || customerId,
-      packageId: packageId, // Explicitly pass packageId
-      orderData: orderData, // Explicitly pass orderData - CRITICAL!
+      packageId: packageId,
+      orderData: orderData,
     };
-
 
     navigation.navigate("OrderSummeryScreen" as any, navigationData);
   };
-  
+
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      enabled 
-      style={{flex: 1}}
+      enabled
+      style={{ flex: 1 }}
     >
-      <ScrollView 
+      <StatusBar barStyle="dark-content" backgroundColor="white" />
+      <CustomHeader
+        title="Select Payment Method"
+        titleColor="#6C3CD1"
+        showBackButton={true}
+        navigation={navigation}
+      />
+      <ScrollView
         className="bg-white flex-1"
         keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ flexGrow: 1 }}
       >
-        <View className="flex-row items-center shadow-md px-3 bg-white">
-          <BackButton navigation={navigation} />
-          <Text className="text-lg font-bold text-[#6C3CD1] flex-grow text-center mr-8">
-            Select Payment Method
-          </Text>
-        </View>
+        <View className="flex-1 justify-center">
+          <View className="flex items-center justify-center mb-20">
+            <Image
+              source={require("@/assets/images/order/payment.webp")}
+              className="w-84 h-60"
+              resizeMode="contain"
+            />
+          </View>
 
-        <View className="flex items-center justify-center mt-3">
-          <Image
-            source={require("../../assets/images/payment.webp")}
-            className="w-84 h-60"
-            resizeMode="contain"
-          />
-        </View>
+          <View className="w-full items-center space-y-5 px-12 mt-5">
+            <TouchableOpacity
+              onPress={() => setSelectedMethod("Cash")}
+              className={`w-full py-5 px-5 rounded-lg flex-row items-center justify-between border border-[#5D5D5D] ${
+                selectedMethod === "Cash"
+                  ? "bg-[#6C3CD1] border-[#6C3CD1]"
+                  : "bg-white border-[#5D5D5D]"
+              }`}
+            >
+              <Text
+                className={`text-lg ${selectedMethod === "Cash" ? "text-white font-bold" : "text-gray-700 font-medium"}`}
+              >
+                Cash On Delivery
+              </Text>
+              {selectedMethod === "Cash" && (
+                <View className="w-7 h-7 bg-white rounded-full flex items-center justify-center">
+                  <Feather name="check" size={24} color="#6C3CD0" />
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
 
-        <View className="flex-1 w-full items-center space-y-5 p-12 mt-[-10]">
-          <TouchableOpacity
-            onPress={() => setSelectedMethod("Cash")}
-            className={`w-full py-5 px-5 rounded-lg flex-row items-center justify-between border border-[#5D5D5D] ${
-              selectedMethod === "Cash" ? "bg-[#6C3CD1] border-[#6C3CD1]" : "bg-white border-[#5D5D5D]"
-            }`}
-          >
-            <Text className={`text-lg ${selectedMethod === "Cash" ? "text-white font-bold" : "text-gray-700 font-medium"}`}>
-              Cash On Delivery
-            </Text>
-            {selectedMethod === "Cash" && (
-              <View className="w-7 h-7 bg-white rounded-full flex items-center justify-center">
-                <Image 
-                  source={require("../../assets/images/DonePurple.webp")} 
-                  className="w-5 h-5"
-                  resizeMode="contain"
-                />
-              </View>
-            )}
+          <TouchableOpacity onPress={handleProceed} className="mt-8">
+            <LinearGradient
+              colors={["#6839CF", "#874DDB"]}
+              className="py-3 px-4 items-center mx-[25%] rounded-3xl h-15"
+            >
+              <Text className="text-center text-white font-bold">Proceed</Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
-
-        <TouchableOpacity onPress={handleProceed}>
-          <LinearGradient 
-            colors={["#6839CF", "#874DDB"]} 
-            className="py-3 px-4 items-center mb-[22%] mr-[25%] ml-[25%] rounded-3xl h-15"
-          >
-            <Text className="text-center text-white font-bold">Proceed</Text>
-          </LinearGradient>
-        </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
   );

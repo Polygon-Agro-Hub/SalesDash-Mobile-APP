@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -9,7 +9,6 @@ import {
   BackHandler,
   Alert,
 } from "react-native";
-import BackButton from "../common/BackButton";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   widthPercentageToDP as wp,
@@ -19,14 +18,13 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
 import { ScrollView } from "react-native-gesture-handler";
 import { RouteProp, useFocusEffect } from "@react-navigation/native";
-import { SearchBar } from "react-native-screens";
 import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-import { AntDesign } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
-import { navigate } from "expo-router/build/global-state/routing";
+import CustomHeader from "../common/CustomHeader";
+import LoadingPage from "../common/LoadingPage";
 
 type ExcludeItemEditSummeryNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -60,7 +58,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
   useFocusEffect(
     useCallback(() => {
       const fetchProducts = async () => {
-        setLoading(true); // Set loading to true when starting fetch
+        setLoading(true);
         setCrops([]);
         setCustomerName({
           firstName: "",
@@ -81,7 +79,6 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
             headers: { Authorization: `Bearer ${storedToken}` },
           });
 
-
           if (response.data && response.data.data) {
             setCrops(response.data.data);
           }
@@ -92,17 +89,16 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
         } catch (err) {
           console.error("Failed to fetch products:", err);
         } finally {
-          setLoading(false); // Set loading to false when done
+          setLoading(false);
         }
       };
 
       fetchProducts();
-      return () => { };
-    }, [id])
+      return () => {};
+    }, [id]),
   );
 
   const deleteCrop = async (excludeId: number) => {
-    // Ask for confirmation before deleting
     Alert.alert("Delete", "Are you sure you want to delete this item?", [
       {
         text: "Cancel",
@@ -127,7 +123,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
             // Handle response
             if (response.status === 200) {
               setCrops((prevCrops) =>
-                prevCrops.filter((crop) => crop.excludeId !== excludeId)
+                prevCrops.filter((crop) => crop.excludeId !== excludeId),
               );
             } else {
               console.error("Failed to delete item");
@@ -143,20 +139,22 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        // Navigate to ViewCustomerScreen instead of going back to main dashboard
         navigation.navigate("ViewCustomerScreen" as any, {
           id: id,
           customerId: customerId,
           name: name,
-          title: title
+          title: title,
         });
-        return true; // Prevent default back behavior
+        return true;
       };
 
-      const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress,
+      );
 
-      return () => backHandler.remove(); // Cleanup on unmount
-    }, [navigation, id, customerId, name, title])
+      return () => backHandler.remove();
+    }, [navigation, id, customerId, name, title]),
   );
 
   const hasExcludedItems = () => {
@@ -166,6 +164,10 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
     return hasExcludedItems() ? "Add more" : "Add";
   };
 
+  if (loading) {
+    return <LoadingPage message="Loading Details..." fullScreen={true} />;
+  }
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -173,37 +175,35 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
       style={{ flex: 1 }}
       className="bg-white"
     >
-      <View className="flex bg-white px-3">
-        <View className="bg-white flex-row items-center h-17  px-1">
-          <TouchableOpacity
-            style={{ paddingHorizontal: wp(2), paddingVertical: hp(2) }}
-            onPress={() => navigation.navigate("ViewCustomerScreen" as any, { id: id, customerId: customerId, name: name, title: title })}
-          >
-            <View className="w-9 h-9 bg-[#F6F6F680] rounded-full justify-center items-center">
-              <AntDesign name="left" size={20} color="black" />
-            </View>
-          </TouchableOpacity>
-          {/* Title */}
-          <Text
-            style={{ fontSize: 18 }}
-            className="font-bold text-center text-black flex-grow mr-9 text-xl -mt-2 "
-          >
-            {customerName.firstName && customerName.lastName
-              ? `${customerName.title}. ${customerName.firstName} ${customerName.lastName}`
-              : "Loading..."}
-          </Text>
-        </View>
-
-        <Text
-          style={{ fontSize: 18 }}
-          className=" text-center text-black flex-grow ml-4 text-xl -mt-6"
-        >
-          {customerName.firstName && customerName.lastName
-            ? `Customer ID : ${customerName.cusId.slice(4)}`
-            : "Loading..."}
-        </Text>
-
-        <View className="px-6 mt-10">
+      <CustomHeader
+        title={
+          customerName.firstName && customerName.lastName
+            ? `${customerName.title}. ${customerName.firstName} ${customerName.lastName}`
+            : "Loading..."
+        }
+        transparent
+        titleColor="#000000"
+        showBackButton={true}
+        navigation={navigation}
+        onBackPress={() =>
+          navigation.navigate("ViewCustomerScreen" as any, {
+            id: id,
+            customerId: customerId,
+            name: name,
+            title: title,
+          })
+        }
+      />
+      <Text
+        style={{ fontSize: 18 }}
+        className=" text-center text-black text-xl mt-14"
+      >
+        {customerName.firstName && customerName.lastName
+          ? `Customer ID : ${customerName.cusId.slice(4)}`
+          : "Loading..."}
+      </Text>
+      <View className="flex bg-white px-6">
+        <View className="mt-4">
           <Text className="text-[#874CDB] text-sm font-semibold">
             Preferred Items to Exclude
           </Text>
@@ -211,7 +211,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
         </View>
 
         <ScrollView keyboardShouldPersistTaps="handled" className="mb-[90%]">
-          <View className="px-6 mt-4">
+          <View className="mt-4">
             {loading ? (
               <View
                 style={{
@@ -222,7 +222,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
                 }}
               >
                 <LottieView
-                  source={require("../../assets/images/loading.json")} 
+                  source={require("@/assets/json/loading.json")}
                   style={{ width: wp(40), height: hp(40) }}
                   autoPlay
                   loop
@@ -231,7 +231,8 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
                   Loading...
                 </Text>
               </View>
-            ) : crops.length === 0 || crops.every((crop) => crop.excludeId === null) ? (
+            ) : crops.length === 0 ||
+              crops.every((crop) => crop.excludeId === null) ? (
               <View
                 style={{
                   flex: 1,
@@ -242,7 +243,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
               >
                 <View className="flex-1 justify-center items-center px-4 ">
                   <LottieView
-                    source={require("../../assets/images/NoComplaints.json")}
+                    source={require("@/assets/json/no-data.json")}
                     style={{ width: wp(50), height: hp(50) }}
                     autoPlay
                     loop
@@ -284,18 +285,20 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
                   </TouchableOpacity>
                 </View>
               ))
-            )}0
+            )}
           </View>
         </ScrollView>
       </View>
       <TouchableOpacity
         className="absolute bottom-[14%] left-0 right-0 items-center "
-        onPress={() => navigation.navigate("ExcludeAddMore", {
-          id: id,
-          customerId: customerId,
-          name: name,
-          title: title
-        })}
+        onPress={() =>
+          navigation.navigate("ExcludeAddMore", {
+            id: id,
+            customerId: customerId,
+            name: name,
+            title: title,
+          })
+        }
       >
         <LinearGradient
           colors={["#6C3CD1", "#9B65D6"]}

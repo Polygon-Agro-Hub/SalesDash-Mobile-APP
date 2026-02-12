@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,36 +8,36 @@ import {
   StatusBar,
   Modal,
   TextInput,
-  Keyboard,
   Image,
   Alert,
   KeyboardAvoidingView,
-  Platform
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import DropDownPicker from 'react-native-dropdown-picker';
-import BackButton from '../common/BackButton';
-import { LinearGradient } from 'expo-linear-gradient';
+  Platform,
+} from "react-native";
+import { Feather, Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import environment from "@/environment/environment";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
-import { RouteProp, useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from "@react-navigation/native";
+import CustomHeader from "../common/CustomHeader";
+import GlobalSearchModal from "../common/GlobalSearchModal";
 
-type OrderScreenNavigationProp = StackNavigationProp<RootStackParamList, "OrderScreen">;
-type OrderScreenRouteProp = RouteProp<RootStackParamList, "OrderScreen">;
-
+type OrderScreenNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  "OrderScreen"
+>;
 interface ProductItem {
   label: string;
   discount: string;
-  value: string; // This is varietyId
-  id: number;    // marketplaceitems.id
+  value: string;
+  id: number;
   price: string;
   discountedPrice?: string;
   unitType?: string;
-  changeby?: string;  // Add this
-  startValue?: string; // Add this
+  changeby?: string;
+  startValue?: string;
 }
 
 interface AdditionalItem {
@@ -50,11 +50,9 @@ interface AdditionalItem {
   discount: number;
   totalAmount: number;
   selected: boolean;
-  changeby?: string; // Add this
-  startValue?: string; // Add this
+  changeby?: string;
+  startValue?: string;
 }
-
-
 
 interface Package {
   id: number;
@@ -67,7 +65,7 @@ interface Package {
   total: number;
   packingFee: string;
   productPrice: string;
-  serviceFee: string
+  serviceFee: string;
 }
 
 interface Crop {
@@ -113,8 +111,8 @@ interface OrderScreenProps {
         price: number;
       }>;
       additionalItems?: Array<{
-        pricePerKg?: number;  // Change from function to optional number
-        discountedPricePerKg?: number;  // Change from function to optional number
+        pricePerKg?: number;
+        discountedPricePerKg?: number;
         totalPrice?: number;
         mpItemId?: number;
         productId?: number;
@@ -125,9 +123,9 @@ interface OrderScreenProps {
         price: number;
         discount: string;
         cropId?: number;
-        changeby?: string;  // Add this
-        startValue?: string; // Add this
-        unitType?: string;  // Add this
+        changeby?: string;
+        startValue?: string;
+        unitType?: string;
       }>;
       orderItems?: any[];
       subtotal?: number;
@@ -147,112 +145,98 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
   const { id, isPackage } = route.params || {};
   const [loading, setLoading] = useState<boolean>(false);
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
-  const [selectedProduct, setSelectedProduct] = useState<string>('');
+  const [selectedProduct, setSelectedProduct] = useState<string>("");
   const [quantity, setQuantity] = useState<number>(1);
   const [pricePerKg, setPricePerKg] = useState<number>(0);
   const [additionalItems, setAdditionalItems] = useState<AdditionalItem[]>([]);
   const [productItems, setProductItems] = useState<ProductItem[]>([]);
-  // Edit Modal States
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [editingItem, setEditingItem] = useState<AdditionalItem | null>(null);
   const [newItemQuantity, setNewItemQuantity] = useState<number>(1);
-  const [editUnitOpen, setEditUnitOpen] = useState<boolean>(false);
-  const [editSelectedUnit, setEditSelectedUnit] = useState<string>('g');
+  const [editSelectedUnit, setEditSelectedUnit] = useState<string>("g");
+  const [packageItems, setPackageItems] = useState<
+    { label: string; value: string }[]
+  >([]);
+  const [selectedUnit, setSelectedUnit] = useState<string>("g");
 
-  // Package dropdown states
-  const [packageOpen, setPackageOpen] = useState<boolean>(false);
-  const [packageValue, setPackageValue] = useState<string>('');
-  const [packageItems, setPackageItems] = useState<{ label: string, value: string }[]>([]);
-  const [unitOpen, setUnitOpen] = useState<boolean>(false);
-  const [selectedUnit, setSelectedUnit] = useState<string>('g');
-  const [packageSearchValue, setPackageSearchValue] = useState('');
-  const [filteredPackageItems, setFilteredPackageItems] = useState(packageItems);
+  // Modal visibility states
+  const [packageModalVisible, setPackageModalVisible] =
+    useState<boolean>(false);
+  const [productModalVisible, setProductModalVisible] =
+    useState<boolean>(false);
+  const [unitModalVisible, setUnitModalVisible] = useState<boolean>(false);
+  const [editUnitModalVisible, setEditUnitModalVisible] =
+    useState<boolean>(false);
+
+  const [filteredPackageItems, setFilteredPackageItems] =
+    useState(packageItems);
 
   const [items, setItems] = useState<{ name: string; qty: string }[]>([]);
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
-  // Product dropdown states (for modal)
-  const [productOpen, setProductOpen] = useState<boolean>(false);
-  const [productDropdownLoading, setProductDropdownLoading] = useState<boolean>(false);
-  const [productValue, setProductValue] = useState<string>('kiwi');
-  // const [productItems, setProductItems] = useState<{
-  //   price: string;label: string, value: string
-  // }[]>([]);
-  const [discountprice, setDiscountprice] = useState('')
-  // Remove hardcoded orderData - we'll use dynamic data instead
+  const [productDropdownLoading, setProductDropdownLoading] =
+    useState<boolean>(false);
+  const [productValue, setProductValue] = useState<string>("");
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
-  const [packageTotal, setPackageTotal] = useState<string>('0.00');
-  const [open, setOpen] = useState(false); // For edit modal dropdown
-  const products = ['Kiwi', 'Apple', 'Mango', 'Orange', 'Banana'];
   const [token, setToken] = useState<string | null>(null);
-  const [productSearchValue, setProductSearchValue] = useState('');
-  const [filteredProductItems, setFilteredProductItems] = useState(productItems);
+  const [filteredProductItems, setFilteredProductItems] =
+    useState(productItems);
   const [packages, setPackages] = useState<Package[]>([]);
-  const [crops, setCrops] = useState<Crop[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
-  const [itemDetails, setItemDetails] = useState<{
-    id?: number;
-    mpItemId?: string;
-    changeby?: string;
-    startValue?: string;
-    unitType?: string;
-    discountedPrice?: string;
-    normalPrice?: string;
-    displayName?: string;
-  } | null>(null);
-
+  const [packageValue, setPackageValue] = useState<string>("");
 
   useFocusEffect(
     useCallback(() => {
-
       setSelectedItems([]);
       setSelectedProduct("");
-
-    }, [])
+    }, []),
   );
 
   useEffect(() => {
     if (showAddModal) {
-      // Reset all form fields when modal opens
-      setProductValue("null");
-      setSelectedProduct('');
+      setProductValue("");
+      setSelectedProduct("");
       setPricePerKg(0);
       setQuantity(0);
-      setSelectedUnit('Kg');
-      setProductOpen(false);
-      setUnitOpen(false);
-      handleProductSearchChange('')
-      handlePackageSearchChange('')
+      setSelectedUnit("Kg");
+      handleProductSearchChange("");
+      handlePackageSearchChange("");
     }
   }, [showAddModal]);
-
 
   const fetchProductPrices = useCallback(async (productIds: number[]) => {
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
       if (!storedToken || productIds.length === 0) return {};
 
-      const response = await axios.get(`${environment.API_BASE_URL}api/packages/crops/all`, {
-        headers: { Authorization: `Bearer ${storedToken}` },
-        params: { id }
-      });
+      const response = await axios.get(
+        `${environment.API_BASE_URL}api/packages/crops/all`,
+        {
+          headers: { Authorization: `Bearer ${storedToken}` },
+          params: { id },
+        },
+      );
 
-      const productPrices: Record<string, {
-        normalPrice: number;
-        discountedPrice: number;
-        displayName: string;
-        changeby: string; // Add this
-        startValue: string; // Add this
-      }> = {};
+      const productPrices: Record<
+        string,
+        {
+          normalPrice: number;
+          discountedPrice: number;
+          displayName: string;
+          changeby: string;
+          startValue: string;
+        }
+      > = {};
 
       response.data.data.forEach((item: any) => {
         if (productIds.includes(item.id)) {
           productPrices[item.id.toString()] = {
             normalPrice: parseFloat(item.normalPrice) || 0,
-            discountedPrice: parseFloat(item.discountedPrice) || parseFloat(item.normalPrice) || 0,
+            discountedPrice:
+              parseFloat(item.discountedPrice) ||
+              parseFloat(item.normalPrice) ||
+              0,
             displayName: item.displayName || `Item ${item.id}`,
-            changeby: item.changeby || '1', // Add this
-            startValue: item.startValue || '1' // Add this
+            changeby: item.changeby || "1",
+            startValue: item.startValue || "1",
           };
         }
       });
@@ -264,82 +248,89 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     }
   }, []);
 
-
   useEffect(() => {
-
     const initializeAdditionalItems = async () => {
       if (route.params?.isEdit && route.params?.additionalItems) {
-        // Filter out items without valid productId and map to numbers
         const productIds = route.params.additionalItems
-          .map(item => item.productId)
-          .filter((id): id is number => typeof id === 'number' && id !== undefined);
+          .map((item) => item.productId)
+          .filter(
+            (id): id is number => typeof id === "number" && id !== undefined,
+          );
 
         const productPrices = await fetchProductPrices(productIds);
 
-        const mappedAdditionalItems: AdditionalItem[] = route.params.additionalItems
-          .filter(item => item.productId !== undefined)
-          .map((item) => {
-            const productId = item.productId || item.mpItemId || item.cropId;
+        const mappedAdditionalItems: AdditionalItem[] =
+          route.params.additionalItems
+            .filter((item) => item.productId !== undefined)
+            .map((item) => {
+              const productId = item.productId || item.mpItemId || item.cropId;
 
-            // Ensure productId is a number
-            if (!productId || typeof productId !== 'number') {
-              console.warn('Skipping item with invalid productId:', item);
-              return null;
-            }
+              // Ensure productId is a number
+              if (!productId || typeof productId !== "number") {
+                console.warn("Skipping item with invalid productId:", item);
+                return null;
+              }
 
-            const quantity = parseFloat(item.quantity) || 1;
-            const unit = (item.quantityType || 'kg').toLowerCase() === 'kg' ? 'Kg' : 'g';
-            const quantityInKg = unit === 'Kg' ? quantity : quantity / 1000;
+              const quantity = parseFloat(item.quantity) || 1;
+              const unit =
+                (item.quantityType || "kg").toLowerCase() === "kg" ? "Kg" : "g";
+              const quantityInKg = unit === "Kg" ? quantity : quantity / 1000;
 
-            const productPrice = productPrices[productId.toString()];
-            let pricePerKg, discountedPricePerKg, discountAmount, displayName;
-            let changeby = '1';
-            let startValue = '1';
+              const productPrice = productPrices[productId.toString()];
+              let pricePerKg, discountedPricePerKg, discountAmount, displayName;
+              let changeby = "1";
+              let startValue = "1";
 
-            if (productPrice) {
-              pricePerKg = productPrice.normalPrice;
-              discountedPricePerKg = productPrice.discountedPrice;
-              discountAmount = (pricePerKg - discountedPricePerKg) * quantityInKg;
-              displayName = productPrice.displayName;
-              changeby = productPrice.changeby;
-              startValue = productPrice.startValue;
-            } else if (item.pricePerKg && item.discountedPricePerKg) {
-              pricePerKg = Number(item.pricePerKg);
-              discountedPricePerKg = Number(item.discountedPricePerKg);
-              discountAmount = (pricePerKg - discountedPricePerKg) * quantityInKg;
-              displayName = item.name;
-              changeby = item.changeby || '1';
-              startValue = item.startValue || '1';
-            } else {
-              const totalPrice = Number(item.price || item.totalPrice) || 0;
-              const totalDiscount = Number(item.discount) || 0;
+              if (productPrice) {
+                pricePerKg = productPrice.normalPrice;
+                discountedPricePerKg = productPrice.discountedPrice;
+                discountAmount =
+                  (pricePerKg - discountedPricePerKg) * quantityInKg;
+                displayName = productPrice.displayName;
+                changeby = productPrice.changeby;
+                startValue = productPrice.startValue;
+              } else if (item.pricePerKg && item.discountedPricePerKg) {
+                pricePerKg = Number(item.pricePerKg);
+                discountedPricePerKg = Number(item.discountedPricePerKg);
+                discountAmount =
+                  (pricePerKg - discountedPricePerKg) * quantityInKg;
+                displayName = item.name;
+                changeby = item.changeby || "1";
+                startValue = item.startValue || "1";
+              } else {
+                const totalPrice = Number(item.price || item.totalPrice) || 0;
+                const totalDiscount = Number(item.discount) || 0;
 
-              discountedPricePerKg = quantityInKg > 0 ? totalPrice / quantityInKg : 0;
-              pricePerKg = quantityInKg > 0 ? (totalPrice + totalDiscount) / quantityInKg : 0;
-              discountAmount = totalDiscount;
-              displayName = item.name;
-              changeby = item.changeby || '1';
-              startValue = item.startValue || '1';
-            }
+                discountedPricePerKg =
+                  quantityInKg > 0 ? totalPrice / quantityInKg : 0;
+                pricePerKg =
+                  quantityInKg > 0
+                    ? (totalPrice + totalDiscount) / quantityInKg
+                    : 0;
+                discountAmount = totalDiscount;
+                displayName = item.name;
+                changeby = item.changeby || "1";
+                startValue = item.startValue || "1";
+              }
 
-            const totalAmount = quantityInKg * discountedPricePerKg;
+              const totalAmount = quantityInKg * discountedPricePerKg;
 
-            // Return AdditionalItem type with all required properties
-            return {
-              id: productId,
-              name: displayName,
-              quantity: quantity,
-              unit: unit,
-              pricePerKg: pricePerKg,
-              discountedPricePerKg: Math.max(0, discountedPricePerKg),
-              discount: discountAmount,
-              totalAmount: totalAmount,
-              selected: false,
-              changeby: changeby,    // Always a string
-              startValue: startValue  // Always a string
-            } as AdditionalItem; // Explicitly cast to AdditionalItem
-          })
-          .filter((item): item is AdditionalItem => item !== null); // Type guard
+              // Return AdditionalItem type with all required properties
+              return {
+                id: productId,
+                name: displayName,
+                quantity: quantity,
+                unit: unit,
+                pricePerKg: pricePerKg,
+                discountedPricePerKg: Math.max(0, discountedPricePerKg),
+                discount: discountAmount,
+                totalAmount: totalAmount,
+                selected: false,
+                changeby: changeby,
+                startValue: startValue,
+              } as AdditionalItem;
+            })
+            .filter((item): item is AdditionalItem => item !== null);
 
         setAdditionalItems(mappedAdditionalItems);
       }
@@ -354,31 +345,28 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
       // Set the package value from route params
       setPackageValue(route.params.packageId.toString());
 
-      // Initialize package items if they exist
       if (route.params.packageItems) {
-        const mappedPackageItems = route.params.packageItems.map(item => ({
+        const mappedPackageItems = route.params.packageItems.map((item) => ({
           name: item.name,
-          qty: item.quantity
+          qty: item.quantity,
         }));
         setItems(mappedPackageItems);
       }
-
-      // Find and set the selected package
       if (route.params.packageId && packages.length > 0) {
-        const selectedPkg = packages.find(pkg => pkg.id === route.params.packageId);
+        const selectedPkg = packages.find(
+          (pkg) => pkg.id === route.params.packageId,
+        );
         if (selectedPkg) {
           setSelectedPackage(selectedPkg);
-          const packingFee = parseFloat(selectedPkg.packingFee) || 0;
-          const productPrice = parseFloat(selectedPkg.productPrice) || 0;
-          const serviceFee = parseFloat(selectedPkg.serviceFee) || 0;
-          setPackageTotal((packingFee + productPrice + serviceFee).toString());
         }
       }
     }
-  }, [route.params?.isEdit, route.params?.packageId, route.params?.packageItems, packages]);
-
-
-
+  }, [
+    route.params?.isEdit,
+    route.params?.packageId,
+    route.params?.packageItems,
+    packages,
+  ]);
 
   const handleConfirm = useCallback(async () => {
     setLoading(true);
@@ -397,52 +385,65 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         userId: route.params?.id,
         isPackage: isPackage === "1" ? 1 : 0,
         packageId: packageValue ? parseInt(packageValue) : null,
-        total: packageTotalAmount + additionalItems.reduce((sum, item) => sum + item.totalAmount, 0),
-        fullTotal: packageTotalAmount + additionalItems.reduce((sum, item) => sum + item.totalAmount, 0),
+        total:
+          packageTotalAmount +
+          additionalItems.reduce((sum, item) => sum + item.totalAmount, 0),
+        fullTotal:
+          packageTotalAmount +
+          additionalItems.reduce((sum, item) => sum + item.totalAmount, 0),
         discount: additionalItems.reduce((sum, item) => sum + item.discount, 0),
-        additionalItems: additionalItems.map(item => ({
+        additionalItems: additionalItems.map((item) => ({
           productId: item.id,
           qty: item.quantity,
           unit: item.unit.toLowerCase(),
-          price: item.discountedPricePerKg * (item.unit === 'Kg' ? item.quantity : item.quantity / 1000),
-          discount: item.discount
-        }))
+          price:
+            item.discountedPricePerKg *
+            (item.unit === "Kg" ? item.quantity : item.quantity / 1000),
+          discount: item.discount,
+        })),
       };
-
 
       navigation.navigate("ScheduleScreen" as any, {
         orderData,
         customerid: route.params?.id,
-        isPackage
+        isPackage,
       });
-
     } catch (error) {
       console.error("Error confirming order:", error);
       Alert.alert("Error", "Failed to process order");
     } finally {
       setLoading(false);
     }
-  }, [isPackage, packageValue, additionalItems, navigation, route.params?.id, selectedPackage]);
-
-
+  }, [
+    isPackage,
+    packageValue,
+    additionalItems,
+    navigation,
+    route.params?.id,
+    selectedPackage,
+  ]);
 
   const handleSaveItem = useCallback(() => {
-    const selectedProductData = productItems.find(item => item.value === productValue);
+    const selectedProductData = productItems.find(
+      (item) => item.value === productValue,
+    );
 
     if (!selectedProductData) {
       Alert.alert("Error", "Please select a product");
       return;
     }
 
-    const isProductAlreadyAdded = additionalItems.some(item => item.id === selectedProductData.id);
+    const isProductAlreadyAdded = additionalItems.some(
+      (item) => item.id === selectedProductData.id,
+    );
 
     if (isProductAlreadyAdded) {
       Alert.alert("Error", "This product is already added");
       return;
     }
 
-    const unit = selectedUnit === 'Kg' ? 'Kg' : 'g';
-    const quantityInKg = unit === 'Kg' ? quantity : quantity / 1000;
+    const unit = selectedUnit === "Kg" ? "Kg" : "g";
+    const quantityInKg = unit === "Kg" ? quantity : quantity / 1000;
 
     const normalPrice = parseFloat(selectedProductData.price);
     const discountedPrice = selectedProductData.discountedPrice
@@ -463,27 +464,16 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
       discount: totalDiscountForQuantity,
       totalAmount: totalAmount,
       selected: false,
-      changeby: selectedProductData.changeby || '1', // Add this
-      startValue: selectedProductData.startValue || '1' // Add this
+      changeby: selectedProductData.changeby || "1",
+      startValue: selectedProductData.startValue || "1",
     };
 
-    setAdditionalItems(prev => [...prev, newItem]);
+    setAdditionalItems((prev) => [...prev, newItem]);
     setShowAddModal(false);
     setQuantity(1);
-    setSelectedUnit('g');
+    setSelectedUnit("g");
     setPricePerKg(discountedPrice);
   }, [productItems, productValue, selectedUnit, quantity, additionalItems]);
-
-
-  const availableProducts = productItems.filter(
-    item => !additionalItems.some(addedItem => addedItem.id === item.id)
-  );
-  const productDropdownItems = productItems.map(item => ({
-    ...item,
-    disabled: additionalItems.some(addedItem => addedItem.id === item.id)
-  }));
-
-
 
   // Modify fetchItemsForPackage to handle pre-selected package
   const fetchItemsForPackage = async (packageId: number) => {
@@ -494,26 +484,19 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         return;
       }
 
-      const response = await axios.get<{ data: { name: string; qty: string }[] }>(
-        `${environment.API_BASE_URL}api/packages/${packageId}/items`,
-        { headers: { Authorization: `Bearer ${storedToken}` } }
-      );
+      const response = await axios.get<{
+        data: { name: string; qty: string }[];
+      }>(`${environment.API_BASE_URL}api/packages/${packageId}/items`, {
+        headers: { Authorization: `Bearer ${storedToken}` },
+      });
 
       if (response.data && Array.isArray(response.data.data)) {
         setItems(response.data.data);
 
         // Find and set the selected package
-        const selectedPkg = packages.find(pkg => pkg.id === packageId);
+        const selectedPkg = packages.find((pkg) => pkg.id === packageId);
         if (selectedPkg) {
           setSelectedPackage(selectedPkg);
-
-          // Calculate total from all package fees
-          const packingFee = parseFloat(selectedPkg.packingFee) || 0;
-          const productPrice = parseFloat(selectedPkg.productPrice) || 0;
-          const serviceFee = parseFloat(selectedPkg.serviceFee) || 0;
-          const calculatedTotal = packingFee + productPrice + serviceFee;
-
-          setPackageTotal(calculatedTotal.toString());
         }
       }
     } catch (error) {
@@ -536,18 +519,18 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         `${environment.API_BASE_URL}api/packages/get-packages`,
         {
           headers: { Authorization: `Bearer ${storedToken}` },
-        }
+        },
       );
       setPackages(response.data.data);
 
       // Transform packages for dropdown
-      const dropdownItems = response.data.data.map(pkg => ({
+      const dropdownItems = response.data.data.map((pkg) => ({
         label: pkg.displayName,
-        value: pkg.id.toString()
+        value: pkg.id.toString(),
       }));
 
       setPackageItems(dropdownItems);
-
+      setFilteredPackageItems(dropdownItems);
     } catch (error) {
       Alert.alert("Error", "Failed to fetch packages");
       console.error(error);
@@ -558,43 +541,33 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     fetchPackages();
   }, []);
 
+  useEffect(() => {}, [route.params]);
 
-
-  useEffect(() => {
-  }, [route.params]);
-
-
-
-  // Handle package selection change - IMPROVED VERSION
+  // Handle package selection change
   const handlePackageChange = (value: string | null) => {
     if (value) {
       setPackageValue(value);
       const packageId = parseInt(value, 10);
       if (!isNaN(packageId)) {
-        // Only fetch items if packages array is populated
         if (packages.length > 0) {
           fetchItemsForPackage(packageId);
         } else {
-          // You might want to add a loading state here
           setItems([]);
           setSelectedPackage(null);
-          setPackageTotal('0.00');
         }
       } else {
         console.error("Invalid package ID:", value);
         setItems([]);
         setSelectedPackage(null);
-        setPackageTotal('0.00');
       }
     } else {
-      setPackageValue('');
+      setPackageValue("");
       setItems([]);
       setSelectedPackage(null);
-      setPackageTotal('0.00');
     }
   };
 
-  // Alternative: Use useEffect to handle package selection after packages are loaded
+  // Use useEffect to handle package selection after packages are loaded
   useEffect(() => {
     if (packageValue && packages.length > 0) {
       const packageId = parseInt(packageValue, 10);
@@ -606,11 +579,14 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
 
   const fetchCrops = async () => {
     try {
-      setProductDropdownLoading(true); // Add this
-      const response = await axios.get(`${environment.API_BASE_URL}api/packages/crops/all`, {
-        headers: { Authorization: `Bearer ${token}` },
-        params: { id }
-      });
+      setProductDropdownLoading(true);
+      const response = await axios.get(
+        `${environment.API_BASE_URL}api/packages/crops/all`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { id },
+        },
+      );
 
       const retailItems = response.data.data
         .filter((item: CropItem) => item.category === "Retail")
@@ -621,9 +597,11 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
           unitType: item.unitType,
           price: item.normalPrice,
           discountedPrice: item.discountedPrice,
-          discount: (parseFloat(item.normalPrice) - parseFloat(item.discountedPrice)).toFixed(2),
-          changeby: item.changeby || '1',
-          startValue: item.startValue || '1',
+          discount: (
+            parseFloat(item.normalPrice) - parseFloat(item.discountedPrice)
+          ).toFixed(2),
+          changeby: item.changeby || "1",
+          startValue: item.startValue || "1",
         }));
 
       setProductItems(retailItems);
@@ -631,22 +609,15 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
       console.error("Error fetching crops:", error);
       Alert.alert("Error", "Failed to load products");
     } finally {
-      setProductDropdownLoading(false); // Add this
+      setProductDropdownLoading(false);
     }
   };
 
-
-  useEffect(() => {
-    if (productOpen) {
-      fetchCrops();
-    }
-  }, [productOpen]);
-
-
   const handleAddMore = () => {
     setShowAddModal(true);
-    // Reset quantity to startValue when opening modal
-    const selectedProductData = productItems.find(item => item.value === productValue);
+    const selectedProductData = productItems.find(
+      (item) => item.value === productValue,
+    );
     if (selectedProductData && selectedProductData.startValue) {
       setQuantity(Number(selectedProductData.startValue));
     } else {
@@ -654,9 +625,10 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     }
   };
 
-
   const calculateDiscountForQuantity = () => {
-    const selectedProductData = productItems.find(item => item.value === productValue);
+    const selectedProductData = productItems.find(
+      (item) => item.value === productValue,
+    );
     if (!selectedProductData) return 0;
 
     const normalPrice = parseFloat(selectedProductData.price);
@@ -665,11 +637,10 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
       : normalPrice;
 
     const discountPerKg = normalPrice - discountedPrice;
-    const quantityInKg = selectedUnit === 'Kg' ? quantity : quantity / 1000;
+    const quantityInKg = selectedUnit === "Kg" ? quantity : quantity / 1000;
 
     return (discountPerKg * quantityInKg).toFixed(2);
   };
-
 
   const calculateGrandTotal = () => {
     let packageTotalAmount = 0;
@@ -682,9 +653,10 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     }
 
     const additionalItemsTotal = additionalItems
-      .filter(item => !selectedItems.includes(item.id)) // Exclude selected items
+      .filter((item) => !selectedItems.includes(item.id))
       .reduce((total, item) => {
-        const quantityInKg = item.unit === 'Kg' ? item.quantity : item.quantity / 1000;
+        const quantityInKg =
+          item.unit === "Kg" ? item.quantity : item.quantity / 1000;
         const itemTotal = quantityInKg * item.discountedPricePerKg;
         return total + itemTotal;
       }, 0);
@@ -692,19 +664,16 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     return (packageTotalAmount + additionalItemsTotal).toFixed(2);
   };
 
-
-
   const handleGoBack = () => {
     setShowAddModal(false);
-    setProductValue('');
-    setSelectedProduct('');
+    setProductValue("");
+    setSelectedProduct("");
   };
 
-
   const toggleItemSelection = (id: number) => {
-    setSelectedItems(prev => {
+    setSelectedItems((prev) => {
       if (prev.includes(id)) {
-        return prev.filter(itemId => itemId !== id);
+        return prev.filter((itemId) => itemId !== id);
       } else {
         return [...prev, id];
       }
@@ -713,109 +682,126 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
 
   // 3. Delete selected items function
   const deleteSelectedItems = () => {
-    setAdditionalItems(prev => prev.filter(item => !selectedItems.includes(item.id)));
-    setSelectedItems([]); // Clear selection after deletion
+    setAdditionalItems((prev) =>
+      prev.filter((item) => !selectedItems.includes(item.id)),
+    );
+    setSelectedItems([]);
   };
-
-  const removeItem = (id: number) => {
-    setAdditionalItems(items => items.filter(item => item.id !== id));
-  };
-
-
 
   const incrementQuantity = () => {
-    const selectedProductData = productItems.find(item => item.value === productValue);
-    const changeBy = selectedProductData?.changeby ? Number(selectedProductData.changeby) : 1;
+    const selectedProductData = productItems.find(
+      (item) => item.value === productValue,
+    );
+    const changeBy = selectedProductData?.changeby
+      ? Number(selectedProductData.changeby)
+      : 1;
 
-    // For Kg, use the changeBy value as is (could be decimal like 0.5)
-    // For g, multiply by 1000 to get gram increments
-    const adjustedChangeBy = selectedUnit === 'Kg' ? changeBy : changeBy * 1000;
+    const adjustedChangeBy = selectedUnit === "Kg" ? changeBy : changeBy * 1000;
 
-    setQuantity(prev => {
+    setQuantity((prev) => {
       const newValue = prev + adjustedChangeBy;
       // Round to 2 decimal places for Kg, 0 for grams
-      return selectedUnit === 'Kg' ? Math.round(newValue * 100) / 100 : Math.round(newValue);
+      return selectedUnit === "Kg"
+        ? Math.round(newValue * 100) / 100
+        : Math.round(newValue);
     });
   };
 
   const decrementQuantity = () => {
-    const selectedProductData = productItems.find(item => item.value === productValue);
-    const changeBy = selectedProductData?.changeby ? Number(selectedProductData.changeby) : 1;
-    const startValue = selectedProductData?.startValue ? Number(selectedProductData.startValue) : 0;
+    const selectedProductData = productItems.find(
+      (item) => item.value === productValue,
+    );
+    const changeBy = selectedProductData?.changeby
+      ? Number(selectedProductData.changeby)
+      : 1;
+    const startValue = selectedProductData?.startValue
+      ? Number(selectedProductData.startValue)
+      : 0;
 
     // For Kg, use values as is
     // For g, multiply by 1000
-    const adjustedChangeBy = selectedUnit === 'Kg' ? changeBy : changeBy * 1000;
-    const adjustedStartValue = selectedUnit === 'Kg' ? startValue : startValue * 1000;
+    const adjustedChangeBy = selectedUnit === "Kg" ? changeBy : changeBy * 1000;
+    const adjustedStartValue =
+      selectedUnit === "Kg" ? startValue : startValue * 1000;
 
-    setQuantity(prev => {
+    setQuantity((prev) => {
       const newValue = prev - adjustedChangeBy;
-      const roundedValue = selectedUnit === 'Kg' ? Math.round(newValue * 100) / 100 : Math.round(newValue);
+      const roundedValue =
+        selectedUnit === "Kg"
+          ? Math.round(newValue * 100) / 100
+          : Math.round(newValue);
       return Math.max(adjustedStartValue, roundedValue);
     });
   };
 
-
   const updateQuantity = (changeBy: number, increase: boolean) => {
     if (!editingItem) return;
 
-    const dynamicChangeBy = editingItem.changeby ? Number(editingItem.changeby) : changeBy;
-    const startValue = editingItem.startValue ? Number(editingItem.startValue) : 1;
+    const dynamicChangeBy = editingItem.changeby
+      ? Number(editingItem.changeby)
+      : changeBy;
+    const startValue = editingItem.startValue
+      ? Number(editingItem.startValue)
+      : 1;
 
-    const adjustedChangeBy = editSelectedUnit === 'Kg' ? dynamicChangeBy : dynamicChangeBy * 1000;
-    const adjustedStartValue = editSelectedUnit === 'Kg' ? startValue : startValue * 1000;
+    const adjustedChangeBy =
+      editSelectedUnit === "Kg" ? dynamicChangeBy : dynamicChangeBy * 1000;
+    const adjustedStartValue =
+      editSelectedUnit === "Kg" ? startValue : startValue * 1000;
 
     if (increase) {
-      setNewItemQuantity(prev => {
+      setNewItemQuantity((prev) => {
         const newValue = prev + adjustedChangeBy;
-        return editSelectedUnit === 'Kg' ? Math.round(newValue * 1000) / 1000 : Math.round(newValue);
+        return editSelectedUnit === "Kg"
+          ? Math.round(newValue * 1000) / 1000
+          : Math.round(newValue);
       });
     } else {
-      setNewItemQuantity(prev => {
+      setNewItemQuantity((prev) => {
         const newValue = prev - adjustedChangeBy;
-        const roundedValue = editSelectedUnit === 'Kg' ? Math.round(newValue * 1000) / 1000 : Math.round(newValue);
+        const roundedValue =
+          editSelectedUnit === "Kg"
+            ? Math.round(newValue * 1000) / 1000
+            : Math.round(newValue);
         return Math.max(adjustedStartValue, roundedValue);
       });
     }
   };
-
-
-  const handleUnitChange = (unit: string) => {
-    setEditSelectedUnit(unit);
-  };
-
-
-
 
   const saveUpdatedItem = () => {
     if (!editingItem) return;
 
     const unit = editSelectedUnit;
 
-    const roundedQuantity = unit === 'Kg'
-      ? Math.round(newItemQuantity * 1000) / 1000
-      : Math.round(newItemQuantity);
+    const roundedQuantity =
+      unit === "Kg"
+        ? Math.round(newItemQuantity * 1000) / 1000
+        : Math.round(newItemQuantity);
 
     // Convert to kg for price calculations
-    const quantityInKg = unit === 'Kg' ? roundedQuantity : roundedQuantity / 1000;
+    const quantityInKg =
+      unit === "Kg" ? roundedQuantity : roundedQuantity / 1000;
 
     // Calculate totals with proper rounding
-    const totalAmount = Math.round(quantityInKg * editingItem.discountedPricePerKg * 100) / 100;
-    const discountAmount = Math.round((editingItem.pricePerKg - editingItem.discountedPricePerKg) * quantityInKg * 100) / 100;
+    const totalAmount =
+      Math.round(quantityInKg * editingItem.discountedPricePerKg * 100) / 100;
+    const discountAmount =
+      Math.round(
+        (editingItem.pricePerKg - editingItem.discountedPricePerKg) *
+          quantityInKg *
+          100,
+      ) / 100;
 
     const updatedItem: AdditionalItem = {
       ...editingItem,
       quantity: roundedQuantity,
       unit: unit,
       totalAmount: totalAmount,
-      discount: discountAmount
+      discount: discountAmount,
     };
 
-
-    setAdditionalItems(items =>
-      items.map(item =>
-        item.id === editingItem.id ? updatedItem : item
-      )
+    setAdditionalItems((items) =>
+      items.map((item) => (item.id === editingItem.id ? updatedItem : item)),
     );
 
     setModalVisible(false);
@@ -837,17 +823,18 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     setModalVisible(true);
   };
 
-
-
-
-
   useEffect(() => {
     if (productValue) {
-      const selectedProductData = productItems.find(item => item.value === productValue);
+      const selectedProductData = productItems.find(
+        (item) => item.value === productValue,
+      );
       if (selectedProductData) {
-        const startValue = selectedProductData.startValue ? Number(selectedProductData.startValue) : 1;
+        const startValue = selectedProductData.startValue
+          ? Number(selectedProductData.startValue)
+          : 1;
         // Only set initial quantity when product changes, not when unit changes
-        const adjustedStartValue = selectedUnit === 'Kg' ? startValue : startValue * 1000;
+        const adjustedStartValue =
+          selectedUnit === "Kg" ? startValue : startValue * 1000;
         setQuantity(adjustedStartValue);
 
         const discountedPrice = selectedProductData.discountedPrice
@@ -856,25 +843,25 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         setPricePerKg(discountedPrice);
       }
     }
-  }, [productValue, productItems]); // Removed selectedUnit dependency
-  // Add this new function to handle unit conversion
+  }, [productValue, productItems]);
+
   const handleUnitConversion = (newUnit: string) => {
     const currentUnit = selectedUnit;
 
-    if (currentUnit === newUnit) return; // No change needed
+    if (currentUnit === newUnit) return;
 
     let convertedQuantity = quantity;
 
-    if (currentUnit === 'Kg' && newUnit === 'g') {
+    if (currentUnit === "Kg" && newUnit === "g") {
       // Converting from Kg to g: multiply by 1000
       convertedQuantity = quantity * 1000;
-    } else if (currentUnit === 'g' && newUnit === 'Kg') {
+    } else if (currentUnit === "g" && newUnit === "Kg") {
       // Converting from g to Kg: divide by 1000
       convertedQuantity = quantity / 1000;
     }
 
     // Round to appropriate decimal places
-    if (newUnit === 'g') {
+    if (newUnit === "g") {
       convertedQuantity = Math.round(convertedQuantity);
     } else {
       // For Kg, keep up to 3 decimal places
@@ -889,14 +876,14 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
   const handleEditUnitConversion = (newUnit: string) => {
     const currentUnit = editSelectedUnit;
 
-    if (currentUnit === newUnit) return; // No change needed
+    if (currentUnit === newUnit) return;
 
     let convertedQuantity = newItemQuantity;
 
-    if (currentUnit === 'Kg' && newUnit === 'g') {
+    if (currentUnit === "Kg" && newUnit === "g") {
       // Converting from Kg to g: multiply by 1000
       convertedQuantity = newItemQuantity * 1000;
-    } else if (currentUnit === 'g' && newUnit === 'Kg') {
+    } else if (currentUnit === "g" && newUnit === "Kg") {
       // Converting from g to Kg: divide by 1000
       convertedQuantity = newItemQuantity / 1000;
     }
@@ -907,45 +894,35 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
 
   useEffect(() => {
     const filtered = productItems.filter(
-      product => !additionalItems.some(item => item.id === product.id)
+      (product) => !additionalItems.some((item) => item.id === product.id),
     );
     setFilteredProductItems(filtered);
   }, [productItems, additionalItems]);
 
   const handleProductSearchChange = (text: string) => {
     let filteredText = text;
-
-    // Remove leading spaces
-    if (filteredText.startsWith(' ')) {
-      filteredText = filteredText.replace(/^\s+/, '');
+    if (filteredText.startsWith(" ")) {
+      filteredText = filteredText.replace(/^\s+/, "");
     }
-
-    // Allow only letters, numbers, and spaces
-    filteredText = filteredText.replace(/[^a-zA-Z0-9\s]/g, '');
-
-    // Clean up multiple spaces
-    filteredText = filteredText.replace(/\s+/g, ' ');
+    filteredText = filteredText.replace(/[^a-zA-Z0-9\s]/g, "");
+    filteredText = filteredText.replace(/\s+/g, " ");
 
     setProductSearchValue(filteredText);
 
-    // Get base filtered items (excluding already added items)
+    // Get base filtered items
     const baseFiltered = productItems.filter(
-      product => !additionalItems.some(item => item.id === product.id)
+      (product) => !additionalItems.some((item) => item.id === product.id),
     );
 
-    // Apply search filter
-    if (filteredText.trim() === '') {
+    if (filteredText.trim() === "") {
       setFilteredProductItems(baseFiltered);
     } else {
-      const searchFiltered = baseFiltered.filter(item =>
-        item.label.toLowerCase().includes(filteredText.toLowerCase())
+      const searchFiltered = baseFiltered.filter((item) =>
+        item.label.toLowerCase().includes(filteredText.toLowerCase()),
       );
       setFilteredProductItems(searchFiltered);
     }
   };
-
-
-
 
   useEffect(() => {
     setFilteredPackageItems(packageItems);
@@ -953,111 +930,58 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
 
   const handlePackageSearchChange = (text: string) => {
     let filteredText = text;
-
-    // Remove leading spaces
-    if (filteredText.startsWith(' ')) {
-      filteredText = filteredText.replace(/^\s+/, '');
+    if (filteredText.startsWith(" ")) {
+      filteredText = filteredText.replace(/^\s+/, "");
     }
-
-    // Allow only letters, numbers, and spaces
-    filteredText = filteredText.replace(/[^a-zA-Z0-9\s]/g, '');
-
-    // Clean up multiple spaces
-    filteredText = filteredText.replace(/\s+/g, ' ');
+    filteredText = filteredText.replace(/[^a-zA-Z0-9\s]/g, "");
+    filteredText = filteredText.replace(/\s+/g, " ");
 
     setPackageSearchValue(filteredText);
-
-    // Filter package items based on cleaned search text
-    if (filteredText.trim() === '') {
-      setFilteredPackageItems(packageItems); // Show all if search is empty
+    if (filteredText.trim() === "") {
+      setFilteredPackageItems(packageItems);
     } else {
-      const filtered = packageItems.filter(item =>
-        item.label.toLowerCase().includes(filteredText.toLowerCase())
+      const filtered = packageItems.filter((item) =>
+        item.label.toLowerCase().includes(filteredText.toLowerCase()),
       );
       setFilteredPackageItems(filtered);
     }
   };
+  
+  const [productSearchValue, setProductSearchValue] = useState("");
+  const [packageSearchValue, setPackageSearchValue] = useState("");
 
   return (
-
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       enabled
-      style={{ flex: 1, backgroundColor: 'white' }}
+      style={{ flex: 1, backgroundColor: "white" }}
     >
       <StatusBar barStyle="dark-content" backgroundColor="white" />
-
-      {/* Header */}
-      <View className="flex-row items-center justify-between bg-white p-2">
-        <BackButton navigation={navigation} />
-        <Text className="text-lg font-semibold text-purple-600">Order Details</Text>
-        <View className="w-6" />
-      </View>
-
-      <ScrollView className="flex-1 px-7" showsVerticalScrollIndicator={false}>
+      <CustomHeader
+        title="Order Details"
+        titleColor="#6C3CD1"
+        showBackButton={true}
+        navigation={navigation}
+      />
+      <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
         {/* Package Selection */}
-        <View className="mb-6" >
-          <Text className="font-medium text-gray-700 mb-2 rounded-full">Package</Text>
+        <View className="mb-6">
+          <Text className="font-medium text-gray-700 mb-2 rounded-full">
+            Package
+          </Text>
 
-          <DropDownPicker
-            open={packageOpen}
-            value={packageValue}
-            items={filteredPackageItems} // Use filtered items instead of packageItems
-            setOpen={setPackageOpen}
-            setValue={setPackageValue}
-            setItems={setFilteredPackageItems} // Update this too
-            onChangeValue={handlePackageChange}
-            placeholder="Select a package"
-            placeholderStyle={{ color: '#000000' }}
-            style={{
-              backgroundColor: '#F6F6F6',
-              borderColor: '#F6F6F6',
-              borderRadius: 20,
-              minHeight: 48,
-              borderWidth: 1,
-              paddingHorizontal: 12,
-              paddingVertical: 10,
-            }}
-            textStyle={{
-              fontSize: 14,
-              color: '#111827',
-            }}
-            dropDownContainerStyle={{
-              backgroundColor: '#FFFFFF',
-              borderColor: '#E5E7EB',
-              borderRadius: 8,
-              borderWidth: 1,
-              maxHeight: 300,
-              minHeight: 200,
-            }}
-            arrowIconStyle={{
-              width: 20,
-              height: 20,
-            }}
-            tickIconStyle={{
-              width: 20,
-              height: 20,
-            }}
-            labelStyle={{
-              fontWeight: '500',
-              color: '#111827',
-            }}
-            searchable={true}
-            searchPlaceholder="Search package..."
-            listMode="SCROLLVIEW"
-            scrollViewProps={{
-              nestedScrollEnabled: true,
-              keyboardShouldPersistTaps: 'handled',
-              showsVerticalScrollIndicator: true,
-            }}
-            searchTextInputProps={{
-              onChangeText: handlePackageSearchChange,
-              value: packageSearchValue,
-            }}
-            zIndex={3000}
-          />
+          <TouchableOpacity
+            onPress={() => setPackageModalVisible(true)}
+            className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-2xl px-4 py-3 justify-center min-h-[48px]"
+          >
+            <Text className={packageValue ? "text-black" : "text-gray-500"}>
+              {packageValue
+                ? packageItems.find((item) => item.value === packageValue)
+                    ?.label || "Select a package"
+                : "Select a package"}
+            </Text>
+          </TouchableOpacity>
         </View>
-
 
         {/* Package Items - Now using dynamic data */}
         {items.length > 0 && (
@@ -1070,9 +994,10 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                 onPress={handleAddMore}
                 className="flex-row items-center gap-1"
               >
-                {/* <Ionicons name="add" size={16} color="#7C3AED" /> */}
-                <Image source={require("../../assets/images/Add.webp")} className="w-5 h-5 " />
-                <Text className="text-purple-600 text-sm font-medium">Add More</Text>
+                <Ionicons name="add-circle-outline" size={20} color="#6839CF" />
+                <Text className="text-purple-600 text-sm font-medium">
+                  Add More
+                </Text>
               </TouchableOpacity>
             </View>
 
@@ -1080,10 +1005,15 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
               {items.map((item, index) => (
                 <View
                   key={index}
-                  className={`flex-row justify-between items-center py-2 px-4 ${index !== items.length - 1 ? "border-b border-[#CDCDCD]" : ""
-                    }`}
+                  className={`flex-row justify-between items-center py-2 px-4 ${
+                    index !== items.length - 1
+                      ? "border-b border-[#CDCDCD]"
+                      : ""
+                  }`}
                 >
-                  <Text className="text-gray-800 font-medium flex-1">{item.name}</Text>
+                  <Text className="text-gray-800 font-medium flex-1">
+                    {item.name}
+                  </Text>
                   <View className="bg-gray-50 px-2 py-1 rounded min-w-[32px] items-center">
                     <Text className="text-gray-600 font-medium text-sm">
                       {item.qty}
@@ -1096,14 +1026,13 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         )}
 
         {/* Show message when no package is selected */}
-        {items.length === 0 && packageValue === '' && (
+        {items.length === 0 && packageValue === "" && (
           <View className="items-center justify-center mt-[50%]">
             <Image
-              source={require("../../assets/images/nopackage.webp")}
+              source={require("@/assets/images/order/no-package.webp")}
               className="w-48 h-48 mb-4"
               resizeMode="contain"
             />
-
           </View>
         )}
 
@@ -1112,15 +1041,13 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
           <View className="mb-8">
             <View className="flex-row items-center justify-between mb-4">
               <Text className="text-base font-semibold text-gray-900">
-                Additional ({additionalItems.length} {additionalItems.length === 1 ? 'item' : 'items'})
+                Additional ({additionalItems.length}{" "}
+                {additionalItems.length === 1 ? "item" : "items"})
               </Text>
 
               {/* Show delete icon only when items are selected */}
               {selectedItems.length > 0 && (
-                <TouchableOpacity
-                  onPress={deleteSelectedItems}
-                  className="p-2"
-                >
+                <TouchableOpacity onPress={deleteSelectedItems} className="p-2">
                   <Ionicons name="trash-outline" size={20} color="#EF4444" />
                 </TouchableOpacity>
               )}
@@ -1131,29 +1058,39 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                 <TouchableOpacity
                   key={item.id}
                   onPress={() => toggleItemSelection(item.id)}
-                  className={`flex-row items-center py-4 px-4 ${index !== additionalItems.length - 1 ? "border-b border-[#CDCDCD]" : ""
-                    } ${selectedItems.includes(item.id) ? "bg-white" : "bg-white"}`}
+                  className={`flex-row items-center py-4 px-4 ${
+                    index !== additionalItems.length - 1
+                      ? "border-b border-[#CDCDCD]"
+                      : ""
+                  } ${selectedItems.includes(item.id) ? "bg-white" : "bg-white"}`}
                 >
                   {/* Checkbox icon */}
                   <Ionicons
-                    name={selectedItems.includes(item.id) ? "checkbox" : "checkbox-outline"}
+                    name={
+                      selectedItems.includes(item.id)
+                        ? "checkbox"
+                        : "checkbox-outline"
+                    }
                     size={20}
-                    color={selectedItems.includes(item.id) ? "#7C3AED" : "#9CA3AF"}
+                    color={
+                      selectedItems.includes(item.id) ? "#7C3AED" : "#9CA3AF"
+                    }
                     className="mr-3"
                   />
 
                   {/* Item details */}
                   <View className="flex-1 ml-2">
-                    <Text className="text-gray-800 font-medium">{item.name}</Text>
-
+                    <Text className="text-gray-800 font-medium">
+                      {item.name}
+                    </Text>
                   </View>
 
                   {/* Quantity and edit button */}
                   <View className="flex-row items-center gap-3">
                     <Text className="text-gray-600 text-sm font-medium">
-                      {item.quantity}{item.unit}
+                      {item.quantity}
+                      {item.unit}
                     </Text>
-
 
                     <TouchableOpacity
                       onPress={(e) => {
@@ -1161,10 +1098,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                         handleEditItem(item);
                       }}
                     >
-                      <Image
-                        source={require("../../assets/images/Edit.webp")}
-                        className="w-4 h-4"
-                      />
+                      <MaterialIcons name="edit" size={20} color="#6839CF" />
                     </TouchableOpacity>
                   </View>
                 </TouchableOpacity>
@@ -1172,15 +1106,12 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
             </View>
           </View>
         )}
-
       </ScrollView>
 
-
-
-      {/* Bottom Total Section - Only show when a package is selected */}
       {/* Bottom Total Section - Only show when a package is selected */}
       {packageValue && (
-        <View className={`bg-white flex-row justify-between items-center p-4 rounded-t-3xl shadow-lg`}
+        <View
+          className={`bg-white flex-row justify-between items-center p-4 rounded-t-3xl shadow-lg`}
           style={{
             shadowColor: "#000",
             shadowOffset: { width: 0, height: -4 },
@@ -1190,20 +1121,16 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
             marginTop: -10,
           }}
         >
-
           <Text className="text-lg font-semibold text-gray-800 ml-2">
-            Total:
+            Total:{" "}
+            <Text className="text-base font-semibold text-[#5C5C5C] mr-10">
+              Rs.
+              {Number(calculateGrandTotal()).toLocaleString("en-US", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </Text>
           </Text>
-
-          <Text className="text-base font-semibold text-[#5C5C5C] mr-10">
-            Rs.{Number(calculateGrandTotal()).toLocaleString('en-US', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </Text>
-
-
-
 
           <TouchableOpacity onPress={handleConfirm}>
             <LinearGradient
@@ -1212,14 +1139,18 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
             >
-              <View className="w-14 flex-row justify-center items-center" style={{ minHeight: 20 }}>
+              <View
+                className="w-14 flex-row justify-center items-center"
+                style={{ minHeight: 20 }}
+              >
                 {loading ? (
                   <ActivityIndicator color="#FFFFFF" size="small" />
                 ) : (
-                  <View>
-                    <Text className="text-white font-semibold">
+                  <View className="flex flex-row gap-2 justify-center items-center">
+                    <Text className="text-white font-semibold pl-2">
                       Confirm
                     </Text>
+                    <Feather name="check" size={18} color="white" />
                   </View>
                 )}
               </View>
@@ -1232,108 +1163,48 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
       <Modal
         visible={showAddModal}
         animationType="slide"
-        // presentationStyle="pageSheet"
         transparent={true}
         onRequestClose={handleGoBack}
       >
-        <View className="flex-1 justify-center items-center bg-[#00000066]  p-2">
-          {/* <View className="bg-white p-6 rounded-xl w-4/5  "> */}
+        <View className="flex-1 justify-center items-center bg-[#00000066] p-2">
           <View
             className="bg-white p-6 rounded-xl"
             style={{
-              width: '90%', // Responsive width
-              maxHeight: '100%', // Maximum height (to prevent overflow)
-              height: 'auto', // Auto height adjustment
+              width: "90%",
+              maxHeight: "100%",
+              height: "auto",
             }}
           >
             {/* Product Section */}
-            <View className="mb-4" >
+            <View className="mb-4">
               <Text className="text-gray-700 mb-3">Product</Text>
 
-
-              <DropDownPicker
-                open={productOpen}
-                setOpen={(open) => {
-                  setProductOpen(open);
-                  setUnitOpen(false);
+              <TouchableOpacity
+                onPress={() => {
+                  fetchCrops();
+                  setProductModalVisible(true);
                 }}
-                value={productValue}
-                setValue={setProductValue}
-                items={filteredProductItems}
-                loading={productDropdownLoading} // Add this prop
-                onSelectItem={(item) => {
-                  if (item && item.label && item.value) {
-                    setSelectedProduct(item.label);
-                    const selectedItem = productItems.find(p => p.value === item.value);
-                    if (selectedItem) {
-                      const discountedPrice = selectedItem.discountedPrice
-                        ? parseFloat(selectedItem.discountedPrice)
-                        : parseFloat(selectedItem.price);
-                      setPricePerKg(discountedPrice);
-
-                      const startValue = selectedItem.startValue ? Number(selectedItem.startValue) : 1;
-                      const adjustedStartValue = selectedUnit === 'Kg' ? startValue : startValue * 1000;
-                      setQuantity(adjustedStartValue);
-                    }
-                  }
-                }}
-                searchable={true}
-                searchPlaceholder="Search product..."
-                placeholder="Select a product..."
-                dropDownContainerStyle={{
-                  borderColor: "#F6F6F6",
-                  borderWidth: 1,
-                  backgroundColor: "#F6F6F6",
-                  maxHeight: 300,
-                  minHeight: 350,
-                }}
-                style={{
-                  borderWidth: 1,
-                  borderColor: "#F6F6F6",
-                  backgroundColor: "#F6F6F6",
-                  borderRadius: 15,
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
-                  minHeight: 0,
-                }}
-                textStyle={{
-                  fontSize: 14,
-                  color: '#111827',
-                }}
-                searchTextInputProps={{
-                  onChangeText: handleProductSearchChange,
-                  value: productSearchValue,
-                }}
-                // Add these props for better loading experience
-                listMessageTextStyle={{
-                  color: '#9CA3AF',
-                  fontSize: 14,
-                }}
-                ActivityIndicatorComponent={() => (
-                  <ActivityIndicator size="small" color="#7C3AED" />
-                )}
-                ListEmptyComponent={() => (
-                  <View className="py-8 items-center">
-                    <Text className="text-gray-500 text-sm">
-                      {productDropdownLoading ? "Loading products..." : "No products available"}
-                    </Text>
-                  </View>
-                )}
-                zIndex={80000}
-              />
+                className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-xl px-4 py-3 justify-center min-h-[0]"
+              >
+                <Text className={productValue ? "text-black" : "text-gray-500"}>
+                  {productValue
+                    ? productItems.find((item) => item.value === productValue)
+                        ?.label || "Select a product..."
+                    : "Select a product..."}
+                </Text>
+              </TouchableOpacity>
             </View>
 
             <View className="mb-4">
               <Text className="text-gray-700 mb-">Price per 1kg</Text>
               <View className="bg-gray-50 rounded-xl p-3">
-                <Text className="text-gray-900">Rs.{pricePerKg || '0.00'}</Text>
+                <Text className="text-gray-900">Rs.{pricePerKg || "0.00"}</Text>
               </View>
             </View>
 
             <View className="mb-4">
               <Text className="text-gray-700 mb-3">Quantity</Text>
               <View className="flex-row items-center space-x-2">
-                {/* Quantity Control with +/- buttons */}
                 <View className="flex-row items-center bg-gray-100 rounded-full flex-1">
                   <TouchableOpacity
                     className="w-10 h-10 flex items-center justify-center"
@@ -1341,14 +1212,9 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                   >
                     <Text className="text-gray-700 text-xl font-bold">-</Text>
                   </TouchableOpacity>
-
-                  {/* <Text className="flex-1 text-center text-gray-700">
-              {quantity || "0"}
-            </Text> */}
                   <Text className="flex-1 text-center text-gray-700">
                     {(quantity || 0).toFixed(2)}
                   </Text>
-
                   <TouchableOpacity
                     className="w-10 h-10 flex items-center justify-center"
                     onPress={incrementQuantity}
@@ -1357,38 +1223,14 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                   </TouchableOpacity>
                 </View>
 
-                {/* Unit dropdown - FIXED VERSION */}
-                <DropDownPicker
-                  open={unitOpen}
-                  setOpen={setUnitOpen}
-                  value={selectedUnit}
-                  setValue={setSelectedUnit}
-                  onSelectItem={(item) => {
-                    if (item && item.value) {
-                      handleUnitConversion(item.value);
-                    }
-                  }}
-                  items={[
-                    { label: "Kg", value: "Kg" },
-                    { label: "g", value: "g" }
-                  ]}
-                  dropDownDirection="BOTTOM"
-                  containerStyle={{ width: 100 }}
-                  style={{
-                    backgroundColor: "#F6F6F6",
-                    borderColor: "#F6F6F6",
-                    borderRadius: 30,
-                    paddingHorizontal: 10,
-                    paddingVertical: 10,
-                  }}
-                  dropDownContainerStyle={{
-                    borderColor: "#F6F6F6",
-                    borderWidth: 1,
-                    backgroundColor: "#F6F6F6",
-                    marginLeft: 8
-                  }}
-                  zIndex={70000}
-                />
+                {/* Unit button */}
+                <TouchableOpacity
+                  onPress={() => setUnitModalVisible(true)}
+                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-3xl px-4 py-3 justify-center"
+                  style={{ width: 100 }}
+                >
+                  <Text className="text-black">{selectedUnit}</Text>
+                </TouchableOpacity>
               </View>
             </View>
 
@@ -1396,22 +1238,28 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
             <View className="mb-6">
               <Text className="text-gray-700 mb-3">Total Amount</Text>
               <View className="bg-gray-50 rounded-xl px-4 py-4">
-                {/* <Text className="text-gray-900">
-                  Rs.{((selectedUnit === 'Kg' ? quantity : quantity / 1000) * pricePerKg).toFixed(2)}
-                </Text> */}
-                 <Text className="text-gray-900">
-      Rs.{((selectedUnit === 'Kg' ? quantity : quantity / 1000) * pricePerKg).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-    </Text>
+                <Text className="text-gray-900">
+                  Rs.
+                  {(
+                    (selectedUnit === "Kg" ? quantity : quantity / 1000) *
+                    pricePerKg
+                  ).toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </Text>
               </View>
             </View>
 
             {/* Dynamic Discount Message */}
             <View className="mb-4">
-              {/* <Text className="text-purple-600 text-center text-sm font-medium">
-                You received a discount of Rs.{calculateDiscountForQuantity()} for this product
-              </Text> */}
-             <Text className="text-purple-600 text-center text-sm font-medium">
-                   You received a discount of Rs.{Number(calculateDiscountForQuantity()).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} for this product
+              <Text className="text-purple-600 text-center text-sm font-medium">
+                You received a discount of Rs.
+                {Number(calculateDiscountForQuantity()).toLocaleString(
+                  "en-US",
+                  { minimumFractionDigits: 2, maximumFractionDigits: 2 },
+                )}{" "}
+                for this product
               </Text>
             </View>
 
@@ -1421,7 +1269,9 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                 onPress={handleGoBack}
                 className="bg-gray-200 py-4 rounded-full items-center"
               >
-                <Text className="text-gray-700 font-semibold text-base">Go Back</Text>
+                <Text className="text-gray-700 font-semibold text-base">
+                  Go Back
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -1435,7 +1285,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         </View>
       </Modal>
 
-      {/* Edit Item Modal */}
       {/* Edit Item Modal */}
       <Modal visible={modalVisible} transparent animationType="slide">
         <View className="flex-1 justify-center items-center bg-[#00000066] bg-opacity-10">
@@ -1451,7 +1300,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
             <View>
               <Text className="text-gray-700 mb-2">Quantity</Text>
               <View className="flex-row items-center space-x-2">
-                {/* Quantity Control with +/- buttons */}
                 <View className="flex-row items-center bg-gray-100 rounded-full flex-1">
                   <TouchableOpacity
                     className="w-10 h-10 flex items-center justify-center"
@@ -1472,55 +1320,35 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                   </TouchableOpacity>
                 </View>
 
-                {/* Unit dropdown */}
-                <DropDownPicker
-                  open={editUnitOpen}
-                  setOpen={setEditUnitOpen}
-                  value={editSelectedUnit}
-                  setValue={setEditSelectedUnit}
-                  onSelectItem={(item) => {
-                    if (item && item.value) {
-                      handleEditUnitConversion(item.value);
-                    }
-                  }}
-                  items={[
-                    { label: "Kg", value: "Kg" },
-                    { label: "g", value: "g" }
-                  ]}
-                  dropDownDirection="BOTTOM"
-                  containerStyle={{ width: 100 }}
-                  style={{
-                    backgroundColor: "#F6F6F6",
-                    borderColor: "#F6F6F6",
-                    borderRadius: 30,
-                    paddingHorizontal: 10,
-                    paddingVertical: 10,
-                  }}
-                  dropDownContainerStyle={{
-                    backgroundColor: "#F6F6F6",
-                    borderColor: "#F6F6F6",
-                    marginLeft: 8
-                  }}
-                />
+                {/* Unit button */}
+                <TouchableOpacity
+                  onPress={() => setEditUnitModalVisible(true)}
+                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-3xl px-4 py-3 justify-center"
+                  style={{ width: 100 }}
+                >
+                  <Text className="text-black">{editSelectedUnit}</Text>
+                </TouchableOpacity>
               </View>
             </View>
 
             {/* Total Amount Section */}
             <View className="mb-6 mt-4">
-              <Text className="text-gray-700 font-medium mb-3">Total Amount</Text>
-              <View className="bg-gray-50 rounded-xl px-4 py-4">
-                {/* <Text className="text-gray-900  ">
-                  Rs.{(
-                    (editSelectedUnit === 'Kg' ? newItemQuantity : newItemQuantity / 1000) *
-                    (editingItem?.discountedPricePerKg || 0)
-                  ).toFixed(2)}
-                </Text> */}
-                <Text className="text-gray-900">
-                 Rs.{(
-                    (editSelectedUnit === 'Kg' ? newItemQuantity : newItemQuantity / 1000) *
-                   (editingItem?.discountedPricePerKg || 0)
-                 ).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <Text className="text-gray-700 font-medium mb-3">
+                Total Amount
               </Text>
+              <View className="bg-gray-50 rounded-xl px-4 py-4">
+                <Text className="text-gray-900">
+                  Rs.
+                  {(
+                    (editSelectedUnit === "Kg"
+                      ? newItemQuantity
+                      : newItemQuantity / 1000) *
+                    (editingItem?.discountedPricePerKg || 0)
+                  ).toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </Text>
               </View>
             </View>
 
@@ -1530,23 +1358,113 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                 className="bg-gray-300 py-3 rounded-full items-center justify-center"
                 onPress={() => setModalVisible(false)}
               >
-                <Text className="text-gray-700 font-semibold text-center">Go Back</Text>
+                <Text className="text-gray-700 font-semibold text-center">
+                  Go Back
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 className="bg-purple-700 py-3 rounded-full items-center justify-center"
                 onPress={saveUpdatedItem}
               >
-                <Text className="text-white font-semibold text-center">Save</Text>
+                <Text className="text-white font-semibold text-center">
+                  Save
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
-    </KeyboardAvoidingView>
 
+      {/* Package Selection Modal */}
+      <GlobalSearchModal
+        visible={packageModalVisible}
+        onClose={() => setPackageModalVisible(false)}
+        title="Select Package"
+        data={filteredPackageItems}
+        selectedItems={packageValue ? [packageValue] : []}
+        onSelect={(items) => {
+          if (items.length > 0) {
+            handlePackageChange(items[0]);
+          }
+          setPackageModalVisible(false);
+        }}
+        searchPlaceholder="Search package..."
+        multiSelect={false}
+      />
+
+      {/* Product Selection Modal */}
+      <GlobalSearchModal
+        visible={productModalVisible}
+        onClose={() => setProductModalVisible(false)}
+        title="Select Product"
+        data={filteredProductItems}
+        selectedItems={productValue ? [productValue] : []}
+        onSelect={(items) => {
+          if (items.length > 0) {
+            setProductValue(items[0]);
+            const selectedItem = productItems.find((p) => p.value === items[0]);
+            if (selectedItem) {
+              setSelectedProduct(selectedItem.label);
+              const discountedPrice = selectedItem.discountedPrice
+                ? parseFloat(selectedItem.discountedPrice)
+                : parseFloat(selectedItem.price);
+              setPricePerKg(discountedPrice);
+              const startValue = selectedItem.startValue
+                ? Number(selectedItem.startValue)
+                : 1;
+              const adjustedStartValue =
+                selectedUnit === "Kg" ? startValue : startValue * 1000;
+              setQuantity(adjustedStartValue);
+            }
+          }
+          setProductModalVisible(false);
+        }}
+        searchPlaceholder="Search product..."
+        multiSelect={false}
+      />
+
+      {/* Unit Selection Modal */}
+      <GlobalSearchModal
+        visible={unitModalVisible}
+        onClose={() => setUnitModalVisible(false)}
+        title="Select Unit"
+        data={[
+          { label: "Kg", value: "Kg" },
+          { label: "g", value: "g" },
+        ]}
+        selectedItems={[selectedUnit]}
+        onSelect={(items) => {
+          if (items.length > 0) {
+            handleUnitConversion(items[0]);
+          }
+          setUnitModalVisible(false);
+        }}
+        searchPlaceholder="Search unit..."
+        multiSelect={false}
+      />
+
+      {/* Edit Unit Selection Modal */}
+      <GlobalSearchModal
+        visible={editUnitModalVisible}
+        onClose={() => setEditUnitModalVisible(false)}
+        title="Select Unit"
+        data={[
+          { label: "Kg", value: "Kg" },
+          { label: "g", value: "g" },
+        ]}
+        selectedItems={[editSelectedUnit]}
+        onSelect={(items) => {
+          if (items.length > 0) {
+            handleEditUnitConversion(items[0]);
+          }
+          setEditUnitModalVisible(false);
+        }}
+        searchPlaceholder="Search unit..."
+        multiSelect={false}
+      />
+    </KeyboardAvoidingView>
   );
 };
 
 export default OrderScreen;
-

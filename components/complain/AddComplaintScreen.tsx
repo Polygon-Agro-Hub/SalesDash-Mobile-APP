@@ -9,25 +9,19 @@ import {
   KeyboardAvoidingView,
   Platform,
   Keyboard,
-  TouchableWithoutFeedback,
   BackHandler,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
-import {
-    widthPercentageToDP as wp,
-    heightPercentageToDP as hp,
-  } from "react-native-responsive-screen";
-import BackButton from "../common/BackButton";
 import axios from "axios";
 import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Alert } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import DropDownPicker from "react-native-dropdown-picker";
-import { SelectList } from "react-native-dropdown-select-list";
-import { AntDesign } from "@expo/vector-icons"; 
-import { useFocusEffect } from '@react-navigation/native';
+import { MaterialIcons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
+import CustomHeader from "../common/CustomHeader";
+import GlobalSearchModal from "../common/GlobalSearchModal";
 
 type AddComplaintScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -38,33 +32,33 @@ interface AddComplaintScreenProps {
   navigation: AddComplaintScreenNavigationProp;
 }
 
-const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) => {
+const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({
+  navigation,
+}) => {
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [complaintText, setComplaintText] = useState<string>("");
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [category, setCategory] = useState<any[]>([]);
-  const [open, setOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState('');
-  const [filteredCategory, setFilteredCategory] = useState<any[]>([]);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedCategoryLabel, setSelectedCategoryLabel] = useState("");
 
   useEffect(() => {
     let appName = "SalesDash";
-    
+
     const fetchComplainCategory = async () => {
       try {
         const response = await axios.get(
-          `${environment.API_BASE_URL}api/complain/get-complain/category/${appName}`
+          `${environment.API_BASE_URL}api/complain/get-complain/category/${appName}`,
         );
         if (response.data.status === "success") {
           const mappedCategories = response.data.data
             .map((item: any) => ({
-              key: item.id,
-              value: item.categoryEnglish
+              label: item.categoryEnglish,
+              value: item.id,
             }))
-            .filter((item: { key: any }) => item.key);
-          
+            .filter((item: { value: any }) => item.value);
+
           setCategory(mappedCategories);
-          setFilteredCategory(mappedCategories);
         }
       } catch (error) {
         console.error(error);
@@ -76,7 +70,7 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
 
   const handleSubmit = async () => {
     if (!selectedCategory) {
-      alert("Please fill out the category.");
+      alert("Please select a category.");
       return;
     }
 
@@ -85,18 +79,16 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
       return;
     }
 
-    
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
       if (!storedToken) {
         Alert.alert("Error", "No authentication token found");
         return;
       }
-  
-  
+
       const apiUrl = `${environment.API_BASE_URL}api/complain/add-complain`;
-  
-      const response = await axios.post(
+
+      await axios.post(
         apiUrl,
         {
           language: "English",
@@ -107,11 +99,12 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
           headers: {
             Authorization: `Bearer ${storedToken}`,
           },
-        }
+        },
       );
-  
+
       alert("Complaint submitted successfully!");
       setSelectedCategory("");
+      setSelectedCategoryLabel("");
       setComplaintText("");
       navigation.goBack();
     } catch (error: unknown) {
@@ -123,32 +116,6 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
         alert("An unknown error occurred.");
       }
     }
-  }
-
-  useEffect(() => {
-    setFilteredCategory(category);
-  }, [category]);
-
-  const handleSearchChange = (text: string) => {
-    let filteredText = text;
-    
-    if (filteredText.startsWith(' ')) {
-      filteredText = filteredText.replace(/^\s+/, '');
-    }
-    
-    filteredText = filteredText.replace(/[^a-zA-Z0-9\s]/g, '');
-    filteredText = filteredText.replace(/\s+/g, ' ');
-    
-    setSearchValue(filteredText);
-    
-    if (filteredText.trim() === '') {
-      setFilteredCategory(category);
-    } else {
-      const filtered = category.filter(item => 
-        item.value.toLowerCase().includes(filteredText.toLowerCase())
-      );
-      setFilteredCategory(filtered);
-    }
   };
 
   useFocusEffect(
@@ -158,102 +125,99 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
         return true;
       };
 
-      const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress,
+      );
       return () => backHandler.remove();
-    }, [navigation])
+    }, [navigation]),
   );
 
   useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
-    const keyboardDidHideListener = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false));
+    const keyboardDidShowListener = Keyboard.addListener(
+      "keyboardDidShow",
+      () => setKeyboardVisible(true),
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      "keyboardDidHide",
+      () => setKeyboardVisible(false),
+    );
     return () => {
       keyboardDidShowListener.remove();
       keyboardDidHideListener.remove();
     };
   }, []);
 
+  const handleCategorySelect = (items: string[]) => {
+    const selectedValue = items[0];
+    setSelectedCategory(selectedValue);
+
+    // Find and set the label for display
+    const selectedItem = category.find((item) => item.value === selectedValue);
+    setSelectedCategoryLabel(selectedItem?.label || "");
+  };
+
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })}
       style={{ flex: 1, backgroundColor: "white" }}
     >
-      <ScrollView 
+      <ScrollView
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ 
+        contentContainerStyle={{
           flexGrow: 1,
-          paddingHorizontal: wp(4),
-          paddingBottom: hp(5) // Extra padding at bottom
         }}
         showsVerticalScrollIndicator={true}
       >
-        <View>
-          <TouchableOpacity 
-            style={{ paddingHorizontal: wp(2), paddingVertical: hp(2) }}
-            onPress={() => navigation.navigate("SidebarScreen")}
-          >
-            <View className="w-9 h-9 bg-[#F6F6F680] rounded-full justify-center items-center">
-              <AntDesign name="left" size={20} color="black" />
-            </View>
-          </TouchableOpacity>
-        </View>
+        <CustomHeader
+          title=""
+          showBackButton={true}
+          navigation={navigation}
+          onBackPress={() => navigation.navigate("SidebarScreen")}
+        />
 
-        <View className="p-4">
+        <View className="px-6">
           <View className="items-center mb-6">
-            <Image source={require("../../assets/images/complain11.webp")} className="w-20 h-20" />
+            <Image
+              source={require("@/assets/images/complain/complain.webp")}
+              className="w-32 h-32"
+            />
             <Text className="text-xl font-bold text-gray-900 mt-2">
               Tell us the <Text className="text-[#6839CF]">problem</Text>
             </Text>
           </View>
 
-          <DropDownPicker
-            open={open}
-            setOpen={setOpen}
-            value={selectedCategory}
-            setValue={setSelectedCategory}
-            items={filteredCategory.map(item => ({
-              label: item.value,
-              value: item.key
-            }))}
-            searchable={true}
+          {/* Category Selection Button */}
+          <TouchableOpacity
+            onPress={() => setModalVisible(true)}
+            className="border border-[#393939] rounded-full h-12 px-4 flex-row items-center justify-between bg-white mb-4"
+          >
+            <Text
+              className={selectedCategory ? "text-black" : "text-[#434343]"}
+            >
+              {selectedCategoryLabel || "Select Complaint Category"}
+            </Text>
+            <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
+          </TouchableOpacity>
+
+          {/* Global Search Modal */}
+          <GlobalSearchModal
+            visible={modalVisible}
+            onClose={() => setModalVisible(false)}
+            title="Select Category"
+            data={category}
+            selectedItems={selectedCategory ? [selectedCategory] : []}
+            onSelect={handleCategorySelect}
             searchPlaceholder="Search category..."
-            placeholder="Select Complaint Category"
-            style={{
-              borderColor: "#393939",
-              borderRadius: 30,
-              height: 50,
-              backgroundColor: "#FFFFFF",
-            }}
-            dropDownContainerStyle={{
-              borderColor: "#0a0a0bff",
-              backgroundColor: "#FFFFFF",
-              maxHeight: 500,
-            }}
-            textStyle={{
-              color: "#434343",
-              fontSize: 14,
-            }}
-            searchTextInputStyle={{
-              borderColor: "#0c0c0cff",
-              color: "#434343",
-            }}
-            searchContainerStyle={{
-              borderBottomColor: "#E5E7EB",
-            }}
-            listItemLabelStyle={{
-              fontSize: 12,
-            }}
-            zIndex={3000}
-            zIndexInverse={1000}
-            listMode="SCROLLVIEW"
-            searchTextInputProps={{
-              onChangeText: handleSearchChange,
-              value: searchValue,
-            }}
+            doneButtonText="Done"
+            noResultsText="No categories found"
+            multiSelect={false}
+            searchKeys={["label"]}
           />
 
-          <Text className="text-center text-black mb-4 mt-4">
-            --  We will get back to you within 2 days --
+          <Text className="text-center text-black mb-4">
+            -- We will get back to you within 2 days --
           </Text>
 
           <View className="mb-8">
@@ -262,34 +226,37 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({ navigation }) =
               numberOfLines={6}
               textAlignVertical="top"
               placeholder="Add the Complaint here.."
-              placeholderTextColor="#808FA2" 
+              placeholderTextColor="#808FA2"
               className="text-black bg-white border border-[#393939] rounded-lg p-4 min-h-[250px]"
               value={complaintText}
               onChangeText={(text) => {
-                if (text.startsWith(' ')) {
+                if (text.startsWith(" ")) {
                   return;
                 }
-                
+
                 if (text.length > 0) {
                   const firstChar = text.charAt(0);
                   const isAlphabetic = /^[a-zA-Z]$/.test(firstChar);
-                  
+
                   if (!isAlphabetic) {
                     return;
                   }
-                  
+
                   if (text.length === 1) {
                     text = text.toUpperCase();
                   }
                 }
-                
+
                 setComplaintText(text);
               }}
               autoCapitalize="sentences"
             />
           </View>
 
-          <TouchableOpacity onPress={handleSubmit} className="mx-auto shadow-lg w-40 mb-4">
+          <TouchableOpacity
+            onPress={handleSubmit}
+            className="mx-auto shadow-lg w-40 mb-4"
+          >
             <LinearGradient
               colors={["#6839CF", "#874DDB"]}
               start={{ x: 0, y: 0 }}
