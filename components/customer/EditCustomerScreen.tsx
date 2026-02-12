@@ -17,7 +17,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import axios from "axios";
 import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Entypo, FontAwesome6 } from "@expo/vector-icons";
+import { Entypo, FontAwesome6, MaterialIcons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { Platform } from "react-native";
 import CustomHeader from "../common/CustomHeader";
@@ -1073,7 +1073,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })} 
+      keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })}
       style={{ flex: 1, backgroundColor: "white" }}
     >
       <CustomHeader
@@ -1102,7 +1102,9 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                       setTitleModalVisible(true);
                       handleFieldTouch("title");
                     }}
-                    className={`bg-[#F6F6F6] border ${titleError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 justify-center`}
+                    className={`bg-[#F6F6F6] border flex-row justify-between items-center ${
+                      titleError ? "border-red-500" : "border-[#F6F6F6]"
+                    } rounded-full px-4 h-10`}
                   >
                     <Text
                       className={
@@ -1111,6 +1113,11 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                     >
                       {selectedCategory || "Select Title"}
                     </Text>
+                    <MaterialIcons
+                      name="keyboard-arrow-down"
+                      size={24}
+                      color="#666"
+                    />
                   </TouchableOpacity>
                 </View>
                 {titleError ? (

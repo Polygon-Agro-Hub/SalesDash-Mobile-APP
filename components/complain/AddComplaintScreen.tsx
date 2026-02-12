@@ -106,7 +106,7 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({
       setSelectedCategory("");
       setSelectedCategoryLabel("");
       setComplaintText("");
-      navigation.goBack();
+      navigation.navigate("SidebarScreen");
     } catch (error: unknown) {
       if (error instanceof Error) {
         console.error("Error message:", error.message);
@@ -167,6 +167,7 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{
           flexGrow: 1,
+          paddingBottom: 70,
         }}
         showsVerticalScrollIndicator={true}
       >

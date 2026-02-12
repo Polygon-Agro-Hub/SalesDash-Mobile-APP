@@ -11,7 +11,6 @@ import {
   StatusBar,
 } from "react-native";
 import { Feather, FontAwesome } from "@expo/vector-icons";
-import { RouteProp } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
 import { LinearGradient } from "expo-linear-gradient";
@@ -728,9 +727,9 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
             </View>
 
             <View className="flex-row justify-between mt-2">
-              <Text className="font-semibold text-lg">
+              <Text className="font-semibold text-base">
                 Full Total :{" "}
-                <Text className="font-bold text-lg">
+                <Text className="font-bold text-base">
                   Rs.
                   {fullTotal.toLocaleString("en-IN", {
                     minimumFractionDigits: 2,

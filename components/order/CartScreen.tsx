@@ -4,12 +4,9 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
-  ActivityIndicator,
   StatusBar,
 } from "react-native";
-import { StackNavigationProp } from "@react-navigation/stack";
 import { FontAwesome6, Ionicons } from "@expo/vector-icons";
-import BackButton from "../common/BackButton";
 import { LinearGradient } from "expo-linear-gradient";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";

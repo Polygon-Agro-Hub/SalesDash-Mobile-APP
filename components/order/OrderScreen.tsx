@@ -946,7 +946,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
       setFilteredPackageItems(filtered);
     }
   };
-  
+
   const [productSearchValue, setProductSearchValue] = useState("");
   const [packageSearchValue, setPackageSearchValue] = useState("");
 
@@ -972,7 +972,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
 
           <TouchableOpacity
             onPress={() => setPackageModalVisible(true)}
-            className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-2xl px-4 py-3 justify-center min-h-[48px]"
+            className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-4 py-3 flex-row justify-between items-center min-h-[48px]"
           >
             <Text className={packageValue ? "text-black" : "text-gray-500"}>
               {packageValue
@@ -980,6 +980,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                     ?.label || "Select a package"
                 : "Select a package"}
             </Text>
+            <MaterialIcons name="keyboard-arrow-down" size={24} color="#666" />
           </TouchableOpacity>
         </View>
 
@@ -1184,7 +1185,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                   fetchCrops();
                   setProductModalVisible(true);
                 }}
-                className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-xl px-4 py-3 justify-center min-h-[0]"
+                className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-xl px-4 py-2 flex-row justify-between items-center min-h-[48px]"
               >
                 <Text className={productValue ? "text-black" : "text-gray-500"}>
                   {productValue
@@ -1192,6 +1193,11 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                         ?.label || "Select a product..."
                     : "Select a product..."}
                 </Text>
+                <MaterialIcons
+                  name="keyboard-arrow-down"
+                  size={24}
+                  color="#666"
+                />
               </TouchableOpacity>
             </View>
 

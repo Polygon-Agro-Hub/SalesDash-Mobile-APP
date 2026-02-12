@@ -21,6 +21,7 @@ const TermsConditions: React.FC<TermsConditionsProps> = ({ navigation }) => {
           title="Terms & Conditions"
           showBackButton={true}
           navigation={navigation}
+          titleColor="#000000"
         />
 
         <View className="px-6">

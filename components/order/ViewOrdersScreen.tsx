@@ -518,6 +518,8 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                             style={{
                               borderRadius: wp(5),
                               minWidth: wp(24),
+                              minHeight:hp(4),
+                              justifyContent: "center", 
                               alignItems: "center",
                               backgroundColor:
                                 item.status === "Ordered"

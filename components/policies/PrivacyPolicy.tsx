@@ -22,6 +22,7 @@ const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ navigation }) => {
           title="Privacy Policy"
           showBackButton={true}
           navigation={navigation}
+          titleColor="#000000"
         />
 
         <View className="px-6">

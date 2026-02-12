@@ -19,7 +19,7 @@ import axios from "axios";
 import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
-import { Entypo, FontAwesome6 } from "@expo/vector-icons";
+import { Entypo, FontAwesome6, MaterialIcons } from "@expo/vector-icons";
 import { Platform } from "react-native";
 import CustomHeader from "../common/CustomHeader";
 import GlobalSearchModal from "../common/GlobalSearchModal";
@@ -912,7 +912,9 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                     setTitleModalVisible(true);
                     handleFieldTouch("title");
                   }}
-                  className={`bg-[#F6F6F6] border ${titleError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 justify-center`}
+                  className={`bg-[#F6F6F6] border flex-row justify-between items-center ${
+                    titleError ? "border-red-500" : "border-[#F6F6F6]"
+                  } rounded-full px-4 h-10`}
                 >
                   <Text
                     className={
@@ -921,6 +923,11 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                   >
                     {selectedCategory || "Title"}
                   </Text>
+                  <MaterialIcons
+                    name="keyboard-arrow-down"
+                    size={24}
+                    color="#666"
+                  />
                 </TouchableOpacity>
                 {titleError ? (
                   <Text className="text-red-500 text-xs pl-4 pt-1">
