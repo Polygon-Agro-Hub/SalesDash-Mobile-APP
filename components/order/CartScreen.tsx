@@ -410,7 +410,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
                 {item.name}
               </Text>
               <Text className="text-sm text-gray-600">
-                Rs.
+                Rs.{" "}
                 {item.discountedPrice.toLocaleString("en-IN", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
@@ -493,7 +493,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
           <View className="flex-row justify-between py-2">
             <Text className="text-gray-500">Subtotal</Text>
             <Text className="font-medium">
-              Rs.
+              Rs.{" "}
               {currentSubtotal.toLocaleString("en-US", {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
@@ -504,7 +504,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
           <View className="flex-row justify-between py-2">
             <Text className="text-gray-500">Discount</Text>
             <Text className="font-medium text-[#686868]">
-              Rs.
+              Rs.{" "}
               {discount.toLocaleString("en-US", {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
@@ -514,13 +514,13 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
 
           <View className="flex-row justify-between py-2">
             <Text className="text-gray-500">Service Fee</Text>
-            <Text className="font-medium text-[#686868]">Rs.180.00</Text>
+            <Text className="font-medium text-[#686868]">Rs. 180.00</Text>
           </View>
 
           <View className="flex-row justify-between py-2">
             <Text className="font-semibold">Total</Text>
             <Text className="font-bold">
-              Rs.
+              Rs.{" "}
               {currentTotal.toLocaleString("en-IN", {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
@@ -532,18 +532,35 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
       </ScrollView>
 
       <View className="py-4 px-6">
-        <TouchableOpacity onPress={handleConfirm}>
-          <LinearGradient
-            colors={["#6839CF", "#874DDB"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            className="py-3 rounded-full items-center"
-          >
-            <Text className="text-white font-medium text-base">
-              {fromOrderSummary ? "Update Cart" : "Confirm"}
-            </Text>
-          </LinearGradient>
-        </TouchableOpacity>
+        <View
+          style={{
+            borderRadius: 30,
+            shadowColor: "#000",
+            shadowOpacity: 0.25,
+            shadowOffset: { width: 0, height: 6 },
+            shadowRadius: 8,
+            elevation: 10,
+          }}
+        >
+          <TouchableOpacity onPress={handleConfirm} activeOpacity={0.8}>
+            <LinearGradient
+              colors={["#6839CF", "#874DDB"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{
+                paddingVertical: 12,
+                borderRadius: 30,
+                alignItems: "center",
+              }}
+            >
+              <Text
+                style={{ color: "#FFFFFF", fontWeight: "500", fontSize: 16 }}
+              >
+                {fromOrderSummary ? "Update Cart" : "Confirm"}
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );

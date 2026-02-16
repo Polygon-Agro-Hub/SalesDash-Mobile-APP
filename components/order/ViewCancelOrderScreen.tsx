@@ -888,7 +888,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                   <View className="flex-row justify-between mb-2">
                     <Text className="text-[#8492A3]">Subtotal</Text>
                     <Text className="text-[#8492A3]">
-                      Rs.
+                      Rs.{" "}
                       {new Intl.NumberFormat("en-IN", {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
@@ -903,26 +903,26 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                   <View className="flex-row justify-between mb-2">
                     <Text className="text-[#8492A3]">Discount</Text>
                     <Text className="text-[#8492A3]">
-                      Rs.{formatPrice(order.discount)}
+                      Rs. {formatPrice(order.discount)}
                     </Text>
                   </View>
                 )}
                 <View className="flex-row justify-between mb-2">
                   <Text className="text-[#8492A3]">Delivery</Text>
                   <Text className="text-[#8492A3]">
-                    Rs.{formatPrice(deliveryFee)}
+                    Rs. {formatPrice(deliveryFee)}
                   </Text>
                 </View>
                 {isPackage === 0 && (
                   <View className="flex-row justify-between mb-2">
                     <Text className="text-[#8492A3]">Service Fee</Text>
-                    <Text className="text-[#8492A3]">Rs.180.00</Text>
+                    <Text className="text-[#8492A3]">Rs. 180.00</Text>
                   </View>
                 )}
                 <View className="flex-row justify-between pt-2">
                   <Text className="font-semibold text-black">Grand Total</Text>
                   <Text className="font-bold text-black">
-                    Rs.{formatPrice(order.fullTotal || "0")}
+                    Rs. {formatPrice(order.fullTotal || "0")}
                   </Text>
                 </View>
               </View>

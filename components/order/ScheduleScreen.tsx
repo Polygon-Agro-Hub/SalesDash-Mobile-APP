@@ -10,7 +10,7 @@ import {
   Alert,
   StatusBar,
 } from "react-native";
-import { Feather, FontAwesome } from "@expo/vector-icons";
+import { Feather, FontAwesome, MaterialIcons } from "@expo/vector-icons";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
 import { LinearGradient } from "expo-linear-gradient";
@@ -172,8 +172,6 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showTimeSlotModal, setShowTimeSlotModal] = useState(false);
-
-  // Updated state initialization to handle orderData
   const [total, setTotal] = useState(() => {
     if (orderData) {
       return orderData.total;
@@ -183,7 +181,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
 
   const [subtotal, setSubtotal] = useState(() => {
     if (orderData) {
-      return orderData.fullTotal; // Use fullTotal as subtotal for orderData
+      return orderData.fullTotal;
     }
     return calculateInitialSubtotal(originalSubtotal, orderItems);
   });
@@ -355,7 +353,6 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
 
   function processInitialData(originalItems: any[], orderItems: any[]) {
     if (orderItems && orderItems.length > 0) {
-      const orderData = orderItems[0];
       const processedItems: CartItem[] = [];
       return processedItems;
     } else if (originalItems && originalItems.length > 0) {
@@ -491,13 +488,13 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
   const convertTimeSlotTo24Hour = (timeSlot: string): string => {
     switch (timeSlot) {
       case "Within 8-12 PM":
-        return "10:00"; // Middle of the range
+        return "10:00";
       case "Within 12-4 PM":
-        return "14:00"; // Middle of the range
+        return "14:00";
       case "Within 4-8 PM":
-        return "18:00"; // Middle of the range
+        return "18:00";
       default:
-        return "12:00"; // Default fallback
+        return "12:00";
     }
   };
 
@@ -539,7 +536,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       selectedTimeSlot: selectedTimeSlot,
       customerId: customerId,
       isPackage: isPackage,
-      packageId: packageId, // Now correctly passing packageId
+      packageId: packageId,
       customerid: customerid,
       orderItems: orderItems,
 
@@ -628,11 +625,11 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
             <Text className="flex-1 text-[#7F7F7F]">
               {selectedTimeSlot || "Select Time Slot"}
             </Text>
-            <Feather name="chevron-down" size={20} color="#7F7F7F" />
+            <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
           </TouchableOpacity>
         </ScrollView>
 
-        {/* Date Picker (conditionally rendered) */}
+        {/* Date Picker */}
         {showDatePicker && Platform.OS === "android" && (
           <DateTimePicker
             value={date}
@@ -703,6 +700,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
           noResultsText="No time slots found"
           multiSelect={false}
           searchKeys={["label"]}
+          showSearch={false}
         />
 
         <View
@@ -721,7 +719,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
               <Text className="text-[#5C5C5C]">
                 Delivery Fee :{" "}
                 <Text className="font-semibold text-[#5C5C5C]">
-                  + Rs.{deliveryFee.toFixed(2)}
+                  + Rs. {deliveryFee.toFixed(2)}
                 </Text>
               </Text>
             </View>
@@ -730,7 +728,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
               <Text className="font-semibold text-base">
                 Full Total :{" "}
                 <Text className="font-bold text-base">
-                  Rs.
+                  Rs.{" "}
                   {fullTotal.toLocaleString("en-IN", {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
@@ -740,15 +738,41 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
             </View>
           </View>
 
-          <TouchableOpacity onPress={handleProceed}>
-            <LinearGradient
-              colors={["#854BDA", "#6E3DD1"]}
-              className="py-3 px-6 rounded-full flex-row items-center ml-4 justify-center"
+          <View
+            style={{
+              borderRadius: 30,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.25,
+              shadowRadius: 8,
+              elevation: 10,
+            }}
+          >
+            <TouchableOpacity
+              onPress={handleProceed}
+              activeOpacity={0.8}
+              style={{ borderRadius: 30 }}
             >
-              <Text className="text-white font-semibold mr-2">Proceed</Text>
-              <Feather name="check" size={20} color="white" />
-            </LinearGradient>
-          </TouchableOpacity>
+              <LinearGradient
+                colors={["#854BDA", "#6E3DD1"]}
+                style={{
+                  paddingVertical: 12,
+                  paddingHorizontal: 24,
+                  borderRadius: 30,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Text
+                  style={{ color: "white", fontWeight: "600", marginRight: 8 }}
+                >
+                  Proceed
+                </Text>
+                <Feather name="check" size={20} color="white" />
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </KeyboardAvoidingView>

@@ -1,9 +1,9 @@
 const environment = {
   // LOCAL --------------------
-  API_BASE_URL: "http://192.168.8.180:3000/agro-api/salesdash/",
+  // API_BASE_URL: "http://192.168.8.101:3000/agro-api/salesdash/",
 
   // // DEV --------------------
- // API_BASE_URL: "https://dev.polygonagro.com/dash-api/agro-api/salesdash/",
+  API_BASE_URL: "https://dev.polygonagro.com/dash-api/agro-api/salesdash/",
 
   // PROD --------------------
   //API_BASE_URL: "https://polygonagro.com/dash-api/agro-api/salesdash/",
