@@ -382,7 +382,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
 
         {/* Packages Section with Pull to Refresh */}
         <ScrollView
-          className="flex-1 mb-10"
+          className="flex-1 "
           refreshControl={
             <RefreshControl
               refreshing={isLoading}
