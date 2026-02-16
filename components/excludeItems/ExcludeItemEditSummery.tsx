@@ -199,7 +199,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
         className=" text-center text-black text-xl mt-14"
       >
         {customerName.firstName && customerName.lastName
-          ? `Customer ID : ${customerName.cusId.slice(4)}`
+          ? `Customer ID : ${customerName.cusId}`
           : "Loading..."}
       </Text>
       <View className="flex bg-white px-6">
@@ -218,7 +218,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
                   flex: 1,
                   justifyContent: "center",
                   alignItems: "center",
-                  height: hp("60%"),
+                  height: hp("50%"),
                 }}
               >
                 <LottieView
@@ -238,7 +238,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
                   flex: 1,
                   justifyContent: "center",
                   alignItems: "center",
-                  height: hp("60%"),
+                  height: hp("50%"),
                 }}
               >
                 <View className="flex-1 justify-center items-center px-4 ">
@@ -250,7 +250,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
                   />
                 </View>
                 <View className="mt-[-20]">
-                  <Text className="text-center text-lg text-gray-500 mt-[-40%]">
+                  <Text className="text-center text-gray-500 mt-[-35%]">
                     No Exclude Item Found
                   </Text>
                 </View>
@@ -290,7 +290,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
         </ScrollView>
       </View>
       <TouchableOpacity
-        className="absolute bottom-[14%] left-0 right-0 items-center "
+        className="absolute bottom-[12%] left-0 right-0 items-center "
         onPress={() =>
           navigation.navigate("ExcludeAddMore", {
             id: id,
@@ -301,7 +301,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
         }
       >
         <LinearGradient
-          colors={["#6C3CD1", "#9B65D6"]}
+          colors={["#6839CF", "#874DDB"]}
           start={[0, 0]}
           end={[1, 1]}
           style={{
@@ -310,6 +310,14 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
             borderRadius: 25,
             alignItems: "center",
             justifyContent: "center",
+            shadowColor: "#000000",
+            shadowOffset: {
+              width: 0,
+              height: 2,
+            },
+            shadowOpacity: 0.2,
+            shadowRadius: 10,
+            elevation: 8,
           }}
         >
           <Text style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}>

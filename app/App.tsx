@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Alert, StatusBar} from "react-native";
+import { Alert, StatusBar } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
@@ -68,7 +68,7 @@ function MainTabNavigator() {
       <Tab.Screen name="ReminderScreen" component={ReminderScreen} />
       <Tab.Screen
         options={{
-          tabBarHideOnKeyboard: true, 
+          tabBarHideOnKeyboard: true,
           tabBarVisibilityAnimationConfig: {
             show: { animation: "timing", config: { duration: 0 } },
             hide: { animation: "timing", config: { duration: 0 } },
@@ -77,8 +77,7 @@ function MainTabNavigator() {
         name="CustomersScreen"
         component={CustomersScreen}
       />
-      <Tab.Screen name="ViewComplainScreen" component={ViewComplainScreen} />
-      <Tab.Screen name="ViewScreen" component={ViewScreen as any} />
+
       <Tab.Screen
         name="ViewCustomerScreen"
         component={ViewCustomerScreen as any}
@@ -93,10 +92,7 @@ function MainTabNavigator() {
         name="OrderConfirmedScreen"
         component={OrderConfirmedScreen as any}
       />
-      <Tab.Screen
-        name="OtpSuccesfulScreen"
-        component={OtpSuccesfulScreen as any}
-      />
+
       <Tab.Screen name="AddComplaintScreen" component={AddComplaintScreen} />
       <Tab.Screen name="ExcludeListAdd" component={ExcludeListAdd as any} />
       <Tab.Screen
@@ -166,8 +162,17 @@ function AppContent() {
             <Stack.Screen name="SidebarScreen" component={SidebarScreen} />
             <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
             <Stack.Screen name="OtpScreen" component={OtpScreen} />
+            <Stack.Screen name="ViewScreen" component={ViewScreen as any} />
             <Stack.Screen name="OtpScreenUp" component={OtpScreenUp} />
+            <Stack.Screen
+              name="ViewComplainScreen"
+              component={ViewComplainScreen}
+            />
             <Stack.Screen name="OrderScreen" component={OrderScreen as any} />
+            <Stack.Screen
+              name="OtpSuccesfulScreen"
+              component={OtpSuccesfulScreen as any}
+            />
             <Stack.Screen
               name="ScheduleScreen"
               component={ScheduleScreen as any}

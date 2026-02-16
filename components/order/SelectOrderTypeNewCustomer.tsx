@@ -1,16 +1,16 @@
-// Not
-// Done
-// Refactoring
-import React from "react";
-import { View, Text, TouchableOpacity, Image, ScrollView } from "react-native";
+import React, { useCallback } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  ScrollView,
+  BackHandler,
+} from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
-import { AntDesign } from "@expo/vector-icons";
-import {
-  widthPercentageToDP as wp,
-  heightPercentageToDP as hp,
-} from "react-native-responsive-screen";
 import CustomHeader from "../common/CustomHeader";
+import { useFocusEffect } from "@react-navigation/native";
 
 type SelectOrderTypeNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -27,6 +27,7 @@ interface SelectOrderTypeProps {
       customerId: string;
       name: string;
       title: string;
+      phoneNumber: string;
     };
   };
 }
@@ -35,7 +36,7 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({
   navigation,
   route,
 }) => {
-  const { id } = route.params || {};
+  const { id, name, title, customerId, phoneNumber } = route.params || {};
 
   const handleCreateCustomPackage = () => {
     navigation.navigate("CreateCustomPackage" as any, {
@@ -52,6 +53,28 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({
     });
   };
 
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        navigation.navigate("ViewCustomerScreen", {
+          name: name,
+          title: title,
+          number: phoneNumber,
+          customerId: customerId,
+          id: id,
+        });
+        return true;
+      };
+
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress,
+      );
+
+      return () => backHandler.remove();
+    }, [navigation, name, title, phoneNumber, customerId, id]),
+  );
+
   return (
     <View className="flex-1 bg-white">
       <CustomHeader
@@ -59,7 +82,15 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({
         titleColor="#6C3CD1"
         showBackButton={true}
         navigation={navigation}
-        onBackPress={() => navigation.navigate("DashboardScreen")}
+        onBackPress={() =>
+          navigation.navigate("ViewCustomerScreen", {
+            name: name,
+            title: title,
+            number: phoneNumber,
+            customerId: customerId,
+            id: id,
+          })
+        }
       />
 
       <ScrollView

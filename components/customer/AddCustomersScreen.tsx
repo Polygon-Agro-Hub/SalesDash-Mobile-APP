@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -118,8 +118,12 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     { label: "Apartment", value: "Apartment" },
   ]);
 
+  // Track if we're navigating to geolocation screens
+  const isNavigatingToGeoScreen = useRef(false);
+
   // Navigate to map screen for manual selection
   const openMapForLocation = () => {
+    isNavigatingToGeoScreen.current = true;
     navigation.navigate("AttachGeoLocationScreen", {
       currentLatitude: latitude,
       currentLongitude: longitude,
@@ -165,6 +169,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     setLatitude(undefined);
     setLongitude(undefined);
     setLocationError("");
+    setSelectedLocationName("");
     setTouchedFields({
       email: false,
       phoneNumber: false,
@@ -184,27 +189,30 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
 
   useFocusEffect(
     React.useCallback(() => {
-      // Only reset form on initial mount, not when returning from other screens
-      const unsubscribe = navigation.addListener("focus", () => {
-        // Check if we're coming from the geolocation screen
-        const routes = navigation.getState()?.routes;
-        const previousRoute = routes?.[routes.length - 2];
-
-        if (
-          previousRoute?.name === "AttachGeoLocationScreen" ||
-          previousRoute?.name === "ViewLocationScreen"
-        ) {
-          return;
-        }
-
-        resetForm();
-      });
-
+      // Fetch cities on every focus
       fetchCity();
 
-      return () => {
-        unsubscribe();
-      };
+      // If we're navigating TO a geo screen, preserve all data
+      if (isNavigatingToGeoScreen.current) {
+        isNavigatingToGeoScreen.current = false;
+        return;
+      }
+
+      // Check if we're coming FROM geolocation screens - preserve data
+      const routes = navigation.getState()?.routes;
+      const previousRoute = routes?.[routes.length - 2];
+
+      const isComingFromGeoScreens =
+        previousRoute?.name === "AttachGeoLocationScreen" ||
+        previousRoute?.name === "ViewLocationScreen";
+
+      // Don't reset if coming from geo screens
+      if (isComingFromGeoScreens) {
+        return;
+      }
+
+      // Reset form for all other navigation cases (coming from CustomersScreen, etc)
+      resetForm();
     }, [navigation]),
   );
 
@@ -1413,6 +1421,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 {/* View Here Link */}
                 <TouchableOpacity
                   onPress={() => {
+                    isNavigatingToGeoScreen.current = true;
                     navigation.navigate("ViewLocationScreen", {
                       latitude: latitude,
                       longitude: longitude,

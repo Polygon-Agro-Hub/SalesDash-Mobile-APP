@@ -304,9 +304,7 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
                         <TouchableOpacity
                           style={{ marginTop: hp(1), marginBottom: hp(1) }}
                           onPress={() =>
-                            navigation.navigate("Main", {
-                              screen: "ViewComplainScreen",
-                            })
+                            navigation.navigate( "ViewComplainScreen")
                           }
                         >
                           <Text className="text-base text-gray-700 font-bold">

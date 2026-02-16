@@ -81,7 +81,13 @@ export type RootStackParamList = {
   SelectOrderType: undefined;
   PrivacyPolicy: undefined;
   TermsConditions: undefined;
-  SelectOrderTypeNewCustomer: undefined;
+  SelectOrderTypeNewCustomer: {
+    id:number,
+    name:string,
+    title:string,
+    customerId:string,
+    phoneNumber:string
+  };
   Main: {
     screen: keyof RootStackParamList;
     params?: any;
@@ -108,11 +114,13 @@ export type RootStackParamList = {
     selectedLatitude?: number;
     selectedLongitude?: number;
     selectedLocationName?: string;
+    preserveData?: boolean;
   };
   ViewLocationScreen: {
     latitude: number;
     longitude: number;
     locationName?: string;
+    preserveData?: boolean;
   };
   OtpScreen: {
     phoneNumber: string;
@@ -154,6 +162,7 @@ export type RootStackParamList = {
       longitude: number,
       locationName: string,
     ) => void;
+    preserveData?: boolean;
   };
   AttachGeoLocationScreenEdit: {
     currentLatitude?: number;
