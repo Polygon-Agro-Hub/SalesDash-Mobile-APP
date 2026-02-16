@@ -491,8 +491,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                           shadowOpacity: 0.12,
                           shadowOffset: { width: 0, height: 8 },
                           shadowRadius: 10,
-
-                          elevation: 8,
+                          elevation: 4,
                         }}
                         className="mx-6"
                       >

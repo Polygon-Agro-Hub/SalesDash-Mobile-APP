@@ -360,7 +360,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                   </TouchableOpacity>
                 </View>
               ) : isEmpty ? (
-                <View className="flex-1 justify-center items-center px-4 mt-[-20%]">
+                <View className="flex-1 justify-center items-center">
                   <Image
                     source={require("@/assets/images/public/no-data.webp")}
                     style={{
@@ -370,11 +370,11 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                     }}
                   />
                   {searchQuery ? (
-                    <Text className="text-gray-500 text-center mt-4">
+                    <Text className="text-black text-i text-center mt-4">
                       No customers found for "{searchQuery}"
                     </Text>
                   ) : (
-                    <Text className="text-gray-600 text-center ">
+                    <Text className="text-black text-i text-center mt-4">
                       No registered customers yet
                     </Text>
                   )}
@@ -403,7 +403,20 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                         })
                       }
                     >
-                      <View className="bg-white shadow-md p-4 mb-3 flex-row justify-between items-center rounded-lg border border-gray-200">
+                      <View
+                        style={{
+                          backgroundColor: "white",
+                          borderRadius: 12,
+                          padding: 16,
+                          marginBottom: 12,
+                          flexDirection: "row",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          borderWidth: 1,
+                          borderColor: "#E5E7EB",
+                          elevation: 4,
+                        }}
+                      >
                         <View className="flex-1 mr-3">
                           <Text
                             className="text-gray-700 font-semibold"
