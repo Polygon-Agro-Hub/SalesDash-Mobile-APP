@@ -22,6 +22,7 @@ interface GlobalSearchModalProps {
   multiSelect?: boolean;
   renderItem?: (item: any, isSelected: boolean) => React.ReactNode;
   searchKeys?: string[];
+  showSearch?: boolean; 
 }
 
 const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
@@ -37,6 +38,7 @@ const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
   multiSelect = false,
   renderItem,
   searchKeys = ["label"],
+  showSearch = true, 
 }) => {
   const [searchValue, setSearchValue] = useState("");
   const [filteredData, setFilteredData] = useState(data);
@@ -47,9 +49,9 @@ const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
     setSelectedValues(selectedItems);
   }, [selectedItems, visible]);
 
-  // Filter data based on search
+  // Filter data based on search (only if search is shown)
   useEffect(() => {
-    if (!searchValue.trim()) {
+    if (!showSearch || !searchValue.trim()) {
       setFilteredData(data);
       return;
     }
@@ -65,7 +67,7 @@ const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
       });
     });
     setFilteredData(filtered);
-  }, [searchValue, data, searchKeys]);
+  }, [searchValue, data, searchKeys, showSearch]);
 
   const handleItemPress = (value: string) => {
     let newSelectedValues: string[];
@@ -97,9 +99,15 @@ const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
     setSearchValue("");
   };
 
-  const renderDefaultItem = (item: any, isSelected: boolean) => (
+  const renderDefaultItem = (
+    item: any,
+    isSelected: boolean,
+    isLast: boolean,
+  ) => (
     <TouchableOpacity
-      className="px-4 py-3 border-b border-gray-200 flex-row items-center justify-between"
+      className={`px-4 py-3 flex-row items-center justify-between ${
+        !isLast ? "border-b border-gray-200" : ""
+      }`}
       onPress={() => handleItemPress(item.value)}
     >
       <Text className="text-base text-gray-800">{item.label}</Text>
@@ -116,7 +124,7 @@ const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
           value={searchValue}
           onChangeText={setSearchValue}
           className="flex-1 ml-2 text-base"
-          placeholderTextColor="#666"
+          placeholderTextColor="#7F7F7F"
           autoCapitalize="none"
           autoCorrect={false}
         />
@@ -153,22 +161,25 @@ const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
             </TouchableOpacity>
           </View>
 
-          {/* Search Bar */}
-          {renderSearchInput()}
+          {/* Search Bar - Conditional Rendering */}
+          {showSearch && renderSearchInput()}
 
           {/* List */}
           <FlatList
             data={filteredData}
             keyExtractor={(item) => item.value}
-            renderItem={({ item }) => {
+            renderItem={({ item, index }) => {
               const isSelected = selectedValues.includes(item.value);
+              const isLast = index === filteredData.length - 1;
+
               if (renderItem) {
                 return renderItem(
                   item,
                   isSelected,
                 ) as React.ReactElement | null;
               }
-              return renderDefaultItem(item, isSelected);
+
+              return renderDefaultItem(item, isSelected, isLast);
             }}
             showsVerticalScrollIndicator={false}
             className="max-h-64"

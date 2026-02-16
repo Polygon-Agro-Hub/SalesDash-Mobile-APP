@@ -1,4 +1,4 @@
-import { View, Image, StatusBar } from "react-native";
+import { View, Image, StatusBar, Text } from "react-native";
 import React, { useEffect } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -129,6 +129,13 @@ const Splash: React.FC<SplashProps> = ({ navigation }) => {
           className="w-60 h-60"
           resizeMode="contain"
         />
+      </View>
+      
+      {/* Powered By Text at Bottom */}
+      <View className="absolute bottom-10 w-full items-center">
+        <Text className="text-white text-md font-medium opacity-80">
+          Powered By Polygon
+        </Text>
       </View>
     </View>
   );

@@ -10,13 +10,13 @@ import {
   Platform,
   Keyboard,
   BackHandler,
+  Alert,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
 import axios from "axios";
 import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Alert } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
@@ -70,12 +70,15 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({
 
   const handleSubmit = async () => {
     if (!selectedCategory) {
-      alert("Please select a category.");
+      Alert.alert("Error", "Please select a category.");
       return;
     }
 
     if (!complaintText.trim()) {
-      alert("Please fill out the complaint text before submitting.");
+      Alert.alert(
+        "Error",
+        "Please fill out the complaint text before submitting.",
+      );
       return;
     }
 
@@ -102,18 +105,24 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({
         },
       );
 
-      alert("Complaint submitted successfully!");
-      setSelectedCategory("");
-      setSelectedCategoryLabel("");
-      setComplaintText("");
-      navigation.navigate("SidebarScreen");
+      Alert.alert("Success", "Complaint submitted successfully!", [
+        {
+          text: "OK",
+          onPress: () => {
+            setSelectedCategory("");
+            setSelectedCategoryLabel("");
+            setComplaintText("");
+            navigation.navigate("SidebarScreen");
+          },
+        },
+      ]);
     } catch (error: unknown) {
       if (error instanceof Error) {
         console.error("Error message:", error.message);
-        alert("Failed to submit complaint. Please try again.");
+        Alert.alert("Error", "Failed to submit complaint. Please try again.");
       } else {
         console.error("An unknown error occurred.");
-        alert("An unknown error occurred.");
+        Alert.alert("Error", "An unknown error occurred.");
       }
     }
   };
@@ -182,7 +191,8 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({
           <View className="items-center mb-6">
             <Image
               source={require("@/assets/images/complain/complain.webp")}
-              className="w-32 h-32"
+              style={{ width: 130, height: 130 }}
+              resizeMode="contain"
             />
             <Text className="text-xl font-bold text-gray-900 mt-2">
               Tell us the <Text className="text-[#6839CF]">problem</Text>

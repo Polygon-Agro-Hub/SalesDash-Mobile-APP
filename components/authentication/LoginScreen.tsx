@@ -34,28 +34,64 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [empId, setEmpId] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error1, setError1] = useState("");
-  const [error2, setError2] = useState("");
+  const [empIdError, setEmpIdError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const validateEmployeeId = (id: string): string => {
+    if (id.trim() === "") {
+      return "Employee ID is required";
+    }
+
+    // Check if first character is uppercase
+    const firstChar = id.charAt(0);
+    if (firstChar && firstChar !== firstChar.toUpperCase()) {
+      return "Please enter Employee ID in uppercase letters";
+    }
+
+    return "";
+  };
+
+  const validatePassword = (pwd: string): string => {
+    if (pwd.trim() === "") {
+      return "Password is required";
+    }
+    return "";
+  };
 
   const handleSignIn = async () => {
     Keyboard.dismiss();
-    setError1("");
-    setError2("");
+    setEmpIdError("");
+    setPasswordError("");
 
-    if (empId.trim() === "") {
-      setError1("Employee ID is required");
+    let hasError = false;
+
+    // Validate Employee ID
+    const empIdValidationError = validateEmployeeId(empId);
+    if (empIdValidationError) {
+      setEmpIdError(empIdValidationError);
+      hasError = true;
+    }
+
+    // Validate Password
+    const passwordValidationError = validatePassword(password);
+    if (passwordValidationError) {
+      setPasswordError(passwordValidationError);
+      hasError = true;
+    }
+
+    // If there are validation errors, stop here
+    if (hasError) {
       return;
     }
 
-    // Check if empId contains lowercase letters
-    if (empId !== empId.toUpperCase()) {
-      setError1("Employee ID must be in uppercase format (e.g., SA00001)");
-      return;
-    }
-
-    if (password.trim() === "") {
-      setError2("Password is required");
+    // Check if EMP ID starts with exactly "SA" (both letters capital)
+    if (empId.length < 2 || empId.substring(0, 2) !== "SA") {
+      Alert.alert(
+        "Unauthorized Access",
+        "You are not authorized to access this system. Please use a valid Employee ID.",
+        [{ text: "OK" }],
+      );
       return;
     }
 
@@ -113,9 +149,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             { text: "OK" },
           ]);
         } else if (statusType === "not_approved") {
+          Alert.alert("Not Approved EMP ID", "This EMP ID is not approved.", [
+            { text: "OK" },
+          ]);
+        } else if (statusType === "password_not_set") {
           Alert.alert(
-            "Account Not Approved",
-            "This Employee ID is not approved yet.",
+            "Not Approved EMP ID",
+            "This EMP ID is not approved.",
             [{ text: "OK" }],
           );
         } else if (errorMessage === "Invalid password") {
@@ -176,18 +216,20 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               Welcome to Sign in
             </Text>
 
-            {error1.length > 0 && (
+            {empIdError.length > 0 && (
               <View className="-mb-3">
                 <View className="flex-row items-center ">
                   <Icon name="alert-circle" size={16} color="#DC2626" />
-                  <Text className="text-red-600 text-sm ml-2">{error1}</Text>
+                  <Text className="text-red-600 text-sm ml-2">
+                    {empIdError}
+                  </Text>
                 </View>
               </View>
             )}
 
             <View
               className={`border rounded-full px-4 py-1 mb-4 flex-row items-center bg-gray-100 mt-5 ${
-                error1 ? "border-red-500" : "border-gray-300"
+                empIdError ? "border-red-500" : "border-gray-300"
               }`}
             >
               <TextInput
@@ -196,26 +238,27 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 className="flex-1 py-3 text-gray-800"
                 value={empId}
                 onChangeText={(text) => {
-                  // Convert to uppercase automatically
-                  const upperCaseText = text.toUpperCase();
-                  setEmpId(upperCaseText);
+                  setEmpId(text);
+                  // Clear error when user starts typing
+                  if (empIdError) setEmpIdError("");
                 }}
-                autoCapitalize="characters"
               />
             </View>
 
-            {error2.length > 0 && (
+            {passwordError.length > 0 && (
               <View className="-mb-3">
                 <View className="flex-row items-center ">
                   <Icon name="alert-circle" size={16} color="#DC2626" />
-                  <Text className="text-red-600 text-sm ml-2">{error2}</Text>
+                  <Text className="text-red-600 text-sm ml-2">
+                    {passwordError}
+                  </Text>
                 </View>
               </View>
             )}
 
             <View
               className={`border rounded-full px-4 py-1 mb-6 flex-row items-center bg-gray-100 mt-4 ${
-                error2 ? "border-red-500" : "border-gray-300"
+                passwordError ? "border-red-500" : "border-gray-300"
               }`}
             >
               <TextInput
@@ -224,7 +267,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 className="flex-1 py-3 text-gray-800"
                 secureTextEntry={!showPassword}
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  // Clear error when user starts typing
+                  if (passwordError) setPasswordError("");
+                }}
               />
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                 <Icon
@@ -235,21 +282,45 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               </TouchableOpacity>
             </View>
 
-            <View className="mb-2">
-              <TouchableOpacity
-                className="items-center"
-                onPress={handleSignIn}
-                disabled={loading}
+            <View className="items-center mb-6">
+              <View
+                style={{
+                  backgroundColor: "#854BDA",
+                  borderRadius: 999,
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 8 },
+                  shadowOpacity: 0.4,
+                  shadowRadius: 10,
+                  elevation: 12,
+                }}
               >
-                <LinearGradient
-                  colors={["#854BDA", "#6E3DD1"]}
-                  className="rounded-full py-3 w-1/2 flex justify-center items-center self-center shadow-lg"
+                <TouchableOpacity
+                  onPress={handleSignIn}
+                  disabled={loading}
+                  activeOpacity={0.8}
+                  style={{ borderRadius: 999 }}
                 >
-                  <Text className="text-white text-lg font-bold">
-                    {loading ? "Signing in..." : "Sign in"}
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
+                  <LinearGradient
+                    colors={["#854BDA", "#6E3DD1"]}
+                    style={{
+                      borderRadius: 999,
+                      paddingVertical: 14,
+                      width: 180,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: "white",
+                        fontSize: 18,
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {loading ? "Signing in..." : "Sign in"}
+                    </Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </View>
