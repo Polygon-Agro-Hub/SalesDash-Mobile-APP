@@ -244,8 +244,8 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       <View
         className="bg-white rounded-2xl p-4 mb-5 mx-2"
         style={{
-          width: (wp("100%") - 48) / 2, // Fixed width for 2 columns with padding
-          minHeight: 240, // Minimum height to align all cards
+          width: (wp("100%") - 48) / 2, 
+          minHeight: 240, 
           shadowColor: "#000",
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.15,
@@ -265,7 +265,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
           </Text>
 
           <Text className="text-sm font-medium text-[#808FA2] text-center mt-1">
-            Rs.{formattedTotalPrice}
+            Rs. {formattedTotalPrice}
           </Text>
         </View>
 
@@ -347,7 +347,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
 
           {/* Progress Bar */}
           <View className="mt-6">
-            <Text className="text-lg font-semibold text-[#874CDB]">
+            <Text className="text-lg text-[#874CDB]">
               Your Daily Target
             </Text>
 
@@ -392,7 +392,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
             />
           }
         >
-          <Text className="text-xl text-[#874CDB]  ml-6 mb-2">Packages</Text>
+          <Text className="text-lg text-[#874CDB] ml-6 mb-2">Packages</Text>
           <View className="px-2">
             <FlatList
               data={packages}

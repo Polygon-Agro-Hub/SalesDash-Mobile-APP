@@ -228,7 +228,29 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   };
 
   const handleSearch = (query: string) => {
-    const cleanedQuery = query.replace(/^\s+/, "");
+    // Block special characters - only allow letters, numbers, spaces, and +
+    const specialCharRegex = /[^a-zA-Z0-9\s+]/g;
+    let cleanedQuery = query.replace(specialCharRegex, "");
+
+    cleanedQuery = cleanedQuery.replace(/^\s+/, "");
+
+    if (cleanedQuery.startsWith("+94")) {
+      const digits = cleanedQuery.replace(/[^\d]/g, "");
+      const limitedDigits = digits.slice(0, 9);
+      cleanedQuery = "+" + limitedDigits;
+    } else if (cleanedQuery.startsWith("0")) {
+      const digits = cleanedQuery.replace(/[^\d]/g, "");
+      const limitedDigits = digits.slice(0, 10);
+      cleanedQuery = limitedDigits;
+    } else if (
+      cleanedQuery.length > 0 &&
+      !isNaN(Number(cleanedQuery.charAt(0))) &&
+      cleanedQuery.charAt(0) !== "0"
+    ) {
+      const digits = cleanedQuery.replace(/[^\d]/g, "");
+      const limitedDigits = digits.slice(0, 9);
+      cleanedQuery = limitedDigits;
+    }
 
     setSearchQuery(cleanedQuery);
 
@@ -253,7 +275,6 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
         );
       });
 
-      // Keep the filtered results sorted alphabetically
       setFilteredCustomers(sortCustomersByName(filteredData));
     }
   };
@@ -304,7 +325,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
             </LinearGradient>
 
             {/* Search Bar */}
-            <View className="flex-row items-center bg-[#F5F1FC] px-6 py-3 rounded-full mt-[-22px] mx-auto w-[90%] shadow-md">
+            <View className="flex-row items-center bg-[#F5F1FC] px-6 py-1 rounded-full mt-[-22px] mx-auto w-[90%] shadow-md">
               <TextInput
                 value={searchQuery}
                 onChangeText={handleSearch}
@@ -389,7 +410,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                             numberOfLines={2}
                             ellipsizeMode="tail"
                           >
-                            {item.title}.{item.firstName} {item.lastName}
+                            {item.title}. {item.firstName} {item.lastName}
                           </Text>
                           <Text className="text-gray-500 text-sm">
                             {formatPhoneNumber(item.phoneNumber)}

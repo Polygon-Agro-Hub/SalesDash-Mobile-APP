@@ -182,10 +182,6 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     });
   };
 
-  const dismissKeyboard = () => {
-    Keyboard.dismiss();
-  };
-
   useFocusEffect(
     React.useCallback(() => {
       // Only reset form on initial mount, not when returning from other screens
@@ -577,6 +573,10 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
 
   const formatNameInput = (text: string) => {
     if (!text) return text;
+    // Prevent space as first character
+    if (text.startsWith(" ")) {
+      return text.trim();
+    }
     const filteredText = text.replace(/[^a-zA-Z]/g, "");
     return (
       filteredText.charAt(0).toUpperCase() + filteredText.slice(1).toLowerCase()
@@ -848,6 +848,11 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
   };
 
   const handlePhoneNumberChange = (text: string) => {
+    // Prevent space as first character
+    if (text.startsWith(" ")) {
+      return;
+    }
+
     if (!text.startsWith("+94")) {
       if (text.length < 3) {
         setPhoneNumber("+94");
@@ -918,13 +923,14 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 >
                   <Text
                     className={
-                      selectedCategory ? "text-black" : "text-gray-400"
+                      selectedCategory ? "text-black" : "text-[#7F7F7F]"
                     }
+                    style={!selectedCategory ? { fontStyle: "italic" } : {}}
                   >
                     {selectedCategory || "Title"}
                   </Text>
                   <MaterialIcons
-                    name="keyboard-arrow-down"
+                    name="arrow-drop-down"
                     size={24}
                     color="#666"
                   />
@@ -939,10 +945,12 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
               <View className="flex-[2] ml-2">
                 <Text className="text-gray-700 mb-1">First Name *</Text>
                 <TextInput
-                  className={`bg-[#F6F6F6] border ${firstNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+                  className={`bg-[#F6F6F6] border ${firstNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
                   placeholder="First Name"
+                  placeholderTextColor="#7F7F7F"
                   value={firstName}
                   onChangeText={(text) => {
+                    if (text.startsWith(" ")) return;
                     setFirstName(formatNameInput(text));
                     if (touchedFields.firstName && !text) {
                       setFirstNameError("First name is required");
@@ -953,6 +961,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                   onBlur={() => {
                     handleFieldTouch("firstName");
                   }}
+                  style={[{ fontStyle: firstName ? "normal" : "italic" }]}
                 />
                 {firstNameError ? (
                   <Text className="text-red-500 text-xs pl-4 pt-1">
@@ -966,10 +975,12 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
             <View className="mb-4">
               <Text className="text-gray-700 mb-1">Last Name *</Text>
               <TextInput
-                className={`bg-[#F6F6F6] border ${lastNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+                className={`bg-[#F6F6F6] border ${lastNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
                 placeholder="Last Name"
+                placeholderTextColor="#7F7F7F"
                 value={lastName}
                 onChangeText={(text) => {
+                  if (text.startsWith(" ")) return;
                   setLastName(formatNameInput(text));
                   if (touchedFields.lastName && !text) {
                     setLastNameError("Last name is required");
@@ -980,6 +991,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 onBlur={() => {
                   handleFieldTouch("lastName");
                 }}
+                style={[{ fontStyle: lastName ? "normal" : "italic" }]}
               />
               {lastNameError ? (
                 <Text className="text-red-500 text-xs pl-4 pt-1">
@@ -992,8 +1004,9 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
             <View className="mb-4">
               <Text className="text-gray-700 mb-1">Mobile Number *</Text>
               <TextInput
-                className={`bg-[#F6F6F6] border ${phoneError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+                className={`bg-[#F6F6F6] border ${phoneError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
                 placeholder="+947XXXXXXXX"
+                placeholderTextColor="#7F7F7F"
                 value={phoneNumber}
                 onChangeText={handlePhoneNumberChange}
                 onBlur={() => handleFieldTouch("phoneNumber")}
@@ -1004,6 +1017,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                     setPhoneNumber("+94");
                   }
                 }}
+                style={[{ fontStyle: phoneNumber ? "normal" : "italic" }]}
               />
               {phoneError ? (
                 <Text className="text-red-500 text-xs pl-4 pt-1">
@@ -1016,13 +1030,15 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
             <View className="mb-4">
               <Text className="text-gray-700 mb-1">Email Address *</Text>
               <TextInput
-                className={`bg-[#F6F6F6] border ${emailError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+                className={`bg-[#F6F6F6] border ${emailError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
                 placeholder="Email Address"
+                placeholderTextColor="#7F7F7F"
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
                 value={email}
                 onChangeText={(text) => {
+                  if (text.startsWith(" ")) return;
                   setEmail(text.toLowerCase());
                   if (touchedFields.email) {
                     handleFieldTouch("email");
@@ -1031,6 +1047,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 onBlur={() => {
                   handleFieldTouch("email");
                 }}
+                style={[{ fontStyle: email ? "normal" : "italic" }]}
               />
               {emailError ? (
                 <Text className="text-red-500 text-xs pl-4 pt-1">
@@ -1047,11 +1064,15 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                   setBuildingTypeModalVisible(true);
                   handleFieldTouch("buildingType");
                 }}
-                className={`bg-[#F6F6F6] border ${buildingTypeError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 justify-center`}
+                className={`bg-[#F6F6F6] border ${buildingTypeError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 flex-row items-center justify-between`}
               >
-                <Text className={buildingType ? "text-black" : "text-gray-400"}>
+                <Text
+                  className={buildingType ? "text-black" : "text-[#7F7F7F]"}
+                  style={!buildingType ? { fontStyle: "italic" } : {}}
+                >
                   {buildingType || "Select Building Type"}
                 </Text>
+                <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
               </TouchableOpacity>
               {buildingTypeError ? (
                 <Text className="text-red-500 text-xs pl-4 pt-1">
@@ -1068,10 +1089,12 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                     Building / House No *
                   </Text>
                   <TextInput
-                    className={`bg-[#F6F6F6] border ${houseNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+                    className={`bg-[#F6F6F6] border ${houseNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
                     placeholder="Building / House No (e.g., 14/B)"
+                    placeholderTextColor="#7F7F7F"
                     value={houseNo}
                     onChangeText={(text) => {
+                      if (text.startsWith(" ")) return;
                       const capitalizedText = capitalizeWords(text);
                       setHouseNo(capitalizedText);
                       if (touchedFields.houseNo && !text) {
@@ -1082,6 +1105,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                     }}
                     onBlur={() => handleFieldTouch("houseNo")}
                     autoCapitalize="words"
+                    style={[{ fontStyle: houseNo ? "normal" : "italic" }]}
                   />
                   {houseNoError ? (
                     <Text className="text-red-500 text-xs pl-4 pt-1">
@@ -1093,10 +1117,12 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 <View className="mb-4">
                   <Text className="text-gray-700 mb-1">Street Name *</Text>
                   <TextInput
-                    className={`bg-[#F6F6F6] border ${streetNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+                    className={`bg-[#F6F6F6] border ${streetNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
                     placeholder="Street Name"
+                    placeholderTextColor="#7F7F7F"
                     value={streetName}
                     onChangeText={(text) => {
+                      if (text.startsWith(" ")) return;
                       const capitalizedText = capitalizeWords(text);
                       setStreetName(capitalizedText);
                       if (touchedFields.streetName && !text) {
@@ -1107,6 +1133,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                     }}
                     onBlur={() => handleFieldTouch("streetName")}
                     autoCapitalize="words"
+                    style={[{ fontStyle: streetName ? "normal" : "italic" }]}
                   />
                   {streetNameError ? (
                     <Text className="text-red-500 text-xs pl-4 pt-1">
@@ -1122,11 +1149,19 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                       setCityModalVisible(true);
                       handleFieldTouch("city");
                     }}
-                    className={`bg-[#F6F6F6] border ${cityError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 justify-center`}
+                    className={`bg-[#F6F6F6] border ${cityError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 flex-row items-center justify-between`}
                   >
-                    <Text className={city ? "text-black" : "text-gray-400"}>
+                    <Text
+                      className={city ? "text-black" : "text-[#7F7F7F]"}
+                      style={!city ? { fontStyle: "italic" } : {}}
+                    >
                       {city || "Select Nearest City"}
                     </Text>
+                    <MaterialIcons
+                      name="arrow-drop-down"
+                      size={24}
+                      color="#666"
+                    />
                   </TouchableOpacity>
                   {cityError ? (
                     <Text className="text-red-500 text-xs pl-4 pt-1">
@@ -1145,10 +1180,12 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                     Apartment / Building No *
                   </Text>
                   <TextInput
-                    className={`bg-[#F6F6F6] border ${buildingNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+                    className={`bg-[#F6F6F6] border ${buildingNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
                     placeholder="Apartment / Building Name"
+                    placeholderTextColor="#7F7F7F"
                     value={buildingNo}
                     onChangeText={(text) => {
+                      if (text.startsWith(" ")) return;
                       const capitalizedText = capitalizeWords(text);
                       setbuildingNo(capitalizedText);
                       if (touchedFields.buildingNo && !text) {
@@ -1159,6 +1196,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                     }}
                     onBlur={() => handleFieldTouch("buildingNo")}
                     autoCapitalize="words"
+                    style={[{ fontStyle: buildingNo ? "normal" : "italic" }]}
                   />
                   {buildingNoError ? (
                     <Text className="text-red-500 text-xs pl-4 pt-1">
@@ -1172,10 +1210,12 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                     Apartment / Building Name *
                   </Text>
                   <TextInput
-                    className={`bg-[#F6F6F6] border ${buildingNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+                    className={`bg-[#F6F6F6] border ${buildingNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
                     placeholder="Apartment / Building Name"
+                    placeholderTextColor="#7F7F7F"
                     value={buildingName}
                     onChangeText={(text) => {
+                      if (text.startsWith(" ")) return;
                       const capitalizedText = capitalizeWords(text);
                       setbuildingName(capitalizedText);
                       if (touchedFields.buildingName && !text) {
@@ -1186,6 +1226,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                     }}
                     onBlur={() => handleFieldTouch("buildingName")}
                     autoCapitalize="words"
+                    style={[{ fontStyle: buildingName ? "normal" : "italic" }]}
                   />
                   {buildingNameError ? (
                     <Text className="text-red-500 text-xs pl-4 pt-1">
@@ -1199,10 +1240,12 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                     Flat / Unit Number *
                   </Text>
                   <TextInput
-                    className={`bg-[#F6F6F6] border ${unitNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+                    className={`bg-[#F6F6F6] border ${unitNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
                     placeholder="ex : Building B"
+                    placeholderTextColor="#7F7F7F"
                     value={unitNo}
                     onChangeText={(text) => {
+                      if (text.startsWith(" ")) return;
                       const capitalizedText = capitalizeWords(text);
                       setunitNo(capitalizedText);
                       if (touchedFields.unitNo && !text) {
@@ -1213,6 +1256,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                     }}
                     onBlur={() => handleFieldTouch("unitNo")}
                     autoCapitalize="words"
+                    style={[{ fontStyle: unitNo ? "normal" : "italic" }]}
                   />
                   {unitNoError ? (
                     <Text className="text-red-500 text-xs pl-4 pt-1">
@@ -1224,10 +1268,12 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 <View className="mb-4">
                   <Text className="text-gray-700 mb-1">Floor Number *</Text>
                   <TextInput
-                    className={`bg-[#F6F6F6] border ${floorNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+                    className={`bg-[#F6F6F6] border ${floorNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
                     placeholder="ex : 3rd Floor"
+                    placeholderTextColor="#7F7F7F"
                     value={floorNo}
                     onChangeText={(text) => {
+                      if (text.startsWith(" ")) return;
                       const capitalizedText = capitalizeWords(text);
                       setfloorNo(capitalizedText);
                       if (touchedFields.floorNo && !text) {
@@ -1238,6 +1284,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                     }}
                     onBlur={() => handleFieldTouch("floorNo")}
                     autoCapitalize="words"
+                    style={[{ fontStyle: floorNo ? "normal" : "italic" }]}
                   />
                   {floorNoError ? (
                     <Text className="text-red-500 text-xs pl-4 pt-1">
@@ -1249,10 +1296,12 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 <View className="mb-4">
                   <Text className="text-gray-700 mb-1">House No *</Text>
                   <TextInput
-                    className={`bg-[#F6F6F6] border ${houseNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+                    className={`bg-[#F6F6F6] border ${houseNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
                     placeholder="ex : 14"
+                    placeholderTextColor="#7F7F7F"
                     value={houseNo}
                     onChangeText={(text) => {
+                      if (text.startsWith(" ")) return;
                       const capitalizedText = capitalizeWords(text);
                       setHouseNo(capitalizedText);
                       if (touchedFields.houseNo && !text) {
@@ -1263,6 +1312,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                     }}
                     onBlur={() => handleFieldTouch("houseNo")}
                     autoCapitalize="words"
+                    style={[{ fontStyle: houseNo ? "normal" : "italic" }]}
                   />
                   {houseNoError ? (
                     <Text className="text-red-500 text-xs pl-4 pt-1">
@@ -1274,10 +1324,12 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 <View className="mb-4">
                   <Text className="text-gray-700 mb-1">Street Name *</Text>
                   <TextInput
-                    className={`bg-[#F6F6F6] border ${streetNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+                    className={`bg-[#F6F6F6] border ${streetNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
                     placeholder="Street Name"
+                    placeholderTextColor="#7F7F7F"
                     value={streetName}
                     onChangeText={(text) => {
+                      if (text.startsWith(" ")) return;
                       const capitalizedText = capitalizeWords(text);
                       setStreetName(capitalizedText);
                       if (touchedFields.streetName && !text) {
@@ -1288,6 +1340,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                     }}
                     onBlur={() => handleFieldTouch("streetName")}
                     autoCapitalize="words"
+                    style={[{ fontStyle: streetName ? "normal" : "italic" }]}
                   />
                   {streetNameError ? (
                     <Text className="text-red-500 text-xs pl-4 pt-1">
@@ -1303,11 +1356,19 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                       setCityModalVisible(true);
                       handleFieldTouch("city");
                     }}
-                    className={`bg-[#F6F6F6] border ${cityError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 justify-center`}
+                    className={`bg-[#F6F6F6] border ${cityError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 flex-row items-center justify-between`}
                   >
-                    <Text className={city ? "text-black" : "text-gray-400"}>
+                    <Text
+                      className={city ? "text-black" : "text-[#7F7F7F]"}
+                      style={!city ? { fontStyle: "italic" } : {}}
+                    >
                       {city || "Select Nearest City"}
                     </Text>
+                    <MaterialIcons
+                      name="arrow-drop-down"
+                      size={24}
+                      color="#666"
+                    />
                   </TouchableOpacity>
                   {cityError ? (
                     <Text className="text-red-500 text-xs pl-4 pt-1">
@@ -1371,24 +1432,49 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
             )}
 
             {/* Register Button */}
-            <TouchableOpacity
-              onPress={handleRegister}
-              disabled={isSubmitting || loading}
-              className="mb-[40%]"
+            <View
+              style={{
+                marginTop: 24,
+                marginHorizontal: "20%",
+                marginBottom: "40%",
+                borderRadius: 30,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: 0.25,
+                shadowRadius: 8,
+                elevation: 10,
+              }}
             >
-              <LinearGradient
-                colors={["#854BDA", "#6E3DD1"]}
-                className="py-3 px-4 items-center mt-6 mb-[2%] mr-[20%] ml-[20%] rounded-3xl h-15"
+              <TouchableOpacity
+                onPress={handleRegister}
+                disabled={isSubmitting || loading}
+                activeOpacity={0.8}
+                style={{ borderRadius: 30 }}
               >
-                {isSubmitting || loading ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <Text className="text-center text-white font-bold">
-                    Register
-                  </Text>
-                )}
-              </LinearGradient>
-            </TouchableOpacity>
+                <LinearGradient
+                  colors={["#854BDA", "#6E3DD1"]}
+                  style={{
+                    paddingVertical: 14,
+                    alignItems: "center",
+                    borderRadius: 30,
+                  }}
+                >
+                  {isSubmitting || loading ? (
+                    <ActivityIndicator color="#FFFFFF" />
+                  ) : (
+                    <Text
+                      style={{
+                        textAlign: "center",
+                        color: "#FFFFFF",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      Register
+                    </Text>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
           </View>
         </ScrollView>
       </View>
@@ -1408,6 +1494,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         }}
         searchPlaceholder="Search title..."
         multiSelect={false}
+        showSearch={false}
       />
 
       {/* Building Type Selection Modal */}
@@ -1425,6 +1512,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         }}
         searchPlaceholder="Search building type..."
         multiSelect={false}
+        showSearch={false}
       />
 
       {/* City Selection Modal */}

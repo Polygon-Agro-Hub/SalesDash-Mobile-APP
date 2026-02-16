@@ -174,7 +174,7 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
               </View>
               <View className="flex-shrink-0">
                 <Text className="text-lg font-bold text-black">
-                  Rs.{selectedPackageTotal}
+                  Rs. {selectedPackageTotal}
                 </Text>
               </View>
             </View>

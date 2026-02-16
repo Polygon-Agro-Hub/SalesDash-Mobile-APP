@@ -366,7 +366,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
     >
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <CustomHeader
-        title={`${title}.${name}`}
+        title={`${title}. ${name}`}
         titleColor="#000000"
         showBackButton={true}
         navigation={navigation}
@@ -409,7 +409,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 }
               >
                 <View className="flex-row justify-center items-center gap-2">
-                  <Text className=" font-semibold text-[#7240D3] underline">
+                  <Text className="text-[#7240D3] underline">
                     Exclude Item List
                   </Text>
                   <AntIcons name="external-link" size={20} color="#6C3CD1" />
@@ -432,13 +432,14 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                   }
                 }}
               >
-                <View className="flex-row justify-center items-center gap-2 mb-3">
-                  <Entypo name="location-pin" size={22} color="#FF0000" />
-                  <Text className="text-base font-semibold text-[#FF0000] underline">
+                <View className="flex-row justify-center items-center gap-1 mb-3">
+                  <Text className="text-[#FF0000] underline">
                     {loadingCustomerData
-                      ? "Loading Location..."
+                      ? "Loading Location"
                       : "View Geo Location"}
                   </Text>
+
+                  <Entypo name="location-pin" size={20} color="#FF0000" />
                 </View>
               </TouchableOpacity>
             </View>
@@ -479,7 +480,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
 
         {/* Search and Filters */}
         <View className="mx-6">
-          <View className="flex-row items-center bg-[#F5F1FC] px-8 py-1 border border-[#6B3BCF] rounded-full mt-4 shadow-sm">
+          <View className="flex-row items-center bg-[#F5F1FC] px-4 border border-[#6B3BCF] rounded-full mt-4 shadow-sm">
             <TextInput
               placeholder="Search By Order Number"
               placeholderTextColor="#6839CF"

@@ -376,7 +376,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
             </LinearGradient>
 
             {/* Search Bar */}
-            <View className="flex-row items-center bg-[#F5F1FC] px-6 py-3 rounded-full mt-[-22px] mx-auto w-[90%] shadow-md">
+            <View className="flex-row items-center bg-[#F5F1FC] px-4 border border-[#6B3BCF] rounded-full mt-4 shadow-sm">
               <TextInput
                 placeholder="Search By Order Number"
                 placeholderTextColor="#6839CF"
@@ -518,8 +518,8 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                             style={{
                               borderRadius: wp(5),
                               minWidth: wp(24),
-                              minHeight:hp(4),
-                              justifyContent: "center", 
+                              minHeight: hp(4),
+                              justifyContent: "center",
                               alignItems: "center",
                               backgroundColor:
                                 item.status === "Ordered"
