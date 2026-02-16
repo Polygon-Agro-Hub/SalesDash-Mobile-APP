@@ -992,24 +992,61 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         </View>
 
         {/* Confirm Button with ActivityIndicator */}
-        <TouchableOpacity
-          onPress={handleConfirmOrder}
-          disabled={isSubmitting || isSubmitted}
-          style={{ opacity: isSubmitted ? 0.6 : 1 }}
+        <View
+          style={{
+            marginTop: "10%",
+            marginBottom: "10%",
+            alignItems: "center",
+          }}
         >
-          <LinearGradient
-            colors={["#6839CF", "#874DDB"]}
-            className="py-3 px-4 items-center mt-[10%] mb-[10%] mr-[25%] ml-[25%] rounded-3xl h-15"
+          <View
+            style={{
+              width: "50%", // ml-[25%] mr-[25%]
+              borderRadius: 24,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: isSubmitted ? 0.15 : 0.25,
+              shadowRadius: 8,
+              elevation: 10,
+              backgroundColor: "#fff", // important for Android shadow
+            }}
           >
-            {isSubmitting ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text className="text-center text-white font-bold">
-                {isSubmitted ? "Order Confirmed" : "Confirm"}
-              </Text>
-            )}
-          </LinearGradient>
-        </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleConfirmOrder}
+              disabled={isSubmitting || isSubmitted}
+              activeOpacity={0.8}
+              style={{
+                borderRadius: 24,
+                opacity: isSubmitted ? 0.6 : 1,
+              }}
+            >
+              <LinearGradient
+                colors={["#6839CF", "#874DDB"]}
+                style={{
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                  borderRadius: 24,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text
+                    style={{
+                      color: "white",
+                      fontWeight: "bold",
+                      textAlign: "center",
+                    }}
+                  >
+                    {isSubmitted ? "Order Confirmed" : "Confirm"}
+                  </Text>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );

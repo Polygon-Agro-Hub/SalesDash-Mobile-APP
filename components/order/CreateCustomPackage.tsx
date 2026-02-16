@@ -188,6 +188,10 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
     );
   }
 
+  const formatPrice = (price: number) => {
+    return Number(price).toFixed(2);
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -229,7 +233,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
                     {product.displayName}
                   </Text>
                   <Text className="text-sm text-gray-600">
-                    Rs.{product.discountedPrice} per kg
+                    Rs. {formatPrice(product.discountedPrice)} per kg
                   </Text>
                 </View>
                 <View className="justify-center w-8">
@@ -262,26 +266,53 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
 
         {/* Go to Cart Button */}
         <View className="py-4 px-6 ">
-          <TouchableOpacity onPress={goToCart} disabled={!hasSelectedProducts}>
-            {hasSelectedProducts ? (
-              <LinearGradient
-                colors={["#6839CF", "#874DDB"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                className="py-3 rounded-full items-center"
-              >
-                <Text className="text-white font-medium text-base">
-                  Go to Cart
-                </Text>
-              </LinearGradient>
-            ) : (
-              <View className="py-3 rounded-full items-center bg-[#B6B7BC]">
-                <Text className="text-white font-medium text-base">
-                  Go to Cart
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
+          <View
+            style={{
+              borderRadius: 30,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: hasSelectedProducts ? 0.25 : 0,
+              shadowRadius: 8,
+              elevation: hasSelectedProducts ? 10 : 0,
+            }}
+          >
+            <TouchableOpacity
+              onPress={goToCart}
+              disabled={!hasSelectedProducts}
+              activeOpacity={0.8}
+              style={{ borderRadius: 30 }}
+            >
+              {hasSelectedProducts ? (
+                <LinearGradient
+                  colors={["#6839CF", "#874DDB"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{
+                    paddingVertical: 12,
+                    borderRadius: 30,
+                    alignItems: "center",
+                  }}
+                >
+                  <Text className="text-white font-medium text-base">
+                    Go to Cart
+                  </Text>
+                </LinearGradient>
+              ) : (
+                <View
+                  style={{
+                    paddingVertical: 12,
+                    borderRadius: 30,
+                    alignItems: "center",
+                    backgroundColor: "#B6B7BC",
+                  }}
+                >
+                  <Text className="text-white font-medium text-base">
+                    Go to Cart
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </KeyboardAvoidingView>

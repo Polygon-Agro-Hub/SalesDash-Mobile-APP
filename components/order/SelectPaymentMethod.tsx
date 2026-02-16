@@ -220,14 +220,45 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity onPress={handleProceed} className="mt-8">
-            <LinearGradient
-              colors={["#6839CF", "#874DDB"]}
-              className="py-3 px-4 items-center mx-[25%] rounded-3xl h-15"
+          <View
+            style={{
+              marginTop: 32,
+              alignItems: "center",
+            }}
+          >
+            <View
+              style={{
+                width: "50%",
+                borderRadius: 24,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: 0.25,
+                shadowRadius: 8,
+                elevation: 10,
+              }}
             >
-              <Text className="text-center text-white font-bold">Proceed</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleProceed}
+                activeOpacity={0.8}
+                style={{ borderRadius: 24 }}
+              >
+                <LinearGradient
+                  colors={["#6839CF", "#874DDB"]}
+                  style={{
+                    paddingVertical: 12,
+                    paddingHorizontal: 16,
+                    borderRadius: 24,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text style={{ color: "white", fontWeight: "bold" }}>
+                    Proceed
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
