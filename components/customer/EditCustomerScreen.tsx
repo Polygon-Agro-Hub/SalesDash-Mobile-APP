@@ -127,6 +127,19 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
   ]);
   const [selectedCategory, setSelectedCategory] = useState("");
 
+  // Helper function to prevent leading spaces
+  const preventLeadingSpace = (
+    text: string,
+    setter: (value: string) => void,
+  ) => {
+    // If the text starts with a space, remove it
+    if (text.startsWith(" ")) {
+      setter(text.trimStart());
+    } else {
+      setter(text);
+    }
+  };
+
   // Validation regex
   const phoneRegex = /^\+947\d{8}$/;
   const nameRegex = /^[A-Z][a-z]*$/;
@@ -192,7 +205,9 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
 
   const formatNameInput = (text: string) => {
     if (!text) return text;
-    const filteredText = text.replace(/[^a-zA-Z]/g, "");
+    // First remove any leading spaces
+    const trimmedText = text.replace(/^\s+/, "");
+    const filteredText = trimmedText.replace(/[^a-zA-Z]/g, "");
     return (
       filteredText.charAt(0).toUpperCase() + filteredText.slice(1).toLowerCase()
     );
@@ -493,12 +508,6 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     });
   };
 
-  useEffect(() => {}, [latitude, longitude, locationName]);
-
-  const dismissKeyboard = () => {
-    Keyboard.dismiss();
-  };
-
   const fetchCustomerData = async () => {
     try {
       setLoading(true);
@@ -555,42 +564,37 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     isReturningFromMapRef.current = true;
   };
 
+  // Single useFocusEffect to handle form loading
   useFocusEffect(
     React.useCallback(() => {
+      // If returning from map screen, don't reset or reload data
       if (isReturningFromMapRef.current) {
         isReturningFromMapRef.current = false;
         return;
       }
 
-      const shouldLoadData =
-        !hasLoadedOnce.current || lastFetchedIdRef.current !== id;
+      const loadData = async () => {
+        try {
+          setLoading(true);
 
-      if (shouldLoadData) {
-        const loadData = async () => {
-          try {
-            setLoading(true);
+          // Clear all fields before loading new customer data
+          resetFormState();
 
-            // Clear all fields before loading new customer data
-            resetFormState();
+          // Fetch the data
+          await fetchCustomerData();
 
-            // Fetch the data
-            await fetchCustomerData();
+          // Mark as loaded
+          hasLoadedOnce.current = true;
+          lastFetchedIdRef.current = id;
+        } catch (error) {
+          console.error("❌ Error loading customer data:", error);
+          Alert.alert("Error", "Failed to load customer data.");
+        } finally {
+          setLoading(false);
+        }
+      };
 
-            // Mark as loaded
-            hasLoadedOnce.current = true;
-            lastFetchedIdRef.current = id;
-          } catch (error) {
-            console.error("❌ Error loading customer data:", error);
-            Alert.alert("Error", "Failed to load customer data.");
-          } finally {
-            setLoading(false);
-          }
-        };
-
-        loadData();
-      } else {
-        console.log("Already have data for customer:", id);
-      }
+      loadData();
     }, [id]),
   );
 
@@ -599,6 +603,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
       isReturningFromMapRef.current = false;
     };
   }, []);
+
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+  };
 
   const navigateToMapScreen = () => {
     isReturningFromMapRef.current = true;
@@ -978,6 +986,11 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
       setEmailError("");
     }
 
+    // Prevent leading spaces
+    if (text.startsWith(" ")) {
+      return;
+    }
+
     // Convert to lowercase and update state
     setEmail(text.toLowerCase());
   };
@@ -996,6 +1009,11 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
 
   // Enhanced phone number change handler
   const handlePhoneNumberChange = (text: string) => {
+    // Prevent leading spaces
+    if (text.startsWith(" ")) {
+      return;
+    }
+
     // Always ensure +94 prefix is maintained
     if (!text.startsWith("+94")) {
       // If user tries to remove +94, restore it
@@ -1114,7 +1132,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                       {selectedCategory || "Select Title"}
                     </Text>
                     <MaterialIcons
-                      name="keyboard-arrow-down"
+                      name="arrow-drop-down"
                       size={24}
                       color="#666"
                     />
@@ -1135,7 +1153,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                   }`}
                   placeholder="First Name"
                   value={firstName}
-                  onChangeText={(text) => setFirstName(formatNameInput(text))}
+                  onChangeText={(text) => {
+                    if (text.startsWith(" ")) return;
+                    setFirstName(formatNameInput(text));
+                  }}
                   autoCapitalize="words"
                   onBlur={() => {
                     handleFieldTouch("firstName");
@@ -1157,7 +1178,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                 }`}
                 placeholder="Last Name"
                 value={lastName}
-                onChangeText={(text) => setLastName(formatNameInput(text))}
+                onChangeText={(text) => {
+                  if (text.startsWith(" ")) return;
+                  setLastName(formatNameInput(text));
+                }}
                 onBlur={() => {
                   handleFieldTouch("lastName");
                 }}
@@ -1227,11 +1251,12 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                   setBuildingTypeModalVisible(true);
                   handleFieldTouch("buildingType");
                 }}
-                className={`bg-[#F6F6F6] border ${buildingTypeError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 justify-center`}
+                className={`bg-[#F6F6F6] border ${buildingTypeError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 flex-row items-center justify-between`}
               >
                 <Text className={buildingType ? "text-black" : "text-gray-400"}>
                   {buildingType || "Select Building Type"}
                 </Text>
+                <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
               </TouchableOpacity>
               {buildingTypeError ? (
                 <Text className="text-red-500 text-xs mt-1 ml-2">
@@ -1250,6 +1275,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                     placeholder="Building / House No (e.g., 14/B)"
                     value={houseNo}
                     onChangeText={(text) => {
+                      if (text.startsWith(" ")) return;
                       const capitalizedText = capitalizeWords(text);
                       setHouseNo(capitalizedText);
                       if (touchedFields.houseNo && !text) {
@@ -1275,6 +1301,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                     placeholder="Street Name"
                     value={streetName}
                     onChangeText={(text) => {
+                      if (text.startsWith(" ")) return;
                       const capitalizedText = capitalizeWords(text);
                       setStreetName(capitalizedText);
                       if (touchedFields.streetName && !text) {
@@ -1300,11 +1327,16 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                       setCityModalVisible(true);
                       handleFieldTouch("city");
                     }}
-                    className={`bg-[#F6F6F6] border ${cityError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 justify-center`}
+                    className={`bg-[#F6F6F6] border ${cityError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 flex-row items-center justify-between`}
                   >
                     <Text className={city ? "text-black" : "text-gray-400"}>
                       {city || "Select Nearest City"}
                     </Text>
+                    <MaterialIcons
+                      name="arrow-drop-down"
+                      size={24}
+                      color="#666"
+                    />
                   </TouchableOpacity>
                   {cityError ? (
                     <Text className="text-red-500 text-xs mt-1 ml-2">
@@ -1324,6 +1356,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                     placeholder="Apartment / Building No"
                     value={buildingNo}
                     onChangeText={(text) => {
+                      if (text.startsWith(" ")) return;
                       const capitalizedText = capitalizeWords(text);
                       setBuildingNo(capitalizedText);
                       if (touchedFields.buildingNo && !text) {
@@ -1349,6 +1382,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                     placeholder="Apartment / Building Name"
                     value={buildingName}
                     onChangeText={(text) => {
+                      if (text.startsWith(" ")) return;
                       const capitalizedText = capitalizeWords(text);
                       setBuildingName(capitalizedText);
                       if (touchedFields.buildingName && !text) {
@@ -1374,6 +1408,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                     placeholder="ex: Building B"
                     value={unitNo}
                     onChangeText={(text) => {
+                      if (text.startsWith(" ")) return;
                       const capitalizedText = capitalizeWords(text);
                       setUnitNo(capitalizedText);
                       if (touchedFields.unitNo && !text) {
@@ -1399,6 +1434,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                     placeholder="ex: 3rd Floor"
                     value={floorNo}
                     onChangeText={(text) => {
+                      if (text.startsWith(" ")) return;
                       const capitalizedText = capitalizeWords(text);
                       setFloorNo(capitalizedText);
                       if (touchedFields.floorNo && !text) {
@@ -1424,6 +1460,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                     placeholder="Building / House No (e.g., 14/B)"
                     value={houseNo}
                     onChangeText={(text) => {
+                      if (text.startsWith(" ")) return;
                       const capitalizedText = capitalizeWords(text);
                       setHouseNo(capitalizedText);
                       if (touchedFields.houseNo && !text) {
@@ -1449,6 +1486,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                     placeholder="Street Name"
                     value={streetName}
                     onChangeText={(text) => {
+                      if (text.startsWith(" ")) return;
                       const capitalizedText = capitalizeWords(text);
                       setStreetName(capitalizedText);
                       if (touchedFields.streetName && !text) {
@@ -1474,11 +1512,16 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                       setCityModalVisible(true);
                       handleFieldTouch("city");
                     }}
-                    className={`bg-[#F6F6F6] border ${cityError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 justify-center`}
+                    className={`bg-[#F6F6F6] border ${cityError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 flex-row items-center justify-between`}
                   >
                     <Text className={city ? "text-black" : "text-gray-400"}>
                       {city || "Select Nearest City"}
                     </Text>
+                    <MaterialIcons
+                      name="arrow-drop-down"
+                      size={24}
+                      color="#666"
+                    />
                   </TouchableOpacity>
                   {cityError ? (
                     <Text className="text-red-500 text-xs mt-1 ml-2">
@@ -1529,24 +1572,46 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
               )}
             </View>
 
-            <TouchableOpacity
-              onPress={handleRegister}
-              disabled={isSubmitting}
-              className="mb-[30%]"
+            <View
+              style={{
+                marginBottom: "30%",
+                alignItems: "center",
+              }}
             >
-              <LinearGradient
-                colors={["#854BDA", "#6E3DD1"]}
-                className="flex-1 mx-auto mt-6 rounded-3xl w-1/2 py-3"
+              <View
+                style={{
+                  borderRadius: 30,
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 6 },
+                  shadowOpacity: 0.25,
+                  shadowRadius: 8,
+                  elevation: 10,
+                  width: "50%",
+                }}
               >
-                {isSubmitting ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <Text className="text-center text-white font-bold text-lg">
-                    Save
-                  </Text>
-                )}
-              </LinearGradient>
-            </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleRegister}
+                  disabled={isSubmitting}
+                  activeOpacity={0.8}
+                  style={{ borderRadius: 30 }}
+                >
+                  <LinearGradient
+                    colors={["#854BDA", "#6E3DD1"]}
+                    style={{
+                      paddingVertical: 12,
+                      borderRadius: 30,
+                      alignItems: "center",
+                    }}
+                  >
+                    {isSubmitting ? (
+                      <ActivityIndicator color="#FFFFFF" />
+                    ) : (
+                      <Text className="text-white font-bold text-lg">Save</Text>
+                    )}
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
         </ScrollView>
       </View>
@@ -1566,6 +1631,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
         }}
         searchPlaceholder="Search title..."
         multiSelect={false}
+        showSearch={false}
       />
 
       {/* Building Type Selection Modal */}
@@ -1583,6 +1649,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
         }}
         searchPlaceholder="Search building type..."
         multiSelect={false}
+        showSearch={false}
       />
 
       {/* City Selection Modal */}
