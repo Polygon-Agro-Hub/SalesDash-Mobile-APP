@@ -311,7 +311,7 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
                     resizeMode: "contain",
                   }}
                 />
-                <Text className="text-black text-center mt-4 font-bold text-3xl">
+                <Text className="text-black text-center mt-4 font-bold text-xl">
                   No Notification Yet
                 </Text>
               </View>
@@ -341,7 +341,7 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
                             {item.title}
                           </Text>
                           <Text className="text-gray-600">
-                            Order No: {item.invNo}
+                            Order No: #{item.invNo}
                           </Text>
                           <Text className="text-gray-600">
                             Customer ID: {item.customerId}
