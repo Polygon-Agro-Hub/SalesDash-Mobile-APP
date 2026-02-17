@@ -1275,7 +1275,14 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
             <View className="gap-3">
               <TouchableOpacity
                 onPress={handleGoBack}
-                className="bg-gray-200 py-4 rounded-full items-center"
+                className="bg-gray-200 py-4 rounded-full items-center mb-3"
+                style={{
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 4,
+                  elevation: 3,
+                }}
               >
                 <Text className="text-gray-700 font-semibold text-base">
                   Go Back
@@ -1285,6 +1292,13 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
               <TouchableOpacity
                 onPress={handleSaveItem}
                 className="bg-purple-600 py-4 rounded-full items-center"
+                style={{
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.12,
+                  shadowRadius: 4,
+                  elevation: 3,
+                }}
               >
                 <Text className="text-white font-semibold text-base">Save</Text>
               </TouchableOpacity>
