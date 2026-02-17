@@ -12,6 +12,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  BackHandler,
 } from "react-native";
 import { Feather, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -137,12 +138,17 @@ interface OrderScreenProps {
       timeDisplay?: string;
       paymentMethod?: string;
       isEdit?: boolean;
+      customerId: string;
+      name: string;
+      title: string;
+      number:string;
+      customerscreencustomerid:string;
     };
   };
 }
 
 const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
-  const { id, isPackage } = route.params || {};
+  const { id, isPackage, customerId, name, title  ,number,customerscreencustomerid} = route.params || {};
   const [loading, setLoading] = useState<boolean>(false);
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [selectedProduct, setSelectedProduct] = useState<string>("");
@@ -158,6 +164,8 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     { label: string; value: string }[]
   >([]);
   const [selectedUnit, setSelectedUnit] = useState<string>("g");
+
+  console.log("kjjjjjjj", id);
 
   // Modal visibility states
   const [packageModalVisible, setPackageModalVisible] =
@@ -372,7 +380,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     setLoading(true);
 
     try {
-      // Calculate package total if a package is selected
       let packageTotalAmount = 0;
       if (packageValue && selectedPackage) {
         const packingFee = parseFloat(selectedPackage.packingFee) || 0;
@@ -407,6 +414,11 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         orderData,
         customerid: route.params?.id,
         isPackage,
+        id,title,name,number,customerscreencustomerid,
+        // ✅ Pass these so ScheduleScreen can restore state on back press
+        packageId: packageValue ? parseInt(packageValue) : null,
+        rawPackageItems: items, // { name: string; qty: string }[]
+        rawAdditionalItems: additionalItems, // AdditionalItem[]
       });
     } catch (error) {
       console.error("Error confirming order:", error);
@@ -418,6 +430,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     isPackage,
     packageValue,
     additionalItems,
+    items,
     navigation,
     route.params?.id,
     selectedPackage,
@@ -924,6 +937,25 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     }
   };
 
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        navigation.navigate("Main", {
+          screen: "SelectOrderType",
+          params: { id, customerId, title, name,number ,customerscreencustomerid},
+        });
+        return true;
+      };
+
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress,
+      );
+
+      return () => backHandler.remove();
+    }, [navigation]),
+  );
+
   useEffect(() => {
     setFilteredPackageItems(packageItems);
   }, [packageItems]);
@@ -962,6 +994,12 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         titleColor="#6C3CD1"
         showBackButton={true}
         navigation={navigation}
+        onBackPress={() => {
+          navigation.navigate("Main", {
+            screen: "SelectOrderType",
+            params: { id, customerId, title, name ,number,customerscreencustomerid},
+          });
+        }}
       />
       <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
         {/* Package Selection */}

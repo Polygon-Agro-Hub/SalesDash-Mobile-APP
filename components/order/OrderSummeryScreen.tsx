@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -10,9 +10,10 @@ import {
   Alert,
   ActivityIndicator,
   StatusBar,
+  BackHandler,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
-import { RouteProp } from "@react-navigation/native";
+import { RouteProp, useFocusEffect } from "@react-navigation/native";
 import { RootStackParamList } from "../types/types";
 import { LinearGradient } from "expo-linear-gradient";
 import environment from "@/environment/environment";
@@ -84,8 +85,8 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
   >({});
   const [packageDisplayName, setPackageDisplayName] = useState<string>("");
   const [deliveryFee, setDeliveryFee] = useState<number>(0);
-  // const [customerData, setCustomerData] = useState<CustomerData | null>(null);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
+
   const {
     items = [],
     subtotal = 0,
@@ -98,8 +99,8 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
     customerId = "",
     customerid = "",
     isPackage = 0,
-
     orderItems = [],
+    customerscreencustomerid="",
   } = route.params || {};
 
   const safeItems = Array.isArray(items) ? items : [];
@@ -108,56 +109,85 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
   const totalDeliveryPlus = fullTotal;
   const subTotalDeliveryPlus = totalDeliveryPlus + discount;
 
+  // Single consolidated effect: fetches customer data AND delivery fee together
+  // so the address and all screen content appear at the same time.
   useEffect(() => {
-    const fetchCustomerData = async () => {
+    const fetchCustomerDataAndDeliveryFee = async () => {
+      const customerIdValue =
+        customerId || route.params?.customerId || route.params?.customerid;
+
+      if (!customerIdValue) {
+        setIsDataLoaded(true);
+        setLoading(false);
+        return;
+      }
+
       try {
-        setLoading(true);
-
-        const customerIdValue =
-          customerId || route.params?.customerId || route.params?.customerid;
-
-        if (!customerIdValue) {
-          setError("No customer ID found");
-          setLoading(false);
-          return;
-        }
-
         const storedToken = await AsyncStorage.getItem("authToken");
-
         if (!storedToken) {
           setError("No authentication token found");
+          setIsDataLoaded(true);
           setLoading(false);
           return;
         }
 
-        const apiUrl = `${environment.API_BASE_URL}api/orders/get-customer-data/${customerIdValue}`;
+        const customerResponse = await axios.get(
+          `${environment.API_BASE_URL}api/orders/get-customer-data/${customerIdValue}`,
+          {
+            headers: { Authorization: `Bearer ${storedToken}` },
+          },
+        );
 
-        const response = await axios.get(apiUrl, {
-          headers: { Authorization: `Bearer ${storedToken}` },
-        });
+        if (customerResponse.data?.success) {
+          const fetchedCustomerData = customerResponse.data.data;
+          setCustomerData(fetchedCustomerData);
+          const customerCity = fetchedCustomerData.buildingDetails?.city;
 
-        if (response.data.success) {
-          setCustomerData(response.data.data);
+          if (customerCity) {
+            try {
+              const cityResponse = await axios.get<{ data: City[] }>(
+                `${environment.API_BASE_URL}api/customer/get-city`,
+                { headers: { Authorization: `Bearer ${storedToken}` } },
+              );
+
+              if (cityResponse.data?.data) {
+                const cityData = cityResponse.data.data.find(
+                  (c) => c.city === customerCity,
+                );
+                setDeliveryFee(cityData ? parseFloat(cityData.charge) || 0 : 0);
+              }
+            } catch (cityError) {
+              console.error("Error fetching cities:", cityError);
+              setDeliveryFee(0);
+            }
+          } else {
+            setDeliveryFee(0);
+          }
         } else {
-          setError(response.data.message || "Failed to fetch customer data");
+          const errorMsg =
+            customerResponse.data?.message || "Failed to fetch customer data";
+          setError(errorMsg);
         }
       } catch (error: any) {
         console.error("Error fetching customer data:", error);
-
-        if (error instanceof Error) {
-          setError(error.message || "Failed to fetch customer data");
+        if (axios.isAxiosError(error)) {
+          setError(error.response?.data?.message || error.message);
         } else {
           setError("Failed to fetch customer data");
         }
       } finally {
+        setIsDataLoaded(true);
         setLoading(false);
       }
     };
 
-    if (route.params?.customerId || route.params?.customerid) {
-      fetchCustomerData();
+    if (customerId || route.params?.customerId || route.params?.customerid) {
+      fetchCustomerDataAndDeliveryFee();
+    } else {
+      setIsDataLoaded(true);
+      setLoading(false);
     }
-  }, [route.params]);
+  }, [customerId, route.params?.customerId, route.params?.customerid]);
 
   const handleConfirmOrder = async () => {
     if (isSubmitting || isSubmitted) {
@@ -290,15 +320,6 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
   };
 
   const getCustomerInfo = () => {
-    if (loading) {
-      return {
-        name: "Loading...",
-        phone: "Loading...",
-        buildingType: "Loading...",
-        address: "Loading...",
-      };
-    }
-
     if (customerData) {
       const address = customerData.buildingDetails
         ? `${customerData.buildingDetails.buildingNo || ""} ${customerData.buildingDetails.unitNo || ""}, 
@@ -312,7 +333,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
       const cleanedAddress = address.replace(/\s+/g, " ").trim();
 
       return {
-        name: `${customerData.title || ""} ${customerData.firstName || ""} ${customerData.lastName || ""}`,
+        name: `${customerData.title || ""}. ${customerData.firstName || ""} ${customerData.lastName || ""}`,
         phone: customerData.phoneNumber || "No phone",
         buildingType: customerData.buildingType || "Not specified",
         address: cleanedAddress,
@@ -339,10 +360,9 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
       if (!storedToken) return;
 
       const additionalDetails: Record<string, ItemDetails> = {};
-      const packageItemDetails: Record<string, ItemDetails> = {};
-      let packageDisplayName = "";
+      const packageItemDetailsLocal: Record<string, ItemDetails> = {};
+      let packageDisplayNameLocal = "";
 
-      // Fetch package details
       if (packageItem.packageId) {
         try {
           const response = await axios.get(
@@ -353,14 +373,14 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           );
 
           if (response.data && response.data.data) {
-            packageDisplayName = response.data.data.displayName;
+            packageDisplayNameLocal = response.data.data.displayName;
           }
         } catch (error) {
           console.error(
             `Error fetching package ${packageItem.packageId} details:`,
             error,
           );
-          packageDisplayName = `Package ${packageItem.packageId}`;
+          packageDisplayNameLocal = `Package ${packageItem.packageId}`;
         }
       }
       if (
@@ -416,8 +436,8 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
       }
 
       setAdditionalItemDetails(additionalDetails);
-      setPackageItemDetails(packageItemDetails);
-      setPackageDisplayName(packageDisplayName);
+      setPackageItemDetails(packageItemDetailsLocal);
+      setPackageDisplayName(packageDisplayNameLocal);
     } catch (error) {
       console.error("Error fetching item details:", error);
     }
@@ -429,96 +449,91 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
     }
   }, [isPackage, safeOrderItems]);
 
-  useEffect(() => {
-    const fetchCustomerDataAndDeliveryFee = async () => {
-      const customerIdValue =
-        customerId || route.params?.customerId || route.params?.customerid;
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return "";
 
-      if (!customerIdValue) {
-        return;
-      }
-
-      try {
-        const storedToken = await AsyncStorage.getItem("authToken");
-        if (!storedToken) {
-          setError("No authentication token found");
-          return;
-        }
-        const customerResponse = await axios.get(
-          `${environment.API_BASE_URL}api/orders/get-customer-data/${customerIdValue}`,
-          {
-            headers: { Authorization: `Bearer ${storedToken}` },
-          },
-        );
-
-        if (customerResponse.data?.success) {
-          const customerData = customerResponse.data.data;
-          setCustomerData(customerData);
-          const customerCity = customerData.buildingDetails?.city;
-
-          if (customerCity) {
-            try {
-              const cityResponse = await axios.get<{ data: City[] }>(
-                `${environment.API_BASE_URL}api/customer/get-city`,
-                { headers: { Authorization: `Bearer ${storedToken}` } },
-              );
-
-              if (cityResponse.data?.data) {
-                const cityData = cityResponse.data.data.find(
-                  (c) => c.city === customerCity,
-                );
-                if (cityData) {
-                  const fee = parseFloat(cityData.charge) || 0;
-                  setDeliveryFee(fee);
-                } else {
-                  setDeliveryFee(0);
-                }
-              }
-            } catch (cityError) {
-              console.error("Error fetching cities:", cityError);
-              setDeliveryFee(0);
-            }
-          } else {
-            setDeliveryFee(0);
-          }
-        } else {
-          const errorMsg =
-            customerResponse.data?.message || "Failed to fetch customer data";
-          console.log("Customer API error:", errorMsg);
-          setError(errorMsg);
-        }
-      } catch (error: any) {
-        console.error("Error fetching customer data:", error);
-        if (axios.isAxiosError(error)) {
-          const errorMsg = error.response?.data?.message || error.message;
-          console.log("Axios error details:", errorMsg);
-          setError(errorMsg);
-        } else {
-          setError("Failed to fetch customer data");
-        }
-      } finally {
-        setIsDataLoaded(true);
-      }
+    // Handle "DD MMM YYYY" format e.g. "20 Feb 2026"
+    const monthMap: Record<string, string> = {
+      Jan: "01",
+      Feb: "02",
+      Mar: "03",
+      Apr: "04",
+      May: "05",
+      Jun: "06",
+      Jul: "07",
+      Aug: "08",
+      Sep: "09",
+      Oct: "10",
+      Nov: "11",
+      Dec: "12",
     };
-
-    // Only fetch if we have a customer ID
-    if (customerId || route.params?.customerId || route.params?.customerid) {
-      fetchCustomerDataAndDeliveryFee();
+    const ddMmmYyyy = dateStr.match(/^(\d{1,2})\s([A-Za-z]{3})\s(\d{4})$/);
+    if (ddMmmYyyy) {
+      const dd = ddMmmYyyy[1].padStart(2, "0");
+      const mmm = ddMmmYyyy[2];
+      const yyyy = ddMmmYyyy[3];
+      const mm =
+        monthMap[mmm.charAt(0).toUpperCase() + mmm.slice(1).toLowerCase()];
+      if (mm) return `${yyyy}/${mm}/${dd}`;
     }
-  }, [customerId, route.params?.customerId, route.params?.customerid]);
+
+    // Fallback: try native Date parsing for ISO / other formats
+    const date = new Date(dateStr);
+    if (!isNaN(date.getTime())) {
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, "0");
+      const dd = String(date.getDate()).padStart(2, "0");
+      return `${yyyy}/${mm}/${dd}`;
+    }
+
+    return dateStr;
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        navigation.navigate("SelectPaymentMethod" as any, {
+          items,
+          subtotal,
+          discount,
+          total,
+          id: customerId,
+          title: customerData?.title,
+          name: `${customerData?.firstName} ${customerData?.lastName}`,
+          number: customerData?.phoneNumber,
+          customerscreencustomerid:customerscreencustomerid,
+          fullTotal,
+          selectedDate,
+          timeDisplay,
+          isPackage,
+          packageId: route.params?.packageId,
+          selectedTimeSlot,
+          customerId,
+          customerid: customerid?.toString() || customerId?.toString(),
+          orderItems,
+          selectedMethod: paymentMethod,
+        });
+        return true;
+      };
+
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress,
+      );
+
+      return () => backHandler.remove();
+    }, [navigation]),
+  );
 
   const formatPrice = (amount: number) => {
-    // Check if the number has decimal places
     const hasDecimals = amount % 1 !== 0;
 
     if (hasDecimals) {
-      // If has decimals, show them without .00
       return amount.toLocaleString("en-US", {
         maximumFractionDigits: 2,
         minimumFractionDigits: 2,
       });
     } else {
-      // If no decimals, show .00
       return (
         amount.toLocaleString("en-US", {
           maximumFractionDigits: 0,
@@ -527,6 +542,30 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
       );
     }
   };
+
+  if (!isDataLoaded) {
+    return (
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        enabled
+        className="bg-white"
+        style={{ flex: 1 }}
+      >
+        <StatusBar barStyle="dark-content" backgroundColor="white" />
+        <CustomHeader
+          title="Order Summary"
+          titleColor="#6C3CD1"
+          showBackButton={true}
+          navigation={navigation}
+        />
+        <View
+          style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
+        >
+          <ActivityIndicator size="large" color="#6C3CD1" />
+        </View>
+      </KeyboardAvoidingView>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -541,6 +580,29 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         titleColor="#6C3CD1"
         showBackButton={true}
         navigation={navigation}
+        onBackPress={() =>
+          navigation.navigate("SelectPaymentMethod" as any, {
+            items,
+            subtotal,
+            discount,
+            total,
+            fullTotal,
+            id: customerId,
+            title: customerData?.title,
+            number: customerData?.phoneNumber,
+            customerscreencustomerid:customerscreencustomerid,
+            name: `${customerData?.firstName} ${customerData?.lastName}`,
+            selectedDate,
+            timeDisplay,
+            isPackage,
+            packageId: route.params?.packageId,
+            selectedTimeSlot,
+            customerId,
+            customerid: customerid?.toString() || customerId?.toString(),
+            orderItems,
+            selectedMethod: paymentMethod,
+          })
+        }
       />
 
       <ScrollView
@@ -564,8 +626,8 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                       Delivery - One Time
                     </Text>
                   </View>
-                  <Text className="text-[#808FA2] text-sm">
-                    Scheduled to {selectedDate}
+                  <Text className="text-[#808FA2] text-sm font-medium">
+                    Scheduled to {formatDate(selectedDate)}
                   </Text>
                   <Text className="text-[#808FA2] text-sm">{timeDisplay}</Text>
                 </View>
@@ -576,6 +638,11 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                       packageId: route.params?.packageId,
                       items,
                       subtotal,
+                      id: customerId,
+                      title: customerData?.title,
+                      customerscreencustomerid:customerscreencustomerid,
+                      name: `${customerData?.firstName} ${customerData?.lastName}`,
+                      number: customerData?.phoneNumber,
                       discount,
                       selectedDate,
                       timeDisplay,
@@ -673,51 +740,15 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
 
               <TouchableOpacity
                 onPress={() => {
-                  // Create detailed logging objects based on the route being taken
                   if (isPackage === 0) {
-                    // For Regular Items - CratScreen
-                    const regularItemsData = {
-                      route: "CratScreen (Regular Items)",
-                      ids: {
-                        customerId: customerId,
-                        customerid: customerid,
-                        resolvedId: customerId || customerid,
-                      },
-                      selectedProducts: safeItems.map((item) => ({
-                        id: item.id,
-                        name: item.name || `Item ${item.id}`,
-                        price: item.price,
-                        normalPrice:
-                          item.normalPrice || item.price + (item.discount || 0),
-                        discountedPrice: item.price,
-                        discount: item.discount || 0,
-                        quantity: item.qty,
-                        selected: false,
-                        unitType: item.unitType || "kg",
-                        startValue: item.startValue || 0.5,
-                        changeby:
-                          item.unitType === "g"
-                            ? Number(item.qty) * 1000
-                            : item.qty,
-                      })),
-                      finances: {
-                        subtotal,
-                        discount,
-                        total,
-                        fullTotal,
-                      },
-                      scheduling: {
-                        selectedDate,
-                        timeDisplay,
-                        selectedTimeSlot,
-                      },
-                      paymentMethod,
-                    };
-
                     navigation.navigate("CratScreen" as any, {
                       id: customerId || customerid,
                       customerId: customerId || customerid,
                       isPackage: 0,
+                      number: customerData?.phoneNumber,
+                      title: customerData?.title,
+                      customerscreencustomerid:customerscreencustomerid,
+                      name: `${customerData?.firstName} ${customerData?.lastName}`,
                       items: safeItems.map((item) => ({
                         id: item.id,
                         name: item.name || `Item ${item.id}`,
@@ -778,7 +809,6 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                         discount: item.discount || 0,
                       })) || [];
 
-                    // Include changeby and startValue in mapped additional items
                     const mappedAdditionalItems = additionalItems.map(
                       (item) => {
                         const itemDetail =
@@ -818,10 +848,14 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                       },
                     );
 
-                    const navigationData = {
+                    navigation.navigate("OrderScreen" as any, {
                       id: customerId || customerid,
                       isPackage: "1",
                       orderItems: safeOrderItems,
+                      number: customerData?.phoneNumber,
+                      title: customerData?.title,
+                      customerscreencustomerid:customerscreencustomerid,
+                      name: `${customerData?.firstName} ${customerData?.lastName}`,
                       packageId:
                         currentOrderItem.packageId || route.params?.packageId,
                       packageItems: packageItems,
@@ -836,43 +870,8 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                       paymentMethod,
                       isEdit: true,
                       orderData: route.params?.orderData,
-                    };
-
-                    navigation.navigate("OrderScreen" as any, navigationData);
+                    });
                   } else {
-                    // For Regular Items - CratScreen
-                    const regularItemsData = {
-                      route: "CratScreen (Regular Items)",
-                      ids: {
-                        customerId: customerId,
-                        customerid: customerid,
-                        resolvedId: customerId || customerid,
-                      },
-                      selectedProducts: safeItems.map((item) => ({
-                        id: item.id,
-                        name: item.name,
-                        price: item.price,
-                        normalPrice: item.normalPrice || item.price,
-                        discountedPrice: item.discountedPrice || item.price,
-                        quantity: item.quantity,
-                        unitType: item.unitType || "kg",
-                        startValue: item.startValue || 0.1,
-                        changeby: item.quantity,
-                      })),
-                      finances: {
-                        subtotal,
-                        discount,
-                        total,
-                        fullTotal,
-                      },
-                      scheduling: {
-                        selectedDate,
-                        timeDisplay,
-                        selectedTimeSlot,
-                      },
-                      paymentMethod,
-                    };
-
                     navigation.navigate("CratScreen" as any, {
                       id: customerId || customerid,
                       customerId: customerId || customerid,
@@ -882,6 +881,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                         name: item.name,
                         price: item.price,
                         normalPrice: item.normalPrice || item.price,
+                        customerscreencustomerid:customerscreencustomerid,
                         discountedPrice: item.discountedPrice || item.price,
                         quantity: item.quantity,
                         selected: true,
@@ -889,7 +889,6 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                         startValue: item.startValue || 0.1,
                         changeby: item.quantity,
                       })),
-
                       subtotal,
                       discount,
                       total,
@@ -914,7 +913,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
               <View className="flex-row justify-between mt-3">
                 <Text className="text-[#8492A3] font-medium">Subtotal</Text>
                 <Text className="text-black font-medium mr-14">
-                  Rs.{formatPrice(subTotalDeliveryPlus - deliveryFee)}
+                  Rs. {formatPrice(subTotalDeliveryPlus - deliveryFee)}
                 </Text>
               </View>
             )}
@@ -923,7 +922,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
               <View className="flex-row justify-between mt-3">
                 <Text className="text-[#8492A3] font-medium">Subtotal</Text>
                 <Text className="text-black font-medium mr-14">
-                  Rs.{formatPrice(subTotalDeliveryPlus - 180 - deliveryFee)}
+                  Rs. {formatPrice(subTotalDeliveryPlus - 180 - deliveryFee)}
                 </Text>
               </View>
             )}
@@ -931,28 +930,28 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
             <View className="flex-row justify-between mt-2">
               <Text className="text-[#8492A3]">Discount</Text>
               <Text className="text-gray-500 mr-14">
-                Rs.{formatPrice(discount)}
+                Rs. {formatPrice(discount)}
               </Text>
             </View>
 
             <View className="flex-row justify-between mt-2">
               <Text className="text-[#8492A3]">Delivery Fee</Text>
               <Text className="text-gray-500 mr-14">
-                Rs.{formatPrice(deliveryFee)}
+                Rs. {formatPrice(deliveryFee)}
               </Text>
             </View>
 
             {isPackage === 0 && (
               <View className="flex-row justify-between mt-2">
                 <Text className="text-[#8492A3]">Service Fee</Text>
-                <Text className="text-gray-500 mr-14">Rs.180.00</Text>
+                <Text className="text-gray-500 mr-14">Rs. 180.00</Text>
               </View>
             )}
 
             <View className="flex-row justify-between mt-2">
               <Text className="text-black font-semibold">Grand Total</Text>
               <Text className="text-black font-semibold mr-14">
-                Rs.{formatPrice(totalDeliveryPlus)}
+                Rs. {formatPrice(totalDeliveryPlus)}
               </Text>
             </View>
           </View>
@@ -966,6 +965,11 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                     items,
                     subtotal,
                     discount,
+                    id: customerId,
+                    title: customerData?.title,
+                    customerscreencustomerid:customerscreencustomerid,
+                    name: `${customerData?.firstName} ${customerData?.lastName}`,
+                    number: customerData?.phoneNumber,
                     total,
                     fullTotal,
                     selectedDate,
@@ -1001,14 +1005,14 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         >
           <View
             style={{
-              width: "50%", 
+              width: "50%",
               borderRadius: 24,
               shadowColor: "#000",
               shadowOffset: { width: 0, height: 6 },
               shadowOpacity: isSubmitted ? 0.15 : 0.25,
               shadowRadius: 8,
               elevation: 10,
-              backgroundColor: "#fff", 
+              backgroundColor: "#fff",
             }}
           >
             <TouchableOpacity

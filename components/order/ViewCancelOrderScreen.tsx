@@ -312,7 +312,14 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
           );
 
           if (response.data.success && response.data.data) {
-            setReturnReason(response.data.data.returnReason);
+            const { returnReason, otherReason } = response.data.data;
+
+            // If reason is "Other", show the custom note instead
+            setReturnReason(
+              returnReason === "Other" && otherReason
+                ? otherReason
+                : returnReason,
+            );
           }
         } catch (error) {
           console.error("Error fetching return reason:", error);
@@ -808,10 +815,9 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
               </View>
 
               {status === "Return" && returnReason && (
-                <View className="mt-[-7] ml-2 p-4 ">
-                  <Text className=" font-semibold mb-1 text-[#5E5E5E]">
-                    Reason:{" "}
-                    <Text className="text-black"> "{returnReason}"</Text>
+                <View className="mt-[-7] ml-2 p-4">
+                  <Text className="font-semibold mb-1 text-[#5E5E5E]">
+                    Reason: <Text className="text-black">"{returnReason}"</Text>
                   </Text>
                 </View>
               )}
