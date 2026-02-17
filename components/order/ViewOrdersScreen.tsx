@@ -31,7 +31,6 @@ import OrderScreenSkeleton from "./OrderScreenSkeleton";
 import axios from "axios";
 import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import LottieView from "lottie-react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { FontAwesome } from "@expo/vector-icons";
 
@@ -376,7 +375,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
             </LinearGradient>
 
             {/* Search Bar */}
-            <View className="flex-row items-center bg-[#F5F1FC] px-6 py-3 rounded-full mt-[-22px] mx-auto w-[90%] shadow-md">
+            <View className="flex-row items-center bg-[#F5F1FC] px-4 border border-[#6B3BCF] rounded-full mt-4 shadow-sm mx-6">
               <TextInput
                 placeholder="Search By Order Number"
                 placeholderTextColor="#6839CF"
@@ -440,18 +439,18 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
 
             <View className="py-[-12%] mb-[60%]">
               {isEmpty ? (
-                <View className="">
-                  <View className="flex-1 justify-center items-center px-4 mt-[60%]">
-                    <LottieView
-                      source={require("@/assets/json/no-data.json")}
-                      style={{ width: wp(50), height: hp(50) }}
-                      autoPlay
-                      loop
-                    />
-                  </View>
-                  <View className="justify-center items-center px-4 mt-[20%]">
-                    <Text className="text-gray-500 ">No Data Found</Text>
-                  </View>
+                <View className="flex justify-center items-center mt-20">
+                  <Image
+                    source={require("@/assets/images/public/no-data.webp")}
+                    style={{
+                      width: wp("60%"),
+                      height: hp("30%"),
+                      resizeMode: "contain",
+                    }}
+                  />
+                  <Text className="text-black text-i text-center mt-4">
+                    You have no previous orders
+                  </Text>
                 </View>
               ) : (
                 <FlatList
@@ -471,6 +470,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                   onEndReachedThreshold={0.1}
                   renderItem={({ item }) => (
                     <TouchableOpacity
+                      activeOpacity={1}
                       onPress={() =>
                         navigation.navigate("View_CancelOrderScreen" as any, {
                           orderId: item.orderId,
@@ -478,7 +478,6 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                           reportStatus: item.reportStatus,
                         })
                       }
-                      activeOpacity={0.7}
                     >
                       <View
                         style={{
@@ -488,11 +487,11 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                           marginBottom: hp(2),
                           borderWidth: 1,
                           borderColor: "#EAEAEA",
-                          shadowColor: "#0000001A",
-                          shadowOpacity: 0.2,
-                          shadowOffset: { width: 0, height: 2 },
-                          shadowRadius: 5,
-                          elevation: 5,
+                          shadowColor: "#000",
+                          shadowOpacity: 0.12,
+                          shadowOffset: { width: 0, height: 8 },
+                          shadowRadius: 10,
+                          elevation: 4,
                         }}
                         className="mx-6"
                       >
@@ -518,8 +517,8 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                             style={{
                               borderRadius: wp(5),
                               minWidth: wp(24),
-                              minHeight:hp(4),
-                              justifyContent: "center", 
+                              minHeight: hp(4),
+                              justifyContent: "center",
                               alignItems: "center",
                               backgroundColor:
                                 item.status === "Ordered"
@@ -595,7 +594,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                               marginTop: hp(0.5),
                             }}
                           >
-                            Within : {item.sheduleTime}
+                            {item.sheduleTime}
                           </Text>
                           <Text style={{ fontSize: wp(3.6), color: "#FF4C4C" }}>
                             {" "}

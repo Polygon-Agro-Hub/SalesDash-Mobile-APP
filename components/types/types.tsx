@@ -11,6 +11,7 @@ export interface CartItem {
   unitType: string;
   startValue: number;
   changeby: number;
+  title:string;
 }
 
 export interface PackageItem {
@@ -81,7 +82,13 @@ export type RootStackParamList = {
   SelectOrderType: undefined;
   PrivacyPolicy: undefined;
   TermsConditions: undefined;
-  SelectOrderTypeNewCustomer: undefined;
+  SelectOrderTypeNewCustomer: {
+    id:number,
+    name:string,
+    title:string,
+    customerId:string,
+    phoneNumber:string
+  };
   Main: {
     screen: keyof RootStackParamList;
     params?: any;
@@ -108,11 +115,13 @@ export type RootStackParamList = {
     selectedLatitude?: number;
     selectedLongitude?: number;
     selectedLocationName?: string;
+    preserveData?: boolean;
   };
   ViewLocationScreen: {
     latitude: number;
     longitude: number;
     locationName?: string;
+    preserveData?: boolean;
   };
   OtpScreen: {
     phoneNumber: string;
@@ -154,6 +163,7 @@ export type RootStackParamList = {
       longitude: number,
       locationName: string,
     ) => void;
+    preserveData?: boolean;
   };
   AttachGeoLocationScreenEdit: {
     currentLatitude?: number;
@@ -181,6 +191,7 @@ export type RootStackParamList = {
     fullTotal: number;
     selectedDate: string;
     selectedTimeSlot: string;
+    sheduleTime:string;
   };
   OrderSummeryScreen: {
     items?: CartItem[];
@@ -195,6 +206,7 @@ export type RootStackParamList = {
     customerid?: string | number;
     isPackage?: number;
     packageId?: number;
+    customerscreencustomerid:string;
     orderItems?: PackageItem[];
     orderData?: {
       additionalItems?: AdditionalItem[];

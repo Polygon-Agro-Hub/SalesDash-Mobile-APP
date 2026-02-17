@@ -78,7 +78,7 @@ const OtpSuccesfulScreen: React.FC<OtpSuccesfulScreenProps> = ({
                 Successfully Verified!
               </Text>
               <Text className="text-[#747474] text-center mt-2 text-base">
-                Customer Phone number has been verified!
+                Customer's Mobile number has been verified!
               </Text>
             </View>
 

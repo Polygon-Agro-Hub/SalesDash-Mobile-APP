@@ -305,7 +305,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
             disabled={loading}
           >
             <LinearGradient
-              colors={["#6C3CD1", "#9B65D6"]}
+              colors={["#6839CF", "#874DDB"]}
               start={[0, 0]}
               end={[1, 1]}
               style={{
@@ -314,6 +314,14 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
                 borderRadius: 25,
                 alignItems: "center",
                 justifyContent: "center",
+                shadowColor: "#000000",
+                shadowOffset: {
+                  width: 0,
+                  height: 2,
+                },
+                shadowOpacity: 0.2,
+                shadowRadius: 10,
+                elevation: 8,
               }}
             >
               {loading ? (

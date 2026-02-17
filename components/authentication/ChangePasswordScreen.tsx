@@ -51,11 +51,11 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
       return false;
     }
 
-    // Check if new password meets format requirements
-    if (newPassword.length < 8) {
+    // Check if new password meets format requirements - Updated to 6 characters
+    if (newPassword.length < 6) {
       Alert.alert(
         "Error",
-        "Your password must contain a minimum of 8 characters with 1 Uppercase, Numbers & Special characters.",
+        "Your password must contain a minimum of 6 characters with 1 Uppercase, Numbers & Special characters.",
       );
       return false;
     }
@@ -64,7 +64,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
     if (!/[A-Z]/.test(newPassword)) {
       Alert.alert(
         "Error",
-        "Your password must contain a minimum of 8 characters with 1 Uppercase, Numbers & Special characters.",
+        "Your password must contain a minimum of 6 characters with 1 Uppercase, Numbers & Special characters.",
       );
       return false;
     }
@@ -73,7 +73,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
     if (!/[0-9]/.test(newPassword)) {
       Alert.alert(
         "Error",
-        "Your password must contain a minimum of 8 characters with 1 Uppercase, Numbers & Special characters.",
+        "Your password must contain a minimum of 6 characters with 1 Uppercase, Numbers & Special characters.",
       );
       return false;
     }
@@ -82,7 +82,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
     if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(newPassword)) {
       Alert.alert(
         "Error",
-        "Your password must contain a minimum of 8 characters with 1 Uppercase, Numbers & Special characters.",
+        "Your password must contain a minimum of 6 characters with 1 Uppercase, Numbers & Special characters.",
       );
       return false;
     }
@@ -204,7 +204,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })}
       style={{ flex: 1, backgroundColor: "white" }}
     >
@@ -226,7 +226,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
             source={require("@/assets/images/auth/update-password.webp")}
             className="flex-1 items-center justify-center h-full"
             resizeMode="cover"
-          ></ImageBackground>
+          />
         </View>
 
         {/* Form Section */}
@@ -235,8 +235,13 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
             colors={["#854BDA", "#6E3DD1"]}
             className="flex-1 rounded-t-3xl px-7 py-10 -mt-2"
           >
-            <Text className="text-white text-2xl font-bold text-center mb-6">
+            <Text className="text-white text-2xl font-bold text-center mb-2">
               Change Your Password
+            </Text>
+
+            {/* Password Requirements Note */}
+            <Text className="text-white/80 text-xs text-center mb-6">
+              Password must be at least 6 characters
             </Text>
 
             {/* Current Password */}
@@ -248,8 +253,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
                 secureTextEntry={!showCurrentPassword}
                 value={currentPassword}
                 onChangeText={(text) => {
-                  const cleanText = text.replace(/\s/g, "");
-                  setCurrentPassword(cleanText);
+                  setCurrentPassword(text);
                 }}
               />
               <TouchableOpacity
@@ -272,8 +276,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
                 secureTextEntry={!showNewPassword}
                 value={newPassword}
                 onChangeText={(text) => {
-                  const cleanText = text.replace(/\s/g, "");
-                  setNewPassword(cleanText);
+                  setNewPassword(text);
                 }}
               />
               <TouchableOpacity
@@ -296,8 +299,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
                 secureTextEntry={!showConfirmPassword}
                 value={confirmNewPassword}
                 onChangeText={(text) => {
-                  const cleanText = text.replace(/\s/g, "");
-                  setConfirmNewPassword(cleanText);
+                  setConfirmNewPassword(text);
                 }}
               />
               <TouchableOpacity
@@ -312,15 +314,46 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
             </View>
 
             {/* Update Button */}
-            <TouchableOpacity
-              className="bg-white rounded-full py-3 w-1/2 flex justify-center items-center self-center shadow-lg"
-              onPress={handleChangePassword}
-              disabled={loading}
+            <View
+              style={{
+                alignItems: "center",
+                marginBottom: 10,
+              }}
             >
-              <Text className="text-purple-600 font-bold text-lg">
-                {loading ? "Updating..." : "Update"}
-              </Text>
-            </TouchableOpacity>
+              <View
+                style={{
+                  backgroundColor: "#ffffff",
+                  borderRadius: 999,
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 8 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 10,
+                  elevation: 12,
+                  width: "50%",
+                }}
+              >
+                <TouchableOpacity
+                  onPress={handleChangePassword}
+                  disabled={loading}
+                  activeOpacity={0.8}
+                  style={{
+                    paddingVertical: 14,
+                    alignItems: "center",
+                    borderRadius: 999,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: "#6B21A8",
+                      fontWeight: "bold",
+                      fontSize: 18,
+                    }}
+                  >
+                    {loading ? "Updating..." : "Update"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </LinearGradient>
         </View>
       </ScrollView>

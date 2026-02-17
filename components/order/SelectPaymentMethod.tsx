@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -10,11 +10,12 @@ import {
   ScrollView,
   Alert,
   StatusBar,
+  BackHandler,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
 import { LinearGradient } from "expo-linear-gradient";
-import { RouteProp } from "@react-navigation/native";
+import { RouteProp, useFocusEffect } from "@react-navigation/native";
 import CustomHeader from "../common/CustomHeader";
 import { Feather } from "@expo/vector-icons";
 
@@ -53,6 +54,10 @@ interface SelectPaymentMethodProps {
       fullTotal?: number;
       id?: string;
       customerId?: string;
+      title:string
+      name:string
+      number:string
+      customerscreencustomerid:string
       isPackage?: number | string;
       packageId?: number;
       customerid?: string;
@@ -123,6 +128,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
     selectedTimeSlot,
     orderItems,
     orderData,
+    id ,title,name,number,customerscreencustomerid
   } = route.params || {};
 
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
@@ -130,6 +136,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
     previousSelectedMethod || "Cash",
   );
 
+  console.log("payment methos",name,title,id,customerId)
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
       "keyboardDidShow",
@@ -166,10 +173,42 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
       customerid: customerid || customerId,
       packageId: packageId,
       orderData: orderData,
+      id ,title,name,number,customerscreencustomerid
     };
 
     navigation.navigate("OrderSummeryScreen" as any, navigationData);
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        navigation.navigate("ScheduleScreen" as any, {
+          items,
+          subtotal,
+          discount,number,
+          id ,title,name,customerscreencustomerid,
+          total,
+          fullTotal,
+          selectedDate,
+          timeDisplay: selectedTimeSlot,
+          isPackage,
+          packageId: route.params?.packageId,
+          selectedTimeSlot,
+          customerId,
+          customerid: customerid?.toString() || customerId?.toString(),
+          orderItems,
+        });
+        return true;
+      };
+
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress,
+      );
+
+      return () => backHandler.remove();
+    }, [navigation]),
+  );
 
   return (
     <KeyboardAvoidingView
@@ -183,6 +222,24 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
         titleColor="#6C3CD1"
         showBackButton={true}
         navigation={navigation}
+        onBackPress={() =>
+          navigation.navigate("ScheduleScreen" as any, {
+            items,
+            subtotal,
+            id ,title,name,number,customerscreencustomerid,
+            discount,
+            total,
+            fullTotal,
+            selectedDate,
+            timeDisplay: selectedTimeSlot,
+            isPackage,
+            packageId: route.params?.packageId,
+            selectedTimeSlot,
+            customerId,
+            customerid: customerid?.toString() || customerId?.toString(),
+            orderItems,
+          })
+        }
       />
       <ScrollView
         className="bg-white flex-1"
@@ -220,14 +277,45 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity onPress={handleProceed} className="mt-8">
-            <LinearGradient
-              colors={["#6839CF", "#874DDB"]}
-              className="py-3 px-4 items-center mx-[25%] rounded-3xl h-15"
+          <View
+            style={{
+              marginTop: 32,
+              alignItems: "center",
+            }}
+          >
+            <View
+              style={{
+                width: "50%",
+                borderRadius: 24,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: 0.25,
+                shadowRadius: 8,
+                elevation: 10,
+              }}
             >
-              <Text className="text-center text-white font-bold">Proceed</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleProceed}
+                activeOpacity={0.8}
+                style={{ borderRadius: 24 }}
+              >
+                <LinearGradient
+                  colors={["#6839CF", "#874DDB"]}
+                  style={{
+                    paddingVertical: 12,
+                    paddingHorizontal: 16,
+                    borderRadius: 24,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text style={{ color: "white", fontWeight: "bold" }}>
+                    Proceed
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

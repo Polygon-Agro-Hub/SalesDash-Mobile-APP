@@ -366,7 +366,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
     >
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <CustomHeader
-        title={`${title}.${name}`}
+        title={`${title}. ${name}`}
         titleColor="#000000"
         showBackButton={true}
         navigation={navigation}
@@ -409,7 +409,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 }
               >
                 <View className="flex-row justify-center items-center gap-2">
-                  <Text className=" font-semibold text-[#7240D3] underline">
+                  <Text className="text-[#7240D3] underline">
                     Exclude Item List
                   </Text>
                   <AntIcons name="external-link" size={20} color="#6C3CD1" />
@@ -432,13 +432,14 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                   }
                 }}
               >
-                <View className="flex-row justify-center items-center gap-2 mb-3">
-                  <Entypo name="location-pin" size={22} color="#FF0000" />
-                  <Text className="text-base font-semibold text-[#FF0000] underline">
+                <View className="flex-row justify-center items-center gap-1 mb-3">
+                  <Text className="text-[#FF0000] underline">
                     {loadingCustomerData
-                      ? "Loading Location..."
+                      ? "Loading Location"
                       : "View Geo Location"}
                   </Text>
+
+                  <Entypo name="location-pin" size={20} color="#FF0000" />
                 </View>
               </TouchableOpacity>
             </View>
@@ -464,6 +465,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                     customerId: customerId,
                     name: name,
                     title: title,
+                    number:number,
+                    customerscreencustomerid:customerId
                   })
                 }
                 className="flex-row bg-[#6B3BCF] px-4 py-2 rounded-full items-center mt-5"
@@ -479,7 +482,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
 
         {/* Search and Filters */}
         <View className="mx-6">
-          <View className="flex-row items-center bg-[#F5F1FC] px-8 py-1 border border-[#6B3BCF] rounded-full mt-4 shadow-sm">
+          <View className="flex-row items-center bg-[#F5F1FC] px-4 border border-[#6B3BCF] rounded-full mt-4 shadow-sm">
             <TextInput
               placeholder="Search By Order Number"
               placeholderTextColor="#6839CF"
@@ -573,6 +576,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
               keyExtractor={(item) => item.orderId.toString()}
               renderItem={({ item }) => (
                 <TouchableOpacity
+                  activeOpacity={1}
                   onPress={() =>
                     navigation.navigate("View_CancelOrderScreen" as any, {
                       orderId: item.orderId,
@@ -581,7 +585,23 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                     })
                   }
                 >
-                  <View className="bg-white rounded-2xl p-4 mb-4 border border-gray-200 mx-4 shadow-sm mt-4">
+                  <View
+                    style={{
+                      backgroundColor: "#FFFFFF",
+                      borderRadius: 16,
+                      padding: 16,
+                      marginBottom: 16,
+                      marginHorizontal: 16,
+                      marginTop: 16,
+                      borderWidth: 1,
+                      borderColor: "#E5E7EB",
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 3 },
+                      shadowOpacity: 0.06,
+                      shadowRadius: 6,
+                      elevation: 3,
+                    }}
+                  >
                     <View className="flex-row justify-between items-center">
                       <Text className="text-lg font-semibold text-gray-900">
                         Order: #{item.InvNo || "N/A"}

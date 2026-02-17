@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,8 +9,9 @@ import {
   Modal,
   Alert,
   StatusBar,
+  BackHandler,
 } from "react-native";
-import { Feather, FontAwesome } from "@expo/vector-icons";
+import { Feather, FontAwesome, MaterialIcons } from "@expo/vector-icons";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
 import { LinearGradient } from "expo-linear-gradient";
@@ -21,6 +22,7 @@ import axios from "axios";
 import CustomHeader from "../common/CustomHeader";
 import LoadingPage from "../common/LoadingPage";
 import GlobalSearchModal from "../common/GlobalSearchModal";
+import { useFocusEffect } from "@react-navigation/native";
 
 type ScheduleScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -80,6 +82,11 @@ interface ScheduleScreenProps {
   route: {
     params: {
       packageId: number | null | undefined;
+      customerId: string;
+      title: string;
+      name: string;
+      number: string;
+      customerscreencustomerid: string;
       items?: Array<{
         id: number;
         name: string;
@@ -101,6 +108,21 @@ interface ScheduleScreenProps {
       customerid?: string;
       selectedDate?: string;
       timeDisplay?: string;
+      rawPackageItems?: Array<{ name: string; qty: string }>;
+      rawAdditionalItems?: Array<{
+        id: number;
+        name: string;
+        quantity: number;
+        unit: string;
+        pricePerKg: number;
+        discountedPricePerKg: number;
+        discount: number;
+        totalAmount: number;
+        selected: boolean;
+        changeby?: string;
+        startValue?: string;
+      }>;
+
       orderItems?: Array<{
         additionalItems?: Array<AdditionalItem>;
         isAdditionalItems: boolean;
@@ -147,6 +169,14 @@ interface CartItem {
   discount?: number;
 }
 
+// Cache keys and duration
+const CACHE_KEYS = {
+  CITIES: 'cached_cities',
+  CITIES_TIMESTAMP: 'cities_timestamp'
+};
+
+const CACHE_DURATION = 24 * 60 * 60 * 1000; 
+
 const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
   navigation,
   route,
@@ -163,6 +193,11 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     orderItems = [],
     selectedDate: previousSelectedDate = null,
     timeDisplay: previousTimeSlot = null,
+    id,
+    title,
+    name,
+    number,
+    customerscreencustomerid,
   } = route.params || {};
 
   const [items, setItems] = useState<CartItem[]>(() => {
@@ -172,8 +207,6 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showTimeSlotModal, setShowTimeSlotModal] = useState(false);
-
-  // Updated state initialization to handle orderData
   const [total, setTotal] = useState(() => {
     if (orderData) {
       return orderData.total;
@@ -183,7 +216,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
 
   const [subtotal, setSubtotal] = useState(() => {
     if (orderData) {
-      return orderData.fullTotal; // Use fullTotal as subtotal for orderData
+      return orderData.fullTotal;
     }
     return calculateInitialSubtotal(originalSubtotal, orderItems);
   });
@@ -242,17 +275,44 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     return new Date();
   });
 
+  // Helper functions for caching
+  const cacheCities = async (cities: City[]) => {
+    try {
+      await AsyncStorage.setItem(CACHE_KEYS.CITIES, JSON.stringify(cities));
+      await AsyncStorage.setItem(CACHE_KEYS.CITIES_TIMESTAMP, Date.now().toString());
+    } catch (error) {
+      console.log("Error caching cities:", error);
+    }
+  };
+
+  const getCachedCities = async (): Promise<City[] | null> => {
+    try {
+      const cachedCities = await AsyncStorage.getItem(CACHE_KEYS.CITIES);
+      const timestamp = await AsyncStorage.getItem(CACHE_KEYS.CITIES_TIMESTAMP);
+      
+      if (cachedCities && timestamp) {
+        const age = Date.now() - parseInt(timestamp);
+        if (age < CACHE_DURATION) {
+          return JSON.parse(cachedCities);
+        }
+      }
+      return null;
+    } catch (error) {
+      console.log("Error getting cached cities:", error);
+      return null;
+    }
+  };
+
   const getMinimumSelectableDate = () => {
-    const today = new Date(); // Current date and time
-    const currentHour = today.getHours(); // Get the current hour before modifying the date
+    const today = new Date();
+    const currentHour = today.getHours();
 
-    const minDate = new Date(today); // Create a new date object for minDate
+    const minDate = new Date(today);
 
-    // If the current time is between 6 PM and 6 AM
     if (currentHour >= 18 || currentHour < 6) {
-      minDate.setDate(today.getDate() + 4); // Set the minimum date to 4 days from today
+      minDate.setDate(today.getDate() + 4);
     } else {
-      minDate.setDate(today.getDate() + 3); // Set the minimum date to 3 days from today
+      minDate.setDate(today.getDate() + 3);
     }
 
     return minDate;
@@ -260,65 +320,93 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
 
   const minimumDate = getMinimumSelectableDate();
 
+  // Optimized data fetching with parallel calls and caching
   useEffect(() => {
-    const fetchCustomerData = async () => {
+    const fetchData = async () => {
       try {
-        setLoading(true);
-
         const customerIdi = route.params?.customerid || customerId;
-
+        const storedToken = await AsyncStorage.getItem("authToken");
+        
         if (!customerIdi) {
           setError("No customer ID found");
           setLoading(false);
           return;
         }
-
-        const storedToken = await AsyncStorage.getItem("authToken");
-
         if (!storedToken) {
           setError("No authentication token found");
           setLoading(false);
           return;
         }
 
-        // Fetch customer data
-        const apiUrl = `${environment.API_BASE_URL}api/orders/get-customer-data/${customerIdi}`;
-        const response = await axios.get(apiUrl, {
-          headers: { Authorization: `Bearer ${storedToken}` },
-        });
+        setLoading(true);
 
-        if (response.data && response.data.success) {
-          setCustomerData(response.data.data);
+        // Try to get cached cities first
+        const cachedCities = await getCachedCities();
 
-          // Fetch cities to get delivery charge
-          const cityResponse = await axios.get<{ data: City[] }>(
+        // Fetch customer data (always needed fresh)
+        const customerPromise = axios.get(
+          `${environment.API_BASE_URL}api/orders/get-customer-data/${customerIdi}`,
+          { headers: { Authorization: `Bearer ${storedToken}` } }
+        );
+
+        // Only fetch cities if not in cache or if we need to find a city
+        let cityPromise = null;
+        if (!cachedCities) {
+          cityPromise = axios.get<{ data: City[] }>(
             `${environment.API_BASE_URL}api/customer/get-city`,
-            { headers: { Authorization: `Bearer ${storedToken}` } },
+            { headers: { Authorization: `Bearer ${storedToken}` } }
           );
+        }
 
-          if (cityResponse.data && cityResponse.data.data) {
-            const customerCity = response.data.data.buildingDetails?.city;
-            if (customerCity) {
+        // Wait for customer data
+        const customerResponse = await customerPromise;
+
+        if (customerResponse.data && customerResponse.data.success) {
+          setCustomerData(customerResponse.data.data);
+
+          const customerCity = customerResponse.data.data.buildingDetails?.city;
+          
+          if (customerCity) {
+            // If we have cached cities, try to find the city there first
+            if (cachedCities) {
+              const cityData = cachedCities.find((c) => c.city === customerCity);
+              if (cityData) {
+                setDeliveryFee(parseFloat(cityData.charge) || 0);
+                setLoading(false);
+                return;
+              }
+            }
+
+            // If city not found in cache or no cache, fetch cities
+            if (!cityPromise) {
+              cityPromise = axios.get<{ data: City[] }>(
+                `${environment.API_BASE_URL}api/customer/get-city`,
+                { headers: { Authorization: `Bearer ${storedToken}` } }
+              );
+            }
+
+            const cityResponse = await cityPromise;
+            
+            if (cityResponse.data && cityResponse.data.data) {
+              // Cache the cities for future use
+              await cacheCities(cityResponse.data.data);
+              
               const cityData = cityResponse.data.data.find(
-                (c) => c.city === customerCity,
+                (c) => c.city === customerCity
               );
               if (cityData) {
-                const fee = parseFloat(cityData.charge) || 0;
-                setDeliveryFee(fee);
+                setDeliveryFee(parseFloat(cityData.charge) || 0);
               }
             }
           }
         } else {
-          const errorMsg =
-            response.data?.message || "Failed to fetch customer data";
-          console.log("API error:", errorMsg);
+          const errorMsg = customerResponse.data?.message || "Failed to fetch customer data";
           setError(errorMsg);
         }
       } catch (error: any) {
-        console.error("Error fetching customer data:", error);
+        console.error("Error fetching data:", error);
         if (axios.isAxiosError(error)) {
           const errorMsg = error.response?.data?.message || error.message;
-          console.log("Axios error details:", errorMsg);
           setError(errorMsg);
         } else {
           setError("Failed to fetch customer data");
@@ -329,11 +417,13 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     };
 
     if (customerid || customerId) {
-      fetchCustomerData();
+      fetchData();
     } else {
       console.log("No customer ID in route params");
+      // If no customer ID, still set loading to false
+      setLoading(false);
     }
-  }, [route.params]);
+  }, [route.params, customerId, customerid]);
 
   const fullTotal = total + deliveryFee;
 
@@ -355,7 +445,6 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
 
   function processInitialData(originalItems: any[], orderItems: any[]) {
     if (orderItems && orderItems.length > 0) {
-      const orderData = orderItems[0];
       const processedItems: CartItem[] = [];
       return processedItems;
     } else if (originalItems && originalItems.length > 0) {
@@ -402,17 +491,16 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
 
   const getSelectableDates = () => {
     const today = new Date();
-    const currentHour = today.getHours(); // Get the current hour before resetting to midnight
+    const currentHour = today.getHours();
 
-    today.setHours(0, 0, 0, 0); // Reset to midnight
+    today.setHours(0, 0, 0, 0);
 
     const minDate = new Date(today);
 
-    // If the current time is between 6 PM and 6 AM
     if (currentHour >= 18 || currentHour < 6) {
-      minDate.setDate(today.getDate() + 4); // Set the minimum date to 4 days from today
+      minDate.setDate(today.getDate() + 4);
     } else {
-      minDate.setDate(today.getDate() + 3); // Set the minimum date to 3 days from today
+      minDate.setDate(today.getDate() + 3);
     }
 
     return { minDate };
@@ -491,15 +579,161 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
   const convertTimeSlotTo24Hour = (timeSlot: string): string => {
     switch (timeSlot) {
       case "Within 8-12 PM":
-        return "10:00"; // Middle of the range
+        return "10:00";
       case "Within 12-4 PM":
-        return "14:00"; // Middle of the range
+        return "14:00";
       case "Within 4-8 PM":
-        return "18:00"; // Middle of the range
+        return "18:00";
       default:
-        return "12:00"; // Default fallback
+        return "12:00";
     }
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        const parsedIsPackage =
+          typeof isPackage === "string" ? parseInt(isPackage) : isPackage;
+
+        if (parsedIsPackage === 0) {
+          navigation.navigate("CratScreen" as any, {
+            id: customerId || customerid,
+            customerId: customerId || customerid,
+            title,
+            name,
+            number,
+            customerscreencustomerid,
+            isPackage: 0,
+            items: items.map((item) => ({
+              id: item.id,
+              name: item.name || `Item ${item.id}`,
+              price: item.price,
+              normalPrice:
+                item.normalPrice || item.price + (item.discount || 0),
+              discountedPrice: item.discountedPrice || item.price,
+              discount: item.discount || 0,
+              qty: item.quantity,
+              unitType: item.unitType || "kg",
+              startValue: item.startValue || 0.5,
+              quantity: item.quantity,
+            })),
+            selectedProducts: items.map((item) => ({
+              id: item.id,
+              name: item.name || `Item ${item.id}`,
+              price: item.price,
+              normalPrice:
+                item.normalPrice || item.price + (item.discount || 0),
+              discountedPrice: item.discountedPrice || item.price,
+              discount: item.discount || 0,
+              quantity: item.quantity,
+              selected: false,
+              unitType: item.unitType || "kg",
+              startValue: item.startValue || 0.5,
+              changeby:
+                item.unitType === "g"
+                  ? Number(item.quantity) * 1000
+                  : item.quantity,
+            })),
+            subtotal,
+            discount,
+            total,
+            fullTotal,
+            selectedDate,
+            fromOrderSummary: true,
+          });
+        } else if (parsedIsPackage === 1) {
+          const currentOrderItem = orderItems?.[0] || {};
+
+          const restoredPackageItems = (
+            route.params?.rawPackageItems || []
+          ).map((item: { name: string; qty: string }) => ({
+            id: 0,
+            name: item.name,
+            quantity: item.qty,
+            quantityType: "kg",
+            price: 0,
+          }));
+
+          const restoredAdditionalItems = (
+            route.params?.rawAdditionalItems || []
+          ).map((item: any) => ({
+            productId: item.id,
+            mpItemId: item.id,
+            id: item.id,
+            name: item.name,
+            quantity: item.quantity.toString(),
+            quantityType: item.unit?.toLowerCase() === "kg" ? "kg" : "g",
+            pricePerKg: item.pricePerKg,
+            discountedPricePerKg: item.discountedPricePerKg,
+            price: item.totalAmount,
+            discount: item.discount,
+            changeby: item.changeby || "1",
+            startValue: item.startValue || "1",
+            unitType: item.unit?.toLowerCase() || "kg",
+          }));
+
+          navigation.navigate("OrderScreen" as any, {
+            id: customerId || customerid,
+            customerId,
+            title,
+            name,
+            number,
+            customerscreencustomerid,
+            isPackage: "1",
+            orderItems: orderItems,
+            packageId: route.params?.packageId || currentOrderItem.packageId,
+            packageItems: restoredPackageItems,
+            additionalItems: restoredAdditionalItems,
+            subtotal,
+            discount,
+            total,
+            fullTotal,
+            selectedDate,
+            selectedTimeSlot,
+            isEdit: true,
+            orderData: route.params?.orderData,
+          });
+        } else {
+          navigation.navigate("CratScreen" as any, {
+            id: customerId || customerid,
+            customerId: customerId || customerid,
+            title,
+            name,
+            items: items,
+            number,
+            customerscreencustomerid,
+            selectedProducts: items.map((item) => ({
+              id: item.id,
+              name: item.name,
+              price: item.price,
+              normalPrice: item.normalPrice || item.price,
+              discountedPrice: item.discountedPrice || item.price,
+              quantity: item.quantity,
+              selected: true,
+              unitType: item.unitType || "kg",
+              startValue: item.startValue || 0.1,
+              changeby: item.quantity,
+            })),
+            subtotal,
+            discount,
+            total,
+            fullTotal,
+            selectedDate,
+            selectedTimeSlot,
+            fromOrderSummary: true,
+          });
+        }
+        return true;
+      };
+
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress,
+      );
+
+      return () => backHandler.remove();
+    }, [navigation]),
+  );
 
   const handleProceed = () => {
     if (!selectedDate && !selectedTimeSlot) {
@@ -537,11 +771,17 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       fullTotal: fullTotal,
       selectedDate: selectedDate,
       selectedTimeSlot: selectedTimeSlot,
+
       customerId: customerId,
       isPackage: isPackage,
-      packageId: packageId, // Now correctly passing packageId
+      packageId: packageId,
       customerid: customerid,
       orderItems: orderItems,
+      id: id,
+      title: title,
+      name: name,
+      number: number,
+      customerscreencustomerid: customerscreencustomerid,
 
       // Add the formatted schedule data
       sheduleDate: selectedDate,
@@ -554,6 +794,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     navigation.navigate("SelectPaymentMethod" as any, navigationParams);
   };
 
+  // Show loading state
   if (loading) {
     return (
       <LoadingPage
@@ -590,6 +831,139 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
         titleColor="#6C3CD1"
         showBackButton={true}
         navigation={navigation}
+        onBackPress={() => {
+          const parsedIsPackage =
+            typeof isPackage === "string" ? parseInt(isPackage) : isPackage;
+          if (parsedIsPackage === 0) {
+            navigation.navigate("CratScreen" as any, {
+              id: customerId || customerid,
+              customerId: customerId || customerid,
+              title,
+              name,
+              number,
+              customerscreencustomerid,
+              isPackage: 0,
+              items: items.map((item) => ({
+                id: item.id,
+                name: item.name || `Item ${item.id}`,
+                price: item.price,
+                normalPrice:
+                  item.normalPrice || item.price + (item.discount || 0),
+                discountedPrice: item.discountedPrice || item.price,
+                discount: item.discount || 0,
+                qty: item.quantity,
+                unitType: item.unitType || "kg",
+                startValue: item.startValue || 0.5,
+                quantity: item.quantity,
+              })),
+              selectedProducts: items.map((item) => ({
+                id: item.id,
+                name: item.name || `Item ${item.id}`,
+                price: item.price,
+                normalPrice:
+                  item.normalPrice || item.price + (item.discount || 0),
+                discountedPrice: item.discountedPrice || item.price,
+                discount: item.discount || 0,
+                quantity: item.quantity,
+                selected: false,
+                unitType: item.unitType || "kg",
+                startValue: item.startValue || 0.5,
+                changeby:
+                  item.unitType === "g"
+                    ? Number(item.quantity) * 1000
+                    : item.quantity,
+              })),
+              subtotal,
+              discount,
+              total,
+              fullTotal,
+              selectedDate,
+              fromOrderSummary: true,
+            });
+          } else if (parsedIsPackage === 1) {
+            const currentOrderItem = orderItems?.[0] || {};
+
+            const restoredPackageItems = (
+              route.params?.rawPackageItems || []
+            ).map((item: { name: string; qty: string }) => ({
+              id: 0,
+              name: item.name,
+              quantity: item.qty,
+              quantityType: "kg",
+              price: 0,
+            }));
+
+            const restoredAdditionalItems = (
+              route.params?.rawAdditionalItems || []
+            ).map((item: any) => ({
+              productId: item.id,
+              mpItemId: item.id,
+              id: item.id,
+              name: item.name,
+              quantity: item.quantity.toString(),
+              quantityType: item.unit?.toLowerCase() === "kg" ? "kg" : "g",
+              pricePerKg: item.pricePerKg,
+              discountedPricePerKg: item.discountedPricePerKg,
+              price: item.totalAmount,
+              discount: item.discount,
+              changeby: item.changeby || "1",
+              startValue: item.startValue || "1",
+              unitType: item.unit?.toLowerCase() || "kg",
+            }));
+
+            navigation.navigate("OrderScreen" as any, {
+              id: customerId || customerid,
+              customerId,
+              title,
+              name,
+              number,
+              customerscreencustomerid: customerscreencustomerid,
+              isPackage: "1",
+              orderItems: orderItems,
+              packageId: route.params?.packageId || currentOrderItem.packageId,
+              packageItems: restoredPackageItems,
+              additionalItems: restoredAdditionalItems,
+              subtotal,
+              discount,
+              total,
+              fullTotal,
+              selectedDate,
+              selectedTimeSlot,
+              isEdit: true,
+              orderData: route.params?.orderData,
+            });
+          } else {
+            navigation.navigate("CratScreen" as any, {
+              id: customerId || customerid,
+              customerId: customerId || customerid,
+              title,
+              name,
+              items: items,
+              number,
+              customerscreencustomerid,
+              selectedProducts: items.map((item) => ({
+                id: item.id,
+                name: item.name,
+                price: item.price,
+                normalPrice: item.normalPrice || item.price,
+                discountedPrice: item.discountedPrice || item.price,
+                quantity: item.quantity,
+                selected: true,
+                unitType: item.unitType || "kg",
+                startValue: item.startValue || 0.1,
+                changeby: item.quantity,
+              })),
+              subtotal,
+              discount,
+              total,
+              fullTotal,
+              selectedDate,
+              selectedTimeSlot,
+              fromOrderSummary: true,
+            });
+          }
+          return true;
+        }}
       />
       <View className="flex-1 bg-white">
         <View className="px-6 py-3">
@@ -628,11 +1002,11 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
             <Text className="flex-1 text-[#7F7F7F]">
               {selectedTimeSlot || "Select Time Slot"}
             </Text>
-            <Feather name="chevron-down" size={20} color="#7F7F7F" />
+            <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
           </TouchableOpacity>
         </ScrollView>
 
-        {/* Date Picker (conditionally rendered) */}
+        {/* Date Picker */}
         {showDatePicker && Platform.OS === "android" && (
           <DateTimePicker
             value={date}
@@ -703,6 +1077,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
           noResultsText="No time slots found"
           multiSelect={false}
           searchKeys={["label"]}
+          showSearch={false}
         />
 
         <View
@@ -721,7 +1096,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
               <Text className="text-[#5C5C5C]">
                 Delivery Fee :{" "}
                 <Text className="font-semibold text-[#5C5C5C]">
-                  + Rs.{deliveryFee.toFixed(2)}
+                  + Rs. {deliveryFee.toFixed(2)}
                 </Text>
               </Text>
             </View>
@@ -730,7 +1105,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
               <Text className="font-semibold text-base">
                 Full Total :{" "}
                 <Text className="font-bold text-base">
-                  Rs.
+                  Rs.{" "}
                   {fullTotal.toLocaleString("en-IN", {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
@@ -740,15 +1115,41 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
             </View>
           </View>
 
-          <TouchableOpacity onPress={handleProceed}>
-            <LinearGradient
-              colors={["#854BDA", "#6E3DD1"]}
-              className="py-3 px-6 rounded-full flex-row items-center ml-4 justify-center"
+          <View
+            style={{
+              borderRadius: 30,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.25,
+              shadowRadius: 8,
+              elevation: 10,
+            }}
+          >
+            <TouchableOpacity
+              onPress={handleProceed}
+              activeOpacity={0.8}
+              style={{ borderRadius: 30 }}
             >
-              <Text className="text-white font-semibold mr-2">Proceed</Text>
-              <Feather name="check" size={20} color="white" />
-            </LinearGradient>
-          </TouchableOpacity>
+              <LinearGradient
+                colors={["#854BDA", "#6E3DD1"]}
+                style={{
+                  paddingVertical: 12,
+                  paddingHorizontal: 24,
+                  borderRadius: 30,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Text
+                  style={{ color: "white", fontWeight: "600", marginRight: 8 }}
+                >
+                  Proceed
+                </Text>
+                <Feather name="check" size={20} color="white" />
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </KeyboardAvoidingView>

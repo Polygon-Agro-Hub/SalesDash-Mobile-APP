@@ -20,7 +20,6 @@ import ReminderScreenSkeleton from "./ReminderSkeleton";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import environment from "@/environment/environment";
-import { useAudioPlayer, setAudioModeAsync } from "expo-audio";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Global state management
@@ -74,9 +73,7 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
     useState<Notification | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isAudioInitialized, setIsAudioInitialized] = useState(false);
   const insets = useSafeAreaInsets();
-  const player = useAudioPlayer(require("../../assets/sounds/popup.mp3"));
   const highestNotificationId = useRef(0);
   const isFirstLoad = useRef(true);
 
@@ -85,39 +82,17 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
     updateGlobalUnreadCount(unreadCount);
   }, [unreadCount]);
 
-  // Initialize audio properly
-  const initializeAudio = async () => {
-    try {
-      await setAudioModeAsync({
-        playsInSilentMode: true,
-        shouldPlayInBackground: true,
-        interruptionModeAndroid: "duckOthers",
-        interruptionMode: "mixWithOthers",
-        allowsRecording: false,
-      });
-
-      setIsAudioInitialized(true);
-    } catch (error) {
-      console.error("Failed to initialize audio:", error);
-    }
-  };
-
-  const playNotificationSound = async () => {
-    try {
-      if (!isAudioInitialized) await initializeAudio();
-
-      // If already at end, reset to beginning
-      player.seekTo(0);
-      await player.play();
-    } catch (error) {
-      console.error("Error playing sound via expo-audio:", error);
-    }
-  };
   const fetchNotifications = async () => {
     try {
       setError(null);
 
       const storedToken = await AsyncStorage.getItem("authToken");
+
+      // Add this check 
+      if (!storedToken) {
+        return; 
+      }
+
       const response = await axios.get(
         `${environment.API_BASE_URL}api/notifications/`,
         {
@@ -128,10 +103,10 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
       );
 
       const data = response.data.data || {};
+      console.log("data",data)
       const newNotifications = data.notifications || [];
       const newUnreadCount = data.unreadCount || 0;
 
-      // Update state
       setNotifications(newNotifications);
       setUnreadCount(newUnreadCount);
       setIsLoading(false);
@@ -140,14 +115,17 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
         const maxId = Math.max(
           ...newNotifications.map((n: Notification) => n.id),
         );
-
-        if (!isFirstLoad.current && maxId > highestNotificationId.current) {
-          await playNotificationSound();
-        }
-
         highestNotificationId.current = maxId;
       }
-    } catch (err) {
+    } catch (err: any) {
+      // If 401/403 and token is gone, just return silently
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        const token = await AsyncStorage.getItem("authToken");
+        if (!token) {
+          return; // User is logged out, don't show error
+        }
+      }
+
       console.error("Failed to fetch notifications:", err);
       setError("Failed to load notifications. Please try again.");
       setNotifications([]);
@@ -161,12 +139,7 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
   };
 
   useEffect(() => {
-    const setupComponent = async () => {
-      await initializeAudio();
-      await fetchNotifications();
-    };
-
-    setupComponent();
+    fetchNotifications();
 
     const intervalId = setInterval(() => {
       fetchNotifications();
@@ -174,8 +147,6 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
 
     return () => {
       clearInterval(intervalId);
-      player.pause();
-      player.seekTo(0);
     };
   }, []);
 
@@ -250,16 +221,20 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
 
   const getNotificationIcon = (title: string) => {
     switch (title) {
-      case "Payment reminder ":
+      case "Payment Reminder":
         return require("@/assets/images/reminder/payment-method.webp");
       case "Order is Processing":
         return require("@/assets/images/reminder/time-management.webp");
       case "Order is Out for Delivery":
-        return require("@/assets/images/reminder/fast-shipping.webp");
+        return require("@/assets/images/reminder/out-for-delivery.webp");
       case "Order is Cancelled":
         return require("@/assets/images/reminder/order-cancelled.webp");
+       case "Order is Delivered":
+        return require("@/assets/images/reminder/order-is-elivered.webp");
       case "Driver has collected the order":
         return require("@/assets/images/reminder/delivery-courier.webp");
+      case "Order is on the way":
+        return require("@/assets/images/reminder/fast-shipping.webp");
       default:
         return require("@/assets/images/reminder/reminder.webp");
     }
@@ -311,7 +286,7 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
                     resizeMode: "contain",
                   }}
                 />
-                <Text className="text-black text-center mt-4 font-bold text-3xl">
+                <Text className="text-black text-center mt-4 font-bold text-xl">
                   No Notification Yet
                 </Text>
               </View>
@@ -341,7 +316,7 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
                             {item.title}
                           </Text>
                           <Text className="text-gray-600">
-                            Order No: {item.invNo}
+                            Order No: #{item.invNo}
                           </Text>
                           <Text className="text-gray-600">
                             Customer ID: {item.customerId}

@@ -45,11 +45,13 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
     lastName: string;
     title: String;
     cusId: String;
+    phoneNumber: string;
   }>({
     firstName: "",
     lastName: "",
     title: "",
     cusId: "",
+    phoneNumber:""
   });
 
   useFocusEffect(
@@ -70,9 +72,9 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
           if (response.data && response.data.data) {
             // Set customer name from first item (regardless of crop validity)
             if (response.data.data.length > 0) {
-              const { firstName, lastName, title, cusId } =
+              const { firstName, lastName, title, cusId ,phoneNumber } =
                 response.data.data[0];
-              setCustomerName({ firstName, lastName, title, cusId });
+              setCustomerName({ firstName, lastName, title, cusId ,phoneNumber });
             }
 
             // Filter out any invalid or empty items for crops display
@@ -161,7 +163,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
         className=" text-center text-black text-xl mt-12"
       >
         {customerName.firstName && customerName.lastName
-          ? `Customer ID : ${customerName.cusId.slice(4)}`
+          ? `Customer ID : ${customerName.cusId}`
           : "Loading..."}
       </Text>
 
@@ -240,30 +242,47 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
         )}
       </View>
       <TouchableOpacity
-        className="absolute bottom-[14%] left-0 right-0 items-center "
+        className="absolute bottom-[14%] left-0 right-0 items-center"
         onPress={() =>
           navigation.navigate("Main", {
             screen: "SelectOrderTypeNewCustomer",
-            params: { id: customerId },
+            params: { id: customerId , name :`${customerName.firstName} ${customerName.lastName}` , title:customerName.title , customerId: customerName.cusId , phoneNumber:customerName.phoneNumber},
           })
         }
       >
-        <LinearGradient
-          colors={["#6C3CD1", "#9B65D6"]}
-          start={[0, 0]}
-          end={[1, 1]}
+        <View
           style={{
-            width: "70%",
-            paddingVertical: 12,
+            width: 264,
+            height: 48,
             borderRadius: 25,
-            alignItems: "center",
-            justifyContent: "center",
+            shadowColor: "#000000",
+            shadowOffset: {
+              width: 0,
+              height: 2,
+            },
+            shadowOpacity: 0.2,
+            shadowRadius: 10,
+            elevation: 8,
+            backgroundColor: "transparent",
           }}
         >
-          <Text style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}>
-            Select Order Type
-          </Text>
-        </LinearGradient>
+          <LinearGradient
+            colors={["#6839CF", "#874DDB"]}
+            start={[0, 0]}
+            end={[1, 1]}
+            style={{
+              width: "100%",
+              height: "100%",
+              borderRadius: 25,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}>
+              Select Order Type
+            </Text>
+          </LinearGradient>
+        </View>
       </TouchableOpacity>
     </KeyboardAvoidingView>
   );

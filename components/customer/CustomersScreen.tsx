@@ -228,7 +228,29 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   };
 
   const handleSearch = (query: string) => {
-    const cleanedQuery = query.replace(/^\s+/, "");
+    // Block special characters - only allow letters, numbers, spaces, and +
+    const specialCharRegex = /[^a-zA-Z0-9\s+]/g;
+    let cleanedQuery = query.replace(specialCharRegex, "");
+
+    cleanedQuery = cleanedQuery.replace(/^\s+/, "");
+
+    if (cleanedQuery.startsWith("+94")) {
+      const digits = cleanedQuery.replace(/[^\d]/g, "");
+      const limitedDigits = digits.slice(0, 9);
+      cleanedQuery = "+" + limitedDigits;
+    } else if (cleanedQuery.startsWith("0")) {
+      const digits = cleanedQuery.replace(/[^\d]/g, "");
+      const limitedDigits = digits.slice(0, 10);
+      cleanedQuery = limitedDigits;
+    } else if (
+      cleanedQuery.length > 0 &&
+      !isNaN(Number(cleanedQuery.charAt(0))) &&
+      cleanedQuery.charAt(0) !== "0"
+    ) {
+      const digits = cleanedQuery.replace(/[^\d]/g, "");
+      const limitedDigits = digits.slice(0, 9);
+      cleanedQuery = limitedDigits;
+    }
 
     setSearchQuery(cleanedQuery);
 
@@ -253,7 +275,6 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
         );
       });
 
-      // Keep the filtered results sorted alphabetically
       setFilteredCustomers(sortCustomersByName(filteredData));
     }
   };
@@ -304,7 +325,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
             </LinearGradient>
 
             {/* Search Bar */}
-            <View className="flex-row items-center bg-[#F5F1FC] px-6 py-3 rounded-full mt-[-22px] mx-auto w-[90%] shadow-md">
+            <View className="flex-row items-center bg-[#F5F1FC] px-6 py-1 rounded-full mt-[-22px] mx-auto w-[90%] shadow-md">
               <TextInput
                 value={searchQuery}
                 onChangeText={handleSearch}
@@ -339,7 +360,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                   </TouchableOpacity>
                 </View>
               ) : isEmpty ? (
-                <View className="flex-1 justify-center items-center px-4 mt-[-20%]">
+                <View className="flex-1 justify-center items-center">
                   <Image
                     source={require("@/assets/images/public/no-data.webp")}
                     style={{
@@ -349,11 +370,11 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                     }}
                   />
                   {searchQuery ? (
-                    <Text className="text-gray-500 text-center mt-4">
+                    <Text className="text-black text-i text-center mt-4">
                       No customers found for "{searchQuery}"
                     </Text>
                   ) : (
-                    <Text className="text-gray-600 text-center ">
+                    <Text className="text-black text-i text-center mt-4">
                       No registered customers yet
                     </Text>
                   )}
@@ -372,6 +393,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                   scrollEventThrottle={16}
                   renderItem={({ item }: { item: Customer }) => (
                     <TouchableOpacity
+                    activeOpacity={1}
                       onPress={() =>
                         navigation.navigate("ViewCustomerScreen", {
                           name: `${item.firstName} ${item.lastName}`,
@@ -382,14 +404,27 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                         })
                       }
                     >
-                      <View className="bg-white shadow-md p-4 mb-3 flex-row justify-between items-center rounded-lg border border-gray-200">
+                      <View
+                        style={{
+                          backgroundColor: "white",
+                          borderRadius: 20,
+                          padding: 16,
+                          marginBottom: 12,
+                          flexDirection: "row",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          borderWidth: 1,
+                          borderColor: "#E5E7EB",
+                          elevation: 4,
+                        }}
+                      >
                         <View className="flex-1 mr-3">
                           <Text
                             className="text-gray-700 font-semibold"
                             numberOfLines={2}
                             ellipsizeMode="tail"
                           >
-                            {item.title}.{item.firstName} {item.lastName}
+                            {item.title}. {item.firstName} {item.lastName}
                           </Text>
                           <Text className="text-gray-500 text-sm">
                             {formatPhoneNumber(item.phoneNumber)}

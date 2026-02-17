@@ -181,10 +181,12 @@ const OtpScreenUp: React.FC = () => {
               );
             }
 
-            navigation.navigate("Main", {
-              screen: "OtpSuccesfulScreen",
-              params: { customerId },
-            });
+         
+             navigation.navigate( "OtpSuccesfulScreen" as any,
+           {
+            customerId
+           }         
+          );
           } else {
             throw new Error(
               customerResponse.data?.message ||

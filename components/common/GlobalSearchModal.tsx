@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   FlatList,
   Modal,
+  ActivityIndicator,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 
@@ -22,6 +23,8 @@ interface GlobalSearchModalProps {
   multiSelect?: boolean;
   renderItem?: (item: any, isSelected: boolean) => React.ReactNode;
   searchKeys?: string[];
+  showSearch?: boolean;
+  isLoading?: boolean;
 }
 
 const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
@@ -37,6 +40,8 @@ const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
   multiSelect = false,
   renderItem,
   searchKeys = ["label"],
+  showSearch = true,
+  isLoading = false,
 }) => {
   const [searchValue, setSearchValue] = useState("");
   const [filteredData, setFilteredData] = useState(data);
@@ -47,9 +52,9 @@ const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
     setSelectedValues(selectedItems);
   }, [selectedItems, visible]);
 
-  // Filter data based on search
+  // Filter data based on search (only if search is shown)
   useEffect(() => {
-    if (!searchValue.trim()) {
+    if (!showSearch || !searchValue.trim()) {
       setFilteredData(data);
       return;
     }
@@ -65,7 +70,7 @@ const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
       });
     });
     setFilteredData(filtered);
-  }, [searchValue, data, searchKeys]);
+  }, [searchValue, data, searchKeys, showSearch]);
 
   const handleItemPress = (value: string) => {
     let newSelectedValues: string[];
@@ -97,9 +102,15 @@ const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
     setSearchValue("");
   };
 
-  const renderDefaultItem = (item: any, isSelected: boolean) => (
+  const renderDefaultItem = (
+    item: any,
+    isSelected: boolean,
+    isLast: boolean,
+  ) => (
     <TouchableOpacity
-      className="px-4 py-3 border-b border-gray-200 flex-row items-center justify-between"
+      className={`px-4 py-3 flex-row items-center justify-between ${
+        !isLast ? "border-b border-gray-200" : ""
+      }`}
       onPress={() => handleItemPress(item.value)}
     >
       <Text className="text-base text-gray-800">{item.label}</Text>
@@ -116,7 +127,7 @@ const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
           value={searchValue}
           onChangeText={setSearchValue}
           className="flex-1 ml-2 text-base"
-          placeholderTextColor="#666"
+          placeholderTextColor="#7F7F7F"
           autoCapitalize="none"
           autoCorrect={false}
         />
@@ -128,6 +139,44 @@ const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
       </View>
     </View>
   );
+
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <View className="px-4 py-12 items-center justify-center">
+          <ActivityIndicator size="large" color="#6839CF" />
+          <Text className="text-sm mt-3 text-[#6839CF]">Loading...</Text>
+        </View>
+      );
+    }
+
+    if (filteredData.length === 0) {
+      return (
+        <View className="px-4 py-8 items-center">
+          <Text className="text-gray-500 text-base">{noResultsText}</Text>
+        </View>
+      );
+    }
+
+    return (
+      <FlatList
+        data={filteredData}
+        keyExtractor={(item) => item.value}
+        renderItem={({ item, index }) => {
+          const isSelected = selectedValues.includes(item.value);
+          const isLast = index === filteredData.length - 1;
+
+          if (renderItem) {
+            return renderItem(item, isSelected) as React.ReactElement | null;
+          }
+
+          return renderDefaultItem(item, isSelected, isLast);
+        }}
+        showsVerticalScrollIndicator={false}
+        className="max-h-64"
+      />
+    );
+  };
 
   return (
     <Modal
@@ -153,31 +202,11 @@ const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
             </TouchableOpacity>
           </View>
 
-          {/* Search Bar */}
-          {renderSearchInput()}
+          {/* Search Bar - Conditional Rendering */}
+          {showSearch && renderSearchInput()}
 
-          {/* List */}
-          <FlatList
-            data={filteredData}
-            keyExtractor={(item) => item.value}
-            renderItem={({ item }) => {
-              const isSelected = selectedValues.includes(item.value);
-              if (renderItem) {
-                return renderItem(
-                  item,
-                  isSelected,
-                ) as React.ReactElement | null;
-              }
-              return renderDefaultItem(item, isSelected);
-            }}
-            showsVerticalScrollIndicator={false}
-            className="max-h-64"
-            ListEmptyComponent={
-              <View className="px-4 py-8 items-center">
-                <Text className="text-gray-500 text-base">{noResultsText}</Text>
-              </View>
-            }
-          />
+          {/* List or Loading State */}
+          {renderContent()}
 
           {/* Done Button (only for multi-select) */}
           {multiSelect && (

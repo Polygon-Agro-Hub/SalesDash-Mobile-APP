@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   StatusBar,
+  BackHandler,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -23,6 +24,7 @@ import {
 } from "react-native-responsive-screen";
 import LoadingPage from "../common/LoadingPage";
 import CustomHeader from "../common/CustomHeader";
+import { useFocusEffect } from "@react-navigation/native";
 
 type CreateCustomPackageNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -35,6 +37,12 @@ interface CreateCustomPackageProps {
     params: {
       id: string;
       isPackage: string;
+      selectedProductIds?: number[];
+      customerId:string;
+       name:string;
+       title:string;
+       number:string;
+       customerscreencustomerid:string;
     };
   };
 }
@@ -57,11 +65,13 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
   navigation,
   route,
 }) => {
-  const { id, isPackage } = route.params || {};
+  const { id, isPackage, selectedProductIds ,customerId, name, title,number ,customerscreencustomerid} = route.params || {};
   const [searchQuery, setSearchQuery] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  console.log("id custom package",id)
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -88,7 +98,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
               normalPrice: parseFloat(item.normalPrice),
               discountedPrice: parseFloat(item.discountedPrice),
               startValue: parseFloat(item.startValue),
-              selected: false,
+              selected: selectedProductIds?.includes(item.id) ?? false,
             })),
           );
         }
@@ -124,6 +134,25 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
       ),
     );
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+         navigation.navigate("Main", {
+            screen: "SelectOrderType",
+            params:{id ,customerId,title,name,number,customerscreencustomerid}
+          });
+        return true;
+      };
+
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress,
+      );
+
+      return () => backHandler.remove();
+    }, [navigation]),
+  );
 
   const handleSearch = (query: string) => {
     let cleanedQuery = query;
@@ -164,6 +193,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
         selectedProducts,
         id,
         isPackage,
+        customerId,title,name,number,customerscreencustomerid
       });
     } else {
       alert("Please select at least one product");
@@ -188,6 +218,10 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
     );
   }
 
+  const formatPrice = (price: number) => {
+    return Number(price).toFixed(2);
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -199,6 +233,12 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
         titleColor="#6C3CD1"
         showBackButton={true}
         navigation={navigation}
+        onBackPress={() => {
+          navigation.navigate("Main", {
+            screen: "SelectOrderType",
+            params:{id ,customerId,title,name,number,customerscreencustomerid}
+          });
+        }}
       />
       <View className="flex-1 px-6">
         <View className="mb-4 bg-[#F5F1FC] rounded-full flex-row items-center px-4 py-2 mt-2">
@@ -229,7 +269,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
                     {product.displayName}
                   </Text>
                   <Text className="text-sm text-gray-600">
-                    Rs.{product.discountedPrice} per kg
+                    Rs. {formatPrice(product.discountedPrice)} per kg
                   </Text>
                 </View>
                 <View className="justify-center w-8">
@@ -262,26 +302,53 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
 
         {/* Go to Cart Button */}
         <View className="py-4 px-6 ">
-          <TouchableOpacity onPress={goToCart} disabled={!hasSelectedProducts}>
-            {hasSelectedProducts ? (
-              <LinearGradient
-                colors={["#6839CF", "#874DDB"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                className="py-3 rounded-full items-center"
-              >
-                <Text className="text-white font-medium text-base">
-                  Go to Cart
-                </Text>
-              </LinearGradient>
-            ) : (
-              <View className="py-3 rounded-full items-center bg-[#B6B7BC]">
-                <Text className="text-white font-medium text-base">
-                  Go to Cart
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
+          <View
+            style={{
+              borderRadius: 30,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: hasSelectedProducts ? 0.25 : 0,
+              shadowRadius: 8,
+              elevation: hasSelectedProducts ? 10 : 0,
+            }}
+          >
+            <TouchableOpacity
+              onPress={goToCart}
+              disabled={!hasSelectedProducts}
+              activeOpacity={0.8}
+              style={{ borderRadius: 30 }}
+            >
+              {hasSelectedProducts ? (
+                <LinearGradient
+                  colors={["#6839CF", "#874DDB"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{
+                    paddingVertical: 12,
+                    borderRadius: 30,
+                    alignItems: "center",
+                  }}
+                >
+                  <Text className="text-white font-medium text-base">
+                    Go to Cart
+                  </Text>
+                </LinearGradient>
+              ) : (
+                <View
+                  style={{
+                    paddingVertical: 12,
+                    borderRadius: 30,
+                    alignItems: "center",
+                    backgroundColor: "#B6B7BC",
+                  }}
+                >
+                  <Text className="text-white font-medium text-base">
+                    Go to Cart
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </KeyboardAvoidingView>

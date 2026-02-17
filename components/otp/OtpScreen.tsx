@@ -48,6 +48,9 @@ const OtpScreen: React.FC = () => {
 
   const [isOtpInvalid, setIsOtpInvalid] = useState(false);
 
+  // Check if all OTP digits are filled
+  const isOtpComplete = otp.every((digit) => digit.length === 1);
+
   const getUserProfile = async () => {
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
@@ -140,13 +143,13 @@ const OtpScreen: React.FC = () => {
 
           await AsyncStorage.setItem("latestCustomerId", customerId.toString());
 
-          navigation.navigate("Main" as any, {
-            screen: "OtpSuccesfulScreen" as any,
-            params: {
-              customerId: customerId,
-              customerData: customerData,
-            },
-          });
+    
+          navigation.navigate( "OtpSuccesfulScreen" as any,
+           {
+            customerId: customerId,
+            customerData: customerData,
+           }         
+          );
         } else {
           Alert.alert(
             "Error",
@@ -354,12 +357,18 @@ const OtpScreen: React.FC = () => {
                 </TouchableOpacity>
               </View>
 
-              {/* Verify Button */}
+              {/* Verify Button - Disabled until all digits are entered */}
               {!isKeyboardVisible && (
-                <TouchableOpacity onPress={verifyOTP} disabled={loading}>
+                <TouchableOpacity 
+                  onPress={verifyOTP} 
+                  disabled={!isOtpComplete || loading || timer <= 0}
+                  activeOpacity={0.7}
+                >
                   <LinearGradient
-                    colors={["#6839CF", "#874DDB"]}
-                    className="py-3 px-14 items-center mt-10 rounded-3xl"
+                    colors={!isOtpComplete || loading || timer <= 0 ? ["#6839CF", "#874DDB"] : ["#6839CF", "#874DDB"]}
+                    className={`py-3 px-14 items-center mt-10 rounded-3xl ${
+                      !isOtpComplete || loading || timer <= 0 ? "opacity-50" : ""
+                    }`}
                   >
                     <Text className="text-center text-white font-bold text-lg">
                       {loading ? "Verifying..." : "Verify"}

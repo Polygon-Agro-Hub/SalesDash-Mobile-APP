@@ -24,6 +24,7 @@ import environment from "@/environment/environment";
 import { useFocusEffect } from "@react-navigation/native";
 import CustomHeader from "../common/CustomHeader";
 import SidebarSkeleton from "./SidebarSkeleton";
+import LoadingPage from "../common/LoadingPage";
 
 type SidebarScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -132,12 +133,7 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
     >
       <View className="flex-1 w-full bg-white">
         {loading ? (
-          <View className="flex-1 justify-center items-center">
-            <ActivityIndicator size="large" color="#693ACF" />
-            <Text className="mt-4 text-[#693ACF] font-semibold">
-              Logging out...
-            </Text>
-          </View>
+          <LoadingPage message="Logging Out..." fullScreen={true} />
         ) : (
           <View className="flex-1 bg-white">
             <ScrollView keyboardShouldPersistTaps="handled">
@@ -304,9 +300,7 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
                         <TouchableOpacity
                           style={{ marginTop: hp(1), marginBottom: hp(1) }}
                           onPress={() =>
-                            navigation.navigate("Main", {
-                              screen: "ViewComplainScreen",
-                            })
+                            navigation.navigate("ViewComplainScreen")
                           }
                         >
                           <Text className="text-base text-gray-700 font-bold">
