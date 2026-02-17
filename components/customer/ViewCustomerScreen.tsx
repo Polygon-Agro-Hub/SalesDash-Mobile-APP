@@ -574,6 +574,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
               keyExtractor={(item) => item.orderId.toString()}
               renderItem={({ item }) => (
                 <TouchableOpacity
+                  activeOpacity={1}
                   onPress={() =>
                     navigation.navigate("View_CancelOrderScreen" as any, {
                       orderId: item.orderId,
@@ -582,7 +583,23 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                     })
                   }
                 >
-                  <View className="bg-white rounded-2xl p-4 mb-4 border border-gray-200 mx-4 shadow-sm mt-4">
+                  <View
+                    style={{
+                      backgroundColor: "#FFFFFF",
+                      borderRadius: 16,
+                      padding: 16,
+                      marginBottom: 16,
+                      marginHorizontal: 16,
+                      marginTop: 16,
+                      borderWidth: 1,
+                      borderColor: "#E5E7EB",
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 3 },
+                      shadowOpacity: 0.06,
+                      shadowRadius: 6,
+                      elevation: 3,
+                    }}
+                  >
                     <View className="flex-row justify-between items-center">
                       <Text className="text-lg font-semibold text-gray-900">
                         Order: #{item.InvNo || "N/A"}

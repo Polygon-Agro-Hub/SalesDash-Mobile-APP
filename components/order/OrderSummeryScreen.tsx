@@ -1001,14 +1001,14 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         >
           <View
             style={{
-              width: "50%", // ml-[25%] mr-[25%]
+              width: "50%", 
               borderRadius: 24,
               shadowColor: "#000",
               shadowOffset: { width: 0, height: 6 },
               shadowOpacity: isSubmitted ? 0.15 : 0.25,
               shadowRadius: 8,
               elevation: 10,
-              backgroundColor: "#fff", // important for Android shadow
+              backgroundColor: "#fff", 
             }}
           >
             <TouchableOpacity

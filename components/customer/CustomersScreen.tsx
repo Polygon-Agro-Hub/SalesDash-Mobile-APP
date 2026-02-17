@@ -393,6 +393,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                   scrollEventThrottle={16}
                   renderItem={({ item }: { item: Customer }) => (
                     <TouchableOpacity
+                    activeOpacity={1}
                       onPress={() =>
                         navigation.navigate("ViewCustomerScreen", {
                           name: `${item.firstName} ${item.lastName}`,
@@ -406,7 +407,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                       <View
                         style={{
                           backgroundColor: "white",
-                          borderRadius: 12,
+                          borderRadius: 20,
                           padding: 16,
                           marginBottom: 12,
                           flexDirection: "row",
