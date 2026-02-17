@@ -103,7 +103,6 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
       );
 
       const data = response.data.data || {};
-      console.log("data",data)
       const newNotifications = data.notifications || [];
       const newUnreadCount = data.unreadCount || 0;
 
