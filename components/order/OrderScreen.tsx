@@ -980,7 +980,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                     ?.label || "Select a package"
                 : "Select a package"}
             </Text>
-            <MaterialIcons name="keyboard-arrow-down" size={24} color="#666" />
+            <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
           </TouchableOpacity>
         </View>
 
@@ -1193,18 +1193,18 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                         ?.label || "Select a product..."
                     : "Select a product..."}
                 </Text>
-                <MaterialIcons
-                  name="keyboard-arrow-down"
-                  size={24}
-                  color="#666"
-                />
+                <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
               </TouchableOpacity>
             </View>
 
             <View className="mb-4">
-              <Text className="text-gray-700 mb-">Price per 1kg</Text>
+              <Text className="text-gray-700 mb-">
+                Price per 1kg (Discounted Value)
+              </Text>
               <View className="bg-gray-50 rounded-xl p-3">
-                <Text className="text-gray-900">Rs.{pricePerKg || "0.00"}</Text>
+                <Text className="text-gray-900">
+                  Rs. {pricePerKg || "0.00"}
+                </Text>
               </View>
             </View>
 
@@ -1242,10 +1242,12 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
 
             {/* Total Amount Section */}
             <View className="mb-6">
-              <Text className="text-gray-700 mb-3">Total Amount</Text>
+              <Text className="text-gray-700 mb-3">
+                Total Amount (Discounted Value)
+              </Text>
               <View className="bg-gray-50 rounded-xl px-4 py-4">
                 <Text className="text-gray-900">
-                  Rs.
+                  Rs.{" "}
                   {(
                     (selectedUnit === "Kg" ? quantity : quantity / 1000) *
                     pricePerKg
@@ -1260,7 +1262,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
             {/* Dynamic Discount Message */}
             <View className="mb-4">
               <Text className="text-purple-600 text-center text-sm font-medium">
-                You received a discount of Rs.
+                You received a discount of Rs.{" "}
                 {Number(calculateDiscountForQuantity()).toLocaleString(
                   "en-US",
                   { minimumFractionDigits: 2, maximumFractionDigits: 2 },
@@ -1344,7 +1346,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
               </Text>
               <View className="bg-gray-50 rounded-xl px-4 py-4">
                 <Text className="text-gray-900">
-                  Rs.
+                  Rs.{" "}
                   {(
                     (editSelectedUnit === "Kg"
                       ? newItemQuantity
@@ -1361,8 +1363,15 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
             {/* Buttons */}
             <View className="gap-3">
               <TouchableOpacity
-                className="bg-gray-300 py-3 rounded-full items-center justify-center"
+                className="bg-gray-300 py-3 rounded-full items-center justify-center mb-3"
                 onPress={() => setModalVisible(false)}
+                style={{
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.12,
+                  shadowRadius: 4,
+                  elevation: 4,
+                }}
               >
                 <Text className="text-gray-700 font-semibold text-center">
                   Go Back
@@ -1372,6 +1381,13 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
               <TouchableOpacity
                 className="bg-purple-700 py-3 rounded-full items-center justify-center"
                 onPress={saveUpdatedItem}
+                style={{
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.12,
+                  shadowRadius: 4,
+                  elevation: 4,
+                }}
               >
                 <Text className="text-white font-semibold text-center">
                   Save
@@ -1397,6 +1413,8 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         }}
         searchPlaceholder="Search package..."
         multiSelect={false}
+        showSearch={false}
+        isLoading={false}
       />
 
       {/* Product Selection Modal */}
@@ -1428,6 +1446,8 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         }}
         searchPlaceholder="Search product..."
         multiSelect={false}
+        showSearch={false}
+        isLoading={productDropdownLoading}
       />
 
       {/* Unit Selection Modal */}
@@ -1448,6 +1468,8 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         }}
         searchPlaceholder="Search unit..."
         multiSelect={false}
+        showSearch={false}
+        isLoading={false}
       />
 
       {/* Edit Unit Selection Modal */}
@@ -1468,6 +1490,8 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         }}
         searchPlaceholder="Search unit..."
         multiSelect={false}
+        showSearch={false}
+        isLoading={false}
       />
     </KeyboardAvoidingView>
   );

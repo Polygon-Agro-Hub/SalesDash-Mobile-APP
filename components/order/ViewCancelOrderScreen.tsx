@@ -105,6 +105,9 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   const [selectedReportOption, setSelectedReportOption] = useState<
     string | null
   >(null);
+  const [tempSelectedReportOption, setTempSelectedReportOption] = useState<
+    string | null
+  >(null);
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
   const [deliveryFee, setDeliveryFee] = useState<number>(0);
@@ -380,11 +383,12 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   };
 
   const handleReportStatus = () => {
+    setTempSelectedReportOption(selectedReportOption);
     setReportModalVisible(true);
   };
 
   const handleConfirmReport = async () => {
-    if (!selectedReportOption) {
+    if (!tempSelectedReportOption) {
       Alert.alert(
         "Please select an option",
         "You must select a report status option.",
@@ -407,7 +411,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
       const apiUrl = `${environment.API_BASE_URL}api/orders/report-order/${orderId}`;
       const response = await axios.post(
         apiUrl,
-        { reportStatus: selectedReportOption },
+        { reportStatus: tempSelectedReportOption },
         {
           headers: {
             Authorization: `Bearer ${storedToken}`,
@@ -417,7 +421,9 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
       );
 
       if (response.data.success) {
+        setSelectedReportOption(tempSelectedReportOption);
         setReportModalVisible(false);
+        setTempSelectedReportOption(null);
       } else {
         Alert.alert(
           "Error",
@@ -428,6 +434,11 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
       console.error("Error updating report status:", error);
       Alert.alert("Error", "Failed to update report status. Please try again.");
     }
+  };
+
+  const handleCloseReportModal = () => {
+    setReportModalVisible(false);
+    setTempSelectedReportOption(null);
   };
 
   const isTimelineItemActive = (status: string) => {
@@ -943,45 +954,82 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
             <Text className="text-red-500 font-medium text-center mb-2">
               {selectedReportOption}{" "}
             </Text>
-
-            {status !== "Cancelled" && (
-              <TouchableOpacity
-                onPress={handleReportStatus}
-                className="mx-5 mb-3 rounded-full px-14"
-              >
-                <LinearGradient
-                  colors={["#6839CF", "#874DDB"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  className="py-3 rounded-full items-center"
+            <View className="flex w-3/5 mx-auto">
+              {status !== "Cancelled" && (
+                <View
+                  style={{
+                    marginHorizontal: 20,
+                    marginBottom: 12,
+                    borderRadius: 30,
+                    shadowColor: "#000",
+                    shadowOpacity: 0.15,
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowRadius: 8,
+                    elevation: 8,
+                  }}
                 >
-                  <Text className="text-white text-center font-semibold">
-                    Report Status
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            )}
-
-            {/* Cancel Order Button */}
-            <TouchableOpacity
-              onPress={handleCancelOrder}
-              disabled={isCancelDisabled()}
-              className={`mx-5 mb-5 px-14 rounded-full ${isCancelDisabled() ? "opacity-70" : ""}`}
-            >
-              {isCancelDisabled() ? (
-                <View className="bg-white py-3 rounded-full items-center">
-                  <Text className="text-white text-center font-semibold">
-                    Cancel Order
-                  </Text>
-                </View>
-              ) : (
-                <View className="bg-[#000000] py-3 rounded-full items-center">
-                  <Text className="text-white text-center font-semibold">
-                    Cancel Order
-                  </Text>
+                  <TouchableOpacity
+                    onPress={handleReportStatus}
+                    activeOpacity={0.8}
+                    style={{ borderRadius: 30 }}
+                  >
+                    <LinearGradient
+                      colors={["#6839CF", "#874DDB"]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={{
+                        paddingVertical: 12,
+                        borderRadius: 30,
+                        alignItems: "center",
+                      }}
+                    >
+                      <Text style={{ color: "#fff", fontWeight: "600" }}>
+                        Report Status
+                      </Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
                 </View>
               )}
-            </TouchableOpacity>
+
+              {/* Cancel Order Button */}
+              <View
+                style={{
+                  marginHorizontal: 20,
+                  marginBottom: 20,
+                  borderRadius: 30,
+                  shadowColor: "#000",
+                  shadowOpacity: isCancelDisabled() ? 0.05 : 0.12,
+                  shadowOffset: { width: 0, height: 5 },
+                  shadowRadius: 7,
+                  elevation: isCancelDisabled() ? 3 : 6,
+                }}
+              >
+                <TouchableOpacity
+                  onPress={handleCancelOrder}
+                  disabled={isCancelDisabled()}
+                  activeOpacity={0.8}
+                  style={{
+                    borderRadius: 30,
+                    opacity: isCancelDisabled() ? 0.7 : 1,
+                  }}
+                >
+                  <View
+                    style={{
+                      backgroundColor: isCancelDisabled()
+                        ? "#E5E7EB"
+                        : "#000000",
+                      paddingVertical: 12,
+                      borderRadius: 30,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>
+                      Cancel Order
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
           </ScrollView>
         ) : (
           <View className="flex-1 justify-center items-center p-5">
@@ -990,7 +1038,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
         )}
       </View>
 
-      {/* Report Status Modal */}
+      {/* Cancel Order Modal */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -1009,37 +1057,77 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
             </Text>
 
             {/* Confirm Button */}
-            <TouchableOpacity
-              onPress={confirmCancelOrder}
-              className="mb-3 rounded-lg overflow-hidden"
+            <View
+              style={{
+                borderRadius: 24,
+                shadowColor: "#000",
+                shadowOpacity: 0.12,
+                shadowOffset: { width: 0, height: 4 },
+                shadowRadius: 6,
+                elevation: 4,
+                marginBottom: 12,
+              }}
             >
-              <View className="bg-black py-3 rounded-lg items-center">
-                <Text className="text-white text-center font-semibold">
-                  Confirm
-                </Text>
-              </View>
-            </TouchableOpacity>
+              <TouchableOpacity
+                onPress={confirmCancelOrder}
+                activeOpacity={0.8}
+                style={{ borderRadius: 24 }}
+              >
+                <View
+                  style={{
+                    backgroundColor: "#000",
+                    paddingVertical: 12,
+                    borderRadius: 24,
+                    alignItems: "center",
+                  }}
+                >
+                  <Text style={{ color: "#fff", fontWeight: "600" }}>
+                    Confirm
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </View>
 
             {/* Cancel Button */}
-            <TouchableOpacity
-              onPress={() => setCancelModalVisible(false)}
-              className="rounded-lg"
+            <View
+              style={{
+                borderRadius: 24,
+                shadowColor: "#000",
+                shadowOpacity: 0.08,
+                shadowOffset: { width: 0, height: 3 },
+                shadowRadius: 5,
+                elevation: 3,
+              }}
             >
-              <View className="bg-gray-200 py-3 rounded-lg items-center">
-                <Text className="text-black text-center font-semibold">
-                  Cancel
-                </Text>
-              </View>
-            </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setCancelModalVisible(false)}
+                activeOpacity={0.8}
+                style={{ borderRadius: 24 }}
+              >
+                <View
+                  style={{
+                    backgroundColor: "#E5E7EB",
+                    paddingVertical: 12,
+                    borderRadius: 24,
+                    alignItems: "center",
+                  }}
+                >
+                  <Text style={{ color: "#000", fontWeight: "600" }}>
+                    Cancel
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
 
+      {/* Report Status Modal */}
       <Modal
         animationType="slide"
         transparent={true}
         visible={reportModalVisible}
-        onRequestClose={() => setReportModalVisible(false)}
+        onRequestClose={handleCloseReportModal}
       >
         <View className="flex-1 justify-center items-center bg-black/50">
           <View className="bg-white rounded-lg p-5 w-5/6 max-w-md">
@@ -1047,13 +1135,13 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
             <View className="mb-4">
               <TouchableOpacity
                 className="flex-row items-center justify-between p-3 mb-2 rounded-lg"
-                onPress={() => setSelectedReportOption("Confirmed")}
+                onPress={() => setTempSelectedReportOption("Confirmed")}
               >
                 <Text className="text-black font-medium">Confirmed</Text>
                 <View
-                  className={`w-6 h-6 rounded-lg border-2 ${selectedReportOption === "Confirmed" ? "border-[#6C3CD1] bg-[#6C3CD1]" : "border-gray-400 bg-white"}`}
+                  className={`w-6 h-6 rounded-lg border-2 ${tempSelectedReportOption === "Confirmed" ? "border-[#6C3CD1] bg-[#6C3CD1]" : "border-gray-400 bg-white"}`}
                 >
-                  {selectedReportOption === "Confirmed" && (
+                  {tempSelectedReportOption === "Confirmed" && (
                     <View className="flex-1 items-center justify-center">
                       <Feather name="check" size={16} color="white" />
                     </View>
@@ -1063,13 +1151,13 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
 
               <TouchableOpacity
                 className="flex-row items-center justify-between p-3 mb-2  rounded-lg"
-                onPress={() => setSelectedReportOption("Not-Confirmed")}
+                onPress={() => setTempSelectedReportOption("Not-Confirmed")}
               >
                 <Text className="text-black font-medium">Not-Confirmed</Text>
                 <View
-                  className={`w-6 h-6 rounded-lg border-2 ${selectedReportOption === "Not-Confirmed" ? "border-[#6C3CD1] bg-[#6C3CD1]" : "border-gray-400 bg-white"}`}
+                  className={`w-6 h-6 rounded-lg border-2 ${tempSelectedReportOption === "Not-Confirmed" ? "border-[#6C3CD1] bg-[#6C3CD1]" : "border-gray-400 bg-white"}`}
                 >
-                  {selectedReportOption === "Not-Confirmed" && (
+                  {tempSelectedReportOption === "Not-Confirmed" && (
                     <View className="flex-1 items-center justify-center">
                       <Feather name="check" size={16} color="white" />
                     </View>
@@ -1079,13 +1167,13 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
 
               <TouchableOpacity
                 className="flex-row items-center justify-between p-3 mb-6 "
-                onPress={() => setSelectedReportOption("Not-Answered")}
+                onPress={() => setTempSelectedReportOption("Not-Answered")}
               >
                 <Text className="text-black font-medium">Not-Answered</Text>
                 <View
-                  className={`w-6 h-6 rounded-lg border-black border-2 ${selectedReportOption === "Not-Answered" ? "border-[#6C3CD1] bg-[#6C3CD1]" : "border-gray-400 bg-white"}`}
+                  className={`w-6 h-6 rounded-lg border-black border-2 ${tempSelectedReportOption === "Not-Answered" ? "border-[#6C3CD1] bg-[#6C3CD1]" : "border-gray-400 bg-white"}`}
                 >
-                  {selectedReportOption === "Not-Answered" && (
+                  {tempSelectedReportOption === "Not-Answered" && (
                     <View className="flex-1 items-center justify-center">
                       <Feather name="check" size={16} color="white" />
                     </View>
@@ -1098,11 +1186,11 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
             <TouchableOpacity
               onPress={handleConfirmReport}
               className="mb-3 rounded-full mx-7 overflow-hidden"
-              disabled={!selectedReportOption}
+              disabled={!tempSelectedReportOption}
             >
               <LinearGradient
                 colors={
-                  selectedReportOption
+                  tempSelectedReportOption
                     ? ["#040404ff", "#030203ff"]
                     : ["#CCCCCC", "#CCCCCC"]
                 }
@@ -1111,7 +1199,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                 className="py-3 rounded-full items-center"
               >
                 <Text
-                  className={`text-center font-semibold ${selectedReportOption ? "text-white" : "text-gray-600"}`}
+                  className={`text-center font-semibold ${tempSelectedReportOption ? "text-white" : "text-gray-600"}`}
                 >
                   Confirm
                 </Text>
@@ -1119,7 +1207,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={() => setReportModalVisible(false)}
+              onPress={handleCloseReportModal}
               className="rounded-full mx-7"
             >
               <View className="bg-gray-200 py-3 rounded-full items-center">
