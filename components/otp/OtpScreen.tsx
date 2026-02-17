@@ -143,13 +143,7 @@ const OtpScreen: React.FC = () => {
 
           await AsyncStorage.setItem("latestCustomerId", customerId.toString());
 
-          // navigation.navigate("Main" as any, {
-          //   screen: "OtpSuccesfulScreen" as any,
-          //   params: {
-          //     customerId: customerId,
-          //     customerData: customerData,
-          //   },
-          // });
+    
           navigation.navigate( "OtpSuccesfulScreen" as any,
            {
             customerId: customerId,

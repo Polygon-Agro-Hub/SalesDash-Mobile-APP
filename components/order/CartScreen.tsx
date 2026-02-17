@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   ScrollView,
   StatusBar,
+  BackHandler,
 } from "react-native";
 import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { useFocusEffect } from "@react-navigation/native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import environment from "@/environment/environment";
@@ -35,6 +37,7 @@ interface CratScreenProps {
     params?: {
       id?: string;
       customerId?: any;
+      number:string;
       isPackage?: number | string;
       selectedProducts?: any[];
       items?: any[];
@@ -47,16 +50,48 @@ interface CratScreenProps {
       timeDisplay?: string;
       selectedTimeSlot?: string;
       paymentMethod?: string;
+      title:string;
+      name:string;
+      customerscreencustomerid:string
     };
   };
 }
 
 const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
-  const { id, isPackage } = route.params || {};
+  const { id, isPackage ,customerId,title,name,number,customerscreencustomerid} = route.params || {};
   const fromOrderSummary = (route.params as any)?.fromOrderSummary;
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      setCartItems((prevItems) =>
+        prevItems.map((item) => ({ ...item, selected: false })),
+      );
+    }, []),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        navigation.navigate("CreateCustomPackage" as any, {
+          id,
+          isPackage,
+          selectedProductIds: cartItems.map((item) => item.id),
+          customerId,title,name,number,customerscreencustomerid
+        });
+        return true;
+      };
+
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress,
+      );
+
+      return () => backHandler.remove();
+    }, [navigation]),
+  );
 
   useEffect(() => {
     const initializeCartItems = async () => {
@@ -73,20 +108,13 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
               if (needsApiFetch) {
                 try {
                   const storedToken = await AsyncStorage.getItem("authToken");
-
                   const apiUrl = `${environment.API_BASE_URL}api/packages/getChnageby/${item.id}`;
-
                   const response = await axios.get(apiUrl, {
                     headers: { Authorization: `Bearer ${storedToken}` },
                   });
-
                   if (response.data.data) {
                     changebyValue = response.data.data.changeby;
                     startValue = response.data.data.startValue;
-                  } else {
-                    console.log(
-                      "No data in API response, using existing values",
-                    );
                   }
                 } catch (error) {
                   console.error(
@@ -110,7 +138,6 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
                 item.unitType?.toLowerCase() === "g" ? "g" : "kg";
 
               let initialQuantity;
-
               if (fromOrderSummary) {
                 initialQuantity =
                   typeof item.quantity === "string"
@@ -144,7 +171,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
                 discountPerKg = item.discount;
               }
 
-              const finalItem = {
+              return {
                 ...item,
                 name: item.name || `Product ${item.id}`,
                 price: pricePerKg,
@@ -158,8 +185,6 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
                 startValue: changebyNum,
                 minValue: startValueNum,
               };
-
-              return finalItem;
             }),
           );
 
@@ -213,13 +238,8 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     setCartItems(
       cartItems.map((item) => {
         if (item.id === id && item.unitType !== newUnit) {
-          let newValue;
-          if (newUnit === "kg") {
-            newValue = item.changeby / 1000;
-          } else {
-            newValue = item.changeby * 1000;
-          }
-
+          const newValue =
+            newUnit === "kg" ? item.changeby / 1000 : item.changeby * 1000;
           return {
             ...item,
             unitType: newUnit,
@@ -236,18 +256,10 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     setCartItems(
       cartItems.map((item) => {
         if (item.id === id) {
-          let incrementAmount = item.startValue;
-          if (item.unitType === "g") {
-            incrementAmount = item.startValue * 1000;
-          }
-
+          const incrementAmount =
+            item.unitType === "g" ? item.startValue * 1000 : item.startValue;
           const newValue = item.changeby + incrementAmount;
-
-          return {
-            ...item,
-            changeby: newValue,
-            quantity: newValue,
-          };
+          return { ...item, changeby: newValue, quantity: newValue };
         }
         return item;
       }),
@@ -258,44 +270,34 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     setCartItems(
       cartItems.map((item) => {
         if (item.id === id) {
-          // Use startValue as the decrement step (same as increment)
-          let decrementAmount = item.startValue;
-          if (item.unitType === "g") {
-            // If unit is grams, convert startValue to grams
-            decrementAmount = item.startValue * 1000;
-          }
-
-          // Use minValue (startValue) as the minimum allowed quantity
-          let minValue = item.minValue;
-          if (item.unitType === "g") {
-            // If unit is grams, convert minValue to grams
-            minValue = item.minValue * 1000;
-          }
-
-          // Ensure quantity doesn't go below minimum
+          const decrementAmount =
+            item.unitType === "g" ? item.startValue * 1000 : item.startValue;
+          const minValue =
+            item.unitType === "g" ? item.minValue * 1000 : item.minValue;
           const newValue = Math.max(minValue, item.changeby - decrementAmount);
-
-          return {
-            ...item,
-            changeby: newValue,
-            quantity: newValue,
-          };
+          return { ...item, changeby: newValue, quantity: newValue };
         }
         return item;
       }),
     );
   };
 
+  // Subtotal = sum of normal prices (without discount)
   const currentSubtotal = cartItems.reduce((total, item) => {
     return total + parseFloat(calculateItemNormalTotal(item));
   }, 0);
 
-  const currentTotal =
-    cartItems.reduce((total, item) => {
-      return total + parseFloat(calculateItemTotal(item));
-    }, 0) + 180;
+  // Total discounted value = sum of discounted prices
+  const totalDiscountedValue = cartItems.reduce((total, item) => {
+    return total + parseFloat(calculateItemTotal(item));
+  }, 0);
 
-  const discount = currentSubtotal - (currentTotal - 180);
+  const discount = currentSubtotal - totalDiscountedValue;
+
+  const SERVICE_FEE = 180;
+
+  // Full total = discounted value + service fee
+  const fullTotal = totalDiscountedValue + SERVICE_FEE;
 
   const handleConfirm = () => {
     const nonSelectedItems = cartItems.filter((item) => !item.selected);
@@ -304,7 +306,6 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
       const itemsToPass = nonSelectedItems.map((item) => {
         const weightInKg =
           item.unitType === "g" ? item.changeby / 1000 : item.changeby;
-
         return {
           id: item.id,
           name: item.name,
@@ -323,9 +324,11 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
       if (navigationTarget === "ScheduleScreen") {
         navigation.navigate("ScheduleScreen" as any, {
           items: itemsToPass,
-          total: currentTotal,
+          total: fullTotal,
           subtotal: currentSubtotal,
           discount: discount,
+          customerscreencustomerid,
+          number:number,
           id: id,
           isPackage: isPackage,
           selectedDate: route.params?.selectedDate,
@@ -334,15 +337,18 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
           paymentMethod: route.params?.paymentMethod,
           fullTotal: route.params?.fullTotal,
           customerId: route.params?.customerId,
+          title,
+          name
         });
       } else {
         navigation.navigate("ScheduleScreen" as any, {
           items: itemsToPass,
-          total: currentTotal,
+          total: fullTotal,
           subtotal: currentSubtotal,
           discount: discount,
           id: id,
           isPackage: isPackage,
+          customerId,title,name,number,customerscreencustomerid
         });
       }
     } else {
@@ -354,7 +360,6 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     return item.changeby.toFixed(2);
   };
 
-  // Loading Screen
   if (isLoading) {
     return <LoadingPage message="Loading Your Cart..." fullScreen={true} />;
   }
@@ -367,6 +372,14 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
         titleColor="#6C3CD1"
         showBackButton={true}
         navigation={navigation}
+        onBackPress={() => {
+          navigation.navigate("CreateCustomPackage" as any, {
+            id,
+            isPackage,
+            selectedProductIds: cartItems.map((item) => item.id),
+            customerId,title,name,number,customerscreencustomerid
+          });
+        }}
         rightComponent={
           <View className="flex-row items-center">
             {isSelectionMode && (
@@ -388,11 +401,11 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
         {cartItems.map((item) => (
           <View
             key={item.id}
-            className="flex-row items-center py-4 border-b border-gray-200"
+            className="flex-row items-start py-4 border-b border-gray-200"
           >
             <TouchableOpacity
               onPress={() => toggleItemSelection(item.id)}
-              className="mr-4"
+              className="mr-2 mt-[5%]"
             >
               <View
                 className={`w-5 h-5 rounded-sm border ${
@@ -406,95 +419,101 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
             </TouchableOpacity>
 
             <View className="flex-1">
-              <Text className="text-base font-medium text-gray-800">
-                {item.name}
-              </Text>
-              <Text className="text-sm text-gray-600">
-                Rs.{" "}
-                {item.discountedPrice.toLocaleString("en-IN", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}{" "}
-                per kg
-              </Text>
-            </View>
+              <Text className="font-medium text-gray-800 ">{item.name}</Text>
 
-            <View className="flex-row items-center justify-center">
-              <View className="flex-row mr-2 item-center justify-center">
-                <TouchableOpacity
-                  className={`w-8 h-8 rounded-md border shadow-xl items-center justify-center ${
-                    item.unitType === "kg"
-                      ? "bg-purple-100 border-[#3E206D]"
-                      : "bg-white border-[#A3A3A3]"
-                  }`}
-                  style={{
-                    shadowColor: "#000",
-                    shadowOpacity: 0.5,
-                    shadowRadius: 10,
-                    elevation: 10,
-                  }}
-                  onPress={() => changeUnit(item.id, "kg")}
-                >
-                  <Text
-                    className={`text-base mt-[-3] ${
-                      item.unitType === "kg"
-                        ? "text-purple-600"
-                        : "text-gray-600"
-                    }`}
-                  >
-                    kg
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  className={`w-8 h-8 rounded-md border ml-2 shadow-xl items-center justify-center ${
-                    item.unitType === "g"
-                      ? "bg-purple-100 border-[#3E206D]"
-                      : "bg-white border-[#A3A3A3]"
-                  }`}
-                  style={{
-                    shadowColor: "#000",
-                    shadowOpacity: 0.5,
-                    shadowRadius: 10,
-                    elevation: 10,
-                  }}
-                  onPress={() => changeUnit(item.id, "g")}
-                >
-                  <Text
-                    className={`text-base mt-[-5] ${
-                      item.unitType === "g"
-                        ? "text-purple-600"
-                        : "text-gray-600"
-                    }`}
-                  >
-                    g
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <View className="flex-row items-center">
-                <TouchableOpacity onPress={() => decreaseQuantity(item.id)}>
-                  <FontAwesome6 name="circle-minus" size={20} color="#5D5D5D" />
-                </TouchableOpacity>
-
-                <Text className="mx-2 text-sm w-14 text-center">
-                  {formatQuantity(item)}
+              <View className="flex-row items-center justify-between mt-3">
+                <Text className="text-xs text-gray-600">
+                  Rs.{" "}
+                  {item.discountedPrice.toLocaleString("en-IN", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}{" "}
+                  /per kg
                 </Text>
 
-                <TouchableOpacity onPress={() => increaseQuantity(item.id)}>
-                  <Ionicons name="add-circle" size={24} color="#5D5D5D" />
-                </TouchableOpacity>
+                <View className="flex-row items-center mt-[-6%]">
+                  <View className="flex-row mr-2 items-center">
+                    <TouchableOpacity
+                      className={`w-6 h-6 rounded-md border shadow-xl items-center  justify-center ${
+                        item.unitType === "kg"
+                          ? "bg-purple-100 border-[#3E206D]"
+                          : "bg-white border-[#A3A3A3]"
+                      }`}
+                      style={{
+                        shadowColor: "#000",
+                        shadowOpacity: 0.5,
+                        shadowRadius: 10,
+                        elevation: 10,
+                      }}
+                      onPress={() => changeUnit(item.id, "kg")}
+                    >
+                      <Text
+                        className={`text-xs mt-[-3] ${
+                          item.unitType === "kg"
+                            ? "text-purple-600"
+                            : "text-gray-600"
+                        }`}
+                      >
+                        kg
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      className={`w-6 h-6 rounded-md border ml-2 shadow-xl items-center justify-center ${
+                        item.unitType === "g"
+                          ? "bg-purple-100 border-[#3E206D]"
+                          : "bg-white border-[#A3A3A3]"
+                      }`}
+                      style={{
+                        shadowColor: "#000",
+                        shadowOpacity: 0.5,
+                        shadowRadius: 10,
+                        elevation: 10,
+                      }}
+                      onPress={() => changeUnit(item.id, "g")}
+                    >
+                      <Text
+                        className={`text-xs mt-[-5] ${
+                          item.unitType === "g"
+                            ? "text-purple-600"
+                            : "text-gray-600"
+                        }`}
+                      >
+                        g
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <View className="flex-row items-center">
+                    <TouchableOpacity onPress={() => decreaseQuantity(item.id)}>
+                      <FontAwesome6
+                        name="circle-minus"
+                        size={20}
+                        color="#5D5D5D"
+                      />
+                    </TouchableOpacity>
+
+                    <Text className="mx-2 text-xs w-14 text-center">
+                      {formatQuantity(item)}
+                    </Text>
+
+                    <TouchableOpacity onPress={() => increaseQuantity(item.id)}>
+                      <Ionicons name="add-circle" size={24} color="#5D5D5D" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
               </View>
             </View>
           </View>
         ))}
 
+        {/*Summary Section*/}
         <View className="py-4 border-t border-gray-200">
           <View className="flex-row justify-between py-2">
-            <Text className="text-gray-500">Subtotal</Text>
-            <Text className="font-medium">
+            <Text className="text-[#8492A3]">Subtotal (Without Discount)</Text>
+            <Text className="font-bold text-[#CA0000]">
               Rs.{" "}
-              {currentSubtotal.toLocaleString("en-US", {
+              {currentSubtotal.toLocaleString("en-IN", {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}
@@ -502,36 +521,60 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
           </View>
 
           <View className="flex-row justify-between py-2">
-            <Text className="text-gray-500">Discount</Text>
+            <Text className="text-[#8492A3]">Discount</Text>
             <Text className="font-medium text-[#686868]">
-              Rs.{" "}
-              {discount.toLocaleString("en-US", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
-            </Text>
-          </View>
-
-          <View className="flex-row justify-between py-2">
-            <Text className="text-gray-500">Service Fee</Text>
-            <Text className="font-medium text-[#686868]">Rs. 180.00</Text>
-          </View>
-
-          <View className="flex-row justify-between py-2">
-            <Text className="font-semibold">Total</Text>
-            <Text className="font-bold">
-              Rs.{" "}
-              {currentTotal.toLocaleString("en-IN", {
+              - Rs.{" "}
+              {discount.toLocaleString("en-IN", {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}
             </Text>
           </View>
         </View>
-        <View className="py-4 border-t border-gray-200"></View>
+
+        <View className="border-t border-gray-200" />
+
+        <View className="py-4">
+          <View className="flex-row justify-between py-2">
+            <Text className="text-[#8492A3]">Total (Discounted Value)</Text>
+            <Text className="font-bold text-[#3E206D]">
+              Rs.{" "}
+              {totalDiscountedValue.toLocaleString("en-IN", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </Text>
+          </View>
+
+          <View className="flex-row justify-between py-2">
+            <Text className="text-[#8492A3]">Service Fee</Text>
+            <Text className="font-medium text-[#686868]">
+              + Rs. {SERVICE_FEE.toFixed(2)}
+            </Text>
+          </View>
+        </View>
+
+        {/* Separator */}
+        <View className="border-t border-gray-200" />
+
+        {/* Full Total – large bold */}
+        <View className="flex-row justify-between py-5">
+          <Text className="font-semibold text-base text-[#414347]">
+            Full Total
+          </Text>
+          <Text className="font-bold text-xl text-[#212121]">
+            Rs.{" "}
+            {fullTotal.toLocaleString("en-IN", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </Text>
+        </View>
+
+        <View className="py-4" />
       </ScrollView>
 
-      <View className="py-4 px-6">
+      <View className="py-4 px-[15%]">
         <View
           style={{
             borderRadius: 30,

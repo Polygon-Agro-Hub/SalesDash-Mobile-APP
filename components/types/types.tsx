@@ -11,6 +11,7 @@ export interface CartItem {
   unitType: string;
   startValue: number;
   changeby: number;
+  title:string;
 }
 
 export interface PackageItem {
@@ -190,6 +191,7 @@ export type RootStackParamList = {
     fullTotal: number;
     selectedDate: string;
     selectedTimeSlot: string;
+    sheduleTime:string;
   };
   OrderSummeryScreen: {
     items?: CartItem[];
@@ -204,6 +206,7 @@ export type RootStackParamList = {
     customerid?: string | number;
     isPackage?: number;
     packageId?: number;
+    customerscreencustomerid:string;
     orderItems?: PackageItem[];
     orderData?: {
       additionalItems?: AdditionalItem[];

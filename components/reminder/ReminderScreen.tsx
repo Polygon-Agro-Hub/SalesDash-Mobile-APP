@@ -103,6 +103,7 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
       );
 
       const data = response.data.data || {};
+      console.log("data",data)
       const newNotifications = data.notifications || [];
       const newUnreadCount = data.unreadCount || 0;
 
@@ -220,16 +221,20 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
 
   const getNotificationIcon = (title: string) => {
     switch (title) {
-      case "Payment reminder ":
+      case "Payment Reminder":
         return require("@/assets/images/reminder/payment-method.webp");
       case "Order is Processing":
         return require("@/assets/images/reminder/time-management.webp");
       case "Order is Out for Delivery":
-        return require("@/assets/images/reminder/fast-shipping.webp");
+        return require("@/assets/images/reminder/out-for-delivery.webp");
       case "Order is Cancelled":
         return require("@/assets/images/reminder/order-cancelled.webp");
+       case "Order is Delivered":
+        return require("@/assets/images/reminder/order-is-elivered.webp");
       case "Driver has collected the order":
         return require("@/assets/images/reminder/delivery-courier.webp");
+      case "Order is on the way":
+        return require("@/assets/images/reminder/fast-shipping.webp");
       default:
         return require("@/assets/images/reminder/reminder.webp");
     }

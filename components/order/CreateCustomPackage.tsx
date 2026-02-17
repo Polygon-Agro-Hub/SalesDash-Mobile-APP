@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   StatusBar,
+  BackHandler,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -23,6 +24,7 @@ import {
 } from "react-native-responsive-screen";
 import LoadingPage from "../common/LoadingPage";
 import CustomHeader from "../common/CustomHeader";
+import { useFocusEffect } from "@react-navigation/native";
 
 type CreateCustomPackageNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -35,6 +37,12 @@ interface CreateCustomPackageProps {
     params: {
       id: string;
       isPackage: string;
+      selectedProductIds?: number[];
+      customerId:string;
+       name:string;
+       title:string;
+       number:string;
+       customerscreencustomerid:string;
     };
   };
 }
@@ -57,11 +65,13 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
   navigation,
   route,
 }) => {
-  const { id, isPackage } = route.params || {};
+  const { id, isPackage, selectedProductIds ,customerId, name, title,number ,customerscreencustomerid} = route.params || {};
   const [searchQuery, setSearchQuery] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  console.log("id custom package",id)
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -88,7 +98,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
               normalPrice: parseFloat(item.normalPrice),
               discountedPrice: parseFloat(item.discountedPrice),
               startValue: parseFloat(item.startValue),
-              selected: false,
+              selected: selectedProductIds?.includes(item.id) ?? false,
             })),
           );
         }
@@ -124,6 +134,25 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
       ),
     );
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+         navigation.navigate("Main", {
+            screen: "SelectOrderType",
+            params:{id ,customerId,title,name,number,customerscreencustomerid}
+          });
+        return true;
+      };
+
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress,
+      );
+
+      return () => backHandler.remove();
+    }, [navigation]),
+  );
 
   const handleSearch = (query: string) => {
     let cleanedQuery = query;
@@ -164,6 +193,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
         selectedProducts,
         id,
         isPackage,
+        customerId,title,name,number,customerscreencustomerid
       });
     } else {
       alert("Please select at least one product");
@@ -203,6 +233,12 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
         titleColor="#6C3CD1"
         showBackButton={true}
         navigation={navigation}
+        onBackPress={() => {
+          navigation.navigate("Main", {
+            screen: "SelectOrderType",
+            params:{id ,customerId,title,name,number,customerscreencustomerid}
+          });
+        }}
       />
       <View className="flex-1 px-6">
         <View className="mb-4 bg-[#F5F1FC] rounded-full flex-row items-center px-4 py-2 mt-2">

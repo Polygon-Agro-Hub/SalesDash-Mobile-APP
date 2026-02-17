@@ -465,6 +465,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                     customerId: customerId,
                     name: name,
                     title: title,
+                    number:number,
+                    customerscreencustomerid:customerId
                   })
                 }
                 className="flex-row bg-[#6B3BCF] px-4 py-2 rounded-full items-center mt-5"
