@@ -55,6 +55,8 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
     cusId: "",
   });
 
+    console.log("summary",customerId,id)
+
   useFocusEffect(
     useCallback(() => {
       const fetchProducts = async () => {
