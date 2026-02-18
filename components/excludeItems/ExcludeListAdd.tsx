@@ -235,9 +235,8 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
       );
 
       if (checkResponse.status === 200) {
-        navigation.navigate("Main", {
-          screen: "ExcludeListSummery",
-          params: { customerId: customerId },
+        navigation.navigate("ExcludeListSummery", {
+          customerId: Number(customerId),
         });
       } else if (checkResponse.status === 400) {
         console.error("Bad request:", checkResponse.data.message);
@@ -285,9 +284,8 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
 
   const handleNavigateIfNoCropsSelected = () => {
     if (selectedCrops.length === 0) {
-      navigation.navigate("Main", {
-        screen: "ExcludeListSummery",
-        params: { customerId: customerId },
+      navigation.navigate("ExcludeListSummery", {
+        customerId: Number(customerId),
       });
     } else {
       handlesubmitexcludelist();
@@ -402,6 +400,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
           <FlatList
             keyboardShouldPersistTaps="handled"
             data={filteredCrops}
+            contentContainerStyle={{ paddingBottom: 200 }}
             renderItem={({ item }) => (
               <TouchableOpacity
                 onPress={() => toggleSelect(item.id)}
@@ -438,7 +437,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
       </View>
 
       {!isKeyboardVisible && (
-        <View className="absolute bottom-0 left-0 right-0 bg-white pt-4 pb-20 px-6">
+        <View className="absolute bottom-0 left-0 right-0 bg-white pt-4 pb-4 px-6">
           <TouchableOpacity
             onPress={handleNavigateIfNoCropsSelected}
             className="bottom-[14%] left-0 right-0 items-center"

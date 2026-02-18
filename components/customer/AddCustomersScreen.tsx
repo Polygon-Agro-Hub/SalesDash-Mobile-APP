@@ -697,7 +697,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     if (!latitude || !longitude) {
       Alert.alert(
         "Location Required",
-        "Please capture your location before registering.",
+        "Please capture customer’s location before registering.",
         [{ text: "OK" }],
       );
       setIsSubmitting(false);

@@ -891,43 +891,46 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
               />
             </View>
 
-            <TouchableOpacity
-              onPress={handleDownloadAndShareInvoice}
+            <View
               style={{
-                marginHorizontal: wp(20),
                 marginTop: hp(7),
-                opacity: isDownloading ? 0.7 : 1,
+                alignSelf: "center",
+                width: "90%",
+                maxWidth: 300,
+                borderRadius: 30,
+
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.12,
+                shadowRadius: 8,
+                elevation: 6,
               }}
-              disabled={isDownloading}
-              className="w-2/3"
             >
-              <LinearGradient
-                colors={
-                  isDownloading
-                    ? ["#9ca3af", "#6b7280"]
-                    : ["#6839CF", "#874DDB"]
-                }
-                style={{
-                  paddingVertical: 12,
-                  paddingHorizontal: 16,
-                  borderRadius: 30,
-                  alignItems: "center",
-                  flexDirection: "row",
-                  justifyContent: "center",
-                }}
+              <TouchableOpacity
+                onPress={handleDownloadAndShareInvoice}
+                disabled={isDownloading}
+                activeOpacity={0.85}
               >
-                {isDownloading && (
-                  <ActivityIndicator
-                    size="small"
-                    color="white"
-                    style={{ marginRight: 8 }}
-                  />
-                )}
-                <Text style={{ color: "white", fontWeight: "bold" }}>
-                  {isDownloading ? "Downloading..." : "Download Invoice"}
-                </Text>
-              </LinearGradient>
-            </TouchableOpacity>
+                <LinearGradient
+                  colors={
+                    isDownloading
+                      ? ["#9ca3af", "#6b7280"]
+                      : ["#6839CF", "#874DDB"]
+                  }
+                  style={{
+                    paddingVertical: 12,
+                    borderRadius: 30,
+                    alignItems: "center",
+                    flexDirection: "row",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text style={{ color: "white", fontWeight: "bold" }}>
+                    {isDownloading ? "Downloading..." : "Download Invoice"}
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </ScrollView>

@@ -7,6 +7,7 @@ import {
   Platform,
   TouchableOpacity,
   Alert,
+  BackHandler,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import {
@@ -51,7 +52,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
     lastName: "",
     title: "",
     cusId: "",
-    phoneNumber:""
+    phoneNumber: "",
   });
 
   useFocusEffect(
@@ -72,9 +73,15 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
           if (response.data && response.data.data) {
             // Set customer name from first item (regardless of crop validity)
             if (response.data.data.length > 0) {
-              const { firstName, lastName, title, cusId ,phoneNumber } =
+              const { firstName, lastName, title, cusId, phoneNumber } =
                 response.data.data[0];
-              setCustomerName({ firstName, lastName, title, cusId ,phoneNumber });
+              setCustomerName({
+                firstName,
+                lastName,
+                title,
+                cusId,
+                phoneNumber,
+              });
             }
 
             // Filter out any invalid or empty items for crops display
@@ -134,6 +141,24 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
     ]);
   };
 
+    useFocusEffect(
+      useCallback(() => {
+        const onBackPress = () => {
+           navigation.navigate("ExcludeListAdd", {
+            customerId: Number(customerId),
+          });
+          return true;
+        };
+  
+        const backHandler = BackHandler.addEventListener(
+          "hardwareBackPress",
+          onBackPress,
+        );
+  
+        return () => backHandler.remove();
+      }, [navigation]),
+    );
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -152,9 +177,8 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
         showBackButton={true}
         navigation={navigation}
         onBackPress={() =>
-          navigation.navigate("Main", {
-            screen: "ExcludeListAdd",
-            params: { customerId },
+          navigation.navigate("ExcludeListAdd", {
+            customerId: Number(customerId),
           })
         }
       />
@@ -242,11 +266,16 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
         )}
       </View>
       <TouchableOpacity
-        className="absolute bottom-[14%] left-0 right-0 items-center"
+        className="absolute bottom-4 left-0 right-0 items-center"
         onPress={() =>
-          navigation.navigate("Main", {
-            screen: "SelectOrderTypeNewCustomer",
-            params: { id: customerId , name :`${customerName.firstName} ${customerName.lastName}` , title:customerName.title , customerId: customerName.cusId , phoneNumber:customerName.phoneNumber},
+          navigation.navigate("SelectOrderTypeNewCustomer", {
+            id: Number(customerId),
+            name: String(
+              `${customerName.firstName || ""} ${customerName.lastName || ""}`,
+            ).trim(),
+            title: String(customerName.title || ""),
+            customerId: String(customerName.cusId || customerId || ""),
+            phoneNumber: String(customerName.phoneNumber || ""),
           })
         }
       >

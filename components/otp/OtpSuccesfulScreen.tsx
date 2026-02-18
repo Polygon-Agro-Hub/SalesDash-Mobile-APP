@@ -84,24 +84,41 @@ const OtpSuccesfulScreen: React.FC<OtpSuccesfulScreenProps> = ({
 
             {/* Button - Centered */}
             <View className="items-center mt-24">
-              <TouchableOpacity
-                onPress={() =>
-                  navigation.navigate("Main", {
-                    screen: "ExcludeListAdd",
-                    params: { customerId: customerId },
-                  })
-                }
-                className="w-[60%]"
+              <View
+                style={{
+                  width: "60%",
+                  borderRadius: 30,
+                  backgroundColor: "transparent",
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 8 },
+                  shadowOpacity: 0.25,
+                  shadowRadius: 10,
+                  elevation: 8,
+                }}
               >
-                <LinearGradient
-                  colors={["#6839CF", "#874DDB"]}
-                  className="py-3 px-6 items-center rounded-3xl"
+                <TouchableOpacity
+                  onPress={() =>
+                    navigation.navigate("ExcludeListAdd", {
+                      customerId: Number(customerId),
+                    })
+                  }
+                  activeOpacity={0.85}
+                  style={{ borderRadius: 30, overflow: "hidden" }}
                 >
-                  <Text className="text-center text-white font-bold text-lg">
-                    Order Now
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
+                  <LinearGradient
+                    colors={["#6839CF", "#874DDB"]}
+                    style={{
+                      paddingVertical: 14,
+                      alignItems: "center",
+                      borderRadius: 30,
+                    }}
+                  >
+                    <Text className="text-center text-white font-bold text-lg">
+                      Order Now
+                    </Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </ScrollView>

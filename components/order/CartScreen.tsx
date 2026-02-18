@@ -6,6 +6,7 @@ import {
   ScrollView,
   StatusBar,
   BackHandler,
+  Alert,
 } from "react-native";
 import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -37,7 +38,7 @@ interface CratScreenProps {
     params?: {
       id?: string;
       customerId?: any;
-      number:string;
+      number: string;
       isPackage?: number | string;
       selectedProducts?: any[];
       items?: any[];
@@ -50,19 +51,32 @@ interface CratScreenProps {
       timeDisplay?: string;
       selectedTimeSlot?: string;
       paymentMethod?: string;
-      title:string;
-      name:string;
-      customerscreencustomerid:string
+      title: string;
+      name: string;
+      customerscreencustomerid: string;
     };
   };
 }
 
 const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
-  const { id, isPackage ,customerId,title,name,number,customerscreencustomerid} = route.params || {};
+  const {
+    id,
+    isPackage,
+    customerId,
+    title,
+    name,
+    number,
+    customerscreencustomerid,
+  } = route.params || {};
   const fromOrderSummary = (route.params as any)?.fromOrderSummary;
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Utility function for consistent rounding to 2 decimal places
+  const roundToTwoDecimals = (value: number): number => {
+    return Math.round((value + Number.EPSILON) * 100) / 100;
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -79,7 +93,11 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
           id,
           isPackage,
           selectedProductIds: cartItems.map((item) => item.id),
-          customerId,title,name,number,customerscreencustomerid
+          customerId,
+          title,
+          name,
+          number,
+          customerscreencustomerid,
         });
         return true;
       };
@@ -218,20 +236,25 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     setIsSelectionMode(false);
   };
 
+  // Updated calculation functions with proper rounding
   const calculateItemTotal = (item: CartItem) => {
+    let total;
     if (item.unitType === "kg") {
-      return (item.discountedPrice * item.changeby).toFixed(2);
+      total = item.discountedPrice * item.changeby;
     } else {
-      return (item.discountedPrice * (item.changeby / 1000)).toFixed(2);
+      total = item.discountedPrice * (item.changeby / 1000);
     }
+    return roundToTwoDecimals(total);
   };
 
   const calculateItemNormalTotal = (item: CartItem) => {
+    let total;
     if (item.unitType === "kg") {
-      return (item.normalPrice * item.changeby).toFixed(2);
+      total = item.normalPrice * item.changeby;
     } else {
-      return (item.normalPrice * (item.changeby / 1000)).toFixed(2);
+      total = item.normalPrice * (item.changeby / 1000);
     }
+    return roundToTwoDecimals(total);
   };
 
   const changeUnit = (id: number, newUnit: "kg" | "g") => {
@@ -282,24 +305,32 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     );
   };
 
-  // Subtotal = sum of normal prices (without discount)
+  // Calculate totals with proper rounding
   const currentSubtotal = cartItems.reduce((total, item) => {
-    return total + parseFloat(calculateItemNormalTotal(item));
+    return roundToTwoDecimals(total + calculateItemNormalTotal(item));
   }, 0);
 
-  // Total discounted value = sum of discounted prices
   const totalDiscountedValue = cartItems.reduce((total, item) => {
-    return total + parseFloat(calculateItemTotal(item));
+    return roundToTwoDecimals(total + calculateItemTotal(item));
   }, 0);
 
-  const discount = currentSubtotal - totalDiscountedValue;
+  const discount = roundToTwoDecimals(currentSubtotal - totalDiscountedValue);
 
   const SERVICE_FEE = 180;
-
-  // Full total = discounted value + service fee
-  const fullTotal = totalDiscountedValue + SERVICE_FEE;
+  const fullTotal = roundToTwoDecimals(totalDiscountedValue + SERVICE_FEE);
 
   const handleConfirm = () => {
+    const hasSelectedItems = cartItems.some((item) => item.selected);
+    if (hasSelectedItems) {
+      Alert.alert(
+        "Action Required",
+        "You have selected an item that cannot be processed. To continue, please either remove the item from the cart or uncheck it.",
+        [{ text: "OK", onPress: () => {} }],
+        { cancelable: false },
+      );
+      return;
+    }
+
     const nonSelectedItems = cartItems.filter((item) => !item.selected);
 
     if (nonSelectedItems.length > 0) {
@@ -309,8 +340,8 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
         return {
           id: item.id,
           name: item.name,
-          price: item.discountedPrice * weightInKg,
-          discount: item.discount * weightInKg,
+          price: roundToTwoDecimals(item.discountedPrice * weightInKg),
+          discount: roundToTwoDecimals(item.discount * weightInKg),
           qty: weightInKg,
           unitType: "kg",
           isPackage: isPackage,
@@ -328,7 +359,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
           subtotal: currentSubtotal,
           discount: discount,
           customerscreencustomerid,
-          number:number,
+          number: number,
           id: id,
           isPackage: isPackage,
           selectedDate: route.params?.selectedDate,
@@ -338,7 +369,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
           fullTotal: route.params?.fullTotal,
           customerId: route.params?.customerId,
           title,
-          name
+          name,
         });
       } else {
         navigation.navigate("ScheduleScreen" as any, {
@@ -348,7 +379,11 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
           discount: discount,
           id: id,
           isPackage: isPackage,
-          customerId,title,name,number,customerscreencustomerid
+          customerId,
+          title,
+          name,
+          number,
+          customerscreencustomerid,
         });
       }
     } else {
@@ -358,6 +393,14 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
 
   const formatQuantity = (item: CartItem) => {
     return item.changeby.toFixed(2);
+  };
+
+  // Format price with commas and 2 decimal places
+  const formatPrice = (price: number) => {
+    return price.toLocaleString("en-IN", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
   };
 
   if (isLoading) {
@@ -377,7 +420,11 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
             id,
             isPackage,
             selectedProductIds: cartItems.map((item) => item.id),
-            customerId,title,name,number,customerscreencustomerid
+            customerId,
+            title,
+            name,
+            number,
+            customerscreencustomerid,
           });
         }}
         rightComponent={
@@ -423,15 +470,10 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
 
               <View className="flex-row items-center justify-between mt-3">
                 <Text className="text-xs text-gray-600">
-                  Rs.{" "}
-                  {item.discountedPrice.toLocaleString("en-IN", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}{" "}
-                  /per kg
+                  Rs. {formatPrice(item.discountedPrice)} /per kg
                 </Text>
 
-                <View className="flex-row items-center mt-[-6%]">
+                <View className="flex-row items-center ">
                   <View className="flex-row mr-2 items-center">
                     <TouchableOpacity
                       className={`w-6 h-6 rounded-md border shadow-xl items-center  justify-center ${
@@ -512,22 +554,14 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
           <View className="flex-row justify-between py-2">
             <Text className="text-[#8492A3]">Subtotal (Without Discount)</Text>
             <Text className="font-bold text-[#CA0000]">
-              Rs.{" "}
-              {currentSubtotal.toLocaleString("en-IN", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
+              Rs. {formatPrice(currentSubtotal)}
             </Text>
           </View>
 
           <View className="flex-row justify-between py-2">
             <Text className="text-[#8492A3]">Discount</Text>
             <Text className="font-medium text-[#686868]">
-              - Rs.{" "}
-              {discount.toLocaleString("en-IN", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
+              - Rs. {formatPrice(discount)}
             </Text>
           </View>
         </View>
@@ -538,11 +572,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
           <View className="flex-row justify-between py-2">
             <Text className="text-[#8492A3]">Total (Discounted Value)</Text>
             <Text className="font-bold text-[#3E206D]">
-              Rs.{" "}
-              {totalDiscountedValue.toLocaleString("en-IN", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
+              Rs. {formatPrice(totalDiscountedValue)}
             </Text>
           </View>
 
@@ -563,11 +593,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
             Full Total
           </Text>
           <Text className="font-bold text-xl text-[#212121]">
-            Rs.{" "}
-            {fullTotal.toLocaleString("en-IN", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
+            Rs. {formatPrice(fullTotal)}
           </Text>
         </View>
 
