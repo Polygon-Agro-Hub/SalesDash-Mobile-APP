@@ -6,6 +6,7 @@ import {
   ScrollView,
   StatusBar,
   BackHandler,
+  Alert,
 } from "react-native";
 import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -37,7 +38,7 @@ interface CratScreenProps {
     params?: {
       id?: string;
       customerId?: any;
-      number:string;
+      number: string;
       isPackage?: number | string;
       selectedProducts?: any[];
       items?: any[];
@@ -50,15 +51,23 @@ interface CratScreenProps {
       timeDisplay?: string;
       selectedTimeSlot?: string;
       paymentMethod?: string;
-      title:string;
-      name:string;
-      customerscreencustomerid:string
+      title: string;
+      name: string;
+      customerscreencustomerid: string;
     };
   };
 }
 
 const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
-  const { id, isPackage ,customerId,title,name,number,customerscreencustomerid} = route.params || {};
+  const {
+    id,
+    isPackage,
+    customerId,
+    title,
+    name,
+    number,
+    customerscreencustomerid,
+  } = route.params || {};
   const fromOrderSummary = (route.params as any)?.fromOrderSummary;
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -79,7 +88,11 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
           id,
           isPackage,
           selectedProductIds: cartItems.map((item) => item.id),
-          customerId,title,name,number,customerscreencustomerid
+          customerId,
+          title,
+          name,
+          number,
+          customerscreencustomerid,
         });
         return true;
       };
@@ -300,6 +313,17 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
   const fullTotal = totalDiscountedValue + SERVICE_FEE;
 
   const handleConfirm = () => {
+    const hasSelectedItems = cartItems.some((item) => item.selected);
+   if (hasSelectedItems) {
+      Alert.alert(
+        "Action Required",
+        "You have selected an item that cannot be processed. To continue, please either remove the item from the cart or uncheck it.",
+        [{ text: "OK", onPress: () => {} }],
+        { cancelable: false }
+      );
+      return;
+    }
+
     const nonSelectedItems = cartItems.filter((item) => !item.selected);
 
     if (nonSelectedItems.length > 0) {
@@ -328,7 +352,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
           subtotal: currentSubtotal,
           discount: discount,
           customerscreencustomerid,
-          number:number,
+          number: number,
           id: id,
           isPackage: isPackage,
           selectedDate: route.params?.selectedDate,
@@ -338,7 +362,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
           fullTotal: route.params?.fullTotal,
           customerId: route.params?.customerId,
           title,
-          name
+          name,
         });
       } else {
         navigation.navigate("ScheduleScreen" as any, {
@@ -348,7 +372,11 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
           discount: discount,
           id: id,
           isPackage: isPackage,
-          customerId,title,name,number,customerscreencustomerid
+          customerId,
+          title,
+          name,
+          number,
+          customerscreencustomerid,
         });
       }
     } else {
@@ -377,7 +405,11 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
             id,
             isPackage,
             selectedProductIds: cartItems.map((item) => item.id),
-            customerId,title,name,number,customerscreencustomerid
+            customerId,
+            title,
+            name,
+            number,
+            customerscreencustomerid,
           });
         }}
         rightComponent={
