@@ -169,14 +169,6 @@ interface CartItem {
   discount?: number;
 }
 
-// Cache keys and duration
-const CACHE_KEYS = {
-  CITIES: 'cached_cities',
-  CITIES_TIMESTAMP: 'cities_timestamp'
-};
-
-const CACHE_DURATION = 24 * 60 * 60 * 1000; 
-
 const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
   navigation,
   route,
@@ -275,44 +267,17 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     return new Date();
   });
 
-  // Helper functions for caching
-  const cacheCities = async (cities: City[]) => {
-    try {
-      await AsyncStorage.setItem(CACHE_KEYS.CITIES, JSON.stringify(cities));
-      await AsyncStorage.setItem(CACHE_KEYS.CITIES_TIMESTAMP, Date.now().toString());
-    } catch (error) {
-      console.log("Error caching cities:", error);
-    }
-  };
-
-  const getCachedCities = async (): Promise<City[] | null> => {
-    try {
-      const cachedCities = await AsyncStorage.getItem(CACHE_KEYS.CITIES);
-      const timestamp = await AsyncStorage.getItem(CACHE_KEYS.CITIES_TIMESTAMP);
-      
-      if (cachedCities && timestamp) {
-        const age = Date.now() - parseInt(timestamp);
-        if (age < CACHE_DURATION) {
-          return JSON.parse(cachedCities);
-        }
-      }
-      return null;
-    } catch (error) {
-      console.log("Error getting cached cities:", error);
-      return null;
-    }
-  };
-
   const getMinimumSelectableDate = () => {
-    const today = new Date();
-    const currentHour = today.getHours();
+    const today = new Date(); // Current date and time
+    const currentHour = today.getHours(); // Get the current hour before modifying the date
 
-    const minDate = new Date(today);
+    const minDate = new Date(today); // Create a new date object for minDate
 
+    // If the current time is between 6 PM and 6 AM
     if (currentHour >= 18 || currentHour < 6) {
-      minDate.setDate(today.getDate() + 4);
+      minDate.setDate(today.getDate() + 4); // Set the minimum date to 4 days from today
     } else {
-      minDate.setDate(today.getDate() + 3);
+      minDate.setDate(today.getDate() + 3); // Set the minimum date to 3 days from today
     }
 
     return minDate;
@@ -320,93 +285,65 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
 
   const minimumDate = getMinimumSelectableDate();
 
-  // Optimized data fetching with parallel calls and caching
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchCustomerData = async () => {
       try {
+        setLoading(true);
+
         const customerIdi = route.params?.customerid || customerId;
-        const storedToken = await AsyncStorage.getItem("authToken");
-        
+
         if (!customerIdi) {
           setError("No customer ID found");
           setLoading(false);
           return;
         }
+
+        const storedToken = await AsyncStorage.getItem("authToken");
+
         if (!storedToken) {
           setError("No authentication token found");
           setLoading(false);
           return;
         }
 
-        setLoading(true);
+        // Fetch customer data
+        const apiUrl = `${environment.API_BASE_URL}api/orders/get-customer-data/${customerIdi}`;
+        const response = await axios.get(apiUrl, {
+          headers: { Authorization: `Bearer ${storedToken}` },
+        });
 
-        // Try to get cached cities first
-        const cachedCities = await getCachedCities();
+        if (response.data && response.data.success) {
+          setCustomerData(response.data.data);
 
-        // Fetch customer data (always needed fresh)
-        const customerPromise = axios.get(
-          `${environment.API_BASE_URL}api/orders/get-customer-data/${customerIdi}`,
-          { headers: { Authorization: `Bearer ${storedToken}` } }
-        );
-
-        // Only fetch cities if not in cache or if we need to find a city
-        let cityPromise = null;
-        if (!cachedCities) {
-          cityPromise = axios.get<{ data: City[] }>(
+          // Fetch cities to get delivery charge
+          const cityResponse = await axios.get<{ data: City[] }>(
             `${environment.API_BASE_URL}api/customer/get-city`,
-            { headers: { Authorization: `Bearer ${storedToken}` } }
+            { headers: { Authorization: `Bearer ${storedToken}` } },
           );
-        }
 
-        // Wait for customer data
-        const customerResponse = await customerPromise;
-
-        if (customerResponse.data && customerResponse.data.success) {
-          setCustomerData(customerResponse.data.data);
-
-          const customerCity = customerResponse.data.data.buildingDetails?.city;
-          
-          if (customerCity) {
-            // If we have cached cities, try to find the city there first
-            if (cachedCities) {
-              const cityData = cachedCities.find((c) => c.city === customerCity);
-              if (cityData) {
-                setDeliveryFee(parseFloat(cityData.charge) || 0);
-                setLoading(false);
-                return;
-              }
-            }
-
-            // If city not found in cache or no cache, fetch cities
-            if (!cityPromise) {
-              cityPromise = axios.get<{ data: City[] }>(
-                `${environment.API_BASE_URL}api/customer/get-city`,
-                { headers: { Authorization: `Bearer ${storedToken}` } }
-              );
-            }
-
-            const cityResponse = await cityPromise;
-            
-            if (cityResponse.data && cityResponse.data.data) {
-              // Cache the cities for future use
-              await cacheCities(cityResponse.data.data);
-              
+          if (cityResponse.data && cityResponse.data.data) {
+            const customerCity = response.data.data.buildingDetails?.city;
+            if (customerCity) {
               const cityData = cityResponse.data.data.find(
-                (c) => c.city === customerCity
+                (c) => c.city === customerCity,
               );
               if (cityData) {
-                setDeliveryFee(parseFloat(cityData.charge) || 0);
+                const fee = parseFloat(cityData.charge) || 0;
+                setDeliveryFee(fee);
               }
             }
           }
         } else {
-          const errorMsg = customerResponse.data?.message || "Failed to fetch customer data";
+          const errorMsg =
+            response.data?.message || "Failed to fetch customer data";
+          console.log("API error:", errorMsg);
           setError(errorMsg);
         }
       } catch (error: any) {
-        console.error("Error fetching data:", error);
+        console.error("Error fetching customer data:", error);
         if (axios.isAxiosError(error)) {
           const errorMsg = error.response?.data?.message || error.message;
+          console.log("Axios error details:", errorMsg);
           setError(errorMsg);
         } else {
           setError("Failed to fetch customer data");
@@ -417,13 +354,11 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     };
 
     if (customerid || customerId) {
-      fetchData();
+      fetchCustomerData();
     } else {
       console.log("No customer ID in route params");
-      // If no customer ID, still set loading to false
-      setLoading(false);
     }
-  }, [route.params, customerId, customerid]);
+  }, [route.params]);
 
   const fullTotal = total + deliveryFee;
 
@@ -442,6 +377,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       setSelectedTimeSlot(previousTimeSlot);
     }
   }, [previousSelectedDate, previousTimeSlot]);
+
+  console.log("shedule screen", name, title, id, customerId);
 
   function processInitialData(originalItems: any[], orderItems: any[]) {
     if (orderItems && orderItems.length > 0) {
@@ -491,16 +428,17 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
 
   const getSelectableDates = () => {
     const today = new Date();
-    const currentHour = today.getHours();
+    const currentHour = today.getHours(); // Get the current hour before resetting to midnight
 
-    today.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0); // Reset to midnight
 
     const minDate = new Date(today);
 
+    // If the current time is between 6 PM and 6 AM
     if (currentHour >= 18 || currentHour < 6) {
-      minDate.setDate(today.getDate() + 4);
+      minDate.setDate(today.getDate() + 4); // Set the minimum date to 4 days from today
     } else {
-      minDate.setDate(today.getDate() + 3);
+      minDate.setDate(today.getDate() + 3); // Set the minimum date to 3 days from today
     }
 
     return { minDate };
@@ -782,19 +720,14 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       name: name,
       number: number,
       customerscreencustomerid: customerscreencustomerid,
-
-      // Add the formatted schedule data
       sheduleDate: selectedDate,
       sheduleTime: scheduleTime,
-
-      // Include orderData if it exists
       ...(orderData && { orderData: orderData }),
     };
 
     navigation.navigate("SelectPaymentMethod" as any, navigationParams);
   };
 
-  // Show loading state
   if (loading) {
     return (
       <LoadingPage
@@ -917,7 +850,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
               title,
               name,
               number,
-              customerscreencustomerid: customerscreencustomerid,
+              customerscreencustomerid:customerscreencustomerid,
               isPackage: "1",
               orderItems: orderItems,
               packageId: route.params?.packageId || currentOrderItem.packageId,
