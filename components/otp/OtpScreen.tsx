@@ -143,13 +143,10 @@ const OtpScreen: React.FC = () => {
 
           await AsyncStorage.setItem("latestCustomerId", customerId.toString());
 
-    
-          navigation.navigate( "OtpSuccesfulScreen" as any,
-           {
+          navigation.navigate("OtpSuccesfulScreen" as any, {
             customerId: customerId,
             customerData: customerData,
-           }         
-          );
+          });
         } else {
           Alert.alert(
             "Error",
@@ -341,7 +338,7 @@ const OtpScreen: React.FC = () => {
               </Text>
 
               {/* Resend OTP */}
-              <View className="flex-row items-center justify-center mt-3">
+              <View className="flex-row items-center justify-center my-3">
                 <Text className="text-black font-semibold">
                   Didn't receive the OTP ?
                 </Text>
@@ -357,18 +354,48 @@ const OtpScreen: React.FC = () => {
                 </TouchableOpacity>
               </View>
 
-              {/* Verify Button - Disabled until all digits are entered */}
+              {/* Verify Button with Bottom Shadow */}
               {!isKeyboardVisible && (
-                <TouchableOpacity 
-                  onPress={verifyOTP} 
+                <TouchableOpacity
+                  onPress={verifyOTP}
                   disabled={!isOtpComplete || loading || timer <= 0}
                   activeOpacity={0.7}
+                  style={{
+                    shadowColor: "#6839CF",
+                    shadowOffset: {
+                      width: 0,
+                      height: 6,
+                    },
+
+                    shadowOpacity: 0.3,
+                    shadowRadius: 8,
+                    elevation: 8,
+                    width: wp(60),
+                  }}
                 >
                   <LinearGradient
-                    colors={!isOtpComplete || loading || timer <= 0 ? ["#6839CF", "#874DDB"] : ["#6839CF", "#874DDB"]}
-                    className={`py-3 px-14 items-center mt-10 rounded-3xl ${
-                      !isOtpComplete || loading || timer <= 0 ? "opacity-50" : ""
+                    colors={
+                      !isOtpComplete || loading || timer <= 0
+                        ? ["#A0A0A0", "#808080"]
+                        : ["#6839CF", "#874DDB"]
+                    }
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    className={`py-4 items-center rounded-3xl ${
+                      !isOtpComplete || loading || timer <= 0
+                        ? "opacity-50"
+                        : ""
                     }`}
+                    style={{
+                      shadowColor: "#000",
+                      shadowOffset: {
+                        width: 0,
+                        height: 2,
+                      },
+                      shadowOpacity: 0.1,
+                      shadowRadius: 3.84,
+                      elevation: 5,
+                    }}
                   >
                     <Text className="text-center text-white font-bold text-lg">
                       {loading ? "Verifying..." : "Verify"}

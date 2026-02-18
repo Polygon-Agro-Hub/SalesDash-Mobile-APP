@@ -325,14 +325,17 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
             </LinearGradient>
 
             {/* Search Bar */}
-            <View className="flex-row items-center bg-[#F5F1FC] px-6 py-1 rounded-full mt-[-22px] mx-auto w-[90%] shadow-md">
+            <View className="flex-row items-center bg-[#F5F1FC] px-6 py-0 rounded-full mt-[-22px] mx-auto w-[90%] shadow-md h-12">
               <TextInput
                 value={searchQuery}
                 onChangeText={handleSearch}
                 placeholder="Search By Name, Phone Number"
                 placeholderTextColor="#6839CF"
-                className="flex-1 text-sm text-gray-700 py-2"
-                style={{ fontStyle: "italic" }}
+                className="flex-1 text-sm text-gray-700 h-11 py-0"
+                style={{
+                  fontStyle: "italic",
+                  includeFontPadding: false,
+                }}
               />
               <FontAwesome name="search" size={22} color="#884EDC" />
             </View>
@@ -393,7 +396,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                   scrollEventThrottle={16}
                   renderItem={({ item }: { item: Customer }) => (
                     <TouchableOpacity
-                    activeOpacity={1}
+                      activeOpacity={1}
                       onPress={() =>
                         navigation.navigate("ViewCustomerScreen", {
                           name: `${item.firstName} ${item.lastName}`,
@@ -414,8 +417,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                           justifyContent: "space-between",
                           alignItems: "center",
                           borderWidth: 1,
-                          borderColor: "#E5E7EB",
-                          elevation: 4,
+                          borderColor: "#E0E0E0",
                         }}
                       >
                         <View className="flex-1 mr-3">

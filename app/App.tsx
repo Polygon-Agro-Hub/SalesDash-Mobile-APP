@@ -85,20 +85,11 @@ function MainTabNavigator() {
       <Tab.Screen name="EditCustomerScreen" component={EditCustomerScreen} />
       <Tab.Screen name="SelectOrderType" component={SelectOrderType as any} />
       <Tab.Screen
-        name="SelectOrderTypeNewCustomer"
-        component={SelectOrderTypeNewCustomer as any}
-      />
-      <Tab.Screen
         name="OrderConfirmedScreen"
         component={OrderConfirmedScreen as any}
       />
 
       <Tab.Screen name="AddComplaintScreen" component={AddComplaintScreen} />
-      <Tab.Screen name="ExcludeListAdd" component={ExcludeListAdd as any} />
-      <Tab.Screen
-        name="ExcludeListSummery"
-        component={ExcludeListSummery as any}
-      />
       <Tab.Screen
         name="ExcludeItemEditSummery"
         component={ExcludeItemEditSummery as any}
@@ -213,6 +204,18 @@ function AppContent() {
             <Stack.Screen
               name="TermsConditions"
               component={TermsConditions as any}
+            />
+            <Stack.Screen
+              name="ExcludeListAdd"
+              component={ExcludeListAdd as any}
+            />
+            <Stack.Screen
+              name="ExcludeListSummery"
+              component={ExcludeListSummery as any}
+            />
+            <Stack.Screen
+              name="SelectOrderTypeNewCustomer"
+              component={SelectOrderTypeNewCustomer as any}
             />
             <Stack.Screen name="Main" component={MainTabNavigator} />
           </Stack.Navigator>

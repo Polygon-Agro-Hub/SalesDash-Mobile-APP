@@ -149,20 +149,19 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
         </ImageBackground>
 
         {/* Content Section */}
-        <View style={{ flex: 1, marginTop: -28, marginBottom: 50 }}>
+        <View style={{ flex: 1, marginTop: -28, marginBottom: 10 }}>
           <ScrollView
             ref={scrollViewRef}
             contentContainerStyle={{
               flexGrow: 1,
               paddingTop: 24,
-              paddingBottom: 40,
               backgroundColor: "white",
               borderTopLeftRadius: 24,
               borderTopRightRadius: 24,
             }}
             showsVerticalScrollIndicator={true}
           >
-            <View className="flex-row justify-between items-start mb-4 mx-6">
+            <View className="flex-row justify-between items-start mx-6">
               <View className="flex-1 mr-4">
                 <Text
                   className="text-xl font-bold text-[#7240D3]"
@@ -208,9 +207,6 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
                 <Text className="text-[#5D5D5D] text-sm">{item.qty}</Text>
               </View>
             ))}
-
-            {/* Add some bottom padding for scrolling */}
-            <View style={{ height: 20 }} />
           </ScrollView>
         </View>
       </View>

@@ -233,14 +233,14 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
         <View className="flex-1">
           <LinearGradient
             colors={["#854BDA", "#6E3DD1"]}
-            className="flex-1 rounded-t-3xl px-7 py-10 -mt-2"
+            className="flex-1 rounded-t-3xl px-7 py-8 -mt-2"
           >
             <Text className="text-white text-2xl font-bold text-center mb-2">
               Change Your Password
             </Text>
 
             {/* Password Requirements Note */}
-            <Text className="text-white/80 text-xs text-center mb-6">
+            <Text className="text-white/80 text-xs text-center mb-4">
               Password must be at least 6 characters
             </Text>
 
@@ -291,7 +291,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
             </View>
 
             {/* Confirm New Password */}
-            <View className="bg-[#FFFFFF66] rounded-full flex-row items-center px-4 mb-6 py-1">
+            <View className="bg-[#FFFFFF66] rounded-full flex-row items-center px-4 mb-4 py-1">
               <TextInput
                 placeholder="Confirm New Password"
                 placeholderTextColor="#FFFFFF"
