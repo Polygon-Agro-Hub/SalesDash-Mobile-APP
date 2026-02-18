@@ -200,6 +200,11 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
     }
   };
 
+  // formatPrice function with comma separation
+  const formatPrice = (price: number) => {
+    return Number(price).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  };
+
   if (loading) {
     return <LoadingPage message="Loading Item Details..." fullScreen={true} />;
   }
@@ -217,10 +222,6 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
       </View>
     );
   }
-
-  const formatPrice = (price: number) => {
-    return Number(price).toFixed(2);
-  };
 
   return (
     <KeyboardAvoidingView
