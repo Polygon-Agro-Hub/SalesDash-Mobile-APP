@@ -378,7 +378,6 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     }
   }, [previousSelectedDate, previousTimeSlot]);
 
-
   function processInitialData(originalItems: any[], orderItems: any[]) {
     if (orderItems && orderItems.length > 0) {
       const processedItems: CartItem[] = [];
@@ -562,14 +561,14 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                 item.normalPrice || item.price + (item.discount || 0),
               discountedPrice: item.discountedPrice || item.price,
               discount: item.discount || 0,
-              quantity: item.quantity,
+              quantity: (item as any).qty ?? item.quantity ?? 0,
               selected: false,
               unitType: item.unitType || "kg",
               startValue: item.startValue || 0.5,
               changeby:
                 item.unitType === "g"
-                  ? Number(item.quantity) * 1000
-                  : item.quantity,
+                  ? Number((item as any).qty ?? item.quantity ?? 0) * 1000
+                  : ((item as any).qty ?? item.quantity ?? 0),
             })),
             subtotal,
             discount,
@@ -641,15 +640,20 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
             customerscreencustomerid,
             selectedProducts: items.map((item) => ({
               id: item.id,
-              name: item.name,
+              name: item.name || `Item ${item.id}`,
               price: item.price,
-              normalPrice: item.normalPrice || item.price,
+              normalPrice:
+                item.normalPrice || item.price + (item.discount || 0),
               discountedPrice: item.discountedPrice || item.price,
-              quantity: item.quantity,
-              selected: true,
+              discount: item.discount || 0,
+              quantity: (item as any).qty ?? item.quantity ?? 0,
+              selected: false,
               unitType: item.unitType || "kg",
-              startValue: item.startValue || 0.1,
-              changeby: item.quantity,
+              startValue: item.startValue || 0.5,
+              changeby:
+                item.unitType === "g"
+                  ? Number((item as any).qty ?? item.quantity ?? 0) * 1000
+                  : ((item as any).qty ?? item.quantity ?? 0),
             })),
             subtotal,
             discount,
@@ -796,14 +800,14 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                   item.normalPrice || item.price + (item.discount || 0),
                 discountedPrice: item.discountedPrice || item.price,
                 discount: item.discount || 0,
-                quantity: item.quantity,
+                quantity: (item as any).qty ?? item.quantity ?? 0,
                 selected: false,
                 unitType: item.unitType || "kg",
                 startValue: item.startValue || 0.5,
                 changeby:
                   item.unitType === "g"
-                    ? Number(item.quantity) * 1000
-                    : item.quantity,
+                    ? Number((item as any).qty ?? item.quantity ?? 0) * 1000
+                    : ((item as any).qty ?? item.quantity ?? 0),
               })),
               subtotal,
               discount,
@@ -849,7 +853,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
               title,
               name,
               number,
-              customerscreencustomerid:customerscreencustomerid,
+              customerscreencustomerid: customerscreencustomerid,
               isPackage: "1",
               orderItems: orderItems,
               packageId: route.params?.packageId || currentOrderItem.packageId,
@@ -875,15 +879,20 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
               customerscreencustomerid,
               selectedProducts: items.map((item) => ({
                 id: item.id,
-                name: item.name,
+                name: item.name || `Item ${item.id}`,
                 price: item.price,
-                normalPrice: item.normalPrice || item.price,
+                normalPrice:
+                  item.normalPrice || item.price + (item.discount || 0),
                 discountedPrice: item.discountedPrice || item.price,
-                quantity: item.quantity,
-                selected: true,
+                discount: item.discount || 0,
+                quantity: (item as any).qty ?? item.quantity ?? 0,
+                selected: false,
                 unitType: item.unitType || "kg",
-                startValue: item.startValue || 0.1,
-                changeby: item.quantity,
+                startValue: item.startValue || 0.5,
+                changeby:
+                  item.unitType === "g"
+                    ? Number((item as any).qty ?? item.quantity ?? 0) * 1000
+                    : ((item as any).qty ?? item.quantity ?? 0),
               })),
               subtotal,
               discount,
