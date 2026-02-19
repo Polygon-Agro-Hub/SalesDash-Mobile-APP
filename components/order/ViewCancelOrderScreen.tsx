@@ -997,44 +997,42 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                 </View>
               )}
 
-              {/* Cancel Order Button */}
-              <View
-                style={{
-                  marginHorizontal: 20,
-                  marginBottom: 20,
-                  borderRadius: 30,
-                  shadowColor: "#000",
-                  shadowOpacity: isCancelDisabled() ? 0.05 : 0.12,
-                  shadowOffset: { width: 0, height: 5 },
-                  shadowRadius: 7,
-                  elevation: isCancelDisabled() ? 3 : 6,
-                }}
-              >
-                <TouchableOpacity
-                  onPress={handleCancelOrder}
-                  disabled={isCancelDisabled()}
-                  activeOpacity={0.8}
+              {/* Cancel Order Button - Only show when NOT disabled */}
+              {!isCancelDisabled() && (
+                <View
                   style={{
+                    marginHorizontal: 20,
+                    marginBottom: 20,
                     borderRadius: 30,
-                    opacity: isCancelDisabled() ? 0.7 : 1,
+                    shadowColor: "#000",
+                    shadowOpacity: 0.12,
+                    shadowOffset: { width: 0, height: 5 },
+                    shadowRadius: 7,
+                    elevation: 6,
                   }}
                 >
-                  <View
+                  <TouchableOpacity
+                    onPress={handleCancelOrder}
+                    activeOpacity={0.8}
                     style={{
-                      backgroundColor: isCancelDisabled()
-                        ? "#E5E7EB"
-                        : "#000000",
-                      paddingVertical: 12,
                       borderRadius: 30,
-                      alignItems: "center",
                     }}
                   >
-                    <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>
-                      Cancel Order
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              </View>
+                    <View
+                      style={{
+                        backgroundColor: "#000000",
+                        paddingVertical: 12,
+                        borderRadius: 30,
+                        alignItems: "center",
+                      }}
+                    >
+                      <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>
+                        Cancel Order
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           </ScrollView>
         ) : (

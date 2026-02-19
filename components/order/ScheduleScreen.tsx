@@ -199,26 +199,27 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showTimeSlotModal, setShowTimeSlotModal] = useState(false);
+ 
   const [total, setTotal] = useState(() => {
-    if (orderData) {
-      return orderData.total;
-    }
-    return calculateInitialTotal(originalTotal, orderItems);
-  });
+  if (originalTotal > 0) return originalTotal;
+  if (orderData) return orderData.total;
+  return calculateInitialTotal(originalTotal, orderItems);
+});
 
-  const [subtotal, setSubtotal] = useState(() => {
-    if (orderData) {
-      return orderData.fullTotal;
-    }
-    return calculateInitialSubtotal(originalSubtotal, orderItems);
-  });
+const [subtotal, setSubtotal] = useState(() => {
+  if (originalSubtotal > 0) return originalSubtotal;
+  if (orderData) {
+    return orderData.fullTotal + orderData.discount;
+  }
+  return calculateInitialSubtotal(originalSubtotal, orderItems);
+});
 
-  const [discount, setDiscount] = useState(() => {
-    if (orderData) {
-      return orderData.discount;
-    }
-    return calculateInitialDiscount(originalDiscount, orderItems);
-  });
+const [discount, setDiscount] = useState(() => {
+  if (originalDiscount > 0) return originalDiscount;
+  if (orderData) return orderData.discount;
+  return calculateInitialDiscount(originalDiscount, orderItems);
+});
+
 
   const [selectedTimeSlot, setSelectedTimeSlot] = useState(
     previousTimeSlot || "",
@@ -268,16 +269,15 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
   });
 
   const getMinimumSelectableDate = () => {
-    const today = new Date(); // Current date and time
-    const currentHour = today.getHours(); // Get the current hour before modifying the date
+    const today = new Date(); 
+    const currentHour = today.getHours();
 
-    const minDate = new Date(today); // Create a new date object for minDate
+    const minDate = new Date(today); 
 
-    // If the current time is between 6 PM and 6 AM
     if (currentHour >= 18 || currentHour < 6) {
-      minDate.setDate(today.getDate() + 4); // Set the minimum date to 4 days from today
+      minDate.setDate(today.getDate() + 4); 
     } else {
-      minDate.setDate(today.getDate() + 3); // Set the minimum date to 3 days from today
+      minDate.setDate(today.getDate() + 3); 
     }
 
     return minDate;
@@ -426,17 +426,16 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
 
   const getSelectableDates = () => {
     const today = new Date();
-    const currentHour = today.getHours(); // Get the current hour before resetting to midnight
+    const currentHour = today.getHours();
 
-    today.setHours(0, 0, 0, 0); // Reset to midnight
+    today.setHours(0, 0, 0, 0); 
 
     const minDate = new Date(today);
 
-    // If the current time is between 6 PM and 6 AM
     if (currentHour >= 18 || currentHour < 6) {
-      minDate.setDate(today.getDate() + 4); // Set the minimum date to 4 days from today
+      minDate.setDate(today.getDate() + 4); 
     } else {
-      minDate.setDate(today.getDate() + 3); // Set the minimum date to 3 days from today
+      minDate.setDate(today.getDate() + 3); 
     }
 
     return { minDate };

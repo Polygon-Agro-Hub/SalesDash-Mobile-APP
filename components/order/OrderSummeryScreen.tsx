@@ -98,10 +98,14 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
     paymentMethod = "",
     customerId = "",
     customerid = "",
-    isPackage = 0,
+    isPackage: isPackageRaw = 0,
     orderItems = [],
     customerscreencustomerid="",
   } = route.params || {};
+
+  const isPackage = typeof isPackageRaw === "string"
+  ? parseInt(isPackageRaw) || 0
+  : Number(isPackageRaw);
 
   const safeItems = Array.isArray(items) ? items : [];
   const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
