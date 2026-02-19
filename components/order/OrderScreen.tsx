@@ -165,7 +165,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
   >([]);
   const [selectedUnit, setSelectedUnit] = useState<string>("g");
 
-  console.log("kjjjjjjj", id);
 
   // Modal visibility states
   const [packageModalVisible, setPackageModalVisible] =
