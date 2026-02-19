@@ -108,7 +108,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
       );
 
       return () => backHandler.remove();
-    }, [navigation]),
+    }, [navigation, cartItems]),
   );
 
   useEffect(() => {

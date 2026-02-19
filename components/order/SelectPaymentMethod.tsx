@@ -136,7 +136,6 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
     previousSelectedMethod || "Cash",
   );
 
-  console.log("payment methos",name,title,id,customerId)
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
       "keyboardDidShow",

@@ -378,7 +378,6 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     }
   }, [previousSelectedDate, previousTimeSlot]);
 
-  console.log("shedule screen", name, title, id, customerId);
 
   function processInitialData(originalItems: any[], orderItems: any[]) {
     if (orderItems && orderItems.length > 0) {
