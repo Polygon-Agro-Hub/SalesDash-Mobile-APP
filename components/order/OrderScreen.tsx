@@ -1187,7 +1187,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
           <Text className="text-lg font-semibold text-gray-800 ml-2">
             Total:{" "}
             <Text className="text-base font-semibold text-[#5C5C5C] mr-10">
-              Rs.
+              Rs.{" "}
               {Number(calculateGrandTotal()).toLocaleString("en-US", {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
@@ -1195,29 +1195,40 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
             </Text>
           </Text>
 
-          <TouchableOpacity onPress={handleConfirm}>
-            <LinearGradient
-              colors={["#6839CF", "#874DDB"]}
-              className="py-3 px-6 rounded-full"
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
+          <TouchableOpacity onPress={handleConfirm} activeOpacity={0.8}>
+            <View
+              style={{
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.25,
+                shadowRadius: 6,
+                elevation: 8,
+                borderRadius: 999,
+              }}
             >
-              <View
-                className="w-14 flex-row justify-center items-center"
-                style={{ minHeight: 20 }}
+              <LinearGradient
+                colors={["#6839CF", "#874DDB"]}
+                className="py-3 px-6 rounded-full"
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
               >
-                {loading ? (
-                  <ActivityIndicator color="#FFFFFF" size="small" />
-                ) : (
-                  <View className="flex flex-row gap-2 justify-center items-center">
-                    <Text className="text-white font-semibold pl-2">
-                      Confirm
-                    </Text>
-                    <Feather name="check" size={18} color="white" />
-                  </View>
-                )}
-              </View>
-            </LinearGradient>
+                <View
+                  className="w-14 flex-row justify-center items-center"
+                  style={{ minHeight: 20 }}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : (
+                    <View className="flex-row gap-2 justify-center items-center">
+                      <Text className="text-white font-semibold pl-2">
+                        Confirm
+                      </Text>
+                      <Feather name="check" size={18} color="white" />
+                    </View>
+                  )}
+                </View>
+              </LinearGradient>
+            </View>
           </TouchableOpacity>
         </View>
       )}

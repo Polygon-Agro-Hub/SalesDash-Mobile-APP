@@ -58,7 +58,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
 
   useFocusEffect(
     useCallback(() => {
-      const { id } = route.params; 
+      const { id } = route.params;
 
       setSelectedCrops([]);
       setCrops([]);
@@ -85,7 +85,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
       };
 
       fetchProducts();
-    }, [route.params.id]), 
+    }, [route.params.id]),
   );
 
   const handleSearch = (query: string) => {
@@ -107,7 +107,6 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
       );
       setFilteredCrops(filtered);
 
-
       if (filtered.length === 0) {
         setSearchError("No products found matching your search");
       }
@@ -127,7 +126,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
   }, [navigation, crops]);
 
   const handlesubmitexcludelist = async () => {
-    const { id, customerId, name, title } = route.params; 
+    const { id, customerId, name, title } = route.params;
     setLoading(true);
 
     try {
@@ -149,7 +148,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
 
       if (checkResponse.status === 200) {
         navigation.navigate("ExcludeItemEditSummery" as any, {
-          id, 
+          id,
           customerId,
           name,
           title,
@@ -169,7 +168,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        const { id, customerId, name, title } = route.params; 
+        const { id, customerId, name, title } = route.params;
         navigation.navigate("ExcludeItemEditSummery" as any, {
           id,
           customerId,
@@ -221,7 +220,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
         showBackButton={true}
         navigation={navigation}
         onBackPress={() => {
-          const { id, customerId, name, title } = route.params; 
+          const { id, customerId, name, title } = route.params;
           navigation.navigate("ExcludeItemEditSummery" as any, {
             id,
             customerId,
@@ -280,7 +279,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
             </View>
           </View>
         )}
-        <View className="flex-1  ">
+        <View className="flex-1">
           <FlatList
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={{ paddingBottom: 200 }}
@@ -320,10 +319,10 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
         </View>
       </View>
       {!isKeyboardVisible && (
-        <View className="absolute bottom-0 left-0 right-0 bg-white pt-4 pb-20 px-6">
+        <View className="absolute bottom-0 left-0 right-0 bg-white pt-4 pb-4 px-6">
           <TouchableOpacity
             onPress={handleNavigateIfNoCropsSelected}
-            className=" bottom-[14%] left-0 right-0 items-center "
+            className="left-0 right-0 items-center"
             disabled={loading}
           >
             <LinearGradient
