@@ -204,9 +204,9 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })}
-      style={{ flex: 1, backgroundColor: "white" }}
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
     >
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <ScrollView

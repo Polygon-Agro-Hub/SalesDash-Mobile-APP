@@ -895,10 +895,9 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
               style={{
                 marginTop: hp(7),
                 alignSelf: "center",
-                width: "90%",
+                width: "65%",
                 maxWidth: 300,
                 borderRadius: 30,
-
                 shadowColor: "#000",
                 shadowOffset: { width: 0, height: 4 },
                 shadowOpacity: 0.12,

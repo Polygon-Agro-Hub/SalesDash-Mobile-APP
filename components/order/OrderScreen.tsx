@@ -141,14 +141,22 @@ interface OrderScreenProps {
       customerId: string;
       name: string;
       title: string;
-      number:string;
-      customerscreencustomerid:string;
+      number: string;
+      customerscreencustomerid: string;
     };
   };
 }
 
 const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
-  const { id, isPackage, customerId, name, title  ,number,customerscreencustomerid} = route.params || {};
+  const {
+    id,
+    isPackage,
+    customerId,
+    name,
+    title,
+    number,
+    customerscreencustomerid,
+  } = route.params || {};
   const [loading, setLoading] = useState<boolean>(false);
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [selectedProduct, setSelectedProduct] = useState<string>("");
@@ -164,7 +172,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     { label: string; value: string }[]
   >([]);
   const [selectedUnit, setSelectedUnit] = useState<string>("g");
-
 
   // Modal visibility states
   const [packageModalVisible, setPackageModalVisible] =
@@ -413,7 +420,11 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         orderData,
         customerid: route.params?.id,
         isPackage,
-        id,title,name,number,customerscreencustomerid,
+        id,
+        title,
+        name,
+        number,
+        customerscreencustomerid,
         // ✅ Pass these so ScheduleScreen can restore state on back press
         packageId: packageValue ? parseInt(packageValue) : null,
         rawPackageItems: items, // { name: string; qty: string }[]
@@ -941,7 +952,14 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
       const onBackPress = () => {
         navigation.navigate("Main", {
           screen: "SelectOrderType",
-          params: { id, customerId, title, name,number ,customerscreencustomerid},
+          params: {
+            id,
+            customerId,
+            title,
+            name,
+            number,
+            customerscreencustomerid,
+          },
         });
         return true;
       };
@@ -996,7 +1014,14 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         onBackPress={() => {
           navigation.navigate("Main", {
             screen: "SelectOrderType",
-            params: { id, customerId, title, name ,number,customerscreencustomerid},
+            params: {
+              id,
+              customerId,
+              title,
+              name,
+              number,
+              customerscreencustomerid,
+            },
           });
         }}
       />
@@ -1240,7 +1265,11 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
               </Text>
               <View className="bg-gray-50 rounded-xl p-3">
                 <Text className="text-gray-900">
-                  Rs. {pricePerKg || "0.00"}
+                  Rs.{" "}
+                  {Number(pricePerKg || 0).toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </Text>
               </View>
             </View>
@@ -1269,10 +1298,15 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                 {/* Unit button */}
                 <TouchableOpacity
                   onPress={() => setUnitModalVisible(true)}
-                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-3xl px-4 py-3 justify-center"
+                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-3xl px-4 py-3 flex-row items-center justify-between"
                   style={{ width: 100 }}
                 >
                   <Text className="text-black">{selectedUnit}</Text>
+                  <MaterialIcons
+                    name="arrow-drop-down"
+                    size={22}
+                    color="#666"
+                  />
                 </TouchableOpacity>
               </View>
             </View>
@@ -1312,7 +1346,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
             <View className="gap-3">
               <TouchableOpacity
                 onPress={handleGoBack}
-                className="bg-gray-200 py-4 rounded-full items-center mb-3"
+                className="bg-gray-200 py-3 rounded-full items-center mb-3"
                 style={{
                   shadowColor: "#000",
                   shadowOffset: { width: 0, height: 2 },
@@ -1328,7 +1362,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
 
               <TouchableOpacity
                 onPress={handleSaveItem}
-                className="bg-purple-600 py-4 rounded-full items-center"
+                className="bg-purple-600 py-3 rounded-full items-center"
                 style={{
                   shadowColor: "#000",
                   shadowOffset: { width: 0, height: 2 },
@@ -1382,10 +1416,16 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                 {/* Unit button */}
                 <TouchableOpacity
                   onPress={() => setEditUnitModalVisible(true)}
-                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-3xl px-4 py-3 justify-center"
+                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-3xl px-4 py-3 flex-row items-center justify-between"
                   style={{ width: 100 }}
                 >
                   <Text className="text-black">{editSelectedUnit}</Text>
+
+                  <MaterialIcons
+                    name="arrow-drop-down"
+                    size={22}
+                    color="#666"
+                  />
                 </TouchableOpacity>
               </View>
             </View>
@@ -1497,7 +1537,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         }}
         searchPlaceholder="Search product..."
         multiSelect={false}
-        showSearch={false}
         isLoading={productDropdownLoading}
       />
 
