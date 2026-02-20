@@ -187,10 +187,8 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
           `${environment.API_BASE_URL}api/orders/get-order/${orderId}`,
           { timeout: 30000 },
         );
-//
+
         if (!isMounted) return;
-        console.log("response data",response.data)
-        console.log("response data", JSON.stringify(response.data, null, 2));
 
         if (response.data.success) {
           setOrder(response.data.data);
