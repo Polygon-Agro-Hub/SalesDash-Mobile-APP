@@ -105,15 +105,20 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
   // Define handleBackPress outside of useFocusEffect so it can be reused
   const handleBackPress = useCallback(() => {
     const currentData = getCurrentCustomerData();
-    navigation.navigate("ViewCustomerScreen", {
-      number: currentData.number,
-      name: currentData.name,
-      customerId: currentData.customerId,
-      id: currentData.id,
-      title: currentData.title,
+
+    navigation.navigate("Main", {
+      screen: "ViewCustomerScreen",
+      params: {
+        number: currentData.number,
+        name: currentData.name,
+        customerId: currentData.customerId,
+        id: currentData.id,
+        title: currentData.title,
+      },
     });
+
     return true;
-  }, [navigation, customerData, customerId, number, name, id, title]);
+  }, [navigation]);
 
   // Fetch customer data
   useEffect(() => {
@@ -440,7 +445,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
         <View className="absolute bottom-0 left-0 right-0 bg-white pt-4 pb-4 px-6">
           <TouchableOpacity
             onPress={handleNavigateIfNoCropsSelected}
-            className="bottom-[14%] left-0 right-0 items-center"
+            className="left-0 right-0 items-center"
             disabled={loading}
           >
             <LinearGradient

@@ -55,7 +55,6 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
     cusId: "",
   });
 
-
   useFocusEffect(
     useCallback(() => {
       const fetchProducts = async () => {
@@ -187,11 +186,14 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
         showBackButton={true}
         navigation={navigation}
         onBackPress={() =>
-          navigation.navigate("ViewCustomerScreen" as any, {
-            id: id,
-            customerId: customerId,
-            name: name,
-            title: title,
+          navigation.navigate("Main" as any, {
+            screen: "ViewCustomerScreen",
+            params: {
+              id: id,
+              customerId: customerId,
+              name: name,
+              title: title,
+            },
           })
         }
       />
@@ -203,7 +205,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
           ? `Customer ID : ${customerName.cusId}`
           : "Loading..."}
       </Text>
-      <View className="flex bg-white px-6">
+      <View className="flex-1 bg-white px-6 overflow-scroll">
         <View className="mt-4">
           <Text className="text-[#874CDB] text-sm font-semibold">
             Preferred Items to Exclude
@@ -211,7 +213,10 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
           <View className="bg-gray-300 h-[1px] mt-2" />
         </View>
 
-        <ScrollView keyboardShouldPersistTaps="handled" className="mb-[90%]">
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
           <View className="mt-4">
             {loading ? (
               <View
@@ -290,42 +295,44 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
           </View>
         </ScrollView>
       </View>
-      <TouchableOpacity
-        className="absolute bottom-[12%] left-0 right-0 items-center "
-        onPress={() =>
-          navigation.navigate("ExcludeAddMore", {
-            id: id,
-            customerId: customerId,
-            name: name,
-            title: title,
-          })
-        }
-      >
-        <LinearGradient
-          colors={["#6839CF", "#874DDB"]}
-          start={[0, 0]}
-          end={[1, 1]}
-          style={{
-            width: "70%",
-            paddingVertical: 12,
-            borderRadius: 25,
-            alignItems: "center",
-            justifyContent: "center",
-            shadowColor: "#000000",
-            shadowOffset: {
-              width: 0,
-              height: 2,
-            },
-            shadowOpacity: 0.2,
-            shadowRadius: 10,
-            elevation: 8,
-          }}
+      <View className="absolute bottom-0 left-0 right-0 bg-white pt-4 pb-4 px-6">
+        <TouchableOpacity
+          className="left-0 right-0 items-center"
+          onPress={() =>
+            navigation.navigate("ExcludeAddMore", {
+              id: id,
+              customerId: customerId,
+              name: name,
+              title: title,
+            })
+          }
         >
-          <Text style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}>
-            {getButtonText()}
-          </Text>
-        </LinearGradient>
-      </TouchableOpacity>
+          <LinearGradient
+            colors={["#6839CF", "#874DDB"]}
+            start={[0, 0]}
+            end={[1, 1]}
+            style={{
+              width: "70%",
+              paddingVertical: 12,
+              borderRadius: 25,
+              alignItems: "center",
+              justifyContent: "center",
+              shadowColor: "#000000",
+              shadowOffset: {
+                width: 0,
+                height: 2,
+              },
+              shadowOpacity: 0.2,
+              shadowRadius: 10,
+              elevation: 8,
+            }}
+          >
+            <Text style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}>
+              {getButtonText()}
+            </Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
     </KeyboardAvoidingView>
   );
 };

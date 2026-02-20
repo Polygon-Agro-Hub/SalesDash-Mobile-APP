@@ -15,6 +15,7 @@ import {
   BackHandler,
   Alert,
   StatusBar,
+  Image,
 } from "react-native";
 import { RouteProp, useFocusEffect } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -465,8 +466,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                     customerId: customerId,
                     name: name,
                     title: title,
-                    number:number,
-                    customerscreencustomerid:customerId
+                    number: number,
+                    customerscreencustomerid: customerId,
                   })
                 }
                 className="flex-row bg-[#6B3BCF] px-4 py-2 rounded-full items-center mt-5"
@@ -502,20 +503,18 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
 
           {/* Search Error Message - Show when typing and no results found */}
           {searchError && (
-            <View>
-              <View className="justify-center items-center mt-4">
-                <LottieView
-                  source={require("@/assets/json/no-data.json")}
-                  style={{ width: wp(50), height: hp(50) }}
-                  autoPlay
-                  loop
-                />
-              </View>
-              <View className="mt-[-80]">
-                <Text className="text-red-600 text-center text-base">
-                  No data Found
-                </Text>
-              </View>
+            <View className="flex-1 justify-center items-center">
+              <Image
+                source={require("@/assets/images/public/no-data.webp")}
+                style={{
+                  width: wp("60%"),
+                  height: hp("30%"),
+                  resizeMode: "contain",
+                }}
+              />
+              <Text className="text-black text-i text-center mt-4">
+                No data Found
+              </Text>
             </View>
           )}
         </View>
@@ -680,19 +679,23 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
             />
           ) : (
             <View className="flex-1 justify-center items-center px-4">
-              <LottieView
-                source={require("@/assets/json/no-data.json")}
-                style={{ width: wp(50), height: hp(50) }}
-                autoPlay
-                loop
-              />
-              <Text className="text-gray-500 mt-4 text-center">
-                {orders.length === 0
-                  ? "No orders found"
-                  : searchText
-                    ? "No matching orders found"
-                    : `No orders found with status "${selectedFilter}"`}
-              </Text>
+              <View className="flex-1 justify-center items-center">
+                <Image
+                  source={require("@/assets/images/public/no-data.webp")}
+                  style={{
+                    width: wp("60%"),
+                    height: hp("30%"),
+                    resizeMode: "contain",
+                  }}
+                />
+                <Text className="text-black text-i text-center mt-4">
+                  {orders.length === 0
+                    ? "No orders found"
+                    : searchText
+                      ? "No matching orders found"
+                      : `No orders found with status "${selectedFilter}"`}
+                </Text>
+              </View>
             </View>
           )}
         </View>

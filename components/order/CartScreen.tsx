@@ -471,7 +471,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
               <View className="flex-row items-center justify-between mt-1">
                 <Text className="text-xs text-gray-600">
                   Rs. {formatPrice(item.discountedPrice)}
-                  {"\n"}/per kg
+                  {"\n"}(per kg)
                 </Text>
 
                 <View className="flex-row items-center ">
