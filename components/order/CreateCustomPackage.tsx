@@ -71,7 +71,6 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  console.log("id custom package",id)
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -134,6 +133,20 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
       ),
     );
   };
+
+  useFocusEffect(
+  useCallback(() => {
+    const currentSelectedIds = route.params?.selectedProductIds;
+    if (currentSelectedIds && currentSelectedIds.length > 0) {
+      setProducts((prevProducts) =>
+        prevProducts.map((product) => ({
+          ...product,
+          selected: currentSelectedIds.includes(product.id),
+        }))
+      );
+    }
+  }, [route.params?.selectedProductIds])
+);
 
   useFocusEffect(
     useCallback(() => {

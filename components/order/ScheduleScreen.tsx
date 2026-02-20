@@ -199,26 +199,27 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showTimeSlotModal, setShowTimeSlotModal] = useState(false);
+ 
   const [total, setTotal] = useState(() => {
-    if (orderData) {
-      return orderData.total;
-    }
-    return calculateInitialTotal(originalTotal, orderItems);
-  });
+  if (originalTotal > 0) return originalTotal;
+  if (orderData) return orderData.total;
+  return calculateInitialTotal(originalTotal, orderItems);
+});
 
-  const [subtotal, setSubtotal] = useState(() => {
-    if (orderData) {
-      return orderData.fullTotal;
-    }
-    return calculateInitialSubtotal(originalSubtotal, orderItems);
-  });
+const [subtotal, setSubtotal] = useState(() => {
+  if (originalSubtotal > 0) return originalSubtotal;
+  if (orderData) {
+    return orderData.fullTotal + orderData.discount;
+  }
+  return calculateInitialSubtotal(originalSubtotal, orderItems);
+});
 
-  const [discount, setDiscount] = useState(() => {
-    if (orderData) {
-      return orderData.discount;
-    }
-    return calculateInitialDiscount(originalDiscount, orderItems);
-  });
+const [discount, setDiscount] = useState(() => {
+  if (originalDiscount > 0) return originalDiscount;
+  if (orderData) return orderData.discount;
+  return calculateInitialDiscount(originalDiscount, orderItems);
+});
+
 
   const [selectedTimeSlot, setSelectedTimeSlot] = useState(
     previousTimeSlot || "",
@@ -268,16 +269,15 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
   });
 
   const getMinimumSelectableDate = () => {
-    const today = new Date(); // Current date and time
-    const currentHour = today.getHours(); // Get the current hour before modifying the date
+    const today = new Date(); 
+    const currentHour = today.getHours();
 
-    const minDate = new Date(today); // Create a new date object for minDate
+    const minDate = new Date(today); 
 
-    // If the current time is between 6 PM and 6 AM
     if (currentHour >= 18 || currentHour < 6) {
-      minDate.setDate(today.getDate() + 4); // Set the minimum date to 4 days from today
+      minDate.setDate(today.getDate() + 4); 
     } else {
-      minDate.setDate(today.getDate() + 3); // Set the minimum date to 3 days from today
+      minDate.setDate(today.getDate() + 3); 
     }
 
     return minDate;
@@ -378,8 +378,6 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     }
   }, [previousSelectedDate, previousTimeSlot]);
 
-  console.log("shedule screen", name, title, id, customerId);
-
   function processInitialData(originalItems: any[], orderItems: any[]) {
     if (orderItems && orderItems.length > 0) {
       const processedItems: CartItem[] = [];
@@ -428,17 +426,16 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
 
   const getSelectableDates = () => {
     const today = new Date();
-    const currentHour = today.getHours(); // Get the current hour before resetting to midnight
+    const currentHour = today.getHours();
 
-    today.setHours(0, 0, 0, 0); // Reset to midnight
+    today.setHours(0, 0, 0, 0); 
 
     const minDate = new Date(today);
 
-    // If the current time is between 6 PM and 6 AM
     if (currentHour >= 18 || currentHour < 6) {
-      minDate.setDate(today.getDate() + 4); // Set the minimum date to 4 days from today
+      minDate.setDate(today.getDate() + 4); 
     } else {
-      minDate.setDate(today.getDate() + 3); // Set the minimum date to 3 days from today
+      minDate.setDate(today.getDate() + 3); 
     }
 
     return { minDate };
@@ -563,14 +560,14 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                 item.normalPrice || item.price + (item.discount || 0),
               discountedPrice: item.discountedPrice || item.price,
               discount: item.discount || 0,
-              quantity: item.quantity,
+              quantity: (item as any).qty ?? item.quantity ?? 0,
               selected: false,
               unitType: item.unitType || "kg",
               startValue: item.startValue || 0.5,
               changeby:
                 item.unitType === "g"
-                  ? Number(item.quantity) * 1000
-                  : item.quantity,
+                  ? Number((item as any).qty ?? item.quantity ?? 0) * 1000
+                  : ((item as any).qty ?? item.quantity ?? 0),
             })),
             subtotal,
             discount,
@@ -642,15 +639,20 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
             customerscreencustomerid,
             selectedProducts: items.map((item) => ({
               id: item.id,
-              name: item.name,
+              name: item.name || `Item ${item.id}`,
               price: item.price,
-              normalPrice: item.normalPrice || item.price,
+              normalPrice:
+                item.normalPrice || item.price + (item.discount || 0),
               discountedPrice: item.discountedPrice || item.price,
-              quantity: item.quantity,
-              selected: true,
+              discount: item.discount || 0,
+              quantity: (item as any).qty ?? item.quantity ?? 0,
+              selected: false,
               unitType: item.unitType || "kg",
-              startValue: item.startValue || 0.1,
-              changeby: item.quantity,
+              startValue: item.startValue || 0.5,
+              changeby:
+                item.unitType === "g"
+                  ? Number((item as any).qty ?? item.quantity ?? 0) * 1000
+                  : ((item as any).qty ?? item.quantity ?? 0),
             })),
             subtotal,
             discount,
@@ -797,14 +799,14 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                   item.normalPrice || item.price + (item.discount || 0),
                 discountedPrice: item.discountedPrice || item.price,
                 discount: item.discount || 0,
-                quantity: item.quantity,
+                quantity: (item as any).qty ?? item.quantity ?? 0,
                 selected: false,
                 unitType: item.unitType || "kg",
                 startValue: item.startValue || 0.5,
                 changeby:
                   item.unitType === "g"
-                    ? Number(item.quantity) * 1000
-                    : item.quantity,
+                    ? Number((item as any).qty ?? item.quantity ?? 0) * 1000
+                    : ((item as any).qty ?? item.quantity ?? 0),
               })),
               subtotal,
               discount,
@@ -850,7 +852,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
               title,
               name,
               number,
-              customerscreencustomerid:customerscreencustomerid,
+              customerscreencustomerid: customerscreencustomerid,
               isPackage: "1",
               orderItems: orderItems,
               packageId: route.params?.packageId || currentOrderItem.packageId,
@@ -876,15 +878,20 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
               customerscreencustomerid,
               selectedProducts: items.map((item) => ({
                 id: item.id,
-                name: item.name,
+                name: item.name || `Item ${item.id}`,
                 price: item.price,
-                normalPrice: item.normalPrice || item.price,
+                normalPrice:
+                  item.normalPrice || item.price + (item.discount || 0),
                 discountedPrice: item.discountedPrice || item.price,
-                quantity: item.quantity,
-                selected: true,
+                discount: item.discount || 0,
+                quantity: (item as any).qty ?? item.quantity ?? 0,
+                selected: false,
                 unitType: item.unitType || "kg",
-                startValue: item.startValue || 0.1,
-                changeby: item.quantity,
+                startValue: item.startValue || 0.5,
+                changeby:
+                  item.unitType === "g"
+                    ? Number((item as any).qty ?? item.quantity ?? 0) * 1000
+                    : ((item as any).qty ?? item.quantity ?? 0),
               })),
               subtotal,
               discount,

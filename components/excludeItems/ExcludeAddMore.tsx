@@ -9,6 +9,7 @@ import {
   FlatList,
   Keyboard,
   ActivityIndicator,
+  BackHandler,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import {
@@ -40,7 +41,6 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
   route,
   navigation,
 }) => {
-  const { id, customerId, name, title } = route.params;
   const [crops, setCrops] = useState<any[]>([]);
   const [selectedCrops, setSelectedCrops] = useState<number[]>([]);
   const [filteredCrops, setFilteredCrops] = useState<any[]>([]);
@@ -58,7 +58,14 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
 
   useFocusEffect(
     useCallback(() => {
+      const { id } = route.params; 
+
       setSelectedCrops([]);
+      setCrops([]);
+      setFilteredCrops([]);
+      setSearchQuery("");
+      setSearchError(null);
+
       const fetchProducts = async () => {
         try {
           const storedToken = await AsyncStorage.getItem("authToken");
@@ -68,17 +75,17 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
             params: { customerId: id },
           });
 
-          if (response.data && response.data.data) {
+          if (response.data?.data) {
             setCrops(response.data.data);
             setFilteredCrops(response.data.data);
           }
         } catch (err) {
           console.error("Failed to fetch products:", err);
-        } finally {
         }
       };
+
       fetchProducts();
-    }, [id]),
+    }, [route.params.id]), 
   );
 
   const handleSearch = (query: string) => {
@@ -100,7 +107,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
       );
       setFilteredCrops(filtered);
 
-      // Set error if no results found
+
       if (filtered.length === 0) {
         setSearchError("No products found matching your search");
       }
@@ -120,19 +127,14 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
   }, [navigation, crops]);
 
   const handlesubmitexcludelist = async () => {
+    const { id, customerId, name, title } = route.params; 
     setLoading(true);
 
     try {
       const token = await AsyncStorage.getItem("authToken");
-      if (!token) {
-        console.error("No authentication token found");
-        return;
-      }
+      if (!token) return;
 
-      const payload = {
-        customerId: id,
-        selectedCrops,
-      };
+      const payload = { customerId: id, selectedCrops };
 
       const checkResponse = await axios.post(
         `${environment.API_BASE_URL}api/customer/add/excludelist`,
@@ -147,15 +149,11 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
 
       if (checkResponse.status === 200) {
         navigation.navigate("ExcludeItemEditSummery" as any, {
-          id: id,
-          customerId: customerId,
-          name: name,
-          title: title,
+          id, 
+          customerId,
+          name,
+          title,
         });
-      } else if (checkResponse.status === 400) {
-        console.error("Bad request:", checkResponse.data.message);
-      } else if (checkResponse.status === 404) {
-        console.error("Not Found:", checkResponse.data.message);
       }
     } catch (err) {
       console.error("Error posting exclude list:", err);
@@ -167,6 +165,28 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
   const handleNavigateIfNoCropsSelected = () => {
     handlesubmitexcludelist();
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        const { id, customerId, name, title } = route.params; 
+        navigation.navigate("ExcludeItemEditSummery" as any, {
+          id,
+          customerId,
+          name,
+          title,
+        });
+        return true;
+      };
+
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress,
+      );
+
+      return () => backHandler.remove();
+    }, [navigation, route.params]),
+  );
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -200,14 +220,15 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
         titleColor="#6C3CD1"
         showBackButton={true}
         navigation={navigation}
-        onBackPress={() =>
+        onBackPress={() => {
+          const { id, customerId, name, title } = route.params; 
           navigation.navigate("ExcludeItemEditSummery" as any, {
-            id: id,
-            customerId: customerId,
-            name: name,
-            title: title,
-          })
-        }
+            id,
+            customerId,
+            name,
+            title,
+          });
+        }}
       />
       <View className="flex-1 ">
         <Text className="text-center text-sm px-6">
@@ -262,6 +283,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
         <View className="flex-1  ">
           <FlatList
             keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: 200 }}
             data={filteredCrops}
             renderItem={({ item }) => (
               <TouchableOpacity

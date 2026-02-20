@@ -48,16 +48,30 @@ interface SelectPaymentMethodProps {
         startValue: number;
         changeby: number;
       }>;
+      rawPackageItems?: Array<{ name: string; qty: string }>;
+      rawAdditionalItems?: Array<{
+        id: number;
+        name: string;
+        quantity: number;
+        unit: string;
+        pricePerKg: number;
+        discountedPricePerKg: number;
+        discount: number;
+        totalAmount: number;
+        selected: boolean;
+        changeby?: string;
+        startValue?: string;
+      }>;
       total?: number;
       subtotal?: number;
       discount?: number;
       fullTotal?: number;
       id?: string;
       customerId?: string;
-      title:string
-      name:string
-      number:string
-      customerscreencustomerid:string
+      title: string;
+      name: string;
+      number: string;
+      customerscreencustomerid: string;
       isPackage?: number | string;
       packageId?: number;
       customerid?: string;
@@ -128,7 +142,13 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
     selectedTimeSlot,
     orderItems,
     orderData,
-    id ,title,name,number,customerscreencustomerid
+    id,
+    title,
+    name,
+    number,
+    customerscreencustomerid,
+    rawPackageItems,
+    rawAdditionalItems,
   } = route.params || {};
 
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
@@ -136,7 +156,6 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
     previousSelectedMethod || "Cash",
   );
 
-  console.log("payment methos",name,title,id,customerId)
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
       "keyboardDidShow",
@@ -173,7 +192,11 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
       customerid: customerid || customerId,
       packageId: packageId,
       orderData: orderData,
-      id ,title,name,number,customerscreencustomerid
+      id,
+      title,
+      name,
+      number,
+      customerscreencustomerid,
     };
 
     navigation.navigate("OrderSummeryScreen" as any, navigationData);
@@ -185,8 +208,12 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
         navigation.navigate("ScheduleScreen" as any, {
           items,
           subtotal,
-          discount,number,
-          id ,title,name,customerscreencustomerid,
+          discount,
+          number,
+          id,
+          title,
+          name,
+          customerscreencustomerid,
           total,
           fullTotal,
           selectedDate,
@@ -196,6 +223,9 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
           selectedTimeSlot,
           customerId,
           customerid: customerid?.toString() || customerId?.toString(),
+          orderData,
+          rawPackageItems,
+          rawAdditionalItems,
           orderItems,
         });
         return true;
@@ -226,7 +256,11 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
           navigation.navigate("ScheduleScreen" as any, {
             items,
             subtotal,
-            id ,title,name,number,customerscreencustomerid,
+            id,
+            title,
+            name,
+            number,
+            customerscreencustomerid,
             discount,
             total,
             fullTotal,
@@ -238,6 +272,9 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
             customerId,
             customerid: customerid?.toString() || customerId?.toString(),
             orderItems,
+            orderData,
+            rawPackageItems,
+            rawAdditionalItems,
           })
         }
       />

@@ -7,6 +7,7 @@ import {
   Platform,
   TouchableOpacity,
   Alert,
+  BackHandler,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import {
@@ -139,6 +140,24 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
       },
     ]);
   };
+
+    useFocusEffect(
+      useCallback(() => {
+        const onBackPress = () => {
+           navigation.navigate("ExcludeListAdd", {
+            customerId: Number(customerId),
+          });
+          return true;
+        };
+  
+        const backHandler = BackHandler.addEventListener(
+          "hardwareBackPress",
+          onBackPress,
+        );
+  
+        return () => backHandler.remove();
+      }, [navigation]),
+    );
 
   return (
     <KeyboardAvoidingView
