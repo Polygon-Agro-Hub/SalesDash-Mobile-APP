@@ -997,44 +997,42 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                 </View>
               )}
 
-              {/* Cancel Order Button */}
-              <View
-                style={{
-                  marginHorizontal: 20,
-                  marginBottom: 20,
-                  borderRadius: 30,
-                  shadowColor: "#000",
-                  shadowOpacity: isCancelDisabled() ? 0.05 : 0.12,
-                  shadowOffset: { width: 0, height: 5 },
-                  shadowRadius: 7,
-                  elevation: isCancelDisabled() ? 3 : 6,
-                }}
-              >
-                <TouchableOpacity
-                  onPress={handleCancelOrder}
-                  disabled={isCancelDisabled()}
-                  activeOpacity={0.8}
+              {/* Cancel Order Button - Only show when NOT disabled */}
+              {!isCancelDisabled() && (
+                <View
                   style={{
+                    marginHorizontal: 20,
+                    marginBottom: 20,
                     borderRadius: 30,
-                    opacity: isCancelDisabled() ? 0.7 : 1,
+                    shadowColor: "#000",
+                    shadowOpacity: 0.12,
+                    shadowOffset: { width: 0, height: 5 },
+                    shadowRadius: 7,
+                    elevation: 6,
                   }}
                 >
-                  <View
+                  <TouchableOpacity
+                    onPress={handleCancelOrder}
+                    activeOpacity={0.8}
                     style={{
-                      backgroundColor: isCancelDisabled()
-                        ? "#E5E7EB"
-                        : "#000000",
-                      paddingVertical: 12,
                       borderRadius: 30,
-                      alignItems: "center",
                     }}
                   >
-                    <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>
-                      Cancel Order
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              </View>
+                    <View
+                      style={{
+                        backgroundColor: "#000000",
+                        paddingVertical: 12,
+                        borderRadius: 30,
+                        alignItems: "center",
+                      }}
+                    >
+                      <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>
+                        Cancel Order
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           </ScrollView>
         ) : (
@@ -1189,39 +1187,74 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
             </View>
 
             {/* Buttons */}
-            <TouchableOpacity
-              onPress={handleConfirmReport}
-              className="mb-3 rounded-full mx-7 overflow-hidden"
-              disabled={!tempSelectedReportOption}
+            <View
+              style={{
+                marginHorizontal: 28,
+                marginBottom: 12,
+                borderRadius: 999,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: 0.25,
+                shadowRadius: 8,
+                elevation: 8,
+              }}
             >
-              <LinearGradient
-                colors={
-                  tempSelectedReportOption
-                    ? ["#040404ff", "#030203ff"]
-                    : ["#CCCCCC", "#CCCCCC"]
-                }
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                className="py-3 rounded-full items-center"
+              <TouchableOpacity
+                onPress={handleConfirmReport}
+                disabled={!tempSelectedReportOption}
+                activeOpacity={0.8}
+                style={{ borderRadius: 999, overflow: "hidden" }}
               >
-                <Text
-                  className={`text-center font-semibold ${tempSelectedReportOption ? "text-white" : "text-gray-600"}`}
+                <LinearGradient
+                  colors={
+                    tempSelectedReportOption
+                      ? ["#040404ff", "#030203ff"]
+                      : ["#CCCCCC", "#CCCCCC"]
+                  }
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{
+                    paddingVertical: 12,
+                    alignItems: "center",
+                  }}
                 >
-                  Confirm
-                </Text>
-              </LinearGradient>
-            </TouchableOpacity>
+                  <Text
+                    style={{
+                      color: tempSelectedReportOption ? "#fff" : "#666",
+                      fontWeight: "600",
+                    }}
+                  >
+                    Confirm
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
 
-            <TouchableOpacity
-              onPress={handleCloseReportModal}
-              className="rounded-full mx-7"
+            <View
+              style={{
+                marginHorizontal: 28,
+                borderRadius: 999,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.15,
+                shadowRadius: 6,
+                elevation: 5,
+                marginTop: 10,
+              }}
             >
-              <View className="bg-gray-200 py-3 rounded-full items-center">
-                <Text className="text-black text-center font-semibold">
-                  Cancel
-                </Text>
-              </View>
-            </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleCloseReportModal}
+                activeOpacity={0.8}
+                style={{
+                  backgroundColor: "#E5E7EB",
+                  paddingVertical: 12,
+                  borderRadius: 999,
+                  alignItems: "center",
+                }}
+              >
+                <Text style={{ fontWeight: "600", color: "#000" }}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>

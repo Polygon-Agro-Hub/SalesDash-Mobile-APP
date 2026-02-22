@@ -153,11 +153,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             { text: "OK" },
           ]);
         } else if (statusType === "password_not_set") {
-          Alert.alert(
-            "Not Approved EMP ID",
-            "This EMP ID is not approved.",
-            [{ text: "OK" }],
-          );
+          Alert.alert("Not Approved EMP ID", "This EMP ID is not approved.", [
+            { text: "OK" },
+          ]);
         } else if (errorMessage === "Invalid password") {
           Alert.alert("Login Error", "Invalid password, please try again.");
         } else if (errorMessage === "Invalid Employee ID") {
@@ -186,10 +184,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
   return (
     <KeyboardAvoidingView
-      enabled
+      style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={{ flex: 1, backgroundColor: "white" }}
-      className="bg-white"
+      keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
     >
       <StatusBar barStyle="light-content" backgroundColor="#854BDA" />
       <ScrollView
