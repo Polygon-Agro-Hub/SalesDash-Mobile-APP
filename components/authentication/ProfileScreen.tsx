@@ -20,7 +20,6 @@ import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from "react-native-responsive-screen";
-import BackButton from "../common/BackButton";
 import LoadingPage from "../common/LoadingPage";
 import CustomHeader from "../common/CustomHeader";
 
@@ -161,7 +160,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
         const orderData = response.data.data;
 
         if (orderData && typeof orderData === "object") {
-          // If the object has orderCount property, use it directly
           if (orderData.orderCount !== undefined) {
             setOrderCount(orderData.orderCount);
           } else {
@@ -252,7 +250,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
     }
   };
 
-  // Show loading screen while data is being fetched
   if (loading) {
     return <LoadingPage message="Loading Profile..." fullScreen={true} />;
   }

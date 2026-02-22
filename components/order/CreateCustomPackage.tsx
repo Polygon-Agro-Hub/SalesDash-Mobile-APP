@@ -38,11 +38,11 @@ interface CreateCustomPackageProps {
       id: string;
       isPackage: string;
       selectedProductIds?: number[];
-      customerId:string;
-       name:string;
-       title:string;
-       number:string;
-       customerscreencustomerid:string;
+      customerId: string;
+      name: string;
+      title: string;
+      number: string;
+      customerscreencustomerid: string;
     };
   };
 }
@@ -65,12 +65,20 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
   navigation,
   route,
 }) => {
-  const { id, isPackage, selectedProductIds ,customerId, name, title,number ,customerscreencustomerid} = route.params || {};
+  const {
+    id,
+    isPackage,
+    selectedProductIds,
+    customerId,
+    name,
+    title,
+    number,
+    customerscreencustomerid,
+  } = route.params || {};
   const [searchQuery, setSearchQuery] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -135,26 +143,33 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
   };
 
   useFocusEffect(
-  useCallback(() => {
-    const currentSelectedIds = route.params?.selectedProductIds;
-    if (currentSelectedIds && currentSelectedIds.length > 0) {
-      setProducts((prevProducts) =>
-        prevProducts.map((product) => ({
-          ...product,
-          selected: currentSelectedIds.includes(product.id),
-        }))
-      );
-    }
-  }, [route.params?.selectedProductIds])
-);
+    useCallback(() => {
+      const currentSelectedIds = route.params?.selectedProductIds;
+      if (currentSelectedIds && currentSelectedIds.length > 0) {
+        setProducts((prevProducts) =>
+          prevProducts.map((product) => ({
+            ...product,
+            selected: currentSelectedIds.includes(product.id),
+          })),
+        );
+      }
+    }, [route.params?.selectedProductIds]),
+  );
 
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-         navigation.navigate("Main", {
-            screen: "SelectOrderType",
-            params:{id ,customerId,title,name,number,customerscreencustomerid}
-          });
+        navigation.navigate("Main", {
+          screen: "SelectOrderType",
+          params: {
+            id,
+            customerId,
+            title,
+            name,
+            number,
+            customerscreencustomerid,
+          },
+        });
         return true;
       };
 
@@ -206,7 +221,11 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
         selectedProducts,
         id,
         isPackage,
-        customerId,title,name,number,customerscreencustomerid
+        customerId,
+        title,
+        name,
+        number,
+        customerscreencustomerid,
       });
     } else {
       alert("Please select at least one product");
@@ -215,7 +234,9 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
 
   // formatPrice function with comma separation
   const formatPrice = (price: number) => {
-    return Number(price).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return Number(price)
+      .toFixed(2)
+      .replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   };
 
   if (loading) {
@@ -250,7 +271,14 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
         onBackPress={() => {
           navigation.navigate("Main", {
             screen: "SelectOrderType",
-            params:{id ,customerId,title,name,number,customerscreencustomerid}
+            params: {
+              id,
+              customerId,
+              title,
+              name,
+              number,
+              customerscreencustomerid,
+            },
           });
         }}
       />

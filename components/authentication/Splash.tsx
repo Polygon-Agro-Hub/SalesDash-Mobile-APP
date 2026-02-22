@@ -130,7 +130,7 @@ const Splash: React.FC<SplashProps> = ({ navigation }) => {
           resizeMode="contain"
         />
       </View>
-      
+
       {/* Powered By Text at Bottom */}
       <View className="absolute bottom-10 w-full items-center">
         <Text className="text-white text-md font-medium opacity-80">

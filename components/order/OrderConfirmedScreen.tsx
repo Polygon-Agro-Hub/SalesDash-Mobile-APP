@@ -10,7 +10,6 @@ import {
   ScrollView,
   Alert,
   BackHandler,
-  ActivityIndicator,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RouteProp } from "@react-navigation/native";
@@ -65,9 +64,9 @@ interface AdditionalItem {
   quantity: string;
   unit: string;
   totalPrice: string;
-  marketplacetablenormalPrice:string;
-  marketplacetablediscountedPrice:string;
-  marketplacetablediscount:string;
+  marketplacetablenormalPrice: string;
+  marketplacetablediscountedPrice: string;
+  marketplacetablediscount: string;
 }
 interface CustomerInfo {
   buildingType: string;
@@ -149,7 +148,6 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
   const [deliveryFee, setDeliveryFee] = useState<number>(0);
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
-  
 
   const {
     orderId = "N/A",
@@ -423,7 +421,9 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
           const actualAmount = price + discount; // 510 + 90 = 600
 
           // Calculate unit price (actual amount / quantity)
-          const unitPrice = parseFloat(item.marketplacetablenormalPrice?.toString() || "0");
+          const unitPrice = parseFloat(
+            item.marketplacetablenormalPrice?.toString() || "0",
+          );
 
           additionalItemsRows += `
       <tr>

@@ -29,7 +29,6 @@ import {
 import axios from "axios";
 import environment from "@/environment/environment";
 import { Entypo, FontAwesome, Ionicons } from "@expo/vector-icons";
-import LottieView from "lottie-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import LoadingPage from "../common/LoadingPage";
 import CustomHeader from "../common/CustomHeader";
