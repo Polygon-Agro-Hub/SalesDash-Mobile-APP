@@ -88,9 +88,9 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
 
       const storedToken = await AsyncStorage.getItem("authToken");
 
-      // Add this check 
+      // Add this check
       if (!storedToken) {
-        return; 
+        return;
       }
 
       const response = await axios.get(
@@ -228,7 +228,7 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
         return require("@/assets/images/reminder/out-for-delivery.webp");
       case "Order is Cancelled":
         return require("@/assets/images/reminder/order-cancelled.webp");
-       case "Order is Delivered":
+      case "Order is Delivered":
         return require("@/assets/images/reminder/order-is-elivered.webp");
       case "Driver has collected the order":
         return require("@/assets/images/reminder/delivery-courier.webp");

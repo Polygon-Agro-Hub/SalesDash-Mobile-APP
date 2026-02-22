@@ -45,13 +45,10 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
   const [passwordUpdate, setPasswordUpdate] = useState<number | null>(null);
 
   const validatePassword = () => {
-    // Check if all fields are filled
     if (!currentPassword || !newPassword || !confirmNewPassword) {
       Alert.alert("Error", "All fields are required");
       return false;
     }
-
-    // Check if new password meets format requirements - Updated to 6 characters
     if (newPassword.length < 6) {
       Alert.alert(
         "Error",
@@ -59,8 +56,6 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
       );
       return false;
     }
-
-    // Check for at least 1 uppercase letter
     if (!/[A-Z]/.test(newPassword)) {
       Alert.alert(
         "Error",
@@ -68,8 +63,6 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
       );
       return false;
     }
-
-    // Check for at least 1 number
     if (!/[0-9]/.test(newPassword)) {
       Alert.alert(
         "Error",
@@ -77,8 +70,6 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
       );
       return false;
     }
-
-    // Check for at least 1 special character
     if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(newPassword)) {
       Alert.alert(
         "Error",
@@ -86,8 +77,6 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
       );
       return false;
     }
-
-    // Check if new password and confirm password match
     if (newPassword !== confirmNewPassword) {
       Alert.alert("Error", "New password and confirm password do not match");
       return false;
@@ -108,7 +97,6 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
           },
         },
       );
-      // Access the nested passwordUpdate value correctly
       setPasswordUpdate(response.data.data.passwordUpdate);
     } catch (error) {
       console.error("Error fetching password update status:", error);
@@ -121,7 +109,6 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
 
   const handleChangePassword = async () => {
     Keyboard.dismiss();
-    // Validate inputs before proceeding
     if (!validatePassword()) {
       return;
     }
@@ -158,7 +145,6 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
     } catch (error) {
       // Check for password mismatch error specifically
       if (axios.isAxiosError(error) && error.response?.data?.error) {
-        // Check if backend error message contains password match error
         const errorMsg = error.response.data.error;
         if (
           typeof errorMsg === "string" &&

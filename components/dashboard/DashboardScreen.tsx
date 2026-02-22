@@ -244,8 +244,8 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       <View
         className="bg-white rounded-2xl p-4 mb-5 mx-2"
         style={{
-          width: (wp("100%") - 48) / 2, 
-          minHeight: 240, 
+          width: (wp("100%") - 48) / 2,
+          minHeight: 240,
           shadowColor: "#000",
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.15,
@@ -347,9 +347,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
 
           {/* Progress Bar */}
           <View className="mt-6">
-            <Text className="text-lg text-[#874CDB]">
-              Your Daily Target
-            </Text>
+            <Text className="text-lg text-[#874CDB]">Your Daily Target</Text>
 
             <View className="mt-3 bg-[#824AD933] rounded-2xl px-5 py-4 relative overflow-hidden">
               {/* Progress Count (Centered Top) */}

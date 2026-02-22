@@ -100,12 +100,13 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
     customerid = "",
     isPackage: isPackageRaw = 0,
     orderItems = [],
-    customerscreencustomerid="",
+    customerscreencustomerid = "",
   } = route.params || {};
 
-  const isPackage = typeof isPackageRaw === "string"
-  ? parseInt(isPackageRaw) || 0
-  : Number(isPackageRaw);
+  const isPackage =
+    typeof isPackageRaw === "string"
+      ? parseInt(isPackageRaw) || 0
+      : Number(isPackageRaw);
 
   const safeItems = Array.isArray(items) ? items : [];
   const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
@@ -505,7 +506,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           title: customerData?.title,
           name: `${customerData?.firstName} ${customerData?.lastName}`,
           number: customerData?.phoneNumber,
-          customerscreencustomerid:customerscreencustomerid,
+          customerscreencustomerid: customerscreencustomerid,
           fullTotal,
           selectedDate,
           timeDisplay,
@@ -594,7 +595,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
             id: customerId,
             title: customerData?.title,
             number: customerData?.phoneNumber,
-            customerscreencustomerid:customerscreencustomerid,
+            customerscreencustomerid: customerscreencustomerid,
             name: `${customerData?.firstName} ${customerData?.lastName}`,
             selectedDate,
             timeDisplay,
@@ -644,7 +645,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                       subtotal,
                       id: customerId,
                       title: customerData?.title,
-                      customerscreencustomerid:customerscreencustomerid,
+                      customerscreencustomerid: customerscreencustomerid,
                       name: `${customerData?.firstName} ${customerData?.lastName}`,
                       number: customerData?.phoneNumber,
                       discount,
@@ -751,7 +752,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                       isPackage: 0,
                       number: customerData?.phoneNumber,
                       title: customerData?.title,
-                      customerscreencustomerid:customerscreencustomerid,
+                      customerscreencustomerid: customerscreencustomerid,
                       name: `${customerData?.firstName} ${customerData?.lastName}`,
                       items: safeItems.map((item) => ({
                         id: item.id,
@@ -858,7 +859,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                       orderItems: safeOrderItems,
                       number: customerData?.phoneNumber,
                       title: customerData?.title,
-                      customerscreencustomerid:customerscreencustomerid,
+                      customerscreencustomerid: customerscreencustomerid,
                       name: `${customerData?.firstName} ${customerData?.lastName}`,
                       packageId:
                         currentOrderItem.packageId || route.params?.packageId,
@@ -885,7 +886,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                         name: item.name,
                         price: item.price,
                         normalPrice: item.normalPrice || item.price,
-                        customerscreencustomerid:customerscreencustomerid,
+                        customerscreencustomerid: customerscreencustomerid,
                         discountedPrice: item.discountedPrice || item.price,
                         quantity: item.quantity,
                         selected: true,
@@ -971,7 +972,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                     discount,
                     id: customerId,
                     title: customerData?.title,
-                    customerscreencustomerid:customerscreencustomerid,
+                    customerscreencustomerid: customerscreencustomerid,
                     name: `${customerData?.firstName} ${customerData?.lastName}`,
                     number: customerData?.phoneNumber,
                     total,

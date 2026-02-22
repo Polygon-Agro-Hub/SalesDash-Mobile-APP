@@ -5,7 +5,6 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  Keyboard,
   KeyboardAvoidingView,
   Alert,
   ActivityIndicator,
@@ -99,8 +98,6 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
   const [selectedLocationName, setSelectedLocationName] = useState<string>("");
   const [latitude, setLatitude] = useState<number | undefined>(undefined);
   const [longitude, setLongitude] = useState<number | undefined>(undefined);
-
-  // Add modal state variables
   const [titleModalVisible, setTitleModalVisible] = useState(false);
   const [buildingTypeModalVisible, setBuildingTypeModalVisible] =
     useState(false);

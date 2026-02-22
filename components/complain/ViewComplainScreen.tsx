@@ -75,7 +75,7 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({
       }
 
       const complaintsUrl = `${environment.API_BASE_URL.replace(/\/$/, "")}/api/complain/get-complains`;
-      
+
       setTimeout(async () => {
         try {
           const complaintsResponse = await axios.get(complaintsUrl, {
@@ -293,55 +293,57 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({
             {selectedComplaint ? (
               <ScrollView>
                 <View className="mt-4 mb-7">
-                <Text className="text-gray-800 text-base leading-relaxed text-left">
-                  <Text className="font-">
-                    Dear {formData.firstName || "User"} {formData.lastName},
-                  </Text>
-                  {"\n\n"}
-                  We are pleased to inform you that your complaint has been
-                  resolved.
-                  {"\n\n"}
-                  {selectedComplaint.reply || "No response available."}
-                  {"\n\n"}
-                  If you have any further concerns or questions, feel free to
-                  reach out. 
-                  {"\n"}
-                  Thank you for your patience and understanding.
-                  {"\n\n"}
-                  <Text className="text-left">Sincerely,</Text>
-                  {"\n"}
-                  <View>
-                    <Text className="text-left text-base text-gray-800">
-                      Polygon Customer Support Team
+                  <Text className="text-gray-800 text-base leading-relaxed text-left">
+                    <Text className="font-">
+                      Dear {formData.firstName || "User"} {formData.lastName},
                     </Text>
-                  </View>
-                  {"\n\n"}
-                </Text>
+                    {"\n\n"}
+                    We are pleased to inform you that your complaint has been
+                    resolved.
+                    {"\n\n"}
+                    {selectedComplaint.reply || "No response available."}
+                    {"\n\n"}
+                    If you have any further concerns or questions, feel free to
+                    reach out.
+                    {"\n"}
+                    Thank you for your patience and understanding.
+                    {"\n\n"}
+                    <Text className="text-left">Sincerely,</Text>
+                    {"\n"}
+                    <View>
+                      <Text className="text-left text-base text-gray-800">
+                        Polygon Customer Support Team
+                      </Text>
+                    </View>
+                    {"\n\n"}
+                  </Text>
 
-                 {selectedComplaint.replyTime ? (
-                  <Text className="text-gray-800 mt-[-10%] text-base">
-                    {(() => {
-                      const date = new Date(selectedComplaint.replyTime);
-                      let hours = date.getHours();
-                      const minutes = date.getMinutes();
-                      const ampm = hours >= 12 ? "PM" : "AM";
-                      hours = hours % 12;
-                      hours = hours ? hours : 12;
-                      const timeString = `${hours}:${minutes.toString().padStart(2, "0")} ${ampm}`;
-                      
-                      const year = date.getFullYear();
-                      const month = (date.getMonth() + 1).toString().padStart(2, "0");
-                      const day = date.getDate().toString().padStart(2, "0");
-                      const dateString = `${year}/${month}/${day}`;
-                      
-                      return `At ${timeString} on ${dateString}`;
-                    })()}
-                  </Text>
-                ) : (
-                  <Text className="text-gray-600 text-sm">
-                    No reply time available
-                  </Text>
-                )}
+                  {selectedComplaint.replyTime ? (
+                    <Text className="text-gray-800 mt-[-10%] text-base">
+                      {(() => {
+                        const date = new Date(selectedComplaint.replyTime);
+                        let hours = date.getHours();
+                        const minutes = date.getMinutes();
+                        const ampm = hours >= 12 ? "PM" : "AM";
+                        hours = hours % 12;
+                        hours = hours ? hours : 12;
+                        const timeString = `${hours}:${minutes.toString().padStart(2, "0")} ${ampm}`;
+
+                        const year = date.getFullYear();
+                        const month = (date.getMonth() + 1)
+                          .toString()
+                          .padStart(2, "0");
+                        const day = date.getDate().toString().padStart(2, "0");
+                        const dateString = `${year}/${month}/${day}`;
+
+                        return `At ${timeString} on ${dateString}`;
+                      })()}
+                    </Text>
+                  ) : (
+                    <Text className="text-gray-600 text-sm">
+                      No reply time available
+                    </Text>
+                  )}
                 </View>
               </ScrollView>
             ) : (

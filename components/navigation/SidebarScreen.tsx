@@ -8,7 +8,6 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
   BackHandler,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";

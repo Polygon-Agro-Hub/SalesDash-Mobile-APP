@@ -14,7 +14,6 @@ import {
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
 import { useNavigation } from "@react-navigation/native";
-import BackButton from "../common/BackButton";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   widthPercentageToDP as wp,
@@ -24,6 +23,7 @@ import axios, { AxiosError } from "axios";
 import environment from "@/environment/environment";
 import { useRoute } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import CustomHeader from "../common/CustomHeader";
 
 type OtpScreenUpNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -181,12 +181,9 @@ const OtpScreenUp: React.FC = () => {
               );
             }
 
-         
-             navigation.navigate( "OtpSuccesfulScreen" as any,
-           {
-            customerId
-           }         
-          );
+            navigation.navigate("OtpSuccesfulScreen" as any, {
+              customerId,
+            });
           } else {
             throw new Error(
               customerResponse.data?.message ||
@@ -365,15 +362,14 @@ const OtpScreenUp: React.FC = () => {
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
       >
+        <CustomHeader
+          title="OTP Verification"
+          titleColor="#6C3CD1"
+          showBackButton={true}
+          navigation={navigation}
+          onBackPress={() => navigation.goBack()}
+        />
         <View className="flex-1 bg-white">
-          {/* Header */}
-          <View className="bg-white flex-row items-center h-17 shadow-lg px-1">
-            <BackButton navigation={navigation} />
-            <Text className="font-bold text-center text-[#6C3CD1] flex-grow mr-9 text-xl">
-              OTP Verification
-            </Text>
-          </View>
-
           <View
             style={{ paddingHorizontal: wp(5), paddingVertical: hp(2) }}
             className="flex-1 justify-center"

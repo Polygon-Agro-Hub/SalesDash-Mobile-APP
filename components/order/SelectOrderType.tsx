@@ -26,8 +26,8 @@ interface SelectOrderTypeProps {
       customerId: string;
       name: string;
       title: string;
-      number:string;
-      customerscreencustomerid:string
+      number: string;
+      customerscreencustomerid: string;
     };
   };
 }
@@ -36,17 +36,18 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({
   navigation,
   route,
 }) => {
-  const { id, customerId, name, title ,number,customerscreencustomerid} = route.params || {};
+  const { id, customerId, name, title, number, customerscreencustomerid } =
+    route.params || {};
 
   const handleCreateCustomPackage = () => {
     navigation.navigate("CreateCustomPackage" as any, {
       id,
       isPackage: 0,
       customerId: customerId,
-          name: name,
-          title: title,
-          number:number,
-          customerscreencustomerid:customerscreencustomerid,
+      name: name,
+      title: title,
+      number: number,
+      customerscreencustomerid: customerscreencustomerid,
     });
   };
 
@@ -55,10 +56,10 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({
       const onBackPress = () => {
         navigation.navigate("ViewCustomerScreen" as any, {
           id: id,
-          customerId:  customerscreencustomerid,
+          customerId: customerscreencustomerid,
           name: name,
           title: title,
-          number:number
+          number: number,
         });
         return true;
       };
@@ -77,10 +78,10 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({
       id,
       isPackage: 1,
       customerId: customerId,
-          name: name,
-          title: title,
-          number:number,
-          customerscreencustomerid:customerscreencustomerid
+      name: name,
+      title: title,
+      number: number,
+      customerscreencustomerid: customerscreencustomerid,
     });
   };
 
@@ -98,7 +99,7 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({
             customerId: customerscreencustomerid,
             name: name,
             title: title,
-            number:number
+            number: number,
           })
         }
       />

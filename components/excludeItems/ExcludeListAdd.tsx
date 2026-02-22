@@ -159,7 +159,6 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
     useCallback(() => {
       setSelectedCrops([]);
 
-      // Override the default back action for BackButton
       const unsubscribe = navigation.addListener("beforeRemove", (e) => {
         e.preventDefault();
         const currentData = getCurrentCustomerData();

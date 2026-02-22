@@ -66,6 +66,9 @@ function MainTabNavigator() {
       <Tab.Screen name="DashboardScreen" component={DashboardScreen} />
       <Tab.Screen name="ViewOrdersScreen" component={ViewOrdersScreen} />
       <Tab.Screen name="ReminderScreen" component={ReminderScreen} />
+      <Tab.Screen name="EditCustomerScreen" component={EditCustomerScreen} />
+      <Tab.Screen name="AddComplaintScreen" component={AddComplaintScreen} />
+      <Tab.Screen name="SelectOrderType" component={SelectOrderType as any} />
       <Tab.Screen
         options={{
           tabBarHideOnKeyboard: true,
@@ -77,19 +80,14 @@ function MainTabNavigator() {
         name="CustomersScreen"
         component={CustomersScreen}
       />
-
       <Tab.Screen
         name="ViewCustomerScreen"
         component={ViewCustomerScreen as any}
       />
-      <Tab.Screen name="EditCustomerScreen" component={EditCustomerScreen} />
-      <Tab.Screen name="SelectOrderType" component={SelectOrderType as any} />
       <Tab.Screen
         name="OrderConfirmedScreen"
         component={OrderConfirmedScreen as any}
       />
-
-      <Tab.Screen name="AddComplaintScreen" component={AddComplaintScreen} />
       <Tab.Screen
         name="AddCustomersScreen"
         component={AddCustomersScreen as any}
@@ -141,20 +139,21 @@ function AppContent() {
           <Stack.Navigator screenOptions={{ headerShown: false }}>
             <Stack.Screen name="Splash" component={Splash} />
             <Stack.Screen name="LoginScreen" component={LoginScreen} />
-            <Stack.Screen
-              name="ChangePasswordScreen"
-              component={ChangePasswordScreen}
-            />
             <Stack.Screen name="SidebarScreen" component={SidebarScreen} />
             <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
             <Stack.Screen name="OtpScreen" component={OtpScreen} />
             <Stack.Screen name="ViewScreen" component={ViewScreen as any} />
             <Stack.Screen name="OtpScreenUp" component={OtpScreenUp} />
+            <Stack.Screen name="OrderScreen" component={OrderScreen as any} />
+            <Stack.Screen name="CratScreen" component={CratScreen as any} />
             <Stack.Screen
               name="ViewComplainScreen"
               component={ViewComplainScreen}
             />
-            <Stack.Screen name="OrderScreen" component={OrderScreen as any} />
+            <Stack.Screen
+              name="ChangePasswordScreen"
+              component={ChangePasswordScreen}
+            />
             <Stack.Screen
               name="OtpSuccesfulScreen"
               component={OtpSuccesfulScreen as any}
@@ -179,7 +178,6 @@ function AppContent() {
               name="CreateCustomPackage"
               component={CreateCustomPackage as any}
             />
-            <Stack.Screen name="CratScreen" component={CratScreen as any} />
             <Stack.Screen
               name="PrivacyPolicy"
               component={PrivacyPolicy as any}
