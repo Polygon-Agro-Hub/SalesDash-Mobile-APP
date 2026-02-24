@@ -438,7 +438,6 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                       ? "Loading Location"
                       : "View Geo Location"}
                   </Text>
-
                   <Entypo name="location-pin" size={20} color="#FF0000" />
                 </View>
               </TouchableOpacity>
@@ -499,23 +498,6 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
               <FontAwesome name="search" size={22} color="#884EDC" />
             </TouchableOpacity>
           </View>
-
-          {/* Search Error Message - Show when typing and no results found */}
-          {searchError && (
-            <View className="flex-1 justify-center items-center">
-              <Image
-                source={require("@/assets/images/public/no-data.webp")}
-                style={{
-                  width: wp("60%"),
-                  height: hp("30%"),
-                  resizeMode: "contain",
-                }}
-              />
-              <Text className="text-black text-i text-center mt-4">
-                No data Found
-              </Text>
-            </View>
-          )}
         </View>
 
         {!searchError && (
@@ -568,7 +550,21 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 <Text className="text-white font-semibold">Retry</Text>
               </TouchableOpacity>
             </View>
-          ) : searchError ? null : filteredOrders.length > 0 ? (
+          ) : searchError ? (
+            <View className="flex-1 justify-center items-center mt-[-15%]">
+              <Image
+                source={require("@/assets/images/public/no-data.webp")}
+                style={{
+                  width: wp("60%"),
+                  height: hp("30%"),
+                  resizeMode: "contain",
+                }}
+              />
+              <Text className="text-black text-base text-center mt-3">
+                No orders found
+              </Text>
+            </View>
+          ) : filteredOrders.length > 0 ? (
             <FlatList
               data={filteredOrders}
               keyExtractor={(item) => item.orderId.toString()}
@@ -678,23 +674,21 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
             />
           ) : (
             <View className="flex-1 justify-center items-center px-4">
-              <View className="flex-1 justify-center items-center">
-                <Image
-                  source={require("@/assets/images/public/no-data.webp")}
-                  style={{
-                    width: wp("60%"),
-                    height: hp("30%"),
-                    resizeMode: "contain",
-                  }}
-                />
-                <Text className="text-black text-i text-center mt-4">
-                  {orders.length === 0
-                    ? "No orders found"
-                    : searchText
-                      ? "No matching orders found"
-                      : `No orders found with status "${selectedFilter}"`}
-                </Text>
-              </View>
+              <Image
+                source={require("@/assets/images/public/no-data.webp")}
+                style={{
+                  width: wp("60%"),
+                  height: hp("30%"),
+                  resizeMode: "contain",
+                }}
+              />
+              <Text className="text-black text-base text-center mt-4">
+                {orders.length === 0
+                  ? "No orders found"
+                  : searchText
+                    ? "No matching orders found"
+                    : `No orders found with status "${selectedFilter}"`}
+              </Text>
             </View>
           )}
         </View>

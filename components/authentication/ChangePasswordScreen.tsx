@@ -191,13 +191,13 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
+      behavior="padding"
+keyboardVerticalOffset={0}
     >
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
-        keyboardShouldPersistTaps="handled"
+        keyboardShouldPersistTaps="always"
       >
         {passwordUpdate === 1 && (
           <CustomHeader
@@ -207,7 +207,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
             transparent
           />
         )}
-        <View className="h-1/2">
+        <View style={{ height: 280 }}>
           <ImageBackground
             source={require("@/assets/images/auth/update-password.webp")}
             className="flex-1 items-center justify-center h-full"
