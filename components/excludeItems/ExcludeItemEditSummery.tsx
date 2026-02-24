@@ -161,7 +161,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
     return crops.length > 0 && crops.some((crop) => crop.excludeId !== null);
   };
   const getButtonText = () => {
-    return hasExcludedItems() ? "Add more" : "Add";
+    return hasExcludedItems() ? "Add More" : "Add";
   };
 
   if (loading) {
@@ -216,6 +216,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
         <ScrollView
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          className="mb-20"
         >
           <View className="mt-4">
             {loading ? (
