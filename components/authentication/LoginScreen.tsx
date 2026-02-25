@@ -42,10 +42,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       return "Employee ID is required";
     }
 
-    // Check if first character is uppercase
-    const firstChar = id.charAt(0);
-    if (firstChar && firstChar !== firstChar.toUpperCase()) {
-      return "Please enter Employee ID in uppercase letters";
+    // Check if first two letters are exactly "SA" in uppercase
+    const prefix = id.substring(0, 2);
+    if (/^sa$/i.test(prefix)) {
+      // If letters are lowercase in any combination, show uppercase error
+      if (prefix !== "SA") {
+        return "Please enter Employee ID in uppercase letters";
+      }
     }
 
     return "";
@@ -205,7 +208,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           </LinearGradient>
         </View>
 
-        <View className="flex-1 bg-white">
+        <View className="flex-1">
           {/* Form Section */}
           <View className="flex-1 bg-white px-6 py-8 rounded-t-3xl shadow-lg -mt-28 pt-16">
             <Text className="text-center text-2xl font-bold text-[#6C3CD1] mb-6 mt-[6%]">

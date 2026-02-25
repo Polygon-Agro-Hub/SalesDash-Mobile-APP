@@ -191,13 +191,10 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
     <KeyboardAvoidingView
       enabled
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={{ flex: 1, backgroundColor: "white" }}
-      className="bg-white"
+      style={{ flex: 1, backgroundColor: "#6E3DD1" }}
+      className="bg-[#6E3DD1]"
     >
-      <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
-        keyboardShouldPersistTaps="handled"
-      >
+      <ScrollView>
         {passwordUpdate === 1 && (
           <CustomHeader
             title=""
@@ -215,10 +212,10 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
         </View>
 
         {/* Form Section */}
-        <View className="flex-1">
+        <View className="flex-1 ">
           <LinearGradient
             colors={["#854BDA", "#6E3DD1"]}
-            className="flex-1 rounded-t-3xl px-7 py-8 -mt-2"
+            className="flex-1 rounded-t-3xl px-7 py-8 -mt-4"
           >
             <Text className="text-white text-2xl font-bold text-center mb-2">
               Change Your Password
