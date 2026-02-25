@@ -1,4 +1,4 @@
-import { View, FlatList, StatusBar } from "react-native";
+import { View, FlatList } from "react-native";
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
@@ -8,7 +8,6 @@ import ContentLoader, { Circle, Rect } from "react-content-loader/native";
 const ComplaintHistorySkeleton = () => {
   return (
     <View style={{ flex: 1, backgroundColor: "#F5F5F5", padding: wp(4) }}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
       {/* Header Skeleton */}
       <ContentLoader
         speed={1.5}

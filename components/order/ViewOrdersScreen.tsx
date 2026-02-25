@@ -18,7 +18,6 @@ import {
   ScrollView,
   RefreshControl,
   ActivityIndicator,
-  StatusBar,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -357,7 +356,6 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
       enabled
       style={{ flex: 1 }}
     >
-      <StatusBar barStyle="light-content" backgroundColor="#884EDC" />
       <View className="flex-1 bg-white">
         {/* Loading Animation */}
         {loading ? (

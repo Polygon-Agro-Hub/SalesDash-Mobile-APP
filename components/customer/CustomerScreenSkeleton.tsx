@@ -1,5 +1,5 @@
 import React from "react";
-import { View, FlatList, StatusBar } from "react-native";
+import { View, FlatList } from "react-native";
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
@@ -9,7 +9,6 @@ import ContentLoader, { Circle, Rect } from "react-content-loader/native";
 const CustomersScreenSkeleton: React.FC = () => {
   return (
     <View className="flex-1 bg-white">
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       {/* Header Skeleton */}
       <ContentLoader
         speed={1.5}

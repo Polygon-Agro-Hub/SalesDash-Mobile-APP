@@ -6,7 +6,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import environment from "@/environment/environment";
-import { Keyboard, StatusBar } from "react-native";
+import { Keyboard } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
@@ -15,7 +15,6 @@ import {
   TouchableOpacity,
   Image,
   KeyboardAvoidingView,
-  Platform,
   ScrollView,
   Alert,
   BackHandler,
@@ -188,7 +187,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       behavior="padding"
       keyboardVerticalOffset={0}
     >
-      <StatusBar barStyle="light-content" backgroundColor="#854BDA" />
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="always"

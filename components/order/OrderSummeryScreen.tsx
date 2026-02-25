@@ -9,7 +9,6 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
-  StatusBar,
   BackHandler,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -556,7 +555,6 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         className="bg-white"
         style={{ flex: 1 }}
       >
-        <StatusBar barStyle="dark-content" backgroundColor="white" />
         <CustomHeader
           title="Order Summary"
           titleColor="#6C3CD1"
@@ -579,7 +577,6 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
       className=" bg-white"
       style={{ flex: 1 }}
     >
-      <StatusBar barStyle="dark-content" backgroundColor="white" />
       <CustomHeader
         title="Order Summary"
         titleColor="#6C3CD1"

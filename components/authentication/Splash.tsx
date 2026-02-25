@@ -1,4 +1,4 @@
-import { View, Image, StatusBar, Text } from "react-native";
+import { View, Image, Text } from "react-native";
 import React, { useEffect } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -111,7 +111,6 @@ const Splash: React.FC<SplashProps> = ({ navigation }) => {
 
   return (
     <View className="flex-1">
-      <StatusBar barStyle="light-content" backgroundColor="#854BDA" />
       <LinearGradient
         colors={["#854BDA", "#6E3DD1"]}
         style={{ flex: 1, position: "absolute", width: "100%", height: "100%" }}

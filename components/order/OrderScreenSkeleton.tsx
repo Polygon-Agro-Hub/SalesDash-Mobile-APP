@@ -1,5 +1,5 @@
 import React from "react";
-import { FlatList, StatusBar, View } from "react-native";
+import { FlatList, View } from "react-native";
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
@@ -16,7 +16,6 @@ const OrderScreenSkeleton: React.FC = () => {
         backgroundColor: "#F8F8F8",
       }}
     >
-      <StatusBar barStyle="dark-content" backgroundColor="white" />
       {/* Skeleton for Header */}
       <ContentLoader
         speed={1.5}

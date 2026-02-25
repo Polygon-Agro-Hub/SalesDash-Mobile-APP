@@ -9,7 +9,6 @@ import {
   Alert,
   ActivityIndicator,
   BackHandler,
-  StatusBar,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -902,7 +901,6 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })}
       style={{ flex: 1, backgroundColor: "white" }}
     >
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <CustomHeader
         title="New Customer Registration"
         titleColor="#6C3CD1"

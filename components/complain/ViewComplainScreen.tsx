@@ -9,7 +9,6 @@ import {
   Alert,
   RefreshControl,
   BackHandler,
-  StatusBar,
 } from "react-native";
 import { AntDesign } from "@expo/vector-icons";
 import {
@@ -186,10 +185,6 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({
 
   return (
     <View className="flex-1 bg-white">
-      <StatusBar
-        barStyle={modalVisible ? "dark-content" : "light-content"}
-        backgroundColor={modalVisible ? "#ffffff" : "#854BDA"}
-      />
       {loading ? (
         <ViewComplainScreenSkeleton />
       ) : (

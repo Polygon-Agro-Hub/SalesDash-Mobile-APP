@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  StatusBar,
   Modal,
   TextInput,
   Image,
@@ -1002,7 +1001,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
       enabled
       style={{ flex: 1, backgroundColor: "white" }}
     >
-      <StatusBar barStyle="dark-content" backgroundColor="white" />
       <CustomHeader
         title="Order Details"
         titleColor="#6C3CD1"

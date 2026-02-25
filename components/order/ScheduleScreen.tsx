@@ -8,7 +8,6 @@ import {
   Platform,
   Modal,
   Alert,
-  StatusBar,
   BackHandler,
 } from "react-native";
 import { Feather, FontAwesome, MaterialIcons } from "@expo/vector-icons";
@@ -759,7 +758,6 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       enabled
       style={{ flex: 1 }}
     >
-      <StatusBar barStyle="dark-content" backgroundColor="white" />
       <CustomHeader
         title="Schedule"
         titleColor="#6C3CD1"

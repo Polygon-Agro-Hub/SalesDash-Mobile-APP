@@ -11,7 +11,6 @@ import {
   FlatList,
   Alert,
   ActivityIndicator,
-  StatusBar,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -310,7 +309,6 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
           </>
         ) : (
           <>
-            <StatusBar barStyle="light-content" backgroundColor="#854BDA" />
             {/* Header */}
             <LinearGradient
               colors={["#854BDA", "#6E3DD1"]}

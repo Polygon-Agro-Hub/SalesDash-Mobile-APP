@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
-  StatusBar,
   BackHandler,
   Alert,
 } from "react-native";
@@ -415,7 +414,6 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
 
   return (
     <View className="flex-1 bg-white">
-      <StatusBar barStyle="dark-content" backgroundColor="white" />
       <CustomHeader
         title={fromOrderSummary ? "Edit Cart" : "Custom Cart"}
         titleColor="#6C3CD1"

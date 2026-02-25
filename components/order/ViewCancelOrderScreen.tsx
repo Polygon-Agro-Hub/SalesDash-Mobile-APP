@@ -10,7 +10,6 @@ import {
   Modal,
   Linking,
   BackHandler,
-  StatusBar,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -637,7 +636,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
       className="bg-white"
       style={{ flex: 1 }}
     >
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <CustomHeader
         title="Order Status"
         titleColor="#6C3CD1"
