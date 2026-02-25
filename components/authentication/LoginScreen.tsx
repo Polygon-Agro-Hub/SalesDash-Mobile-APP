@@ -6,7 +6,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import environment from "@/environment/environment";
-import { Keyboard } from "react-native";
+import { Keyboard, Platform } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
@@ -183,15 +183,16 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior="padding"
-      keyboardVerticalOffset={0}
+      enabled
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={{ flex: 1, backgroundColor: "white" }}
+      className="bg-white"
     >
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
-        keyboardShouldPersistTaps="always"
+        keyboardShouldPersistTaps="handled"
       >
-        <View style={{ height: 280 }}>
+        <View className="h-96 flex-1 justify-center items-center">
           <LinearGradient
             colors={["#854BDA", "#6E3DD1"]}
             className="flex-1 items-center justify-center mb-20"
