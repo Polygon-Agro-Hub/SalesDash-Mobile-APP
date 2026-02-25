@@ -226,6 +226,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
           <ScrollView
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
+            className="mb-20"
           >
             <View className="px-6 mt-4 ">
               {crops

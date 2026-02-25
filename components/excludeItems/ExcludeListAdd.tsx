@@ -404,7 +404,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
           <FlatList
             keyboardShouldPersistTaps="handled"
             data={filteredCrops}
-            contentContainerStyle={{ paddingBottom: 200 }}
+            contentContainerStyle={{ paddingBottom: 100 }}
             renderItem={({ item }) => (
               <TouchableOpacity
                 onPress={() => toggleSelect(item.id)}

@@ -314,7 +314,12 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     return roundToTwoDecimals(total + calculateItemTotal(item));
   }, 0);
 
-  const discount = roundToTwoDecimals(currentSubtotal - totalDiscountedValue);
+  const discount = cartItems.reduce((total, item) => {
+    const weightInKg =
+      item.unitType === "g" ? item.changeby / 1000 : item.changeby;
+    const itemDiscount = roundToTwoDecimals(item.discount * weightInKg);
+    return roundToTwoDecimals(total + itemDiscount);
+  }, 0);
 
   const SERVICE_FEE = 180;
   const fullTotal = roundToTwoDecimals(totalDiscountedValue + SERVICE_FEE);
@@ -402,6 +407,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
       maximumFractionDigits: 2,
     });
   };
+  console.log("discount", discount);
 
   if (isLoading) {
     return <LoadingPage message="Loading Your Cart..." fullScreen={true} />;

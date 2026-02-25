@@ -660,7 +660,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
             padding-bottom: 10px;
           "
         >
-          <div class="bold">${order?.packageInfo?.displayName || "Package"} (${order?.packageInfo?.packageDetails?.length || 0} Items)</div>
+          <div class="bold">${order?.packageInfo?.displayName || "Package"} (${order?.packageInfo?.packageDetails?.reduce((sum, item) => sum + (item.qty || 0), 0) || 0} Items)</div>
           <div style="font-weight: 550; font-size: 16px">Rs. ${(packagePrice + packingFee + serviceFee).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</div>
         </div>
         <div style="border: 1px solid #ddd; border-radius: 10px">

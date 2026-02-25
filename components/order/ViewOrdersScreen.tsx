@@ -449,7 +449,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                     }}
                   />
                   <Text className="text-black text-i text-center mt-4">
-                    You have no previous orders
+                    No orders found
                   </Text>
                 </View>
               ) : (

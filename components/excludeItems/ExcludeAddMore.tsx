@@ -282,7 +282,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
         <View className="flex-1">
           <FlatList
             keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ paddingBottom: 200 }}
+            contentContainerStyle={{ paddingBottom: 100 }}
             data={filteredCrops}
             renderItem={({ item }) => (
               <TouchableOpacity
