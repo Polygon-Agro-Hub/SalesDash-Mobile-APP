@@ -7,7 +7,6 @@ import {
   ImageBackground,
   Alert,
   BackHandler,
-  StatusBar,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -128,7 +127,6 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
   return (
     <View style={{ flex: 1, backgroundColor: "#fff" }}>
       <View style={{ flex: 1 }}>
-        <StatusBar barStyle="dark-content" backgroundColor="#E6DBF766" />
         <ImageBackground
           source={require("@/assets/images/order/order-bg.webp")}
           style={{ height: 220 }}

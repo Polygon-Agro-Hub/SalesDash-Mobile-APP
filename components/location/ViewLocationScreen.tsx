@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef } from "react";
-import { View, StatusBar, BackHandler } from "react-native";
+import { View, BackHandler } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RouteProp, useFocusEffect } from "@react-navigation/native";
 import { WebView } from "react-native-webview";
@@ -150,7 +150,6 @@ const ViewLocationScreen: React.FC<ViewLocationScreenProps> = ({
   return (
     <View className="flex-1 bg-white">
       {/* Status Bar */}
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <CustomHeader
         title="Attach Geo Location"
         titleColor="#6C3CD1"

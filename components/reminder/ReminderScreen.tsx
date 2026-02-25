@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Image,
   Modal,
-  StatusBar,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import {
@@ -257,7 +256,6 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
         </View>
       ) : (
         <>
-          <StatusBar barStyle="light-content" backgroundColor="#854BDA" />
           <LinearGradient
             colors={["#854BDA", "#6E3DD1"]}
             style={{

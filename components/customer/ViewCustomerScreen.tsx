@@ -14,7 +14,6 @@ import {
   RefreshControl,
   BackHandler,
   Alert,
-  StatusBar,
   Image,
 } from "react-native";
 import { RouteProp, useFocusEffect } from "@react-navigation/native";
@@ -364,7 +363,6 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       enabled
       style={{ flex: 1 }}
     >
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <CustomHeader
         title={`${title}. ${name}`}
         titleColor="#000000"

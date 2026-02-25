@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
-  StatusBar,
   BackHandler,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -246,7 +245,6 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
       enabled
       style={{ flex: 1 }}
     >
-      <StatusBar barStyle="dark-content" backgroundColor="white" />
       <CustomHeader
         title="Select Payment Method"
         titleColor="#6C3CD1"

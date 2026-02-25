@@ -1,11 +1,10 @@
 import React from "react";
-import { StatusBar, View } from "react-native";
+import { View } from "react-native";
 import ContentLoader, { Rect, Circle } from "react-content-loader/native";
 
 const DashboardSkeleton: React.FC = () => {
   return (
     <View className="flex-1 bg-gray-100 px-4 py-6">
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       {/* Header Skeleton */}
       <ContentLoader
         speed={1.5}

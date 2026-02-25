@@ -6,12 +6,10 @@ import {
   TouchableOpacity,
   ScrollView,
   KeyboardAvoidingView,
-  Platform,
   ImageBackground,
   Alert,
   BackHandler,
   Keyboard,
-  StatusBar,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -194,7 +192,6 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
       behavior="padding"
 keyboardVerticalOffset={0}
     >
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="always"

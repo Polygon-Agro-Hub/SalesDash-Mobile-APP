@@ -11,7 +11,6 @@ import {
   ScrollView,
   BackHandler,
   RefreshControl,
-  StatusBar,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -303,7 +302,6 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       enabled
       className="flex-1"
     >
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <View className="flex-1 bg-white">
         {/* Header Section */}
         <View className="bg-white shadow-md py-5 px-6 rounded-b-3xl">

@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { View, Animated, StatusBar } from "react-native";
+import { View, Animated } from "react-native";
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
@@ -44,7 +44,6 @@ const SidebarSkeleton: React.FC<SidebarSkeletonProps> = ({
   return (
     <View className="flex-1 bg-white">
       <View className="p-5">
-        <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
         {/* Profile Section Skeleton */}
         <View className="flex-row items-center mb-5">
           <Animated.View

@@ -5,7 +5,6 @@ import {
   ActivityIndicator,
   StyleProp,
   ViewStyle,
-  StatusBar,
 } from "react-native";
 
 interface LoadingPageProps {
@@ -31,7 +30,6 @@ const LoadingPage: React.FC<LoadingPageProps> = ({
         containerStyle,
       ]}
     >
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
       <ActivityIndicator size={size} color={color} />
       <Text className="mt-4 text-[#6839CF] text-center">
         {message || "Loading..."}

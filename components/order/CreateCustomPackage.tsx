@@ -7,7 +7,6 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  StatusBar,
   BackHandler,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -259,7 +258,6 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={{ flex: 1, backgroundColor: "white" }}
     >
-      <StatusBar barStyle="dark-content" backgroundColor="white" />
       <CustomHeader
         title="Select Custom Items"
         titleColor="#6C3CD1"
