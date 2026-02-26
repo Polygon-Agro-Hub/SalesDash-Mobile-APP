@@ -139,11 +139,14 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        navigation.navigate("ViewCustomerScreen" as any, {
-          id: id,
-          customerId: customerId,
-          name: name,
-          title: title,
+        navigation.navigate("Main" as any, {
+          screen: "ViewCustomerScreen",
+          params: {
+            id: id,
+            customerId: customerId,
+            name: name,
+            title: title,
+          },
         });
         return true;
       };

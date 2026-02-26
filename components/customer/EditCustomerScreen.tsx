@@ -267,11 +267,9 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
       if (!email) {
         setEmailError("Email is required");
       } else if (!validateEmail(email)) {
-        // Provide specific error messages based on domain and validation issues
         const emailLower = email.toLowerCase();
         const [localPart, domain] = emailLower.split("@");
 
-        // Check if email format is completely invalid
         const generalEmailRegex =
           /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         if (!generalEmailRegex.test(email)) {
@@ -279,8 +277,14 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
           return;
         }
 
+        if (domain && domain.includes("..")) {
+          setEmailError(
+            "Email domain cannot contain consecutive dots (e.g., gmail..com is invalid)",
+          );
+          return;
+        }
+
         if (domain === "gmail.com" || domain === "googlemail.com") {
-          // Gmail-specific errors
           if (localPart.length > 30) {
             setEmailError(
               "Gmail addresses cannot exceed 30 characters before @",
@@ -775,7 +779,6 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
         } catch (checkError: any) {
           console.log("Customer check error:", checkError);
 
-          // Handle different types of errors
           if (checkError.code === "ECONNABORTED") {
             Alert.alert(
               "Error",
@@ -1553,6 +1556,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
               {latitude && longitude && (
                 <TouchableOpacity
                   onPress={() => {
+                    isReturningFromMapRef.current = true;
                     navigation.navigate("ViewLocationScreen" as any, {
                       latitude: parseFloat(latitude),
                       longitude: parseFloat(longitude),

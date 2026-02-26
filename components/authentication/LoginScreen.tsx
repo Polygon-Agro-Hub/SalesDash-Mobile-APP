@@ -195,7 +195,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
       >
-        <View className="h-96 flex-1 justify-center items-center">
+        <View className="h-44 flex-1 justify-center items-center">
           <LinearGradient
             colors={["#854BDA", "#6E3DD1"]}
             className="flex-1 items-center justify-center mb-20"
@@ -210,7 +210,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
         <View className="flex-1">
           {/* Form Section */}
-          <View className="flex-1 bg-white px-6 py-8 rounded-t-3xl shadow-lg -mt-28 pt-16">
+          <View className="flex-1 bg-white px-6 py-8 rounded-t-3xl shadow-lg -mt-20 pt-6">
             <Text className="text-center text-2xl font-bold text-[#6C3CD1] mb-6 mt-[6%]">
               Welcome to Sign in
             </Text>

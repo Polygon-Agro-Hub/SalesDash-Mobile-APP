@@ -194,7 +194,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
       style={{ flex: 1, backgroundColor: "#6E3DD1" }}
       className="bg-[#6E3DD1]"
     >
-      <ScrollView>
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         {passwordUpdate === 1 && (
           <CustomHeader
             title=""
@@ -203,7 +203,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
             transparent
           />
         )}
-        <View className="h-96 flex-1">
+        <View className="h-56 flex-1">
           <ImageBackground
             source={require("@/assets/images/auth/update-password.webp")}
             className="flex-1 items-center justify-center h-full"
@@ -215,7 +215,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
         <View className="flex-1 ">
           <LinearGradient
             colors={["#854BDA", "#6E3DD1"]}
-            className="flex-1 rounded-t-3xl px-7 py-8 -mt-4"
+            className="flex-1 rounded-t-3xl px-7 pt-10 pb-8 -mt-4"
           >
             <Text className="text-white text-2xl font-bold text-center mb-2">
               Change Your Password

@@ -285,6 +285,10 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     const emailLower = email.toLowerCase();
     const [localPart, domain] = emailLower.split("@");
 
+    if (domain && domain.includes("..")) {
+      return false;
+    }
+
     const allowedTLDs = [".com", ".gov", ".lk"];
 
     if (domain === "gmail.com" || domain === "googlemail.com") {

@@ -264,19 +264,38 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({
             />
           </View>
 
-          <TouchableOpacity
-            onPress={handleSubmit}
-            className="mx-auto shadow-lg w-40 mb-4"
+          <View
+            style={{
+              alignSelf: "center",
+              marginBottom: 16,
+              borderRadius: 50,
+              backgroundColor: "#6839CF",
+              shadowColor: "#6839CF",
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.5,
+              shadowRadius: 12,
+              elevation: 12,
+            }}
           >
-            <LinearGradient
-              colors={["#6839CF", "#874DDB"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              className="py-3 rounded-full items-center"
-            >
-              <Text className="text-white text-lg font-bold">Submit</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+            <TouchableOpacity onPress={handleSubmit} style={{ width: 160 }}>
+              <LinearGradient
+                colors={["#6839CF", "#874DDB"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{
+                  paddingVertical: 12,
+                  borderRadius: 50,
+                  alignItems: "center",
+                }}
+              >
+                <Text
+                  style={{ color: "white", fontSize: 18, fontWeight: "bold" }}
+                >
+                  Submit
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
