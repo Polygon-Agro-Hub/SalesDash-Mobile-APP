@@ -112,12 +112,11 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   const [deliveryFee, setDeliveryFee] = useState<number>(0);
   const [isPackage, setIsPackage] = useState();
   const [returnReason, setReturnReason] = useState<string | null>(null);
+  const [holdReason, setHoldReason] = useState<string | null>(null); // NEW
   const [isHoldOrder, setIsHoldOrder] = useState<boolean>(false);
 
   useEffect(() => {
-    if (reportStatus) {
-      setSelectedReportOption(reportStatus);
-    }
+    if (reportStatus) setSelectedReportOption(reportStatus);
   }, [reportStatus]);
 
   useEffect(() => {
@@ -127,11 +126,8 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
         const response = await axios.get(
           `${environment.API_BASE_URL}api/orders/get-order/${orderId}`,
         );
-
         if (response.data.success) {
           setOrder(response.data.data);
-
-          // Extract city from fullAddress and fetch delivery fee
           const orderData = response.data.data;
           if (orderData.fullAddress) {
             await fetchDeliveryFee(
@@ -150,7 +146,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
         setLoading(false);
       }
     };
-
     fetchOrderDetails();
   }, [orderId]);
 
@@ -158,30 +153,28 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
     const fetchHoldStatus = async () => {
       try {
         const storedToken = await AsyncStorage.getItem("authToken");
-
-        if (!storedToken) {
-          return;
-        }
-
+        if (!storedToken) return;
         const response = await axios.get(
           `${environment.API_BASE_URL}api/orders/get-hold-reason/${orderId}`,
           { headers: { Authorization: `Bearer ${storedToken}` } },
         );
-
         if (response.data.success && response.data.data) {
-          // Set isHoldOrder to true if the order was ever held (isHold from backend)
           setIsHoldOrder(response.data.data.isHold);
+          // NEW: capture hold reason
+          const { holdReason: reason, otherReason } = response.data.data;
+          if (reason) {
+            setHoldReason(
+              reason === "Other" && otherReason ? otherReason : reason,
+            );
+          }
         } else {
-          // If no hold data found, set to false
           setIsHoldOrder(false);
         }
       } catch (error) {
         console.error("Error fetching hold status:", error);
-        // On error, default to false to prevent UI issues
         setIsHoldOrder(false);
       }
     };
-
     fetchHoldStatus();
   }, [orderId]);
 
@@ -191,69 +184,39 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   ) => {
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
-
-      if (!storedToken) {
-        return;
-      }
-
-      // First fetch customer data to get the correct city
+      if (!storedToken) return;
       if (customerUserId || userId) {
-        const customerData = await fetchCustomerData(customerUserId || userId);
-
-        // Use city from customer data if available
-        if (customerData && customerData.buildingDetails?.city) {
-          const cityName = customerData.buildingDetails.city;
-
-          // Fetch cities to get delivery charge
+        const custData = await fetchCustomerData(customerUserId || userId);
+        if (custData && custData.buildingDetails?.city) {
+          const cityName = custData.buildingDetails.city;
           const cityResponse = await axios.get<{ data: City[] }>(
             `${environment.API_BASE_URL}api/customer/get-city`,
             { headers: { Authorization: `Bearer ${storedToken}` } },
           );
-
           if (cityResponse.data && cityResponse.data.data) {
             const cityData = cityResponse.data.data.find(
               (c) => c.city.toLowerCase() === cityName.toLowerCase(),
             );
-
-            if (cityData) {
-              const fee = parseFloat(cityData.charge) || 0;
-              setDeliveryFee(fee);
-            } else {
-              console.log(`City ${cityName} not found in cities list`);
-              console.log(
-                "Available cities:",
-                cityResponse.data.data.map((c) => c.city),
-              );
-            }
+            if (cityData) setDeliveryFee(parseFloat(cityData.charge) || 0);
           }
           return;
         }
       }
-
-      // Extract city from fullAddress if customer data fails
       const addressParts = fullAddress.split(", ");
-      let cityName = "";
-
-      if (addressParts.length >= 2) {
-        cityName = addressParts[addressParts.length - 2].trim();
-      }
-
+      let cityName =
+        addressParts.length >= 2
+          ? addressParts[addressParts.length - 2].trim()
+          : "";
       if (cityName) {
-        // Fetch cities to get delivery charge
         const cityResponse = await axios.get<{ data: City[] }>(
           `${environment.API_BASE_URL}api/customer/get-city`,
           { headers: { Authorization: `Bearer ${storedToken}` } },
         );
-
         if (cityResponse.data && cityResponse.data.data) {
           const cityData = cityResponse.data.data.find(
             (c) => c.city.toLowerCase() === cityName.toLowerCase(),
           );
-
-          if (cityData) {
-            const fee = parseFloat(cityData.charge) || 0;
-            setDeliveryFee(fee);
-          }
+          if (cityData) setDeliveryFee(parseFloat(cityData.charge) || 0);
         }
       }
     } catch (error) {
@@ -266,32 +229,18 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   ): Promise<CustomerData | null> => {
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
-
-      if (!storedToken) {
-        return null;
-      }
-
-      // Fetch customer data
-      const apiUrl = `${environment.API_BASE_URL}api/orders/get-customer-data/${customerUserId}`;
-      const response = await axios.get(apiUrl, {
-        headers: { Authorization: `Bearer ${storedToken}` },
-      });
-
+      if (!storedToken) return null;
+      const response = await axios.get(
+        `${environment.API_BASE_URL}api/orders/get-customer-data/${customerUserId}`,
+        { headers: { Authorization: `Bearer ${storedToken}` } },
+      );
       if (response.data && response.data.success) {
         setCustomerData(response.data.data);
         return response.data.data;
-      } else {
-        const errorMsg =
-          response.data?.message || "Failed to fetch customer data";
-        console.log("Customer API error:", errorMsg);
-        return null;
       }
+      return null;
     } catch (error: any) {
       console.error("Error fetching customer data:", error);
-      if (axios.isAxiosError(error)) {
-        const errorMsg = error.response?.data?.message || error.message;
-        console.log("Customer data Axios error:", errorMsg);
-      }
       return null;
     }
   };
@@ -301,32 +250,22 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
       if (status === "Return") {
         try {
           const storedToken = await AsyncStorage.getItem("authToken");
-
-          if (!storedToken) {
-            return;
-          }
+          if (!storedToken) return;
           const response = await axios.get(
             `${environment.API_BASE_URL}api/orders/get-return-reason/${orderId}`,
             { headers: { Authorization: `Bearer ${storedToken}` } },
           );
-
           if (response.data.success && response.data.data) {
-            const { returnReason, otherReason } = response.data.data;
-
-            // If reason is "Other", show the custom note instead
+            const { returnReason: reason, otherReason } = response.data.data;
             setReturnReason(
-              returnReason === "Other" && otherReason
-                ? otherReason
-                : returnReason,
+              reason === "Other" && otherReason ? otherReason : reason,
             );
           }
         } catch (error) {
           console.error("Error fetching return reason:", error);
-          // Don't show error to user, just log it
         }
       }
     };
-
     fetchReturnReason();
   }, [orderId, status]);
 
@@ -352,40 +291,30 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
 
   const isAfter6PM = (dateString: string) => {
     if (!dateString) return false;
-    const date = new Date(dateString);
-    return date.getHours() >= 18;
+    return new Date(dateString).getHours() >= 18;
   };
 
   const getActualStatus = () => {
     if (!order) return "";
-
-    if (status === "Cancelled") {
-      return "Cancelled";
-    }
-
-    if (status === "Ordered" && isAfter6PM(order.createdAt)) {
+    if (status === "Cancelled") return "Cancelled";
+    if (status === "Ordered" && isAfter6PM(order.createdAt))
       return "Processing";
-    }
-
     return status;
   };
 
   const isCancelDisabled = () => {
     if (!order) return true;
-
-    // Get the actual status using the same logic as getActualStatus
     const actualStatus = getActualStatus();
-
-    // Disable cancel button for these statuses
-    return (
-      actualStatus === "On the way" ||
-      actualStatus === "Processing" ||
-      actualStatus === "Out For Delivery" ||
-      actualStatus === "Collected" ||
-      actualStatus === "Delivered" ||
-      actualStatus === "Return" ||
-      actualStatus === "Cancelled"
-    );
+    return [
+      "On the way",
+      "Processing",
+      "Out For Delivery",
+      "Collected",
+      "Delivered",
+      "Return",
+      "Cancelled",
+      "Hold",
+    ].includes(actualStatus);
   };
 
   const handleReportStatus = () => {
@@ -401,10 +330,8 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
       );
       return;
     }
-
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
-
       if (!storedToken) {
         Alert.alert(
           "Error",
@@ -413,10 +340,8 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
         setLoading(false);
         return;
       }
-
-      const apiUrl = `${environment.API_BASE_URL}api/orders/report-order/${orderId}`;
       const response = await axios.post(
-        apiUrl,
+        `${environment.API_BASE_URL}api/orders/report-order/${orderId}`,
         { reportStatus: tempSelectedReportOption },
         {
           headers: {
@@ -425,17 +350,15 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
           },
         },
       );
-
       if (response.data.success) {
         setSelectedReportOption(tempSelectedReportOption);
         setReportModalVisible(false);
         setTempSelectedReportOption(null);
-      } else {
+      } else
         Alert.alert(
           "Error",
           response.data.message || "Failed to update report status",
         );
-      }
     } catch (error) {
       console.error("Error updating report status:", error);
       Alert.alert("Error", "Failed to update report status. Please try again.");
@@ -447,9 +370,8 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
     setTempSelectedReportOption(null);
   };
 
-  const isTimelineItemActive = (status: string) => {
+  const isTimelineItemActive = (itemStatus: string) => {
     if (!order) return false;
-
     const orderStatuses = [
       "Ordered",
       "Processing",
@@ -459,86 +381,53 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
       "Hold",
       "Delivered",
     ];
-
     const actualStatus = getActualStatus();
-
-    // Handle Cancelled orders - only show Ordered and Cancelled as active
-    if (actualStatus === "Cancelled") {
-      return status === "Ordered" || status === "Cancelled";
-    }
-
-    // Handle Return orders - show all steps up to and including Return
-    if (actualStatus === "Return") {
-      return status !== "Delivered" && status !== "Cancelled";
-    }
-
-    // Special handling for Hold status
-    if (status === "Hold") {
+    if (actualStatus === "Cancelled")
+      return itemStatus === "Ordered" || itemStatus === "Cancelled";
+    if (actualStatus === "Return")
+      return itemStatus !== "Delivered" && itemStatus !== "Cancelled";
+    if (itemStatus === "Hold")
       return (
         actualStatus === "Hold" ||
-        (actualStatus === "On the way" && isHoldOrder) ||
-        (actualStatus === "Delivered" && isHoldOrder)
+        ((isHoldOrder || holdReason !== null) &&
+          ["On the way", "Delivered", "Return"].includes(actualStatus))
       );
-    }
-
-    // For Delivered status with hold history
-    if (status === "Delivered" && isHoldOrder && actualStatus === "Delivered") {
+    if (
+      itemStatus === "Delivered" &&
+      isHoldOrder &&
+      actualStatus === "Delivered"
+    )
       return true;
-    }
-
-    // Standard timeline progression
     const currentIndex = orderStatuses.indexOf(actualStatus);
-    const itemIndex = orderStatuses.indexOf(status);
-
+    const itemIndex = orderStatuses.indexOf(itemStatus);
     if (itemIndex === -1) return false;
-
     return itemIndex <= currentIndex;
   };
 
   const handleGetACall = () => {
-    // Get phone number from customer data first, fallback to order data
     const phoneNumber = customerData?.phoneNumber || order?.phoneNumber;
-
     if (!phoneNumber) {
       Alert.alert("Error", "Phone number not available");
       return;
     }
-
-    // Clean the phone number - remove all non-digit characters except '+'
     let cleanedNumber = phoneNumber.replace(/[^\d+]/g, "");
-
-    // If number starts with +, use as-is (already international format)
     if (cleanedNumber.startsWith("+")) {
-      // Ensure it's a valid international number
       if (cleanedNumber.length < 10) {
-        // +94 + 9 digits
         Alert.alert("Error", "Invalid international phone number format");
         return;
       }
-    }
-    // If number starts with 94 (without +), add +
-    else if (cleanedNumber.startsWith("94")) {
+    } else if (cleanedNumber.startsWith("94"))
       cleanedNumber = `+${cleanedNumber}`;
-    }
-    // If number starts with 0 (local format), convert to international
-    else if (cleanedNumber.startsWith("0")) {
+    else if (cleanedNumber.startsWith("0"))
       cleanedNumber = `+94${cleanedNumber.substring(1)}`;
-    }
-    // Otherwise assume it's a local number without 0
-    else {
-      cleanedNumber = `+94${cleanedNumber}`;
-    }
-
+    else cleanedNumber = `+94${cleanedNumber}`;
     if (!/^\+94\d{9}$/.test(cleanedNumber)) {
       Alert.alert("Error", "Invalid phone number format");
       return;
     }
-
-    const telUrl = `tel:${cleanedNumber}`;
-    Linking.openURL(telUrl).catch((err) => {
-      console.error("Error opening dialer", err);
-      Alert.alert("Error", "Could not open phone dialer");
-    });
+    Linking.openURL(`tel:${cleanedNumber}`).catch(() =>
+      Alert.alert("Error", "Could not open phone dialer"),
+    );
   };
 
   const handleCancelOrder = () => {
@@ -549,23 +438,19 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
       );
       return;
     }
-
     setCancelModalVisible(true);
   };
 
-  const formatPrice = (price: string | number): string => {
-    return parseFloat(price.toString()).toLocaleString("en-US", {
+  const formatPrice = (price: string | number): string =>
+    parseFloat(price.toString()).toLocaleString("en-US", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
-  };
 
   const confirmCancelOrder = async () => {
     try {
       setLoading(true);
-
       const storedToken = await AsyncStorage.getItem("authToken");
-
       if (!storedToken) {
         Alert.alert(
           "Error",
@@ -574,10 +459,8 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
         setLoading(false);
         return;
       }
-
-      const apiUrl = `${environment.API_BASE_URL}api/orders/cancel-order/${orderId}`;
       const response = await axios.post(
-        apiUrl,
+        `${environment.API_BASE_URL}api/orders/cancel-order/${orderId}`,
         {},
         {
           headers: {
@@ -586,7 +469,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
           },
         },
       );
-
       if (response.data.success) {
         setCancelModalVisible(false);
         Alert.alert(
@@ -594,21 +476,18 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
           "Your order has been successfully cancelled.",
         );
         navigation.goBack();
-      } else {
+      } else
         Alert.alert(
           "Error",
           response.data.message || "Failed to cancel the order.",
         );
-      }
     } catch (error: any) {
       console.error("Error cancelling order:", error);
-
-      let errorMessage = "Failed to cancel the order. Please try again.";
-      if (error.response && error.response.data) {
-        errorMessage = error.response.data.message || errorMessage;
-      }
-
-      Alert.alert("Error", errorMessage);
+      Alert.alert(
+        "Error",
+        error.response?.data?.message ||
+          "Failed to cancel the order. Please try again.",
+      );
     } finally {
       setLoading(false);
     }
@@ -616,19 +495,21 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
 
   useFocusEffect(
     useCallback(() => {
-      const onBackPress = () => {
-        navigation.goBack();
-        return true;
-      };
-
       const backHandler = BackHandler.addEventListener(
         "hardwareBackPress",
-        onBackPress,
+        () => {
+          navigation.goBack();
+          return true;
+        },
       );
-
       return () => backHandler.remove();
     }, [navigation]),
   );
+
+  const showHoldStep =
+    status === "Hold" ||
+    ((isHoldOrder || holdReason !== null) &&
+      ["On the way", "Delivered", "Return"].includes(status));
 
   return (
     <KeyboardAvoidingView
@@ -662,31 +543,29 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
           </View>
         ) : order ? (
           <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
-            {/* Order Status Timeline */}
             <View className="mx-6 my-4 ml-8">
               <View className="border-l-2 border-[#D9D9D9] pl-5 relative">
-                {/* Order Placed */}
                 <View className="flex-row items-center mb-10">
                   <View
-                    className={`p-1.5 rounded-full absolute -left-8 ${isTimelineItemActive("Ordered") ? "bg-[#6C3CD1]  border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`}
+                    className={`p-1.5 rounded-full absolute -left-8 ${isTimelineItemActive("Ordered") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`}
                   />
                   <Text className="text-[#5E5E5E] font-medium">
                     Order Placed {formatDateShort(order.createdAt)}
                   </Text>
                 </View>
 
-                {/* Processing */}
                 <View className="flex-row items-center mb-10">
                   <View
-                    className={`p-1.5 rounded-full  absolute -left-8 ${isTimelineItemActive("Processing") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`}
+                    className={`p-1.5 rounded-full absolute -left-8 ${isTimelineItemActive("Processing") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`}
                   />
                   <Text className="text-[#5E5E5E] font-medium">
                     Order is Processing
                   </Text>
                 </View>
+
                 <View className="flex-row items-center mb-10">
                   <View
-                    className={`p-1.5 rounded-full  absolute -left-8 ${isTimelineItemActive("Out For Delivery") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`}
+                    className={`p-1.5 rounded-full absolute -left-8 ${isTimelineItemActive("Out For Delivery") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`}
                   />
                   <Text className="text-[#5E5E5E] font-medium">
                     Order is Out for Delivery
@@ -695,113 +574,85 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
 
                 <View className="flex-row items-center mb-10">
                   <View
-                    className={`p-1.5 rounded-full  absolute -left-8 ${isTimelineItemActive("Collected") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`}
+                    className={`p-1.5 rounded-full absolute -left-8 ${isTimelineItemActive("Collected") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`}
                   />
                   <Text className="text-[#5E5E5E] font-medium">
                     Driver has Collected the order
                   </Text>
                 </View>
 
-                {/* On the way */}
                 <View className="flex-row items-center mb-10">
                   <View
-                    className={`p-1.5 rounded-full  absolute -left-8 ${isTimelineItemActive("On the way") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`}
+                    className={`p-1.5 rounded-full absolute -left-8 ${isTimelineItemActive("On the way") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`}
                   />
                   <Text className="text-[#5E5E5E] font-medium">
                     Order is On the way
                   </Text>
                 </View>
 
-                {/* Delivered - Last item in normal flow */}
-                <View
-                  className={`flex-row items-center ${status === "Cancelled" ? "mb-10" : ""}`}
-                >
-                  {status !== "Return" && status !== "Hold" && !isHoldOrder && (
-                    <View className={`flex-row items-center`}>
+                {showHoldStep && (
+                  <View className="mb-10">
+                    <View className="flex-row items-center">
+                      <View className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]" />
+                      <Text className="text-[#5E5E5E] font-medium">
+                        Driver marked order as Hold
+                      </Text>
+                    </View>
+                  </View>
+                )}
+
+                {status === "Return" && (
+                  <View className="flex-row items-center">
+                    <View className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]" />
+                    <Text className="font-medium text-[#5E5E5E]">
+                      Order marked as Return
+                    </Text>
+                  </View>
+                )}
+
+                {status !== "Return" && status !== "Hold" && !isHoldOrder && (
+                  <View
+                    className={`flex-row items-center ${status === "Cancelled" ? "mb-10" : ""}`}
+                  >
+                    <View
+                      className={`p-1.5 rounded-full absolute -left-8 ${isTimelineItemActive("Delivered") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`}
+                    />
+                    <Text className="text-[#5E5E5E] font-medium">
+                      Order is Delivered
+                    </Text>
+                  </View>
+                )}
+
+                {(isHoldOrder || holdReason !== null) &&
+                  (status === "On the way" || status === "Delivered") && (
+                    <View className="flex-row items-center">
                       <View
-                        className={`p-1.5 rounded-full  absolute -left-8 ${isTimelineItemActive("Delivered") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`}
+                        className={`p-1.5 rounded-full absolute -left-8 ${status === "Delivered" ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#CDCDCD] border-4 border-[#F4EDFF]"}`}
                       />
                       <Text className="text-[#5E5E5E] font-medium">
                         Order is Delivered
                       </Text>
                     </View>
                   )}
-                </View>
-
-                {status === "Return" && (
-                  <View className="flex-row items-center">
-                    <View className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]" />
-                    <Text className=" font-medium text-[#5E5E5E]">
-                      Order marked as Return
-                    </Text>
-                  </View>
-                )}
-
-                {(status === "Hold" ||
-                  (status === "On the way" && isHoldOrder) ||
-                  (status === "Delivered" && isHoldOrder)) && (
-                  <View className="flex-row items-center mb-10">
-                    <View className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]" />
-                    <Text className="text-[#5E5E5E] font-medium">
-                      Driver marked order as Hold
-                    </Text>
-                  </View>
-                )}
 
                 {status === "Hold" && (
-                  <View className="flex-row items-center mb-10">
-                    <View className="p-1.5 rounded-full absolute -left-8 bg-[#CDCDCD] border-4 border-[#F4EDFF]" />
-                    <Text className="text-[#5E5E5E] font-medium">
-                      Order is On the way
-                    </Text>
-                  </View>
+                  <>
+                    <View className="flex-row items-center mb-10">
+                      <View className="p-1.5 rounded-full absolute -left-8 bg-[#CDCDCD] border-4 border-[#F4EDFF]" />
+                      <Text className="text-[#5E5E5E] font-medium">
+                        Order is On the way
+                      </Text>
+                    </View>
+
+                    <View className="flex-row items-center">
+                      <View className="p-1.5 rounded-full absolute -left-8 bg-[#CDCDCD] border-4 border-[#F4EDFF]" />
+                      <Text className="text-[#5E5E5E] font-medium">
+                        Order is Delivered
+                      </Text>
+                    </View>
+                  </>
                 )}
 
-                {status === "Hold" && (
-                  <View className="flex-row items-center">
-                    <View className="p-1.5 rounded-full absolute -left-8 bg-[#CDCDCD] border-4 border-[#F4EDFF]" />
-                    <Text className="text-[#5E5E5E] font-medium">
-                      Order is Delivered
-                    </Text>
-                  </View>
-                )}
-
-                {isHoldOrder && status === "On the way" && (
-                  <View className="flex-row items-center mb-10">
-                    <View className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]" />
-                    <Text className="text-[#5E5E5E] font-medium">
-                      Order is On the way
-                    </Text>
-                  </View>
-                )}
-
-                {isHoldOrder && status === "On the way" && (
-                  <View className="flex-row items-center">
-                    <View className="p-1.5 rounded-full absolute -left-8 bg-[#CDCDCD] border-4 border-[#F4EDFF]" />
-                    <Text className="text-[#5E5E5E] font-medium">
-                      Order is Delivered
-                    </Text>
-                  </View>
-                )}
-
-                {isHoldOrder && status === "Delivered" && (
-                  <View className="flex-row items-center mb-10">
-                    <View className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]" />
-                    <Text className="text-[#5E5E5E] font-medium">
-                      Order is On the way
-                    </Text>
-                  </View>
-                )}
-
-                {isHoldOrder && status === "Delivered" && (
-                  <View className="flex-row items-center">
-                    <View className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]" />
-                    <Text className="text-[#5E5E5E] font-medium">
-                      Order is Delivered
-                    </Text>
-                  </View>
-                )}
-                {/* Order Cancelled - Show ONLY if order is cancelled */}
                 {status === "Cancelled" && (
                   <View className="flex-row items-center">
                     <View className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]" />
@@ -812,16 +663,34 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                 )}
               </View>
 
+              {showHoldStep && holdReason && (
+                <View
+                  style={{
+                    paddingLeft: 20,
+                    marginTop: 8,
+                    marginBottom: status === "Return" ? 0 : 12,
+                  }}
+                >
+                  <View className="mt-[-7] ml-2 p-4">
+                    <Text className="font-semibold mb-1 text-[#5E5E5E]">
+                      Reason: <Text className="text-black">"{holdReason}"</Text>
+                    </Text>
+                  </View>
+                </View>
+              )}
+
               {status === "Return" && returnReason && (
-                <View className="mt-[-7] ml-2 p-4">
-                  <Text className="font-semibold mb-1 text-[#5E5E5E]">
-                    Reason: <Text className="text-black">"{returnReason}"</Text>
-                  </Text>
+                <View style={{ paddingLeft: 20, marginTop: 8 }}>
+                  <View className="mt-[-7] ml-2 p-4">
+                    <Text className="font-semibold mb-1 text-[#5E5E5E]">
+                      Reason:{" "}
+                      <Text className="text-black">"{returnReason}"</Text>
+                    </Text>
+                  </View>
                 </View>
               )}
             </View>
 
-            {/* Customer Information */}
             <View className="bg-white border border-gray-200 rounded-lg shadow-sm mx-4 p-4 mb-4">
               <Text className="text-[#808FA2] font-medium mb-1">
                 Customer's Name
@@ -833,7 +702,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                   : `${order.title || ""}  ${order.firstName || ""} ${order.lastName || ""}`.trim() ||
                     "Not Available"}
               </Text>
-
               <Text className="text-[#808FA2] font-medium mb-1">
                 Customer's Mobile Number
               </Text>
@@ -842,7 +710,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                   order.phoneNumber ||
                   "Not Available"}
               </Text>
-
               <Text className="text-[#808FA2] font-medium mb-1">
                 Building Type
               </Text>
@@ -851,14 +718,12 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                   order.buildingType ||
                   "Not Available"}
               </Text>
-
               <Text className="text-[#808FA2] font-medium mb-1">Address</Text>
               <Text className="text-black font-medium">
                 {customerData?.buildingDetails
                   ? (() => {
                       const buildingType =
                         customerData?.buildingType || order.buildingType;
-
                       if (buildingType === "Apartment") {
                         return (
                           `${customerData.buildingDetails.buildingNo || ""}, ${customerData.buildingDetails.buildingName || ""}, ${customerData.buildingDetails.unitNo || ""}, ${customerData.buildingDetails.floorNo || ""}, ${customerData.buildingDetails.houseNo || ""}, ${customerData.buildingDetails.streetName || ""}, ${customerData.buildingDetails.city || ""}`
@@ -881,7 +746,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                   : order.fullAddress || "Not Available"}
               </Text>
             </View>
-            {/* Payment Summary */}
+
             {order.fullTotal && (
               <View className="bg-white border border-gray-200 rounded-lg shadow-sm mx-4 p-4 mb-4">
                 <Text className="text-black font-semibold mb-2">
@@ -891,14 +756,13 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                   <View className="flex-row justify-between mb-2">
                     <Text className="text-[#8492A3]">Subtotal</Text>
                     <Text className="text-[#8492A3]">
-                      Rs.
+                      Rs.{" "}
                       {formatPrice(
                         parseFloat(order.total || "0") - deliveryFee,
                       )}
                     </Text>
                   </View>
                 )}
-
                 {isPackage === 0 && (
                   <View className="flex-row justify-between mb-2">
                     <Text className="text-[#8492A3]">Subtotal</Text>
@@ -913,7 +777,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                     </Text>
                   </View>
                 )}
-
                 {order.discount && parseFloat(order.discount) > 0 && (
                   <View className="flex-row justify-between mb-2">
                     <Text className="text-[#8492A3]">Discount</Text>
@@ -943,7 +806,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
               </View>
             )}
 
-            {/* Payment Method */}
             <View className="bg-white border border-gray-200 rounded-lg shadow-sm mx-4 p-4 mb-6">
               <Text className="text-black font-semibold mb-1">
                 Payment Method
@@ -994,8 +856,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                   </TouchableOpacity>
                 </View>
               )}
-
-              {/* Cancel Order Button - Only show when NOT disabled */}
               {!isCancelDisabled() && (
                 <View
                   style={{
@@ -1012,9 +872,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                   <TouchableOpacity
                     onPress={handleCancelOrder}
                     activeOpacity={0.8}
-                    style={{
-                      borderRadius: 30,
-                    }}
+                    style={{ borderRadius: 30 }}
                   >
                     <View
                       style={{
@@ -1040,7 +898,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
         )}
       </View>
 
-      {/* Cancel Order Modal */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -1052,13 +909,10 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
             <Text className="text-xl font-bold text-center mb-2">
               Are you sure?
             </Text>
-
             <Text className="text-center text-gray-600 mb-8">
               This will permanently delete the order placed by customer and
               cannot be undone.
             </Text>
-
-            {/* Confirm Button */}
             <View
               style={{
                 borderRadius: 24,
@@ -1089,8 +943,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                 </View>
               </TouchableOpacity>
             </View>
-
-            {/* Cancel Button */}
             <View
               style={{
                 borderRadius: 24,
@@ -1124,7 +976,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
         </View>
       </Modal>
 
-      {/* Report Status Modal */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -1133,58 +984,28 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
       >
         <View className="flex-1 justify-center items-center bg-black/50">
           <View className="bg-white rounded-lg p-5 w-5/6 max-w-md">
-            {/* Status Options */}
             <View className="mb-4">
-              <TouchableOpacity
-                className="flex-row items-center justify-between p-3 mb-2 rounded-lg"
-                onPress={() => setTempSelectedReportOption("Confirmed")}
-              >
-                <Text className="text-black font-medium">Confirmed</Text>
-                <View
-                  className={`w-6 h-6 rounded-lg border-2 ${tempSelectedReportOption === "Confirmed" ? "border-[#6C3CD1] bg-[#6C3CD1]" : "border-gray-400 bg-white"}`}
-                >
-                  {tempSelectedReportOption === "Confirmed" && (
-                    <View className="flex-1 items-center justify-center">
-                      <Feather name="check" size={16} color="white" />
+              {["Confirmed", "Not-Confirmed", "Not-Answered"].map(
+                (option, index) => (
+                  <TouchableOpacity
+                    key={option}
+                    className={`flex-row items-center justify-between p-3 ${index < 2 ? "mb-2" : "mb-6"} rounded-lg`}
+                    onPress={() => setTempSelectedReportOption(option)}
+                  >
+                    <Text className="text-black font-medium">{option}</Text>
+                    <View
+                      className={`w-6 h-6 rounded-lg border-2 ${tempSelectedReportOption === option ? "border-[#6C3CD1] bg-[#6C3CD1]" : "border-gray-400 bg-white"}`}
+                    >
+                      {tempSelectedReportOption === option && (
+                        <View className="flex-1 items-center justify-center">
+                          <Feather name="check" size={16} color="white" />
+                        </View>
+                      )}
                     </View>
-                  )}
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                className="flex-row items-center justify-between p-3 mb-2  rounded-lg"
-                onPress={() => setTempSelectedReportOption("Not-Confirmed")}
-              >
-                <Text className="text-black font-medium">Not-Confirmed</Text>
-                <View
-                  className={`w-6 h-6 rounded-lg border-2 ${tempSelectedReportOption === "Not-Confirmed" ? "border-[#6C3CD1] bg-[#6C3CD1]" : "border-gray-400 bg-white"}`}
-                >
-                  {tempSelectedReportOption === "Not-Confirmed" && (
-                    <View className="flex-1 items-center justify-center">
-                      <Feather name="check" size={16} color="white" />
-                    </View>
-                  )}
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                className="flex-row items-center justify-between p-3 mb-6 "
-                onPress={() => setTempSelectedReportOption("Not-Answered")}
-              >
-                <Text className="text-black font-medium">Not-Answered</Text>
-                <View
-                  className={`w-6 h-6 rounded-lg border-black border-2 ${tempSelectedReportOption === "Not-Answered" ? "border-[#6C3CD1] bg-[#6C3CD1]" : "border-gray-400 bg-white"}`}
-                >
-                  {tempSelectedReportOption === "Not-Answered" && (
-                    <View className="flex-1 items-center justify-center">
-                      <Feather name="check" size={16} color="white" />
-                    </View>
-                  )}
-                </View>
-              </TouchableOpacity>
+                  </TouchableOpacity>
+                ),
+              )}
             </View>
-
-            {/* Buttons */}
             <View
               style={{
                 marginHorizontal: 28,
@@ -1211,10 +1032,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                   }
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
-                  style={{
-                    paddingVertical: 12,
-                    alignItems: "center",
-                  }}
+                  style={{ paddingVertical: 12, alignItems: "center" }}
                 >
                   <Text
                     style={{
@@ -1227,7 +1045,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                 </LinearGradient>
               </TouchableOpacity>
             </View>
-
             <View
               style={{
                 marginHorizontal: 28,

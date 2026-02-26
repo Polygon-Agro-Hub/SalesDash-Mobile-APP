@@ -6,7 +6,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import environment from "@/environment/environment";
-import { Keyboard } from "react-native";
+import { Keyboard, Platform } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
@@ -42,10 +42,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       return "Employee ID is required";
     }
 
-    // Check if first character is uppercase
-    const firstChar = id.charAt(0);
-    if (firstChar && firstChar !== firstChar.toUpperCase()) {
-      return "Please enter Employee ID in uppercase letters";
+    // Check if first two letters are exactly "SA" in uppercase
+    const prefix = id.substring(0, 2);
+    if (/^sa$/i.test(prefix)) {
+      // If letters are lowercase in any combination, show uppercase error
+      if (prefix !== "SA") {
+        return "Please enter Employee ID in uppercase letters";
+      }
     }
 
     return "";
@@ -183,15 +186,16 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior="padding"
-      keyboardVerticalOffset={0}
+      enabled
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={{ flex: 1, backgroundColor: "white" }}
+      className="bg-white"
     >
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
-        keyboardShouldPersistTaps="always"
+        keyboardShouldPersistTaps="handled"
       >
-        <View style={{ height: 280 }}>
+        <View className="h-44 flex-1 justify-center items-center">
           <LinearGradient
             colors={["#854BDA", "#6E3DD1"]}
             className="flex-1 items-center justify-center mb-20"
@@ -204,9 +208,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           </LinearGradient>
         </View>
 
-        <View className="flex-1 bg-white">
+        <View className="flex-1">
           {/* Form Section */}
-          <View className="flex-1 bg-white px-6 py-8 rounded-t-3xl shadow-lg -mt-28 pt-16">
+          <View className="flex-1 bg-white px-6 py-8 rounded-t-3xl shadow-lg -mt-20 pt-6">
             <Text className="text-center text-2xl font-bold text-[#6C3CD1] mb-6 mt-[6%]">
               Welcome to Sign in
             </Text>

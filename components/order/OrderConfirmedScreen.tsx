@@ -426,13 +426,13 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
           );
 
           additionalItemsRows += `
-      <tr>
-        <td style="text-align: center">${index + 1}</td>
-        <td class="tabledata">${item.displayName || item.name || "Item"}</td>
-        <td class="tabledata">${unitPrice.toFixed(2)}</td>
-        <td class="tabledata">${quantity} </td>
-        <td class="tabledata">${actualAmount.toFixed(2)}</td>
-      </tr>`;
+  <tr>
+    <td style="text-align: center">${index + 1}</td>
+    <td class="tabledata">${item.displayName || item.name || "Item"}</td>
+    <td class="tabledata">${unitPrice.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</td>
+    <td class="tabledata">${quantity} </td>
+    <td class="tabledata">${actualAmount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</td>
+  </tr>`;
         });
       }
 

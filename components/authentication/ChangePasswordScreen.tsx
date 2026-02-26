@@ -10,6 +10,7 @@ import {
   Alert,
   BackHandler,
   Keyboard,
+  Platform,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -188,14 +189,12 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior="padding"
-keyboardVerticalOffset={0}
+      enabled
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={{ flex: 1, backgroundColor: "#6E3DD1" }}
+      className="bg-[#6E3DD1]"
     >
-      <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
-        keyboardShouldPersistTaps="always"
-      >
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         {passwordUpdate === 1 && (
           <CustomHeader
             title=""
@@ -204,7 +203,7 @@ keyboardVerticalOffset={0}
             transparent
           />
         )}
-        <View style={{ height: 280 }}>
+        <View className="h-56 flex-1">
           <ImageBackground
             source={require("@/assets/images/auth/update-password.webp")}
             className="flex-1 items-center justify-center h-full"
@@ -213,10 +212,10 @@ keyboardVerticalOffset={0}
         </View>
 
         {/* Form Section */}
-        <View className="flex-1">
+        <View className="flex-1 ">
           <LinearGradient
             colors={["#854BDA", "#6E3DD1"]}
-            className="flex-1 rounded-t-3xl px-7 py-8 -mt-2"
+            className="flex-1 rounded-t-3xl px-7 pt-10 pb-8 -mt-4"
           >
             <Text className="text-white text-2xl font-bold text-center mb-2">
               Change Your Password

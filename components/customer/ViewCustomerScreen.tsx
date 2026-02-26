@@ -549,7 +549,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
               </TouchableOpacity>
             </View>
           ) : searchError ? (
-            <View className="flex-1 justify-center items-center mt-[-15%]">
+            <View className="items-center" style={{ marginTop: hp("8%") }}>
               <Image
                 source={require("@/assets/images/public/no-data.webp")}
                 style={{
@@ -671,7 +671,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
               contentContainerStyle={{ paddingBottom: 100 }}
             />
           ) : (
-            <View className="flex-1 justify-center items-center px-4">
+            <View className="items-center px-4" style={{ marginTop: hp("4%") }}>
               <Image
                 source={require("@/assets/images/public/no-data.webp")}
                 style={{
