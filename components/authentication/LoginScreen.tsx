@@ -6,19 +6,21 @@ import { LinearGradient } from "expo-linear-gradient";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import environment from "@/environment/environment";
-import { Keyboard, Platform } from "react-native";
-import { useFocusEffect } from "@react-navigation/native";
 import {
+  Keyboard,
+  Platform,
+  Dimensions,
   View,
   Text,
   TextInput,
   TouchableOpacity,
   Image,
   KeyboardAvoidingView,
-  ScrollView,
   Alert,
   BackHandler,
 } from "react-native";
+import { ScrollView } from "react-native-gesture-handler";
+import { useFocusEffect } from "@react-navigation/native";
 
 type LoginScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -29,6 +31,9 @@ interface LoginScreenProps {
   navigation: LoginScreenNavigationProp;
 }
 
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+const HALF = SCREEN_HEIGHT * 0.5;
+
 const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [empId, setEmpId] = useState("");
   const [password, setPassword] = useState("");
@@ -38,26 +43,16 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
 
   const validateEmployeeId = (id: string): string => {
-    if (id.trim() === "") {
-      return "Employee ID is required";
-    }
-
-    // Check if first two letters are exactly "SA" in uppercase
+    if (id.trim() === "") return "Employee ID is required";
     const prefix = id.substring(0, 2);
-    if (/^sa$/i.test(prefix)) {
-      // If letters are lowercase in any combination, show uppercase error
-      if (prefix !== "SA") {
-        return "Please enter Employee ID in uppercase letters";
-      }
+    if (/^sa$/i.test(prefix) && prefix !== "SA") {
+      return "Please enter Employee ID in uppercase letters";
     }
-
     return "";
   };
 
   const validatePassword = (pwd: string): string => {
-    if (pwd.trim() === "") {
-      return "Password is required";
-    }
+    if (pwd.trim() === "") return "Password is required";
     return "";
   };
 
@@ -68,26 +63,20 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
     let hasError = false;
 
-    // Validate Employee ID
     const empIdValidationError = validateEmployeeId(empId);
     if (empIdValidationError) {
       setEmpIdError(empIdValidationError);
       hasError = true;
     }
 
-    // Validate Password
     const passwordValidationError = validatePassword(password);
     if (passwordValidationError) {
       setPasswordError(passwordValidationError);
       hasError = true;
     }
 
-    // If there are validation errors, stop here
-    if (hasError) {
-      return;
-    }
+    if (hasError) return;
 
-    // Check if EMP ID starts with exactly "SA" (both letters capital)
     if (empId.length < 2 || empId.substring(0, 2) !== "SA") {
       Alert.alert(
         "Unauthorized Access",
@@ -107,15 +96,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     try {
       const response = await axios.post(
         `${environment.API_BASE_URL}api/auth/login`,
-        {
-          empId: empId.trim(),
-          password,
-        },
+        { empId: empId.trim(), password },
       );
 
       if (response.data.success) {
         const { token, passwordUpdate } = response.data.data;
-
         if (token) {
           const timestamp = new Date();
           const expirationTime = new Date(
@@ -132,29 +117,23 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             navigation.navigate("Main", { screen: "DashboardScreen" });
           }
         } else {
-          Alert.alert(
-            "Sorry",
-            "Something went wrong, please try again later..",
-          );
+          Alert.alert("Sorry", "Something went wrong, please try again later.");
         }
       }
     } catch (err) {
-      console.log(err);
       if (axios.isAxiosError(err)) {
         const errorMessage =
           err.response?.data?.message || "Something went wrong.";
         const statusType = err.response?.data?.statusType;
 
-        // Handle specific status-related errors
         if (statusType === "rejected") {
           Alert.alert("Account Rejected", "This Employee ID is rejected.", [
             { text: "OK" },
           ]);
-        } else if (statusType === "not_approved") {
-          Alert.alert("Not Approved EMP ID", "This EMP ID is not approved.", [
-            { text: "OK" },
-          ]);
-        } else if (statusType === "password_not_set") {
+        } else if (
+          statusType === "not_approved" ||
+          statusType === "password_not_set"
+        ) {
           Alert.alert("Not Approved EMP ID", "This EMP ID is not approved.", [
             { text: "OK" },
           ]);
@@ -186,140 +165,186 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
   return (
     <KeyboardAvoidingView
-      enabled
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
       style={{ flex: 1, backgroundColor: "white" }}
-      className="bg-white"
     >
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        bounces={false}
       >
-        <View className="h-44 flex-1 justify-center items-center">
-          <LinearGradient
-            colors={["#854BDA", "#6E3DD1"]}
-            className="flex-1 items-center justify-center mb-20"
+        <LinearGradient
+          colors={["#9B60E8", "#6E3DD1"]}
+          style={{
+            height: HALF,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Image
+            source={require("@/assets/images/public/logo.webp")}
+            style={{ width: "55%", height: "55%" }}
+            resizeMode="contain"
+          />
+        </LinearGradient>
+
+        <View
+          style={{
+            backgroundColor: "white",
+            borderTopLeftRadius: 32,
+            borderTopRightRadius: 32,
+            marginTop: -28,
+            paddingHorizontal: 24,
+            paddingTop: 36,
+            paddingBottom: SCREEN_HEIGHT * 0.25,
+          }}
+        >
+          <Text
+            style={{
+              textAlign: "center",
+              fontSize: 22,
+              fontWeight: "700",
+              color: "#6C3CD1",
+              marginBottom: 24,
+            }}
           >
-            <Image
-              source={require("@/assets/images/public/logo.webp")}
-              className="w-auto h-[60%]"
-              resizeMode="contain"
+            Welcome to Sign in
+          </Text>
+
+          {empIdError.length > 0 && (
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: 6,
+              }}
+            >
+              <Icon name="alert-circle" size={16} color="#DC2626" />
+              <Text style={{ color: "#DC2626", fontSize: 13, marginLeft: 6 }}>
+                {empIdError}
+              </Text>
+            </View>
+          )}
+
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: "#F3F4F6",
+              borderRadius: 999,
+              borderWidth: 1,
+              borderColor: empIdError ? "#EF4444" : "#D1D5DB",
+              paddingHorizontal: 16,
+              marginBottom: 16,
+            }}
+          >
+            <TextInput
+              placeholder="Employee ID"
+              placeholderTextColor="#A3A3A3"
+              style={{
+                flex: 1,
+                paddingVertical: 14,
+                fontSize: 15,
+                color: "#1F2937",
+              }}
+              value={empId}
+              onChangeText={(text) => {
+                setEmpId(text);
+                if (empIdError) setEmpIdError("");
+              }}
+              autoCapitalize="characters"
+              returnKeyType="next"
             />
-          </LinearGradient>
-        </View>
+          </View>
 
-        <View className="flex-1">
-          {/* Form Section */}
-          <View className="flex-1 bg-white px-6 py-8 rounded-t-3xl shadow-lg -mt-20 pt-6">
-            <Text className="text-center text-2xl font-bold text-[#6C3CD1] mb-6 mt-[6%]">
-              Welcome to Sign in
-            </Text>
-
-            {empIdError.length > 0 && (
-              <View className="-mb-3">
-                <View className="flex-row items-center ">
-                  <Icon name="alert-circle" size={16} color="#DC2626" />
-                  <Text className="text-red-600 text-sm ml-2">
-                    {empIdError}
-                  </Text>
-                </View>
-              </View>
-            )}
-
+          {passwordError.length > 0 && (
             <View
-              className={`border rounded-full px-4 py-1 mb-4 flex-row items-center bg-gray-100 mt-5 ${
-                empIdError ? "border-red-500" : "border-gray-300"
-              }`}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: 6,
+              }}
             >
-              <TextInput
-                placeholder="Employee ID"
-                placeholderTextColor="#A3A3A3"
-                className="flex-1 py-3 text-gray-800"
-                value={empId}
-                onChangeText={(text) => {
-                  setEmpId(text);
-                  // Clear error when user starts typing
-                  if (empIdError) setEmpIdError("");
-                }}
-              />
+              <Icon name="alert-circle" size={16} color="#DC2626" />
+              <Text style={{ color: "#DC2626", fontSize: 13, marginLeft: 6 }}>
+                {passwordError}
+              </Text>
             </View>
+          )}
 
-            {passwordError.length > 0 && (
-              <View className="-mb-3">
-                <View className="flex-row items-center ">
-                  <Icon name="alert-circle" size={16} color="#DC2626" />
-                  <Text className="text-red-600 text-sm ml-2">
-                    {passwordError}
-                  </Text>
-                </View>
-              </View>
-            )}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: "#F3F4F6",
+              borderRadius: 999,
+              borderWidth: 1,
+              borderColor: passwordError ? "#EF4444" : "#D1D5DB",
+              paddingHorizontal: 16,
+              marginBottom: 32,
+            }}
+          >
+            <TextInput
+              placeholder="Password"
+              placeholderTextColor="#A3A3A3"
+              style={{
+                flex: 1,
+                paddingVertical: 14,
+                fontSize: 15,
+                color: "#1F2937",
+              }}
+              secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={(text) => {
+                setPassword(text);
+                if (passwordError) setPasswordError("");
+              }}
+              returnKeyType="done"
+              onSubmitEditing={handleSignIn}
+            />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+              <Icon
+                name={showPassword ? "eye-off" : "eye"}
+                size={20}
+                color="#6B7280"
+              />
+            </TouchableOpacity>
+          </View>
 
+          <View style={{ alignItems: "center" }}>
             <View
-              className={`border rounded-full px-4 py-1 mb-6 flex-row items-center bg-gray-100 mt-4 ${
-                passwordError ? "border-red-500" : "border-gray-300"
-              }`}
+              style={{
+                borderRadius: 999,
+                shadowColor: "#6E3DD1",
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.45,
+                shadowRadius: 12,
+                elevation: 12,
+              }}
             >
-              <TextInput
-                placeholder="Password"
-                placeholderTextColor="#A3A3A3"
-                className="flex-1 py-3 text-gray-800"
-                secureTextEntry={!showPassword}
-                value={password}
-                onChangeText={(text) => {
-                  setPassword(text);
-                  // Clear error when user starts typing
-                  if (passwordError) setPasswordError("");
-                }}
-              />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                <Icon
-                  name={showPassword ? "eye-off" : "eye"}
-                  size={20}
-                  color="#6B7280"
-                />
-              </TouchableOpacity>
-            </View>
-
-            <View className="items-center mb-6">
-              <View
-                style={{
-                  backgroundColor: "#854BDA",
-                  borderRadius: 999,
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 8 },
-                  shadowOpacity: 0.4,
-                  shadowRadius: 10,
-                  elevation: 12,
-                }}
+              <TouchableOpacity
+                onPress={handleSignIn}
+                disabled={loading}
+                activeOpacity={0.8}
+                style={{ borderRadius: 999 }}
               >
-                <TouchableOpacity
-                  onPress={handleSignIn}
-                  disabled={loading}
-                  activeOpacity={0.8}
-                  style={{ borderRadius: 999 }}
+                <LinearGradient
+                  colors={["#9B60E8", "#6E3DD1"]}
+                  style={{
+                    borderRadius: 999,
+                    paddingVertical: 15,
+                    width: 200,
+                    alignItems: "center",
+                  }}
                 >
-                  <LinearGradient
-                    colors={["#854BDA", "#6E3DD1"]}
-                    style={{
-                      borderRadius: 999,
-                      paddingVertical: 14,
-                      width: 180,
-                      alignItems: "center",
-                    }}
+                  <Text
+                    style={{ color: "white", fontSize: 18, fontWeight: "700" }}
                   >
-                    <Text
-                      style={{
-                        color: "white",
-                        fontSize: 18,
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {loading ? "Signing in..." : "Sign in"}
-                    </Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-              </View>
+                    {loading ? "Signing in…" : "Sign in"}
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
             </View>
           </View>
         </View>

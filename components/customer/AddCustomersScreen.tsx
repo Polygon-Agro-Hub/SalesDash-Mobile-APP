@@ -396,6 +396,12 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
           setEmailError("Please enter a valid email address");
           return;
         }
+        if (domain && domain.includes("..")) {
+          setEmailError(
+            "Email domain cannot contain consecutive dots (e.g., gmail..com is invalid)",
+          );
+          return;
+        }
 
         if (domain === "gmail.com" || domain === "googlemail.com") {
           if (localPart.length > 30) {
@@ -689,6 +695,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     }
 
     if (email && !validateEmail(email)) {
+      Alert.alert("Error", "Please enter a valid email address.");
       setIsSubmitting(false);
       return;
     }

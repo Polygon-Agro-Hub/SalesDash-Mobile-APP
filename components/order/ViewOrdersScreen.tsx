@@ -138,12 +138,10 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
 
       if (response.data.success && response.data.data) {
         if (isLoadMore) {
-          // Append new orders to existing ones
           if (isMounted.current) {
             setOrders((prevOrders) => [...prevOrders, ...response.data.data]);
           }
         } else {
-          // Replace orders (for initial load or refresh)
           safeSetOrders(response.data.data);
         }
 
@@ -198,7 +196,6 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
   }, []);
 
   useEffect(() => {
-    // Set up listeners
     const unsubscribe = navigation.addListener("focus", () => {
       if (isMounted.current) {
         setCurrentPage(1);
@@ -216,10 +213,8 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
       () => setKeyboardVisible(false),
     );
 
-    // Initial load
     loadOrders(1, true, false);
 
-    // Cleanup function
     return () => {
       isMounted.current = false;
       unsubscribe();
@@ -230,13 +225,13 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
 
   const filters = ["All", "Today", "Tomorrow", "In 3 Days", "This Week"];
 
-  // Safe implementation with null check
   const filteredOrders = useMemo(() => {
     if (!orders || !Array.isArray(orders)) {
       return [];
     }
 
     return orders.filter((order) => {
+      if (order.status === "Return Received") return false;
       try {
         const matchesFilter = () => {
           if (selectedFilter === "All") return true;
@@ -299,15 +294,12 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
 
   useFocusEffect(
     React.useCallback(() => {
-      // Reset search-related states
       setSearchText("");
       setSelectedFilter("All");
 
-      // Reset pagination states
       setCurrentPage(1);
       setHasMore(true);
 
-      // Load fresh orders
       loadOrders(1, true, false);
 
       return () => {};

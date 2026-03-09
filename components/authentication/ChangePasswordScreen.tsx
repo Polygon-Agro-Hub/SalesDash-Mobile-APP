@@ -4,13 +4,10 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
-  KeyboardAvoidingView,
   ImageBackground,
   Alert,
   BackHandler,
   Keyboard,
-  Platform,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -21,6 +18,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import environment from "@/environment/environment";
 import { useFocusEffect } from "@react-navigation/native";
 import CustomHeader from "../common/CustomHeader";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 type ChangePasswordScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -188,13 +186,14 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
   );
 
   return (
-    <KeyboardAvoidingView
-      enabled
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={{ flex: 1, backgroundColor: "#6E3DD1" }}
-      className="bg-[#6E3DD1]"
-    >
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+    <View style={{ flex: 1, backgroundColor: "#6E3DD1" }}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
+        enableOnAndroid={true}
+        extraScrollHeight={20}
+        keyboardShouldPersistTaps="handled"
+        style={{ backgroundColor: "#6E3DD1" }}
+      >
         {passwordUpdate === 1 && (
           <CustomHeader
             title=""
@@ -338,8 +337,8 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
             </View>
           </LinearGradient>
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
+    </View>
   );
 };
 

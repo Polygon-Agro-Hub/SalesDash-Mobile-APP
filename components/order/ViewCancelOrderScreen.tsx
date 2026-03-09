@@ -112,7 +112,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   const [deliveryFee, setDeliveryFee] = useState<number>(0);
   const [isPackage, setIsPackage] = useState();
   const [returnReason, setReturnReason] = useState<string | null>(null);
-  const [holdReason, setHoldReason] = useState<string | null>(null); // NEW
+  const [holdReason, setHoldReason] = useState<string | null>(null);
   const [isHoldOrder, setIsHoldOrder] = useState<boolean>(false);
 
   useEffect(() => {
@@ -160,7 +160,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
         );
         if (response.data.success && response.data.data) {
           setIsHoldOrder(response.data.data.isHold);
-          // NEW: capture hold reason
           const { holdReason: reason, otherReason } = response.data.data;
           if (reason) {
             setHoldReason(
@@ -511,6 +510,9 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
     ((isHoldOrder || holdReason !== null) &&
       ["On the way", "Delivered", "Return"].includes(status));
 
+  const showRestartedOnTheWayStep =
+    status === "Return" && (isHoldOrder || holdReason !== null);
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -590,6 +592,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                   </Text>
                 </View>
 
+                {/* Hold step */}
                 {showHoldStep && (
                   <View className="mb-10">
                     <View className="flex-row items-center">
@@ -598,6 +601,16 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                         Driver marked order as Hold
                       </Text>
                     </View>
+                  </View>
+                )}
+
+                {/* ── FIX: "On the Way" restart step after Hold, before Return ── */}
+                {showRestartedOnTheWayStep && (
+                  <View className="flex-row items-center mb-10">
+                    <View className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]" />
+                    <Text className="text-[#5E5E5E] font-medium">
+                      Order is On the way
+                    </Text>
                   </View>
                 )}
 
@@ -682,10 +695,19 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
               {status === "Return" && returnReason && (
                 <View style={{ paddingLeft: 20, marginTop: 8 }}>
                   <View className="mt-[-7] ml-2 p-4">
-                    <Text className="font-semibold mb-1 text-[#5E5E5E]">
-                      Reason:{" "}
-                      <Text className="text-black">"{returnReason}"</Text>
-                    </Text>
+                    <View
+                      style={{ flexDirection: "row", alignItems: "flex-start" }}
+                    >
+                      <Text className="font-semibold text-[#5E5E5E]">
+                        Reason :{" "}
+                      </Text>
+                      <Text
+                        className="text-black font-medium"
+                        style={{ flex: 1 }}
+                      >
+                        "{returnReason}"
+                      </Text>
+                    </View>
                   </View>
                 </View>
               )}
