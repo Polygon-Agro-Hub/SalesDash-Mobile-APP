@@ -74,8 +74,16 @@ const NavigationBar = ({
 
   return (
     <View
-      className="absolute bottom-0 flex-row justify-between items-center bg-white w-full p-4 rounded-t-3xl px-10"
       style={{
+        position: "absolute",
+        bottom: 0,
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: "white",
+        width: "100%",
+        paddingVertical: 8,
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
         shadowColor: "#000",
         shadowOpacity: 0.5,
         shadowRadius: 10,
@@ -91,35 +99,44 @@ const NavigationBar = ({
           <Animated.View
             key={index}
             style={{
+              flex: 1,
               transform: [{ scale: scales[index] }],
-              alignItems: "center",
-              justifyContent: "center",
-              height: 40,
             }}
           >
             <TouchableOpacity
               onPress={() => handleTabPress(tab.name, index)}
               style={{
-                backgroundColor: isFocused ? "#854BDA" : "#FFFFFF",
-                padding: 8,
-                borderRadius: 9999,
                 alignItems: "center",
                 justifyContent: "center",
+                paddingVertical: 4,
               }}
             >
-              <Image
-                source={isFocused ? tab.icon : tab.focusedIcon}
-                style={{ width: 20, height: 20 }}
-              />
-            </TouchableOpacity>
+              <View
+                style={{
+                  backgroundColor: isFocused ? "#854BDA" : "#FFFFFF",
+                  padding: 8,
+                  borderRadius: 9999,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Image
+                  source={isFocused ? tab.icon : tab.focusedIcon}
+                  style={{ width: 20, height: 20 }}
+                />
+              </View>
 
-            <Text
-              className={`${
-                isFocused ? "text-purple-600" : "text-gray-600"
-              } text-sm font-medium`}
-            >
-              {tab.tabName}
-            </Text>
+              <Text
+                style={{
+                  marginTop: 2,
+                  fontSize: 12,
+                  fontWeight: "500",
+                  color: isFocused ? "#9333ea" : "#4b5563",
+                }}
+              >
+                {tab.tabName}
+              </Text>
+            </TouchableOpacity>
           </Animated.View>
         );
       })}
