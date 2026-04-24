@@ -5,6 +5,9 @@ const environment = {
   // DEV --------------------
   API_BASE_URL: "https://dev.polygonagro.com/dash-api/agro-api/salesdash/",
 
+  // UAT --------------------
+  // API_BASE_URL: "https://sales-dash-mobile-api-uat.vercel.app/agro-api/salesdash/",
+
   // PROD --------------------
   //API_BASE_URL: "https://polygonagro.com/dash-api/agro-api/salesdash/",
 
