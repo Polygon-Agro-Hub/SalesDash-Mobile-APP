@@ -8,7 +8,7 @@ npm-debug.*
 *.mobileprovision
 *.orig.*
 *.jks
-ios/
+/ios
 .env
 web-build/
 
