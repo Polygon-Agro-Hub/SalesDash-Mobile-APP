@@ -15,6 +15,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.polygonagro.SalesDash",
+      "buildNumber": "1.0.0",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -29,9 +30,6 @@
       "softwareKeyboardLayoutMode": "pan",
       "package": "com.polygonagro.SalesDash",
       "versionCode": 10,
-      "compileSdkVersion": 35,
-      "targetSdkVersion": 35,
-      "minSdkVersion": 24,
       "permissions": [
         "INTERNET",
         "WRITE_EXTERNAL_STORAGE",
@@ -89,7 +87,8 @@
           }
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true
