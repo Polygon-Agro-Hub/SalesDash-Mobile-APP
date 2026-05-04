@@ -92,6 +92,7 @@ const CustomHeader: React.FC<CustomHeaderProps> = ({
 
 export default CustomHeader;
 
+// Styles
 const styles = StyleSheet.create({
   container: {
     top: 0,
