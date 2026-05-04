@@ -69,6 +69,7 @@ const CustomHeader: React.FC<CustomHeaderProps> = ({
     </View>
   );
 
+  // If linearGradient is true, wrap the header content in a LinearGradient
   if (linearGradient) {
     return (
       <LinearGradient colors={["#6839CF", "#854EDC"]} style={containerStyle}>
