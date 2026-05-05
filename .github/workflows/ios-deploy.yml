@@ -11,13 +11,13 @@
 #                   MATCH_GIT_URL, MATCH_GIT_BASIC_AUTHORIZATION,
 #                   MATCH_PASSWORD, DEV_API_URL, PROD_API_URL
 
-#name: iOS Deploy
+name: iOS Deploy
 
-# on:
-#   push:
-#     branches:
-#       - dev-main   # → TestFlight build for QA team
-#       - main       # → App Store submission
+on:
+  push:
+    branches:
+      - dev-main   # → TestFlight build for QA team
+      - main       # → App Store submission
 
 # Prevent multiple builds running simultaneously for the same branch.
 # If a new push comes in while a build is running, cancel the old one.
