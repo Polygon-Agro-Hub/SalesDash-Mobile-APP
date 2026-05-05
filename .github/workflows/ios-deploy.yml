@@ -1,6 +1,6 @@
 # .github/workflows/ios-deploy.yml
 #
-# iOS CI/CD Pipeline — GoVi-Transport
+# iOS CI/CD Pipeline — Sales Dash
 #
 # TRIGGERS:
 #   Push to dev-main → Upload to TestFlight (QA testing)
@@ -11,13 +11,13 @@
 #                   MATCH_GIT_URL, MATCH_GIT_BASIC_AUTHORIZATION,
 #                   MATCH_PASSWORD, DEV_API_URL, PROD_API_URL
 
-name: iOS Deploy
+#name: iOS Deploy
 
-on:
-  push:
-    branches:
-      - dev-main   # → TestFlight build for QA team
-      - main       # → App Store submission
+# on:
+#   push:
+#     branches:
+#       - dev-main   # → TestFlight build for QA team
+#       - main       # → App Store submission
 
 # Prevent multiple builds running simultaneously for the same branch.
 # If a new push comes in while a build is running, cancel the old one.
@@ -42,15 +42,6 @@ jobs:
       # ─────────────────────────────────────────────────────────────────
       - name: "📥 Checkout repository"
         uses: actions/checkout@v4
-
-      # ─────────────────────────────────────────────────────────────────
-      # STEP 1b: Set up Xcode 26
-      # Apps uploaded to App Store Connect must be built with Xcode 26+
-      # ─────────────────────────────────────────────────────────────────
-      - name: "🍏 Set up Xcode"
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: '>=26.0'
 
       # ─────────────────────────────────────────────────────────────────
       # STEP 2: Set up Ruby
@@ -215,3 +206,4 @@ jobs:
           path: build/GoVi-Transport.ipa
           retention-days: 7
           if-no-files-found: warn   # Don't fail if build never produced an .ipa
+
