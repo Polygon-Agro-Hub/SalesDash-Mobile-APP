@@ -248,7 +248,6 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
               </TouchableOpacity>
             </View>
 
-            {/* New Password */}
             <View className="bg-[#FFFFFF66] rounded-full flex-row items-center px-4 mb-4 py-1">
               <TextInput
                 placeholder="New Password"
