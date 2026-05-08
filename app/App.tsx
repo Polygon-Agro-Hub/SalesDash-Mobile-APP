@@ -68,7 +68,7 @@ function MainTabNavigator() {
       <Tab.Screen name="ReminderScreen" component={ReminderScreen} />
       <Tab.Screen name="EditCustomerScreen" component={EditCustomerScreen} />
       <Tab.Screen name="AddComplaintScreen" component={AddComplaintScreen} />
-
+      
       <Tab.Screen
         options={{
           tabBarHideOnKeyboard: true,
@@ -146,10 +146,7 @@ function AppContent() {
             <Stack.Screen name="OtpScreenUp" component={OtpScreenUp} />
             <Stack.Screen name="OrderScreen" component={OrderScreen as any} />
             <Stack.Screen name="CratScreen" component={CratScreen as any} />
-            <Stack.Screen
-              name="SelectOrderType"
-              component={SelectOrderType as any}
-            />
+            <Stack.Screen name="SelectOrderType" component={SelectOrderType as any} />
             <Stack.Screen
               name="ViewComplainScreen"
               component={ViewComplainScreen}

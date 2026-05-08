@@ -6,7 +6,6 @@
     "orientation": "portrait",
     "icon": "./assets/images/public/favicon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/public/dashicon.png",
       "resizeMode": "contain",
@@ -32,8 +31,6 @@
         "foregroundImage": "./assets/images/public/favicon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "pan",
       "package": "com.polygonagro.SalesDash",
       "versionCode": 10,
@@ -94,8 +91,7 @@
           }
         }
       ],
-      "expo-web-browser",
-      "@react-native-community/datetimepicker"
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
@@ -105,7 +101,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "14ca40ab-2836-4097-b032-7ca5c4688cbf"
+        "projectId": "9f428bf3-e5cd-4988-b00d-94b4a17ad98d"
       }
     }
   }
