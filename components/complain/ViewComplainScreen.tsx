@@ -206,7 +206,7 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({
                     resizeMode: "contain",
                   }}
                 />
-                <Text className="text-black text-i text-center mt-4">
+                <Text className="text-black italic text-center mt-4">
                   You have no previous complaints
                 </Text>
               </View>

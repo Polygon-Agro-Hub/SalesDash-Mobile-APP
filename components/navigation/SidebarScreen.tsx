@@ -163,7 +163,7 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
                           {/* Show placeholder while loading */}
                           {imageLoading && (
                             <Image
-                              source={require("@/assets/images/profile/profile.webp")}
+                              source={require("@/assets/images/profile/profile1.webp")}
                               className="w-16 h-16 rounded-full absolute"
                               resizeMode="cover"
                             />
@@ -180,7 +180,7 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
                         </>
                       ) : (
                         <Image
-                          source={require("@/assets/images/profile/profile.webp")}
+                          source={require("@/assets/images/profile/profile1.webp")}
                           className="w-16 h-16 rounded-full"
                           resizeMode="cover"
                         />

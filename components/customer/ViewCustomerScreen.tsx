@@ -243,12 +243,10 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
     loadOrders(1, true, false);
   };
 
-  // Check for search results when search text or filter changes
   useEffect(() => {
     if (searchText.trim() === "") {
       setSearchError(null);
     } else {
-      // Check if the search returns any results
       const results = orders.filter(
         (order) =>
           order.InvNo &&
@@ -291,10 +289,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
     return `${year}/${month}/${day}`;
   };
 
-  const handleSearch = () => {
-    // This function can be kept for manual search trigger if needed
-    // But the search logic now happens automatically in useEffect
-  };
+  const handleSearch = () => {};
 
   const filteredOrders = orders.filter((order) => {
     const matchesStatus =
@@ -307,7 +302,6 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
     return matchesStatus && matchesSearch;
   });
 
-  // Reset pagination state when customer ID changes
   const resetPaginationState = () => {
     setOrders([]);
     setCurrentPage(1);
@@ -319,10 +313,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   };
 
   useEffect(() => {
-    // Reset pagination state when customer changes
     resetPaginationState();
 
-    // Set up listeners
     const unsubscribe = navigation.addListener("focus", () => {
       if (isMounted.current) {
         resetPaginationState();
@@ -339,10 +331,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       () => setKeyboardVisible(false),
     );
 
-    // Initial load
     loadOrders(1, true, false);
 
-    // Cleanup function
     return () => {
       isMounted.current = false;
       unsubscribe();
@@ -448,6 +438,13 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
               <TouchableOpacity
                 onPress={handleGetACall}
                 className="flex-row bg-[#6B3BCF] px-4 py-2 rounded-full items-center mt-5"
+                style={{
+                  shadowColor: "#000000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.2,
+                  shadowRadius: 4,
+                  elevation: 4,
+                }}
               >
                 <Ionicons name="call" size={20} color="white" />
                 <Text className="text-white font-bold text-lg ml-2">
@@ -467,6 +464,13 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                   })
                 }
                 className="flex-row bg-[#6B3BCF] px-4 py-2 rounded-full items-center mt-5"
+                style={{
+                  shadowColor: "#000000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.2,
+                  shadowRadius: 4,
+                  elevation: 4,
+                }}
               >
                 <Ionicons name="add-circle" size={24} color="white" />
                 <Text className="text-white font-bold text-lg ml-2">

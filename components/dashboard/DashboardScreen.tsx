@@ -262,7 +262,10 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
             {item.displayName}
           </Text>
 
-          <Text className="text-sm font-medium text-[#808FA2] text-center" style={{ marginTop: 4 }}>
+          <Text
+            className="text-sm font-medium text-[#808FA2] text-center"
+            style={{ marginTop: 4 }}
+          >
             Rs. {formattedTotalPrice}
           </Text>
         </View>
@@ -298,9 +301,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
                 justifyContent: "center",
               }}
             >
-              <Text className="text-white font-bold text-sm">
-                View
-              </Text>
+              <Text className="text-white font-bold text-sm">View</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -316,7 +317,13 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     >
       <View className="flex-1 bg-white">
         {/* Header Section */}
-        <View className="bg-white rounded-b-3xl px-4" style={{ paddingTop: Platform.OS === 'ios' ? 50 : 20, paddingBottom: 20 }}>
+        <View
+          className="bg-white rounded-b-3xl px-4"
+          style={{
+            paddingTop: Platform.OS === "ios" ? 50 : 20,
+            paddingBottom: 20,
+          }}
+        >
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center">
               <TouchableOpacity
@@ -328,7 +335,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
                   source={
                     formData?.image
                       ? { uri: formData.image }
-                      : require("@/assets/images/profile/profile.webp")
+                      : require("@/assets/images/profile/profile1.webp")
                   }
                   className="w-14 h-14 rounded-full border-2 border-purple-200"
                   resizeMode="cover"
@@ -340,14 +347,19 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
               </Text>
             </View>
 
-            {/* Right Section (Stars Badge) */}
-            <View className="flex-row items-center bg-[#E6DBF766] rounded-full " style={{ paddingHorizontal: 16, paddingVertical: 8 }}>
+            <View className="flex-row items-center bg-[#E6DBF766] rounded-full px-5 py-3 gap-1  ">
               <Image
                 source={require("@/assets/images/icons/star.webp")}
-                className="w-6 h-6"
+                className="w-7 h-7"
                 resizeMode="contain"
               />
-              <Text className="font-semibold text-black" style={{ marginLeft: 8 }}>
+              <Text
+                className="font-semibold text-black"
+                style={{
+                  textDecorationLine: "none",
+                  includeFontPadding: false,
+                }}
+              >
                 {agentStats?.monthly?.totalStars ?? 0}
               </Text>
             </View>
@@ -356,7 +368,14 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
           {/* Progress Bar */}
           <View style={{ marginTop: 24 }}>
             <Text className="text-lg text-[#874CDB]">Your Daily Target</Text>
-            <View className="bg-[#824AD933] rounded-2xl relative overflow-hidden" style={{ marginTop: 12, paddingHorizontal: 20, paddingVertical: 16 }}>
+            <View
+              className="bg-[#824AD933] rounded-2xl relative overflow-hidden"
+              style={{
+                marginTop: 12,
+                paddingHorizontal: 20,
+                paddingVertical: 16,
+              }}
+            >
               {/* Progress Count (Centered Top) */}
               <Text className="absolute top-2 self-center text-sm font-bold text-[#693ACF]">
                 {agentStats?.daily?.completed ?? 0}/
@@ -394,7 +413,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
 
         {/* Packages Section with Pull to Refresh */}
         <ScrollView
-          className="flex-1 "
+          className="flex-1 mb-10 "
           refreshControl={
             <RefreshControl
               refreshing={isLoading}

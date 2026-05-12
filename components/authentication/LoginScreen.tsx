@@ -191,13 +191,15 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
         <View
           style={{
+            flex: 1,
             backgroundColor: "white",
             borderTopLeftRadius: 32,
             borderTopRightRadius: 32,
             marginTop: -28,
             paddingHorizontal: 24,
             paddingTop: 36,
-            paddingBottom: SCREEN_HEIGHT * 0.25,
+            paddingBottom: 40,
+            justifyContent: "space-between",
           }}
         >
           <Text
@@ -250,6 +252,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               }}
               value={empId}
               onChangeText={(text) => {
+                if (text.includes(" ")) return;
                 setEmpId(text);
                 if (empIdError) setEmpIdError("");
               }}
@@ -297,6 +300,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               secureTextEntry={!showPassword}
               value={password}
               onChangeText={(text) => {
+                if (text.includes(" ")) return;
                 setPassword(text);
                 if (passwordError) setPasswordError("");
               }}

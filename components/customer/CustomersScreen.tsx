@@ -341,9 +341,17 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
             {/* Floating Button */}
             {!isKeyboardVisible && (
               <TouchableOpacity
-                style={{ zIndex: 1000 }}
-                className="absolute bottom-20 right-6 bg-[#7743D4] w-14 h-14 rounded-full items-center justify-center shadow-lg mb-1"
+                className="absolute bottom-28 right-6 w-14 h-14 rounded-full items-center justify-center"
                 onPress={() => navigation.navigate("AddCustomersScreen" as any)}
+                style={{
+                  backgroundColor: "#7743D4",
+                  shadowColor: "#8149D8",
+                  shadowOffset: { width: 1, height: 2 },
+                  shadowOpacity: 0.4,
+                  shadowRadius: 4,
+                  elevation: 6,
+                  zIndex: 1000,
+                }}
               >
                 <Ionicons name="add" size={45} color="#fff" />
               </TouchableOpacity>
@@ -371,11 +379,11 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                     }}
                   />
                   {searchQuery ? (
-                    <Text className="text-black text-i text-center mt-4">
+                    <Text className="text-black italic text-center mt-4">
                       No customers found for "{searchQuery}"
                     </Text>
                   ) : (
-                    <Text className="text-black text-i text-center mt-4">
+                    <Text className="text-black italic text-center mt-4">
                       No registered customers yet
                     </Text>
                   )}
@@ -416,6 +424,11 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                           alignItems: "center",
                           borderWidth: 1,
                           borderColor: "#E0E0E0",
+                          shadowColor: "#000",
+                          shadowOffset: { width: 0, height: 4 },
+                          shadowOpacity: 0.08,
+                          shadowRadius: 6,
+                          elevation: 4,
                         }}
                       >
                         <View className="flex-1 mr-3">

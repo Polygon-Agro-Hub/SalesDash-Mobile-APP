@@ -228,7 +228,6 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
     }
   };
 
-  // formatPrice function with comma separation
   const formatPrice = (price: number) => {
     return Number(price)
       .toFixed(2)
@@ -322,14 +321,16 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
               </TouchableOpacity>
             ))
           ) : (
-            <View className="py-8 items-center justify-center mt-[20%]">
+            <View className="items-center justify-center mt-[30%]">
               <LottieView
                 source={require("@/assets/json/no-data.json")}
                 style={{ width: wp(50), height: hp(30) }}
                 autoPlay
                 loop
               />
-              <Text className="text-gray-500">No products found</Text>
+              <Text className="text-black italic mt-[-10%]  text-center ">
+                No products found
+              </Text>
             </View>
           )}
         </ScrollView>

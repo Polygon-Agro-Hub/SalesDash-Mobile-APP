@@ -259,8 +259,8 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
                     loop
                   />
                 </View>
-                <View className="mt-[-20]">
-                  <Text className="text-center text-gray-500 mt-[-35%]">
+                <View className="justify-center  mt-[-30%] items-center   ">
+                  <Text className="text-black italic text-center mt-[-35%] ">
                     No Exclude Item Found
                   </Text>
                 </View>

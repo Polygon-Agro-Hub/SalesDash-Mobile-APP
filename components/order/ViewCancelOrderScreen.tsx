@@ -748,7 +748,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                         customerData?.buildingType || order.buildingType;
                       if (buildingType === "Apartment") {
                         return (
-                          `${customerData.buildingDetails.buildingNo || ""}, ${customerData.buildingDetails.buildingName || ""}, ${customerData.buildingDetails.unitNo || ""}, ${customerData.buildingDetails.floorNo || ""}, ${customerData.buildingDetails.houseNo || ""}, ${customerData.buildingDetails.streetName || ""}, ${customerData.buildingDetails.city || ""}`
+                            `${customerData.buildingDetails.houseNo || ""}, ${customerData.buildingDetails.floorNo || ""}, ${customerData.buildingDetails.buildingNo || ""}, ${customerData.buildingDetails.buildingName || ""}, ${customerData.buildingDetails.unitNo || ""}, ${customerData.buildingDetails.streetName || ""}, ${customerData.buildingDetails.city || ""}`
                             .replace(/,\s*,/g, ",")
                             .replace(/^,\s*|,\s*$/g, "")
                             .trim() ||
@@ -954,12 +954,14 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                 <View
                   style={{
                     backgroundColor: "#000",
-                    paddingVertical: 12,
+                    paddingVertical: 14,
                     borderRadius: 24,
                     alignItems: "center",
                   }}
                 >
-                  <Text style={{ color: "#fff", fontWeight: "600" }}>
+                  <Text
+                    style={{ color: "#fff", fontWeight: "600", fontSize: 15 }}
+                  >
                     Confirm
                   </Text>
                 </View>
@@ -983,12 +985,14 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                 <View
                   style={{
                     backgroundColor: "#E5E7EB",
-                    paddingVertical: 12,
+                    paddingVertical: 14,
                     borderRadius: 24,
                     alignItems: "center",
                   }}
                 >
-                  <Text style={{ color: "#000", fontWeight: "600" }}>
+                  <Text
+                    style={{ color: "#000", fontWeight: "600", fontSize: 15 }}
+                  >
                     Cancel
                   </Text>
                 </View>

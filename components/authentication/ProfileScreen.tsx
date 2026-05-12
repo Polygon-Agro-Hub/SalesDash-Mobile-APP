@@ -299,11 +299,11 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                       onError={(e) =>
                         console.log("Image load error:", e.nativeEvent.error)
                       }
-                      defaultSource={require("@/assets/images/profile/profile.webp")}
+                      defaultSource={require("@/assets/images/profile/profile1.webp")}
                     />
                   ) : (
                     <Image
-                      source={require("@/assets/images/profile/profile.webp")}
+                      source={require("@/assets/images/profile/profile1.webp")}
                       style={{
                         width: wp(34),
                         height: wp(34),
