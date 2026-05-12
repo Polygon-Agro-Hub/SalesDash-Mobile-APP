@@ -68,7 +68,6 @@ function MainTabNavigator() {
       <Tab.Screen name="ReminderScreen" component={ReminderScreen} />
       <Tab.Screen name="EditCustomerScreen" component={EditCustomerScreen} />
       <Tab.Screen name="AddComplaintScreen" component={AddComplaintScreen} />
-      
       <Tab.Screen
         options={{
           tabBarHideOnKeyboard: true,
