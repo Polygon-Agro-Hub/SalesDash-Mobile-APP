@@ -9,6 +9,7 @@ import {
   Alert,
   ActivityIndicator,
   BackHandler,
+  Dimensions,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -39,6 +40,8 @@ interface City {
   charge: string;
   createdAt?: string;
 }
+
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
   navigation,
@@ -911,11 +914,16 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       />
       <View className="flex-1 bg-white">
         <ScrollView keyboardShouldPersistTaps="handled">
-          <View className="py-2 px-6">
+          <View className="flex-1 mx-auto w-full max-w-[500px] py-2 px-6">
             {/* Title and First Name */}
             <View className="mb-4 mt-4 flex-row justify-between">
               <View className="flex-[1]">
-                <Text className="text-[#000000] mb-1">Title *</Text>
+                <Text
+                  className="text-[#000000] mb-1"
+                  style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                >
+                  Title *
+                </Text>
                 <TouchableOpacity
                   onPress={() => {
                     setTitleModalVisible(true);
@@ -947,7 +955,12 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
               </View>
 
               <View className="flex-[2] ml-2">
-                <Text className="text-[#000000] mb-1">First Name *</Text>
+                <Text
+                  className="text-[#000000] mb-1"
+                  style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                >
+                  First Name *
+                </Text>
                 <TextInput
                   className={`bg-[#F6F6F6] h-[50px] border ${firstNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
                   placeholder="First Name"
@@ -977,7 +990,12 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
 
             {/* Last Name */}
             <View className="mb-4">
-              <Text className="text-[#000000] mb-1">Last Name *</Text>
+              <Text
+                className="text-[#000000] mb-1"
+                style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+              >
+                Last Name *
+              </Text>
               <TextInput
                 className={`bg-[#F6F6F6] h-[50px] border ${lastNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
                 placeholder="Last Name"
@@ -1006,7 +1024,12 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
 
             {/* Mobile Number */}
             <View className="mb-4">
-              <Text className="text-[#000000] mb-1">Mobile Number *</Text>
+              <Text
+                className="text-[#000000] mb-1"
+                style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+              >
+                Mobile Number *
+              </Text>
               <TextInput
                 className={`bg-[#F6F6F6] h-[50px] border ${phoneError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
                 placeholder="+947XXXXXXXX"
@@ -1032,7 +1055,12 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
 
             {/* Email */}
             <View className="mb-4">
-              <Text className="text-[#000000] mb-1">Email Address *</Text>
+              <Text
+                className="text-[#000000] mb-1"
+                style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+              >
+                Email Address *
+              </Text>
               <TextInput
                 className={`bg-[#F6F6F6] h-[50px] border ${emailError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
                 placeholder="Email Address"
@@ -1062,7 +1090,12 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
 
             {/* Building Type */}
             <View className="mb-4">
-              <Text className="text-[#000000] mb-1">Building Type *</Text>
+              <Text
+                className="text-[#000000] mb-1"
+                style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+              >
+                Building Type *
+              </Text>
               <TouchableOpacity
                 onPress={() => {
                   setBuildingTypeModalVisible(true);
@@ -1089,7 +1122,10 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
             {buildingType === "House" && (
               <>
                 <View className="mb-4">
-                  <Text className="text-[#000000] mb-1">
+                  <Text
+                    className="text-[#000000] mb-1"
+                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                  >
                     Building / House No *
                   </Text>
                   <TextInput
@@ -1119,7 +1155,12 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 </View>
 
                 <View className="mb-4">
-                  <Text className="text-[#000000] mb-1">Street Name *</Text>
+                  <Text
+                    className="text-[#000000] mb-1"
+                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                  >
+                    Street Name *
+                  </Text>
                   <TextInput
                     className={`bg-[#F6F6F6] h-[50px] border ${streetNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
                     placeholder="Street Name"
@@ -1147,7 +1188,12 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 </View>
 
                 <View className="mb-4">
-                  <Text className="text-[#000000] mb-1">Nearest City *</Text>
+                  <Text
+                    className="text-[#000000] mb-1"
+                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                  >
+                    Nearest City *
+                  </Text>
                   <TouchableOpacity
                     onPress={() => {
                       setCityModalVisible(true);
@@ -1180,7 +1226,10 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
             {buildingType === "Apartment" && (
               <>
                 <View className="mb-4">
-                  <Text className="text-[#000000] mb-1">
+                  <Text
+                    className="text-[#000000] mb-1"
+                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                  >
                     Apartment / Building No *
                   </Text>
                   <TextInput
@@ -1210,7 +1259,10 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 </View>
 
                 <View className="mb-4">
-                  <Text className="text-[#000000] mb-1">
+                  <Text
+                    className="text-[#000000] mb-1"
+                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                  >
                     Apartment / Building Name *
                   </Text>
                   <TextInput
@@ -1240,7 +1292,10 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 </View>
 
                 <View className="mb-4">
-                  <Text className="text-[#000000] mb-1">
+                  <Text
+                    className="text-[#000000] mb-1"
+                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                  >
                     Flat / Unit Number *
                   </Text>
                   <TextInput
@@ -1270,7 +1325,12 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 </View>
 
                 <View className="mb-4">
-                  <Text className="text-[#000000] mb-1">Floor Number *</Text>
+                  <Text
+                    className="text-[#000000] mb-1"
+                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                  >
+                    Floor Number *
+                  </Text>
                   <TextInput
                     className={`bg-[#F6F6F6] h-[50px] border ${floorNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
                     placeholder="ex : 3rd Floor"
@@ -1326,7 +1386,12 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 </View>
 
                 <View className="mb-4">
-                  <Text className="text-[#000000] mb-1">Street Name *</Text>
+                  <Text
+                    className="text-[#000000] mb-1"
+                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                  >
+                    Street Name *
+                  </Text>
                   <TextInput
                     className={`bg-[#F6F6F6] h-[50px] border ${streetNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
                     placeholder="Street Name"
@@ -1354,7 +1419,12 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 </View>
 
                 <View className="mb-4">
-                  <Text className="text-[#000000] mb-1">Nearest City *</Text>
+                  <Text
+                    className="text-[#000000] mb-1"
+                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                  >
+                    Nearest City *
+                  </Text>
                   <TouchableOpacity
                     onPress={() => {
                       setCityModalVisible(true);

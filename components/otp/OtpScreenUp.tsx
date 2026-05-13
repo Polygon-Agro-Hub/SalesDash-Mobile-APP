@@ -369,10 +369,10 @@ const OtpScreenUp: React.FC = () => {
           navigation={navigation}
           onBackPress={() => navigation.goBack()}
         />
-        <View className="flex-1 bg-white">
+        <View className="flex-1 bg-white items-center">
           <View
             style={{ paddingHorizontal: wp(5), paddingVertical: hp(2) }}
-            className="flex-1 justify-center"
+            className="flex-1 justify-center w-full max-w-[500px]"
           >
             {/* Illustration - Centered */}
             <View className="items-center justify-center mb-6">
@@ -448,10 +448,10 @@ const OtpScreenUp: React.FC = () => {
 
               {/* Verify Button */}
               {!isKeyboardVisible && (
-                <TouchableOpacity onPress={verifyOTP} disabled={loading}>
+                <TouchableOpacity onPress={verifyOTP} disabled={loading} className="items-center w-full">
                   <LinearGradient
                     colors={["#6839CF", "#874DDB"]}
-                    className="py-3 px-14 items-center mt-10 rounded-3xl"
+                    className="py-3 items-center mt-10 rounded-3xl w-1/2"
                   >
                     <Text className="text-center text-white font-bold text-lg">
                       {loading ? "Verifying..." : "Verify"}

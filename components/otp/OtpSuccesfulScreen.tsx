@@ -51,77 +51,76 @@ const OtpSuccesfulScreen: React.FC<OtpSuccesfulScreenProps> = ({
       enabled
       style={{ flex: 1 }}
     >
-      <View className="flex-1 bg-white">
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1 }}
-          keyboardShouldPersistTaps="handled"
+      <View className="flex-1 bg-white items-center">
+        <View
+          style={{ paddingHorizontal: 20, paddingVertical: 20 }}
+          className="flex-1 justify-center w-full max-w-[500px]"
         >
-          <View
-            style={{ paddingHorizontal: wp(5), paddingVertical: hp(2) }}
-            className="flex-1 justify-center"
-          >
-            {/* Success Image - Centered */}
-            <View className="items-center justify-center mb-6">
-              <Image
-                source={require("@/assets/images/otp/sucsse.webp")}
-                style={{
-                  width: 180,
-                  height: 180,
-                }}
-                resizeMode="contain"
-              />
-            </View>
+          {/* Success Image - Centered */}
+          <View className="items-center justify-center mb-6">
+            <Image
+              source={require("@/assets/images/otp/sucsse.webp")}
+              style={{
+                width: 180,
+                height: 180,
+              }}
+              resizeMode="contain"
+            />
+          </View>
 
-            {/* Text Section - Centered */}
-            <View className="items-center px-4">
-              <Text className="text-black text-center font-bold text-xl">
-                Successfully Verified!
-              </Text>
-              <Text className="text-[#747474] text-center mt-2 text-base">
-                Customer's Mobile number has been verified!
-              </Text>
-            </View>
+          {/* Text Section - Centered */}
+          <View className="items-center px-4">
+            <Text className="text-black text-center font-bold text-xl">
+              Successfully Verified!
+            </Text>
+            <Text className="text-[#747474] text-center mt-2 text-base">
+              Customer's Mobile number has been verified!
+            </Text>
+          </View>
 
-            {/* Button - Centered */}
-            <View className="items-center mt-24">
-              <View
+          {/* Button - Centered */}
+          <View className="items-center mt-24">
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate("ExcludeListAdd", {
+                  customerId: Number(customerId),
+                })
+              }
+              activeOpacity={0.7}
+              style={{
+                width: "50%",
+                borderRadius: 30,
+                backgroundColor: "transparent",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.25,
+                shadowRadius: 10,
+                elevation: 8,
+              }}
+            >
+              <LinearGradient
+                colors={["#6839CF", "#874DDB"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                className="h-[50px] items-center justify-center rounded-full"
                 style={{
-                  width: "60%",
-                  borderRadius: 30,
-                  backgroundColor: "transparent",
                   shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 8 },
-                  shadowOpacity: 0.25,
-                  shadowRadius: 10,
-                  elevation: 8,
+                  shadowOffset: {
+                    width: 0,
+                    height: 2,
+                  },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 3.84,
+                  overflow: "hidden",
                 }}
               >
-                <TouchableOpacity
-                  onPress={() =>
-                    navigation.navigate("ExcludeListAdd", {
-                      customerId: Number(customerId),
-                    })
-                  }
-                  activeOpacity={0.85}
-                  style={{ borderRadius: 30, overflow: "hidden" }}
-                >
-                  <LinearGradient
-                    colors={["#6839CF", "#874DDB"]}
-                    style={{
-                      paddingVertical: 14,
-                      alignItems: "center",
-                      borderRadius: 30,
-                    }}
-                  >
-                    <Text className="text-center text-white font-bold text-lg">
-                      Order Now
-                    </Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-              </View>
-            </View>
+                <Text className="text-center text-white font-bold text-lg">
+                  Order Now
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
           </View>
-        </ScrollView>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );

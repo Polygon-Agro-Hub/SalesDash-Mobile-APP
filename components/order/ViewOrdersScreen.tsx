@@ -18,6 +18,7 @@ import {
   ScrollView,
   RefreshControl,
   ActivityIndicator,
+  Dimensions,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -72,6 +73,8 @@ interface OrdersResponse {
   currentPage: number;
   data: Order[];
 }
+
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
@@ -302,7 +305,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
 
       loadOrders(1, true, false);
 
-      return () => {};
+      return () => { };
     }, []),
   );
 
@@ -349,33 +352,41 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
       style={{ flex: 1 }}
     >
       <View className="flex-1 bg-white">
+        {/* Header */}
+        <LinearGradient
+          colors={["#854BDA", "#6E3DD1"]}
+          className="h-24 shadow-md px-4 pt-4 pb-10 items-center justify-center"
+        >
+          <View className="w-full max-w-[500px] items-center">
+            <Text
+              className="text-white font-semibold"
+              style={{ fontSize: SCREEN_HEIGHT > 900 ? 20 : 18 }}
+            >
+              Total Orders: <Text className="font-bold">{totalCount}</Text>
+            </Text>
+          </View>
+        </LinearGradient>
+
         {/* Loading Animation */}
         {loading ? (
           <OrderScreenSkeleton />
         ) : (
-          <>
-            {/* Header */}
-            <LinearGradient
-              colors={["#854BDA", "#6E3DD1"]}
-              className="h-20 shadow-md px-4 pt-17 items-center justify-center"
-            >
-              <Text className="text-white text-lg mb-2">
-                Total Orders: <Text className="font-bold">{totalCount}</Text>
-              </Text>
-            </LinearGradient>
-
+          <View className="flex-1 mx-auto w-full max-w-[500px]">
             {/* Search Bar */}
-            <View className="flex-row items-center bg-[#F5F1FC] px-4 h-[50px] border border-[#6B3BCF] rounded-full mt-[-7%] shadow-sm mx-6">
+            <View className="flex-row items-center bg-[#F5F1FC] px-4 h-[50px] border border-[#6B3BCF] rounded-full mt-[-6%] shadow-sm mx-6">
               <TextInput
                 placeholder="Search By Order Number"
                 placeholderTextColor="#6839CF"
-                className="flex-1 text-sm text-gray-700 h-11 py-0"
+                className="flex-1 text-gray-700 h-11 py-0"
+                style={{
+                  fontStyle: "italic",
+                  fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
+                }}
                 onChangeText={(text) => {
                   const numericOnly = text.replace(/[^0-9]/g, "");
                   setSearchText(numericOnly);
                 }}
                 value={searchText}
-                style={{ fontStyle: "italic" }}
                 keyboardType="numeric"
               />
               <FontAwesome name="search" size={22} color="#884EDC" />
@@ -414,7 +425,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                   >
                     <Text
                       style={{
-                        fontSize: 14,
+                        fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
                         fontWeight:
                           selectedFilter === filter ? "bold" : "normal",
                         color: selectedFilter === filter ? "white" : "#6B3BCF",
@@ -427,7 +438,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
               </ScrollView>
             </View>
 
-            <View className="py-[-12%] mb-[60%]">
+            <View className="flex-1 mb-[5%]">
               {isEmpty ? (
                 <View className="flex justify-center items-center mt-20">
                   <Image
@@ -438,14 +449,17 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                       resizeMode: "contain",
                     }}
                   />
-                  <Text className="text-black italic text-center mt-4">
+                  <Text
+                    className="text-black italic text-center mt-4"
+                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 16 }}
+                  >
                     No orders found
                   </Text>
                 </View>
               ) : (
                 <FlatList
                   data={filteredOrders}
-                  className="mb-10"
+                  className="flex-1"
                   keyExtractor={(item) => item.orderId.toString()}
                   refreshControl={
                     <RefreshControl
@@ -472,9 +486,9 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                       <View
                         style={{
                           backgroundColor: "white",
-                          borderRadius: wp(4),
-                          padding: wp(4),
-                          marginBottom: hp(2),
+                          borderRadius: 12,
+                          padding: 16,
+                          marginBottom: 16,
                           borderWidth: 1,
                           borderColor: "#EAEAEA",
                           shadowColor: "#000",
@@ -492,11 +506,10 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                             justifyContent: "space-between",
                             alignItems: "center",
                           }}
-                          className=""
                         >
                           <Text
                             style={{
-                              fontSize: wp(4.5),
+                              fontSize: SCREEN_HEIGHT > 900 ? 20 : 18,
                               fontWeight: "600",
                               color: "#393939",
                             }}
@@ -505,9 +518,10 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                           </Text>
                           <View
                             style={{
-                              borderRadius: wp(5),
-                              minWidth: wp(24),
-                              minHeight: hp(4),
+                              borderRadius: 20,
+                              minWidth: 100,
+                              minHeight: 30,
+                              paddingHorizontal: 12,
                               justifyContent: "center",
                               alignItems: "center",
                               backgroundColor:
@@ -534,7 +548,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                           >
                             <Text
                               style={{
-                                fontSize: wp(3),
+                                fontSize: SCREEN_HEIGHT > 900 ? 14 : 12,
                                 fontWeight: "600",
                                 textAlign: "center",
                                 color:
@@ -555,7 +569,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                                                 : item.status === "Return"
                                                   ? "#FF1100"
                                                   : item.status ===
-                                                      "Out For Delivery"
+                                                    "Out For Delivery"
                                                     ? "#80118A"
                                                     : "#393939",
                               }}
@@ -565,7 +579,13 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                           </View>
                         </View>
 
-                        <Text style={{ fontSize: wp(3.6), color: "#808FA2" }}>
+                        <Text
+                          style={{
+                            fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
+                            color: "#808FA2",
+                            marginTop: 4,
+                          }}
+                        >
                           Schedule to: {formatDate(item.sheduleDate)}
                         </Text>
 
@@ -574,20 +594,23 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                             flexDirection: "row",
                             justifyContent: "space-between",
                             alignItems: "center",
+                            marginTop: 4,
                           }}
                         >
-                          {/* Customer name */}
                           <Text
                             style={{
-                              fontSize: wp(3.6),
+                              fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
                               color: "#808FA2",
-                              marginTop: hp(0.5),
                             }}
                           >
                             {item.sheduleTime}
                           </Text>
-                          <Text style={{ fontSize: wp(3.6), color: "#FF4C4C" }}>
-                            {" "}
+                          <Text
+                            style={{
+                              fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
+                              color: "#FF4C4C",
+                            }}
+                          >
                             {item.reportStatus}
                           </Text>
                         </View>
@@ -598,7 +621,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                 />
               )}
             </View>
-          </>
+          </View>
         )}
       </View>
     </KeyboardAvoidingView>

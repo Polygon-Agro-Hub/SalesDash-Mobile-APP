@@ -760,334 +760,345 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       enabled
       style={{ flex: 1 }}
     >
-      <CustomHeader
-        title="Schedule"
-        titleColor="#6C3CD1"
-        showBackButton={true}
-        navigation={navigation}
-        onBackPress={() => {
-          const parsedIsPackage =
-            typeof isPackage === "string" ? parseInt(isPackage) : isPackage;
-          if (parsedIsPackage === 0) {
-            navigation.navigate("CratScreen" as any, {
-              id: customerId || customerid,
-              customerId: customerId || customerid,
-              title,
-              name,
-              number,
-              customerscreencustomerid,
-              isPackage: 0,
-              items: items.map((item) => ({
-                id: item.id,
-                name: item.name || `Item ${item.id}`,
-                price: item.price,
-                normalPrice:
-                  item.normalPrice || item.price + (item.discount || 0),
-                discountedPrice: item.discountedPrice || item.price,
-                discount: item.discount || 0,
-                qty: item.quantity,
-                unitType: item.unitType || "kg",
-                startValue: item.startValue || 0.5,
-                quantity: item.quantity,
-              })),
-              selectedProducts: items.map((item) => ({
-                id: item.id,
-                name: item.name || `Item ${item.id}`,
-                price: item.price,
-                normalPrice:
-                  item.normalPrice || item.price + (item.discount || 0),
-                discountedPrice: item.discountedPrice || item.price,
-                discount: item.discount || 0,
-                quantity: (item as any).qty ?? item.quantity ?? 0,
-                selected: false,
-                unitType: item.unitType || "kg",
-                startValue: item.startValue || 0.5,
-                changeby:
-                  item.unitType === "g"
-                    ? Number((item as any).qty ?? item.quantity ?? 0) * 1000
-                    : ((item as any).qty ?? item.quantity ?? 0),
-              })),
-              subtotal,
-              discount,
-              total,
-              fullTotal,
-              selectedDate,
-              fromOrderSummary: true,
-            });
-          } else if (parsedIsPackage === 1) {
-            const currentOrderItem = orderItems?.[0] || {};
+      <View className="flex-1 bg-white items-center">
+        <View className="flex-1 w-full">
+          <CustomHeader
+            title="Schedule"
+            titleColor="#6C3CD1"
+            showBackButton={true}
+            navigation={navigation}
+            onBackPress={() => {
+              const parsedIsPackage =
+                typeof isPackage === "string" ? parseInt(isPackage) : isPackage;
+              if (parsedIsPackage === 0) {
+                navigation.navigate("CratScreen" as any, {
+                  id: customerId || customerid,
+                  customerId: customerId || customerid,
+                  title,
+                  name,
+                  number,
+                  customerscreencustomerid,
+                  isPackage: 0,
+                  items: items.map((item) => ({
+                    id: item.id,
+                    name: item.name || `Item ${item.id}`,
+                    price: item.price,
+                    normalPrice:
+                      item.normalPrice || item.price + (item.discount || 0),
+                    discountedPrice: item.discountedPrice || item.price,
+                    discount: item.discount || 0,
+                    qty: item.quantity,
+                    unitType: item.unitType || "kg",
+                    startValue: item.startValue || 0.5,
+                    quantity: item.quantity,
+                  })),
+                  selectedProducts: items.map((item) => ({
+                    id: item.id,
+                    name: item.name || `Item ${item.id}`,
+                    price: item.price,
+                    normalPrice:
+                      item.normalPrice || item.price + (item.discount || 0),
+                    discountedPrice: item.discountedPrice || item.price,
+                    discount: item.discount || 0,
+                    quantity: (item as any).qty ?? item.quantity ?? 0,
+                    selected: false,
+                    unitType: item.unitType || "kg",
+                    startValue: item.startValue || 0.5,
+                    changeby:
+                      item.unitType === "g"
+                        ? Number((item as any).qty ?? item.quantity ?? 0) * 1000
+                        : ((item as any).qty ?? item.quantity ?? 0),
+                  })),
+                  subtotal,
+                  discount,
+                  total,
+                  fullTotal,
+                  selectedDate,
+                  fromOrderSummary: true,
+                });
+              } else if (parsedIsPackage === 1) {
+                const currentOrderItem = orderItems?.[0] || {};
 
-            const restoredPackageItems = (
-              route.params?.rawPackageItems || []
-            ).map((item: { name: string; qty: string }) => ({
-              id: 0,
-              name: item.name,
-              quantity: item.qty,
-              quantityType: "kg",
-              price: 0,
-            }));
+                const restoredPackageItems = (
+                  route.params?.rawPackageItems || []
+                ).map((item: { name: string; qty: string }) => ({
+                  id: 0,
+                  name: item.name,
+                  quantity: item.qty,
+                  quantityType: "kg",
+                  price: 0,
+                }));
 
-            const restoredAdditionalItems = (
-              route.params?.rawAdditionalItems || []
-            ).map((item: any) => ({
-              productId: item.id,
-              mpItemId: item.id,
-              id: item.id,
-              name: item.name,
-              quantity: item.quantity.toString(),
-              quantityType: item.unit?.toLowerCase() === "kg" ? "kg" : "g",
-              pricePerKg: item.pricePerKg,
-              discountedPricePerKg: item.discountedPricePerKg,
-              price: item.totalAmount,
-              discount: item.discount,
-              changeby: item.changeby || "1",
-              startValue: item.startValue || "1",
-              unitType: item.unit?.toLowerCase() || "kg",
-            }));
+                const restoredAdditionalItems = (
+                  route.params?.rawAdditionalItems || []
+                ).map((item: any) => ({
+                  productId: item.id,
+                  mpItemId: item.id,
+                  id: item.id,
+                  name: item.name,
+                  quantity: item.quantity.toString(),
+                  quantityType: item.unit?.toLowerCase() === "kg" ? "kg" : "g",
+                  pricePerKg: item.pricePerKg,
+                  discountedPricePerKg: item.discountedPricePerKg,
+                  price: item.totalAmount,
+                  discount: item.discount,
+                  changeby: item.changeby || "1",
+                  startValue: item.startValue || "1",
+                  unitType: item.unit?.toLowerCase() || "kg",
+                }));
 
-            navigation.navigate("OrderScreen" as any, {
-              id: customerId || customerid,
-              customerId,
-              title,
-              name,
-              number,
-              customerscreencustomerid: customerscreencustomerid,
-              isPackage: "1",
-              orderItems: orderItems,
-              packageId: route.params?.packageId || currentOrderItem.packageId,
-              packageItems: restoredPackageItems,
-              additionalItems: restoredAdditionalItems,
-              subtotal,
-              discount,
-              total,
-              fullTotal,
-              selectedDate,
-              selectedTimeSlot,
-              isEdit: true,
-              orderData: route.params?.orderData,
-            });
-          } else {
-            navigation.navigate("CratScreen" as any, {
-              id: customerId || customerid,
-              customerId: customerId || customerid,
-              title,
-              name,
-              items: items,
-              number,
-              customerscreencustomerid,
-              selectedProducts: items.map((item) => ({
-                id: item.id,
-                name: item.name || `Item ${item.id}`,
-                price: item.price,
-                normalPrice:
-                  item.normalPrice || item.price + (item.discount || 0),
-                discountedPrice: item.discountedPrice || item.price,
-                discount: item.discount || 0,
-                quantity: (item as any).qty ?? item.quantity ?? 0,
-                selected: false,
-                unitType: item.unitType || "kg",
-                startValue: item.startValue || 0.5,
-                changeby:
-                  item.unitType === "g"
-                    ? Number((item as any).qty ?? item.quantity ?? 0) * 1000
-                    : ((item as any).qty ?? item.quantity ?? 0),
-              })),
-              subtotal,
-              discount,
-              total,
-              fullTotal,
-              selectedDate,
-              selectedTimeSlot,
-              fromOrderSummary: true,
-            });
-          }
-          return true;
-        }}
-      />
-      <View className="flex-1 bg-white">
-        <View className="px-6 py-3">
-          {/* Delivery Type Dropdown */}
-          <Text className="text-[#000000] mb-2">Delivery Type</Text>
-          <TouchableOpacity
-            className="flex-row items-center px-4 py-3 bg-gray-100 rounded-full"
-            activeOpacity={0.7}
-          >
-            <Text className="text-gray-700 font-semibold">One Time</Text>
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView
-          className="px-6 mt-[-5]"
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Schedule Date section */}
-          <Text className="text-[#000000] mt-4 mb-2">Schedule Date</Text>
-          <TouchableOpacity
-            onPress={handleScheduleDateSelection}
-            className="flex-row items-center bg-[#F6F6F6] p-3 rounded-full"
-          >
-            <Text className="flex-1 text-[#7F7F7F]">
-              {selectedDate || "Select Date"}
-            </Text>
-            <FontAwesome name="calendar" size={20} color="#6839CF" />
-          </TouchableOpacity>
-
-          <Text className="text-[#000000] mt-4 mb-2">Schedule Time Slot</Text>
-
-          <TouchableOpacity
-            onPress={() => setShowTimeSlotModal(true)}
-            className="flex-row items-center bg-[#F6F6F6] p-3 rounded-full"
-          >
-            <Text className="flex-1 text-[#7F7F7F]">
-              {selectedTimeSlot || "Select Time Slot"}
-            </Text>
-            <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
-          </TouchableOpacity>
-        </ScrollView>
-
-        {/* Date Picker */}
-        {showDatePicker && Platform.OS === "android" && (
-          <DateTimePicker
-            value={date}
-            mode="date"
-            display="default"
-            onChange={handleDateChange}
-            minimumDate={minimumDate}
+                navigation.navigate("OrderScreen" as any, {
+                  id: customerId || customerid,
+                  customerId,
+                  title,
+                  name,
+                  number,
+                  customerscreencustomerid: customerscreencustomerid,
+                  isPackage: "1",
+                  orderItems: orderItems,
+                  packageId: route.params?.packageId || currentOrderItem.packageId,
+                  packageItems: restoredPackageItems,
+                  additionalItems: restoredAdditionalItems,
+                  subtotal,
+                  discount,
+                  total,
+                  fullTotal,
+                  selectedDate,
+                  selectedTimeSlot,
+                  isEdit: true,
+                  orderData: route.params?.orderData,
+                });
+              } else {
+                navigation.navigate("CratScreen" as any, {
+                  id: customerId || customerid,
+                  customerId: customerId || customerid,
+                  title,
+                  name,
+                  items: items,
+                  number,
+                  customerscreencustomerid,
+                  selectedProducts: items.map((item) => ({
+                    id: item.id,
+                    name: item.name || `Item ${item.id}`,
+                    price: item.price,
+                    normalPrice:
+                      item.normalPrice || item.price + (item.discount || 0),
+                    discountedPrice: item.discountedPrice || item.price,
+                    discount: item.discount || 0,
+                    quantity: (item as any).qty ?? item.quantity ?? 0,
+                    selected: false,
+                    unitType: item.unitType || "kg",
+                    startValue: item.startValue || 0.5,
+                    changeby:
+                      item.unitType === "g"
+                        ? Number((item as any).qty ?? item.quantity ?? 0) * 1000
+                        : ((item as any).qty ?? item.quantity ?? 0),
+                  })),
+                  subtotal,
+                  discount,
+                  total,
+                  fullTotal,
+                  selectedDate,
+                  selectedTimeSlot,
+                  fromOrderSummary: true,
+                });
+              }
+              return true;
+            }}
           />
-        )}
+          <View className="flex-1 bg-white items-center">
+            <View className="flex-1 w-full max-w-[500px]">
+              <View className="px-6 py-3">
+                {/* Delivery Type Dropdown */}
+                <Text className="text-[#000000] mb-2">Delivery Type</Text>
+                <TouchableOpacity
+                  className="flex-row items-center px-4 py-3 bg-gray-100 rounded-full"
+                  activeOpacity={0.7}
+                >
+                  <Text className="text-gray-700 font-semibold">One Time</Text>
+                </TouchableOpacity>
+              </View>
 
-        {Platform.OS === "ios" && showDatePicker && (
-          <Modal
-            visible={showDatePicker}
-            transparent={true}
-            animationType="slide"
-          >
-            <View className="flex-1 justify-end bg-black/50">
-              <View className="bg-white p-4 rounded-t-2xl">
-                <View className="flex-row justify-between items-center mb-4">
-                  <Text className="text-lg font-bold text-[#6C3CD1]">
-                    Select Date
+              <ScrollView
+                className="px-6 mt-[-5]"
+                keyboardShouldPersistTaps="handled"
+              >
+                {/* Schedule Date section */}
+                <Text className="text-[#000000] mt-4 mb-2">Schedule Date</Text>
+                <TouchableOpacity
+                  onPress={handleScheduleDateSelection}
+                  className="flex-row items-center bg-[#F6F6F6] p-3 rounded-full"
+                >
+                  <Text className="flex-1 text-[#7F7F7F]">
+                    {selectedDate || "Select Date"}
                   </Text>
-                  <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                    <Feather name="x" size={24} color="#6C3CD1" />
-                  </TouchableOpacity>
-                </View>
+                  <FontAwesome name="calendar" size={20} color="#6839CF" />
+                </TouchableOpacity>
 
+                <Text className="text-[#000000] mt-4 mb-2">Schedule Time Slot</Text>
+
+                <TouchableOpacity
+                  onPress={() => setShowTimeSlotModal(true)}
+                  className="flex-row items-center bg-[#F6F6F6] p-3 rounded-full"
+                >
+                  <Text className="flex-1 text-[#7F7F7F]">
+                    {selectedTimeSlot || "Select Time Slot"}
+                  </Text>
+                  <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
+                </TouchableOpacity>
+              </ScrollView>
+
+              {/* Date Picker */}
+              {showDatePicker && Platform.OS === "android" && (
                 <DateTimePicker
                   value={date}
                   mode="date"
-                  display="inline"
-                  style={{ width: 320, height: 260 }}
-                  minimumDate={minimumDate}
+                  display="default"
                   onChange={handleDateChange}
+                  minimumDate={minimumDate}
                 />
+              )}
+
+              {Platform.OS === "ios" && showDatePicker && (
+                <Modal
+                  visible={showDatePicker}
+                  transparent={true}
+                  animationType="slide"
+                >
+                  <View className="flex-1 justify-end bg-black/50">
+                    <View className="bg-white p-4 rounded-t-2xl">
+                      <View className="flex-row justify-between items-center mb-4">
+                        <Text className="text-lg font-bold text-[#6C3CD1]">
+                          Select Date
+                        </Text>
+                        <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                          <Feather name="x" size={24} color="#6C3CD1" />
+                        </TouchableOpacity>
+                      </View>
+
+                      <DateTimePicker
+                        value={date}
+                        mode="date"
+                        display="inline"
+                        style={{ width: 320, height: 260 }}
+                        minimumDate={minimumDate}
+                        onChange={handleDateChange}
+                      />
+
+                      <View className="flex-row justify-between mt-2">
+                        <TouchableOpacity
+                          onPress={() => setShowDatePicker(false)}
+                          className="px-4 py-2"
+                        >
+                          <Text className="text-[#6C3CD1] font-semibold">Cancel</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          onPress={handleIOSDateConfirm}
+                          className="px-4 py-2"
+                        >
+                          <Text className="text-[#6C3CD1] font-semibold">
+                            Confirm
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </View>
+                </Modal>
+              )}
+
+            </View>
+
+            <GlobalSearchModal
+              visible={showTimeSlotModal}
+              onClose={() => setShowTimeSlotModal(false)}
+              title="Select Time Slot"
+              data={timeSlots}
+              selectedItems={selectedTimeSlot ? [selectedTimeSlot] : []}
+              onSelect={handleTimeSlotSelection}
+              searchPlaceholder="Search time slot..."
+              doneButtonText="Done"
+              noResultsText="No time slots found"
+              multiSelect={false}
+              searchKeys={["label"]}
+              showSearch={false}
+            />
+
+            <View
+              className="bg-white flex-row justify-between items-center py-4 px-6 rounded-t-3xl shadow-lg"
+              style={{
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: -4 },
+                shadowOpacity: 0.2,
+                shadowRadius: 8,
+                elevation: 10,
+                marginTop: -10,
+              }}
+            >
+              <View className="flex-1">
+                <View className="flex-row justify-between max-w-[500px]">
+                  <Text className="text-[#5C5C5C]">
+                    Delivery Fee :{" "}
+                    <Text className="font-semibold text-[#5C5C5C]">
+                      + Rs. {deliveryFee.toFixed(2)}
+                    </Text>
+                  </Text>
+                </View>
 
                 <View className="flex-row justify-between mt-2">
-                  <TouchableOpacity
-                    onPress={() => setShowDatePicker(false)}
-                    className="px-4 py-2"
-                  >
-                    <Text className="text-[#6C3CD1] font-semibold">Cancel</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    onPress={handleIOSDateConfirm}
-                    className="px-4 py-2"
-                  >
-                    <Text className="text-[#6C3CD1] font-semibold">
-                      Confirm
+                  <Text className="font-semibold text-base">
+                    Full Total :{" "}
+                    <Text className="font-bold text-base">
+                      Rs.{" "}
+                      {fullTotal.toLocaleString("en-IN", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
                     </Text>
+                  </Text>
+                </View>
+              </View>
+
+              <View className="py-4 items-center">
+                <View
+                  style={{
+                    width: "100%",
+                    borderRadius: 30,
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 8,
+                    elevation: 10,
+                  }}
+                >
+                  <TouchableOpacity
+                    onPress={handleProceed}
+                    activeOpacity={0.8}
+                    style={{ borderRadius: 30 }}
+                  >
+                    <LinearGradient
+                      colors={["#854BDA", "#6E3DD1"]}
+                      style={{
+                        paddingVertical: 12,
+                        paddingHorizontal: 24,
+                        borderRadius: 30,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Text
+                        style={{ color: "white", fontWeight: "600", marginRight: 8 }}
+                      >
+                        Proceed
+                      </Text>
+                      <Feather name="check" size={20} color="white" />
+                    </LinearGradient>
                   </TouchableOpacity>
                 </View>
               </View>
             </View>
-          </Modal>
-        )}
 
-        <GlobalSearchModal
-          visible={showTimeSlotModal}
-          onClose={() => setShowTimeSlotModal(false)}
-          title="Select Time Slot"
-          data={timeSlots}
-          selectedItems={selectedTimeSlot ? [selectedTimeSlot] : []}
-          onSelect={handleTimeSlotSelection}
-          searchPlaceholder="Search time slot..."
-          doneButtonText="Done"
-          noResultsText="No time slots found"
-          multiSelect={false}
-          searchKeys={["label"]}
-          showSearch={false}
-        />
-
-        <View
-          className="bg-white flex-row justify-between items-center py-4 px-6 rounded-t-3xl shadow-lg"
-          style={{
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: -4 },
-            shadowOpacity: 0.2,
-            shadowRadius: 8,
-            elevation: 10,
-            marginTop: -10,
-          }}
-        >
-          <View className="flex-1">
-            <View className="flex-row justify-between">
-              <Text className="text-[#5C5C5C]">
-                Delivery Fee :{" "}
-                <Text className="font-semibold text-[#5C5C5C]">
-                  + Rs. {deliveryFee.toFixed(2)}
-                </Text>
-              </Text>
-            </View>
-
-            <View className="flex-row justify-between mt-2">
-              <Text className="font-semibold text-base">
-                Full Total :{" "}
-                <Text className="font-bold text-base">
-                  Rs.{" "}
-                  {fullTotal.toLocaleString("en-IN", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </Text>
-              </Text>
-            </View>
-          </View>
-
-          <View
-            style={{
-              borderRadius: 30,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 6 },
-              shadowOpacity: 0.25,
-              shadowRadius: 8,
-              elevation: 10,
-            }}
-          >
-            <TouchableOpacity
-              onPress={handleProceed}
-              activeOpacity={0.8}
-              style={{ borderRadius: 30 }}
-            >
-              <LinearGradient
-                colors={["#854BDA", "#6E3DD1"]}
-                style={{
-                  paddingVertical: 12,
-                  paddingHorizontal: 24,
-                  borderRadius: 30,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Text
-                  style={{ color: "white", fontWeight: "600", marginRight: 8 }}
-                >
-                  Proceed
-                </Text>
-                <Feather name="check" size={20} color="white" />
-              </LinearGradient>
-            </TouchableOpacity>
           </View>
         </View>
       </View>

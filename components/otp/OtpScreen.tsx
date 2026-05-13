@@ -17,10 +17,6 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-import {
-  widthPercentageToDP as wp,
-  heightPercentageToDP as hp,
-} from "react-native-responsive-screen";
 import axios from "axios";
 import environment from "@/environment/environment";
 import { useRoute } from "@react-navigation/native";
@@ -281,8 +277,8 @@ const OtpScreen: React.FC = () => {
           navigation={navigation}
           onBackPress={() => navigation.goBack()}
         />
-        <View className="flex-1 bg-white ">
-          <View className="flex-1 mt-[5%] ">
+        <View className="flex-1 bg-white items-center">
+          <View className="flex-1 mt-[5%] w-full max-w-[500px]">
             {/* Illustration - Centered */}
             <View className="items-center justify-center mb-6   ">
               <Image
@@ -310,11 +306,10 @@ const OtpScreen: React.FC = () => {
                   ref={(el: TextInput | null) => {
                     inputRefs.current[index] = el;
                   }}
-                  className={`w-12 h-12 rounded-lg border-2 ${
-                    digit
-                      ? "bg-[#874DDB] border-[#874DDB]"
-                      : "bg-[#E7D7FF] border-[#E7D7FF]"
-                  }`}
+                  className={`w-12 h-12 rounded-lg border-2 ${digit
+                    ? "bg-[#874DDB] border-[#874DDB]"
+                    : "bg-[#E7D7FF] border-[#E7D7FF]"
+                    }`}
                   style={{
                     textAlign: "center",
                     textAlignVertical: "center",
@@ -369,7 +364,7 @@ const OtpScreen: React.FC = () => {
                   disabled={!isOtpComplete || loading || timer <= 0}
                   activeOpacity={0.7}
                   style={{
-                    width: "60%",
+                    width: "50%",
                     borderRadius: 30,
                     backgroundColor: "transparent",
                     shadowColor: "#000",
@@ -387,11 +382,10 @@ const OtpScreen: React.FC = () => {
                     }
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
-                    className={`h-[50px] items-center justify-center rounded-full ${
-                      !isOtpComplete || loading || timer <= 0
-                        ? "opacity-50"
-                        : ""
-                    }`}
+                    className={`h-[50px] items-center justify-center rounded-full ${!isOtpComplete || loading || timer <= 0
+                      ? "opacity-50"
+                      : ""
+                      }`}
                     style={{
                       shadowColor: "#000",
                       shadowOffset: {

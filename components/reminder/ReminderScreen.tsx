@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Image,
   Modal,
+  Dimensions,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import {
@@ -63,6 +64,8 @@ interface Notification {
   orderid: number;
   status: string;
 }
+
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -242,6 +245,26 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
 
   return (
     <View className="flex-1 bg-white">
+      <LinearGradient
+        colors={["#854BDA", "#6E3DD1"]}
+        style={{
+          height: 80,
+          width: "100%",
+          justifyContent: "center",
+          alignItems: "center",
+          paddingTop: 10,
+        }}
+      >
+        <View className="w-full max-w-[500px] items-center">
+          <Text
+            className="text-white font-bold"
+            style={{ fontSize: SCREEN_HEIGHT > 900 ? 20 : 18 }}
+          >
+            {unreadCount} Unread Notifications
+          </Text>
+        </View>
+      </LinearGradient>
+
       {isLoading ? (
         <ReminderScreenSkeleton />
       ) : error ? (
@@ -255,24 +278,8 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       ) : (
-        <>
-          <LinearGradient
-            colors={["#854BDA", "#6E3DD1"]}
-            style={{
-              height: hp(8),
-              width: wp(100),
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <Text
-              style={{ fontSize: wp(4.5), color: "white", fontWeight: "bold" }}
-            >
-              {unreadCount} Unread Notifications
-            </Text>
-          </LinearGradient>
-
-          <View style={{ flex: 1, paddingVertical: hp(2) }}>
+        <View className="flex-1 mx-auto w-full max-w-[500px] px-6">
+          <View style={{ flex: 1, paddingVertical: 16 }}>
             {isEmpty ? (
               <View className="flex-1 justify-center items-center mb-10">
                 <Image
@@ -309,13 +316,22 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
                           style={{ width: 45, height: 45 }}
                         />
                         <View className="flex-1 ml-5">
-                          <Text className="text-gray-800 font-bold">
+                          <Text
+                            className="text-gray-800 font-bold"
+                            style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 16 }}
+                          >
                             {item.title}
                           </Text>
-                          <Text className="text-gray-600">
+                          <Text
+                            className="text-gray-600"
+                            style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                          >
                             Order No: #{item.invNo}
                           </Text>
-                          <Text className="text-gray-600">
+                          <Text
+                            className="text-gray-600"
+                            style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                          >
                             Customer ID: {item.customerId}
                           </Text>
                         </View>
@@ -351,7 +367,7 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
               />
 
               <View
-                className="bg-white rounded-t-3xl"
+                className="bg-white rounded-t-3xl mx-auto w-full"
                 style={{
                   position: "absolute",
                   bottom: 0,
@@ -380,7 +396,7 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
               </View>
             </View>
           </Modal>
-        </>
+        </View>
       )}
     </View>
   );

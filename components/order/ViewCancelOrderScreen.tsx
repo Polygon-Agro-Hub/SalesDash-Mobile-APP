@@ -927,7 +927,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
         onRequestClose={() => setCancelModalVisible(false)}
       >
         <View className="flex-1 justify-center items-center bg-black/50">
-          <View className="bg-white rounded-lg p-5 w-5/6 max-w-md">
+          <View className="bg-white rounded-lg p-5 w-5/6 max-w-[500px]">
             <Text className="text-xl font-bold text-center mb-2">
               Are you sure?
             </Text>
@@ -1009,7 +1009,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
         onRequestClose={handleCloseReportModal}
       >
         <View className="flex-1 justify-center items-center bg-black/50">
-          <View className="bg-white rounded-lg p-5 w-5/6 max-w-md">
+          <View className="bg-white rounded-lg p-5 w-5/6 max-w-[500px]">
             <View className="mb-4">
               {["Confirmed", "Not-Confirmed", "Not-Answered"].map(
                 (option, index) => (
