@@ -1185,7 +1185,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                 style={{ overflow: "hidden" }}
               >
                 <View
-                  className="w-14 flex-row justify-center items-center"
+                  className="w-20 flex-row justify-center items-center"
                   style={{ minHeight: 20 }}
                 >
                   {loading ? (

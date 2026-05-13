@@ -367,7 +367,7 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
               />
 
               <View
-                className="bg-white rounded-t-3xl mx-auto w-full max-w-[500px]"
+                className="bg-white rounded-t-3xl mx-auto w-full"
                 style={{
                   position: "absolute",
                   bottom: 0,
