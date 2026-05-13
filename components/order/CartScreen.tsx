@@ -72,7 +72,6 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Utility function for consistent rounding to 2 decimal places
   const roundToTwoDecimals = (value: number): number => {
     return Math.round((value + Number.EPSILON) * 100) / 100;
   };
@@ -235,7 +234,6 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     setIsSelectionMode(false);
   };
 
-  // Updated calculation functions with proper rounding
   const calculateItemTotal = (item: CartItem) => {
     let total;
     if (item.unitType === "kg") {
@@ -304,7 +302,6 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     );
   };
 
-  // Calculate totals with proper rounding
   const currentSubtotal = cartItems.reduce((total, item) => {
     return roundToTwoDecimals(total + calculateItemNormalTotal(item));
   }, 0);
@@ -347,7 +344,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
           price: roundToTwoDecimals(item.discountedPrice * weightInKg),
           discount: roundToTwoDecimals(item.discount * weightInKg),
           qty: weightInKg,
-          unitType: "kg",
+          unitType: item.unitType,
           isPackage: isPackage,
         };
       });
@@ -399,14 +396,12 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     return item.changeby.toFixed(2);
   };
 
-  // Format price with commas and 2 decimal places
   const formatPrice = (price: number) => {
     return price.toLocaleString("en-IN", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
   };
-  console.log("discount", discount);
 
   if (isLoading) {
     return <LoadingPage message="Loading Your Cart..." fullScreen={true} />;

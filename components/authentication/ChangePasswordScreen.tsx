@@ -8,6 +8,7 @@ import {
   Alert,
   BackHandler,
   Keyboard,
+  Dimensions,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -40,6 +41,8 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [passwordUpdate, setPasswordUpdate] = useState<number | null>(null);
+  const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+  const HALF = SCREEN_HEIGHT / 2;
 
   const validatePassword = () => {
     if (!currentPassword || !newPassword || !confirmNewPassword) {
@@ -140,7 +143,6 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
         ]);
       }
     } catch (error) {
-      // Check for password mismatch error specifically
       if (axios.isAxiosError(error) && error.response?.data?.error) {
         const errorMsg = error.response.data.error;
         if (
@@ -167,7 +169,6 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
     }
   };
 
-  // Conditional back button behavior based on passwordUpdate status
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
@@ -185,6 +186,11 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
     }, [passwordUpdate]),
   );
 
+  const blockSpaces = (text: string, setter: (val: string) => void) => {
+    if (text.includes(" ")) return;
+    setter(text);
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: "#6E3DD1" }}>
       <KeyboardAwareScrollView
@@ -194,48 +200,79 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
         keyboardShouldPersistTaps="handled"
         style={{ backgroundColor: "#6E3DD1" }}
       >
-        {passwordUpdate === 1 && (
-          <CustomHeader
-            title=""
-            showBackButton={true}
-            navigation={navigation}
-            transparent
-          />
-        )}
-        <View className="h-56 flex-1">
+        {/* TOP HALF — Image Section exactly 50% */}
+        <View style={{ height: HALF }}>
+          {passwordUpdate === 1 && (
+            <CustomHeader
+              title=""
+              showBackButton={true}
+              navigation={navigation}
+              transparent
+            />
+          )}
           <ImageBackground
             source={require("@/assets/images/auth/update-password.webp")}
-            className="flex-1 items-center justify-center h-full"
+            style={{ flex: 1 }}
             resizeMode="cover"
           />
         </View>
 
-        {/* Form Section */}
-        <View className="flex-1 ">
+        {/* BOTTOM HALF — Form Section exactly 50% */}
+        <View style={{ minHeight: HALF }}>
           <LinearGradient
             colors={["#854BDA", "#6E3DD1"]}
-            className="flex-1 rounded-t-3xl px-7 pt-10 pb-8 -mt-4"
+            style={{
+              flex: 1,
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              paddingHorizontal: 28,
+              paddingTop: 40,
+              paddingBottom: 32,
+              marginTop: -16,
+            }}
           >
-            <Text className="text-white text-2xl font-bold text-center mb-2">
+            <Text
+              style={{
+                color: "#ffffff",
+                fontSize: 22,
+                fontWeight: "bold",
+                textAlign: "center",
+                marginBottom: 8,
+              }}
+            >
               Change Your Password
             </Text>
 
-            {/* Password Requirements Note */}
-            <Text className="text-white/80 text-xs text-center mb-4">
+            <Text
+              style={{
+                color: "rgba(255,255,255,0.8)",
+                fontSize: 12,
+                textAlign: "center",
+                marginBottom: 16,
+              }}
+            >
               Password must be at least 6 characters
             </Text>
 
             {/* Current Password */}
-            <View className="bg-[#FFFFFF66] rounded-full flex-row items-center px-4 mb-4 py-1">
+            <View
+              style={{
+                backgroundColor: "rgba(255,255,255,0.4)",
+                borderRadius: 999,
+                flexDirection: "row",
+                alignItems: "center",
+                paddingHorizontal: 16,
+                marginBottom: 16,
+                paddingVertical: 4,
+              }}
+            >
               <TextInput
                 placeholder="Current Password"
                 placeholderTextColor="#FFFFFF"
-                className="flex-1 text-white py-3"
+                style={{ flex: 1, color: "#ffffff", paddingVertical: 12 }}
                 secureTextEntry={!showCurrentPassword}
                 value={currentPassword}
-                onChangeText={(text) => {
-                  setCurrentPassword(text);
-                }}
+                onChangeText={(text) => blockSpaces(text, setCurrentPassword)}
               />
               <TouchableOpacity
                 onPress={() => setShowCurrentPassword(!showCurrentPassword)}
@@ -249,16 +286,24 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
             </View>
 
             {/* New Password */}
-            <View className="bg-[#FFFFFF66] rounded-full flex-row items-center px-4 mb-4 py-1">
+            <View
+              style={{
+                backgroundColor: "rgba(255,255,255,0.4)",
+                borderRadius: 999,
+                flexDirection: "row",
+                alignItems: "center",
+                paddingHorizontal: 16,
+                marginBottom: 16,
+                paddingVertical: 4,
+              }}
+            >
               <TextInput
                 placeholder="New Password"
                 placeholderTextColor="#FFFFFF"
-                className="flex-1 text-white py-3"
+                style={{ flex: 1, color: "#ffffff", paddingVertical: 12 }}
                 secureTextEntry={!showNewPassword}
                 value={newPassword}
-                onChangeText={(text) => {
-                  setNewPassword(text);
-                }}
+                onChangeText={(text) => blockSpaces(text, setNewPassword)}
               />
               <TouchableOpacity
                 onPress={() => setShowNewPassword(!showNewPassword)}
@@ -272,16 +317,26 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
             </View>
 
             {/* Confirm New Password */}
-            <View className="bg-[#FFFFFF66] rounded-full flex-row items-center px-4 mb-4 py-1">
+            <View
+              style={{
+                backgroundColor: "rgba(255,255,255,0.4)",
+                borderRadius: 999,
+                flexDirection: "row",
+                alignItems: "center",
+                paddingHorizontal: 16,
+                marginBottom: 16,
+                paddingVertical: 4,
+              }}
+            >
               <TextInput
                 placeholder="Confirm New Password"
                 placeholderTextColor="#FFFFFF"
-                className="flex-1 text-white py-3"
+                style={{ flex: 1, color: "#ffffff", paddingVertical: 12 }}
                 secureTextEntry={!showConfirmPassword}
                 value={confirmNewPassword}
-                onChangeText={(text) => {
-                  setConfirmNewPassword(text);
-                }}
+                onChangeText={(text) =>
+                  blockSpaces(text, setConfirmNewPassword)
+                }
               />
               <TouchableOpacity
                 onPress={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -295,12 +350,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
             </View>
 
             {/* Update Button */}
-            <View
-              style={{
-                alignItems: "center",
-                marginBottom: 10,
-              }}
-            >
+            <View style={{ alignItems: "center", marginBottom: 10 }}>
               <View
                 style={{
                   backgroundColor: "#ffffff",

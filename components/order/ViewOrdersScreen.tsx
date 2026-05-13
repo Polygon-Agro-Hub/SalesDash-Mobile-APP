@@ -365,7 +365,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
             </LinearGradient>
 
             {/* Search Bar */}
-            <View className="flex-row items-center bg-[#F5F1FC] px-4 border border-[#6B3BCF] rounded-full mt-4 shadow-sm mx-6">
+            <View className="flex-row items-center bg-[#F5F1FC] px-4 h-[50px] border border-[#6B3BCF] rounded-full mt-[-7%] shadow-sm mx-6">
               <TextInput
                 placeholder="Search By Order Number"
                 placeholderTextColor="#6839CF"
@@ -438,7 +438,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                       resizeMode: "contain",
                     }}
                   />
-                  <Text className="text-black text-i text-center mt-4">
+                  <Text className="text-black italic text-center mt-4">
                     No orders found
                   </Text>
                 </View>

@@ -709,7 +709,6 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       fullTotal: fullTotal,
       selectedDate: selectedDate,
       selectedTimeSlot: selectedTimeSlot,
-
       customerId: customerId,
       isPackage: isPackage,
       packageId: packageId,
@@ -722,6 +721,9 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       customerscreencustomerid: customerscreencustomerid,
       sheduleDate: selectedDate,
       sheduleTime: scheduleTime,
+
+      rawPackageItems: route.params?.rawPackageItems,
+      rawAdditionalItems: route.params?.rawAdditionalItems,
       ...(orderData && { orderData: orderData }),
     };
 

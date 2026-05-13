@@ -184,7 +184,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
       />
       <Text
         style={{ fontSize: 18 }}
-        className=" text-center text-black text-xl mt-12"
+        className=" text-center text-black text-xl mt-14"
       >
         {customerName.firstName && customerName.lastName
           ? `Customer ID : ${customerName.cusId}`
@@ -207,7 +207,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
               flex: 1,
               justifyContent: "center",
               alignItems: "center",
-              paddingTop: hp("30%"),
+              paddingTop: hp("10%"),
               paddingBottom: hp("20%"),
             }}
           >
@@ -217,7 +217,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
               autoPlay
               loop
             />
-            <Text className="text-center text-lg text-gray-500 mt-4">
+            <Text className="text-black italic text-center">
               No items to exclude
             </Text>
           </View>

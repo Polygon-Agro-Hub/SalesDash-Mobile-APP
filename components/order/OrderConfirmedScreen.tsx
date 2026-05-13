@@ -290,7 +290,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
     if (order && order.userId) {
       fetchCustomerDataAndDeliveryFee();
     }
-  }, [order]); // Dependency on order object
+  }, [order]);
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -361,7 +361,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
   };
 
   const handleDownloadAndShareInvoice = async () => {
-    if (isDownloading) return; // Prevent multiple clicks
+    if (isDownloading) return;
 
     try {
       setIsDownloading(true);
@@ -370,7 +370,6 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
       const invoiceNumber =
         order?.orderStatus?.invoiceNumber || `INV-${Date.now()}`;
 
-      // Calculate totals from API data
       const packagePrice = parseFloat(order?.packageInfo?.productPrice || "0");
       const packingFee = parseFloat(order?.packageInfo?.packingFee || "0");
       const serviceFee = parseFloat(order?.packageInfo?.serviceFee || "0");
@@ -382,13 +381,12 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         order?.additionalItems?.reduce((sum, item) => {
           const price = parseFloat(item.price?.toString() || "0");
           const discount = parseFloat(item.discount?.toString() || "0");
-          const actualAmount = price + discount; // Use actual amount (price + discount)
+          const actualAmount = price + discount;
           return sum + actualAmount;
         }, 0) || 0;
 
       const totaldiscount =
         order?.additionalItems?.reduce((sum, item) => {
-          // Convert discount to string before parsing if it's a number
           const discount =
             typeof item.discount === "number"
               ? item.discount.toString()
@@ -417,20 +415,21 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
           const discount = parseFloat(item.discount?.toString() || "0");
           const quantity = parseFloat(item.qty?.toString() || "0");
 
-          // Calculate the actual amount (price + discount)
-          const actualAmount = price + discount; // 510 + 90 = 600
+          const actualAmount = price + discount;
 
-          // Calculate unit price (actual amount / quantity)
           const unitPrice = parseFloat(
             item.marketplacetablenormalPrice?.toString() || "0",
           );
+
+          const displayQuantity =
+            item.unit === "g" ? quantity / 1000 : quantity;
 
           additionalItemsRows += `
   <tr>
     <td style="text-align: center">${index + 1}</td>
     <td class="tabledata">${item.displayName || item.name || "Item"}</td>
     <td class="tabledata">${unitPrice.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</td>
-    <td class="tabledata">${quantity} </td>
+    <td class="tabledata">${displayQuantity % 1 === 0 ? displayQuantity : displayQuantity.toFixed(3).replace(/\.?0+$/, "")} </td>
     <td class="tabledata">${actualAmount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</td>
   </tr>`;
         });
@@ -585,14 +584,18 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
       ${
         order?.customerInfo?.buildingType === "Apartment"
           ? `
-        <p class="bold">Apartment Address :</p>
-        <p class="headerp"><span class="label">House No:</span> <span class="value">${customerData?.buildingDetails?.houseNo || ""}</span></p>
-        <p class="headerp"><span class="label">Floor No:</span> <span class="value">${customerData?.buildingDetails?.floorNo || ""}</span></p>
-        <p class="headerp"><span class="label">Building No:</span> <span class="value">${customerData?.buildingDetails?.buildingNo || ""}</span></p>
-        <p class="headerp"><span class="label">Building Name:</span> <span class="value">${customerData?.buildingDetails?.buildingName || ""}</span></p>
-        <p class="headerp"><span class="label">Unit No:</span> <span class="value">${customerData?.buildingDetails?.unitNo || ""}</span></p>
-        <p class="headerp"><span class="label">Street:</span> <span class="value">${customerData?.buildingDetails?.streetName || ""}</span></p>
-        <p class="headerp"><span class="label">City:</span> <span class="value">${customerData?.buildingDetails?.city || ""}</span></p>
+    <p class="bold">Apartment Address :</p>
+<p class="headerp">${[
+              customerData?.buildingDetails?.houseNo,
+              customerData?.buildingDetails?.floorNo,
+              customerData?.buildingDetails?.buildingNo,
+              customerData?.buildingDetails?.buildingName,
+              customerData?.buildingDetails?.unitNo,
+              customerData?.buildingDetails?.streetName,
+              customerData?.buildingDetails?.city,
+            ]
+              .filter(Boolean)
+              .join(", ")}</p>
         `
           : `
         <p class="bold">House Address :</p>

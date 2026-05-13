@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -47,12 +47,19 @@ const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
   const [filteredData, setFilteredData] = useState(data);
   const [selectedValues, setSelectedValues] = useState<string[]>(selectedItems);
 
-  // Initialize selected values
-  useEffect(() => {
-    setSelectedValues(selectedItems);
-  }, [selectedItems, visible]);
+  const prevVisibleRef = useRef(visible);
 
-  // Filter data based on search (only if search is shown)
+  useEffect(() => {
+    if (visible && !prevVisibleRef.current) {
+      setSelectedValues(selectedItems);
+      setSearchValue("");
+    }
+    prevVisibleRef.current = visible;
+  }, [visible]);
+
+  const dataKey = JSON.stringify(data);
+  const searchKeysKey = JSON.stringify(searchKeys);
+
   useEffect(() => {
     if (!showSearch || !searchValue.trim()) {
       setFilteredData(data);
@@ -60,17 +67,16 @@ const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
     }
 
     const searchTerm = searchValue.toLowerCase();
-    const filtered = data.filter((item) => {
-      return searchKeys.some((key) => {
+    const filtered = data.filter((item) =>
+      searchKeys.some((key) => {
         const value = item[key];
-        if (typeof value === "string") {
-          return value.toLowerCase().includes(searchTerm);
-        }
-        return false;
-      });
-    });
+        return (
+          typeof value === "string" && value.toLowerCase().includes(searchTerm)
+        );
+      }),
+    );
     setFilteredData(filtered);
-  }, [searchValue, data, searchKeys, showSearch]);
+  }, [searchValue, dataKey, searchKeysKey, showSearch]);
 
   const handleItemPress = (value: string) => {
     let newSelectedValues: string[];

@@ -98,6 +98,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
   const [buildingTypeModalVisible, setBuildingTypeModalVisible] =
     useState(false);
   const [cityModalVisible, setCityModalVisible] = useState(false);
+  const [cityModalKey, setCityModalKey] = useState(0);
 
   // Dropdown states - removed DropDownPicker states and kept only data states
   const [items, setItems] = useState([
@@ -1123,7 +1124,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                       setTitleModalVisible(true);
                       handleFieldTouch("title");
                     }}
-                    className={`bg-[#F6F6F6] border flex-row justify-between items-center ${
+                    className={`bg-[#F6F6F6] border flex-row h-[50px] justify-between items-center ${
                       titleError ? "border-red-500" : "border-[#F6F6F6]"
                     } rounded-full px-4 h-10`}
                   >
@@ -1151,7 +1152,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
               <View className="flex-[2] ml-2">
                 <RequiredField>First Name</RequiredField>
                 <TextInput
-                  className={`bg-[#F6F6F6] border rounded-full px-6 h-10 ${
+                  className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${
                     firstNameError ? "border-red-500" : "border-[#F6F6F6]"
                   }`}
                   placeholder="First Name"
@@ -1176,7 +1177,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
             <View className="mb-4">
               <RequiredField>Last Name</RequiredField>
               <TextInput
-                className={`bg-[#F6F6F6] border rounded-full px-6 h-10 ${
+                className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${
                   lastNameError ? "border-red-500" : "border-[#F6F6F6]"
                 }`}
                 placeholder="Last Name"
@@ -1200,7 +1201,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
             <View className="mb-4">
               <RequiredField>Mobile Number</RequiredField>
               <TextInput
-                className={`bg-[#F6F6F6] border rounded-full px-6 h-10 ${
+                className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${
                   phoneError ? "border-red-500" : "border-[#F6F6F6]"
                 }`}
                 placeholder="ex: +94771234567"
@@ -1227,7 +1228,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
             <View className="mb-4">
               <RequiredField>Email Address</RequiredField>
               <TextInput
-                className={`bg-[#F6F6F6] border rounded-full px-6 h-10 ${
+                className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${
                   emailError ? "border-red-500" : "border-[#F6F6F6]"
                 }`}
                 placeholder="Email Address "
@@ -1254,7 +1255,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                   setBuildingTypeModalVisible(true);
                   handleFieldTouch("buildingType");
                 }}
-                className={`bg-[#F6F6F6] border ${buildingTypeError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 flex-row items-center justify-between`}
+                className={`bg-[#F6F6F6] border h-[50px] ${buildingTypeError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 flex-row items-center justify-between`}
               >
                 <Text className={buildingType ? "text-black" : "text-gray-400"}>
                   {buildingType || "Select Building Type"}
@@ -1274,7 +1275,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                 <View className="mb-4">
                   <RequiredField>Building / House No</RequiredField>
                   <TextInput
-                    className={`bg-[#F6F6F6] border ${houseNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+                    className={`bg-[#F6F6F6] border h-[50px] ${houseNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
                     placeholder="Building / House No (e.g., 14/B)"
                     value={houseNo}
                     onChangeText={(text) => {
@@ -1300,7 +1301,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                 <View className="mb-4">
                   <RequiredField>Street Name</RequiredField>
                   <TextInput
-                    className={`bg-[#F6F6F6] border ${streetNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+                    className={`bg-[#F6F6F6] border h-[50px] ${streetNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
                     placeholder="Street Name"
                     value={streetName}
                     onChangeText={(text) => {
@@ -1328,9 +1329,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                   <TouchableOpacity
                     onPress={() => {
                       setCityModalVisible(true);
+                      setCityModalKey((prev) => prev + 1);
                       handleFieldTouch("city");
                     }}
-                    className={`bg-[#F6F6F6] border ${cityError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 flex-row items-center justify-between`}
+                    className={`bg-[#F6F6F6] border h-[50px] ${cityError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 flex-row items-center justify-between`}
                   >
                     <Text className={city ? "text-black" : "text-gray-400"}>
                       {city || "Select Nearest City"}
@@ -1355,7 +1357,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                 <View className="mb-4">
                   <RequiredField>Apartment / Building No</RequiredField>
                   <TextInput
-                    className={`bg-[#F6F6F6] border ${buildingNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+                    className={`bg-[#F6F6F6] border h-[50px] ${buildingNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
                     placeholder="Apartment / Building No"
                     value={buildingNo}
                     onChangeText={(text) => {
@@ -1381,7 +1383,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                 <View className="mb-4">
                   <RequiredField>Apartment / Building Name</RequiredField>
                   <TextInput
-                    className={`bg-[#F6F6F6] border ${buildingNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+                    className={`bg-[#F6F6F6] border h-[50px] ${buildingNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
                     placeholder="Apartment / Building Name"
                     value={buildingName}
                     onChangeText={(text) => {
@@ -1407,7 +1409,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                 <View className="mb-4">
                   <RequiredField>Flat / Unit Number</RequiredField>
                   <TextInput
-                    className={`bg-[#F6F6F6] border ${unitNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+                    className={`bg-[#F6F6F6] border h-[50px] ${unitNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
                     placeholder="ex: Building B"
                     value={unitNo}
                     onChangeText={(text) => {
@@ -1433,7 +1435,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                 <View className="mb-4">
                   <RequiredField>Floor Number</RequiredField>
                   <TextInput
-                    className={`bg-[#F6F6F6] border ${floorNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+                    className={`bg-[#F6F6F6] border h-[50px] ${floorNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
                     placeholder="ex: 3rd Floor"
                     value={floorNo}
                     onChangeText={(text) => {
@@ -1459,7 +1461,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                 <View className="mb-4">
                   <RequiredField>House No</RequiredField>
                   <TextInput
-                    className={`bg-[#F6F6F6] border ${houseNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+                    className={`bg-[#F6F6F6] border h-[50px] ${houseNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
                     placeholder="Building / House No (e.g., 14/B)"
                     value={houseNo}
                     onChangeText={(text) => {
@@ -1485,7 +1487,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                 <View className="mb-4">
                   <RequiredField>Street Name</RequiredField>
                   <TextInput
-                    className={`bg-[#F6F6F6] border ${streetNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+                    className={`bg-[#F6F6F6] border h-[50px] ${streetNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
                     placeholder="Street Name"
                     value={streetName}
                     onChangeText={(text) => {
@@ -1513,9 +1515,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                   <TouchableOpacity
                     onPress={() => {
                       setCityModalVisible(true);
+                      setCityModalKey((prev) => prev + 1);
                       handleFieldTouch("city");
                     }}
-                    className={`bg-[#F6F6F6] border ${cityError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 flex-row items-center justify-between`}
+                    className={`bg-[#F6F6F6] border h-[50px] ${cityError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 flex-row items-center justify-between`}
                   >
                     <Text className={city ? "text-black" : "text-gray-400"}>
                       {city || "Select Nearest City"}
@@ -1658,6 +1661,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
 
       {/* City Selection Modal */}
       <GlobalSearchModal
+        key={cityModalKey}
         visible={cityModalVisible}
         onClose={() => setCityModalVisible(false)}
         title="Select Nearest City"
@@ -1671,6 +1675,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
         }}
         searchPlaceholder="Search city..."
         multiSelect={false}
+        noResultsText="No City Found"
       />
     </KeyboardAvoidingView>
   );

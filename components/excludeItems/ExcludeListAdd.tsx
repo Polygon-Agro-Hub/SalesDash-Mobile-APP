@@ -392,12 +392,13 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
                 loop
               />
             </View>
-            <View className="justify-center items-center mt-[-50]">
-              <Text className="text-red-600 text-center text-base">
+            <View className="justify-center  mt-[-30%] items-center   ">
+             <Text className="text-black italic text-center mt-4">
                 {searchError}
               </Text>
             </View>
           </View>
+          
         )}
 
         <View className="flex-1">
@@ -411,7 +412,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
                 className="flex-row justify-between items-center my-1 px-6 mb-2"
               >
                 {/* Crop name and selection toggle */}
-                <View className="flex-row items-center space-x-4">
+                <View className="flex-row items-center gap-4">
                   <View
                     className={`w-6 h-6 rounded-full border-2 justify-center items-center ${
                       selectedCrops.includes(item.id)
