@@ -276,12 +276,14 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
           })
         }
       />
-      <ScrollView
-        className="bg-white flex-1"
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ flexGrow: 1 }}
-      >
-        <View className="flex-1 justify-center">
+      <View className="flex-1 bg-white items-center">
+        <View className="flex-1 w-full max-w-[500px]">
+          <ScrollView
+            className="bg-white flex-1"
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ flexGrow: 1 }}
+          >
+            <View className="flex-1 justify-center">
           <View className="flex items-center justify-center mb-20">
             <Image
               source={require("@/assets/images/order/payment.webp")}
@@ -293,11 +295,10 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
           <View className="w-full items-center space-y-5 px-12 mt-5">
             <TouchableOpacity
               onPress={() => setSelectedMethod("Cash")}
-              className={`w-full py-5 px-5 rounded-lg flex-row items-center justify-between border border-[#5D5D5D] ${
-                selectedMethod === "Cash"
+              className={`w-full py-5 px-5 rounded-lg flex-row items-center justify-between border border-[#5D5D5D] ${selectedMethod === "Cash"
                   ? "bg-[#6C3CD1] border-[#6C3CD1]"
                   : "bg-white border-[#5D5D5D]"
-              }`}
+                }`}
             >
               <Text
                 className={`text-lg ${selectedMethod === "Cash" ? "text-white font-bold" : "text-gray-700 font-medium"}`}
@@ -352,7 +353,9 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
             </View>
           </View>
         </View>
-      </ScrollView>
+          </ScrollView>
+        </View>
+      </View>
     </KeyboardAvoidingView>
   );
 };

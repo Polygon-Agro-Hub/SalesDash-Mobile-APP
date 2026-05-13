@@ -15,6 +15,7 @@ import {
   BackHandler,
   Alert,
   Image,
+  Dimensions,
 } from "react-native";
 import { RouteProp, useFocusEffect } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -57,6 +58,8 @@ interface Order {
   fullDiscount: string | null;
   reportStatus: string | null;
 }
+
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 interface OrdersResponse {
   success: boolean;
@@ -111,7 +114,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       loadOrders(1, true, false);
       getUserProfile();
 
-      return () => {};
+      return () => { };
     }, [id, customerId]),
   );
 
@@ -289,7 +292,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
     return `${year}/${month}/${day}`;
   };
 
-  const handleSearch = () => {};
+  const handleSearch = () => { };
 
   const filteredOrders = orders.filter((order) => {
     const matchesStatus =
@@ -378,7 +381,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       <View className="flex-1 bg-white">
         {/* Header Section */}
         <View className="mt-14">
-          <View className="bg-white flex-row rounded-b-[35px] items-center justify-between z-50 shadow-lg px-5">
+          <View className="bg-white flex-row rounded-b-[35px] items-center justify-between z-50 mt-4 px-5">
             <View className="flex-1 justify-center items-center gap-1">
               <Text
                 className="text-gray-500 text-base"
@@ -434,7 +437,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
 
           {/* Action Buttons */}
           <View className="bg-[#F1E8FF] rounded-b-[35px] pt-3 shadow-md mt-[-20] items-center z-5">
-            <View className="flex-row justify-between mb-4 gap-x-4">
+            <View className="flex-row justify-between mb-4 gap-x-4 mt-2">
               <TouchableOpacity
                 onPress={handleGetACall}
                 className="flex-row bg-[#6B3BCF] px-4 py-2 rounded-full items-center mt-5"
@@ -480,131 +483,131 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
             </View>
           </View>
         </View>
-
-        {/* Search and Filters */}
-        <View className="mx-6">
-          <View className="flex-row items-center bg-[#F5F1FC] px-4 border border-[#6B3BCF] rounded-full mt-4 shadow-sm">
-            <TextInput
-              placeholder="Search By Order Number"
-              placeholderTextColor="#6839CF"
-              className="flex-1 text-sm text-gray-700 h-11 py-0"
-              onChangeText={(text) => {
-                const numericOnly = text.replace(/[^0-9]/g, "");
-                setSearchText(numericOnly);
-              }}
-              value={searchText}
-              style={{ fontStyle: "italic" }}
-              keyboardType="numeric"
-            />
-            <TouchableOpacity onPress={handleSearch}>
-              <FontAwesome name="search" size={22} color="#884EDC" />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {!searchError && (
-          <View className="mt-4">
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              className="flex-row flex-wrap mt-[2%] mb-[1%] mx-5"
-              contentContainerStyle={{ paddingHorizontal: wp("1%") }}
-            >
-              {filters.map((filter) => (
-                <TouchableOpacity
-                  key={filter}
-                  className={`px-4 py-2 rounded-full border mr-2 ${
-                    selectedFilter === filter
-                      ? "bg-[#6B3BCF] border-[#6B3BCF]"
-                      : "border-[#6B3BCF]"
-                  }`}
-                  onPress={() => setSelectedFilter(filter)}
-                >
-                  <Text
-                    className={`text-center text-sm ${
-                      selectedFilter === filter
-                        ? "text-white font-bold"
-                        : "text-[#6B3BCF]"
-                    }`}
-                  >
-                    {filter}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        )}
-
-        <View className="flex-1 mt-3">
-          {/* Orders List */}
-          {loading ? (
-            <View className="flex-1 justify-center items-center">
-              <ActivityIndicator size="large" color="#6B3BCF" />
-              <Text className="text-[#6B3BCF] mt-2">Loading orders...</Text>
-            </View>
-          ) : error ? (
-            <View className="flex-1 justify-center items-center px-4">
-              <Text className="text-red-500 text-center">{error}</Text>
-              <TouchableOpacity
-                className="mt-4 bg-[#6B3BCF] px-4 py-2 rounded-full"
-                onPress={handleRefresh}
-              >
-                <Text className="text-white font-semibold">Retry</Text>
+        <View className="flex-1 mx-auto w-full max-w-[500px]">
+          {/* Search and Filters */}
+          <View className="mx-6">
+            <View className="flex-row items-center bg-[#F5F1FC] px-4 border border-[#6B3BCF] rounded-full mt-4 ">
+              <TextInput
+                placeholder="Search By Order Number"
+                placeholderTextColor="#6839CF"
+                className="flex-1 text-sm text-gray-700 h-11 py-0"
+                onChangeText={(text) => {
+                  const numericOnly = text.replace(/[^0-9]/g, "");
+                  setSearchText(numericOnly);
+                }}
+                value={searchText}
+                style={{ fontStyle: "italic" }}
+                keyboardType="numeric"
+              />
+              <TouchableOpacity onPress={handleSearch}>
+                <FontAwesome name="search" size={22} color="#884EDC" />
               </TouchableOpacity>
             </View>
-          ) : searchError ? (
-            <View className="items-center" style={{ marginTop: hp("8%") }}>
-              <Image
-                source={require("@/assets/images/public/no-data.webp")}
-                style={{
-                  width: wp("60%"),
-                  height: hp("30%"),
-                  resizeMode: "contain",
-                }}
-              />
-              <Text className="text-black text-base text-center mt-3">
-                No orders found
-              </Text>
-            </View>
-          ) : filteredOrders.length > 0 ? (
-            <FlatList
-              data={filteredOrders}
-              keyExtractor={(item) => item.orderId.toString()}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  activeOpacity={1}
-                  onPress={() =>
-                    navigation.navigate("View_CancelOrderScreen" as any, {
-                      orderId: item.orderId,
-                      status: item.status,
-                      reportStatus: item.reportStatus,
-                    })
-                  }
-                >
-                  <View
-                    style={{
-                      backgroundColor: "#FFFFFF",
-                      borderRadius: 16,
-                      padding: 16,
-                      marginBottom: 16,
-                      marginHorizontal: 16,
-                      marginTop: 16,
-                      borderWidth: 1,
-                      borderColor: "#E5E7EB",
-                      shadowColor: "#000",
-                      shadowOffset: { width: 0, height: 3 },
-                      shadowOpacity: 0.06,
-                      shadowRadius: 6,
-                      elevation: 3,
-                    }}
+          </View>
+
+          {!searchError && (
+            <View className="mt-4">
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                className="flex-row flex-wrap mt-[2%] mb-[1%] mx-5"
+                contentContainerStyle={{ paddingHorizontal: wp("1%") }}
+              >
+                {filters.map((filter) => (
+                  <TouchableOpacity
+                    key={filter}
+                    className={`px-4 py-2 rounded-full border mr-2 ${selectedFilter === filter
+                      ? "bg-[#6B3BCF] border-[#6B3BCF]"
+                      : "border-[#6B3BCF]"
+                      }`}
+                    onPress={() => setSelectedFilter(filter)}
                   >
-                    <View className="flex-row justify-between items-center">
-                      <Text className="text-lg font-semibold text-gray-900">
-                        Order: #{item.InvNo || "N/A"}
-                      </Text>
-                      <View
-                        className={`px-3 py-1 rounded-full ${
-                          item.status === "Ordered"
+                    <Text
+                      className={`text-center text-sm ${selectedFilter === filter
+                        ? "text-white font-bold"
+                        : "text-[#6B3BCF]"
+                        }`}
+                    >
+                      {filter}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          <View className="flex-1 mt-3">
+            {/* Orders List */}
+            {loading ? (
+              <View className="flex-1 justify-center items-center">
+                <ActivityIndicator size="large" color="#6B3BCF" />
+                <Text className="text-[#6B3BCF] mt-2">Loading orders...</Text>
+              </View>
+            ) : error ? (
+              <View className="flex-1 justify-center items-center px-4">
+                <Text className="text-red-500 text-center">{error}</Text>
+                <TouchableOpacity
+                  className="mt-4 bg-[#6B3BCF] px-4 py-2 rounded-full"
+                  onPress={handleRefresh}
+                >
+                  <Text className="text-white font-semibold">Retry</Text>
+                </TouchableOpacity>
+              </View>
+            ) : searchError ? (
+              <View className="items-center" style={{ marginTop: hp("8%") }}>
+                <Image
+                  source={require("@/assets/images/public/no-data.webp")}
+                  style={{
+                    width: wp("60%"),
+                    height: hp("30%"),
+                    resizeMode: "contain",
+                  }}
+                />
+                <Text className="text-black text-base text-center mt-3">
+                  No orders found
+                </Text>
+              </View>
+            ) : filteredOrders.length > 0 ? (
+              <FlatList
+                data={filteredOrders}
+                keyExtractor={(item) => item.orderId.toString()}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    activeOpacity={1}
+                    onPress={() =>
+                      navigation.navigate("View_CancelOrderScreen" as any, {
+                        orderId: item.orderId,
+                        status: item.status,
+                        reportStatus: item.reportStatus,
+                      })
+                    }
+                  >
+                    <View
+                      style={{
+                        backgroundColor: "#FFFFFF",
+                        borderRadius: 16,
+                        padding: 16,
+                        marginBottom: 8,
+                        marginHorizontal: 16,
+                        marginTop: 4,
+                        borderWidth: 1,
+                        borderColor: "#E5E7EB",
+                        shadowColor: "#000",
+                        shadowOffset: { width: 0, height: 3 },
+                        shadowOpacity: 0.06,
+                        shadowRadius: 6,
+                        elevation: 3,
+                      }}
+                    >
+                      <View className="flex-row justify-between items-center">
+                        <Text
+                          className="font-semibold text-gray-900"
+                          style={{ fontSize: SCREEN_HEIGHT > 900 ? 20 : 18 }}
+                        >
+                          Order: #{item.InvNo || "N/A"}
+                        </Text>
+                        <View
+                          className={`px-3 py-1 rounded-full ${item.status === "Ordered"
                             ? "bg-[#F5FF85]"
                             : item.status === "Processing"
                               ? "bg-[#CFE1FF]"
@@ -623,11 +626,10 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                                           : item.status === "Return"
                                             ? "bg-[#FFDCDA]"
                                             : "bg-[#EAEAEA]"
-                        }`}
-                      >
-                        <Text
-                          className={`text-xs font-semibold ${
-                            item.status === "Ordered"
+                            }`}
+                        >
+                          <Text
+                            className={`text-xs font-semibold ${item.status === "Ordered"
                               ? "text-[#878216]"
                               : item.status === "Processing"
                                 ? "text-[#3B82F6]"
@@ -646,53 +648,60 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                                             : item.status === "Return"
                                               ? "text-[#FF1100]"
                                               : "text-[#393939]"
-                          }`}
-                        >
-                          {item.status}
-                        </Text>
+                              }`}
+                          >
+                            {item.status}
+                          </Text>
+                        </View>
                       </View>
-                    </View>
 
-                    <Text className="text-sm text-[#808FA2] mt-1">
-                      Scheduled to: {formatsheduleDate(item.sheduleDate)}
-                    </Text>
-                    <Text className="text-sm text-[#808FA2]">
-                      {item.sheduleTime}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              )}
-              onEndReached={loadMoreOrders}
-              onEndReachedThreshold={0.1}
-              ListFooterComponent={renderFooter}
-              refreshControl={
-                <RefreshControl
-                  refreshing={loading}
-                  onRefresh={handleRefresh}
-                  colors={["#6B3BCF"]}
-                />
-              }
-              contentContainerStyle={{ paddingBottom: 100 }}
-            />
-          ) : (
-            <View className="items-center px-4" style={{ marginTop: hp("4%") }}>
-              <Image
-                source={require("@/assets/images/public/no-data.webp")}
-                style={{
-                  width: wp("60%"),
-                  height: hp("30%"),
-                  resizeMode: "contain",
-                }}
+                      <Text
+                        className="text-[#808FA2] mt-1"
+                        style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                      >
+                        Scheduled to: {formatsheduleDate(item.sheduleDate)}
+                      </Text>
+                      <Text
+                        className="text-[#808FA2]"
+                        style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                      >
+                        {item.sheduleTime}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
+                onEndReached={loadMoreOrders}
+                onEndReachedThreshold={0.1}
+                ListFooterComponent={renderFooter}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={loading}
+                    onRefresh={handleRefresh}
+                    colors={["#6B3BCF"]}
+                  />
+                }
+                contentContainerStyle={{ paddingBottom: 100 }}
               />
-              <Text className="text-black text-base text-center mt-4">
-                {orders.length === 0
-                  ? "No orders found"
-                  : searchText
-                    ? "No matching orders found"
-                    : `No orders found with status "${selectedFilter}"`}
-              </Text>
-            </View>
-          )}
+            ) : (
+              <View className="items-center px-4" style={{ marginTop: hp("4%") }}>
+                <Image
+                  source={require("@/assets/images/public/no-data.webp")}
+                  style={{
+                    width: wp("60%"),
+                    height: hp("30%"),
+                    resizeMode: "contain",
+                  }}
+                />
+                <Text className="text-black text-base text-center mt-4">
+                  {orders.length === 0
+                    ? "No orders found"
+                    : searchText
+                      ? "No matching orders found"
+                      : `No orders found with status "${selectedFilter}"`}
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
       </View>
     </KeyboardAvoidingView>

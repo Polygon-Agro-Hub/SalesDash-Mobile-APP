@@ -1214,9 +1214,8 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
       >
         <View className="flex-1 justify-center items-center bg-[#00000066] p-2">
           <View
-            className="bg-white p-6 rounded-xl"
+            className="bg-white p-6 rounded-xl w-11/12 max-w-[500px]"
             style={{
-              width: "90%",
               maxHeight: "100%",
               height: "auto",
             }}
@@ -1364,7 +1363,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
       {/* Edit Item Modal */}
       <Modal visible={modalVisible} transparent animationType="slide">
         <View className="flex-1 justify-center items-center bg-[#00000066] bg-opacity-10">
-          <View className="bg-white p-6 rounded-xl w-4/5">
+          <View className="bg-white p-6 rounded-xl w-11/12 max-w-[500px]">
             <Text className="text-gray-700 mb-2">Product</Text>
             <TextInput
               className="bg-gray-100 p-3 rounded-full mb-3 text-gray-700"

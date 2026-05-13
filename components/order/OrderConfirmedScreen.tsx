@@ -862,8 +862,9 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
           alignItems: "center",
         }}
         keyboardShouldPersistTaps="handled"
+        className="w-full"
       >
-        <View className="bg-white w-full items-center mb-20">
+        <View className="bg-white w-full max-w-[500px] items-center mb-20">
           <View
             style={{ paddingHorizontal: wp(6), paddingVertical: hp(1) }}
             className="w-full items-center"
@@ -902,8 +903,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
               style={{
                 marginTop: hp(7),
                 alignSelf: "center",
-                width: "65%",
-                maxWidth: 300,
+                width: "60%",
                 borderRadius: 30,
                 shadowColor: "#000",
                 shadowOffset: { width: 0, height: 4 },

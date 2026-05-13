@@ -187,7 +187,7 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({
           onBackPress={() => navigation.navigate("SidebarScreen")}
         />
 
-        <View className="px-6">
+        <View className="px-6 max-w-[500px] w-full mx-auto flex items-center mb-6">
           <View className="items-center mb-6">
             <Image
               source={require("@/assets/images/complain/complain.webp")}
@@ -202,7 +202,7 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({
           {/* Category Selection Button */}
           <TouchableOpacity
             onPress={() => setModalVisible(true)}
-            className="border border-[#393939] rounded-full h-12 px-4 flex-row items-center justify-between bg-white mb-4"
+            className="border border-[#393939] rounded-full h-12 px-4 flex-row items-center justify-between bg-white mb-4 w-full"
           >
             <Text
               className={selectedCategory ? "text-black" : "text-[#434343]"}
@@ -231,7 +231,7 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({
             -- We will get back to you within 2 days --
           </Text>
 
-          <View className="mb-8">
+          <View className="mb-8 w-full">
             <TextInput
               multiline
               numberOfLines={6}

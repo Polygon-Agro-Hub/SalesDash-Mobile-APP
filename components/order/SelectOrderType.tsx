@@ -125,10 +125,10 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({
           </View>
 
           {/* Buttons Container - Centered */}
-          <View className="items-center mb-10">
+          <View className="items-center mb-10 max-w-[400px] mx-auto w-full">
             {/* Create Custom Package Button */}
             <TouchableOpacity
-              className="w-[70%] bg-white border border-[#F2F4F7] py-5 rounded-xl mb-4"
+              className="w-full bg-white border border-[#F2F4F7] py-5 rounded-xl mb-4"
               style={{
                 shadowColor: "#000",
                 shadowOffset: { width: 0, height: 4 },
@@ -145,7 +145,7 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({
 
             {/* Select Package Button */}
             <TouchableOpacity
-              className="w-[70%] bg-white border border-[#F2F4F7] py-5 rounded-xl"
+              className="w-full bg-white border border-[#F2F4F7] py-5 rounded-xl"
               style={{
                 shadowColor: "#000",
                 shadowOffset: { width: 0, height: 4 },

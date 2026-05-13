@@ -439,11 +439,12 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
           </View>
         }
       />
-
-      <ScrollView
-        className="flex-1 mt-4 mx-6"
-        showsVerticalScrollIndicator={false}
-      >
+      <View className="flex-1 items-center">
+        <View className="flex-1 w-full max-w-[500px]">
+          <ScrollView
+            className="flex-1 mt-4 px-6"
+            showsVerticalScrollIndicator={false}
+          >
         {cartItems.map((item) => (
           <View
             key={item.id}
@@ -598,37 +599,40 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
         </View>
 
         <View className="py-4" />
-      </ScrollView>
+          </ScrollView>
 
-      <View className="py-4 px-[15%]">
-        <View
-          style={{
-            borderRadius: 30,
-            shadowColor: "#000",
-            shadowOpacity: 0.25,
-            shadowOffset: { width: 0, height: 6 },
-            shadowRadius: 8,
-            elevation: 10,
-          }}
-        >
-          <TouchableOpacity onPress={handleConfirm} activeOpacity={0.8}>
-            <LinearGradient
-              colors={["#6839CF", "#874DDB"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
+          <View className="py-4 items-center">
+            <View
               style={{
-                paddingVertical: 12,
+                width: "60%",
                 borderRadius: 30,
-                alignItems: "center",
+                shadowColor: "#000",
+                shadowOpacity: 0.25,
+                shadowOffset: { width: 0, height: 6 },
+                shadowRadius: 8,
+                elevation: 10,
               }}
             >
-              <Text
-                style={{ color: "#FFFFFF", fontWeight: "500", fontSize: 16 }}
-              >
-                {fromOrderSummary ? "Update Cart" : "Confirm"}
-              </Text>
-            </LinearGradient>
-          </TouchableOpacity>
+              <TouchableOpacity onPress={handleConfirm} activeOpacity={0.8}>
+                <LinearGradient
+                  colors={["#6839CF", "#874DDB"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{
+                    paddingVertical: 12,
+                    borderRadius: 30,
+                    alignItems: "center",
+                  }}
+                >
+                  <Text
+                    style={{ color: "#FFFFFF", fontWeight: "500", fontSize: 16 }}
+                  >
+                    {fromOrderSummary ? "Update Cart" : "Confirm"}
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </View>
     </View>

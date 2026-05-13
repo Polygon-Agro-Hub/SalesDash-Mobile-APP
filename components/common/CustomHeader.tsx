@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
   },
   icon: {
     borderRadius: 50,
-    padding: wp(2.5),
+    padding: 12,
   },
   titleContainer: {
     flex: 1,

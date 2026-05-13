@@ -200,15 +200,17 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
           })
         }
       />
-      <Text
-        style={{ fontSize: 18 }}
-        className=" text-center text-black text-xl mt-14"
-      >
-        {customerName.firstName && customerName.lastName
-          ? `Customer ID : ${customerName.cusId}`
-          : "Loading..."}
-      </Text>
-      <View className="flex-1 bg-white px-6 overflow-scroll">
+      <View className="mx-auto w-full max-w-[500px]">
+        <Text
+          style={{ fontSize: 18 }}
+          className=" text-center text-black text-xl mt-14"
+        >
+          {customerName.firstName && customerName.lastName
+            ? `Customer ID : ${customerName.cusId}`
+            : "Loading..."}
+        </Text>
+      </View>
+      <View className="flex-1 bg-white px-6 overflow-scroll mx-auto w-full max-w-[500px]">
         <View className="mt-4">
           <Text className="text-[#874CDB] text-sm font-semibold">
             Preferred Items to Exclude
@@ -299,9 +301,9 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
           </View>
         </ScrollView>
       </View>
-      <View className="absolute bottom-0 left-0 right-0 bg-white pt-4 pb-4 px-6">
+      <View className="absolute bottom-0 left-0 right-0 bg-white pt-4 pb-4 px-6 items-center">
         <TouchableOpacity
-          className="left-0 right-0 items-center"
+          className="w-full max-w-[500px] items-center"
           onPress={() =>
             navigation.navigate("ExcludeAddMore", {
               id: id,

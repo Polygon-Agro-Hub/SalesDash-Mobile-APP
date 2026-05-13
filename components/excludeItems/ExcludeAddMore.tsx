@@ -229,7 +229,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
           });
         }}
       />
-      <View className="flex-1 ">
+      <View className="flex-1 mx-auto w-full max-w-[500px]">
         <Text className="text-center text-sm px-6">
           Exclude any items your customer doesn’t want in their package. Simply
           tap on the Products they want to remove.
@@ -319,10 +319,10 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
         </View>
       </View>
       {!isKeyboardVisible && (
-        <View className="absolute bottom-0 left-0 right-0 bg-white pt-4 pb-4 px-6">
+        <View className="absolute bottom-0 left-0 right-0 bg-white pt-4 pb-4 px-6 items-center">
           <TouchableOpacity
             onPress={handleNavigateIfNoCropsSelected}
-            className="left-0 right-0 items-center"
+            className="w-full max-w-[500px] items-center"
             disabled={loading}
           >
             <LinearGradient
