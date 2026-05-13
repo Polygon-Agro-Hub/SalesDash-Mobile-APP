@@ -308,54 +308,19 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
     };
   }, []);
 
-  const convertImageToBase64 = async () => {
+  const convertLogoToBase64 = async () => {
     try {
       const asset = Asset.fromModule(
-        require("../../assets/images/Watermark.webp"),
+        require("../../assets/images/order/logo.webp"),
       );
+      if (!asset.downloaded) await asset.downloadAsync();
 
-      if (!asset.downloaded) {
-        await asset.downloadAsync();
-      }
-
-      if (!asset.localUri) {
-        console.warn(
-          "Asset local URI not found, falling back to alternative method",
-        );
-        return await convertImageAlternative();
-      }
-
-      const base64 = await FileSystem.readAsStringAsync(asset.localUri, {
+      const base64 = await FileSystem.readAsStringAsync(asset.localUri!, {
         encoding: "base64",
       });
-
       return `data:image/webp;base64,${base64}`;
     } catch (error) {
-      console.error("Error converting image to base64:", error);
-      return await convertImageAlternative();
-    }
-  };
-
-  const convertImageAlternative = async () => {
-    try {
-      const assetInfo = require("../../assets/images/Watermark.webp");
-
-      if (typeof assetInfo === "number") {
-        const asset = Asset.fromModule(assetInfo);
-        await asset.downloadAsync();
-
-        if (asset.localUri) {
-          const base64 = await FileSystem.readAsStringAsync(asset.localUri, {
-            encoding: "base64",
-          });
-          return `data:image/webp;base64,${base64}`;
-        }
-      }
-
-      console.warn("Unable to load watermark image");
-      return "";
-    } catch (error) {
-      console.error("Alternative watermark conversion failed:", error);
+      console.error("Error converting logo to base64:", error);
       return "";
     }
   };
@@ -366,7 +331,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
     try {
       setIsDownloading(true);
 
-      const watermarkBase64 = await convertImageToBase64();
+      const logoBase64 = await convertLogoToBase64();
       const invoiceNumber =
         order?.orderStatus?.invoiceNumber || `INV-${Date.now()}`;
 
@@ -563,7 +528,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         </div>
         <div>
           <img
-            src="https://pub-79ee03a4a23e4dbbb70c7d799d3cb786.r2.dev/POLYGON%20ORIGINAL%20LOGO.png"
+            src="${logoBase64}"
             alt="Polygon Logo"
             class="logo"
           />
