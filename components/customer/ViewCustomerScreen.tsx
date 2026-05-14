@@ -94,7 +94,16 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   const [selectedLocationName, setSelectedLocationName] = useState<string>("");
   const [loadingCustomerData, setLoadingCustomerData] = useState(false);
   const isMounted = useRef(true);
-  const { name, number, id, customerId, title } = route.params;
+  const {
+    name: initialName,
+    number: initialNumber,
+    id,
+    customerId,
+    title: initialTitle,
+  } = route.params;
+  const [customerName, setCustomerName] = useState(initialName);
+  const [customerTitle, setCustomerTitle] = useState(initialTitle);
+  const [customerNumber, setCustomerNumber] = useState(initialNumber);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -114,7 +123,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       loadOrders(1, true, false);
       getUserProfile();
 
-      return () => { };
+      return () => {};
     }, [id, customerId]),
   );
 
@@ -129,9 +138,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
 
       const response = await axios.get(
         `${environment.API_BASE_URL}api/customer/customerData/${customerId}`,
-        {
-          headers: { Authorization: `Bearer ${storedToken}` },
-        },
+        { headers: { Authorization: `Bearer ${storedToken}` } },
       );
 
       if (response.data) {
@@ -146,8 +153,20 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
           setLongitude(null);
         }
 
+        // ✅ Update display values from fresh API data
+        const freshFirstName = response.data.firstName || "";
+        const freshLastName = response.data.lastName || "";
+        const freshTitle = response.data.title || "";
+        const freshPhone = response.data.phoneNumber || initialNumber;
+
+        setCustomerName(
+          `${freshFirstName} ${freshLastName}`.trim() || initialName,
+        );
+        setCustomerTitle(freshTitle || initialTitle);
+        setCustomerNumber(freshPhone);
+
         const locationName =
-          `${title || ""} ${response.data.firstName || ""} ${response.data.lastName || ""}`.trim();
+          `${freshTitle} ${freshFirstName} ${freshLastName}`.trim();
         setSelectedLocationName(locationName || "Customer Location");
       }
 
@@ -181,6 +200,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
     page = 1,
     showFullLoading = true,
     isLoadMore = false,
+    statusFilter = selectedFilter,
   ) => {
     try {
       if (showFullLoading) {
@@ -192,7 +212,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       setError(null);
 
       const response = await axios.get<OrdersResponse>(
-        `${environment.API_BASE_URL}api/orders/get-order-bycustomerId/${id}?page=${page}&limit=${ORDERS_PER_PAGE}`,
+        `${environment.API_BASE_URL}api/orders/get-order-bycustomerId/${id}?page=${page}&limit=${ORDERS_PER_PAGE}&status=${encodeURIComponent(statusFilter)}`,
       );
 
       if (response.data.success) {
@@ -266,12 +286,11 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   }, [searchText, selectedFilter, orders]);
 
   const handleGetACall = () => {
-    const phoneNumber = `tel:${number}`;
+    const phoneNumber = `tel:${customerNumber}`;
     Linking.openURL(phoneNumber).catch((err) =>
       console.error("Error opening dialer", err),
     );
   };
-
   const filters = [
     "Ordered",
     "Processing",
@@ -292,39 +311,24 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
     return `${year}/${month}/${day}`;
   };
 
-  const handleSearch = () => { };
+  const handleSearch = () => {};
 
-  const filteredOrders = orders.filter((order) => {
-    const matchesStatus =
-      selectedFilter === "All" || order.status === selectedFilter;
-    const matchesSearch =
+  const filteredOrders = orders.filter(
+    (order) =>
       !searchText ||
       (order.InvNo &&
-        order.InvNo.toLowerCase().includes(searchText.toLowerCase()));
+        order.InvNo.toLowerCase().includes(searchText.toLowerCase())),
+  );
 
-    return matchesStatus && matchesSearch;
-  });
-
-  const resetPaginationState = () => {
+  useEffect(() => {
     setOrders([]);
     setCurrentPage(1);
     setHasMore(true);
-    setLoading(true);
-    setLoadingMore(false);
-    setError(null);
-    setSearchError(null);
-  };
+    setSearchText("");
+    loadOrders(1, true, false, selectedFilter);
+  }, [selectedFilter]);
 
   useEffect(() => {
-    resetPaginationState();
-
-    const unsubscribe = navigation.addListener("focus", () => {
-      if (isMounted.current) {
-        resetPaginationState();
-        loadOrders(1, true, false);
-      }
-    });
-
     const keyboardDidShowListener = Keyboard.addListener(
       "keyboardDidShow",
       () => setKeyboardVisible(true),
@@ -334,15 +338,11 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       () => setKeyboardVisible(false),
     );
 
-    loadOrders(1, true, false);
-
     return () => {
-      isMounted.current = false;
-      unsubscribe();
       keyboardDidShowListener.remove();
       keyboardDidHideListener.remove();
     };
-  }, [navigation, id]);
+  }, []);
 
   const renderFooter = () => {
     if (!loadingMore) return null;
@@ -357,7 +357,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       style={{ flex: 1 }}
     >
       <CustomHeader
-        title={`${title}. ${name}`}
+        title={`${customerTitle}. ${customerName}`}
         titleColor="#000000"
         showBackButton={true}
         navigation={navigation}
@@ -369,8 +369,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
               navigation.navigate("EditCustomerScreen", {
                 id,
                 customerId,
-                name,
-                title,
+                name: customerName, // ✅ pass fresh state
+                title: customerTitle, // ✅ pass fresh state
               })
             }
           >
@@ -392,10 +392,10 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
               <TouchableOpacity
                 onPress={() =>
                   navigation.navigate("ExcludeItemEditSummery", {
-                    id: id,
-                    customerId: customerId,
-                    name: name,
-                    title: title,
+                    id,
+                    customerId,
+                    name: customerName, // ✅
+                    title: customerTitle, // ✅
                   })
                 }
               >
@@ -459,10 +459,10 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 onPress={() =>
                   navigation.navigate("SelectOrderType" as any, {
                     id,
-                    customerId: customerId,
-                    name: name,
-                    title: title,
-                    number: number,
+                    customerId,
+                    name: customerName, // ✅
+                    title: customerTitle, // ✅
+                    number: customerNumber, // ✅
                     customerscreencustomerid: customerId,
                   })
                 }
@@ -516,17 +516,19 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 {filters.map((filter) => (
                   <TouchableOpacity
                     key={filter}
-                    className={`px-4 py-2 rounded-full border mr-2 ${selectedFilter === filter
-                      ? "bg-[#6B3BCF] border-[#6B3BCF]"
-                      : "border-[#6B3BCF]"
-                      }`}
+                    className={`px-4 py-2 rounded-full border mr-2 ${
+                      selectedFilter === filter
+                        ? "bg-[#6B3BCF] border-[#6B3BCF]"
+                        : "border-[#6B3BCF]"
+                    }`}
                     onPress={() => setSelectedFilter(filter)}
                   >
                     <Text
-                      className={`text-center text-sm ${selectedFilter === filter
-                        ? "text-white font-bold"
-                        : "text-[#6B3BCF]"
-                        }`}
+                      className={`text-center text-sm ${
+                        selectedFilter === filter
+                          ? "text-white font-bold"
+                          : "text-[#6B3BCF]"
+                      }`}
                     >
                       {filter}
                     </Text>
@@ -607,48 +609,50 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                           Order: #{item.InvNo || "N/A"}
                         </Text>
                         <View
-                          className={`px-3 py-1 rounded-full ${item.status === "Ordered"
-                            ? "bg-[#F5FF85]"
-                            : item.status === "Processing"
-                              ? "bg-[#CFE1FF]"
-                              : item.status === "Out For Delivery"
-                                ? "bg-[#FCD4FF]"
-                                : item.status === "Collected"
-                                  ? "bg-[#F8FEA5]"
-                                  : item.status === "On the way"
-                                    ? "bg-[#FFEDCF]"
-                                    : item.status === "Hold"
+                          className={`px-3 py-1 rounded-full ${
+                            item.status === "Ordered"
+                              ? "bg-[#F5FF85]"
+                              : item.status === "Processing"
+                                ? "bg-[#CFE1FF]"
+                                : item.status === "Out For Delivery"
+                                  ? "bg-[#FCD4FF]"
+                                  : item.status === "Collected"
+                                    ? "bg-[#F8FEA5]"
+                                    : item.status === "On the way"
                                       ? "bg-[#FFEDCF]"
-                                      : item.status === "Delivered"
-                                        ? "bg-[#BBFFC6]"
-                                        : item.status === "Cancelled"
-                                          ? "bg-[#DFDFDF]"
-                                          : item.status === "Return"
-                                            ? "bg-[#FFDCDA]"
-                                            : "bg-[#EAEAEA]"
-                            }`}
+                                      : item.status === "Hold"
+                                        ? "bg-[#FFEDCF]"
+                                        : item.status === "Delivered"
+                                          ? "bg-[#BBFFC6]"
+                                          : item.status === "Cancelled"
+                                            ? "bg-[#DFDFDF]"
+                                            : item.status === "Return"
+                                              ? "bg-[#FFDCDA]"
+                                              : "bg-[#EAEAEA]"
+                          }`}
                         >
                           <Text
-                            className={`text-xs font-semibold ${item.status === "Ordered"
-                              ? "text-[#878216]"
-                              : item.status === "Processing"
-                                ? "text-[#3B82F6]"
-                                : item.status === "Out For Delivery"
-                                  ? "text-[#80118A]"
-                                  : item.status === "Collected"
-                                    ? "text-[#7E8700]"
-                                    : item.status === "On the way"
-                                      ? "text-[#D17A00]"
-                                      : item.status === "Hold"
+                            className={`text-xs font-semibold ${
+                              item.status === "Ordered"
+                                ? "text-[#878216]"
+                                : item.status === "Processing"
+                                  ? "text-[#3B82F6]"
+                                  : item.status === "Out For Delivery"
+                                    ? "text-[#80118A]"
+                                    : item.status === "Collected"
+                                      ? "text-[#7E8700]"
+                                      : item.status === "On the way"
                                         ? "text-[#D17A00]"
-                                        : item.status === "Delivered"
-                                          ? "text-[#308233]"
-                                          : item.status === "Cancelled"
-                                            ? "text-[#5C5C5C]"
-                                            : item.status === "Return"
-                                              ? "text-[#FF1100]"
-                                              : "text-[#393939]"
-                              }`}
+                                        : item.status === "Hold"
+                                          ? "text-[#D17A00]"
+                                          : item.status === "Delivered"
+                                            ? "text-[#308233]"
+                                            : item.status === "Cancelled"
+                                              ? "text-[#5C5C5C]"
+                                              : item.status === "Return"
+                                                ? "text-[#FF1100]"
+                                                : "text-[#393939]"
+                            }`}
                           >
                             {item.status}
                           </Text>
@@ -683,7 +687,10 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 contentContainerStyle={{ paddingBottom: 100 }}
               />
             ) : (
-              <View className="items-center px-4" style={{ marginTop: hp("4%") }}>
+              <View
+                className="items-center px-4"
+                style={{ marginTop: hp("4%") }}
+              >
                 <Image
                   source={require("@/assets/images/public/no-data.webp")}
                   style={{

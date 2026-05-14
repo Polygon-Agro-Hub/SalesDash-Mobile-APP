@@ -260,9 +260,14 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
 
           if (selectedFilter === "This Week") {
             const startOfWeek = new Date(today);
-            startOfWeek.setDate(today.getDate() - today.getDay());
+
+            const dayOffset = (today.getDay() + 6) % 7;
+            startOfWeek.setDate(today.getDate() - dayOffset);
+            startOfWeek.setHours(0, 0, 0, 0);
+
             const endOfWeek = new Date(startOfWeek);
             endOfWeek.setDate(startOfWeek.getDate() + 6);
+            endOfWeek.setHours(23, 59, 59, 999);
 
             return orderDate >= startOfWeek && orderDate <= endOfWeek;
           }
@@ -286,7 +291,10 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString();
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}/${month}/${day}`;
     } catch (error) {
       console.error("Error formatting date:", error);
       return "Invalid date";
@@ -305,7 +313,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
 
       loadOrders(1, true, false);
 
-      return () => { };
+      return () => {};
     }, []),
   );
 
@@ -514,7 +522,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                               color: "#393939",
                             }}
                           >
-                            Order: {item.InvNo}
+                            Order : #{item.InvNo}
                           </Text>
                           <View
                             style={{
@@ -569,7 +577,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                                                 : item.status === "Return"
                                                   ? "#FF1100"
                                                   : item.status ===
-                                                    "Out For Delivery"
+                                                      "Out For Delivery"
                                                     ? "#80118A"
                                                     : "#393939",
                               }}
@@ -586,7 +594,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                             marginTop: 4,
                           }}
                         >
-                          Schedule to: {formatDate(item.sheduleDate)}
+                          Scheduled to : {formatDate(item.sheduleDate)}
                         </Text>
 
                         <View

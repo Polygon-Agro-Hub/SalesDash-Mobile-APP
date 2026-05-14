@@ -119,6 +119,8 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
 
   const isNavigatingToGeoScreen = useRef(false);
 
+  const isNavigatingToOtpScreen = useRef(false);
+
   const openMapForLocation = () => {
     isNavigatingToGeoScreen.current = true;
     navigation.navigate("AttachGeoLocationScreen", {
@@ -193,12 +195,18 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         return;
       }
 
+      if (isNavigatingToOtpScreen.current) {
+        isNavigatingToOtpScreen.current = false;
+        return;
+      }
+
       const routes = navigation.getState()?.routes;
       const previousRoute = routes?.[routes.length - 2];
 
       const isComingFromGeoScreens =
         previousRoute?.name === "AttachGeoLocationScreen" ||
-        previousRoute?.name === "ViewLocationScreen";
+        previousRoute?.name === "ViewLocationScreen" ||
+        previousRoute?.name === "OtpScreen";
 
       if (isComingFromGeoScreens) {
         return;
@@ -227,7 +235,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         source: "PolygonAgro",
         transport: "sms",
         content: {
-          sms: "Thank you for registering with us a GoviMart customer. Please use the bellow OTP to confirm the registration process. {{code}}",
+          sms: "Thank you for registering with us as a GoviMart customer. Please use the bellow OTP to confirm the registration process. {{code}}",
         },
         destination: cleanedPhoneNumber,
       };
@@ -698,7 +706,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     if (!latitude || !longitude) {
       Alert.alert(
         "Location Required",
-        "Please capture customer’s location before registering.",
+        "Please capture customer's location before registering.",
         [{ text: "OK" }],
       );
       setIsSubmitting(false);
@@ -738,6 +746,9 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       );
       const id = new Date().getTime().toString();
       await sendOTP();
+
+      isNavigatingToOtpScreen.current = true;
+
       navigation.navigate("OtpScreen", { phoneNumber, id });
     } catch (error: any) {
       if (axios.isAxiosError(error)) {
@@ -1455,21 +1466,20 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
 
             {/* Geolocation Section */}
             <View className="mb-4 mt-2">
-              {/* Location Buttons */}
               <View className="flex-row justify-between">
-                {/* Geo Location Button */}
                 <TouchableOpacity
                   onPress={openMapForLocation}
                   className="flex-1 items-center"
                 >
-                  <View className="w-1/2 border border-[#6C3CD1] bg-white rounded-full py-3 flex-row items-center justify-center"
-                  style={{
-                     shadowColor: "#000",
-                shadowOffset: { width: 0, height: 6 },
-                shadowOpacity: 0.25,
-                shadowRadius: 8,
-                elevation: 10,
-                  }}
+                  <View
+                    className="w-1/2 border border-[#6C3CD1] bg-white rounded-full py-3 flex-row items-center justify-center"
+                    style={{
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 6 },
+                      shadowOpacity: 0.25,
+                      shadowRadius: 8,
+                      elevation: 10,
+                    }}
                   >
                     <FontAwesome6
                       name="location-crosshairs"
@@ -1483,16 +1493,15 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 </TouchableOpacity>
               </View>
 
-              {/* Location Error */}
               {locationError ? (
                 <Text className="text-red-500 text-xs pl-4 pt-2">
                   {locationError}
                 </Text>
               ) : null}
             </View>
+
             {latitude && longitude && (
               <View className="items-center justify-center rounded-2xl p-3 mb-3">
-                {/* View Here Link */}
                 <TouchableOpacity
                   onPress={() => {
                     isNavigatingToGeoScreen.current = true;

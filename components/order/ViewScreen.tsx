@@ -141,7 +141,7 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
           />
           <Image
             source={{ uri: selectedPackageImage }}
-            className="w-64 h-64 self-center mb-2 "
+            className="w-52 h-52 self-center mb-2 "
             resizeMode="contain"
           />
         </ImageBackground>

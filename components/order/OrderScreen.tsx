@@ -1048,7 +1048,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                   <Text className="text-gray-800 font-medium flex-1">
                     {item.name}
                   </Text>
-                  <View className="bg-gray-50 px-2 py-1 rounded min-w-[32px] items-center">
+                  <View className=" px-2 py-1 rounded min-w-[32px] items-center">
                     <Text className="text-gray-600 font-medium text-sm">
                       {item.qty}
                     </Text>
@@ -1258,10 +1258,11 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
 
             <View className="mb-4">
               <Text className="text-gray-700 mb-3">Quantity</Text>
-              <View className="flex-row items-center space-x-2">
-                <View className="flex-row items-center bg-gray-100 rounded-full flex-1">
+              <View className="flex-row items-center gap-2">
+                {/* Quantity stepper */}
+                <View className="flex-row items-center bg-gray-100 rounded-full flex-1 h-[50px]">
                   <TouchableOpacity
-                    className="w-10 h-10 flex items-center justify-center"
+                    className="w-12 h-[50px] items-center justify-center"
                     onPress={decrementQuantity}
                   >
                     <Text className="text-gray-700 text-xl font-bold">-</Text>
@@ -1270,7 +1271,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                     {(quantity || 0).toFixed(2)}
                   </Text>
                   <TouchableOpacity
-                    className="w-10 h-[50px] flex items-center justify-center"
+                    className="w-12 h-[50px] items-center justify-center"
                     onPress={incrementQuantity}
                   >
                     <Text className="text-gray-700 text-xl font-bold">+</Text>
@@ -1374,7 +1375,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
             {/* Quantity and Unit Selector */}
             <View>
               <Text className="text-gray-700 mb-2">Quantity</Text>
-              <View className="flex-row items-center space-x-2">
+              <View className="flex-row items-center gap-2">
                 <View className="flex-row items-center bg-gray-100 rounded-full flex-1">
                   <TouchableOpacity
                     className="w-10 h-10 flex items-center justify-center"

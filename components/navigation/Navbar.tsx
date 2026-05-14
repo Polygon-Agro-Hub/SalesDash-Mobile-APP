@@ -84,7 +84,7 @@ const NavigationBar = ({
         paddingVertical: 8,
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
-        shadowColor: "#000",
+        shadowColor: "#736e6e",
         shadowOpacity: 0.5,
         shadowRadius: 10,
         elevation: 15,

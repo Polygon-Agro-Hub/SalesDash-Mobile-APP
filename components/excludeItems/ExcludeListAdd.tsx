@@ -83,42 +83,62 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
   };
 
   // Get current customer data (either from state or route params)
+  // const getCurrentCustomerData = () => {
+  //   if (customerData) {
+  //     return {
+  //       name: customerData.name || customerData.firstName || name || "",
+  //       title: customerData.title || title || "",
+  //       number: customerData.number || customerData.phoneNumber || number || "",
+  //       id: customerData.id?.toString() || id?.toString() || "",
+  //       customerId: customerData.cusId?.toString() || customerId.toString(),
+  //     };
+  //   }
+  //   return {
+  //     name: name || "",
+  //     title: title || "",
+  //     number: number || "",
+  //     id: id?.toString() || "",
+  //     customerId: customerId.toString(),
+  //   };
+  // };
   const getCurrentCustomerData = () => {
-    if (customerData) {
-      return {
-        name: customerData.name || customerData.firstName || name || "",
-        title: customerData.title || title || "",
-        number: customerData.number || customerData.phoneNumber || number || "",
-        id: customerData.id?.toString() || id?.toString() || "",
-        customerId: customerData.cusId?.toString() || customerId.toString(),
-      };
-    }
+  if (customerData) {
+    const fullName = `${customerData.firstName || ""} ${customerData.lastName || ""}`.trim(); // ✅
+
     return {
-      name: name || "",
-      title: title || "",
-      number: number || "",
-      id: id?.toString() || "",
-      customerId: customerId.toString(),
+      name: fullName || name || "",
+      title: customerData.title || title || "",
+      number: customerData.phoneNumber || number || "",
+      id: customerData.id?.toString() || id?.toString() || "",
+      customerId: customerData.cusId?.toString() || customerId.toString(),
     };
+  }
+  return {
+    name: name || "",
+    title: title || "",
+    number: number || "",
+    id: id?.toString() || "",
+    customerId: customerId.toString(),
   };
+};
 
   // Define handleBackPress outside of useFocusEffect so it can be reused
-  const handleBackPress = useCallback(() => {
-    const currentData = getCurrentCustomerData();
+ const handleBackPress = useCallback(() => {
+  const currentData = getCurrentCustomerData();
 
-    navigation.navigate("Main", {
-      screen: "ViewCustomerScreen",
-      params: {
-        number: currentData.number,
-        name: currentData.name,
-        customerId: currentData.customerId,
-        id: currentData.id,
-        title: currentData.title,
-      },
-    });
+  navigation.navigate("Main", {
+    screen: "ViewCustomerScreen",
+    params: {
+      number: currentData.number,
+      name: currentData.name,
+      customerId: currentData.customerId,
+      id: currentData.id,
+      title: currentData.title,
+    },
+  });
 
-    return true;
-  }, [navigation]);
+  return true;
+}, [navigation, customerData, name, title, number, id, customerId]); // ✅ add all deps
 
   // Fetch customer data
   useEffect(() => {

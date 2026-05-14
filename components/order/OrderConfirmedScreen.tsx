@@ -219,7 +219,6 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
     };
   }, [orderId]);
 
-  // Fetch customer data and delivery fee after order is loaded
   useEffect(() => {
     const fetchCustomerDataAndDeliveryFee = async () => {
       if (!order?.userId) {
@@ -265,7 +264,6 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
             }
           }
 
-          // Stop loading after all data is fetched successfully
           setLoading(false);
         } else {
           const errorMsg =
@@ -409,14 +407,17 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
     <title>Purchase Invoice</title>
 
     <style>
-    @page{
-    margin-top:20px;
+    @page {
+      margin-top: 20px;
+      size: A4;
     }
       body {
         font-family: Arial, sans-serif;
         padding: 10px;
         margin: 0;
         background-color: #ffffff;
+        height: fit-content;
+        overflow: hidden;
       }
       .invoice-container {
         width: 100%;
@@ -424,6 +425,8 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         margin: auto;
         background: white;
         padding: 20px;
+        height: fit-content;
+        overflow: hidden;
       }
       .header {
         display: flex;
@@ -442,15 +445,14 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         font-size: 14px;
         line-height: 10px;
       }
-         .label {
-    color: #929292; /* Gray color for labels */
-    font-weight: 500;
-  }
-  
-  .value {
-    color: #000000; /* Dark color for values */
-    font-weight: normal;
-  }
+      .label {
+        color: #929292;
+        font-weight: 500;
+      }
+      .value {
+        color: #000000;
+        font-weight: normal;
+      }
       .logo {
         width: 180px;
         height: auto;
@@ -466,8 +468,8 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
       }
       .table th,
       .table td {
-        border-left: none; 
-        border-right: none; 
+        border-left: none;
+        border-right: none;
         padding: 15px;
         text-align: left;
       }
@@ -489,8 +491,9 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
       .footer {
         text-align: center;
         font-size: 12px;
-        margin-top: 60px;
+        margin-top: 30px;
         color: #8492A3;
+        page-break-after: avoid;
       }
       .section1 {
         margin-top: 10px;
@@ -501,8 +504,8 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
       .section3 {
         margin-top: 10px;
       }
-        .section {
-        page-break-inside: avoid; /* Avoid page breaks inside these sections */
+      .section {
+        page-break-inside: avoid;
       }
       .ptext {
         font-size: 14px;
@@ -740,7 +743,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
           Remarks :
         </p>
 
-        <div   style="color: #666666; font-size: 12px; line-height: 10px;">
+        <div style="color: #666666; font-size: 12px; line-height: 10px;">
           <p>Kindly inspect all goods at the time of delivery to ensure accuracy and condition.</p>
           <p>Polygon does not accept returns under any circumstances.</p>
           <p>Please report any issues or discrepancies within 24 hours of delivery to ensure prompt attention.</p>
@@ -751,9 +754,9 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
 
       <!-- Footer Section -->
       <div class="footer">
-        <p  style=" margin-top: 50px; font-size: 16px; font-weight: 600; color:#000; font-style:italic">Thank you for shopping with us!</p>
-        <p  style=" margin-top: -5px; font-size: 14px; font-weight: 500; color:#4B4B4B; font-style:italic">WE WILL SEND YOU MORE OFFERS, LOWEST PRICED VEGGIES FROM US.</p>
-        <p style=" margin-top: 50px; font-style:italic">
+        <p style=" margin-top: 30px; font-size: 16px; font-weight: 600; color:#000; font-style:italic">Thank you for shopping with us!</p>
+        <p style=" margin-top: -5px; font-size: 14px; font-weight: 500; color:#4B4B4B; font-style:italic">WE WILL SEND YOU MORE OFFERS, LOWEST PRICED VEGGIES FROM US.</p>
+        <p style=" margin-top: 30px; font-style:italic">
           - THIS IS A COMPUTER GENERATED INVOICE, THUS NO SIGNATURE REQUIRED -
         </p>
       </div>
@@ -765,7 +768,6 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
       const { uri: pdfUri } = await Print.printToFileAsync({
         html: htmlContent,
         width: 595,
-        height: 842,
         base64: false,
       });
 
@@ -792,11 +794,6 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
       } else {
         if (await Sharing.isAvailableAsync()) {
           await Sharing.shareAsync(tempFilePath, shareOptions);
-          Alert.alert(
-            "Invoice Ready",
-            'Use the "Save to Files" option to save the invoice',
-            [{ text: "OK" }],
-          );
         } else {
           Alert.alert("Error", "Sharing is not available on this device");
         }

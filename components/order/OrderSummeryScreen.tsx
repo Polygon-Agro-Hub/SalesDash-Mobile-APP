@@ -744,20 +744,20 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
 
           {/* ── Customer info ── */}
           <View className="bg-white border border-gray-300 rounded-lg p-4 mt-3 shadow-sm">
-            <Text className="text-[#808FA2] text-xs">Customer's Name</Text>
+            <Text className="text-[#808FA2] text-s mb-2">Customer's Name</Text>
             <Text className="text-black font-medium">{customerInfo.name}</Text>
 
-            <Text className="text-[#808FA2] text-xs mt-2">
+            <Text className="text-[#808FA2] text-s mt-3 mb-2">
               Customer's Phone Number
             </Text>
             <Text className="text-black font-medium">{customerInfo.phone}</Text>
 
-            <Text className="text-[#808FA2] text-xs mt-2">Building Type</Text>
+            <Text className="text-[#808FA2] text-s mt-3 mb-2">Building Type</Text>
             <Text className="text-black font-medium">
               {customerInfo.buildingType}
             </Text>
 
-            <Text className="text-[#808FA2] text-xs mt-2">Address</Text>
+            <Text className="text-[#808FA2] text-s mt-3 mb-2">Address</Text>
             {customerData && customerData.buildingDetails ? (
               <View className="-m-1">
                 {customerData.buildingDetails.buildingNo && (
@@ -911,7 +911,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
             {isPackage === 1 && (
               <View className="flex-row justify-between mt-3">
                 <Text className="text-[#8492A3] font-medium">Subtotal</Text>
-                <Text className="text-black font-medium mr-14">
+                <Text className="text-black font-semibold mr-14">
                   Rs. {formatPrice(subTotalDeliveryPlus - deliveryFee)}
                 </Text>
               </View>
@@ -920,30 +920,30 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
             {isPackage === 0 && (
               <View className="flex-row justify-between mt-3">
                 <Text className="text-[#8492A3] font-medium">Subtotal</Text>
-                <Text className="text-black font-medium mr-14">
+                <Text className="text-black font-semibold mr-14">
                   Rs. {formatPrice(subTotalDeliveryPlus - 180 - deliveryFee)}
                 </Text>
               </View>
             )}
 
             <View className="flex-row justify-between mt-2">
-              <Text className="text-[#8492A3]">Discount</Text>
-              <Text className="text-gray-500 mr-14">
+              <Text className="text-[#8492A3] font-medium">Discount</Text>
+              <Text className="text-gray-500 mr-14 font-medium">
                 Rs. {formatPrice(discount)}
               </Text>
             </View>
 
             <View className="flex-row justify-between mt-2">
-              <Text className="text-[#8492A3]">Delivery Fee</Text>
-              <Text className="text-gray-500 mr-14">
+              <Text className="text-[#8492A3] font-medium">Delivery Fee</Text>
+              <Text className="text-gray-500 mr-14 font-medium">
                 Rs. {formatPrice(deliveryFee)}
               </Text>
             </View>
 
             {isPackage === 0 && (
               <View className="flex-row justify-between mt-2">
-                <Text className="text-[#8492A3]">Service Fee</Text>
-                <Text className="text-gray-500 mr-14">Rs. 180.00</Text>
+                <Text className="text-[#8492A3] font-medium">Service Fee</Text>
+                <Text className="text-gray-500 mr-14 font-medium">Rs. 180.00</Text>
               </View>
             )}
 
