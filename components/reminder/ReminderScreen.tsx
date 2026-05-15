@@ -57,6 +57,7 @@ interface Notification {
   createdAt: string;
   invNo: string;
   orderStatus: string;
+  reportStatus:string;
   cusId: string;
   customerId: string;
   customerName: string;
@@ -172,6 +173,7 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
           },
         );
 
+
         setNotifications((prev) =>
           prev.map((n) => (n.id === id ? { ...n, readStatus: true } : n)),
         );
@@ -184,6 +186,7 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
           orderId: notificationToUpdate.orderid,
           userId: notificationToUpdate.cusId || notificationToUpdate.customerId,
           status: notificationToUpdate.status,
+          reportStatus: notificationToUpdate.reportStatus,
         });
       }
     } catch (err) {

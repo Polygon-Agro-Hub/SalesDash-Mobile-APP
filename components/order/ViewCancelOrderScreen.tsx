@@ -114,40 +114,76 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   const [returnReason, setReturnReason] = useState<string | null>(null);
   const [holdReason, setHoldReason] = useState<string | null>(null);
   const [isHoldOrder, setIsHoldOrder] = useState<boolean>(false);
+  const [wasOnHold, setWasOnHold] = useState<boolean>(false);
 
   useEffect(() => {
     if (reportStatus) setSelectedReportOption(reportStatus);
   }, [reportStatus]);
 
-  useEffect(() => {
-    const fetchOrderDetails = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get(
-          `${environment.API_BASE_URL}api/orders/get-order/${orderId}`,
-        );
-        if (response.data.success) {
-          setOrder(response.data.data);
-          const orderData = response.data.data;
-          if (orderData.fullAddress) {
-            await fetchDeliveryFee(
-              orderData.fullAddress,
-              orderData.userId || userId,
-            );
-            setIsPackage(orderData.isPackage);
+  useFocusEffect(
+    useCallback(() => {
+      const fetchOrderDetails = async () => {
+        try {
+          setLoading(true);
+          const response = await axios.get(
+            `${environment.API_BASE_URL}api/orders/get-order/${orderId}`,
+          );
+          if (response.data.success) {
+            setOrder(response.data.data);
+            const orderData = response.data.data;
+            if (orderData.fullAddress) {
+              await fetchDeliveryFee(
+                orderData.fullAddress,
+                orderData.userId || userId,
+              );
+              setIsPackage(orderData.isPackage);
+            }
+          } else {
+            setError("Failed to load order details");
           }
-        } else {
-          setError("Failed to load order details");
+        } catch (err) {
+          console.error("Error fetching order details:", err);
+          setError("An error occurred while fetching order details");
+        } finally {
+          setLoading(false);
         }
-      } catch (err) {
-        console.error("Error fetching order details:", err);
-        setError("An error occurred while fetching order details");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchOrderDetails();
-  }, [orderId]);
+      };
+
+      const fetchHoldStatus = async () => {
+        try {
+          const storedToken = await AsyncStorage.getItem("authToken");
+          if (!storedToken) return;
+          const response = await axios.get(
+            `${environment.API_BASE_URL}api/orders/get-hold-reason/${orderId}`,
+            { headers: { Authorization: `Bearer ${storedToken}` } },
+          );
+          if (response.data.success && response.data.data) {
+            const {
+              isHold,
+              holdReason: reason,
+              otherReason,
+            } = response.data.data;
+            setIsHoldOrder(isHold);
+            if (reason) {
+              setHoldReason(
+                reason === "Other" && otherReason ? otherReason : reason,
+              );
+              setWasOnHold(true);
+            }
+            if (isHold) setWasOnHold(true);
+          } else {
+            setIsHoldOrder(false);
+          }
+        } catch (error) {
+          console.error("Error fetching hold status:", error);
+          setIsHoldOrder(false);
+        }
+      };
+
+      fetchOrderDetails();
+      fetchHoldStatus();
+    }, [orderId, userId]),
+  );
 
   useEffect(() => {
     const fetchHoldStatus = async () => {
@@ -159,12 +195,21 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
           { headers: { Authorization: `Bearer ${storedToken}` } },
         );
         if (response.data.success && response.data.data) {
-          setIsHoldOrder(response.data.data.isHold);
-          const { holdReason: reason, otherReason } = response.data.data;
+          const {
+            isHold,
+            holdReason: reason,
+            otherReason,
+          } = response.data.data;
+          setIsHoldOrder(isHold);
+
           if (reason) {
             setHoldReason(
               reason === "Other" && otherReason ? otherReason : reason,
             );
+            setWasOnHold(true);
+          }
+          if (isHold) {
+            setWasOnHold(true);
           }
         } else {
           setIsHoldOrder(false);
@@ -507,11 +552,10 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
 
   const showHoldStep =
     status === "Hold" ||
-    ((isHoldOrder || holdReason !== null) &&
-      ["On the way", "Delivered", "Return"].includes(status));
+    (wasOnHold && ["On the way", "Delivered", "Return"].includes(status));
 
   const showRestartedOnTheWayStep =
-    status === "Return" && (isHoldOrder || holdReason !== null);
+    wasOnHold && ["On the way", "Delivered", "Return"].includes(status);
 
   return (
     <KeyboardAvoidingView
@@ -693,7 +737,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
               )}
 
               {status === "Return" && returnReason && (
-                <View style={{ paddingLeft: 20, marginTop: 8 }}>
+                <View style={{ marginTop: 8 }}>
                   <View className="mt-[-7] ml-2 p-4">
                     <View
                       style={{ flexDirection: "row", alignItems: "flex-start" }}
@@ -748,7 +792,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                         customerData?.buildingType || order.buildingType;
                       if (buildingType === "Apartment") {
                         return (
-                            `${customerData.buildingDetails.houseNo || ""}, ${customerData.buildingDetails.floorNo || ""}, ${customerData.buildingDetails.buildingNo || ""}, ${customerData.buildingDetails.buildingName || ""}, ${customerData.buildingDetails.unitNo || ""}, ${customerData.buildingDetails.streetName || ""}, ${customerData.buildingDetails.city || ""}`
+                          `${customerData.buildingDetails.houseNo || ""}, ${customerData.buildingDetails.floorNo || ""}, ${customerData.buildingDetails.buildingNo || ""}, ${customerData.buildingDetails.buildingName || ""}, ${customerData.buildingDetails.unitNo || ""}, ${customerData.buildingDetails.streetName || ""}, ${customerData.buildingDetails.city || ""}`
                             .replace(/,\s*,/g, ",")
                             .replace(/^,\s*|,\s*$/g, "")
                             .trim() ||
@@ -843,7 +887,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
               {selectedReportOption}{" "}
             </Text>
             <View className="flex w-3/5 mx-auto">
-              {status !== "Cancelled" && (
+              {status !== "Cancelled" && status !== "Ordered" && (
                 <View
                   style={{
                     marginHorizontal: 20,
@@ -1054,7 +1098,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                   colors={
                     tempSelectedReportOption
                       ? ["#040404ff", "#030203ff"]
-                      : ["#CCCCCC", "#CCCCCC"]
+                      : ["#E5E7EB", "#E5E7EB"]
                   }
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
@@ -1062,7 +1106,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                 >
                   <Text
                     style={{
-                      color: tempSelectedReportOption ? "#fff" : "#666",
+                      color: tempSelectedReportOption ? "#fff" : "#000",
                       fontWeight: "600",
                     }}
                   >

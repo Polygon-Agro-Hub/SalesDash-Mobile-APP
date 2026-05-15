@@ -328,7 +328,6 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
           <CustomersScreenSkeleton />
         ) : (
           <View className="flex-1 mx-auto w-full max-w-[500px]">
-
             {/* Search Bar */}
             <View className="flex-row items-center bg-[#F5F1FC] px-6 py-0 rounded-full mt-[-22px] mx-6 shadow-md h-12">
               <TextInput
@@ -364,7 +363,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
               </TouchableOpacity>
             )}
 
-            <View style={{ paddingVertical: 16 }} className="flex-1 px-6">
+            <View style={{ paddingVertical: 10 }} className="flex-1 px-6">
               {error ? (
                 <View className="flex-1 justify-center items-center px-4">
                   <Text className="text-red-500 text-center mt-4">{error}</Text>
@@ -376,7 +375,15 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                   </TouchableOpacity>
                 </View>
               ) : isEmpty ? (
-                <View className="flex-1 justify-center items-center">
+                <View
+                  style={{
+                    flex: 1,
+                    marginBottom:80,
+                    justifyContent: "center",
+                    alignItems: "center",
+                    paddingVertical: 16,
+                  }}
+                >
                   <Image
                     source={require("@/assets/images/public/no-data.webp")}
                     style={{
@@ -386,11 +393,25 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                     }}
                   />
                   {searchQuery ? (
-                    <Text className="text-black italic text-center mt-4">
+                    <Text
+                      style={{
+                        color: "black",
+                        fontStyle: "italic",
+                        textAlign: "center",
+                        marginTop: 16,
+                      }}
+                    >
                       No customers found for "{searchQuery}"
                     </Text>
                   ) : (
-                    <Text className="text-black italic text-center mt-4">
+                    <Text
+                      style={{
+                        color: "black",
+                        fontStyle: "italic",
+                        textAlign: "center",
+                        marginTop: 16,
+                      }}
+                    >
                       No registered customers yet
                     </Text>
                   )}
@@ -477,7 +498,6 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
           </View>
         )}
       </View>
-
     </KeyboardAvoidingView>
   );
 };
