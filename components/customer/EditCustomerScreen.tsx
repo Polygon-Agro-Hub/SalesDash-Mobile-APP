@@ -225,7 +225,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
       className="text-gray-700 mb-1 font-medium"
       style={{ fontSize: RESPONSIVE_FONT_SIZE }}
     >
-      {children} <Text className="text-red-500">*</Text>
+      {children} <Text className="text-black">*</Text>
     </Text>
   );
 

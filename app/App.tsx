@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Alert, StatusBar } from "react-native";
+import { Alert, Platform, StatusBar } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
@@ -49,11 +49,18 @@ import NetInfo from "@react-native-community/netinfo";
 import AttachGeoLocationScreen from "@/components/location/AttachGeoLocationScreen";
 import ViewLocationScreen from "@/components/location/ViewLocationScreen";
 import AttachGeoLocationScreenEdit from "@/components/location/AttachGeoLocationScreenEdit";
+import * as ExpoNavigationBar from "expo-navigation-bar";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function MainTabNavigator() {
+  useEffect(() => {
+    if (Platform.OS === "android") {
+      ExpoNavigationBar.setBackgroundColorAsync("#D1D5DB");
+      ExpoNavigationBar.setButtonStyleAsync("dark");
+    }
+  }, []);
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -145,7 +152,10 @@ function AppContent() {
             <Stack.Screen name="OtpScreenUp" component={OtpScreenUp} />
             <Stack.Screen name="OrderScreen" component={OrderScreen as any} />
             <Stack.Screen name="CratScreen" component={CratScreen as any} />
-            <Stack.Screen name="SelectOrderType" component={SelectOrderType as any} />
+            <Stack.Screen
+              name="SelectOrderType"
+              component={SelectOrderType as any}
+            />
             <Stack.Screen
               name="ViewComplainScreen"
               component={ViewComplainScreen}

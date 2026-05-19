@@ -159,7 +159,7 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
             }}
             showsVerticalScrollIndicator={true}
           >
-            <View className="flex-row justify-between items-start mx-6">
+            <View className="flex-row justify-between items-start mb-4 mx-6">
               <View className="flex-1 mr-4">
                 <Text
                   className="text-xl font-bold text-[#7240D3]"
