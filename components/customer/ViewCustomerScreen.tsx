@@ -32,6 +32,7 @@ import { Entypo, FontAwesome, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import LoadingPage from "../common/LoadingPage";
 import CustomHeader from "../common/CustomHeader";
+import FixedMarqueeText from "../common/MarqueeText";
 
 type ViewCustomerScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -153,7 +154,6 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
           setLongitude(null);
         }
 
-        // ✅ Update display values from fresh API data
         const freshFirstName = response.data.firstName || "";
         const freshLastName = response.data.lastName || "";
         const freshTitle = response.data.title || "";
@@ -356,133 +356,185 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       enabled
       style={{ flex: 1 }}
     >
-      <CustomHeader
-        title={`${customerTitle}. ${customerName}`}
-        titleColor="#000000"
-        showBackButton={true}
-        navigation={navigation}
-        transparent
-        onBackPress={() => navigation.navigate("CustomersScreen")}
-        rightComponent={
+      <View className="flex-1 bg-white">
+        <View
+          style={{
+            paddingTop: 12,
+            paddingHorizontal: 12,
+            flexDirection: "row",
+            alignItems: "center",
+            backgroundColor: "transparent",
+          }}
+        >
+          {/* Back button */}
+          <TouchableOpacity
+            onPress={() => navigation.navigate("CustomersScreen")}
+            style={{
+              width: 45,
+              height: 45,
+              borderRadius: 18,
+              backgroundColor: "#F6F6F680",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              marginLeft: 10,
+              zIndex: 1,
+            }}
+            activeOpacity={0.7}
+          >
+            <Entypo name="chevron-left" size={25} color={"black"} />
+          </TouchableOpacity>
+
+          <View style={{ flex: 1, alignItems: "center", overflow: "hidden" }}>
+            {`${customerTitle}. ${customerName}`.length > 25 ? (
+              <FixedMarqueeText
+                text={`${customerTitle}. ${customerName}`}
+                style={{ fontSize: 16, fontWeight: "bold" }}
+                speed={50}
+              />
+            ) : (
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: "bold",
+                  color: "#000",
+                  textAlign: "center",
+                }}
+              >
+                {`${customerTitle}. ${customerName}`}
+              </Text>
+            )}
+          </View>
+
           <TouchableOpacity
             onPress={() =>
               navigation.navigate("EditCustomerScreen", {
                 id,
                 customerId,
-                name: customerName, // ✅ pass fresh state
-                title: customerTitle, // ✅ pass fresh state
+                name: customerName,
+                title: customerTitle,
               })
             }
+            style={{
+              width: 45,
+              height: 45,
+              borderRadius: 18,
+              backgroundColor: "#F6F6F680",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              marginRight: 10,
+              zIndex: 1,
+            }}
+            activeOpacity={0.7}
           >
-            <MaterialIcons name="edit" size={24} color="#6839CF" />
+            <MaterialIcons name="edit" size={22} color="#6839CF" />
           </TouchableOpacity>
-        }
-      />
-      <View className="flex-1 bg-white">
+        </View>
         {/* Header Section */}
-        <View className="mt-14">
-          <View className="bg-white flex-row rounded-b-[35px] items-center justify-between z-50 mt-4 px-5">
-            <View className="flex-1 justify-center items-center gap-1">
-              <Text
-                className="text-gray-500 text-base"
-                style={{ textAlign: "center" }}
-              >
-                Customer ID: {customerId}
-              </Text>
-              <TouchableOpacity
-                onPress={() =>
-                  navigation.navigate("ExcludeItemEditSummery", {
-                    id,
-                    customerId,
-                    name: customerName, // ✅
-                    title: customerTitle, // ✅
-                  })
-                }
-              >
-                <View className="flex-row justify-center items-center gap-2">
-                  <Text className="text-[#7240D3] underline">
-                    Exclude Item List
-                  </Text>
-                  <AntIcons name="external-link" size={20} color="#6C3CD1" />
-                </View>
-              </TouchableOpacity>
 
-              <TouchableOpacity
-                onPress={() => {
-                  if (latitude !== null && longitude !== null) {
-                    navigation.navigate("ViewLocationScreen", {
-                      latitude: latitude,
-                      longitude: longitude,
-                      locationName: selectedLocationName,
-                    });
-                  } else {
-                    Alert.alert(
-                      "Location Unavailable",
-                      "Customer location data is not available.",
-                    );
-                  }
-                }}
-              >
-                <View className="flex-row justify-center items-center gap-1 mb-3">
-                  <Text className="text-[#FF0000] underline">
-                    {loadingCustomerData
-                      ? "Loading Location"
-                      : "View Geo Location"}
-                  </Text>
-                  <Entypo name="location-pin" size={20} color="#FF0000" />
-                </View>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Action Buttons */}
-          <View className="bg-[#F1E8FF] rounded-b-[35px] pt-3 shadow-md mt-[-20] items-center z-5">
-            <View className="flex-row justify-between mb-4 gap-x-4 mt-2">
-              <TouchableOpacity
-                onPress={handleGetACall}
-                className="flex-row bg-[#6B3BCF] px-4 py-2 rounded-full items-center mt-5"
-                style={{
-                  shadowColor: "#000000",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.2,
-                  shadowRadius: 4,
-                  elevation: 4,
-                }}
-              >
-                <Ionicons name="call" size={20} color="white" />
-                <Text className="text-white font-bold text-lg ml-2">
-                  Get a Call
+        <View className="bg-white flex-row rounded-b-[35px] items-center justify-between z-50  px-5">
+          <View className="flex-1 justify-center items-center gap-1">
+            <Text
+              className="text-gray-500 text-base"
+              style={{ textAlign: "center" }}
+            >
+              Customer ID: {customerId}
+            </Text>
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate("ExcludeItemEditSummery", {
+                  id,
+                  customerId,
+                  name: customerName,
+                  title: customerTitle,
+                })
+              }
+            >
+              <View className="flex-row justify-center items-center gap-2">
+                <Text className="text-[#7240D3] underline">
+                  Exclude Item List
                 </Text>
-              </TouchableOpacity>
+                <AntIcons name="external-link" size={20} color="#6C3CD1" />
+              </View>
+            </TouchableOpacity>
 
-              <TouchableOpacity
-                onPress={() =>
-                  navigation.navigate("SelectOrderType" as any, {
-                    id,
-                    customerId,
-                    name: customerName, // ✅
-                    title: customerTitle, // ✅
-                    number: customerNumber, // ✅
-                    customerscreencustomerid: customerId,
-                  })
+            <TouchableOpacity
+              onPress={() => {
+                if (latitude !== null && longitude !== null) {
+                  navigation.navigate("ViewLocationScreen", {
+                    latitude: latitude,
+                    longitude: longitude,
+                    locationName: selectedLocationName,
+                  });
+                } else {
+                  Alert.alert(
+                    "Location Unavailable",
+                    "Customer location data is not available.",
+                  );
                 }
-                className="flex-row bg-[#6B3BCF] px-4 py-2 rounded-full items-center mt-5"
-                style={{
-                  shadowColor: "#000000",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.2,
-                  shadowRadius: 4,
-                  elevation: 4,
-                }}
-              >
-                <Ionicons name="add-circle" size={24} color="white" />
-                <Text className="text-white font-bold text-lg ml-2">
-                  New Order
+              }}
+            >
+              <View className="flex-row justify-center items-center gap-1 mb-3">
+                <Text className="text-[#FF0000] underline">
+                  {loadingCustomerData
+                    ? "Loading Location"
+                    : "View Geo Location"}
                 </Text>
-              </TouchableOpacity>
-            </View>
+                <Entypo name="location-pin" size={20} color="#FF0000" />
+              </View>
+            </TouchableOpacity>
           </View>
         </View>
+
+        {/* Action Buttons */}
+        <View className="bg-[#F1E8FF] rounded-b-[35px] pt-3 shadow-md mt-[-20] items-center z-5">
+          <View className="flex-row justify-between mb-4 gap-x-4 mt-2">
+            <TouchableOpacity
+              onPress={handleGetACall}
+              className="flex-row bg-[#6B3BCF] px-4 py-2 rounded-full items-center mt-5"
+              style={{
+                shadowColor: "#000000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.2,
+                shadowRadius: 4,
+                elevation: 4,
+              }}
+            >
+              <Ionicons name="call" size={20} color="white" />
+              <Text className="text-white font-bold text-lg ml-2">
+                Get a Call
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate("SelectOrderType" as any, {
+                  id,
+                  customerId,
+                  name: customerName,
+                  title: customerTitle,
+                  number: customerNumber,
+                  customerscreencustomerid: customerId,
+                })
+              }
+              className="flex-row bg-[#6B3BCF] px-4 py-2 rounded-full items-center mt-5"
+              style={{
+                shadowColor: "#000000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.2,
+                shadowRadius: 4,
+                elevation: 4,
+              }}
+            >
+              <Ionicons name="add-circle" size={24} color="white" />
+              <Text className="text-white font-bold text-lg ml-2">
+                New Order
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         <View className="flex-1 mx-auto w-full max-w-[500px]">
           {/* Search and Filters */}
           <View className="mx-6">
@@ -565,7 +617,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                     resizeMode: "contain",
                   }}
                 />
-                <Text className="text-black text-base text-center mt-3">
+                <Text className="text-black italic text-center mt-3">
                   No orders found
                 </Text>
               </View>
@@ -604,7 +656,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                       <View className="flex-row justify-between items-center">
                         <Text
                           className="font-semibold text-gray-900"
-                          style={{ fontSize: SCREEN_HEIGHT > 900 ? 20 : 18 }}
+                          style={{ fontSize: SCREEN_HEIGHT > 900 ? 20 : 16 }}
                         >
                           Order: #{item.InvNo || "N/A"}
                         </Text>
@@ -699,7 +751,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                     resizeMode: "contain",
                   }}
                 />
-                <Text className="text-black text-base text-center mt-4">
+                <Text className="text-black italic text-center mt-4">
                   {orders.length === 0
                     ? "No orders found"
                     : searchText

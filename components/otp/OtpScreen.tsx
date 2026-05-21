@@ -341,7 +341,7 @@ const OtpScreen: React.FC = () => {
               </Text>
 
               {/* Resend OTP */}
-              <View className="flex-row items-center justify-center my-3">
+              <View className="flex-row items-center justify-center mb-5 my-3">
                 <Text className="text-black font-semibold">
                   Didn't receive the OTP ?
                 </Text>

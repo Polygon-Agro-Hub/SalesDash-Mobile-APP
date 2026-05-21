@@ -374,13 +374,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                 <View className="mb-4">
                   <Text
                     className="text-black mb-1"
-                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 16 }}
+                    style={{ fontSize: hp(2)  }}
                   >
                     Employee ID
                   </Text>
                   <Text
                     className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-3 text-black"
-                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 16 }}
+                    style={{ fontSize: hp(2)  }}
                   >
                     {formData.empId}
                   </Text>
@@ -389,13 +389,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                 <View className="mb-4">
                   <Text
                     className="text-black mb-1"
-                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 16 }}
+                    style={{ fontSize: hp(2)  }}
                   >
                     First Name
                   </Text>
                   <Text
                     className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-3 text-black"
-                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 16 }}
+                    style={{ fontSize: hp(2)  }}
                   >
                     {formData.firstName}
                   </Text>
@@ -404,13 +404,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                 <View className="mb-4">
                   <Text
                     className="text-black mb-1"
-                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 16 }}
+                    style={{ fontSize: hp(2)  }}
                   >
                     Last Name
                   </Text>
                   <Text
                     className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-3 text-black"
-                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 16 }}
+                    style={{ fontSize: hp(2)  }}
                   >
                     {formData.lastName}
                   </Text>
@@ -419,13 +419,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                 <View className="mb-4">
                   <Text
                     className="text-black mb-1"
-                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 16 }}
+                    style={{ fontSize: hp(2)  }}
                   >
                     Phone Number - 1
                   </Text>
                   <Text
                     className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-3 text-black"
-                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 16 }}
+                    style={{ fontSize: hp(2)  }}
                   >
                     {formData.phoneNumber1}
                   </Text>
@@ -434,13 +434,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                 <View className="mb-4">
                   <Text
                     className="text-black mb-1"
-                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 16 }}
+                    style={{ fontSize: hp(2)  }}
                   >
                     Phone Number - 2
                   </Text>
                   <Text
                     className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-3 text-black"
-                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 16 }}
+                    style={{ fontSize: hp(2)  }}
                   >
                     {formData.phoneNumber2 || "---"}
                   </Text>
@@ -449,13 +449,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                 <View className="mb-4">
                   <Text
                     className="text-black mb-1"
-                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 16 }}
+                    style={{ fontSize: hp(2)  }}
                   >
                     NIC Number
                   </Text>
                   <Text
                     className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-3 text-black"
-                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 16 }}
+                    style={{ fontSize: hp(2)  }}
                   >
                     {formData.nic}
                   </Text>
@@ -464,14 +464,14 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                 <View className="mb-4">
                   <Text
                     className="text-black mb-1"
-                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 16 }}
+                    style={{ fontSize: hp(2)  }}
                   >
                     Email Address
                   </Text>
 
                   <Text
                     className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-3 text-black"
-                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 16 }}
+                    style={{ fontSize: hp(2)  }}
                   >
                     {formData.email}
                   </Text>
@@ -480,13 +480,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                 <View className="mb-4">
                   <Text
                     className="text-black mb-1"
-                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 16 }}
+                    style={{ fontSize: hp(2)  }}
                   >
                     Building / House No
                   </Text>
                   <Text
                     className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-3 text-black"
-                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 16 }}
+                    style={{ fontSize: hp(2)  }}
                   >
                     {formData.houseNumber}
                   </Text>
@@ -495,13 +495,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                 <View className="mb-4">
                   <Text
                     className="text-black mb-1"
-                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 16 }}
+                    style={{ fontSize: hp(2)  }}
                   >
                     Street Name
                   </Text>
                   <Text
                     className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-3 text-black"
-                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 16 }}
+                    style={{ fontSize: hp(2)  }}
                   >
                     {formData.streetName}
                   </Text>
@@ -510,13 +510,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                 <View className="mb-4">
                   <Text
                     className="text-black mb-1"
-                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 16 }}
+                    style={{ fontSize: hp(2)  }}
                   >
                     City
                   </Text>
                   <Text
                     className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-3 text-black"
-                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 16 }}
+                    style={{ fontSize: hp(2)  }}
                   >
                     {formData.city}
                   </Text>

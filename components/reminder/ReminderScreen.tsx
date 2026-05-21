@@ -255,10 +255,10 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
           width: "100%",
           justifyContent: "center",
           alignItems: "center",
-          paddingTop: 10,
+         
         }}
       >
-        <View className="w-full max-w-[500px] items-center">
+        <View className="w-full max-w-[500px] items-center justify-center">
           <Text
             className="text-white font-bold"
             style={{ fontSize: SCREEN_HEIGHT > 900 ? 20 : 18 }}
@@ -321,7 +321,7 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
                         <View className="flex-1 ml-5">
                           <Text
                             className="text-gray-800 font-bold"
-                            style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 16 }}
+                            style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 14 }}
                           >
                             {item.title}
                           </Text>

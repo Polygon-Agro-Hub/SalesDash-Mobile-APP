@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
 import Icon from "react-native-vector-icons/Ionicons";
@@ -41,6 +41,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [empIdError, setEmpIdError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [loading, setLoading] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const passwordRef = useRef<TextInput>(null);
 
   const validateEmployeeId = (id: string): string => {
     if (id.trim() === "") return "Employee ID is required";
@@ -165,7 +167,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={{ flex: 1, backgroundColor: "white" }}
     >
       <ScrollView
@@ -267,6 +269,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 }}
                 autoCapitalize="characters"
                 returnKeyType="next"
+                onSubmitEditing={() => passwordRef.current?.focus()}
               />
             </View>
 
@@ -315,6 +318,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 }}
                 returnKeyType="done"
                 onSubmitEditing={handleSignIn}
+                ref={passwordRef}
+                onFocus={() =>
+                  scrollViewRef.current?.scrollToEnd({ animated: true })
+                }
               />
 
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>

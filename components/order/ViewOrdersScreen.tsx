@@ -370,7 +370,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
               className="text-white font-semibold"
               style={{ fontSize: SCREEN_HEIGHT > 900 ? 20 : 18 }}
             >
-              Total Orders: <Text className="font-bold">{totalCount}</Text>
+              Total Orders: <Text className="font-bold">{String(totalCount).padStart(2, '0')}</Text>
             </Text>
           </View>
         </LinearGradient>
@@ -459,7 +459,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                   />
                   <Text
                     className="text-black italic text-center mt-4"
-                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 16 }}
+                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 14 }}
                   >
                     No orders found
                   </Text>
@@ -517,7 +517,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                         >
                           <Text
                             style={{
-                              fontSize: SCREEN_HEIGHT > 900 ? 20 : 18,
+                              fontSize: SCREEN_HEIGHT > 900 ? 20 : 16,
                               fontWeight: "600",
                               color: "#393939",
                             }}
@@ -525,34 +525,28 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                             Order : #{item.InvNo}
                           </Text>
                           <View
-                            style={{
-                              borderRadius: 20,
-                              minWidth: 100,
-                              minHeight: 30,
-                              paddingHorizontal: 12,
-                              justifyContent: "center",
-                              alignItems: "center",
-                              backgroundColor:
-                                item.status === "Ordered"
-                                  ? "#F5FF85"
-                                  : item.status === "On the way"
-                                    ? "#FFEDCF"
-                                    : item.status === "Processing"
-                                      ? "#CFE1FF"
-                                      : item.status === "Delivered"
-                                        ? "#BBFFC6"
-                                        : item.status === "Collected"
-                                          ? "#F8FEA5"
-                                          : item.status === "Hold"
-                                            ? "#FFEDCF"
-                                            : item.status === "Out For Delivery"
-                                              ? "#FCD4FF"
+                            className={`px-3 py-1 rounded-full ${
+                              item.status === "Ordered"
+                                ? "bg-[#F5FF85]"
+                                : item.status === "Processing"
+                                  ? "bg-[#CFE1FF]"
+                                  : item.status === "Out For Delivery"
+                                    ? "bg-[#FCD4FF]"
+                                    : item.status === "Collected"
+                                      ? "bg-[#F8FEA5]"
+                                      : item.status === "On the way"
+                                        ? "bg-[#FFEDCF]"
+                                        : item.status === "Hold"
+                                          ? "bg-[#FFEDCF]"
+                                          : item.status === "Delivered"
+                                            ? "bg-[#BBFFC6]"
+                                            : item.status === "Cancelled"
+                                              ? "bg-[#DFDFDF]"
                                               : item.status === "Return"
-                                                ? "#FFDCDA"
-                                                : item.status === "Cancelled"
-                                                  ? "#DFDFDF"
-                                                  : "#EAEAEA",
-                            }}
+                                                ? "bg-[#FFDCDA]"
+                                                : "bg-[#EAEAEA]"
+                            }`}
+                            style={{ minWidth: 100, alignItems: "center" }}
                           >
                             <Text
                               style={{

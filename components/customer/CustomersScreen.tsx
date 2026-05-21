@@ -317,7 +317,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
             >
               Total Customers:{" "}
               <Text className="font-bold">
-                {searchQuery ? filteredCustomers.length : totalCount}
+                {String(searchQuery ? filteredCustomers.length : totalCount).padStart(2, "0")}
               </Text>
             </Text>
           </View>
@@ -329,7 +329,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
         ) : (
           <View className="flex-1 mx-auto w-full max-w-[500px]">
             {/* Search Bar */}
-            <View className="flex-row items-center bg-[#F5F1FC] px-6 py-0 rounded-full mt-[-22px] mx-6 shadow-md h-12">
+            <View className="flex-row items-center bg-[#F5F1FC] h-[50px] px-6 py-0 mb-5 rounded-full mt-[-22px] mx-6 shadow-md h-12">
               <TextInput
                 value={searchQuery}
                 onChangeText={handleSearch}
@@ -339,7 +339,9 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                 style={{
                   fontStyle: "italic",
                   includeFontPadding: false,
+                  fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
                 }}
+             
               />
               <FontAwesome name="search" size={22} color="#884EDC" />
             </View>
@@ -464,7 +466,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                             className="text-gray-700 font-semibold"
                             numberOfLines={2}
                             ellipsizeMode="tail"
-                            style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 16 }}
+                            style={{ fontSize: SCREEN_HEIGHT > 900 ? 20 : 14, }}
                           >
                             {item.title}. {item.firstName} {item.lastName}
                           </Text>

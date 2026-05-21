@@ -119,25 +119,21 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
               let changebyValue = item.changeby;
               let startValue = item.startValue;
 
-              const needsApiFetch = true;
-
-              if (needsApiFetch) {
-                try {
-                  const storedToken = await AsyncStorage.getItem("authToken");
-                  const apiUrl = `${environment.API_BASE_URL}api/packages/getChnageby/${item.id}`;
-                  const response = await axios.get(apiUrl, {
-                    headers: { Authorization: `Bearer ${storedToken}` },
-                  });
-                  if (response.data.data) {
-                    changebyValue = response.data.data.changeby;
-                    startValue = response.data.data.startValue;
-                  }
-                } catch (error) {
-                  console.error(
-                    `Error fetching changeby for item ${item.id}:`,
-                    error,
-                  );
+              try {
+                const storedToken = await AsyncStorage.getItem("authToken");
+                const apiUrl = `${environment.API_BASE_URL}api/packages/getChnageby/${item.id}`;
+                const response = await axios.get(apiUrl, {
+                  headers: { Authorization: `Bearer ${storedToken}` },
+                });
+                if (response.data.data) {
+                  changebyValue = response.data.data.changeby;
+                  startValue = response.data.data.startValue;
                 }
+              } catch (error) {
+                console.error(
+                  `Error fetching changeby for item ${item.id}:`,
+                  error,
+                );
               }
 
               const startValueNum =
@@ -153,7 +149,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
               const unitType =
                 item.unitType?.toLowerCase() === "g" ? "g" : "kg";
 
-              let initialQuantity;
+              let initialQuantity: number;
               if (fromOrderSummary) {
                 initialQuantity =
                   typeof item.quantity === "string"
@@ -161,17 +157,19 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
                     : item.quantity || startValueNum;
               } else {
                 initialQuantity = startValueNum;
+                if (unitType === "g") {
+                  initialQuantity *= 1000;
+                }
               }
 
-              if (unitType === "g" && !fromOrderSummary) {
-                initialQuantity *= 1000;
-              }
-
-              let pricePerKg, normalPricePerKg, discountPerKg;
+              let pricePerKg: number;
+              let normalPricePerKg: number;
+              let discountPerKg: number;
 
               if (fromOrderSummary) {
                 const quantityInKg =
                   unitType === "g" ? initialQuantity / 1000 : initialQuantity;
+
                 if (quantityInKg > 0) {
                   pricePerKg = item.discountedPrice / quantityInKg;
                   normalPricePerKg = item.normalPrice / quantityInKg;
@@ -343,7 +341,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
           name: item.name,
           price: roundToTwoDecimals(item.discountedPrice * weightInKg),
           discount: roundToTwoDecimals(item.discount * weightInKg),
-          qty: weightInKg,
+          qty: item.changeby,
           unitType: item.unitType,
           isPackage: isPackage,
         };
@@ -445,160 +443,172 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
             className="flex-1 mt-4 px-6"
             showsVerticalScrollIndicator={false}
           >
-        {cartItems.map((item) => (
-          <View
-            key={item.id}
-            className="flex-row items-start py-4 border-b border-gray-200"
-          >
-            <TouchableOpacity
-              onPress={() => toggleItemSelection(item.id)}
-              className="mr-2 mt-[5%]"
-            >
+            {cartItems.map((item) => (
               <View
-                className={`w-5 h-5 rounded-sm border ${
-                  item.selected ? "bg-black border-black" : "border-gray-400"
-                } justify-center items-center`}
+                key={item.id}
+                className="flex-row items-start py-4 border-b border-gray-200"
               >
-                {item.selected && (
-                  <Ionicons name="checkmark" size={14} color="white" />
-                )}
-              </View>
-            </TouchableOpacity>
-
-            <View className="flex-1">
-              <Text className="font-medium text-gray-800 ">{item.name}</Text>
-
-              <View className="flex-row items-center justify-between mt-1">
-                <Text className="text-xs text-gray-600">
-                  Rs. {formatPrice(item.discountedPrice)}
-                  {"\n"}(per kg)
-                </Text>
-
-                <View className="flex-row items-center ">
-                  <View className="flex-row mr-2 items-center">
-                    <TouchableOpacity
-                      className={`w-6 h-6 rounded-md border shadow-xl items-center  justify-center ${
-                        item.unitType === "kg"
-                          ? "bg-purple-100 border-[#3E206D]"
-                          : "bg-white border-[#A3A3A3]"
-                      }`}
-                      style={{
-                        shadowColor: "#000",
-                        shadowOpacity: 0.5,
-                        shadowRadius: 10,
-                        elevation: 10,
-                      }}
-                      onPress={() => changeUnit(item.id, "kg")}
-                    >
-                      <Text
-                        className={`text-xs mt-[-3] ${
-                          item.unitType === "kg"
-                            ? "text-purple-600"
-                            : "text-gray-600"
-                        }`}
-                      >
-                        kg
-                      </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      className={`w-6 h-6 rounded-md border ml-2 shadow-xl items-center justify-center ${
-                        item.unitType === "g"
-                          ? "bg-purple-100 border-[#3E206D]"
-                          : "bg-white border-[#A3A3A3]"
-                      }`}
-                      style={{
-                        shadowColor: "#000",
-                        shadowOpacity: 0.5,
-                        shadowRadius: 10,
-                        elevation: 10,
-                      }}
-                      onPress={() => changeUnit(item.id, "g")}
-                    >
-                      <Text
-                        className={`text-xs mt-[-5] ${
-                          item.unitType === "g"
-                            ? "text-purple-600"
-                            : "text-gray-600"
-                        }`}
-                      >
-                        g
-                      </Text>
-                    </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => toggleItemSelection(item.id)}
+                  className="mr-2 mt-[5%]"
+                >
+                  <View
+                    className={`w-5 h-5 rounded-sm border ${
+                      item.selected
+                        ? "bg-black border-black"
+                        : "border-gray-400"
+                    } justify-center items-center`}
+                  >
+                    {item.selected && (
+                      <Ionicons name="checkmark" size={14} color="white" />
+                    )}
                   </View>
+                </TouchableOpacity>
 
-                  <View className="flex-row items-center">
-                    <TouchableOpacity onPress={() => decreaseQuantity(item.id)}>
-                      <FontAwesome6
-                        name="circle-minus"
-                        size={20}
-                        color="#5D5D5D"
-                      />
-                    </TouchableOpacity>
+                <View className="flex-1">
+                  <Text className="font-medium text-gray-800">{item.name}</Text>
 
-                    <Text className="mx-2 text-xs w-14 text-center">
-                      {formatQuantity(item)}
+                  <View className="flex-row items-center justify-between mt-1">
+                    <Text className="text-xs text-gray-600">
+                      Rs. {formatPrice(item.discountedPrice)}
+                      {"\n"}(per kg)
                     </Text>
 
-                    <TouchableOpacity onPress={() => increaseQuantity(item.id)}>
-                      <Ionicons name="add-circle" size={24} color="#5D5D5D" />
-                    </TouchableOpacity>
+                    <View className="flex-row items-center">
+                      <View className="flex-row mr-2 items-center">
+                        <TouchableOpacity
+                          className={`w-6 h-6 rounded-md border shadow-xl items-center justify-center ${
+                            item.unitType === "kg"
+                              ? "bg-purple-100 border-[#3E206D]"
+                              : "bg-white border-[#A3A3A3]"
+                          }`}
+                          style={{
+                            shadowColor: "#000",
+                            shadowOpacity: 0.5,
+                            shadowRadius: 10,
+                            elevation: 10,
+                          }}
+                          onPress={() => changeUnit(item.id, "kg")}
+                        >
+                          <Text
+                            className={`text-xs mt-[-3] ${
+                              item.unitType === "kg"
+                                ? "text-purple-600"
+                                : "text-gray-600"
+                            }`}
+                          >
+                            kg
+                          </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          className={`w-6 h-6 rounded-md border ml-2 shadow-xl items-center justify-center ${
+                            item.unitType === "g"
+                              ? "bg-purple-100 border-[#3E206D]"
+                              : "bg-white border-[#A3A3A3]"
+                          }`}
+                          style={{
+                            shadowColor: "#000",
+                            shadowOpacity: 0.5,
+                            shadowRadius: 10,
+                            elevation: 10,
+                          }}
+                          onPress={() => changeUnit(item.id, "g")}
+                        >
+                          <Text
+                            className={`text-xs mt-[-5] ${
+                              item.unitType === "g"
+                                ? "text-purple-600"
+                                : "text-gray-600"
+                            }`}
+                          >
+                            g
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+
+                      <View className="flex-row items-center">
+                        <TouchableOpacity
+                          onPress={() => decreaseQuantity(item.id)}
+                        >
+                          <FontAwesome6
+                            name="circle-minus"
+                            size={20}
+                            color="#5D5D5D"
+                          />
+                        </TouchableOpacity>
+
+                        <Text className="mx-2 text-xs w-14 text-center">
+                          {formatQuantity(item)}
+                        </Text>
+
+                        <TouchableOpacity
+                          onPress={() => increaseQuantity(item.id)}
+                        >
+                          <Ionicons
+                            name="add-circle"
+                            size={24}
+                            color="#5D5D5D"
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
                   </View>
                 </View>
               </View>
+            ))}
+
+            {/* Summary Section */}
+            <View className="py-4 border-t border-gray-200">
+              <View className="flex-row justify-between py-2">
+                <Text className="text-[#8492A3]">
+                  Subtotal (Without Discount)
+                </Text>
+                <Text className="font-bold text-[#CA0000]">
+                  Rs. {formatPrice(currentSubtotal)}
+                </Text>
+              </View>
+
+              <View className="flex-row justify-between py-2">
+                <Text className="text-[#8492A3]">Discount</Text>
+                <Text className="font-medium text-[#686868]">
+                  - Rs. {formatPrice(discount)}
+                </Text>
+              </View>
             </View>
-          </View>
-        ))}
 
-        {/*Summary Section*/}
-        <View className="py-4 border-t border-gray-200">
-          <View className="flex-row justify-between py-2">
-            <Text className="text-[#8492A3]">Subtotal (Without Discount)</Text>
-            <Text className="font-bold text-[#CA0000]">
-              Rs. {formatPrice(currentSubtotal)}
-            </Text>
-          </View>
+            <View className="border-t border-gray-200" />
 
-          <View className="flex-row justify-between py-2">
-            <Text className="text-[#8492A3]">Discount</Text>
-            <Text className="font-medium text-[#686868]">
-              - Rs. {formatPrice(discount)}
-            </Text>
-          </View>
-        </View>
+            <View className="py-4">
+              <View className="flex-row justify-between py-2">
+                <Text className="text-[#8492A3]">Total (Discounted Value)</Text>
+                <Text className="font-bold text-[#3E206D]">
+                  Rs. {formatPrice(totalDiscountedValue)}
+                </Text>
+              </View>
 
-        <View className="border-t border-gray-200" />
+              <View className="flex-row justify-between py-2">
+                <Text className="text-[#8492A3]">Service Fee</Text>
+                <Text className="font-medium text-[#686868]">
+                  + Rs. {SERVICE_FEE.toFixed(2)}
+                </Text>
+              </View>
+            </View>
 
-        <View className="py-4">
-          <View className="flex-row justify-between py-2">
-            <Text className="text-[#8492A3]">Total (Discounted Value)</Text>
-            <Text className="font-bold text-[#3E206D]">
-              Rs. {formatPrice(totalDiscountedValue)}
-            </Text>
-          </View>
+            {/* Separator */}
+            <View className="border-t border-gray-200" />
 
-          <View className="flex-row justify-between py-2">
-            <Text className="text-[#8492A3]">Service Fee</Text>
-            <Text className="font-medium text-[#686868]">
-              + Rs. {SERVICE_FEE.toFixed(2)}
-            </Text>
-          </View>
-        </View>
+            {/* Full Total */}
+            <View className="flex-row justify-between py-5">
+              <Text className="font-semibold text-base text-[#414347]">
+                Full Total
+              </Text>
+              <Text className="font-bold text-xl text-[#212121]">
+                Rs. {formatPrice(fullTotal)}
+              </Text>
+            </View>
 
-        {/* Separator */}
-        <View className="border-t border-gray-200" />
-
-        {/* Full Total – large bold */}
-        <View className="flex-row justify-between py-5">
-          <Text className="font-semibold text-base text-[#414347]">
-            Full Total
-          </Text>
-          <Text className="font-bold text-xl text-[#212121]">
-            Rs. {formatPrice(fullTotal)}
-          </Text>
-        </View>
-
-        <View className="py-4" />
+            <View className="py-4" />
           </ScrollView>
 
           <View className="py-4 items-center">
@@ -625,7 +635,11 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
                   }}
                 >
                   <Text
-                    style={{ color: "#FFFFFF", fontWeight: "500", fontSize: 16 }}
+                    style={{
+                      color: "#FFFFFF",
+                      fontWeight: "500",
+                      fontSize: 16,
+                    }}
                   >
                     {fromOrderSummary ? "Update Cart" : "Confirm"}
                   </Text>

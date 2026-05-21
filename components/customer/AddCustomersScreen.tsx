@@ -1470,6 +1470,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 <TouchableOpacity
                   onPress={openMapForLocation}
                   className="flex-1 items-center"
+                  activeOpacity={1}
                 >
                   <View
                     className="w-1/2 border border-[#6C3CD1] bg-white rounded-full py-3 flex-row items-center justify-center"
