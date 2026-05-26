@@ -1161,6 +1161,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                   }`}
                   style={{ fontSize: INPUT_FONT_SIZE }}
                   placeholder="First Name"
+                  placeholderTextColor="#000000"
                   value={firstName}
                   onChangeText={(text) => {
                     if (text.startsWith(" ")) return;
@@ -1187,6 +1188,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                 }`}
                 style={{ fontSize: INPUT_FONT_SIZE }}
                 placeholder="Last Name"
+                placeholderTextColor="#000000"
                 value={lastName}
                 onChangeText={(text) => {
                   if (text.startsWith(" ")) return;
@@ -1211,6 +1213,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                   phoneError ? "border-red-500" : "border-[#F6F6F6]"
                 }`}
                 style={{ fontSize: INPUT_FONT_SIZE }}
+                placeholderTextColor="#000000"
                 placeholder="ex: +94771234567"
                 keyboardType="phone-pad"
                 value={phoneNumber}
@@ -1239,6 +1242,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                   emailError ? "border-red-500" : "border-[#F6F6F6]"
                 }`}
                 style={{ fontSize: INPUT_FONT_SIZE }}
+                placeholderTextColor="#000000"
                 placeholder="Email Address "
                 keyboardType="email-address"
                 autoCapitalize="none"
@@ -1289,6 +1293,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                     className={`bg-[#F6F6F6] border h-[50px] ${houseNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6`}
                     style={{ fontSize: INPUT_FONT_SIZE }}
                     placeholder="Building / House No (e.g., 14/B)"
+                    placeholderTextColor="#000000"
                     value={houseNo}
                     onChangeText={(text) => {
                       if (text.startsWith(" ")) return;
@@ -1316,6 +1321,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                     className={`bg-[#F6F6F6] border h-[50px] ${streetNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6`}
                     style={{ fontSize: INPUT_FONT_SIZE }}
                     placeholder="Street Name"
+                    placeholderTextColor="#000000"
                     value={streetName}
                     onChangeText={(text) => {
                       if (text.startsWith(" ")) return;
@@ -1376,6 +1382,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                     className={`bg-[#F6F6F6] border h-[50px] ${buildingNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6`}
                     style={{ fontSize: INPUT_FONT_SIZE }}
                     placeholder="Apartment / Building No"
+                    placeholderTextColor="#000000"
                     value={buildingNo}
                     onChangeText={(text) => {
                       if (text.startsWith(" ")) return;
@@ -1403,6 +1410,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                     className={`bg-[#F6F6F6] border h-[50px] ${buildingNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6`}
                     style={{ fontSize: INPUT_FONT_SIZE }}
                     placeholder="Apartment / Building Name"
+                    placeholderTextColor="#000000"
                     value={buildingName}
                     onChangeText={(text) => {
                       if (text.startsWith(" ")) return;
@@ -1430,6 +1438,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                     className={`bg-[#F6F6F6] border h-[50px] ${unitNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6`}
                     style={{ fontSize: INPUT_FONT_SIZE }}
                     placeholder="ex: Building B"
+                    placeholderTextColor="#000000"
                     value={unitNo}
                     onChangeText={(text) => {
                       if (text.startsWith(" ")) return;
@@ -1456,6 +1465,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                   <TextInput
                     className={`bg-[#F6F6F6] border h-[50px] ${floorNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6`}
                     style={{ fontSize: INPUT_FONT_SIZE }}
+                    placeholderTextColor="#000000"
                     placeholder="ex: 3rd Floor"
                     value={floorNo}
                     onChangeText={(text) => {
@@ -1484,6 +1494,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                     className={`bg-[#F6F6F6] border h-[50px] ${houseNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6`}
                     style={{ fontSize: INPUT_FONT_SIZE }}
                     placeholder="Building / House No (e.g., 14/B)"
+                    placeholderTextColor="#000000"
                     value={houseNo}
                     onChangeText={(text) => {
                       if (text.startsWith(" ")) return;
@@ -1511,6 +1522,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                     className={`bg-[#F6F6F6] border h-[50px] ${streetNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6`}
                     style={{ fontSize: INPUT_FONT_SIZE }}
                     placeholder="Street Name"
+                    placeholderTextColor="#000000"
                     value={streetName}
                     onChangeText={(text) => {
                       if (text.startsWith(" ")) return;
@@ -1567,8 +1579,18 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
               <TouchableOpacity
                 onPress={navigateToMapScreen}
                 className="items-center rounded-full mb-3"
+                activeOpacity={1}
               >
-                <View className="border border-[#6C3CD1] rounded-full py-3 px-9 flex-row items-center justify-center">
+                <View
+                  className="w-1/2 border border-[#6C3CD1] bg-white rounded-full py-3 flex-row items-center justify-center"
+                  style={{
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 8,
+                    elevation: 10,
+                  }}
+                >
                   <FontAwesome6
                     name="location-crosshairs"
                     size={20}

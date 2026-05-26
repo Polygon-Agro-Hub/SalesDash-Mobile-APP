@@ -36,8 +36,8 @@ const FixedMarqueeText: React.FC<FixedMarqueeTextProps> = ({
   }, []);
 
   useEffect(() => {
-    const estimatedWidth = Math.max(cleanText.length * 6, 200);
-    setMeasurementWidth(estimatedWidth);
+  
+setMeasurementWidth(9999);
     setTextWidth(0);
 
     if (animationRef.current) {
@@ -177,6 +177,7 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
     flexShrink: 0,
     flexWrap: "nowrap",
+    alignSelf: "flex-start",
   },
   displayContainer: {
     flex: 1,

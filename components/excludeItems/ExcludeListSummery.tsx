@@ -24,6 +24,8 @@ import axios from "axios";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import LottieView from "lottie-react-native";
 import CustomHeader from "../common/CustomHeader";
+import { Entypo } from "@expo/vector-icons";
+import FixedMarqueeText from "../common/MarqueeText";
 
 type ExcludeListSummeryNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -159,6 +161,11 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
     }, [navigation]),
   );
 
+  const fullTitle =
+    customerName.firstName && customerName.lastName
+      ? `${customerName.title}. ${customerName.firstName} ${customerName.lastName}`
+      : "Loading...";
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -166,7 +173,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
       style={{ flex: 1 }}
       className="bg-white"
     >
-      <CustomHeader
+      {/* <CustomHeader
         title={
           customerName.firstName && customerName.lastName
             ? `${customerName.title}. ${customerName.firstName} ${customerName.lastName}`
@@ -187,6 +194,73 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
           style={{ fontSize: 16 }}
           className=" text-center text-black text-xl mt-14"
         >
+          {customerName.firstName && customerName.lastName
+            ? `Customer ID : ${customerName.cusId}`
+            : "Loading..."}
+        </Text>
+      </View> */}
+      {/* ── Inline header with marquee support ── */}
+      <View
+        style={{
+          paddingTop: 12,
+          paddingHorizontal: 12,
+          flexDirection: "row",
+          alignItems: "center",
+          backgroundColor: "transparent",
+        }}
+      >
+        {/* Back button */}
+        <TouchableOpacity
+          onPress={() =>
+            navigation.navigate("ExcludeListAdd", {
+              customerId: Number(customerId),
+            })
+          }
+          style={{
+            width: 45,
+            height: 45,
+            borderRadius: 18,
+            backgroundColor: "#F6F6F680",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+            marginLeft: 10,
+            zIndex: 1,
+          }}
+          activeOpacity={0.7}
+        >
+          <Entypo name="chevron-left" size={25} color="black" />
+        </TouchableOpacity>
+
+        {/* Title — marquee when long */}
+        <View style={{ flex: 1, alignItems: "center", overflow: "hidden" }}>
+          {fullTitle.length > 25 ? (
+            <FixedMarqueeText
+              text={fullTitle}
+              style={{ fontSize: 16, fontWeight: "bold" }}
+              speed={50}
+            />
+          ) : (
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: "bold",
+                color: "#000000",
+                textAlign: "center",
+              }}
+            >
+              {fullTitle}
+            </Text>
+          )}
+        </View>
+
+        {/* Right spacer to keep title centred */}
+        <View style={{ width: 45, marginRight: 10 }} />
+      </View>
+
+      {/* Customer ID */}
+      <View className="mx-auto w-full max-w-[500px]">
+        <Text style={{ fontSize: 16 }} className="text-center text-black mt-4">
           {customerName.firstName && customerName.lastName
             ? `Customer ID : ${customerName.cusId}`
             : "Loading..."}

@@ -175,6 +175,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         bounces={false}
+        style={{ backgroundColor: 'white' }}
       >
         <LinearGradient
           colors={["#9B60E8", "#6E3DD1"]}
@@ -200,7 +201,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             marginTop: -28,
             paddingHorizontal: 24,
             paddingVertical: 32,
-            minHeight: HALF + 40,
+            
           }}
         >
           {/* Center Container */}

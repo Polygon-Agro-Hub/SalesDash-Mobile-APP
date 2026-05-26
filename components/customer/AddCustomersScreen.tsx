@@ -1465,34 +1465,32 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
             )}
 
             {/* Geolocation Section */}
-            <View className="mb-4 mt-2">
-              <View className="flex-row justify-between">
-                <TouchableOpacity
-                  onPress={openMapForLocation}
-                  className="flex-1 items-center"
-                  activeOpacity={1}
+            <View className="mb-4 mt-2 items-center">
+              <TouchableOpacity
+                onPress={openMapForLocation}
+                className="w-1/2"
+                activeOpacity={0.7}
+              >
+                <View
+                  className="border border-[#6C3CD1] bg-white rounded-full py-3 flex-row items-center justify-center"
+                  style={{
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 8,
+                    elevation: 10,
+                  }}
                 >
-                  <View
-                    className="w-1/2 border border-[#6C3CD1] bg-white rounded-full py-3 flex-row items-center justify-center"
-                    style={{
-                      shadowColor: "#000",
-                      shadowOffset: { width: 0, height: 6 },
-                      shadowOpacity: 0.25,
-                      shadowRadius: 8,
-                      elevation: 10,
-                    }}
-                  >
-                    <FontAwesome6
-                      name="location-crosshairs"
-                      size={20}
-                      color="#7C3AED"
-                    />
-                    <Text className="text-[#6C3CD1] font-medium ml-2">
-                      Geo Location
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              </View>
+                  <FontAwesome6
+                    name="location-crosshairs"
+                    size={20}
+                    color="#7C3AED"
+                  />
+                  <Text className="text-[#6C3CD1] font-medium ml-2">
+                    Geo Location
+                  </Text>
+                </View>
+              </TouchableOpacity>
 
               {locationError ? (
                 <Text className="text-red-500 text-xs pl-4 pt-2">

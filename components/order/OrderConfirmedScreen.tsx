@@ -552,25 +552,21 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
       ${
         order?.customerInfo?.buildingType === "Apartment"
           ? `
-    <p class="bold">Apartment Address :</p>
-<p class="headerp">${[
-              customerData?.buildingDetails?.houseNo,
-              customerData?.buildingDetails?.floorNo,
-              customerData?.buildingDetails?.buildingNo,
-              customerData?.buildingDetails?.buildingName,
-              customerData?.buildingDetails?.unitNo,
-              customerData?.buildingDetails?.streetName,
-              customerData?.buildingDetails?.city,
-            ]
-              .filter(Boolean)
-              .join(", ")}</p>
-        `
+  <p class="bold">Apartment Address :</p>
+  ${customerData?.buildingDetails?.buildingNo ? `<p class="headerp"><span class="label">No : </span><span class="value">${customerData.buildingDetails.buildingNo},</span></p>` : ""}
+  ${customerData?.buildingDetails?.buildingName ? `<p class="headerp"><span class="label">Name : </span><span class="value">${customerData.buildingDetails.buildingName},</span></p>` : ""}
+  ${customerData?.buildingDetails?.unitNo ? `<p class="headerp"><span class="label">Flat : </span><span class="value">${customerData.buildingDetails.unitNo},</span></p>` : ""}
+  ${customerData?.buildingDetails?.floorNo ? `<p class="headerp"><span class="label">Floor : </span><span class="value">${customerData.buildingDetails.floorNo},</span></p>` : ""}
+  ${customerData?.buildingDetails?.houseNo ? `<p class="headerp"><span class="label">House No : </span><span class="value">${customerData.buildingDetails.houseNo},</span></p>` : ""}
+  ${customerData?.buildingDetails?.streetName ? `<p class="headerp"><span class="label">Street Name : </span><span class="value">${customerData.buildingDetails.streetName},</span></p>` : ""}
+  ${customerData?.buildingDetails?.city ? `<p class="headerp"><span class="label">City : </span><span class="value">${customerData.buildingDetails.city}</span></p>` : ""}
+    `
           : `
-        <p class="bold">House Address :</p>
-        <p class="headerp"><span class="label">House No:</span> <span class="value">${customerData?.buildingDetails?.houseNo || ""}</span></p>
-        <p class="headerp"><span class="label">Street:</span> <span class="value">${customerData?.buildingDetails?.streetName || ""}</span></p>
-        <p class="headerp"><span class="label">City:</span> <span class="value">${customerData?.buildingDetails?.city || ""}</span></p>
-        `
+  <p class="bold">House Address :</p>
+  ${customerData?.buildingDetails?.houseNo ? `<p class="headerp"><span class="label">House No : </span><span class="value">${customerData.buildingDetails.houseNo},</span></p>` : ""}
+  ${customerData?.buildingDetails?.streetName ? `<p class="headerp"><span class="label">Street Name : </span><span class="value">${customerData.buildingDetails.streetName},</span></p>` : ""}
+  ${customerData?.buildingDetails?.city ? `<p class="headerp"><span class="label">City : </span><span class="value">${customerData.buildingDetails.city}</span></p>` : ""}
+    `
       }
     </div>
           
