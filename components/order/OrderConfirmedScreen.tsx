@@ -27,6 +27,7 @@ import axios from "axios";
 import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import LoadingPage from "../common/LoadingPage";
+import { logoBase64 as logoBase64Fallback } from "./logoBase64";
 
 type OrderConfirmedScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -318,8 +319,8 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
       });
       return `data:image/webp;base64,${base64}`;
     } catch (error) {
-      console.error("Error converting logo to base64:", error);
-      return "";
+      console.error("Error converting logo to base64, using fallback:", error);
+      return logoBase64Fallback;
     }
   };
 
