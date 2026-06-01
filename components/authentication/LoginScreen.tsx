@@ -167,10 +167,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
       style={{ flex: 1, backgroundColor: "white" }}
     >
       <ScrollView
+        ref={scrollViewRef}
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -194,7 +195,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
         <View
           style={{
-            flex: 1,
             backgroundColor: "white",
             borderTopLeftRadius: 32,
             borderTopRightRadius: 32,
@@ -207,7 +207,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           {/* Center Container */}
           <View
             style={{
-              flex: 1,
               justifyContent: "center",
               width: "100%",
               maxWidth: 500,
@@ -271,6 +270,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 autoCapitalize="characters"
                 returnKeyType="next"
                 onSubmitEditing={() => passwordRef.current?.focus()}
+                onFocus={() =>
+                  scrollViewRef.current?.scrollToEnd({ animated: true })
+                }
               />
             </View>
 

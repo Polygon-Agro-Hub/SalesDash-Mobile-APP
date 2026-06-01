@@ -106,6 +106,13 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   const [customerTitle, setCustomerTitle] = useState(initialTitle);
   const [customerNumber, setCustomerNumber] = useState(initialNumber);
 
+  // Synchronize state with route params when they change
+  useEffect(() => {
+    setCustomerName(initialName || "");
+    setCustomerTitle(initialTitle || "");
+    setCustomerNumber(initialNumber || "");
+  }, [initialName, initialTitle, initialNumber]);
+
   useFocusEffect(
     React.useCallback(() => {
       const resetStates = () => {

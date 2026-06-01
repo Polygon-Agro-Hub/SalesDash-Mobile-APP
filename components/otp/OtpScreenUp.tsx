@@ -38,7 +38,7 @@ interface ApiErrorResponse {
 
 const OtpScreenUp: React.FC = () => {
   const navigation = useNavigation<OtpScreenUpNavigationProp>();
-  const [otp, setOtp] = useState<string[]>(["", "", "", "", ""]);
+  const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
   const [timer, setTimer] = useState(60);
@@ -82,7 +82,7 @@ const OtpScreenUp: React.FC = () => {
   const verifyOTP = async () => {
     const otpCode = otp.join("");
 
-    if (otpCode.length !== 5) {
+    if (otpCode.length !== 6) {
       setIsOtpInvalid(true);
       return;
     }
@@ -273,7 +273,7 @@ const OtpScreenUp: React.FC = () => {
 
   const handleResendOtp = async () => {
     try {
-      setOtp(["", "", "", "", ""]);
+      setOtp(["", "", "", "", "", ""]);
       setResendDisabled(true);
       setTimer(60);
 

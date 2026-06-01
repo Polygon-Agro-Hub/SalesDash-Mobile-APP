@@ -30,7 +30,7 @@ type OtpScreenNavigationProp = StackNavigationProp<
 
 const OtpScreen: React.FC = () => {
   const navigation = useNavigation<OtpScreenNavigationProp>();
-  const [otp, setOtp] = useState<string[]>(["", "", "", "", ""]);
+  const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
   const inputRefs = useRef<(TextInput | null)[]>([]);
   const [timer, setTimer] = useState(60);
   const [resendDisabled, setResendDisabled] = useState(true);
@@ -68,7 +68,7 @@ const OtpScreen: React.FC = () => {
   const verifyOTP = async () => {
     const otpCode = otp.join("");
 
-    if (otpCode.length !== 5) {
+    if (otpCode.length !== 6) {
       setIsOtpInvalid(true);
       return;
     }
@@ -163,7 +163,7 @@ const OtpScreen: React.FC = () => {
 
   const handleResendOtp = async () => {
     try {
-      setOtp(["", "", "", "", ""]);
+      setOtp(["", "", "", "", "", ""]);
       setResendDisabled(true);
       setTimer(60);
 

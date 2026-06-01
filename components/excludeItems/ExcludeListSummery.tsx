@@ -41,8 +41,14 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
   route,
   navigation,
 }) => {
-  const { customerId } = route.params || {};
+  const { customerId, name, title, phoneNumber, cusId, id } = route.params || {};
   const [crops, setCrops] = useState<any[]>([]);
+
+  // Split name into first and last name if they are passed as a single string
+  const nameParts = (name || "").trim().split(/\s+/);
+  const initialFirstName = nameParts[0] || "";
+  const initialLastName = nameParts.slice(1).join(" ") || "";
+
   const [customerName, setCustomerName] = useState<{
     firstName: string;
     lastName: string;
@@ -50,11 +56,11 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
     cusId: String;
     phoneNumber: string;
   }>({
-    firstName: "",
-    lastName: "",
-    title: "",
-    cusId: "",
-    phoneNumber: "",
+    firstName: initialFirstName,
+    lastName: initialLastName,
+    title: title || "",
+    cusId: cusId || "",
+    phoneNumber: phoneNumber || "",
   });
 
   useFocusEffect(
@@ -84,6 +90,18 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
                 cusId,
                 phoneNumber,
               });
+            } else {
+              // Fallback to route parameters if no items exist in exclude list
+              const nameParts = (name || "").trim().split(/\s+/);
+              const initialFirstName = nameParts[0] || "";
+              const initialLastName = nameParts.slice(1).join(" ") || "";
+              setCustomerName({
+                firstName: initialFirstName,
+                lastName: initialLastName,
+                title: title || "",
+                cusId: cusId || "",
+                phoneNumber: phoneNumber || "",
+              });
             }
 
             // Filter out any invalid or empty items for crops display
@@ -93,15 +111,37 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
             setCrops(validCrops);
           } else {
             setCrops([]);
+            // Fallback to route parameters
+            const nameParts = (name || "").trim().split(/\s+/);
+            const initialFirstName = nameParts[0] || "";
+            const initialLastName = nameParts.slice(1).join(" ") || "";
+            setCustomerName({
+              firstName: initialFirstName,
+              lastName: initialLastName,
+              title: title || "",
+              cusId: cusId || "",
+              phoneNumber: phoneNumber || "",
+            });
           }
         } catch (err) {
           console.error("Failed to fetch products:", err);
           setCrops([]); // Set empty array on error
+          // Fallback to route parameters
+          const nameParts = (name || "").trim().split(/\s+/);
+          const initialFirstName = nameParts[0] || "";
+          const initialLastName = nameParts.slice(1).join(" ") || "";
+          setCustomerName({
+            firstName: initialFirstName,
+            lastName: initialLastName,
+            title: title || "",
+            cusId: cusId || "",
+            phoneNumber: phoneNumber || "",
+          });
         }
       };
 
       fetchProducts();
-    }, [customerId]),
+    }, [customerId, name, title, phoneNumber, cusId]),
   );
 
   const deleteCrop = async (excludeId: number) => {
@@ -323,7 +363,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
           className="w-full max-w-[500px] items-center"
           onPress={() =>
             navigation.navigate("SelectOrderTypeNewCustomer", {
-              id: Number(customerId),
+              id: Number(id || customerId),
               name: String(
                 `${customerName.firstName || ""} ${customerName.lastName || ""}`,
               ).trim(),

@@ -31,14 +31,13 @@
         "foregroundImage": "./assets/images/public/favicon.png",
         "backgroundColor": "#ffffff"
       },
-      "softwareKeyboardLayoutMode": "pan",
+      "softwareKeyboardLayoutMode": "resize",
       "package": "com.polygonagro.SalesDash",
       "versionCode": 10,
       "navigationBar": {
         "backgroundColor": "#4F4F4F",
         "barStyle": "dark-content"
       },
-
       "permissions": [
         "INTERNET",
         "WRITE_EXTERNAL_STORAGE",
@@ -96,7 +95,8 @@
           }
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true
