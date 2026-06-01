@@ -92,6 +92,13 @@ interface CustomerData {
   };
 }
 
+interface HoldEvent {
+  holdReason: string | null;
+  otherReason?: string | null;
+  isHold: boolean;
+  restartedTime: string | null;
+}
+
 const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   navigation,
   route,
@@ -112,13 +119,61 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   const [deliveryFee, setDeliveryFee] = useState<number>(0);
   const [isPackage, setIsPackage] = useState();
   const [returnReason, setReturnReason] = useState<string | null>(null);
-  const [holdReason, setHoldReason] = useState<string | null>(null);
-  const [isHoldOrder, setIsHoldOrder] = useState<boolean>(false);
-  const [wasOnHold, setWasOnHold] = useState<boolean>(false);
+
+  const [holdEvents, setHoldEvents] = useState<HoldEvent[]>([]);
+
+  const isHoldOrder = holdEvents.some((e) => e.isHold);
+  const wasOnHold = holdEvents.length > 0;
+
+  const holdReason =
+    holdEvents.length > 0
+      ? holdEvents[holdEvents.length - 1].holdReason === "Other" &&
+        holdEvents[holdEvents.length - 1].otherReason
+        ? holdEvents[holdEvents.length - 1].otherReason!
+        : holdEvents[holdEvents.length - 1].holdReason
+      : null;
 
   useEffect(() => {
     if (reportStatus) setSelectedReportOption(reportStatus);
   }, [reportStatus]);
+
+  const fetchHoldStatus = useCallback(async () => {
+    try {
+      const storedToken = await AsyncStorage.getItem("authToken");
+      if (!storedToken) return;
+
+      const response = await axios.get(
+        `${environment.API_BASE_URL}api/orders/get-hold-reason/${orderId}`,
+        { headers: { Authorization: `Bearer ${storedToken}` } },
+      );
+
+      if (response.data.success && response.data.data) {
+        const raw = response.data.data;
+
+        const events: HoldEvent[] = (Array.isArray(raw) ? raw : [raw])
+
+          .filter(
+            (item: any) =>
+              item.isHold === true ||
+              item.isHold === 1 ||
+              item.holdReason != null,
+          )
+          .map((item: any) => ({
+            holdReason: item.holdReason ?? null,
+            otherReason: item.otherReason ?? null,
+            isHold: Boolean(item.isHold),
+            restartedTime: item.restartedTime ?? null,
+          }));
+
+        setHoldEvents(events);
+      } else {
+        setHoldEvents([]);
+      }
+    } catch (error) {
+      console.error("Error fetching hold status:", error);
+      setHoldEvents([]);
+    }
+  }, [orderId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -149,78 +204,14 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
         }
       };
 
-      const fetchHoldStatus = async () => {
-        try {
-          const storedToken = await AsyncStorage.getItem("authToken");
-          if (!storedToken) return;
-          const response = await axios.get(
-            `${environment.API_BASE_URL}api/orders/get-hold-reason/${orderId}`,
-            { headers: { Authorization: `Bearer ${storedToken}` } },
-          );
-          if (response.data.success && response.data.data) {
-            const {
-              isHold,
-              holdReason: reason,
-              otherReason,
-            } = response.data.data;
-            setIsHoldOrder(isHold);
-            if (reason) {
-              setHoldReason(
-                reason === "Other" && otherReason ? otherReason : reason,
-              );
-              setWasOnHold(true);
-            }
-            if (isHold) setWasOnHold(true);
-          } else {
-            setIsHoldOrder(false);
-          }
-        } catch (error) {
-          console.error("Error fetching hold status:", error);
-          setIsHoldOrder(false);
-        }
-      };
-
       fetchOrderDetails();
       fetchHoldStatus();
-    }, [orderId, userId]),
+    }, [orderId, userId, fetchHoldStatus]),
   );
 
   useEffect(() => {
-    const fetchHoldStatus = async () => {
-      try {
-        const storedToken = await AsyncStorage.getItem("authToken");
-        if (!storedToken) return;
-        const response = await axios.get(
-          `${environment.API_BASE_URL}api/orders/get-hold-reason/${orderId}`,
-          { headers: { Authorization: `Bearer ${storedToken}` } },
-        );
-        if (response.data.success && response.data.data) {
-          const {
-            isHold,
-            holdReason: reason,
-            otherReason,
-          } = response.data.data;
-          setIsHoldOrder(isHold);
-
-          if (reason) {
-            setHoldReason(
-              reason === "Other" && otherReason ? otherReason : reason,
-            );
-            setWasOnHold(true);
-          }
-          if (isHold) {
-            setWasOnHold(true);
-          }
-        } else {
-          setIsHoldOrder(false);
-        }
-      } catch (error) {
-        console.error("Error fetching hold status:", error);
-        setIsHoldOrder(false);
-      }
-    };
     fetchHoldStatus();
-  }, [orderId]);
+  }, [fetchHoldStatus]);
 
   const fetchDeliveryFee = async (
     fullAddress: string,
@@ -433,7 +424,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
     if (itemStatus === "Hold")
       return (
         actualStatus === "Hold" ||
-        ((isHoldOrder || holdReason !== null) &&
+        (wasOnHold &&
           ["On the way", "Delivered", "Return"].includes(actualStatus))
       );
     if (
@@ -550,12 +541,10 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
     }, [navigation]),
   );
 
-  const showHoldStep =
-    status === "Hold" ||
-    (wasOnHold && ["On the way", "Delivered", "Return"].includes(status));
-
-  const showRestartedOnTheWayStep =
-    wasOnHold && ["On the way", "Delivered", "Return"].includes(status);
+  const resolveHoldLabel = (event: HoldEvent): string =>
+    event.holdReason === "Other" && event.otherReason
+      ? event.otherReason
+      : (event.holdReason ?? "");
 
   return (
     <KeyboardAvoidingView
@@ -636,27 +625,48 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                   </Text>
                 </View>
 
-                {/* Hold step */}
-                {showHoldStep && (
-                  <View className="mb-10">
-                    <View className="flex-row items-center">
-                      <View className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]" />
-                      <Text className="text-[#5E5E5E] font-medium">
-                        Driver marked order as Hold
-                      </Text>
-                    </View>
-                  </View>
-                )}
+                {holdEvents.map((event, index) => {
+                  const label = resolveHoldLabel(event);
+                  const isLastHold = index === holdEvents.length - 1;
 
-                {/* ── FIX: "On the Way" restart step after Hold, before Return ── */}
-                {showRestartedOnTheWayStep && (
-                  <View className="flex-row items-center mb-10">
-                    <View className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]" />
-                    <Text className="text-[#5E5E5E] font-medium">
-                      Order is On the way
-                    </Text>
-                  </View>
-                )}
+                  const showRestartAfterThisHold =
+                    event.restartedTime != null ||
+                    (isLastHold &&
+                      ["On the way", "Delivered", "Return"].includes(status));
+
+                  return (
+                    <View key={`hold-event-${index}`}>
+                      <View className="flex-row items-center mb-2">
+                        <View className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]" />
+                        <Text className="text-[#5E5E5E] font-medium">
+                          Driver marked order as Hold
+                        </Text>
+                      </View>
+
+                      {label ? (
+                        <View className="ml-2 px-4 pb-4">
+                          <Text className="font-semibold text-[#5E5E5E]">
+                            Reason:{" "}
+                            <Text className="text-black font-medium">
+                              "{label}"
+                            </Text>
+                          </Text>
+                        </View>
+                      ) : (
+                        <View className="mb-6" />
+                      )}
+
+                      {showRestartAfterThisHold && (
+                        <View className="flex-row items-center mb-10">
+                          <View className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]" />
+                          <Text className="text-[#5E5E5E] font-medium">
+                            Order is On the way
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  );
+                })}
 
                 {status === "Return" && (
                   <View className="flex-row items-center">
@@ -667,24 +677,39 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                   </View>
                 )}
 
-                {status !== "Return" && status !== "Hold" && !isHoldOrder && (
-                  <View
-                    className={`flex-row items-center ${status === "Cancelled" ? "mb-10" : ""}`}
-                  >
-                    <View
-                      className={`p-1.5 rounded-full absolute -left-8 ${isTimelineItemActive("Delivered") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`}
-                    />
-                    <Text className="text-[#5E5E5E] font-medium">
-                      Order is Delivered
-                    </Text>
+                {status === "Return" && returnReason && (
+                  <View style={{ marginTop: 8 }}>
+                    <View className="mt-[-7] ml-2 p-4">
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "flex-start",
+                        }}
+                      >
+                        <Text className="font-semibold text-[#5E5E5E]">
+                          Reason :{" "}
+                        </Text>
+                        <Text
+                          className="text-black font-medium"
+                          style={{ flex: 1 }}
+                        >
+                          "{returnReason}"
+                        </Text>
+                      </View>
+                    </View>
                   </View>
                 )}
 
-                {(isHoldOrder || holdReason !== null) &&
-                  (status === "On the way" || status === "Delivered") && (
+                {status !== "Return" &&
+                  status !== "Cancelled" &&
+                  status !== "Hold" && (
                     <View className="flex-row items-center">
                       <View
-                        className={`p-1.5 rounded-full absolute -left-8 ${status === "Delivered" ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#CDCDCD] border-4 border-[#F4EDFF]"}`}
+                        className={`p-1.5 rounded-full absolute -left-8 ${
+                          status === "Delivered"
+                            ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]"
+                            : "bg-[#D9D9D9] border-4 border-[#EDEDED]"
+                        }`}
                       />
                       <Text className="text-[#5E5E5E] font-medium">
                         Order is Delivered
@@ -695,14 +720,14 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                 {status === "Hold" && (
                   <>
                     <View className="flex-row items-center mb-10">
-                      <View className="p-1.5 rounded-full absolute -left-8 bg-[#CDCDCD] border-4 border-[#F4EDFF]" />
+                      <View className="p-1.5 rounded-full absolute -left-8 bg-[#D9D9D9] border-4 border-[#EDEDED]" />
                       <Text className="text-[#5E5E5E] font-medium">
                         Order is On the way
                       </Text>
                     </View>
 
                     <View className="flex-row items-center">
-                      <View className="p-1.5 rounded-full absolute -left-8 bg-[#CDCDCD] border-4 border-[#F4EDFF]" />
+                      <View className="p-1.5 rounded-full absolute -left-8 bg-[#D9D9D9] border-4 border-[#EDEDED]" />
                       <Text className="text-[#5E5E5E] font-medium">
                         Order is Delivered
                       </Text>
@@ -711,7 +736,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                 )}
 
                 {status === "Cancelled" && (
-                  <View className="flex-row items-center">
+                  <View className="flex-row items-center mt-10">
                     <View className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]" />
                     <Text className="text-red-500 font-medium">
                       Order is Cancelled
@@ -719,42 +744,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                   </View>
                 )}
               </View>
-
-              {showHoldStep && holdReason && (
-                <View
-                  style={{
-                    paddingLeft: 20,
-                    marginTop: 8,
-                    marginBottom: status === "Return" ? 0 : 12,
-                  }}
-                >
-                  <View className="mt-[-7] ml-2 p-4">
-                    <Text className="font-semibold mb-1 text-[#5E5E5E]">
-                      Reason: <Text className="text-black">"{holdReason}"</Text>
-                    </Text>
-                  </View>
-                </View>
-              )}
-
-              {status === "Return" && returnReason && (
-                <View style={{ marginTop: 8 }}>
-                  <View className="mt-[-7] ml-2 p-4">
-                    <View
-                      style={{ flexDirection: "row", alignItems: "flex-start" }}
-                    >
-                      <Text className="font-semibold text-[#5E5E5E]">
-                        Reason :{" "}
-                      </Text>
-                      <Text
-                        className="text-black font-medium"
-                        style={{ flex: 1 }}
-                      >
-                        "{returnReason}"
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              )}
             </View>
 
             <View className="bg-white border border-gray-200 rounded-lg shadow-sm mx-4 p-4 mb-4">

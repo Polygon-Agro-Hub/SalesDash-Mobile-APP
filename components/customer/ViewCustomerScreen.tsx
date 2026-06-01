@@ -442,8 +442,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
         <View className="bg-white flex-row rounded-b-[35px] items-center justify-between z-50  px-5">
           <View className="flex-1 justify-center items-center gap-1">
             <Text
-              className="text-gray-500 text-base"
-              style={{ textAlign: "center" }}
+              className="text-[#393939] text-base"
+              style={{ textAlign: "center", fontSize:16 }}
             >
               Customer ID: {customerId}
             </Text>

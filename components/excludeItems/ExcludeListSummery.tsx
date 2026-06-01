@@ -173,33 +173,6 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
       style={{ flex: 1 }}
       className="bg-white"
     >
-      {/* <CustomHeader
-        title={
-          customerName.firstName && customerName.lastName
-            ? `${customerName.title}. ${customerName.firstName} ${customerName.lastName}`
-            : "Loading..."
-        }
-        titleColor="#000000"
-        transparent
-        showBackButton={true}
-        navigation={navigation}
-        onBackPress={() =>
-          navigation.navigate("ExcludeListAdd", {
-            customerId: Number(customerId),
-          })
-        }
-      />
-      <View className="mx-auto w-full max-w-[500px]">
-        <Text
-          style={{ fontSize: 16 }}
-          className=" text-center text-black text-xl mt-14"
-        >
-          {customerName.firstName && customerName.lastName
-            ? `Customer ID : ${customerName.cusId}`
-            : "Loading..."}
-        </Text>
-      </View> */}
-      {/* ── Inline header with marquee support ── */}
       <View
         style={{
           paddingTop: 12,
@@ -260,7 +233,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
 
       {/* Customer ID */}
       <View className="mx-auto w-full max-w-[500px]">
-        <Text style={{ fontSize: 16 }} className="text-center text-black mt-4">
+        <Text style={{ fontSize: 16,marginTop: -3 }} className="text-center text-black">
           {customerName.firstName && customerName.lastName
             ? `Customer ID : ${customerName.cusId}`
             : "Loading..."}

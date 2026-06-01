@@ -286,7 +286,7 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({
 
             {/* Complaint Response Content */}
             {selectedComplaint ? (
-              <ScrollView>
+              <ScrollView showsVerticalScrollIndicator={false}>
                 <View className="mt-4 mb-7">
                   <Text className="text-gray-800 text-base leading-relaxed text-left">
                     <Text className="font-">

@@ -206,7 +206,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
           style={{
             width: 45,
             height: 45,
-            borderRadius: 18,
+            borderRadius: 25,
             backgroundColor: "#F6F6F680",
             alignItems: "center",
             justifyContent: "center",
@@ -246,10 +246,10 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
       </View>
 
       {/* Customer ID */}
-      <View className="mx-auto w-full max-w-[500px]">
+      <View className="mx-auto w-full  max-w-[500px]">
         <Text
-          style={{ fontSize: 16 }}
-          className="text-center text-black mt-4"
+          style={{ fontSize: 16 ,marginTop: -3}}
+          className="text-center text-black "
         >
           {customerName.firstName && customerName.lastName
             ? `Customer ID : ${customerName.cusId}`

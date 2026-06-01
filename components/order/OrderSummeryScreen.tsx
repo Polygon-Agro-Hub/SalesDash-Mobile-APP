@@ -67,8 +67,6 @@ interface CustomerData {
   };
 }
 
-// ─── Helper: build the additionalItems array for navigating back to OrderScreen ───
-// Always prefer rawAdditionalItems (full data) over orderData.additionalItems (slim API payload).
 const buildRestoredAdditionalItems = (rawAdditionalItems: any[]) =>
   (rawAdditionalItems || []).map((item: any) => ({
     productId: item.id,
@@ -141,7 +139,6 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
   const totalDeliveryPlus = fullTotal;
   const subTotalDeliveryPlus = totalDeliveryPlus + discount;
 
-  // ─── Fetches customer data AND delivery fee together ───────────────────────────
   useEffect(() => {
     const fetchCustomerDataAndDeliveryFee = async () => {
       const customerIdValue =
@@ -183,9 +180,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                 const cityData = cityResponse.data.data.find(
                   (c) => c.city === customerCity,
                 );
-                setDeliveryFee(
-                  cityData ? parseFloat(cityData.charge) || 0 : 0,
-                );
+                setDeliveryFee(cityData ? parseFloat(cityData.charge) || 0 : 0);
               }
             } catch (cityError) {
               console.error("Error fetching cities:", cityError);
@@ -220,7 +215,6 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
     }
   }, [customerId, route.params?.customerId, route.params?.customerid]);
 
-  // ─── Confirm order ─────────────────────────────────────────────────────────────
   const handleConfirmOrder = async () => {
     if (isSubmitting || isSubmitted) return;
 
@@ -474,9 +468,18 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
     if (!dateStr) return "";
 
     const monthMap: Record<string, string> = {
-      Jan: "01", Feb: "02", Mar: "03", Apr: "04",
-      May: "05", Jun: "06", Jul: "07", Aug: "08",
-      Sep: "09", Oct: "10", Nov: "11", Dec: "12",
+      Jan: "01",
+      Feb: "02",
+      Mar: "03",
+      Apr: "04",
+      May: "05",
+      Jun: "06",
+      Jul: "07",
+      Aug: "08",
+      Sep: "09",
+      Oct: "10",
+      Nov: "11",
+      Dec: "12",
     };
     const ddMmmYyyy = dateStr.match(/^(\d{1,2})\s([A-Za-z]{3})\s(\d{4})$/);
     if (ddMmmYyyy) {
@@ -499,9 +502,6 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
     return dateStr;
   };
 
-  // ─── Navigate back to OrderScreen (isPackage === 1) ───────────────────────────
-  // FIX: always use rawAdditionalItems — it has name, pricePerKg, discountedPricePerKg,
-  //      changeby, startValue, etc. that orderData.additionalItems is missing.
   const navigateBackToOrderScreen = useCallback(() => {
     const currentOrderItem = safeOrderItems[0] || {};
 
@@ -534,7 +534,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
       paymentMethod,
       isEdit: true,
       orderData: route.params?.orderData,
-      // Preserve rawAdditionalItems & rawPackageItems so further back-nav still works
+
       rawPackageItems: route.params?.rawPackageItems,
       rawAdditionalItems: route.params?.rawAdditionalItems,
     });
@@ -556,7 +556,6 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
     navigation,
   ]);
 
-  // ─── Hardware back button ──────────────────────────────────────────────────────
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
@@ -752,7 +751,9 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
             </Text>
             <Text className="text-black font-medium">{customerInfo.phone}</Text>
 
-            <Text className="text-[#808FA2] text-s mt-3 mb-2">Building Type</Text>
+            <Text className="text-[#808FA2] text-s mt-3 mb-2">
+              Building Type
+            </Text>
             <Text className="text-black font-medium">
               {customerInfo.buildingType}
             </Text>
@@ -867,8 +868,6 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                       fromOrderSummary: true,
                     });
                   } else if (isPackage === 1) {
-                    // ✅ FIX: use rawAdditionalItems instead of
-                    //    reconstructing from orderData.additionalItems
                     navigateBackToOrderScreen();
                   } else {
                     navigation.navigate("CratScreen" as any, {
@@ -943,7 +942,9 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
             {isPackage === 0 && (
               <View className="flex-row justify-between mt-2">
                 <Text className="text-[#8492A3] font-medium">Service Fee</Text>
-                <Text className="text-gray-500 mr-14 font-medium">Rs. 180.00</Text>
+                <Text className="text-gray-500 mr-14 font-medium">
+                  Rs. 180.00
+                </Text>
               </View>
             )}
 

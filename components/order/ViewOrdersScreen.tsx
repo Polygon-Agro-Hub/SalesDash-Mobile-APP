@@ -409,6 +409,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                   paddingHorizontal: 16,
                   height: 40,
                   marginBottom: 5,
+                  marginTop:14
                 }}
                 className="my-2"
               >
@@ -546,7 +547,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                                                 ? "bg-[#FFDCDA]"
                                                 : "bg-[#EAEAEA]"
                             }`}
-                            style={{ minWidth: 100, alignItems: "center" }}
+                            style={{ width: 110, alignItems: "center" }}
                           >
                             <Text
                               style={{
@@ -619,7 +620,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                       </View>
                     </TouchableOpacity>
                   )}
-                  contentContainerStyle={{ paddingBottom: hp(5) }}
+                  contentContainerStyle={{ paddingBottom: hp(5), paddingTop: 4, paddingHorizontal: 2 }}
                 />
               )}
             </View>
