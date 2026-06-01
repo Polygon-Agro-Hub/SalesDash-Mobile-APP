@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useRef, useState, useEffect } from "react";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
 import Icon from "react-native-vector-icons/Ionicons";
@@ -18,8 +18,8 @@ import {
   KeyboardAvoidingView,
   Alert,
   BackHandler,
+  ScrollView,
 } from "react-native";
-import { ScrollView } from "react-native-gesture-handler";
 import { useFocusEffect } from "@react-navigation/native";
 
 type LoginScreenNavigationProp = StackNavigationProp<
@@ -165,6 +165,18 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     }, []),
   );
 
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      "keyboardDidShow",
+      () => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      },
+    );
+    return () => {
+      keyboardDidShowListener.remove();
+    };
+  }, []);
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -270,9 +282,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 autoCapitalize="characters"
                 returnKeyType="next"
                 onSubmitEditing={() => passwordRef.current?.focus()}
-                onFocus={() =>
-                  scrollViewRef.current?.scrollToEnd({ animated: true })
-                }
+                onFocus={() => {
+                  setTimeout(() => {
+                    scrollViewRef.current?.scrollToEnd({ animated: true });
+                  }, 100);
+                }}
               />
             </View>
 
@@ -322,9 +336,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 returnKeyType="done"
                 onSubmitEditing={handleSignIn}
                 ref={passwordRef}
-                onFocus={() =>
-                  scrollViewRef.current?.scrollToEnd({ animated: true })
-                }
+                onFocus={() => {
+                  setTimeout(() => {
+                    scrollViewRef.current?.scrollToEnd({ animated: true });
+                  }, 100);
+                }}
               />
 
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
