@@ -38,7 +38,7 @@ interface ApiErrorResponse {
 
 const OtpScreenUp: React.FC = () => {
   const navigation = useNavigation<OtpScreenUpNavigationProp>();
-  const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
+  const [otp, setOtp] = useState<string[]>(["", "", "", "", ""]);
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
   const [timer, setTimer] = useState(60);
@@ -69,6 +69,9 @@ const OtpScreenUp: React.FC = () => {
 
   const [isOtpInvalid, setIsOtpInvalid] = useState(false);
 
+  // Check if all OTP digits are filled
+  const isOtpComplete = otp.every((digit) => digit.length === 1);
+
   // Helper to get auth token - add this if you need token-based authentication
   const getAuthToken = async (): Promise<string | null> => {
     try {
@@ -82,7 +85,7 @@ const OtpScreenUp: React.FC = () => {
   const verifyOTP = async () => {
     const otpCode = otp.join("");
 
-    if (otpCode.length !== 6) {
+    if (otpCode.length !== 5) {
       setIsOtpInvalid(true);
       return;
     }
@@ -273,7 +276,7 @@ const OtpScreenUp: React.FC = () => {
 
   const handleResendOtp = async () => {
     try {
-      setOtp(["", "", "", "", "", ""]);
+      setOtp(["", "", "", "", ""]);
       setResendDisabled(true);
       setTimer(60);
 
@@ -369,51 +372,56 @@ const OtpScreenUp: React.FC = () => {
           navigation={navigation}
           onBackPress={() => navigation.goBack()}
         />
-        <View className="flex-1 bg-white items-center">
-          <View
-            style={{ paddingHorizontal: wp(5), paddingVertical: hp(2) }}
-            className="flex-1 justify-center w-full max-w-[500px]"
-          >
+        <View className="flex-1 bg-white items-center justify-center">
+          <View className="flex-1 justify-center w-full max-w-[500px]">
             {/* Illustration - Centered */}
             <View className="items-center justify-center mb-6">
               <Image
                 source={require("@/assets/images/otp/otp-check.webp")}
                 style={{
-                  width: 180,
-                  height: 180,
+                  width: 200,
+                  height: 200,
                 }}
                 resizeMode="contain"
               />
             </View>
 
-            {/* Instruction Text - Centered */}
             <Text className="text-black text-center font-bold text-xl">
-              Enter Verification Code
+              Enter Verification Code.
             </Text>
             <Text className="text-[#808080] text-center mt-3 px-4">
               We have sent a Verification Code to your Customer's mobile number
             </Text>
 
             {/* OTP Input Section - Centered */}
-            <View className="flex-row justify-center gap-3 mt-8 mb-4 px-4">
+            <View className="flex-row justify-center items-center gap-3 mt-8 mb-4">
               {otp.map((digit, index) => (
                 <TextInput
-                  key={index}
+                  key={`otp-input-${index}`}
                   ref={(el: TextInput | null) => {
                     inputRefs.current[index] = el;
                   }}
-                  className={`w-12 h-12 text-lg text-center rounded-lg 
-                    ${
-                      digit
-                        ? "bg-[#874DDB] text-[#FFFFFF]"
-                        : "bg-[#E7D7FF] text-pink-900"
+                  className={`w-12 h-12 rounded-lg border-2 ${digit
+                    ? "bg-[#874DDB] border-[#874DDB]"
+                    : "bg-[#E7D7FF] border-[#E7D7FF]"
                     }`}
+                  style={{
+                    textAlign: "center",
+                    textAlignVertical: "center",
+                    fontSize: 16,
+                    fontWeight: "600",
+                    lineHeight: 20,
+                    color: digit ? "#FFFFFF" : "#86198f",
+                    padding: 0,
+                    paddingTop: 0,
+                    paddingBottom: 0,
+                  }}
                   keyboardType="numeric"
                   maxLength={1}
                   value={digit}
                   onChangeText={(text) => handleOtpChange(text, index)}
                   onKeyPress={(e) => handleKeyPress(e, index)}
-                  cursorColor={digit ? "#FFFFFF" : "#FFFFFF"}
+                  cursorColor="#FFFFFF"
                   selectionColor={digit ? "#FFFFFF" : "#874DDB"}
                 />
               ))}
@@ -428,30 +436,62 @@ const OtpScreenUp: React.FC = () => {
               </Text>
 
               {/* Resend OTP */}
-              <View className="flex-row items-center justify-center mt-3">
+              <View className="flex-row items-center justify-center mb-5 my-3">
                 <Text className="text-black font-semibold">
-                  Didn't receive the OTP?
+                  Didn't receive the OTP ?
                 </Text>
                 <TouchableOpacity
                   disabled={resendDisabled}
                   onPress={handleResendOtp}
                 >
                   <Text
-                    className={`ml-2 font-semibold ${
-                      resendDisabled ? "text-gray-500" : "text-[#874DDB]"
-                    }`}
+                    className={`ml-2 font-semibold ${resendDisabled ? "text-gray-500" : "text-[#874DDB]"}`}
                   >
                     RESEND OTP
                   </Text>
                 </TouchableOpacity>
               </View>
 
-              {/* Verify Button */}
+              {/* Verify Button with Bottom Shadow */}
               {!isKeyboardVisible && (
-                <TouchableOpacity onPress={verifyOTP} disabled={loading} className="items-center w-full">
+                <TouchableOpacity
+                  onPress={verifyOTP}
+                  disabled={!isOtpComplete || loading || timer <= 0}
+                  activeOpacity={0.7}
+                  style={{
+                    width: "50%",
+                    borderRadius: 30,
+                    backgroundColor: "transparent",
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 8 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 10,
+                    elevation: 8,
+                    alignSelf: "center",
+                  }}
+                >
                   <LinearGradient
-                    colors={["#6839CF", "#874DDB"]}
-                    className="py-3 items-center mt-10 rounded-3xl w-1/2"
+                    colors={
+                      !isOtpComplete || loading || timer <= 0
+                        ? ["#A0A0A0", "#808080"]
+                        : ["#6839CF", "#874DDB"]
+                    }
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    className={`h-[50px] items-center justify-center rounded-full ${!isOtpComplete || loading || timer <= 0
+                      ? "opacity-50"
+                      : ""
+                      }`}
+                    style={{
+                      shadowColor: "#000",
+                      shadowOffset: {
+                        width: 0,
+                        height: 2,
+                      },
+                      shadowOpacity: 0.1,
+                      shadowRadius: 3.84,
+                      overflow: "hidden",
+                    }}
                   >
                     <Text className="text-center text-white font-bold text-lg">
                       {loading ? "Verifying..." : "Verify"}

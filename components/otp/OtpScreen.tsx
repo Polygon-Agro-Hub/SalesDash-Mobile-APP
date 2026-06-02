@@ -30,7 +30,7 @@ type OtpScreenNavigationProp = StackNavigationProp<
 
 const OtpScreen: React.FC = () => {
   const navigation = useNavigation<OtpScreenNavigationProp>();
-  const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
+  const [otp, setOtp] = useState<string[]>(["", "", "", "", ""]);
   const inputRefs = useRef<(TextInput | null)[]>([]);
   const [timer, setTimer] = useState(60);
   const [resendDisabled, setResendDisabled] = useState(true);
@@ -68,7 +68,7 @@ const OtpScreen: React.FC = () => {
   const verifyOTP = async () => {
     const otpCode = otp.join("");
 
-    if (otpCode.length !== 6) {
+    if (otpCode.length !== 5) {
       setIsOtpInvalid(true);
       return;
     }
@@ -163,7 +163,7 @@ const OtpScreen: React.FC = () => {
 
   const handleResendOtp = async () => {
     try {
-      setOtp(["", "", "", "", "", ""]);
+      setOtp(["", "", "", "", ""]);
       setResendDisabled(true);
       setTimer(60);
 
@@ -277,8 +277,8 @@ const OtpScreen: React.FC = () => {
           navigation={navigation}
           onBackPress={() => navigation.goBack()}
         />
-        <View className="flex-1 bg-white items-center">
-          <View className="flex-1 mt-[5%] w-full max-w-[500px]">
+        <View className="flex-1 bg-white items-center justify-center">
+          <View className="flex-1 justify-center w-full max-w-[500px]">
             {/* Illustration - Centered */}
             <View className="items-center justify-center mb-6   ">
               <Image

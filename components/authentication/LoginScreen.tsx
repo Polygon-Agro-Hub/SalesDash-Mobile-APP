@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState, useEffect } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
 import Icon from "react-native-vector-icons/Ionicons";
@@ -18,8 +18,8 @@ import {
   KeyboardAvoidingView,
   Alert,
   BackHandler,
-  ScrollView,
 } from "react-native";
+import { ScrollView } from "react-native-gesture-handler";
 import { useFocusEffect } from "@react-navigation/native";
 
 type LoginScreenNavigationProp = StackNavigationProp<
@@ -165,25 +165,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     }, []),
   );
 
-  useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener(
-      "keyboardDidShow",
-      () => {
-        scrollViewRef.current?.scrollToEnd({ animated: true });
-      },
-    );
-    return () => {
-      keyboardDidShowListener.remove();
-    };
-  }, []);
-
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={{ flex: 1, backgroundColor: "white" }}
     >
       <ScrollView
-        ref={scrollViewRef}
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -207,6 +194,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
         <View
           style={{
+            flex: 1,
             backgroundColor: "white",
             borderTopLeftRadius: 32,
             borderTopRightRadius: 32,
@@ -219,6 +207,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           {/* Center Container */}
           <View
             style={{
+              flex: 1,
               justifyContent: "center",
               width: "100%",
               maxWidth: 500,
@@ -282,11 +271,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 autoCapitalize="characters"
                 returnKeyType="next"
                 onSubmitEditing={() => passwordRef.current?.focus()}
-                onFocus={() => {
-                  setTimeout(() => {
-                    scrollViewRef.current?.scrollToEnd({ animated: true });
-                  }, 100);
-                }}
               />
             </View>
 
@@ -336,11 +320,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 returnKeyType="done"
                 onSubmitEditing={handleSignIn}
                 ref={passwordRef}
-                onFocus={() => {
-                  setTimeout(() => {
-                    scrollViewRef.current?.scrollToEnd({ animated: true });
-                  }, 100);
-                }}
+                onFocus={() =>
+                  scrollViewRef.current?.scrollToEnd({ animated: true })
+                }
               />
 
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
