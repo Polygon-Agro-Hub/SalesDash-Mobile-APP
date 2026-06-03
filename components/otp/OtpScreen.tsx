@@ -277,8 +277,8 @@ const OtpScreen: React.FC = () => {
           navigation={navigation}
           onBackPress={() => navigation.goBack()}
         />
-        <View className="flex-1 bg-white items-center">
-          <View className="flex-1 mt-[5%] w-full max-w-[500px]">
+        <View className="flex-1 bg-white items-center justify-center">
+          <View className="flex-1 justify-center w-full max-w-[500px]">
             {/* Illustration - Centered */}
             <View className="items-center justify-center mb-6   ">
               <Image

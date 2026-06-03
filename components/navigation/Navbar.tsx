@@ -1,14 +1,56 @@
 import { useState } from "react";
-import { Image, Text, TouchableOpacity, View, Animated } from "react-native";
+import { Text, TouchableOpacity, View, Animated } from "react-native";
+import Octicons from "react-native-vector-icons/Octicons";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import Fontisto from "react-native-vector-icons/Fontisto";
+import FontAwesome from "react-native-vector-icons/FontAwesome";
 
-const DashboardIcon = require("@/assets/images/navbar/home.webp");
-const DashboardIconFocus = require("@/assets/images/navbar/home-focus.webp");
-const ViewOrdersIcon = require("@/assets/images/navbar/order.webp");
-const ViewOrdersIconFocus = require("@/assets/images/navbar/order-focus.webp");
-const ReminderIcon = require("@/assets/images/navbar/reminder.webp");
-const ReminderIconFocus = require("@/assets/images/navbar/reminder-focus.webp");
-const CustomersIcon = require("@/assets/images/navbar/user.webp");
-const CustomersIconFocus = require("@/assets/images/navbar/user-focus.webp");
+const tabs = [
+  {
+    name: "DashboardScreen",
+    tabName: "Home",
+    Icon: ({ focused }: { focused: boolean }) => (
+      <Octicons
+        name={focused ? "home-fill" : "home"}
+        size={20}
+        color={focused ? "#FFFFFF" : "#B6B7BC"}
+      />
+    ),
+  },
+  {
+    name: "ViewOrdersScreen",
+    tabName: "Orders",
+    Icon: ({ focused }: { focused: boolean }) => (
+      <Ionicons
+        name={focused ? "list-circle" : "list-circle-outline"}
+        size={22}
+        color={focused ? "#FFFFFF" : "#B6B7BC"}
+      />
+    ),
+  },
+  {
+    name: "ReminderScreen",
+    tabName: "Reminders",
+    Icon: ({ focused }: { focused: boolean }) => (
+      <Fontisto
+        name={focused ? "bell-alt" : "bell"}
+        size={18}
+        color={focused ? "#FFFFFF" : "#B6B7BC"}
+      />
+    ),
+  },
+  {
+    name: "CustomersScreen",
+    tabName: "Customers",
+    Icon: ({ focused }: { focused: boolean }) => (
+      <FontAwesome
+        name={focused ? "user-circle" : "user-circle-o"}
+        size={20}
+        color={focused ? "#FFFFFF" : "#B6B7BC"}
+      />
+    ),
+  },
+];
 
 const NavigationBar = ({
   navigation,
@@ -17,43 +59,18 @@ const NavigationBar = ({
   navigation: any;
   state: any;
 }) => {
-  let tabs = [
-    {
-      name: "DashboardScreen",
-      icon: DashboardIcon,
-      focusedIcon: DashboardIconFocus,
-      tabName: "Home",
-    },
-    {
-      name: "ViewOrdersScreen",
-      icon: ViewOrdersIcon,
-      focusedIcon: ViewOrdersIconFocus,
-      tabName: "Orders",
-    },
-    {
-      name: "ReminderScreen",
-      icon: ReminderIcon,
-      focusedIcon: ReminderIconFocus,
-      tabName: "Reminders",
-    },
-    {
-      name: "CustomersScreen",
-      icon: CustomersIcon,
-      focusedIcon: CustomersIconFocus,
-      tabName: "Customers",
-    },
-  ];
-
   const [scales] = useState(() => tabs.map(() => new Animated.Value(1)));
 
   let currentTabName = state?.routes?.[state.index]?.name || "DashboardScreen";
 
   if (
-    currentTabName === "ViewCustomerScreen" ||
-    currentTabName === "EditCustomerScreen" ||
-    currentTabName === "SelectOrderType" ||
-    currentTabName === "ExcludeListAdd" ||
-    currentTabName === "AddCustomersScreen"
+    [
+      "ViewCustomerScreen",
+      "EditCustomerScreen",
+      "SelectOrderType",
+      "ExcludeListAdd",
+      "AddCustomersScreen",
+    ].includes(currentTabName)
   ) {
     currentTabName = "CustomersScreen";
   }
@@ -85,11 +102,10 @@ const NavigationBar = ({
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         shadowColor: "#736e6e",
-        shadowOpacity: 0.5,
+        shadowOffset: { width: 0, height: -3 },
+        shadowOpacity: 0.15,
         shadowRadius: 10,
         elevation: 15,
-        borderTopWidth: 2,
-        borderTopColor: "rgba(6, 6, 6, 0.1)",
       }}
     >
       {tabs.map((tab, index) => {
@@ -114,16 +130,14 @@ const NavigationBar = ({
               <View
                 style={{
                   backgroundColor: isFocused ? "#854BDA" : "#FFFFFF",
-                  padding: 8,
-                  borderRadius: 9999,
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <Image
-                  source={isFocused ? tab.icon : tab.focusedIcon}
-                  style={{ width: 20, height: 20 }}
-                />
+                <tab.Icon focused={isFocused} />
               </View>
 
               <Text

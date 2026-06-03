@@ -36,14 +36,15 @@ const FixedMarqueeText: React.FC<FixedMarqueeTextProps> = ({
   }, []);
 
   useEffect(() => {
-    const estimatedWidth = Math.max(cleanText.length * 6, 200);
-    setMeasurementWidth(estimatedWidth);
+    setMeasurementWidth(9999);
     setTextWidth(0);
 
     if (animationRef.current) {
       animationRef.current.stop();
       animationRef.current = null;
     }
+
+    scrollX.setValue(0);
   }, [cleanText]);
 
   useEffect(() => {
@@ -106,9 +107,11 @@ const FixedMarqueeText: React.FC<FixedMarqueeTextProps> = ({
         }
       }}
     >
-      {/* Measurement text with DYNAMIC width based on text length */}
+      {/* Measurement text — key={cleanText} forces remount on text change,
+          guaranteeing onLayout fires fresh every time */}
       <View style={[styles.measurementWrapper, { width: measurementWidth }]}>
         <Text
+          key={cleanText}
           style={[styles.measurementText, style]}
           onLayout={(event) => {
             const { width } = event.nativeEvent.layout;
@@ -177,6 +180,7 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
     flexShrink: 0,
     flexWrap: "nowrap",
+    alignSelf: "flex-start",
   },
   displayContainer: {
     flex: 1,

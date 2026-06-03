@@ -259,8 +259,14 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
       );
 
       if (checkResponse.status === 200) {
+        const currentData = getCurrentCustomerData();
         navigation.navigate("ExcludeListSummery", {
           customerId: Number(customerId),
+          name: currentData.name,
+          title: currentData.title,
+          phoneNumber: currentData.number,
+          cusId: currentData.customerId,
+          id: Number(currentData.id) || undefined,
         });
       } else if (checkResponse.status === 400) {
         console.error("Bad request:", checkResponse.data.message);
@@ -308,8 +314,14 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
 
   const handleNavigateIfNoCropsSelected = () => {
     if (selectedCrops.length === 0) {
+      const currentData = getCurrentCustomerData();
       navigation.navigate("ExcludeListSummery", {
         customerId: Number(customerId),
+        name: currentData.name,
+        title: currentData.title,
+        phoneNumber: currentData.number,
+        cusId: currentData.customerId,
+        id: Number(currentData.id) || undefined,
       });
     } else {
       handlesubmitexcludelist();

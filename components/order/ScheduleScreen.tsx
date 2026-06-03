@@ -304,7 +304,6 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
           return;
         }
 
-        // Fetch customer data
         const apiUrl = `${environment.API_BASE_URL}api/orders/get-customer-data/${customerIdi}`;
         const response = await axios.get(apiUrl, {
           headers: { Authorization: `Bearer ${storedToken}` },
@@ -313,7 +312,6 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
         if (response.data && response.data.success) {
           setCustomerData(response.data.data);
 
-          // Fetch cities to get delivery charge
           const cityResponse = await axios.get<{ data: City[] }>(
             `${environment.API_BASE_URL}api/customer/get-city`,
             { headers: { Authorization: `Bearer ${storedToken}` } },
@@ -508,7 +506,6 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     setShowTimeSlotModal(false);
   };
 
-  // Helper function to convert time slot to 24-hour format
   const convertTimeSlotTo24Hour = (timeSlot: string): string => {
     switch (timeSlot) {
       case "Within 8-12 PM":
@@ -688,10 +685,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       return;
     }
 
-    // Convert selected time slot to 24-hour format
     const scheduleTime = convertTimeSlotTo24Hour(selectedTimeSlot);
 
-    // Get packageId from the correct source
     const packageId =
       route.params?.packageId ||
       (orderItems && orderItems.length > 0
@@ -700,7 +695,6 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
           ? orderData.packageId
           : undefined);
 
-    // Prepare the data to pass to SelectPaymentMethod
     const navigationParams = {
       items: items,
       subtotal: subtotal,
@@ -739,7 +733,6 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     );
   }
 
-  // Error state
   if (error) {
     return (
       <View className="flex-1 bg-white justify-center items-center p-4">
@@ -856,7 +849,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                   customerscreencustomerid: customerscreencustomerid,
                   isPackage: "1",
                   orderItems: orderItems,
-                  packageId: route.params?.packageId || currentOrderItem.packageId,
+                  packageId:
+                    route.params?.packageId || currentOrderItem.packageId,
                   packageItems: restoredPackageItems,
                   additionalItems: restoredAdditionalItems,
                   subtotal,
@@ -935,7 +929,9 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                   <FontAwesome name="calendar" size={20} color="#6839CF" />
                 </TouchableOpacity>
 
-                <Text className="text-[#000000] mt-4 mb-2">Schedule Time Slot</Text>
+                <Text className="text-[#000000] mt-4 mb-2">
+                  Schedule Time Slot
+                </Text>
 
                 <TouchableOpacity
                   onPress={() => setShowTimeSlotModal(true)}
@@ -944,7 +940,11 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                   <Text className="flex-1 text-[#7F7F7F]">
                     {selectedTimeSlot || "Select Time Slot"}
                   </Text>
-                  <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
+                  <MaterialIcons
+                    name="arrow-drop-down"
+                    size={24}
+                    color="#666"
+                  />
                 </TouchableOpacity>
               </ScrollView>
 
@@ -971,7 +971,9 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                         <Text className="text-lg font-bold text-[#6C3CD1]">
                           Select Date
                         </Text>
-                        <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                        <TouchableOpacity
+                          onPress={() => setShowDatePicker(false)}
+                        >
                           <Feather name="x" size={24} color="#6C3CD1" />
                         </TouchableOpacity>
                       </View>
@@ -990,7 +992,9 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                           onPress={() => setShowDatePicker(false)}
                           className="px-4 py-2"
                         >
-                          <Text className="text-[#6C3CD1] font-semibold">Cancel</Text>
+                          <Text className="text-[#6C3CD1] font-semibold">
+                            Cancel
+                          </Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
@@ -1006,7 +1010,6 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                   </View>
                 </Modal>
               )}
-
             </View>
 
             <GlobalSearchModal
@@ -1050,7 +1053,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                     Full Total :{" "}
                     <Text className="font-bold text-base">
                       Rs.{" "}
-                      {fullTotal.toLocaleString("en-IN", {
+                      {fullTotal.toLocaleString("en-US", {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       })}
@@ -1088,7 +1091,11 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                       }}
                     >
                       <Text
-                        style={{ color: "white", fontWeight: "600", marginRight: 8 }}
+                        style={{
+                          color: "white",
+                          fontWeight: "600",
+                          marginRight: 8,
+                        }}
                       >
                         Proceed
                       </Text>
@@ -1098,7 +1105,6 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                 </View>
               </View>
             </View>
-
           </View>
         </View>
       </View>

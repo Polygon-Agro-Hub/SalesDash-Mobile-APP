@@ -391,9 +391,18 @@ export type RootStackParamList = {
   };
   ExcludeListAdd: {
     customerId: number;
+    name?: string;
+    title?: string;
+    number?: string;
+    id?: number;
   };
   ExcludeListSummery: {
     customerId: number;
+    name?: string;
+    title?: string;
+    phoneNumber?: string;
+    cusId?: string;
+    id?: number;
   };
   ExcludeItemEditSummery: {
     id: string;

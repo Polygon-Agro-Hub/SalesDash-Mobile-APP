@@ -106,6 +106,13 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   const [customerTitle, setCustomerTitle] = useState(initialTitle);
   const [customerNumber, setCustomerNumber] = useState(initialNumber);
 
+  // Synchronize state with route params when they change
+  useEffect(() => {
+    setCustomerName(initialName || "");
+    setCustomerTitle(initialTitle || "");
+    setCustomerNumber(initialNumber || "");
+  }, [initialName, initialTitle, initialNumber]);
+
   useFocusEffect(
     React.useCallback(() => {
       const resetStates = () => {
@@ -291,6 +298,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       console.error("Error opening dialer", err),
     );
   };
+
   const filters = [
     "Ordered",
     "Processing",
@@ -372,7 +380,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
             style={{
               width: 45,
               height: 45,
-              borderRadius: 18,
+              borderRadius: 25,
               backgroundColor: "#F6F6F680",
               alignItems: "center",
               justifyContent: "center",
@@ -386,24 +394,30 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
           </TouchableOpacity>
 
           <View style={{ flex: 1, alignItems: "center", overflow: "hidden" }}>
-            {`${customerTitle}. ${customerName}`.length > 25 ? (
-              <FixedMarqueeText
-                text={`${customerTitle}. ${customerName}`}
-                style={{ fontSize: 16, fontWeight: "bold" }}
-                speed={50}
-              />
-            ) : (
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: "bold",
-                  color: "#000",
-                  textAlign: "center",
-                }}
-              >
-                {`${customerTitle}. ${customerName}`}
-              </Text>
-            )}
+            {(() => {
+              const fullDisplayName =
+                `${customerTitle}. ${customerName}`.trim();
+              return fullDisplayName.length > 25 ? (
+                <FixedMarqueeText
+                  key={fullDisplayName}
+                  text={fullDisplayName}
+                  style={{ fontSize: 16, fontWeight: "bold" }}
+                  speed={50}
+                />
+              ) : (
+                <Text
+                  key={fullDisplayName}
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "bold",
+                    color: "#000",
+                    textAlign: "center",
+                  }}
+                >
+                  {fullDisplayName}
+                </Text>
+              );
+            })()}
           </View>
 
           <TouchableOpacity
@@ -418,8 +432,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
             style={{
               width: 45,
               height: 45,
-              borderRadius: 18,
-              backgroundColor: "#F6F6F680",
+
               alignItems: "center",
               justifyContent: "center",
               flexShrink: 0,
@@ -436,8 +449,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
         <View className="bg-white flex-row rounded-b-[35px] items-center justify-between z-50  px-5">
           <View className="flex-1 justify-center items-center gap-1">
             <Text
-              className="text-gray-500 text-base"
-              style={{ textAlign: "center" }}
+              className="text-[#393939] text-base"
+              style={{ textAlign: "center", fontSize:16 }}
             >
               Customer ID: {customerId}
             </Text>
@@ -608,7 +621,21 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 </TouchableOpacity>
               </View>
             ) : searchError ? (
-              <View className="items-center" style={{ marginTop: hp("8%") }}>
+              // ✅ FIX 1: searchError empty state — now pull-to-refreshable
+              <ScrollView
+                contentContainerStyle={{
+                  alignItems: "center",
+                  marginTop: hp("8%"),
+                  flexGrow: 1,
+                }}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={loading}
+                    onRefresh={handleRefresh}
+                    colors={["#6B3BCF"]}
+                  />
+                }
+              >
                 <Image
                   source={require("@/assets/images/public/no-data.webp")}
                   style={{
@@ -620,7 +647,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 <Text className="text-black italic text-center mt-3">
                   No orders found
                 </Text>
-              </View>
+              </ScrollView>
             ) : filteredOrders.length > 0 ? (
               <FlatList
                 data={filteredOrders}
@@ -739,9 +766,21 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 contentContainerStyle={{ paddingBottom: 100 }}
               />
             ) : (
-              <View
-                className="items-center px-4"
-                style={{ marginTop: hp("4%") }}
+              // ✅ FIX 2: Empty orders state — now pull-to-refreshable
+              <ScrollView
+                contentContainerStyle={{
+                  alignItems: "center",
+                  paddingHorizontal: 16,
+                  marginTop: hp("4%"),
+                  flexGrow: 1,
+                }}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={loading}
+                    onRefresh={handleRefresh}
+                    colors={["#6B3BCF"]}
+                  />
+                }
               >
                 <Image
                   source={require("@/assets/images/public/no-data.webp")}
@@ -758,7 +797,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                       ? "No matching orders found"
                       : `No orders found with status "${selectedFilter}"`}
                 </Text>
-              </View>
+              </ScrollView>
             )}
           </View>
         </View>

@@ -277,7 +277,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
         <View className="flex-1 w-full max-w-[500px] px-6">
           <View className="mb-4 bg-[#F5F1FC] rounded-full flex-row items-center px-4 py-2 mt-2">
             <TextInput
-              className="flex-1 text-gray-700"
+              className="flex-1 italic text-gray-700"
               placeholder="Search By Product Name"
               placeholderTextColor="#6839CF"
               value={searchQuery}
