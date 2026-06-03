@@ -10,6 +10,7 @@ import {
   Alert,
   ActivityIndicator,
   BackHandler,
+  Dimensions,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -40,6 +41,10 @@ interface City {
   charge: string;
   createdAt?: string;
 }
+
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+const RESPONSIVE_FONT_SIZE = SCREEN_HEIGHT > 900 ? 16 : 14;
+const INPUT_FONT_SIZE = SCREEN_HEIGHT > 900 ? 15 : 13;
 
 const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
   navigation,
@@ -93,13 +98,12 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
   const [unitNoError, setUnitNoError] = useState<string>("");
   const [floorNoError, setFloorNoError] = useState<string>("");
 
-  // Modal states
   const [titleModalVisible, setTitleModalVisible] = useState(false);
   const [buildingTypeModalVisible, setBuildingTypeModalVisible] =
     useState(false);
   const [cityModalVisible, setCityModalVisible] = useState(false);
+  const [cityModalKey, setCityModalKey] = useState(0);
 
-  // Dropdown states - removed DropDownPicker states and kept only data states
   const [items, setItems] = useState([
     { label: "Rev", value: "Rev" },
     { label: "Mr", value: "Mr" },
@@ -117,7 +121,6 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
   const lastFetchedIdRef = useRef<string | null>(null);
   const hasLoadedOnce = useRef(false);
 
-  // Add these states after line 44 (after originalPhoneNumber state)
   const [latitude, setLatitude] = useState<string>("");
   const [longitude, setLongitude] = useState<string>("");
   const [locationName, setLocationName] = useState<string>("");
@@ -218,8 +221,11 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
   };
 
   const RequiredField = ({ children }: { children: React.ReactNode }) => (
-    <Text className="text-gray-700 mb-1">
-      {children} <Text className="">*</Text>
+    <Text
+      className="text-gray-700 mb-1 font-medium"
+      style={{ fontSize: RESPONSIVE_FONT_SIZE }}
+    >
+      {children} <Text className="text-black">*</Text>
     </Text>
   );
 
@@ -608,10 +614,6 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     };
   }, []);
 
-  const dismissKeyboard = () => {
-    Keyboard.dismiss();
-  };
-
   const navigateToMapScreen = () => {
     isReturningFromMapRef.current = true;
     navigation.navigate("AttachGeoLocationScreenEdit" as any, {
@@ -930,10 +932,11 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
           if (response.status === 200) {
             Alert.alert("Success", "Customer updated successfully.");
             navigation.navigate("ViewCustomerScreen" as any, {
-              id: id,
-              customerId: customerId,
-              name: name,
-              title: title,
+              id,
+              customerId,
+              name: `${firstName} ${lastName}`,
+              title: selectedCategory,
+              number: phoneNumber,
             });
           }
         } catch (updateError: any) {
@@ -1064,14 +1067,14 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        // Navigate to ViewCustomerScreen instead of going back to main dashboard
         navigation.navigate("ViewCustomerScreen" as any, {
-          id: id,
-          customerId: customerId,
-          name: name,
-          title: title,
+          id,
+          customerId,
+          name: `${firstName} ${lastName}`,
+          title: selectedCategory,
+          number: phoneNumber,
         });
-        return true; // Prevent default back behavior
+        return true;
       };
 
       const backHandler = BackHandler.addEventListener(
@@ -1106,14 +1109,15 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
           navigation.navigate("ViewCustomerScreen" as any, {
             id,
             customerId,
-            name,
-            title,
+            name: `${firstName} ${lastName}`,
+            title: selectedCategory,
+            number: phoneNumber,
           })
         }
       />
-      <View className="flex-1 bg-white">
-        <ScrollView keyboardShouldPersistTaps="handled">
-          <View className="py-2 px-6">
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+        <View className="px-6 mx-auto w-full max-w-[500px]">
+          <View className="py-2">
             <View className="flex-row justify-between">
               <View className="flex-[1]">
                 <RequiredField>Title</RequiredField>
@@ -1123,7 +1127,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                       setTitleModalVisible(true);
                       handleFieldTouch("title");
                     }}
-                    className={`bg-[#F6F6F6] border flex-row justify-between items-center ${
+                    className={`bg-[#F6F6F6] border flex-row h-[50px] justify-between items-center ${
                       titleError ? "border-red-500" : "border-[#F6F6F6]"
                     } rounded-full px-4 h-10`}
                   >
@@ -1131,6 +1135,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                       className={
                         selectedCategory ? "text-black" : "text-gray-400"
                       }
+                      style={{ fontSize: RESPONSIVE_FONT_SIZE }}
                     >
                       {selectedCategory || "Select Title"}
                     </Text>
@@ -1151,10 +1156,12 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
               <View className="flex-[2] ml-2">
                 <RequiredField>First Name</RequiredField>
                 <TextInput
-                  className={`bg-[#F6F6F6] border rounded-full px-6 h-10 ${
+                  className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${
                     firstNameError ? "border-red-500" : "border-[#F6F6F6]"
                   }`}
+                  style={{ fontSize: INPUT_FONT_SIZE }}
                   placeholder="First Name"
+                  placeholderTextColor="#7F7F7F"
                   value={firstName}
                   onChangeText={(text) => {
                     if (text.startsWith(" ")) return;
@@ -1176,10 +1183,12 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
             <View className="mb-4">
               <RequiredField>Last Name</RequiredField>
               <TextInput
-                className={`bg-[#F6F6F6] border rounded-full px-6 h-10 ${
+                className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${
                   lastNameError ? "border-red-500" : "border-[#F6F6F6]"
                 }`}
+                style={{ fontSize: INPUT_FONT_SIZE }}
                 placeholder="Last Name"
+                placeholderTextColor="#7F7F7F"
                 value={lastName}
                 onChangeText={(text) => {
                   if (text.startsWith(" ")) return;
@@ -1200,9 +1209,11 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
             <View className="mb-4">
               <RequiredField>Mobile Number</RequiredField>
               <TextInput
-                className={`bg-[#F6F6F6] border rounded-full px-6 h-10 ${
+                className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${
                   phoneError ? "border-red-500" : "border-[#F6F6F6]"
                 }`}
+                style={{ fontSize: INPUT_FONT_SIZE }}
+                placeholderTextColor="#7F7F7F"
                 placeholder="ex: +94771234567"
                 keyboardType="phone-pad"
                 value={phoneNumber}
@@ -1227,9 +1238,11 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
             <View className="mb-4">
               <RequiredField>Email Address</RequiredField>
               <TextInput
-                className={`bg-[#F6F6F6] border rounded-full px-6 h-10 ${
+                className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${
                   emailError ? "border-red-500" : "border-[#F6F6F6]"
                 }`}
+                style={{ fontSize: INPUT_FONT_SIZE }}
+                placeholderTextColor="#7F7F7F"
                 placeholder="Email Address "
                 keyboardType="email-address"
                 autoCapitalize="none"
@@ -1254,9 +1267,12 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                   setBuildingTypeModalVisible(true);
                   handleFieldTouch("buildingType");
                 }}
-                className={`bg-[#F6F6F6] border ${buildingTypeError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 flex-row items-center justify-between`}
+                className={`bg-[#F6F6F6] border h-[50px] ${buildingTypeError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 flex-row items-center justify-between`}
               >
-                <Text className={buildingType ? "text-black" : "text-gray-400"}>
+                <Text
+                  className={buildingType ? "text-black" : "text-gray-400"}
+                  style={{ fontSize: RESPONSIVE_FONT_SIZE }}
+                >
                   {buildingType || "Select Building Type"}
                 </Text>
                 <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
@@ -1274,8 +1290,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                 <View className="mb-4">
                   <RequiredField>Building / House No</RequiredField>
                   <TextInput
-                    className={`bg-[#F6F6F6] border ${houseNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+                    className={`bg-[#F6F6F6] border h-[50px] ${houseNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6`}
+                    style={{ fontSize: INPUT_FONT_SIZE }}
                     placeholder="Building / House No (e.g., 14/B)"
+                    placeholderTextColor="#7F7F7F"
                     value={houseNo}
                     onChangeText={(text) => {
                       if (text.startsWith(" ")) return;
@@ -1300,8 +1318,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                 <View className="mb-4">
                   <RequiredField>Street Name</RequiredField>
                   <TextInput
-                    className={`bg-[#F6F6F6] border ${streetNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+                    className={`bg-[#F6F6F6] border h-[50px] ${streetNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6`}
+                    style={{ fontSize: INPUT_FONT_SIZE }}
                     placeholder="Street Name"
+                    placeholderTextColor="#7F7F7F"
                     value={streetName}
                     onChangeText={(text) => {
                       if (text.startsWith(" ")) return;
@@ -1328,11 +1348,15 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                   <TouchableOpacity
                     onPress={() => {
                       setCityModalVisible(true);
+                      setCityModalKey((prev) => prev + 1);
                       handleFieldTouch("city");
                     }}
-                    className={`bg-[#F6F6F6] border ${cityError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 flex-row items-center justify-between`}
+                    className={`bg-[#F6F6F6] border h-[50px] ${cityError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 flex-row items-center justify-between`}
                   >
-                    <Text className={city ? "text-black" : "text-gray-400"}>
+                    <Text
+                      className={city ? "text-black" : "text-gray-400"}
+                      style={{ fontSize: RESPONSIVE_FONT_SIZE }}
+                    >
                       {city || "Select Nearest City"}
                     </Text>
                     <MaterialIcons
@@ -1355,8 +1379,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                 <View className="mb-4">
                   <RequiredField>Apartment / Building No</RequiredField>
                   <TextInput
-                    className={`bg-[#F6F6F6] border ${buildingNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+                    className={`bg-[#F6F6F6] border h-[50px] ${buildingNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6`}
+                    style={{ fontSize: INPUT_FONT_SIZE }}
                     placeholder="Apartment / Building No"
+                    placeholderTextColor="#7F7F7F"
                     value={buildingNo}
                     onChangeText={(text) => {
                       if (text.startsWith(" ")) return;
@@ -1381,8 +1407,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                 <View className="mb-4">
                   <RequiredField>Apartment / Building Name</RequiredField>
                   <TextInput
-                    className={`bg-[#F6F6F6] border ${buildingNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+                    className={`bg-[#F6F6F6] border h-[50px] ${buildingNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6`}
+                    style={{ fontSize: INPUT_FONT_SIZE }}
                     placeholder="Apartment / Building Name"
+                    placeholderTextColor="#7F7F7F"
                     value={buildingName}
                     onChangeText={(text) => {
                       if (text.startsWith(" ")) return;
@@ -1407,8 +1435,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                 <View className="mb-4">
                   <RequiredField>Flat / Unit Number</RequiredField>
                   <TextInput
-                    className={`bg-[#F6F6F6] border ${unitNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+                    className={`bg-[#F6F6F6] border h-[50px] ${unitNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6`}
+                    style={{ fontSize: INPUT_FONT_SIZE }}
                     placeholder="ex: Building B"
+                    placeholderTextColor="#7F7F7F"
                     value={unitNo}
                     onChangeText={(text) => {
                       if (text.startsWith(" ")) return;
@@ -1433,7 +1463,9 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                 <View className="mb-4">
                   <RequiredField>Floor Number</RequiredField>
                   <TextInput
-                    className={`bg-[#F6F6F6] border ${floorNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+                    className={`bg-[#F6F6F6] border h-[50px] ${floorNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6`}
+                    style={{ fontSize: INPUT_FONT_SIZE }}
+                    placeholderTextColor="#7F7F7F"
                     placeholder="ex: 3rd Floor"
                     value={floorNo}
                     onChangeText={(text) => {
@@ -1459,8 +1491,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                 <View className="mb-4">
                   <RequiredField>House No</RequiredField>
                   <TextInput
-                    className={`bg-[#F6F6F6] border ${houseNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+                    className={`bg-[#F6F6F6] border h-[50px] ${houseNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6`}
+                    style={{ fontSize: INPUT_FONT_SIZE }}
                     placeholder="Building / House No (e.g., 14/B)"
+                    placeholderTextColor="#7F7F7F"
                     value={houseNo}
                     onChangeText={(text) => {
                       if (text.startsWith(" ")) return;
@@ -1485,8 +1519,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                 <View className="mb-4">
                   <RequiredField>Street Name</RequiredField>
                   <TextInput
-                    className={`bg-[#F6F6F6] border ${streetNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6 h-10`}
+                    className={`bg-[#F6F6F6] border h-[50px] ${streetNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6`}
+                    style={{ fontSize: INPUT_FONT_SIZE }}
                     placeholder="Street Name"
+                    placeholderTextColor="#7F7F7F"
                     value={streetName}
                     onChangeText={(text) => {
                       if (text.startsWith(" ")) return;
@@ -1513,11 +1549,15 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                   <TouchableOpacity
                     onPress={() => {
                       setCityModalVisible(true);
+                      setCityModalKey((prev) => prev + 1);
                       handleFieldTouch("city");
                     }}
-                    className={`bg-[#F6F6F6] border ${cityError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 flex-row items-center justify-between`}
+                    className={`bg-[#F6F6F6] border h-[50px] ${cityError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 flex-row items-center justify-between`}
                   >
-                    <Text className={city ? "text-black" : "text-gray-400"}>
+                    <Text
+                      className={city ? "text-black" : "text-gray-400"}
+                      style={{ fontSize: RESPONSIVE_FONT_SIZE }}
+                    >
                       {city || "Select Nearest City"}
                     </Text>
                     <MaterialIcons
@@ -1539,14 +1579,27 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
               <TouchableOpacity
                 onPress={navigateToMapScreen}
                 className="items-center rounded-full mb-3"
+                activeOpacity={1}
               >
-                <View className="border border-[#6C3CD1] rounded-full py-3 px-9 flex-row items-center justify-center">
+                <View
+                  className="w-1/2 border border-[#6C3CD1] bg-white rounded-full py-3 flex-row items-center justify-center"
+                  style={{
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 8,
+                    elevation: 10,
+                  }}
+                >
                   <FontAwesome6
                     name="location-crosshairs"
                     size={20}
                     color="#7C3AED"
                   />
-                  <Text className="text-[#6C3CD1] font-medium ml-2">
+                  <Text
+                    className="text-[#6C3CD1] font-medium ml-2"
+                    style={{ fontSize: RESPONSIVE_FONT_SIZE }}
+                  >
                     Geo Location
                   </Text>
                 </View>
@@ -1568,7 +1621,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                 >
                   <View className="flex-row items-center justify-center">
                     <Entypo name="location-pin" size={16} color="#DC2626" />
-                    <Text className="text-red-600 font-semibold ml-1 underline">
+                    <Text
+                      className="text-red-600 font-semibold ml-1 underline"
+                      style={{ fontSize: RESPONSIVE_FONT_SIZE }}
+                    >
                       View Here
                     </Text>
                   </View>
@@ -1617,8 +1673,8 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
               </View>
             </View>
           </View>
-        </ScrollView>
-      </View>
+        </View>
+      </ScrollView>
 
       {/* Title Selection Modal */}
       <GlobalSearchModal
@@ -1658,6 +1714,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
 
       {/* City Selection Modal */}
       <GlobalSearchModal
+        key={cityModalKey}
         visible={cityModalVisible}
         onClose={() => setCityModalVisible(false)}
         title="Select Nearest City"
@@ -1671,6 +1728,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
         }}
         searchPlaceholder="Search city..."
         multiSelect={false}
+        noResultsText="No City Found"
       />
     </KeyboardAvoidingView>
   );

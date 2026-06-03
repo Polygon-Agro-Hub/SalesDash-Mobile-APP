@@ -11,7 +11,7 @@ export interface CartItem {
   unitType: string;
   startValue: number;
   changeby: number;
-  title:string;
+  title: string;
 }
 
 export interface PackageItem {
@@ -56,7 +56,7 @@ interface ModifiedMinItem {
   additionalDiscount: number;
 }
 
-interface AdditionalItem {
+export interface AdditionalItem {
   unit: any;
   qty: any;
   productId: any;
@@ -65,6 +65,27 @@ interface AdditionalItem {
   quantity: number;
   price: number;
   discount: number;
+}
+
+// Full shape of an additional item as carried through the nav chain (rawAdditionalItems)
+export interface RawAdditionalItem {
+  id: number;
+  name: string;
+  quantity: number;
+  unit: string;
+  pricePerKg: number;
+  discountedPricePerKg: number;
+  discount: number;
+  totalAmount: number;
+  selected: boolean;
+  changeby?: string;
+  startValue?: string;
+}
+
+// Full shape of a package item as carried through the nav chain (rawPackageItems)
+export interface RawPackageItem {
+  name: string;
+  qty: string;
 }
 
 export type RootStackParamList = {
@@ -79,15 +100,22 @@ export type RootStackParamList = {
   ViewComplainScreen: undefined;
   ViewOrdersScreen: undefined;
   ReminderScreen: undefined;
-  SelectOrderType: undefined;
+  SelectOrderType: {
+    id?: string;
+    customerId?: string;
+    title?: string;
+    name?: string;
+    number?: string;
+    customerscreencustomerid?: string;
+  };
   PrivacyPolicy: undefined;
   TermsConditions: undefined;
   SelectOrderTypeNewCustomer: {
-    id:number,
-    name:string,
-    title:string,
-    customerId:string,
-    phoneNumber:string
+    id: number;
+    name: string;
+    title: string;
+    customerId: string;
+    phoneNumber: string;
   };
   Main: {
     screen: keyof RootStackParamList;
@@ -143,11 +171,173 @@ export type RootStackParamList = {
   };
   OrderScreen: {
     id: string;
-    isCustomPackage: string;
-    isSelectPackage: string;
+    isPackage: string;
+    isCustomPackage?: string;
+    isSelectPackage?: string;
+    customerId: string;
+    name: string;
+    title: string;
+    number: string;
+    customerscreencustomerid: string;
+    // Edit / back-navigation fields
+    isEdit?: boolean;
+    packageId?: number;
+    packageItems?: Array<{
+      id: number;
+      name: string;
+      quantity: string;
+      quantityType: string;
+      price: number;
+    }>;
+    additionalItems?: Array<{
+      pricePerKg?: number;
+      discountedPricePerKg?: number;
+      totalPrice?: number;
+      mpItemId?: number;
+      productId?: number;
+      id: number;
+      name: string;
+      quantity: string;
+      quantityType: string;
+      price: number;
+      discount: string;
+      cropId?: number;
+      changeby?: string;
+      startValue?: string;
+      unitType?: string;
+    }>;
+    orderItems?: PackageItem[];
+    subtotal?: number;
+    discount?: number;
+    total?: number;
+    fullTotal?: number;
+    selectedDate?: string;
+    selectedTimeSlot?: string;
+    timeDisplay?: string;
+    paymentMethod?: string;
+    orderData?: {
+      additionalItems?: AdditionalItem[];
+      [key: string]: any;
+    };
   };
   ScheduleScreen: {
-    totalPrice: Number;
+    totalPrice?: number;
+    // Order data
+    items?: CartItem[];
+    subtotal?: number;
+    discount?: number;
+    total?: number;
+    fullTotal?: number;
+    // Customer identifiers
+    id?: string;
+    customerId?: string;
+    customerid?: string;
+    // Customer display info
+    title?: string;
+    name?: string;
+    number?: string;
+    customerscreencustomerid?: string;
+    // Schedule
+    selectedDate?: string;
+    selectedTimeSlot?: string;
+    timeDisplay?: string;
+    // Order type
+    isPackage?: string | number;
+    packageId?: number | null;
+    // Raw items for round-trip back navigation
+    rawPackageItems?: RawPackageItem[];
+    rawAdditionalItems?: RawAdditionalItem[];
+    // Full order items (package flow)
+    orderItems?: PackageItem[];
+    orderData?: {
+      additionalItems?: AdditionalItem[];
+      [key: string]: any;
+    };
+    // Restore flag
+    fromOrderSummary?: boolean;
+  };
+  SelectPaymentMethod: {
+    items?: CartItem[];
+    subtotal?: number;
+    discount?: number;
+    total?: number;
+    fullTotal?: number;
+    selectedDate?: string;
+    selectedTimeSlot?: string;
+    timeDisplay?: string;
+    sheduleTime?: string;
+    sheduleDate?: string;
+    // Customer identifiers
+    id?: string;
+    customerId?: string;
+    customerid?: string;
+    // Customer display info
+    title?: string;
+    name?: string;
+    number?: string;
+    customerscreencustomerid?: string;
+    // Order type
+    isPackage?: number | string;
+    packageId?: number;
+    // Payment
+    selectedMethod?: "Card" | "Cash" | null;
+    // Raw items for round-trip back navigation
+    rawPackageItems?: RawPackageItem[];
+    rawAdditionalItems?: RawAdditionalItem[];
+    // Full order items (package flow)
+    orderItems?: PackageItem[];
+    orderData?: {
+      additionalItems?: AdditionalItem[];
+      [key: string]: any;
+    };
+  };
+  OrderSummeryScreen: {
+    items?: CartItem[];
+    subtotal?: number;
+    discount?: number;
+    total?: number;
+    fullTotal?: number;
+    selectedDate?: string;
+    selectedTimeSlot?: string;
+    timeDisplay?: string;
+    sheduleTime?: string;
+    sheduleDate?: string;
+    paymentMethod?: string;
+    // Customer identifiers
+    customerId?: string | number;
+    customerid?: string | number;
+    id?: string;
+    // Customer display info
+    title?: string;
+    name?: string;
+    number?: string;
+    customerscreencustomerid?: string;
+    // Order type
+    isPackage?: number | string;
+    packageId?: number;
+    // Raw items — source of truth for back navigation to OrderScreen
+    rawPackageItems?: RawPackageItem[];
+    rawAdditionalItems?: RawAdditionalItem[];
+    // Full order items (package flow)
+    orderItems?: PackageItem[];
+    orderData?: {
+      additionalItems?: AdditionalItem[];
+      [key: string]: any;
+    };
+  };
+  OrderConfirmedScreen: {
+    orderId: number;
+    total: number;
+    subtotal: number;
+    discount: number;
+    paymentMethod: string;
+    customerId: string | number;
+    customerid?: string | number;
+    items?: Array<CartItem>;
+    selectedDate: string;
+    selectedTimeSlot: string;
+    orderData?: any;
+    isPackage: number;
   };
   View_CancelOrderScreen: {
     orderId: number;
@@ -182,18 +372,12 @@ export type RootStackParamList = {
   CratScreen: {
     selectedProducts: CartItem[];
     id: string;
-  };
-  SelectPaymentMethod: {
-    items: CartItem[];
-    subtotal: number;
-    discount: number;
-    total: number;
-    fullTotal: number;
-    selectedDate: string;
-    selectedTimeSlot: string;
-    sheduleTime:string;
-  };
-  OrderSummeryScreen: {
+    customerId?: string;
+    title?: string;
+    name?: string;
+    number?: string;
+    customerscreencustomerid?: string;
+    isPackage?: number;
     items?: CartItem[];
     subtotal?: number;
     discount?: number;
@@ -201,37 +385,24 @@ export type RootStackParamList = {
     fullTotal?: number;
     selectedDate?: string;
     selectedTimeSlot?: string;
+    timeDisplay?: string;
     paymentMethod?: string;
-    customerId?: string | number;
-    customerid?: string | number;
-    isPackage?: number;
-    packageId?: number;
-    customerscreencustomerid:string;
-    orderItems?: PackageItem[];
-    orderData?: {
-      additionalItems?: AdditionalItem[];
-      [key: string]: any;
-    };
-  };
-  OrderConfirmedScreen: {
-    orderId: number;
-    total: number;
-    subtotal: number;
-    discount: number;
-    paymentMethod: string;
-    customerId: string | number;
-    customerid?: string | number;
-    items?: Array<CartItem>;
-    selectedDate: string;
-    selectedTimeSlot: string;
-    orderData?: any;
-    isPackage: number;
+    fromOrderSummary?: boolean;
   };
   ExcludeListAdd: {
     customerId: number;
+    name?: string;
+    title?: string;
+    number?: string;
+    id?: number;
   };
   ExcludeListSummery: {
     customerId: number;
+    name?: string;
+    title?: string;
+    phoneNumber?: string;
+    cusId?: string;
+    id?: number;
   };
   ExcludeItemEditSummery: {
     id: string;

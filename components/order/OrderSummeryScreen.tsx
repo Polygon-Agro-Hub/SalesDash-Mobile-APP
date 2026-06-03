@@ -67,6 +67,32 @@ interface CustomerData {
   };
 }
 
+const buildRestoredAdditionalItems = (rawAdditionalItems: any[]) =>
+  (rawAdditionalItems || []).map((item: any) => ({
+    productId: item.id,
+    mpItemId: item.id,
+    id: item.id,
+    name: item.name,
+    quantity: item.quantity.toString(),
+    quantityType: item.unit?.toLowerCase() === "kg" ? "kg" : "g",
+    pricePerKg: item.pricePerKg,
+    discountedPricePerKg: item.discountedPricePerKg,
+    price: item.totalAmount,
+    discount: item.discount,
+    changeby: item.changeby || "1",
+    startValue: item.startValue || "1",
+    unitType: item.unit?.toLowerCase() || "kg",
+  }));
+
+const buildRestoredPackageItems = (rawPackageItems: any[]) =>
+  (rawPackageItems || []).map((item: { name: string; qty: string }) => ({
+    id: 0,
+    name: item.name,
+    quantity: item.qty,
+    quantityType: "kg",
+    price: 0,
+  }));
+
 const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
   navigation,
   route,
@@ -113,8 +139,6 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
   const totalDeliveryPlus = fullTotal;
   const subTotalDeliveryPlus = totalDeliveryPlus + discount;
 
-  // Single consolidated effect: fetches customer data AND delivery fee together
-  // so the address and all screen content appear at the same time.
   useEffect(() => {
     const fetchCustomerDataAndDeliveryFee = async () => {
       const customerIdValue =
@@ -137,9 +161,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
 
         const customerResponse = await axios.get(
           `${environment.API_BASE_URL}api/orders/get-customer-data/${customerIdValue}`,
-          {
-            headers: { Authorization: `Bearer ${storedToken}` },
-          },
+          { headers: { Authorization: `Bearer ${storedToken}` } },
         );
 
         if (customerResponse.data?.success) {
@@ -168,9 +190,9 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
             setDeliveryFee(0);
           }
         } else {
-          const errorMsg =
-            customerResponse.data?.message || "Failed to fetch customer data";
-          setError(errorMsg);
+          setError(
+            customerResponse.data?.message || "Failed to fetch customer data",
+          );
         }
       } catch (error: any) {
         console.error("Error fetching customer data:", error);
@@ -194,9 +216,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
   }, [customerId, route.params?.customerId, route.params?.customerid]);
 
   const handleConfirmOrder = async () => {
-    if (isSubmitting || isSubmitted) {
-      return;
-    }
+    if (isSubmitting || isSubmitted) return;
 
     setIsSubmitting(true);
 
@@ -240,10 +260,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
             discount: item.discount,
           })),
         };
-
-        orderPayload = {
-          orderData: orderData,
-        };
+        orderPayload = { orderData };
       } else {
         const currentPackageItem = safeOrderItems[0] || {};
         const additionalItems =
@@ -274,9 +291,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           items: packageItems,
         };
 
-        orderPayload = {
-          orderData: packageOrderData,
-        };
+        orderPayload = { orderData: packageOrderData };
       }
 
       const apiUrl = `${environment.API_BASE_URL}api/orders/create-order`;
@@ -371,9 +386,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         try {
           const response = await axios.get(
             `${environment.API_BASE_URL}api/packages/marketplace-package/${packageItem.packageId}`,
-            {
-              headers: { Authorization: `Bearer ${storedToken}` },
-            },
+            { headers: { Authorization: `Bearer ${storedToken}` } },
           );
 
           if (response.data && response.data.data) {
@@ -387,6 +400,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           packageDisplayNameLocal = `Package ${packageItem.packageId}`;
         }
       }
+
       if (
         packageItem.additionalItems &&
         packageItem.additionalItems.length > 0
@@ -395,14 +409,11 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           try {
             const response = await axios.get(
               `${environment.API_BASE_URL}api/packages/marketplace-item/${item.id}`,
-              {
-                headers: { Authorization: `Bearer ${storedToken}` },
-              },
+              { headers: { Authorization: `Bearer ${storedToken}` } },
             );
 
             if (response.data && response.data.data) {
               const itemIdKey = item.id.toString();
-
               additionalDetails[itemIdKey] = {
                 name:
                   response.data.data.name ||
@@ -456,7 +467,6 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "";
 
-    // Handle "DD MMM YYYY" format e.g. "20 Feb 2026"
     const monthMap: Record<string, string> = {
       Jan: "01",
       Feb: "02",
@@ -481,7 +491,6 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
       if (mm) return `${yyyy}/${mm}/${dd}`;
     }
 
-    // Fallback: try native Date parsing for ISO / other formats
     const date = new Date(dateStr);
     if (!isNaN(date.getTime())) {
       const yyyy = date.getFullYear();
@@ -492,6 +501,60 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
 
     return dateStr;
   };
+
+  const navigateBackToOrderScreen = useCallback(() => {
+    const currentOrderItem = safeOrderItems[0] || {};
+
+    const restoredPackageItems = buildRestoredPackageItems(
+      route.params?.rawPackageItems || [],
+    );
+
+    const restoredAdditionalItems = buildRestoredAdditionalItems(
+      route.params?.rawAdditionalItems || [],
+    );
+
+    navigation.navigate("OrderScreen" as any, {
+      id: customerId || customerid,
+      isPackage: "1",
+      orderItems: safeOrderItems,
+      number: customerData?.phoneNumber,
+      title: customerData?.title,
+      customerscreencustomerid: customerscreencustomerid,
+      name: `${customerData?.firstName} ${customerData?.lastName}`,
+      packageId: currentOrderItem.packageId || route.params?.packageId,
+      packageItems: restoredPackageItems,
+      additionalItems: restoredAdditionalItems,
+      subtotal,
+      discount,
+      total,
+      fullTotal,
+      selectedDate,
+      selectedTimeSlot,
+      timeDisplay,
+      paymentMethod,
+      isEdit: true,
+      orderData: route.params?.orderData,
+
+      rawPackageItems: route.params?.rawPackageItems,
+      rawAdditionalItems: route.params?.rawAdditionalItems,
+    });
+  }, [
+    safeOrderItems,
+    customerId,
+    customerid,
+    customerData,
+    customerscreencustomerid,
+    route.params,
+    subtotal,
+    discount,
+    total,
+    fullTotal,
+    selectedDate,
+    selectedTimeSlot,
+    timeDisplay,
+    paymentMethod,
+    navigation,
+  ]);
 
   useFocusEffect(
     useCallback(() => {
@@ -516,6 +579,9 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           customerid: customerid?.toString() || customerId?.toString(),
           orderItems,
           selectedMethod: paymentMethod,
+          orderData: route.params?.orderData,
+          rawPackageItems: route.params?.rawPackageItems,
+          rawAdditionalItems: route.params?.rawAdditionalItems,
         });
         return true;
       };
@@ -526,12 +592,11 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
       );
 
       return () => backHandler.remove();
-    }, [navigation]),
+    }, [navigation, customerData]),
   );
 
   const formatPrice = (amount: number) => {
     const hasDecimals = amount % 1 !== 0;
-
     if (hasDecimals) {
       return amount.toLocaleString("en-US", {
         maximumFractionDigits: 2,
@@ -574,9 +639,10 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       enabled
-      className=" bg-white"
+      className="bg-white"
       style={{ flex: 1 }}
     >
+      {/* ── Header ── */}
       <CustomHeader
         title="Order Summary"
         titleColor="#6C3CD1"
@@ -603,6 +669,9 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
             customerid: customerid?.toString() || customerId?.toString(),
             orderItems,
             selectedMethod: paymentMethod,
+            orderData: route.params?.orderData,
+            rawPackageItems: route.params?.rawPackageItems,
+            rawAdditionalItems: route.params?.rawAdditionalItems,
           })
         }
       />
@@ -614,9 +683,10 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         keyboardShouldPersistTaps="handled"
       >
         <View>
+          {/* ── Delivery card ── */}
           <View className="bg-white border border-gray-300 rounded-lg p-4 shadow-sm">
             <View className="flex-row items-center">
-              <View className="flex-row items-center justify-between flex-1 ">
+              <View className="flex-row items-center justify-between flex-1">
                 <Image
                   source={require("@/assets/images/order/delivery.webp")}
                   className="w-10 h-10"
@@ -633,6 +703,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                   </Text>
                   <Text className="text-[#808FA2] text-sm">{timeDisplay}</Text>
                 </View>
+
                 <TouchableOpacity
                   onPress={() => {
                     navigation.navigate("ScheduleScreen" as any, {
@@ -654,13 +725,15 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                         customerid.toString() || customerId.toString(),
                       orderItems,
                       orderData: route.params?.orderData,
+                      rawPackageItems: route.params?.rawPackageItems,
+                      rawAdditionalItems: route.params?.rawAdditionalItems,
                     });
                   }}
                   disabled={isSubmitting || isSubmitted}
                   style={{ opacity: isSubmitting || isSubmitted ? 0.6 : 1 }}
                   className="mb-10"
                 >
-                  <View className="border border-[#6C3CD1] px-3 rounded-full ml-2 ">
+                  <View className="border border-[#6C3CD1] px-3 rounded-full ml-2">
                     <Text className="text-[#6C3CD1] font-medium">Edit</Text>
                   </View>
                 </TouchableOpacity>
@@ -668,22 +741,24 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
             </View>
           </View>
 
-          {/* Customer Info */}
+          {/* ── Customer info ── */}
           <View className="bg-white border border-gray-300 rounded-lg p-4 mt-3 shadow-sm">
-            <Text className="text-[#808FA2] text-xs">Customer's Name</Text>
+            <Text className="text-[#808FA2] text-s mb-2">Customer's Name</Text>
             <Text className="text-black font-medium">{customerInfo.name}</Text>
 
-            <Text className="text-[#808FA2] text-xs mt-2">
+            <Text className="text-[#808FA2] text-s mt-3 mb-2">
               Customer's Phone Number
             </Text>
             <Text className="text-black font-medium">{customerInfo.phone}</Text>
 
-            <Text className="text-[#808FA2] text-xs mt-2">Building Type</Text>
+            <Text className="text-[#808FA2] text-s mt-3 mb-2">
+              Building Type
+            </Text>
             <Text className="text-black font-medium">
               {customerInfo.buildingType}
             </Text>
 
-            <Text className="text-[#808FA2] text-xs mt-2">Address</Text>
+            <Text className="text-[#808FA2] text-s mt-3 mb-2">Address</Text>
             {customerData && customerData.buildingDetails ? (
               <View className="-m-1">
                 {customerData.buildingDetails.buildingNo && (
@@ -736,6 +811,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
             )}
           </View>
 
+          {/* ── Payment summary ── */}
           <View className="bg-white border border-gray-300 rounded-lg p-4 mt-3 shadow-sm">
             <View className="flex-row justify-between">
               <Text className="text-black font-medium">Payment Summary</Text>
@@ -792,87 +868,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                       fromOrderSummary: true,
                     });
                   } else if (isPackage === 1) {
-                    const currentOrderItem = safeOrderItems[0] || {};
-                    const additionalItems =
-                      route.params?.orderData?.additionalItems || [];
-
-                    const packageItems =
-                      currentOrderItem.finalOrderPackageList?.map((item) => ({
-                        id: item.productId,
-                        name:
-                          packageItemDetails[item.productId.toString()]
-                            ?.displayName || `Item ${item.productId}`,
-                        quantity: item.quantity.toString(),
-                        quantityType: "kg",
-                        price:
-                          typeof item.price === "string"
-                            ? parseFloat(item.price)
-                            : item.price,
-                        discount: item.discount || 0,
-                      })) || [];
-
-                    const mappedAdditionalItems = additionalItems.map(
-                      (item) => {
-                        const itemDetail =
-                          additionalItemDetails[item.productId.toString()];
-
-                        const quantity = parseFloat(item.qty) || 1;
-                        const unit = (item.unit || "kg").toLowerCase();
-                        const quantityInKg =
-                          unit === "kg" ? quantity : quantity / 1000;
-
-                        const totalPrice = Number(item.price) || 0;
-                        const totalDiscount = Number(item.discount) || 0;
-
-                        const discountedPricePerKg =
-                          quantityInKg > 0 ? totalPrice / quantityInKg : 0;
-                        const normalPricePerKg =
-                          quantityInKg > 0
-                            ? (totalPrice + totalDiscount) / quantityInKg
-                            : 0;
-
-                        return {
-                          productId: item.productId,
-                          mpItemId: item.productId,
-                          cropId: item.productId,
-                          name:
-                            itemDetail?.displayName || `Item ${item.productId}`,
-                          quantity: quantity.toString(),
-                          quantityType: unit,
-                          pricePerKg: normalPricePerKg,
-                          discountedPricePerKg: discountedPricePerKg,
-                          price: totalPrice,
-                          discount: totalDiscount,
-                          changeby: itemDetail?.changeby || "1",
-                          startValue: itemDetail?.startValue || "1",
-                          unitType: itemDetail?.unitType || "kg",
-                        };
-                      },
-                    );
-
-                    navigation.navigate("OrderScreen" as any, {
-                      id: customerId || customerid,
-                      isPackage: "1",
-                      orderItems: safeOrderItems,
-                      number: customerData?.phoneNumber,
-                      title: customerData?.title,
-                      customerscreencustomerid: customerscreencustomerid,
-                      name: `${customerData?.firstName} ${customerData?.lastName}`,
-                      packageId:
-                        currentOrderItem.packageId || route.params?.packageId,
-                      packageItems: packageItems,
-                      additionalItems: mappedAdditionalItems,
-                      subtotal,
-                      discount,
-                      total,
-                      fullTotal,
-                      selectedDate,
-                      selectedTimeSlot,
-                      timeDisplay,
-                      paymentMethod,
-                      isEdit: true,
-                      orderData: route.params?.orderData,
-                    });
+                    navigateBackToOrderScreen();
                   } else {
                     navigation.navigate("CratScreen" as any, {
                       id: customerId || customerid,
@@ -914,7 +910,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
             {isPackage === 1 && (
               <View className="flex-row justify-between mt-3">
                 <Text className="text-[#8492A3] font-medium">Subtotal</Text>
-                <Text className="text-black font-medium mr-14">
+                <Text className="text-black font-semibold mr-14">
                   Rs. {formatPrice(subTotalDeliveryPlus - deliveryFee)}
                 </Text>
               </View>
@@ -923,30 +919,32 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
             {isPackage === 0 && (
               <View className="flex-row justify-between mt-3">
                 <Text className="text-[#8492A3] font-medium">Subtotal</Text>
-                <Text className="text-black font-medium mr-14">
+                <Text className="text-black font-semibold mr-14">
                   Rs. {formatPrice(subTotalDeliveryPlus - 180 - deliveryFee)}
                 </Text>
               </View>
             )}
 
             <View className="flex-row justify-between mt-2">
-              <Text className="text-[#8492A3]">Discount</Text>
-              <Text className="text-gray-500 mr-14">
+              <Text className="text-[#8492A3] font-medium">Discount</Text>
+              <Text className="text-gray-500 mr-14 font-medium">
                 Rs. {formatPrice(discount)}
               </Text>
             </View>
 
             <View className="flex-row justify-between mt-2">
-              <Text className="text-[#8492A3]">Delivery Fee</Text>
-              <Text className="text-gray-500 mr-14">
+              <Text className="text-[#8492A3] font-medium">Delivery Fee</Text>
+              <Text className="text-gray-500 mr-14 font-medium">
                 Rs. {formatPrice(deliveryFee)}
               </Text>
             </View>
 
             {isPackage === 0 && (
               <View className="flex-row justify-between mt-2">
-                <Text className="text-[#8492A3]">Service Fee</Text>
-                <Text className="text-gray-500 mr-14">Rs. 180.00</Text>
+                <Text className="text-[#8492A3] font-medium">Service Fee</Text>
+                <Text className="text-gray-500 mr-14 font-medium">
+                  Rs. 180.00
+                </Text>
               </View>
             )}
 
@@ -958,6 +956,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
             </View>
           </View>
 
+          {/* ── Payment method ── */}
           <View className="bg-white border border-gray-300 rounded-lg p-4 mt-3 shadow-sm">
             <View className="flex-row justify-between">
               <Text className="text-black font-medium">Payment Method</Text>
@@ -984,6 +983,9 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                       customerid?.toString() || customerId?.toString(),
                     orderItems,
                     selectedMethod: paymentMethod,
+                    orderData: route.params?.orderData,
+                    rawPackageItems: route.params?.rawPackageItems,
+                    rawAdditionalItems: route.params?.rawAdditionalItems,
                   })
                 }
                 className="border border-[#6C3CD1] px-3 rounded-full"
@@ -997,7 +999,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           </View>
         </View>
 
-        {/* Confirm Button with ActivityIndicator */}
+        {/* ── Confirm button ── */}
         <View
           style={{
             marginTop: "10%",
@@ -1021,10 +1023,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
               onPress={handleConfirmOrder}
               disabled={isSubmitting || isSubmitted}
               activeOpacity={0.8}
-              style={{
-                borderRadius: 24,
-                opacity: isSubmitted ? 0.6 : 1,
-              }}
+              style={{ borderRadius: 24, opacity: isSubmitted ? 0.6 : 1 }}
             >
               <LinearGradient
                 colors={["#6839CF", "#874DDB"]}

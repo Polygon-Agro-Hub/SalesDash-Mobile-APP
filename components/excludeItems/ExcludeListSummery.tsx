@@ -24,6 +24,8 @@ import axios from "axios";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import LottieView from "lottie-react-native";
 import CustomHeader from "../common/CustomHeader";
+import { Entypo } from "@expo/vector-icons";
+import FixedMarqueeText from "../common/MarqueeText";
 
 type ExcludeListSummeryNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -39,8 +41,14 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
   route,
   navigation,
 }) => {
-  const { customerId } = route.params || {};
+  const { customerId, name, title, phoneNumber, cusId, id } = route.params || {};
   const [crops, setCrops] = useState<any[]>([]);
+
+  // Split name into first and last name if they are passed as a single string
+  const nameParts = (name || "").trim().split(/\s+/);
+  const initialFirstName = nameParts[0] || "";
+  const initialLastName = nameParts.slice(1).join(" ") || "";
+
   const [customerName, setCustomerName] = useState<{
     firstName: string;
     lastName: string;
@@ -48,11 +56,11 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
     cusId: String;
     phoneNumber: string;
   }>({
-    firstName: "",
-    lastName: "",
-    title: "",
-    cusId: "",
-    phoneNumber: "",
+    firstName: initialFirstName,
+    lastName: initialLastName,
+    title: title || "",
+    cusId: cusId || "",
+    phoneNumber: phoneNumber || "",
   });
 
   useFocusEffect(
@@ -82,6 +90,18 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
                 cusId,
                 phoneNumber,
               });
+            } else {
+              // Fallback to route parameters if no items exist in exclude list
+              const nameParts = (name || "").trim().split(/\s+/);
+              const initialFirstName = nameParts[0] || "";
+              const initialLastName = nameParts.slice(1).join(" ") || "";
+              setCustomerName({
+                firstName: initialFirstName,
+                lastName: initialLastName,
+                title: title || "",
+                cusId: cusId || "",
+                phoneNumber: phoneNumber || "",
+              });
             }
 
             // Filter out any invalid or empty items for crops display
@@ -91,15 +111,37 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
             setCrops(validCrops);
           } else {
             setCrops([]);
+            // Fallback to route parameters
+            const nameParts = (name || "").trim().split(/\s+/);
+            const initialFirstName = nameParts[0] || "";
+            const initialLastName = nameParts.slice(1).join(" ") || "";
+            setCustomerName({
+              firstName: initialFirstName,
+              lastName: initialLastName,
+              title: title || "",
+              cusId: cusId || "",
+              phoneNumber: phoneNumber || "",
+            });
           }
         } catch (err) {
           console.error("Failed to fetch products:", err);
           setCrops([]); // Set empty array on error
+          // Fallback to route parameters
+          const nameParts = (name || "").trim().split(/\s+/);
+          const initialFirstName = nameParts[0] || "";
+          const initialLastName = nameParts.slice(1).join(" ") || "";
+          setCustomerName({
+            firstName: initialFirstName,
+            lastName: initialLastName,
+            title: title || "",
+            cusId: cusId || "",
+            phoneNumber: phoneNumber || "",
+          });
         }
       };
 
       fetchProducts();
-    }, [customerId]),
+    }, [customerId, name, title, phoneNumber, cusId]),
   );
 
   const deleteCrop = async (excludeId: number) => {
@@ -159,6 +201,11 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
     }, [navigation]),
   );
 
+  const fullTitle =
+    customerName.firstName && customerName.lastName
+      ? `${customerName.title}. ${customerName.firstName} ${customerName.lastName}`
+      : "Loading...";
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -166,32 +213,74 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
       style={{ flex: 1 }}
       className="bg-white"
     >
-      <CustomHeader
-        title={
-          customerName.firstName && customerName.lastName
-            ? `${customerName.title}. ${customerName.firstName} ${customerName.lastName}`
-            : "Loading..."
-        }
-        titleColor="#000000"
-        transparent
-        showBackButton={true}
-        navigation={navigation}
-        onBackPress={() =>
-          navigation.navigate("ExcludeListAdd", {
-            customerId: Number(customerId),
-          })
-        }
-      />
-      <Text
-        style={{ fontSize: 18 }}
-        className=" text-center text-black text-xl mt-12"
+      <View
+        style={{
+          paddingTop: 12,
+          paddingHorizontal: 12,
+          flexDirection: "row",
+          alignItems: "center",
+          backgroundColor: "transparent",
+        }}
       >
-        {customerName.firstName && customerName.lastName
-          ? `Customer ID : ${customerName.cusId}`
-          : "Loading..."}
-      </Text>
+        {/* Back button */}
+        <TouchableOpacity
+          onPress={() =>
+            navigation.navigate("ExcludeListAdd", {
+              customerId: Number(customerId),
+            })
+          }
+          style={{
+            width: 45,
+            height: 45,
+            borderRadius: 18,
+            backgroundColor: "#F6F6F680",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+            marginLeft: 10,
+            zIndex: 1,
+          }}
+          activeOpacity={0.7}
+        >
+          <Entypo name="chevron-left" size={25} color="black" />
+        </TouchableOpacity>
 
-      <View className="flex-1 bg-white px-3">
+        {/* Title — marquee when long */}
+        <View style={{ flex: 1, alignItems: "center", overflow: "hidden" }}>
+          {fullTitle.length > 25 ? (
+            <FixedMarqueeText
+              text={fullTitle}
+              style={{ fontSize: 16, fontWeight: "bold" }}
+              speed={50}
+            />
+          ) : (
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: "bold",
+                color: "#000000",
+                textAlign: "center",
+              }}
+            >
+              {fullTitle}
+            </Text>
+          )}
+        </View>
+
+        {/* Right spacer to keep title centred */}
+        <View style={{ width: 45, marginRight: 10 }} />
+      </View>
+
+      {/* Customer ID */}
+      <View className="mx-auto w-full max-w-[500px]">
+        <Text style={{ fontSize: 16,marginTop: -3 }} className="text-center text-black">
+          {customerName.firstName && customerName.lastName
+            ? `Customer ID : ${customerName.cusId}`
+            : "Loading..."}
+        </Text>
+      </View>
+
+      <View className="flex-1 bg-white px-3 mx-auto w-full max-w-[500px]">
         <View className="px-6 mt-6">
           <Text className="text-[#874CDB] text-sm font-semibold">
             Preferred Items to Exclude
@@ -207,7 +296,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
               flex: 1,
               justifyContent: "center",
               alignItems: "center",
-              paddingTop: hp("30%"),
+              paddingTop: hp("10%"),
               paddingBottom: hp("20%"),
             }}
           >
@@ -217,7 +306,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
               autoPlay
               loop
             />
-            <Text className="text-center text-lg text-gray-500 mt-4">
+            <Text className="text-black italic text-center">
               No items to exclude
             </Text>
           </View>
@@ -269,12 +358,12 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
           </ScrollView>
         )}
       </View>
-      <View className="absolute bottom-0 left-0 right-0 bg-white pt-4 pb-4 px-6">
+      <View className="absolute bottom-0 left-0 right-0 bg-white pt-4 pb-4 px-6 items-center">
         <TouchableOpacity
-          className="left-0 right-0 items-center"
+          className="w-full max-w-[500px] items-center"
           onPress={() =>
             navigation.navigate("SelectOrderTypeNewCustomer", {
-              id: Number(customerId),
+              id: Number(id || customerId),
               name: String(
                 `${customerName.firstName || ""} ${customerName.lastName || ""}`,
               ).trim(),

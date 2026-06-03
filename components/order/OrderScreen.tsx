@@ -172,7 +172,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
   >([]);
   const [selectedUnit, setSelectedUnit] = useState<string>("g");
 
-  // Modal visibility states
   const [packageModalVisible, setPackageModalVisible] =
     useState<boolean>(false);
   const [productModalVisible, setProductModalVisible] =
@@ -278,7 +277,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
             .map((item) => {
               const productId = item.productId || item.mpItemId || item.cropId;
 
-              // Ensure productId is a number
               if (!productId || typeof productId !== "number") {
                 console.warn("Skipping item with invalid productId:", item);
                 return null;
@@ -328,7 +326,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
 
               const totalAmount = quantityInKg * discountedPricePerKg;
 
-              // Return AdditionalItem type with all required properties
               return {
                 id: productId,
                 name: displayName,
@@ -352,10 +349,8 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     initializeAdditionalItems();
   }, [route.params?.isEdit, route.params?.additionalItems, fetchProductPrices]);
 
-  // Main useEffect for handling initial data
   useEffect(() => {
     if (route.params?.isEdit && route.params?.packageId) {
-      // Set the package value from route params
       setPackageValue(route.params.packageId.toString());
 
       if (route.params.packageItems) {
@@ -424,10 +419,10 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         name,
         number,
         customerscreencustomerid,
-        // ✅ Pass these so ScheduleScreen can restore state on back press
+
         packageId: packageValue ? parseInt(packageValue) : null,
-        rawPackageItems: items, // { name: string; qty: string }[]
-        rawAdditionalItems: additionalItems, // AdditionalItem[]
+        rawPackageItems: items,
+        rawAdditionalItems: additionalItems,
       });
     } catch (error) {
       console.error("Error confirming order:", error);
@@ -497,7 +492,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     setPricePerKg(discountedPrice);
   }, [productItems, productValue, selectedUnit, quantity, additionalItems]);
 
-  // Modify fetchItemsForPackage to handle pre-selected package
   const fetchItemsForPackage = async (packageId: number) => {
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
@@ -515,7 +509,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
       if (response.data && Array.isArray(response.data.data)) {
         setItems(response.data.data);
 
-        // Find and set the selected package
         const selectedPkg = packages.find((pkg) => pkg.id === packageId);
         if (selectedPkg) {
           setSelectedPackage(selectedPkg);
@@ -545,7 +538,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
       );
       setPackages(response.data.data);
 
-      // Transform packages for dropdown
       const dropdownItems = response.data.data.map((pkg) => ({
         label: pkg.displayName,
         value: pkg.id.toString(),
@@ -565,7 +557,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
 
   useEffect(() => {}, [route.params]);
 
-  // Handle package selection change
   const handlePackageChange = (value: string | null) => {
     if (value) {
       setPackageValue(value);
@@ -589,7 +580,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     }
   };
 
-  // Use useEffect to handle package selection after packages are loaded
   useEffect(() => {
     if (packageValue && packages.length > 0) {
       const packageId = parseInt(packageValue, 10);
@@ -702,7 +692,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     });
   };
 
-  // 3. Delete selected items function
   const deleteSelectedItems = () => {
     setAdditionalItems((prev) =>
       prev.filter((item) => !selectedItems.includes(item.id)),
@@ -722,7 +711,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
 
     setQuantity((prev) => {
       const newValue = prev + adjustedChangeBy;
-      // Round to 2 decimal places for Kg, 0 for grams
+
       return selectedUnit === "Kg"
         ? Math.round(newValue * 100) / 100
         : Math.round(newValue);
@@ -740,8 +729,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
       ? Number(selectedProductData.startValue)
       : 0;
 
-    // For Kg, use values as is
-    // For g, multiply by 1000
     const adjustedChangeBy = selectedUnit === "Kg" ? changeBy : changeBy * 1000;
     const adjustedStartValue =
       selectedUnit === "Kg" ? startValue : startValue * 1000;
@@ -800,11 +787,9 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         ? Math.round(newItemQuantity * 1000) / 1000
         : Math.round(newItemQuantity);
 
-    // Convert to kg for price calculations
     const quantityInKg =
       unit === "Kg" ? roundedQuantity : roundedQuantity / 1000;
 
-    // Calculate totals with proper rounding
     const totalAmount =
       Math.round(quantityInKg * editingItem.discountedPricePerKg * 100) / 100;
     const discountAmount =
@@ -830,7 +815,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     setEditingItem(null);
   };
 
-  // Calculate total items count
   const getTotalItemsCount = () => {
     return items.reduce((total, item) => {
       const qty = parseInt(item.qty) || 0;
@@ -851,12 +835,15 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         (item) => item.value === productValue,
       );
       if (selectedProductData) {
+        const unitType =
+          selectedProductData.unitType?.toLowerCase() === "g" ? "g" : "Kg";
+        setSelectedUnit(unitType);
+
         const startValue = selectedProductData.startValue
           ? Number(selectedProductData.startValue)
           : 1;
-        // Only set initial quantity when product changes, not when unit changes
         const adjustedStartValue =
-          selectedUnit === "Kg" ? startValue : startValue * 1000;
+          unitType === "Kg" ? startValue : startValue * 1000;
         setQuantity(adjustedStartValue);
 
         const discountedPrice = selectedProductData.discountedPrice
@@ -875,18 +862,14 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     let convertedQuantity = quantity;
 
     if (currentUnit === "Kg" && newUnit === "g") {
-      // Converting from Kg to g: multiply by 1000
       convertedQuantity = quantity * 1000;
     } else if (currentUnit === "g" && newUnit === "Kg") {
-      // Converting from g to Kg: divide by 1000
       convertedQuantity = quantity / 1000;
     }
 
-    // Round to appropriate decimal places
     if (newUnit === "g") {
       convertedQuantity = Math.round(convertedQuantity);
     } else {
-      // For Kg, keep up to 3 decimal places
       convertedQuantity = Math.round(convertedQuantity * 1000) / 1000;
     }
 
@@ -894,7 +877,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     setSelectedUnit(newUnit);
   };
 
-  // Add this function for edit modal unit conversion
   const handleEditUnitConversion = (newUnit: string) => {
     const currentUnit = editSelectedUnit;
 
@@ -903,10 +885,8 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     let convertedQuantity = newItemQuantity;
 
     if (currentUnit === "Kg" && newUnit === "g") {
-      // Converting from Kg to g: multiply by 1000
       convertedQuantity = newItemQuantity * 1000;
     } else if (currentUnit === "g" && newUnit === "Kg") {
-      // Converting from g to Kg: divide by 1000
       convertedQuantity = newItemQuantity / 1000;
     }
 
@@ -931,7 +911,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
 
     setProductSearchValue(filteredText);
 
-    // Get base filtered items
     const baseFiltered = productItems.filter(
       (product) => !additionalItems.some((item) => item.id === product.id),
     );
@@ -1069,7 +1048,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                   <Text className="text-gray-800 font-medium flex-1">
                     {item.name}
                   </Text>
-                  <View className="bg-gray-50 px-2 py-1 rounded min-w-[32px] items-center">
+                  <View className=" px-2 py-1 rounded min-w-[32px] items-center">
                     <Text className="text-gray-600 font-medium text-sm">
                       {item.qty}
                     </Text>
@@ -1203,9 +1182,10 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                 className="py-3 px-6 rounded-full"
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
+                style={{ overflow: "hidden" }}
               >
                 <View
-                  className="w-14 flex-row justify-center items-center"
+                  className="w-20 flex-row justify-center items-center"
                   style={{ minHeight: 20 }}
                 >
                   {loading ? (
@@ -1234,9 +1214,8 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
       >
         <View className="flex-1 justify-center items-center bg-[#00000066] p-2">
           <View
-            className="bg-white p-6 rounded-xl"
+            className="bg-white p-6 rounded-xl w-11/12 max-w-[500px]"
             style={{
-              width: "90%",
               maxHeight: "100%",
               height: "auto",
             }}
@@ -1250,7 +1229,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                   fetchCrops();
                   setProductModalVisible(true);
                 }}
-                className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-xl px-4 py-2 flex-row justify-between items-center min-h-[48px]"
+                className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-3xl px-4 py-2 flex-row justify-between items-center min-h-[48px]"
               >
                 <Text className={productValue ? "text-black" : "text-gray-500"}>
                   {productValue
@@ -1263,10 +1242,10 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
             </View>
 
             <View className="mb-4">
-              <Text className="text-gray-700 mb-">
+              <Text className="text-gray-700 mb-2">
                 Price per 1kg (Discounted Value)
               </Text>
-              <View className="bg-gray-50 rounded-xl p-3">
+              <View className="bg-gray-50 justify-center rounded-3xl h-[50px] p-3">
                 <Text className="text-gray-900">
                   Rs.{" "}
                   {Number(pricePerKg || 0).toLocaleString("en-US", {
@@ -1279,10 +1258,11 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
 
             <View className="mb-4">
               <Text className="text-gray-700 mb-3">Quantity</Text>
-              <View className="flex-row items-center space-x-2">
-                <View className="flex-row items-center bg-gray-100 rounded-full flex-1">
+              <View className="flex-row items-center gap-2">
+                {/* Quantity stepper */}
+                <View className="flex-row items-center bg-gray-100 rounded-full flex-1 h-[50px]">
                   <TouchableOpacity
-                    className="w-10 h-10 flex items-center justify-center"
+                    className="w-12 h-[50px] items-center justify-center"
                     onPress={decrementQuantity}
                   >
                     <Text className="text-gray-700 text-xl font-bold">-</Text>
@@ -1291,7 +1271,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                     {(quantity || 0).toFixed(2)}
                   </Text>
                   <TouchableOpacity
-                    className="w-10 h-10 flex items-center justify-center"
+                    className="w-12 h-[50px] items-center justify-center"
                     onPress={incrementQuantity}
                   >
                     <Text className="text-gray-700 text-xl font-bold">+</Text>
@@ -1301,7 +1281,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                 {/* Unit button */}
                 <TouchableOpacity
                   onPress={() => setUnitModalVisible(true)}
-                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-3xl px-4 py-3 flex-row items-center justify-between"
+                  className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-3xl px-4 h-[50px] flex-row items-center justify-between"
                   style={{ width: 100 }}
                 >
                   <Text className="text-black">{selectedUnit}</Text>
@@ -1319,7 +1299,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
               <Text className="text-gray-700 mb-3">
                 Total Amount (Discounted Value)
               </Text>
-              <View className="bg-gray-50 rounded-xl px-4 py-4">
+              <View className="bg-gray-50 rounded-3xl px-4 py-4">
                 <Text className="text-gray-900">
                   Rs.{" "}
                   {(
@@ -1384,7 +1364,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
       {/* Edit Item Modal */}
       <Modal visible={modalVisible} transparent animationType="slide">
         <View className="flex-1 justify-center items-center bg-[#00000066] bg-opacity-10">
-          <View className="bg-white p-6 rounded-xl w-4/5">
+          <View className="bg-white p-6 rounded-xl w-11/12 max-w-[500px]">
             <Text className="text-gray-700 mb-2">Product</Text>
             <TextInput
               className="bg-gray-100 p-3 rounded-full mb-3 text-gray-700"
@@ -1395,7 +1375,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
             {/* Quantity and Unit Selector */}
             <View>
               <Text className="text-gray-700 mb-2">Quantity</Text>
-              <View className="flex-row items-center space-x-2">
+              <View className="flex-row items-center gap-2">
                 <View className="flex-row items-center bg-gray-100 rounded-full flex-1">
                   <TouchableOpacity
                     className="w-10 h-10 flex items-center justify-center"
@@ -1507,7 +1487,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         }}
         searchPlaceholder="Search package..."
         multiSelect={false}
-        showSearch={false}
+        showSearch={true}
         isLoading={false}
       />
 
@@ -1528,11 +1508,16 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                 ? parseFloat(selectedItem.discountedPrice)
                 : parseFloat(selectedItem.price);
               setPricePerKg(discountedPrice);
+
+              const unitType =
+                selectedItem.unitType?.toLowerCase() === "g" ? "g" : "Kg";
+              setSelectedUnit(unitType);
+
               const startValue = selectedItem.startValue
                 ? Number(selectedItem.startValue)
                 : 1;
               const adjustedStartValue =
-                selectedUnit === "Kg" ? startValue : startValue * 1000;
+                unitType === "Kg" ? startValue : startValue * 1000;
               setQuantity(adjustedStartValue);
             }
           }

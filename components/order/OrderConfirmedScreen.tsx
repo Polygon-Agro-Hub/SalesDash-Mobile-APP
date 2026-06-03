@@ -27,6 +27,7 @@ import axios from "axios";
 import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import LoadingPage from "../common/LoadingPage";
+import { logoBase64 as logoBase64Fallback } from "./logoBase64";
 
 type OrderConfirmedScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -219,7 +220,6 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
     };
   }, [orderId]);
 
-  // Fetch customer data and delivery fee after order is loaded
   useEffect(() => {
     const fetchCustomerDataAndDeliveryFee = async () => {
       if (!order?.userId) {
@@ -265,7 +265,6 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
             }
           }
 
-          // Stop loading after all data is fetched successfully
           setLoading(false);
         } else {
           const errorMsg =
@@ -290,7 +289,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
     if (order && order.userId) {
       fetchCustomerDataAndDeliveryFee();
     }
-  }, [order]); // Dependency on order object
+  }, [order]);
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -308,69 +307,33 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
     };
   }, []);
 
-  const convertImageToBase64 = async () => {
+  const convertLogoToBase64 = async () => {
     try {
       const asset = Asset.fromModule(
-        require("../../assets/images/Watermark.webp"),
+        require("../../assets/images/order/logo.webp"),
       );
+      if (!asset.downloaded) await asset.downloadAsync();
 
-      if (!asset.downloaded) {
-        await asset.downloadAsync();
-      }
-
-      if (!asset.localUri) {
-        console.warn(
-          "Asset local URI not found, falling back to alternative method",
-        );
-        return await convertImageAlternative();
-      }
-
-      const base64 = await FileSystem.readAsStringAsync(asset.localUri, {
+      const base64 = await FileSystem.readAsStringAsync(asset.localUri!, {
         encoding: "base64",
       });
-
       return `data:image/webp;base64,${base64}`;
     } catch (error) {
-      console.error("Error converting image to base64:", error);
-      return await convertImageAlternative();
-    }
-  };
-
-  const convertImageAlternative = async () => {
-    try {
-      const assetInfo = require("../../assets/images/Watermark.webp");
-
-      if (typeof assetInfo === "number") {
-        const asset = Asset.fromModule(assetInfo);
-        await asset.downloadAsync();
-
-        if (asset.localUri) {
-          const base64 = await FileSystem.readAsStringAsync(asset.localUri, {
-            encoding: "base64",
-          });
-          return `data:image/webp;base64,${base64}`;
-        }
-      }
-
-      console.warn("Unable to load watermark image");
-      return "";
-    } catch (error) {
-      console.error("Alternative watermark conversion failed:", error);
-      return "";
+      console.error("Error converting logo to base64, using fallback:", error);
+      return logoBase64Fallback;
     }
   };
 
   const handleDownloadAndShareInvoice = async () => {
-    if (isDownloading) return; // Prevent multiple clicks
+    if (isDownloading) return;
 
     try {
       setIsDownloading(true);
 
-      const watermarkBase64 = await convertImageToBase64();
+      const logoBase64 = await convertLogoToBase64();
       const invoiceNumber =
         order?.orderStatus?.invoiceNumber || `INV-${Date.now()}`;
 
-      // Calculate totals from API data
       const packagePrice = parseFloat(order?.packageInfo?.productPrice || "0");
       const packingFee = parseFloat(order?.packageInfo?.packingFee || "0");
       const serviceFee = parseFloat(order?.packageInfo?.serviceFee || "0");
@@ -382,13 +345,12 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         order?.additionalItems?.reduce((sum, item) => {
           const price = parseFloat(item.price?.toString() || "0");
           const discount = parseFloat(item.discount?.toString() || "0");
-          const actualAmount = price + discount; // Use actual amount (price + discount)
+          const actualAmount = price + discount;
           return sum + actualAmount;
         }, 0) || 0;
 
       const totaldiscount =
         order?.additionalItems?.reduce((sum, item) => {
-          // Convert discount to string before parsing if it's a number
           const discount =
             typeof item.discount === "number"
               ? item.discount.toString()
@@ -417,20 +379,21 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
           const discount = parseFloat(item.discount?.toString() || "0");
           const quantity = parseFloat(item.qty?.toString() || "0");
 
-          // Calculate the actual amount (price + discount)
-          const actualAmount = price + discount; // 510 + 90 = 600
+          const actualAmount = price + discount;
 
-          // Calculate unit price (actual amount / quantity)
           const unitPrice = parseFloat(
             item.marketplacetablenormalPrice?.toString() || "0",
           );
+
+          const displayQuantity =
+            item.unit === "g" ? quantity / 1000 : quantity;
 
           additionalItemsRows += `
   <tr>
     <td style="text-align: center">${index + 1}</td>
     <td class="tabledata">${item.displayName || item.name || "Item"}</td>
     <td class="tabledata">${unitPrice.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</td>
-    <td class="tabledata">${quantity} </td>
+    <td class="tabledata">${displayQuantity % 1 === 0 ? displayQuantity : displayQuantity.toFixed(3).replace(/\.?0+$/, "")} </td>
     <td class="tabledata">${actualAmount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</td>
   </tr>`;
         });
@@ -445,14 +408,17 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
     <title>Purchase Invoice</title>
 
     <style>
-    @page{
-    margin-top:20px;
+    @page {
+      margin-top: 20px;
+      size: A4;
     }
       body {
         font-family: Arial, sans-serif;
         padding: 10px;
         margin: 0;
         background-color: #ffffff;
+        height: fit-content;
+        overflow: hidden;
       }
       .invoice-container {
         width: 100%;
@@ -460,6 +426,8 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         margin: auto;
         background: white;
         padding: 20px;
+        height: fit-content;
+        overflow: hidden;
       }
       .header {
         display: flex;
@@ -478,15 +446,14 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         font-size: 14px;
         line-height: 10px;
       }
-         .label {
-    color: #929292; /* Gray color for labels */
-    font-weight: 500;
-  }
-  
-  .value {
-    color: #000000; /* Dark color for values */
-    font-weight: normal;
-  }
+      .label {
+        color: #929292;
+        font-weight: 500;
+      }
+      .value {
+        color: #000000;
+        font-weight: normal;
+      }
       .logo {
         width: 180px;
         height: auto;
@@ -502,8 +469,8 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
       }
       .table th,
       .table td {
-        border-left: none; 
-        border-right: none; 
+        border-left: none;
+        border-right: none;
         padding: 15px;
         text-align: left;
       }
@@ -525,8 +492,9 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
       .footer {
         text-align: center;
         font-size: 12px;
-        margin-top: 60px;
+        margin-top: 30px;
         color: #8492A3;
+        page-break-after: avoid;
       }
       .section1 {
         margin-top: 10px;
@@ -537,8 +505,8 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
       .section3 {
         margin-top: 10px;
       }
-        .section {
-        page-break-inside: avoid; /* Avoid page breaks inside these sections */
+      .section {
+        page-break-inside: avoid;
       }
       .ptext {
         font-size: 14px;
@@ -564,7 +532,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         </div>
         <div>
           <img
-            src="https://pub-79ee03a4a23e4dbbb70c7d799d3cb786.r2.dev/POLYGON%20ORIGINAL%20LOGO.png"
+            src="${logoBase64}"
             alt="Polygon Logo"
             class="logo"
           />
@@ -585,21 +553,21 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
       ${
         order?.customerInfo?.buildingType === "Apartment"
           ? `
-        <p class="bold">Apartment Address :</p>
-        <p class="headerp"><span class="label">House No:</span> <span class="value">${customerData?.buildingDetails?.houseNo || ""}</span></p>
-        <p class="headerp"><span class="label">Floor No:</span> <span class="value">${customerData?.buildingDetails?.floorNo || ""}</span></p>
-        <p class="headerp"><span class="label">Building No:</span> <span class="value">${customerData?.buildingDetails?.buildingNo || ""}</span></p>
-        <p class="headerp"><span class="label">Building Name:</span> <span class="value">${customerData?.buildingDetails?.buildingName || ""}</span></p>
-        <p class="headerp"><span class="label">Unit No:</span> <span class="value">${customerData?.buildingDetails?.unitNo || ""}</span></p>
-        <p class="headerp"><span class="label">Street:</span> <span class="value">${customerData?.buildingDetails?.streetName || ""}</span></p>
-        <p class="headerp"><span class="label">City:</span> <span class="value">${customerData?.buildingDetails?.city || ""}</span></p>
-        `
+  <p class="bold">Apartment Address :</p>
+  ${customerData?.buildingDetails?.buildingNo ? `<p class="headerp"><span class="label">No : </span><span class="value">${customerData.buildingDetails.buildingNo},</span></p>` : ""}
+  ${customerData?.buildingDetails?.buildingName ? `<p class="headerp"><span class="label">Name : </span><span class="value">${customerData.buildingDetails.buildingName},</span></p>` : ""}
+  ${customerData?.buildingDetails?.unitNo ? `<p class="headerp"><span class="label">Flat : </span><span class="value">${customerData.buildingDetails.unitNo},</span></p>` : ""}
+  ${customerData?.buildingDetails?.floorNo ? `<p class="headerp"><span class="label">Floor : </span><span class="value">${customerData.buildingDetails.floorNo},</span></p>` : ""}
+  ${customerData?.buildingDetails?.houseNo ? `<p class="headerp"><span class="label">House No : </span><span class="value">${customerData.buildingDetails.houseNo},</span></p>` : ""}
+  ${customerData?.buildingDetails?.streetName ? `<p class="headerp"><span class="label">Street Name : </span><span class="value">${customerData.buildingDetails.streetName},</span></p>` : ""}
+  ${customerData?.buildingDetails?.city ? `<p class="headerp"><span class="label">City : </span><span class="value">${customerData.buildingDetails.city}</span></p>` : ""}
+    `
           : `
-        <p class="bold">House Address :</p>
-        <p class="headerp"><span class="label">House No:</span> <span class="value">${customerData?.buildingDetails?.houseNo || ""}</span></p>
-        <p class="headerp"><span class="label">Street:</span> <span class="value">${customerData?.buildingDetails?.streetName || ""}</span></p>
-        <p class="headerp"><span class="label">City:</span> <span class="value">${customerData?.buildingDetails?.city || ""}</span></p>
-        `
+  <p class="bold">House Address :</p>
+  ${customerData?.buildingDetails?.houseNo ? `<p class="headerp"><span class="label">House No : </span><span class="value">${customerData.buildingDetails.houseNo},</span></p>` : ""}
+  ${customerData?.buildingDetails?.streetName ? `<p class="headerp"><span class="label">Street Name : </span><span class="value">${customerData.buildingDetails.streetName},</span></p>` : ""}
+  ${customerData?.buildingDetails?.city ? `<p class="headerp"><span class="label">City : </span><span class="value">${customerData.buildingDetails.city}</span></p>` : ""}
+    `
       }
     </div>
           
@@ -772,7 +740,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
           Remarks :
         </p>
 
-        <div   style="color: #666666; font-size: 12px; line-height: 10px;">
+        <div style="color: #666666; font-size: 12px; line-height: 10px;">
           <p>Kindly inspect all goods at the time of delivery to ensure accuracy and condition.</p>
           <p>Polygon does not accept returns under any circumstances.</p>
           <p>Please report any issues or discrepancies within 24 hours of delivery to ensure prompt attention.</p>
@@ -783,9 +751,9 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
 
       <!-- Footer Section -->
       <div class="footer">
-        <p  style=" margin-top: 50px; font-size: 16px; font-weight: 600; color:#000; font-style:italic">Thank you for shopping with us!</p>
-        <p  style=" margin-top: -5px; font-size: 14px; font-weight: 500; color:#4B4B4B; font-style:italic">WE WILL SEND YOU MORE OFFERS, LOWEST PRICED VEGGIES FROM US.</p>
-        <p style=" margin-top: 50px; font-style:italic">
+        <p style=" margin-top: 30px; font-size: 16px; font-weight: 600; color:#000; font-style:italic">Thank you for shopping with us!</p>
+        <p style=" margin-top: -5px; font-size: 14px; font-weight: 500; color:#4B4B4B; font-style:italic">WE WILL SEND YOU MORE OFFERS, LOWEST PRICED VEGGIES FROM US.</p>
+        <p style=" margin-top: 30px; font-style:italic">
           - THIS IS A COMPUTER GENERATED INVOICE, THUS NO SIGNATURE REQUIRED -
         </p>
       </div>
@@ -797,7 +765,6 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
       const { uri: pdfUri } = await Print.printToFileAsync({
         html: htmlContent,
         width: 595,
-        height: 842,
         base64: false,
       });
 
@@ -824,11 +791,6 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
       } else {
         if (await Sharing.isAvailableAsync()) {
           await Sharing.shareAsync(tempFilePath, shareOptions);
-          Alert.alert(
-            "Invoice Ready",
-            'Use the "Save to Files" option to save the invoice',
-            [{ text: "OK" }],
-          );
         } else {
           Alert.alert("Error", "Sharing is not available on this device");
         }
@@ -859,8 +821,9 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
           alignItems: "center",
         }}
         keyboardShouldPersistTaps="handled"
+        className="w-full"
       >
-        <View className="bg-white w-full items-center mb-20">
+        <View className="bg-white w-full max-w-[500px] items-center mb-20">
           <View
             style={{ paddingHorizontal: wp(6), paddingVertical: hp(1) }}
             className="w-full items-center"
@@ -899,8 +862,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
               style={{
                 marginTop: hp(7),
                 alignSelf: "center",
-                width: "65%",
-                maxWidth: 300,
+                width: "60%",
                 borderRadius: 30,
                 shadowColor: "#000",
                 shadowOffset: { width: 0, height: 4 },

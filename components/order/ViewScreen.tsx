@@ -141,7 +141,7 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
           />
           <Image
             source={{ uri: selectedPackageImage }}
-            className="w-64 h-64 self-center mb-2 "
+            className="w-52 h-52 self-center mb-2 "
             resizeMode="contain"
           />
         </ImageBackground>
@@ -159,7 +159,7 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
             }}
             showsVerticalScrollIndicator={true}
           >
-            <View className="flex-row justify-between items-start mx-6">
+            <View className="flex-row justify-between items-start mb-4 mx-6">
               <View className="flex-1 mr-4">
                 <Text
                   className="text-xl font-bold text-[#7240D3]"

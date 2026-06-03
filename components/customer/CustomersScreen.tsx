@@ -11,6 +11,7 @@ import {
   FlatList,
   Alert,
   ActivityIndicator,
+  Dimensions,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -44,6 +45,8 @@ interface Customer {
   title: string;
   orderCount: number;
 }
+
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   const CUSTOMERS_PER_PAGE = 10;
@@ -301,29 +304,32 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
       enabled
       style={{ flex: 1 }}
     >
-      <View className="bg-white flex-1">
+      <View className="flex-1 bg-white">
+        {/* Header */}
+        <LinearGradient
+          colors={["#854BDA", "#6E3DD1"]}
+          className="h-24 shadow-md px-4 pt-4 pb-10 items-center justify-center"
+        >
+          <View className="w-full max-w-[500px] items-center">
+            <Text
+              className="text-white font-semibold"
+              style={{ fontSize: SCREEN_HEIGHT > 900 ? 20 : 18 }}
+            >
+              Total Customers:{" "}
+              <Text className="font-bold">
+                {String(searchQuery ? filteredCustomers.length : totalCount).padStart(2, "0")}
+              </Text>
+            </Text>
+          </View>
+        </LinearGradient>
+
         {/* Show Skeleton while loading */}
         {loading ? (
-          <>
-            <CustomersScreenSkeleton />
-          </>
+          <CustomersScreenSkeleton />
         ) : (
-          <>
-            {/* Header */}
-            <LinearGradient
-              colors={["#854BDA", "#6E3DD1"]}
-              className="h-20 shadow-md px-4 pt-17 items-center justify-center"
-            >
-              <Text className="text-white text-lg mb-2">
-                Total Customers:{" "}
-                <Text className="font-bold">
-                  {searchQuery ? filteredCustomers.length : totalCount}
-                </Text>
-              </Text>
-            </LinearGradient>
-
+          <View className="flex-1 mx-auto w-full max-w-[500px]">
             {/* Search Bar */}
-            <View className="flex-row items-center bg-[#F5F1FC] px-6 py-0 rounded-full mt-[-22px] mx-auto w-[90%] shadow-md h-12">
+            <View className="flex-row items-center bg-[#F5F1FC] h-[50px] px-6 py-0 mb-5 rounded-full mt-[-22px] mx-6 shadow-md h-12">
               <TextInput
                 value={searchQuery}
                 onChangeText={handleSearch}
@@ -333,7 +339,9 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                 style={{
                   fontStyle: "italic",
                   includeFontPadding: false,
+                  fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
                 }}
+             
               />
               <FontAwesome name="search" size={22} color="#884EDC" />
             </View>
@@ -341,15 +349,23 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
             {/* Floating Button */}
             {!isKeyboardVisible && (
               <TouchableOpacity
-                style={{ zIndex: 1000 }}
-                className="absolute bottom-20 right-6 bg-[#7743D4] w-14 h-14 rounded-full items-center justify-center shadow-lg mb-1"
+                className="absolute bottom-28 right-6 w-14 h-14 rounded-full items-center justify-center"
                 onPress={() => navigation.navigate("AddCustomersScreen" as any)}
+                style={{
+                  backgroundColor: "#7743D4",
+                  shadowColor: "#8149D8",
+                  shadowOffset: { width: 1, height: 2 },
+                  shadowOpacity: 0.4,
+                  shadowRadius: 4,
+                  elevation: 6,
+                  zIndex: 1000,
+                }}
               >
                 <Ionicons name="add" size={45} color="#fff" />
               </TouchableOpacity>
             )}
 
-            <View style={{ paddingVertical: hp(2) }} className="flex-1 px-6">
+            <View style={{ paddingVertical: 10 }} className="flex-1 px-6">
               {error ? (
                 <View className="flex-1 justify-center items-center px-4">
                   <Text className="text-red-500 text-center mt-4">{error}</Text>
@@ -361,7 +377,15 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                   </TouchableOpacity>
                 </View>
               ) : isEmpty ? (
-                <View className="flex-1 justify-center items-center">
+                <View
+                  style={{
+                    flex: 1,
+                    marginBottom:80,
+                    justifyContent: "center",
+                    alignItems: "center",
+                    paddingVertical: 16,
+                  }}
+                >
                   <Image
                     source={require("@/assets/images/public/no-data.webp")}
                     style={{
@@ -371,11 +395,25 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                     }}
                   />
                   {searchQuery ? (
-                    <Text className="text-black text-i text-center mt-4">
+                    <Text
+                      style={{
+                        color: "black",
+                        fontStyle: "italic",
+                        textAlign: "center",
+                        marginTop: 16,
+                      }}
+                    >
                       No customers found for "{searchQuery}"
                     </Text>
                   ) : (
-                    <Text className="text-black text-i text-center mt-4">
+                    <Text
+                      style={{
+                        color: "black",
+                        fontStyle: "italic",
+                        textAlign: "center",
+                        marginTop: 16,
+                      }}
+                    >
                       No registered customers yet
                     </Text>
                   )}
@@ -416,6 +454,11 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                           alignItems: "center",
                           borderWidth: 1,
                           borderColor: "#E0E0E0",
+                          shadowColor: "#000",
+                          shadowOffset: { width: 0, height: 4 },
+                          shadowOpacity: 0.08,
+                          shadowRadius: 6,
+                          elevation: 4,
                         }}
                       >
                         <View className="flex-1 mr-3">
@@ -423,10 +466,14 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                             className="text-gray-700 font-semibold"
                             numberOfLines={2}
                             ellipsizeMode="tail"
+                            style={{ fontSize: SCREEN_HEIGHT > 900 ? 20 : 14, }}
                           >
                             {item.title}. {item.firstName} {item.lastName}
                           </Text>
-                          <Text className="text-gray-500 text-sm">
+                          <Text
+                            className="text-gray-500"
+                            style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                          >
                             {formatPhoneNumber(item.phoneNumber)}
                           </Text>
                         </View>
@@ -434,7 +481,10 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                           className="items-end justify-center"
                           style={{ minWidth: 45 }}
                         >
-                          <Text className="text-gray-700 font-semibold">
+                          <Text
+                            className="text-gray-700 font-semibold"
+                            style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 16 }}
+                          >
                             #
                             {item.orderCount < 10
                               ? `0${item.orderCount}`
@@ -447,7 +497,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                 />
               )}
             </View>
-          </>
+          </View>
         )}
       </View>
     </KeyboardAvoidingView>

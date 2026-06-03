@@ -228,7 +228,6 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
     }
   };
 
-  // formatPrice function with comma separation
   const formatPrice = (price: number) => {
     return Number(price)
       .toFixed(2)
@@ -274,17 +273,18 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
           });
         }}
       />
-      <View className="flex-1 px-6">
-        <View className="mb-4 bg-[#F5F1FC] rounded-full flex-row items-center px-4 py-2 mt-2">
-          <TextInput
-            className="flex-1 text-gray-700"
-            placeholder="Search By Product Name"
-            placeholderTextColor="#6839CF"
-            value={searchQuery}
-            onChangeText={handleSearch}
-          />
-          <Ionicons name="search" size={20} color="#6839CF" />
-        </View>
+      <View className="flex-1 items-center">
+        <View className="flex-1 w-full max-w-[500px] px-6">
+          <View className="mb-4 bg-[#F5F1FC] rounded-full flex-row items-center px-4 py-2 mt-2">
+            <TextInput
+              className="flex-1 italic text-gray-700"
+              placeholder="Search By Product Name"
+              placeholderTextColor="#6839CF"
+              value={searchQuery}
+              onChangeText={handleSearch}
+            />
+            <Ionicons name="search" size={20} color="#6839CF" />
+          </View>
 
         {/* Product List */}
         <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
@@ -322,66 +322,70 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
               </TouchableOpacity>
             ))
           ) : (
-            <View className="py-8 items-center justify-center mt-[20%]">
+            <View className="items-center justify-center mt-[30%]">
               <LottieView
                 source={require("@/assets/json/no-data.json")}
                 style={{ width: wp(50), height: hp(30) }}
                 autoPlay
                 loop
               />
-              <Text className="text-gray-500">No products found</Text>
+              <Text className="text-black italic mt-[-10%]  text-center ">
+                No products found
+              </Text>
             </View>
           )}
         </ScrollView>
 
-        {/* Go to Cart Button */}
-        <View className="py-4 px-6 ">
-          <View
-            style={{
-              borderRadius: 30,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 6 },
-              shadowOpacity: hasSelectedProducts ? 0.25 : 0,
-              shadowRadius: 8,
-              elevation: hasSelectedProducts ? 10 : 0,
-            }}
-          >
-            <TouchableOpacity
-              onPress={goToCart}
-              disabled={!hasSelectedProducts}
-              activeOpacity={0.8}
-              style={{ borderRadius: 30 }}
+          {/* Go to Cart Button */}
+          <View className="py-4 items-center">
+            <View
+              style={{
+                width: "60%",
+                borderRadius: 30,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: hasSelectedProducts ? 0.25 : 0,
+                shadowRadius: 8,
+                elevation: hasSelectedProducts ? 10 : 0,
+              }}
             >
-              {hasSelectedProducts ? (
-                <LinearGradient
-                  colors={["#6839CF", "#874DDB"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={{
-                    paddingVertical: 12,
-                    borderRadius: 30,
-                    alignItems: "center",
-                  }}
-                >
-                  <Text className="text-white font-medium text-base">
-                    Go to Cart
-                  </Text>
-                </LinearGradient>
-              ) : (
-                <View
-                  style={{
-                    paddingVertical: 12,
-                    borderRadius: 30,
-                    alignItems: "center",
-                    backgroundColor: "#B6B7BC",
-                  }}
-                >
-                  <Text className="text-white font-medium text-base">
-                    Go to Cart
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
+              <TouchableOpacity
+                onPress={goToCart}
+                disabled={!hasSelectedProducts}
+                activeOpacity={0.8}
+                style={{ borderRadius: 30 }}
+              >
+                {hasSelectedProducts ? (
+                  <LinearGradient
+                    colors={["#6839CF", "#874DDB"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={{
+                      paddingVertical: 12,
+                      borderRadius: 30,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text className="text-white font-medium text-base">
+                      Go to Cart
+                    </Text>
+                  </LinearGradient>
+                ) : (
+                  <View
+                    style={{
+                      paddingVertical: 12,
+                      borderRadius: 30,
+                      alignItems: "center",
+                      backgroundColor: "#B6B7BC",
+                    }}
+                  >
+                    <Text className="text-white font-medium text-base">
+                      Go to Cart
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </View>

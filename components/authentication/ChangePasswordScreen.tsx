@@ -8,6 +8,7 @@ import {
   Alert,
   BackHandler,
   Keyboard,
+  Dimensions,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -40,6 +41,8 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [passwordUpdate, setPasswordUpdate] = useState<number | null>(null);
+  const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+  const HALF = SCREEN_HEIGHT / 2;
 
   const validatePassword = () => {
     if (!currentPassword || !newPassword || !confirmNewPassword) {
@@ -140,7 +143,6 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
         ]);
       }
     } catch (error) {
-      // Check for password mismatch error specifically
       if (axios.isAxiosError(error) && error.response?.data?.error) {
         const errorMsg = error.response.data.error;
         if (
@@ -167,7 +169,6 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
     }
   };
 
-  // Conditional back button behavior based on passwordUpdate status
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
@@ -185,6 +186,11 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
     }, [passwordUpdate]),
   );
 
+  const blockSpaces = (text: string, setter: (val: string) => void) => {
+    if (text.includes(" ")) return;
+    setter(text);
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: "#6E3DD1" }}>
       <KeyboardAwareScrollView
@@ -193,146 +199,205 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
         extraScrollHeight={20}
         keyboardShouldPersistTaps="handled"
         style={{ backgroundColor: "#6E3DD1" }}
+        bounces={false}
       >
-        {passwordUpdate === 1 && (
-          <CustomHeader
-            title=""
-            showBackButton={true}
-            navigation={navigation}
-            transparent
-          />
-        )}
-        <View className="h-56 flex-1">
+        {/* TOP HALF — Image Section exactly 50% */}
+        <View style={{ height: HALF }}>
+          {passwordUpdate === 1 && (
+            <CustomHeader
+              title=""
+              showBackButton={true}
+              navigation={navigation}
+              transparent
+            />
+          )}
           <ImageBackground
             source={require("@/assets/images/auth/update-password.webp")}
-            className="flex-1 items-center justify-center h-full"
+            style={{ flex: 1 }}
             resizeMode="cover"
           />
         </View>
 
-        {/* Form Section */}
-        <View className="flex-1 ">
+        {/* BOTTOM HALF — Form Section exactly 50% */}
+        <View style={{ minHeight: HALF }}>
           <LinearGradient
             colors={["#854BDA", "#6E3DD1"]}
-            className="flex-1 rounded-t-3xl px-7 pt-10 pb-8 -mt-4"
+            style={{
+              flex: 1,
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              paddingHorizontal: 28,
+              paddingTop: 20,
+              paddingBottom: 16,
+              marginTop: -16,
+            }}
           >
-            <Text className="text-white text-2xl font-bold text-center mb-2">
-              Change Your Password
-            </Text>
-
-            {/* Password Requirements Note */}
-            <Text className="text-white/80 text-xs text-center mb-4">
-              Password must be at least 6 characters
-            </Text>
-
-            {/* Current Password */}
-            <View className="bg-[#FFFFFF66] rounded-full flex-row items-center px-4 mb-4 py-1">
-              <TextInput
-                placeholder="Current Password"
-                placeholderTextColor="#FFFFFF"
-                className="flex-1 text-white py-3"
-                secureTextEntry={!showCurrentPassword}
-                value={currentPassword}
-                onChangeText={(text) => {
-                  setCurrentPassword(text);
-                }}
-              />
-              <TouchableOpacity
-                onPress={() => setShowCurrentPassword(!showCurrentPassword)}
-              >
-                <Icon
-                  name={showCurrentPassword ? "eye-off" : "eye"}
-                  size={20}
-                  color="#E5E5E5"
-                />
-              </TouchableOpacity>
-            </View>
-
-            {/* New Password */}
-            <View className="bg-[#FFFFFF66] rounded-full flex-row items-center px-4 mb-4 py-1">
-              <TextInput
-                placeholder="New Password"
-                placeholderTextColor="#FFFFFF"
-                className="flex-1 text-white py-3"
-                secureTextEntry={!showNewPassword}
-                value={newPassword}
-                onChangeText={(text) => {
-                  setNewPassword(text);
-                }}
-              />
-              <TouchableOpacity
-                onPress={() => setShowNewPassword(!showNewPassword)}
-              >
-                <Icon
-                  name={showNewPassword ? "eye-off" : "eye"}
-                  size={20}
-                  color="#E5E5E5"
-                />
-              </TouchableOpacity>
-            </View>
-
-            {/* Confirm New Password */}
-            <View className="bg-[#FFFFFF66] rounded-full flex-row items-center px-4 mb-4 py-1">
-              <TextInput
-                placeholder="Confirm New Password"
-                placeholderTextColor="#FFFFFF"
-                className="flex-1 text-white py-3"
-                secureTextEntry={!showConfirmPassword}
-                value={confirmNewPassword}
-                onChangeText={(text) => {
-                  setConfirmNewPassword(text);
-                }}
-              />
-              <TouchableOpacity
-                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-              >
-                <Icon
-                  name={showConfirmPassword ? "eye-off" : "eye"}
-                  size={20}
-                  color="#E5E5E5"
-                />
-              </TouchableOpacity>
-            </View>
-
-            {/* Update Button */}
             <View
               style={{
-                alignItems: "center",
-                marginBottom: 10,
+                flex: 1,
+                justifyContent: "center",
+                width: "100%",
+                maxWidth: 500,
+                alignSelf: "center",
               }}
             >
-              <View
+              {/* Title */}
+              <Text
                 style={{
-                  backgroundColor: "#ffffff",
-                  borderRadius: 999,
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 8 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 10,
-                  elevation: 12,
-                  width: "50%",
+                  color: "#ffffff",
+                  fontSize: SCREEN_HEIGHT > 900 ? 28 : 22,
+                  fontWeight: "bold",
+                  textAlign: "center",
+                  marginBottom: 8,
                 }}
               >
+                Change Your Password
+              </Text>
+
+              <Text
+                style={{
+                  color: "rgba(255,255,255,0.8)",
+                  fontSize: 12,
+                  textAlign: "center",
+                  marginBottom: 20,
+                }}
+              >
+                Password must be at least 6 characters
+              </Text>
+
+              {/* Current Password */}
+              <View
+                style={{
+                  backgroundColor: "rgba(255,255,255,0.4)",
+                  borderRadius: 999,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingHorizontal: 16,
+                  marginBottom: 16,
+                  paddingVertical: 4,
+                }}
+              >
+                <TextInput
+                  placeholder="Current Password"
+                  placeholderTextColor="#FFFFFF"
+                  style={{ flex: 1, color: "#ffffff", paddingVertical: 12 }}
+                  secureTextEntry={!showCurrentPassword}
+                  value={currentPassword}
+                  onChangeText={(text) => blockSpaces(text, setCurrentPassword)}
+                />
+
                 <TouchableOpacity
-                  onPress={handleChangePassword}
-                  disabled={loading}
-                  activeOpacity={0.8}
+                  onPress={() => setShowCurrentPassword(!showCurrentPassword)}
+                >
+                  <Icon
+                    name={showCurrentPassword ? "eye-off" : "eye"}
+                    size={20}
+                    color="#E5E5E5"
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {/* New Password */}
+              <View
+                style={{
+                  backgroundColor: "rgba(255,255,255,0.4)",
+                  borderRadius: 999,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingHorizontal: 16,
+                  marginBottom: 16,
+                  paddingVertical: 4,
+                }}
+              >
+                <TextInput
+                  placeholder="New Password"
+                  placeholderTextColor="#FFFFFF"
+                  style={{ flex: 1, color: "#ffffff", paddingVertical: 12 }}
+                  secureTextEntry={!showNewPassword}
+                  value={newPassword}
+                  onChangeText={(text) => blockSpaces(text, setNewPassword)}
+                />
+
+                <TouchableOpacity
+                  onPress={() => setShowNewPassword(!showNewPassword)}
+                >
+                  <Icon
+                    name={showNewPassword ? "eye-off" : "eye"}
+                    size={20}
+                    color="#E5E5E5"
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {/* Confirm Password */}
+              <View
+                style={{
+                  backgroundColor: "rgba(255,255,255,0.4)",
+                  borderRadius: 999,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingHorizontal: 16,
+                  marginBottom: 20,
+                  paddingVertical: 4,
+                }}
+              >
+                <TextInput
+                  placeholder="Confirm New Password"
+                  placeholderTextColor="#FFFFFF"
+                  style={{ flex: 1, color: "#ffffff", paddingVertical: 12 }}
+                  secureTextEntry={!showConfirmPassword}
+                  value={confirmNewPassword}
+                  onChangeText={(text) =>
+                    blockSpaces(text, setConfirmNewPassword)
+                  }
+                />
+
+                <TouchableOpacity
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  <Icon
+                    name={showConfirmPassword ? "eye-off" : "eye"}
+                    size={20}
+                    color="#E5E5E5"
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {/* Button */}
+              <View style={{ alignItems: "center" }}>
+                <View
                   style={{
-                    paddingVertical: 14,
-                    alignItems: "center",
+                    backgroundColor: "#ffffff",
                     borderRadius: 999,
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 8 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 10,
+                    elevation: 12,
+                    width: SCREEN_HEIGHT > 900 ? 260 : 220,
                   }}
                 >
-                  <Text
+                  <TouchableOpacity
+                    onPress={handleChangePassword}
+                    disabled={loading}
+                    activeOpacity={0.8}
                     style={{
-                      color: "#6B21A8",
-                      fontWeight: "bold",
-                      fontSize: 18,
+                      paddingVertical: 14,
+                      alignItems: "center",
+                      borderRadius: 999,
                     }}
                   >
-                    {loading ? "Updating..." : "Update"}
-                  </Text>
-                </TouchableOpacity>
+                    <Text
+                      style={{
+                        color: "#6B21A8",
+                        fontWeight: "bold",
+                        fontSize: SCREEN_HEIGHT > 900 ? 20 : 18,
+                      }}
+                    >
+                      {loading ? "Updating..." : "Update"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           </LinearGradient>

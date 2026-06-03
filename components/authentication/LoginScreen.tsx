@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
 import Icon from "react-native-vector-icons/Ionicons";
@@ -41,6 +41,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [empIdError, setEmpIdError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [loading, setLoading] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const passwordRef = useRef<TextInput>(null);
 
   const validateEmployeeId = (id: string): string => {
     if (id.trim() === "") return "Employee ID is required";
@@ -165,7 +167,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={{ flex: 1, backgroundColor: "white" }}
     >
       <ScrollView
@@ -173,6 +175,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         bounces={false}
+        style={{ backgroundColor: 'white' }}
       >
         <LinearGradient
           colors={["#9B60E8", "#6E3DD1"]}
@@ -191,160 +194,185 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
         <View
           style={{
+            flex: 1,
             backgroundColor: "white",
             borderTopLeftRadius: 32,
             borderTopRightRadius: 32,
             marginTop: -28,
             paddingHorizontal: 24,
-            paddingTop: 36,
-            paddingBottom: SCREEN_HEIGHT * 0.25,
+            paddingVertical: 32,
+            
           }}
         >
-          <Text
-            style={{
-              textAlign: "center",
-              fontSize: 22,
-              fontWeight: "700",
-              color: "#6C3CD1",
-              marginBottom: 24,
-            }}
-          >
-            Welcome to Sign in
-          </Text>
-
-          {empIdError.length > 0 && (
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginBottom: 6,
-              }}
-            >
-              <Icon name="alert-circle" size={16} color="#DC2626" />
-              <Text style={{ color: "#DC2626", fontSize: 13, marginLeft: 6 }}>
-                {empIdError}
-              </Text>
-            </View>
-          )}
-
+          {/* Center Container */}
           <View
             style={{
-              flexDirection: "row",
-              alignItems: "center",
-              backgroundColor: "#F3F4F6",
-              borderRadius: 999,
-              borderWidth: 1,
-              borderColor: empIdError ? "#EF4444" : "#D1D5DB",
-              paddingHorizontal: 16,
-              marginBottom: 16,
+              flex: 1,
+              justifyContent: "center",
+              width: "100%",
+              maxWidth: 500,
+              alignSelf: "center",
             }}
           >
-            <TextInput
-              placeholder="Employee ID"
-              placeholderTextColor="#A3A3A3"
+            <Text
               style={{
-                flex: 1,
-                paddingVertical: 14,
-                fontSize: 15,
-                color: "#1F2937",
-              }}
-              value={empId}
-              onChangeText={(text) => {
-                setEmpId(text);
-                if (empIdError) setEmpIdError("");
-              }}
-              autoCapitalize="characters"
-              returnKeyType="next"
-            />
-          </View>
-
-          {passwordError.length > 0 && (
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginBottom: 6,
+                textAlign: "center",
+                fontSize: SCREEN_HEIGHT > 900 ? 28 : 22,
+                fontWeight: "700",
+                color: "#6C3CD1",
+                marginBottom: 52,
               }}
             >
-              <Icon name="alert-circle" size={16} color="#DC2626" />
-              <Text style={{ color: "#DC2626", fontSize: 13, marginLeft: 6 }}>
-                {passwordError}
-              </Text>
-            </View>
-          )}
+              Welcome to Sign in
+            </Text>
 
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              backgroundColor: "#F3F4F6",
-              borderRadius: 999,
-              borderWidth: 1,
-              borderColor: passwordError ? "#EF4444" : "#D1D5DB",
-              paddingHorizontal: 16,
-              marginBottom: 32,
-            }}
-          >
-            <TextInput
-              placeholder="Password"
-              placeholderTextColor="#A3A3A3"
-              style={{
-                flex: 1,
-                paddingVertical: 14,
-                fontSize: 15,
-                color: "#1F2937",
-              }}
-              secureTextEntry={!showPassword}
-              value={password}
-              onChangeText={(text) => {
-                setPassword(text);
-                if (passwordError) setPasswordError("");
-              }}
-              returnKeyType="done"
-              onSubmitEditing={handleSignIn}
-            />
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-              <Icon
-                name={showPassword ? "eye-off" : "eye"}
-                size={20}
-                color="#6B7280"
-              />
-            </TouchableOpacity>
-          </View>
-
-          <View style={{ alignItems: "center" }}>
-            <View
-              style={{
-                borderRadius: 999,
-                shadowColor: "#6E3DD1",
-                shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: 0.45,
-                shadowRadius: 12,
-                elevation: 12,
-              }}
-            >
-              <TouchableOpacity
-                onPress={handleSignIn}
-                disabled={loading}
-                activeOpacity={0.8}
-                style={{ borderRadius: 999 }}
+            {empIdError.length > 0 && (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginBottom: 6,
+                }}
               >
-                <LinearGradient
-                  colors={["#9B60E8", "#6E3DD1"]}
-                  style={{
-                    borderRadius: 999,
-                    paddingVertical: 15,
-                    width: 200,
-                    alignItems: "center",
-                  }}
-                >
-                  <Text
-                    style={{ color: "white", fontSize: 18, fontWeight: "700" }}
-                  >
-                    {loading ? "Signing in…" : "Sign in"}
-                  </Text>
-                </LinearGradient>
+                <Icon name="alert-circle" size={16} color="#DC2626" />
+                <Text style={{ color: "#DC2626", fontSize: 13, marginLeft: 6 }}>
+                  {empIdError}
+                </Text>
+              </View>
+            )}
+
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: "#F3F4F6",
+                borderRadius: 999,
+                borderWidth: 1,
+                borderColor: empIdError ? "#EF4444" : "#D1D5DB",
+                paddingHorizontal: 16,
+                marginBottom: 16,
+              }}
+            >
+              <TextInput
+                placeholder="Employee ID"
+                placeholderTextColor="#A3A3A3"
+                style={{
+                  flex: 1,
+                  paddingVertical: 16,
+                  fontSize: 16,
+                  color: "#1F2937",
+                }}
+                value={empId}
+                onChangeText={(text) => {
+                  if (text.includes(" ")) return;
+                  setEmpId(text);
+                  if (empIdError) setEmpIdError("");
+                }}
+                autoCapitalize="characters"
+                returnKeyType="next"
+                onSubmitEditing={() => passwordRef.current?.focus()}
+              />
+            </View>
+
+            {passwordError.length > 0 && (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginBottom: 6,
+                }}
+              >
+                <Icon name="alert-circle" size={16} color="#DC2626" />
+                <Text style={{ color: "#DC2626", fontSize: 13, marginLeft: 6 }}>
+                  {passwordError}
+                </Text>
+              </View>
+            )}
+
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: "#F3F4F6",
+                borderRadius: 999,
+                borderWidth: 1,
+                borderColor: passwordError ? "#EF4444" : "#D1D5DB",
+                paddingHorizontal: 16,
+                marginBottom: 40,
+              }}
+            >
+              <TextInput
+                placeholder="Password"
+                placeholderTextColor="#A3A3A3"
+                style={{
+                  flex: 1,
+                  paddingVertical: 16,
+                  fontSize: 16,
+                  color: "#1F2937",
+                }}
+                secureTextEntry={!showPassword}
+                value={password}
+                onChangeText={(text) => {
+                  if (text.includes(" ")) return;
+                  setPassword(text);
+                  if (passwordError) setPasswordError("");
+                }}
+                returnKeyType="done"
+                onSubmitEditing={handleSignIn}
+                ref={passwordRef}
+                onFocus={() =>
+                  scrollViewRef.current?.scrollToEnd({ animated: true })
+                }
+              />
+
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                <Icon
+                  name={showPassword ? "eye-off" : "eye"}
+                  size={20}
+                  color="#6B7280"
+                />
               </TouchableOpacity>
+            </View>
+
+            {/* Button */}
+            <View style={{ alignItems: "center" }}>
+              <View
+                style={{
+                  borderRadius: 999,
+                  shadowColor: "#6E3DD1",
+                  shadowOffset: { width: 0, height: 8 },
+                  shadowOpacity: 0.45,
+                  shadowRadius: 12,
+                  elevation: 12,
+                }}
+              >
+                <TouchableOpacity
+                  onPress={handleSignIn}
+                  disabled={loading}
+                  activeOpacity={0.8}
+                  style={{ borderRadius: 999 }}
+                >
+                  <LinearGradient
+                    colors={["#9B60E8", "#6E3DD1"]}
+                    style={{
+                      borderRadius: 999,
+                      paddingVertical: 16,
+                      width: SCREEN_HEIGHT > 900 ? 260 : 220,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: "white",
+                        fontSize: SCREEN_HEIGHT > 900 ? 20 : 18,
+                        fontWeight: "700",
+                      }}
+                    >
+                      {loading ? "Signing in…" : "Sign in"}
+                    </Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </View>

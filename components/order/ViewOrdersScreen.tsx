@@ -18,6 +18,7 @@ import {
   ScrollView,
   RefreshControl,
   ActivityIndicator,
+  Dimensions,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -72,6 +73,8 @@ interface OrdersResponse {
   currentPage: number;
   data: Order[];
 }
+
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
@@ -257,9 +260,14 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
 
           if (selectedFilter === "This Week") {
             const startOfWeek = new Date(today);
-            startOfWeek.setDate(today.getDate() - today.getDay());
+
+            const dayOffset = (today.getDay() + 6) % 7;
+            startOfWeek.setDate(today.getDate() - dayOffset);
+            startOfWeek.setHours(0, 0, 0, 0);
+
             const endOfWeek = new Date(startOfWeek);
             endOfWeek.setDate(startOfWeek.getDate() + 6);
+            endOfWeek.setHours(23, 59, 59, 999);
 
             return orderDate >= startOfWeek && orderDate <= endOfWeek;
           }
@@ -283,7 +291,10 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString();
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}/${month}/${day}`;
     } catch (error) {
       console.error("Error formatting date:", error);
       return "Invalid date";
@@ -349,33 +360,41 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
       style={{ flex: 1 }}
     >
       <View className="flex-1 bg-white">
+        {/* Header */}
+        <LinearGradient
+          colors={["#854BDA", "#6E3DD1"]}
+          className="h-24 shadow-md px-4 pt-4 pb-10 items-center justify-center"
+        >
+          <View className="w-full max-w-[500px] items-center">
+            <Text
+              className="text-white font-semibold"
+              style={{ fontSize: SCREEN_HEIGHT > 900 ? 20 : 18 }}
+            >
+              Total Orders: <Text className="font-bold">{String(totalCount).padStart(2, '0')}</Text>
+            </Text>
+          </View>
+        </LinearGradient>
+
         {/* Loading Animation */}
         {loading ? (
           <OrderScreenSkeleton />
         ) : (
-          <>
-            {/* Header */}
-            <LinearGradient
-              colors={["#854BDA", "#6E3DD1"]}
-              className="h-20 shadow-md px-4 pt-17 items-center justify-center"
-            >
-              <Text className="text-white text-lg mb-2">
-                Total Orders: <Text className="font-bold">{totalCount}</Text>
-              </Text>
-            </LinearGradient>
-
+          <View className="flex-1 mx-auto w-full max-w-[500px]">
             {/* Search Bar */}
-            <View className="flex-row items-center bg-[#F5F1FC] px-4 border border-[#6B3BCF] rounded-full mt-4 shadow-sm mx-6">
+            <View className="flex-row items-center bg-[#F5F1FC] px-4 h-[50px] border border-[#6B3BCF] rounded-full mt-[-6%] shadow-sm mx-6">
               <TextInput
                 placeholder="Search By Order Number"
                 placeholderTextColor="#6839CF"
-                className="flex-1 text-sm text-gray-700 h-11 py-0"
+                className="flex-1 text-gray-700 h-11 py-0"
+                style={{
+                  fontStyle: "italic",
+                  fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
+                }}
                 onChangeText={(text) => {
                   const numericOnly = text.replace(/[^0-9]/g, "");
                   setSearchText(numericOnly);
                 }}
                 value={searchText}
-                style={{ fontStyle: "italic" }}
                 keyboardType="numeric"
               />
               <FontAwesome name="search" size={22} color="#884EDC" />
@@ -390,6 +409,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                   paddingHorizontal: 16,
                   height: 40,
                   marginBottom: 5,
+                  marginTop:14
                 }}
                 className="my-2"
               >
@@ -414,7 +434,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                   >
                     <Text
                       style={{
-                        fontSize: 14,
+                        fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
                         fontWeight:
                           selectedFilter === filter ? "bold" : "normal",
                         color: selectedFilter === filter ? "white" : "#6B3BCF",
@@ -427,7 +447,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
               </ScrollView>
             </View>
 
-            <View className="py-[-12%] mb-[60%]">
+            <View className="flex-1 mb-[5%]">
               {isEmpty ? (
                 <View className="flex justify-center items-center mt-20">
                   <Image
@@ -438,14 +458,17 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                       resizeMode: "contain",
                     }}
                   />
-                  <Text className="text-black text-i text-center mt-4">
+                  <Text
+                    className="text-black italic text-center mt-4"
+                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 14 }}
+                  >
                     No orders found
                   </Text>
                 </View>
               ) : (
                 <FlatList
                   data={filteredOrders}
-                  className="mb-10"
+                  className="flex-1"
                   keyExtractor={(item) => item.orderId.toString()}
                   refreshControl={
                     <RefreshControl
@@ -472,9 +495,9 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                       <View
                         style={{
                           backgroundColor: "white",
-                          borderRadius: wp(4),
-                          padding: wp(4),
-                          marginBottom: hp(2),
+                          borderRadius: 12,
+                          padding: 16,
+                          marginBottom: 16,
                           borderWidth: 1,
                           borderColor: "#EAEAEA",
                           shadowColor: "#000",
@@ -492,49 +515,43 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                             justifyContent: "space-between",
                             alignItems: "center",
                           }}
-                          className=""
                         >
                           <Text
                             style={{
-                              fontSize: wp(4.5),
+                              fontSize: SCREEN_HEIGHT > 900 ? 20 : 16,
                               fontWeight: "600",
                               color: "#393939",
                             }}
                           >
-                            Order: {item.InvNo}
+                            Order : #{item.InvNo}
                           </Text>
                           <View
-                            style={{
-                              borderRadius: wp(5),
-                              minWidth: wp(24),
-                              minHeight: hp(4),
-                              justifyContent: "center",
-                              alignItems: "center",
-                              backgroundColor:
-                                item.status === "Ordered"
-                                  ? "#F5FF85"
-                                  : item.status === "On the way"
-                                    ? "#FFEDCF"
-                                    : item.status === "Processing"
-                                      ? "#CFE1FF"
-                                      : item.status === "Delivered"
-                                        ? "#BBFFC6"
-                                        : item.status === "Collected"
-                                          ? "#F8FEA5"
-                                          : item.status === "Hold"
-                                            ? "#FFEDCF"
-                                            : item.status === "Out For Delivery"
-                                              ? "#FCD4FF"
+                            className={`px-3 py-1 rounded-full ${
+                              item.status === "Ordered"
+                                ? "bg-[#F5FF85]"
+                                : item.status === "Processing"
+                                  ? "bg-[#CFE1FF]"
+                                  : item.status === "Out For Delivery"
+                                    ? "bg-[#FCD4FF]"
+                                    : item.status === "Collected"
+                                      ? "bg-[#F8FEA5]"
+                                      : item.status === "On the way"
+                                        ? "bg-[#FFEDCF]"
+                                        : item.status === "Hold"
+                                          ? "bg-[#FFEDCF]"
+                                          : item.status === "Delivered"
+                                            ? "bg-[#BBFFC6]"
+                                            : item.status === "Cancelled"
+                                              ? "bg-[#DFDFDF]"
                                               : item.status === "Return"
-                                                ? "#FFDCDA"
-                                                : item.status === "Cancelled"
-                                                  ? "#DFDFDF"
-                                                  : "#EAEAEA",
-                            }}
+                                                ? "bg-[#FFDCDA]"
+                                                : "bg-[#EAEAEA]"
+                            }`}
+                            style={{ width: 110, alignItems: "center" }}
                           >
                             <Text
                               style={{
-                                fontSize: wp(3),
+                                fontSize: SCREEN_HEIGHT > 900 ? 14 : 12,
                                 fontWeight: "600",
                                 textAlign: "center",
                                 color:
@@ -565,8 +582,14 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                           </View>
                         </View>
 
-                        <Text style={{ fontSize: wp(3.6), color: "#808FA2" }}>
-                          Schedule to: {formatDate(item.sheduleDate)}
+                        <Text
+                          style={{
+                            fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
+                            color: "#808FA2",
+                            marginTop: 4,
+                          }}
+                        >
+                          Scheduled to : {formatDate(item.sheduleDate)}
                         </Text>
 
                         <View
@@ -574,31 +597,34 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                             flexDirection: "row",
                             justifyContent: "space-between",
                             alignItems: "center",
+                            marginTop: 4,
                           }}
                         >
-                          {/* Customer name */}
                           <Text
                             style={{
-                              fontSize: wp(3.6),
+                              fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
                               color: "#808FA2",
-                              marginTop: hp(0.5),
                             }}
                           >
                             {item.sheduleTime}
                           </Text>
-                          <Text style={{ fontSize: wp(3.6), color: "#FF4C4C" }}>
-                            {" "}
+                          <Text
+                            style={{
+                              fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
+                              color: "#FF4C4C",
+                            }}
+                          >
                             {item.reportStatus}
                           </Text>
                         </View>
                       </View>
                     </TouchableOpacity>
                   )}
-                  contentContainerStyle={{ paddingBottom: hp(5) }}
+                  contentContainerStyle={{ paddingBottom: hp(5), paddingTop: 4, paddingHorizontal: 2 }}
                 />
               )}
             </View>
-          </>
+          </View>
         )}
       </View>
     </KeyboardAvoidingView>

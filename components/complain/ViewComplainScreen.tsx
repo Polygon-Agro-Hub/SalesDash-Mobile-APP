@@ -185,17 +185,17 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({
 
   return (
     <View className="flex-1 bg-white">
+      <CustomHeader
+        title="Complaint History"
+        navigation={navigation}
+        onBackPress={() => navigation.navigate("SidebarScreen")}
+        linearGradient
+      />
       {loading ? (
         <ViewComplainScreenSkeleton />
       ) : (
-        <>
-          <CustomHeader
-            title="Complaint History"
-            navigation={navigation}
-            onBackPress={() => navigation.navigate("SidebarScreen")}
-            linearGradient
-          />
-          <View className="flex-1 px-6">
+        <View className="flex-1 px-6">
+          <View className="flex-1 mx-auto w-full max-w-[500px]">
             {isEmpty ? (
               <View className="flex-1 justify-center items-center">
                 <Image
@@ -206,12 +206,12 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({
                     resizeMode: "contain",
                   }}
                 />
-                <Text className="text-black text-i text-center mt-4">
+                <Text className="text-black italic text-center mt-4">
                   You have no previous complaints
                 </Text>
               </View>
             ) : (
-              <View className="mt-4">
+              <View className="mt-4 flex-1">
                 <FlatList
                   data={complaints}
                   keyExtractor={(item) => item.id.toString()}
@@ -260,7 +260,7 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({
               </View>
             )}
           </View>
-        </>
+        </View>
       )}
 
       {/* Modal to View Response */}
@@ -272,7 +272,7 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({
       >
         <View className="flex-1 items-center bg-white">
           <View
-            className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md"
+            className="bg-white p-6 rounded-lg shadow-lg w-full max-w-[500px]"
             style={{ marginTop: 12 }}
           >
             {/* Close Button */}
@@ -286,7 +286,7 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({
 
             {/* Complaint Response Content */}
             {selectedComplaint ? (
-              <ScrollView>
+              <ScrollView showsVerticalScrollIndicator={false}>
                 <View className="mt-4 mb-7">
                   <Text className="text-gray-800 text-base leading-relaxed text-left">
                     <Text className="font-">
@@ -305,16 +305,13 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({
                     {"\n\n"}
                     <Text className="text-left">Sincerely,</Text>
                     {"\n"}
-                    <View>
-                      <Text className="text-left text-base text-gray-800">
-                        Polygon Customer Support Team
-                      </Text>
-                    </View>
-                    {"\n\n"}
+                    <Text className="text-left text-base text-gray-800 mb-10">
+                      Polygon Customer Support Team
+                    </Text>
                   </Text>
 
                   {selectedComplaint.replyTime ? (
-                    <Text className="text-gray-800 mt-[-10%] text-base">
+                    <Text className="text-gray-800 text-base">
                       {(() => {
                         const date = new Date(selectedComplaint.replyTime);
                         let hours = date.getHours();

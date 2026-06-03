@@ -229,7 +229,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
           });
         }}
       />
-      <View className="flex-1 ">
+      <View className="flex-1 mx-auto w-full max-w-[500px]">
         <Text className="text-center text-sm px-6">
           Exclude any items your customer doesn’t want in their package. Simply
           tap on the Products they want to remove.
@@ -272,8 +272,8 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
                 loop
               />
             </View>
-            <View className="justify-center items-center mt-[-50]">
-              <Text className="text-red-600 text-center text-base">
+            <View className="justify-center items-center mt-[-20%]">
+              <Text className="text-black italic text-center ">
                 {searchError}
               </Text>
             </View>
@@ -290,7 +290,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
                 className="flex-row justify-between items-center my-1 px-6 mb-2"
               >
                 {/* Crop name and selection toggle */}
-                <View className="flex-row items-center space-x-4">
+                <View className="flex-row items-center gap-4">
                   <View
                     className={`w-6 h-6 rounded-full border-2 justify-center items-center ${
                       selectedCrops.includes(item.id)
@@ -319,10 +319,10 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
         </View>
       </View>
       {!isKeyboardVisible && (
-        <View className="absolute bottom-0 left-0 right-0 bg-white pt-4 pb-4 px-6">
+        <View className="absolute bottom-0 left-0 right-0 bg-white pt-4 pb-4 px-6 items-center">
           <TouchableOpacity
             onPress={handleNavigateIfNoCropsSelected}
-            className="left-0 right-0 items-center"
+            className="w-full max-w-[500px] items-center"
             disabled={loading}
           >
             <LinearGradient

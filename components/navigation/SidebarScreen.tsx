@@ -163,7 +163,7 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
                           {/* Show placeholder while loading */}
                           {imageLoading && (
                             <Image
-                              source={require("@/assets/images/profile/profile.webp")}
+                              source={require("@/assets/images/profile/profile1.webp")}
                               className="w-16 h-16 rounded-full absolute"
                               resizeMode="cover"
                             />
@@ -180,7 +180,7 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
                         </>
                       ) : (
                         <Image
-                          source={require("@/assets/images/profile/profile.webp")}
+                          source={require("@/assets/images/profile/profile1.webp")}
                           className="w-16 h-16 rounded-full"
                           resizeMode="cover"
                         />
@@ -188,10 +188,14 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
                     </View>
 
                     <View style={{ marginLeft: wp(4) }}>
-                      <Text className="text-lg font-bold text-gray-900">
+                      <Text className=" font-bold text-gray-900"
+                      style={{  fontSize: hp(2) }}
+                      >
                         {formData.firstName} {formData.lastName}
                       </Text>
-                      <Text className="text-sm text-gray-500 mt-1">
+                      <Text className=" text-gray-500 mt-1"
+                      style={{  fontSize: hp(2) }}
+                      >
                         {formData.empId}
                       </Text>
                     </View>
@@ -292,7 +296,9 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
                             })
                           }
                         >
-                          <Text className="text-base text-gray-700 font-bold mb-2">
+                          <Text className=" text-gray-700 font-bold mb-2"
+                          style={{  fontSize: hp(2) }}
+                          >
                             Report a Complaint
                           </Text>
                         </TouchableOpacity>
@@ -302,7 +308,9 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
                             navigation.navigate("ViewComplainScreen")
                           }
                         >
-                          <Text className="text-base text-gray-700 font-bold">
+                          <Text className=" text-gray-700 font-bold"
+                          style={{  fontSize: hp(2) }}
+                          >
                             View Complaint History
                           </Text>
                         </TouchableOpacity>

@@ -17,10 +17,6 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-import {
-  widthPercentageToDP as wp,
-  heightPercentageToDP as hp,
-} from "react-native-responsive-screen";
 import axios from "axios";
 import environment from "@/environment/environment";
 import { useRoute } from "@react-navigation/native";
@@ -281,13 +277,10 @@ const OtpScreen: React.FC = () => {
           navigation={navigation}
           onBackPress={() => navigation.goBack()}
         />
-        <View className="flex-1 bg-white">
-          <View
-            style={{ paddingHorizontal: wp(5), paddingVertical: hp(2) }}
-            className="flex-1 justify-center"
-          >
+        <View className="flex-1 bg-white items-center justify-center">
+          <View className="flex-1 justify-center w-full max-w-[500px]">
             {/* Illustration - Centered */}
-            <View className="items-center justify-center mb-6">
+            <View className="items-center justify-center mb-6   ">
               <Image
                 source={require("@/assets/images/otp/otp-check.webp")}
                 style={{
@@ -306,18 +299,28 @@ const OtpScreen: React.FC = () => {
             </Text>
 
             {/* OTP Input Section - Centered */}
-            <View className="flex-row justify-center gap-3 mt-8 mb-4 px-4">
+            <View className="flex-row justify-center items-center gap-3 mt-8 mb-4 ">
               {otp.map((digit, index) => (
                 <TextInput
                   key={`otp-input-${index}`}
                   ref={(el: TextInput | null) => {
                     inputRefs.current[index] = el;
                   }}
-                  className={`w-12 h-12 text-lg text-center rounded-lg border-2 ${
-                    digit
-                      ? "bg-[#874DDB] text-white border-[#874DDB]"
-                      : "bg-[#E7D7FF] text-pink-900 border-[#E7D7FF]"
-                  }`}
+                  className={`w-12 h-12 rounded-lg border-2 ${digit
+                    ? "bg-[#874DDB] border-[#874DDB]"
+                    : "bg-[#E7D7FF] border-[#E7D7FF]"
+                    }`}
+                  style={{
+                    textAlign: "center",
+                    textAlignVertical: "center",
+                    fontSize: 16,
+                    fontWeight: "600",
+                    lineHeight: 20,
+                    color: digit ? "#FFFFFF" : "#86198f",
+                    padding: 0,
+                    paddingTop: 0,
+                    paddingBottom: 0,
+                  }}
                   keyboardType="numeric"
                   maxLength={1}
                   value={digit}
@@ -338,7 +341,7 @@ const OtpScreen: React.FC = () => {
               </Text>
 
               {/* Resend OTP */}
-              <View className="flex-row items-center justify-center my-3">
+              <View className="flex-row items-center justify-center mb-5 my-3">
                 <Text className="text-black font-semibold">
                   Didn't receive the OTP ?
                 </Text>
@@ -361,16 +364,14 @@ const OtpScreen: React.FC = () => {
                   disabled={!isOtpComplete || loading || timer <= 0}
                   activeOpacity={0.7}
                   style={{
-                    shadowColor: "#6839CF",
-                    shadowOffset: {
-                      width: 0,
-                      height: 6,
-                    },
-
-                    shadowOpacity: 0.3,
-                    shadowRadius: 8,
+                    width: "50%",
+                    borderRadius: 30,
+                    backgroundColor: "transparent",
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 8 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 10,
                     elevation: 8,
-                    width: wp(60),
                   }}
                 >
                   <LinearGradient
@@ -381,11 +382,10 @@ const OtpScreen: React.FC = () => {
                     }
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
-                    className={`py-4 items-center rounded-3xl ${
-                      !isOtpComplete || loading || timer <= 0
-                        ? "opacity-50"
-                        : ""
-                    }`}
+                    className={`h-[50px] items-center justify-center rounded-full ${!isOtpComplete || loading || timer <= 0
+                      ? "opacity-50"
+                      : ""
+                      }`}
                     style={{
                       shadowColor: "#000",
                       shadowOffset: {
@@ -394,7 +394,8 @@ const OtpScreen: React.FC = () => {
                       },
                       shadowOpacity: 0.1,
                       shadowRadius: 3.84,
-                      elevation: 5,
+
+                      overflow: "hidden",
                     }}
                   >
                     <Text className="text-center text-white font-bold text-lg">

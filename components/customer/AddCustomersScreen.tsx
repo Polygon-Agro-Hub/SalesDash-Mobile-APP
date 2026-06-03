@@ -9,6 +9,7 @@ import {
   Alert,
   ActivityIndicator,
   BackHandler,
+  Dimensions,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -39,6 +40,8 @@ interface City {
   charge: string;
   createdAt?: string;
 }
+
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
   navigation,
@@ -114,10 +117,10 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     { label: "Apartment", value: "Apartment" },
   ]);
 
-  // Track if we're navigating to geolocation screens
   const isNavigatingToGeoScreen = useRef(false);
 
-  // Navigate to map screen for manual selection
+  const isNavigatingToOtpScreen = useRef(false);
+
   const openMapForLocation = () => {
     isNavigatingToGeoScreen.current = true;
     navigation.navigate("AttachGeoLocationScreen", {
@@ -185,29 +188,30 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
 
   useFocusEffect(
     React.useCallback(() => {
-      // Fetch cities on every focus
       fetchCity();
 
-      // If we're navigating TO a geo screen, preserve all data
       if (isNavigatingToGeoScreen.current) {
         isNavigatingToGeoScreen.current = false;
         return;
       }
 
-      // Check if we're coming FROM geolocation screens - preserve data
+      if (isNavigatingToOtpScreen.current) {
+        isNavigatingToOtpScreen.current = false;
+        return;
+      }
+
       const routes = navigation.getState()?.routes;
       const previousRoute = routes?.[routes.length - 2];
 
       const isComingFromGeoScreens =
         previousRoute?.name === "AttachGeoLocationScreen" ||
-        previousRoute?.name === "ViewLocationScreen";
+        previousRoute?.name === "ViewLocationScreen" ||
+        previousRoute?.name === "OtpScreen";
 
-      // Don't reset if coming from geo screens
       if (isComingFromGeoScreens) {
         return;
       }
 
-      // Reset form for all other navigation cases (coming from CustomersScreen, etc)
       resetForm();
     }, [navigation]),
   );
@@ -231,7 +235,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         source: "PolygonAgro",
         transport: "sms",
         content: {
-          sms: "Thank you for registering with us a GoviMart customer. Please use the bellow OTP to confirm the registration process. {{code}}",
+          sms: "Thank you for registering with us as a GoviMart customer. Please use the bellow OTP to confirm the registration process. {{code}}",
         },
         destination: cleanedPhoneNumber,
       };
@@ -371,7 +375,6 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     return true;
   };
 
-  // All your existing useEffects for validation
   useEffect(() => {
     if (touchedFields.title) {
       if (!selectedCategory) {
@@ -587,7 +590,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
 
   const formatNameInput = (text: string) => {
     if (!text) return text;
-    // Prevent space as first character
+
     if (text.startsWith(" ")) {
       return text.trim();
     }
@@ -700,11 +703,10 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       return;
     }
 
-    // Check if location is captured
     if (!latitude || !longitude) {
       Alert.alert(
         "Location Required",
-        "Please capture customer’s location before registering.",
+        "Please capture customer's location before registering.",
         [{ text: "OK" }],
       );
       setIsSubmitting(false);
@@ -744,6 +746,9 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       );
       const id = new Date().getTime().toString();
       await sendOTP();
+
+      isNavigatingToOtpScreen.current = true;
+
       navigation.navigate("OtpScreen", { phoneNumber, id });
     } catch (error: any) {
       if (axios.isAxiosError(error)) {
@@ -863,7 +868,6 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
   };
 
   const handlePhoneNumberChange = (text: string) => {
-    // Prevent space as first character
     if (text.startsWith(" ")) {
       return;
     }
@@ -921,17 +925,22 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       />
       <View className="flex-1 bg-white">
         <ScrollView keyboardShouldPersistTaps="handled">
-          <View className="py-2 px-6">
+          <View className="flex-1 mx-auto w-full max-w-[500px] py-2 px-6">
             {/* Title and First Name */}
             <View className="mb-4 mt-4 flex-row justify-between">
               <View className="flex-[1]">
-                <Text className="text-gray-700 mb-1">Title *</Text>
+                <Text
+                  className="text-[#000000] mb-1"
+                  style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                >
+                  Title *
+                </Text>
                 <TouchableOpacity
                   onPress={() => {
                     setTitleModalVisible(true);
                     handleFieldTouch("title");
                   }}
-                  className={`bg-[#F6F6F6] border flex-row justify-between items-center ${
+                  className={`bg-[#F6F6F6] border flex-row justify-between h-[50px] items-center ${
                     titleError ? "border-red-500" : "border-[#F6F6F6]"
                   } rounded-full px-4 h-10`}
                 >
@@ -957,9 +966,14 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
               </View>
 
               <View className="flex-[2] ml-2">
-                <Text className="text-gray-700 mb-1">First Name *</Text>
+                <Text
+                  className="text-[#000000] mb-1"
+                  style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                >
+                  First Name *
+                </Text>
                 <TextInput
-                  className={`bg-[#F6F6F6] border ${firstNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
+                  className={`bg-[#F6F6F6] h-[50px] border ${firstNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
                   placeholder="First Name"
                   placeholderTextColor="#7F7F7F"
                   value={firstName}
@@ -987,9 +1001,14 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
 
             {/* Last Name */}
             <View className="mb-4">
-              <Text className="text-gray-700 mb-1">Last Name *</Text>
+              <Text
+                className="text-[#000000] mb-1"
+                style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+              >
+                Last Name *
+              </Text>
               <TextInput
-                className={`bg-[#F6F6F6] border ${lastNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
+                className={`bg-[#F6F6F6] h-[50px] border ${lastNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
                 placeholder="Last Name"
                 placeholderTextColor="#7F7F7F"
                 value={lastName}
@@ -1016,9 +1035,14 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
 
             {/* Mobile Number */}
             <View className="mb-4">
-              <Text className="text-gray-700 mb-1">Mobile Number *</Text>
+              <Text
+                className="text-[#000000] mb-1"
+                style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+              >
+                Mobile Number *
+              </Text>
               <TextInput
-                className={`bg-[#F6F6F6] border ${phoneError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
+                className={`bg-[#F6F6F6] h-[50px] border ${phoneError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
                 placeholder="+947XXXXXXXX"
                 placeholderTextColor="#7F7F7F"
                 value={phoneNumber}
@@ -1042,9 +1066,14 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
 
             {/* Email */}
             <View className="mb-4">
-              <Text className="text-gray-700 mb-1">Email Address *</Text>
+              <Text
+                className="text-[#000000] mb-1"
+                style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+              >
+                Email Address *
+              </Text>
               <TextInput
-                className={`bg-[#F6F6F6] border ${emailError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
+                className={`bg-[#F6F6F6] h-[50px] border ${emailError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
                 placeholder="Email Address"
                 placeholderTextColor="#7F7F7F"
                 keyboardType="email-address"
@@ -1072,13 +1101,18 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
 
             {/* Building Type */}
             <View className="mb-4">
-              <Text className="text-gray-700 mb-1">Building Type *</Text>
+              <Text
+                className="text-[#000000] mb-1"
+                style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+              >
+                Building Type *
+              </Text>
               <TouchableOpacity
                 onPress={() => {
                   setBuildingTypeModalVisible(true);
                   handleFieldTouch("buildingType");
                 }}
-                className={`bg-[#F6F6F6] border ${buildingTypeError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 flex-row items-center justify-between`}
+                className={`bg-[#F6F6F6] h-[50px] border ${buildingTypeError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 flex-row items-center justify-between`}
               >
                 <Text
                   className={buildingType ? "text-black" : "text-[#7F7F7F]"}
@@ -1099,11 +1133,14 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
             {buildingType === "House" && (
               <>
                 <View className="mb-4">
-                  <Text className="text-gray-700 mb-1">
+                  <Text
+                    className="text-[#000000] mb-1"
+                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                  >
                     Building / House No *
                   </Text>
                   <TextInput
-                    className={`bg-[#F6F6F6] border ${houseNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
+                    className={`bg-[#F6F6F6] h-[50px] border ${houseNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
                     placeholder="Building / House No (e.g., 14/B)"
                     placeholderTextColor="#7F7F7F"
                     value={houseNo}
@@ -1129,9 +1166,14 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 </View>
 
                 <View className="mb-4">
-                  <Text className="text-gray-700 mb-1">Street Name *</Text>
+                  <Text
+                    className="text-[#000000] mb-1"
+                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                  >
+                    Street Name *
+                  </Text>
                   <TextInput
-                    className={`bg-[#F6F6F6] border ${streetNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
+                    className={`bg-[#F6F6F6] h-[50px] border ${streetNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
                     placeholder="Street Name"
                     placeholderTextColor="#7F7F7F"
                     value={streetName}
@@ -1157,13 +1199,18 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 </View>
 
                 <View className="mb-4">
-                  <Text className="text-gray-700 mb-1">Nearest City *</Text>
+                  <Text
+                    className="text-[#000000] mb-1"
+                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                  >
+                    Nearest City *
+                  </Text>
                   <TouchableOpacity
                     onPress={() => {
                       setCityModalVisible(true);
                       handleFieldTouch("city");
                     }}
-                    className={`bg-[#F6F6F6] border ${cityError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 flex-row items-center justify-between`}
+                    className={`bg-[#F6F6F6] h-[50px] border ${cityError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 flex-row items-center justify-between`}
                   >
                     <Text
                       className={city ? "text-black" : "text-[#7F7F7F]"}
@@ -1190,12 +1237,15 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
             {buildingType === "Apartment" && (
               <>
                 <View className="mb-4">
-                  <Text className="text-gray-700 mb-1">
+                  <Text
+                    className="text-[#000000] mb-1"
+                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                  >
                     Apartment / Building No *
                   </Text>
                   <TextInput
-                    className={`bg-[#F6F6F6] border ${buildingNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
-                    placeholder="Apartment / Building Name"
+                    className={`bg-[#F6F6F6] h-[50px] border ${buildingNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
+                    placeholder="Apartment / Building No"
                     placeholderTextColor="#7F7F7F"
                     value={buildingNo}
                     onChangeText={(text) => {
@@ -1220,11 +1270,14 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 </View>
 
                 <View className="mb-4">
-                  <Text className="text-gray-700 mb-1">
+                  <Text
+                    className="text-[#000000] mb-1"
+                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                  >
                     Apartment / Building Name *
                   </Text>
                   <TextInput
-                    className={`bg-[#F6F6F6] border ${buildingNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
+                    className={`bg-[#F6F6F6] h-[50px] border ${buildingNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
                     placeholder="Apartment / Building Name"
                     placeholderTextColor="#7F7F7F"
                     value={buildingName}
@@ -1250,11 +1303,14 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 </View>
 
                 <View className="mb-4">
-                  <Text className="text-gray-700 mb-1">
+                  <Text
+                    className="text-[#000000] mb-1"
+                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                  >
                     Flat / Unit Number *
                   </Text>
                   <TextInput
-                    className={`bg-[#F6F6F6] border ${unitNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
+                    className={`bg-[#F6F6F6] h-[50px] border ${unitNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
                     placeholder="ex : Building B"
                     placeholderTextColor="#7F7F7F"
                     value={unitNo}
@@ -1280,9 +1336,14 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 </View>
 
                 <View className="mb-4">
-                  <Text className="text-gray-700 mb-1">Floor Number *</Text>
+                  <Text
+                    className="text-[#000000] mb-1"
+                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                  >
+                    Floor Number *
+                  </Text>
                   <TextInput
-                    className={`bg-[#F6F6F6] border ${floorNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
+                    className={`bg-[#F6F6F6] h-[50px] border ${floorNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
                     placeholder="ex : 3rd Floor"
                     placeholderTextColor="#7F7F7F"
                     value={floorNo}
@@ -1308,9 +1369,9 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 </View>
 
                 <View className="mb-4">
-                  <Text className="text-gray-700 mb-1">House No *</Text>
+                  <Text className="text-[#000000] mb-1">House No *</Text>
                   <TextInput
-                    className={`bg-[#F6F6F6] border ${houseNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
+                    className={`bg-[#F6F6F6] h-[50px] border ${houseNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
                     placeholder="ex : 14"
                     placeholderTextColor="#7F7F7F"
                     value={houseNo}
@@ -1336,9 +1397,14 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 </View>
 
                 <View className="mb-4">
-                  <Text className="text-gray-700 mb-1">Street Name *</Text>
+                  <Text
+                    className="text-[#000000] mb-1"
+                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                  >
+                    Street Name *
+                  </Text>
                   <TextInput
-                    className={`bg-[#F6F6F6] border ${streetNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
+                    className={`bg-[#F6F6F6] h-[50px] border ${streetNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
                     placeholder="Street Name"
                     placeholderTextColor="#7F7F7F"
                     value={streetName}
@@ -1364,13 +1430,18 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 </View>
 
                 <View className="mb-4">
-                  <Text className="text-gray-700 mb-1">Nearest City *</Text>
+                  <Text
+                    className="text-[#000000] mb-1"
+                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                  >
+                    Nearest City *
+                  </Text>
                   <TouchableOpacity
                     onPress={() => {
                       setCityModalVisible(true);
                       handleFieldTouch("city");
                     }}
-                    className={`bg-[#F6F6F6] border ${cityError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 flex-row items-center justify-between`}
+                    className={`bg-[#F6F6F6] h-[50px] border ${cityError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 flex-row items-center justify-between`}
                   >
                     <Text
                       className={city ? "text-black" : "text-[#7F7F7F]"}
@@ -1394,37 +1465,42 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
             )}
 
             {/* Geolocation Section */}
-            <View className="mb-4 mt-2">
-              {/* Location Buttons */}
-              <View className="flex-row justify-between">
-                {/* Geo Location Button */}
-                <TouchableOpacity
-                  onPress={openMapForLocation}
-                  className="flex-1 items-center"
+            <View className="mb-4 mt-2 items-center">
+              <TouchableOpacity
+                onPress={openMapForLocation}
+                className="w-1/2"
+                activeOpacity={0.7}
+              >
+                <View
+                  className="border border-[#6C3CD1] bg-white rounded-full py-3 flex-row items-center justify-center"
+                  style={{
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 8,
+                    elevation: 10,
+                  }}
                 >
-                  <View className="w-1/2 border border-[#6C3CD1] rounded-full py-3 flex-row items-center justify-center">
-                    <FontAwesome6
-                      name="location-crosshairs"
-                      size={20}
-                      color="#7C3AED"
-                    />
-                    <Text className="text-[#6C3CD1] font-medium ml-2">
-                      Geo Location
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              </View>
+                  <FontAwesome6
+                    name="location-crosshairs"
+                    size={20}
+                    color="#7C3AED"
+                  />
+                  <Text className="text-[#6C3CD1] font-medium ml-2">
+                    Geo Location
+                  </Text>
+                </View>
+              </TouchableOpacity>
 
-              {/* Location Error */}
               {locationError ? (
                 <Text className="text-red-500 text-xs pl-4 pt-2">
                   {locationError}
                 </Text>
               ) : null}
             </View>
+
             {latitude && longitude && (
               <View className="items-center justify-center rounded-2xl p-3 mb-3">
-                {/* View Here Link */}
                 <TouchableOpacity
                   onPress={() => {
                     isNavigatingToGeoScreen.current = true;
@@ -1545,6 +1621,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         }}
         searchPlaceholder="Search city..."
         multiSelect={false}
+        noResultsText="No City Found"
       />
     </KeyboardAvoidingView>
   );
