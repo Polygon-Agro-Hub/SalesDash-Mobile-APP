@@ -5,9 +5,7 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  Keyboard,
   KeyboardAvoidingView,
-  Alert,
   ActivityIndicator,
   BackHandler,
   Dimensions,
@@ -24,6 +22,7 @@ import { Platform } from "react-native";
 import CustomHeader from "../common/CustomHeader";
 import LoadingPage from "../common/LoadingPage";
 import GlobalSearchModal from "../common/GlobalSearchModal";
+import CustomAlert from "../common/CustomAlert";
 
 type EditCustomerScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -130,12 +129,21 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
   ]);
   const [selectedCategory, setSelectedCategory] = useState("");
 
+  const [alertConfig, setAlertConfig] = useState<{
+  visible: boolean;
+  title: string;
+  message: string;
+}>({ visible: false, title: "", message: "" });
+
+const showAlert = (title: string, message: string) => {
+  setAlertConfig({ visible: true, title, message });
+};
+
   // Helper function to prevent leading spaces
   const preventLeadingSpace = (
     text: string,
     setter: (value: string) => void,
   ) => {
-    // If the text starts with a space, remove it
     if (text.startsWith(" ")) {
       setter(text.trimStart());
     } else {
@@ -162,19 +170,11 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
 
     const [localPart, domainPart] = parts;
 
-    // Check local part length
     if (localPart.length < 1 || localPart.length > 64) return false;
-
-    // Check domain part length
     if (domainPart.length < 1 || domainPart.length > 255) return false;
-
-    // Check for consecutive dots
     if (localPart.includes("..") || domainPart.includes("..")) return false;
-
-    // Check for special characters at start/end
     if (/^[._-]/.test(localPart) || /[._-]$/.test(localPart)) return false;
 
-    // Check for allowed domains
     const allowedDomains = [
       "gmail.com",
       "googlemail.com",
@@ -183,7 +183,6 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     ];
     const allowedTlds = [".com", ".lk", ".gov"];
 
-    // Check if domain is in allowed list or has allowed TLD
     const domainLower = domainPart.toLowerCase();
     const hasAllowedTld = allowedTlds.some((tld) => domainLower.endsWith(tld));
 
@@ -191,15 +190,9 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
       return false;
     }
 
-    // Additional Gmail-specific rules
     if (domainLower === "gmail.com" || domainLower === "googlemail.com") {
-      // Gmail doesn't allow consecutive dots
       if (/\.{2,}/.test(localPart)) return false;
-
-      // Gmail doesn't allow dots at start or end
       if (/^\.|\.$/.test(localPart)) return false;
-
-      // Gmail only allows certain characters
       if (!/^[a-zA-Z0-9.+]+$/.test(localPart)) return false;
     }
 
@@ -208,7 +201,6 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
 
   const formatNameInput = (text: string) => {
     if (!text) return text;
-    // First remove any leading spaces
     const trimmedText = text.replace(/^\s+/, "");
     const filteredText = trimmedText.replace(/[^a-zA-Z]/g, "");
     return (
@@ -222,7 +214,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
 
   const RequiredField = ({ children }: { children: React.ReactNode }) => (
     <Text
-      className="text-gray-700 mb-1 font-medium"
+      className="text-[#000000] mb-1"
       style={{ fontSize: RESPONSIVE_FONT_SIZE }}
     >
       {children} <Text className="text-black">*</Text>
@@ -307,7 +299,6 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
             setEmailError("Please enter a valid Gmail address");
           }
         } else if (domain === "yahoo.com") {
-          // Yahoo-specific errors
           if (localPart.length > 32) {
             setEmailError(
               "Yahoo addresses cannot exceed 32 characters before @",
@@ -326,7 +317,6 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
             setEmailError("Please enter a valid Yahoo address");
           }
         } else {
-          // Check if domain is supported
           const allowedTLDs = [".com", ".gov", ".lk"];
           const isDomainSupported = allowedTLDs.some((tld) =>
             domain.endsWith(tld),
@@ -337,7 +327,6 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
               "Please enter a valid email address with a supported domain (.com, .gov, .lk)",
             );
           } else {
-            // General validation errors
             if (localPart.length > 64) {
               setEmailError("Email address is too long");
             } else if (/\.{2,}/.test(localPart)) {
@@ -452,7 +441,6 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     }
   }, [floorNo, touchedFields.floorNo, buildingType]);
 
-  // Fetch initial data
   useEffect(() => {
     const getToken = async () => {
       const storedToken = await AsyncStorage.getItem("authToken");
@@ -479,13 +467,9 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     setOriginalBuildingType("");
     setOriginalPhoneNumber("");
     setOriginalEmail("");
-
-    // Add these lines
     setLatitude("");
     setLongitude("");
     setLocationName("");
-
-    // Reset ALL error states
     setFirstNameError("");
     setLastNameError("");
     setPhoneError("");
@@ -499,8 +483,6 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     setBuildingNameError("");
     setUnitNoError("");
     setFloorNoError("");
-
-    // Reset ALL touched fields
     setTouchedFields({
       firstName: false,
       lastName: false,
@@ -538,8 +520,6 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
         setOriginalBuildingType(customerData.buildingType || "");
         setOriginalPhoneNumber(customerData.phoneNumber || "");
         setOriginalEmail(customerData.email || "");
-
-        // Add these lines to load geolocation data
         setLatitude(customerData.latitude || "");
         setLongitude(customerData.longitude || "");
 
@@ -561,7 +541,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
       }
     } catch (error) {
       console.error(error);
-      Alert.alert("Error", "Failed to load customer data.");
+      showAlert("Error", "Failed to load customer data.");
     } finally {
       setLoading(false);
     }
@@ -574,10 +554,8 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     isReturningFromMapRef.current = true;
   };
 
-  // Single useFocusEffect to handle form loading
   useFocusEffect(
     React.useCallback(() => {
-      // If returning from map screen, don't reset or reload data
       if (isReturningFromMapRef.current) {
         isReturningFromMapRef.current = false;
         return;
@@ -586,19 +564,13 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
       const loadData = async () => {
         try {
           setLoading(true);
-
-          // Clear all fields before loading new customer data
           resetFormState();
-
-          // Fetch the data
           await fetchCustomerData();
-
-          // Mark as loaded
           hasLoadedOnce.current = true;
           lastFetchedIdRef.current = id;
         } catch (error) {
           console.error("❌ Error loading customer data:", error);
-          Alert.alert("Error", "Failed to load customer data.");
+          showAlert("Error", "Failed to load customer data.");
         } finally {
           setLoading(false);
         }
@@ -649,7 +621,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
 
   const sendOTP = async () => {
     if (!phoneNumber) {
-      Alert.alert("Error", "Please enter a mobile number.");
+      showAlert("Error", "Please enter a mobile number.");
       return { status: 400 };
     }
 
@@ -681,7 +653,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
       return { status: 400 };
     } catch (error) {
       console.error(error);
-      Alert.alert("Error", "Failed to send OTP.");
+      showAlert("Error", "Failed to send OTP.");
       return { status: 400 };
     } finally {
       setLoading(false);
@@ -706,8 +678,6 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     };
 
     setTouchedFields(touchedFieldsToUpdate);
-
-    // Clear any previous validation errors
     setPhoneError("");
     setEmailError("");
 
@@ -718,13 +688,12 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
       !phoneNumber ||
       !buildingType
     ) {
-      Alert.alert("Error", "Please fill in all required fields.");
+      showAlert("Error", "Please fill in all required fields.");
       return;
     }
 
-    // Validate formats
     if (!validatePhoneNumber(phoneNumber)) {
-      Alert.alert(
+      showAlert(
         "Error",
         "Please enter a valid mobile number (format: +947XXXXXXXX).",
       );
@@ -732,13 +701,12 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     }
 
     if (!validateEmail(email)) {
-      Alert.alert("Error", "Please enter a valid email address.");
+      showAlert("Error", "Please enter a valid email address.");
       return;
     }
 
-    // Validate building-specific fields
     if (buildingType === "House" && (!houseNo || !streetName || !city)) {
-      Alert.alert("Error", "Please fill in all required house fields.");
+      showAlert("Error", "Please fill in all required house fields.");
       return;
     }
 
@@ -752,18 +720,16 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
         !streetName ||
         !city)
     ) {
-      Alert.alert("Error", "Please fill in all required apartment fields.");
+      showAlert("Error", "Please fill in all required apartment fields.");
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      // Check if phone number or email has changed
       const phoneNumberChanged = phoneNumber !== originalPhoneNumber;
       const emailChanged = email !== originalEmail;
 
-      // Check for existing phone/email when either has changed
       if (phoneNumberChanged || emailChanged) {
         try {
           const checkResponse = await axios.post(
@@ -771,7 +737,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
             {
               phoneNumber,
               email: email || null,
-              excludeId: id, // Add this to exclude current user from check
+              excludeId: id,
             },
             {
               headers: { Authorization: `Bearer ${token}` },
@@ -782,7 +748,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
           console.log("Customer check error:", checkError);
 
           if (checkError.code === "ECONNABORTED") {
-            Alert.alert(
+            showAlert(
               "Error",
               "Request timed out. Please check your internet connection and try again.",
             );
@@ -790,24 +756,22 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
           }
 
           if (checkError.response) {
-            // Server responded with an error status
             const status = checkError.response.status;
             const errorData = checkError.response.data;
 
             if (status === 400) {
-              // Handle validation errors
               const errorMessage = errorData.message || "Validation failed";
 
               if (errorMessage.includes("Mobile Number already exists")) {
                 setPhoneError("This mobile number is already registered.");
-                Alert.alert(
+                showAlert(
                   "Mobile Number Already Exists",
                   "This mobile number is already registered. Please use a different mobile number.",
                 );
                 return;
               } else if (errorMessage.includes("Email already exists")) {
                 setEmailError("This email address is already registered.");
-                Alert.alert(
+                showAlert(
                   "Email Already Exists",
                   "This email address is already registered. Please use a different email address.",
                 );
@@ -817,43 +781,39 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
               ) {
                 setPhoneError("This mobile number is already registered.");
                 setEmailError("This email address is already registered.");
-                Alert.alert(
+                showAlert(
                   "Account Already Exists",
                   "Both mobile number and email are already registered. Please use different credentials.",
                 );
                 return;
               } else {
-                Alert.alert("Validation Error", errorMessage);
+                showAlert("Validation Error", errorMessage);
                 return;
               }
             } else if (status === 500) {
-              // Server error
               console.error("Server error during validation:", errorData);
-              Alert.alert(
+              showAlert(
                 "Server Error",
                 "There was a problem validating your information. Please try again in a moment.",
               );
               return;
             } else {
-              // Other HTTP errors
-              Alert.alert(
+              showAlert(
                 "Error",
                 `Validation failed (${status}). Please try again.`,
               );
               return;
             }
           } else if (checkError.request) {
-            // Network error
             console.error("Network error:", checkError.request);
-            Alert.alert(
+            showAlert(
               "Network Error",
               "Unable to connect to the server. Please check your internet connection and try again.",
             );
             return;
           } else {
-            // Other error
             console.error("Unexpected error:", checkError.message);
-            Alert.alert(
+            showAlert(
               "Error",
               "An unexpected error occurred. Please try again.",
             );
@@ -861,23 +821,21 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
           }
         }
 
-        // Send OTP only if phone number changed
         if (phoneNumberChanged) {
           try {
             const otpResponse = await sendOTP();
             if (otpResponse.status !== 200) {
-              Alert.alert("Error", "Failed to send OTP. Please try again.");
+              showAlert("Error", "Failed to send OTP. Please try again.");
               return;
             }
           } catch (otpError) {
             console.error("OTP sending error:", otpError);
-            Alert.alert("Error", "Failed to send OTP. Please try again.");
+            showAlert("Error", "Failed to send OTP. Please try again.");
             return;
           }
         }
       }
 
-      // Prepare data for update
       const customerData = {
         title: selectedCategory,
         firstName,
@@ -891,46 +849,28 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
 
       const buildingData =
         buildingType === "House"
-          ? {
-              houseNo,
-              streetName,
-              city,
-            }
-          : {
-              buildingNo,
-              buildingName,
-              unitNo,
-              floorNo,
-              houseNo,
-              streetName,
-              city,
-            };
+          ? { houseNo, streetName, city }
+          : { buildingNo, buildingName, unitNo, floorNo, houseNo, streetName, city };
 
       if (phoneNumberChanged) {
-        // Store data and navigate to OTP screen
         await AsyncStorage.setItem(
           "pendingCustomerData",
-          JSON.stringify({
-            customerData,
-            buildingData,
-            originalBuildingType,
-          }),
+          JSON.stringify({ customerData, buildingData, originalBuildingType }),
         );
         navigation.navigate("OtpScreenUp", { phoneNumber, id, token });
       } else {
-        // Direct update without OTP (phone number unchanged)
         try {
           const response = await axios.put(
             `${environment.API_BASE_URL}api/customer/update-customer-data/${id}`,
             { ...customerData, buildingData, originalBuildingType },
             {
               headers: { Authorization: `Bearer ${token}` },
-              timeout: 15000, // 15 second timeout for update
+              timeout: 15000,
             },
           );
 
           if (response.status === 200) {
-            Alert.alert("Success", "Customer updated successfully.");
+            showAlert("Success", "Customer updated successfully.");
             navigation.navigate("ViewCustomerScreen" as any, {
               id,
               customerId,
@@ -946,24 +886,23 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
               updateError.response.data.message ||
               "Failed to update customer data.";
 
-            // Handle specific backend validation errors
             if (errorMessage.includes("Email already exists")) {
               setEmailError("This email address is already registered.");
-              Alert.alert(
+              showAlert(
                 "Email Already Exists",
                 "This email address is already registered. Please use a different email address.",
               );
             } else if (errorMessage.includes("Mobile Number already exists")) {
               setPhoneError("This mobile number is already registered.");
-              Alert.alert(
+              showAlert(
                 "Mobile Number Already Exists",
                 "This mobile number is already registered. Please use a different mobile number.",
               );
             } else {
-              Alert.alert("Update Error", errorMessage);
+              showAlert("Update Error", errorMessage);
             }
           } else {
-            Alert.alert(
+            showAlert(
               "Error",
               "Failed to update customer. Please try again.",
             );
@@ -972,32 +911,20 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
       }
     } catch (error: any) {
       console.error("Unexpected error in handleRegister:", error);
-      Alert.alert("Error", "An unexpected error occurred. Please try again.");
+      showAlert("Error", "An unexpected error occurred. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Enhanced input handlers with error clearing
   const handlePhoneNumberChangeWithErrorClear = (text: string) => {
-    if (phoneError) {
-      setPhoneError("");
-    }
+    if (phoneError) setPhoneError("");
     handlePhoneNumberChange(text);
   };
 
   const handleEmailChangeWithErrorClear = (text: string) => {
-    // Clear error if present
-    if (emailError) {
-      setEmailError("");
-    }
-
-    // Prevent leading spaces
-    if (text.startsWith(" ")) {
-      return;
-    }
-
-    // Convert to lowercase and update state
+    if (emailError) setEmailError("");
+    if (text.startsWith(" ")) return;
     setEmail(text.toLowerCase());
   };
 
@@ -1013,51 +940,35 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     }
   };
 
-  // Enhanced phone number change handler
   const handlePhoneNumberChange = (text: string) => {
-    // Prevent leading spaces
-    if (text.startsWith(" ")) {
-      return;
-    }
+    if (text.startsWith(" ")) return;
 
-    // Always ensure +94 prefix is maintained
     if (!text.startsWith("+94")) {
-      // If user tries to remove +94, restore it
       if (text.length < 3) {
         setPhoneNumber("+94");
         return;
       }
-      // If text doesn't start with +94, add it
       const cleanedText = text.replace(/^\+?94?/, "");
       setPhoneNumber("+94" + cleanedText.replace(/[^\d]/g, ""));
       return;
     }
 
-    // If text starts with +94, validate the rest
-    const numberPart = text.slice(3); // Remove +94 part
-
-    // Only allow digits after +94 and limit to 9 digits (total 12 chars)
+    const numberPart = text.slice(3);
     const cleanedNumber = numberPart.replace(/[^\d]/g, "");
 
-    // Limit to 9 digits after +94 (making total +94XXXXXXXXX format)
     if (cleanedNumber.length <= 9) {
       setPhoneNumber("+94" + cleanedNumber);
     }
   };
 
-  // Enhanced onFocus handler
   const handlePhoneNumberFocus = () => {
-    // Ensure +94 is there when focused and field is empty or too short
     if (phoneNumber === "" || phoneNumber.length < 3) {
       setPhoneNumber("+94");
     }
   };
 
-  // Enhanced onKeyPress handler for better control
   const handlePhoneNumberKeyPress = (e: any) => {
     const { key } = e.nativeEvent;
-
-    // Prevent deletion if trying to delete +94 prefix
     if (key === "Backspace" && phoneNumber.length <= 3) {
       e.preventDefault();
       return false;
@@ -1082,7 +993,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
         onBackPress,
       );
 
-      return () => backHandler.remove(); // Cleanup on unmount
+      return () => backHandler.remove();
     }, [navigation, id, customerId, name, title]),
   );
 
@@ -1135,9 +1046,12 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                       className={
                         selectedCategory ? "text-black" : "text-gray-400"
                       }
-                      style={{ fontSize: RESPONSIVE_FONT_SIZE }}
+                      style={{
+                        fontSize: RESPONSIVE_FONT_SIZE,
+                        fontStyle: selectedCategory ? "normal" : "italic",
+                      }}
                     >
-                      {selectedCategory || "Select Title"}
+                      {selectedCategory || "Title"}
                     </Text>
                     <MaterialIcons
                       name="arrow-drop-down"
@@ -1159,7 +1073,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                   className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${
                     firstNameError ? "border-red-500" : "border-[#F6F6F6]"
                   }`}
-                  style={{ fontSize: INPUT_FONT_SIZE }}
+                  style={{
+                    fontSize: INPUT_FONT_SIZE,
+                    fontStyle: firstName ? "normal" : "italic",
+                  }}
                   placeholder="First Name"
                   placeholderTextColor="#7F7F7F"
                   value={firstName}
@@ -1186,7 +1103,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                 className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${
                   lastNameError ? "border-red-500" : "border-[#F6F6F6]"
                 }`}
-                style={{ fontSize: INPUT_FONT_SIZE }}
+                style={{
+                  fontSize: INPUT_FONT_SIZE,
+                  fontStyle: lastName ? "normal" : "italic",
+                }}
                 placeholder="Last Name"
                 placeholderTextColor="#7F7F7F"
                 value={lastName}
@@ -1212,16 +1132,17 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                 className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${
                   phoneError ? "border-red-500" : "border-[#F6F6F6]"
                 }`}
-                style={{ fontSize: INPUT_FONT_SIZE }}
+                style={{
+                  fontSize: INPUT_FONT_SIZE,
+                  fontStyle: phoneNumber ? "normal" : "italic",
+                }}
                 placeholderTextColor="#7F7F7F"
                 placeholder="ex: +94771234567"
                 keyboardType="phone-pad"
                 value={phoneNumber}
                 onChangeText={handlePhoneNumberChangeWithErrorClear}
                 onBlur={() => handleFieldTouch("phoneNumber")}
-                onFocus={() => {
-                  handlePhoneNumberFocus();
-                }}
+                onFocus={handlePhoneNumberFocus}
                 onKeyPress={handlePhoneNumberKeyPress}
                 maxLength={12}
                 selection={
@@ -1241,9 +1162,12 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                 className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${
                   emailError ? "border-red-500" : "border-[#F6F6F6]"
                 }`}
-                style={{ fontSize: INPUT_FONT_SIZE }}
+                style={{
+                  fontSize: INPUT_FONT_SIZE,
+                  fontStyle: email ? "normal" : "italic",
+                }}
                 placeholderTextColor="#7F7F7F"
-                placeholder="Email Address "
+                placeholder="Email Address"
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -1271,7 +1195,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
               >
                 <Text
                   className={buildingType ? "text-black" : "text-gray-400"}
-                  style={{ fontSize: RESPONSIVE_FONT_SIZE }}
+                  style={{
+                    fontSize: RESPONSIVE_FONT_SIZE,
+                    fontStyle: buildingType ? "normal" : "italic",
+                  }}
                 >
                   {buildingType || "Select Building Type"}
                 </Text>
@@ -1291,7 +1218,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                   <RequiredField>Building / House No</RequiredField>
                   <TextInput
                     className={`bg-[#F6F6F6] border h-[50px] ${houseNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6`}
-                    style={{ fontSize: INPUT_FONT_SIZE }}
+                    style={{
+                      fontSize: INPUT_FONT_SIZE,
+                      fontStyle: houseNo ? "normal" : "italic",
+                    }}
                     placeholder="Building / House No (e.g., 14/B)"
                     placeholderTextColor="#7F7F7F"
                     value={houseNo}
@@ -1319,7 +1249,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                   <RequiredField>Street Name</RequiredField>
                   <TextInput
                     className={`bg-[#F6F6F6] border h-[50px] ${streetNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6`}
-                    style={{ fontSize: INPUT_FONT_SIZE }}
+                    style={{
+                      fontSize: INPUT_FONT_SIZE,
+                      fontStyle: streetName ? "normal" : "italic",
+                    }}
                     placeholder="Street Name"
                     placeholderTextColor="#7F7F7F"
                     value={streetName}
@@ -1355,7 +1288,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                   >
                     <Text
                       className={city ? "text-black" : "text-gray-400"}
-                      style={{ fontSize: RESPONSIVE_FONT_SIZE }}
+                      style={{
+                        fontSize: RESPONSIVE_FONT_SIZE,
+                        fontStyle: city ? "normal" : "italic",
+                      }}
                     >
                       {city || "Select Nearest City"}
                     </Text>
@@ -1380,7 +1316,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                   <RequiredField>Apartment / Building No</RequiredField>
                   <TextInput
                     className={`bg-[#F6F6F6] border h-[50px] ${buildingNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6`}
-                    style={{ fontSize: INPUT_FONT_SIZE }}
+                    style={{
+                      fontSize: INPUT_FONT_SIZE,
+                      fontStyle: buildingNo ? "normal" : "italic",
+                    }}
                     placeholder="Apartment / Building No"
                     placeholderTextColor="#7F7F7F"
                     value={buildingNo}
@@ -1408,7 +1347,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                   <RequiredField>Apartment / Building Name</RequiredField>
                   <TextInput
                     className={`bg-[#F6F6F6] border h-[50px] ${buildingNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6`}
-                    style={{ fontSize: INPUT_FONT_SIZE }}
+                    style={{
+                      fontSize: INPUT_FONT_SIZE,
+                      fontStyle: buildingName ? "normal" : "italic",
+                    }}
                     placeholder="Apartment / Building Name"
                     placeholderTextColor="#7F7F7F"
                     value={buildingName}
@@ -1436,7 +1378,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                   <RequiredField>Flat / Unit Number</RequiredField>
                   <TextInput
                     className={`bg-[#F6F6F6] border h-[50px] ${unitNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6`}
-                    style={{ fontSize: INPUT_FONT_SIZE }}
+                    style={{
+                      fontSize: INPUT_FONT_SIZE,
+                      fontStyle: unitNo ? "normal" : "italic",
+                    }}
                     placeholder="ex: Building B"
                     placeholderTextColor="#7F7F7F"
                     value={unitNo}
@@ -1464,7 +1409,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                   <RequiredField>Floor Number</RequiredField>
                   <TextInput
                     className={`bg-[#F6F6F6] border h-[50px] ${floorNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6`}
-                    style={{ fontSize: INPUT_FONT_SIZE }}
+                    style={{
+                      fontSize: INPUT_FONT_SIZE,
+                      fontStyle: floorNo ? "normal" : "italic",
+                    }}
                     placeholderTextColor="#7F7F7F"
                     placeholder="ex: 3rd Floor"
                     value={floorNo}
@@ -1492,7 +1440,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                   <RequiredField>House No</RequiredField>
                   <TextInput
                     className={`bg-[#F6F6F6] border h-[50px] ${houseNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6`}
-                    style={{ fontSize: INPUT_FONT_SIZE }}
+                    style={{
+                      fontSize: INPUT_FONT_SIZE,
+                      fontStyle: houseNo ? "normal" : "italic",
+                    }}
                     placeholder="Building / House No (e.g., 14/B)"
                     placeholderTextColor="#7F7F7F"
                     value={houseNo}
@@ -1520,7 +1471,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                   <RequiredField>Street Name</RequiredField>
                   <TextInput
                     className={`bg-[#F6F6F6] border h-[50px] ${streetNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-6`}
-                    style={{ fontSize: INPUT_FONT_SIZE }}
+                    style={{
+                      fontSize: INPUT_FONT_SIZE,
+                      fontStyle: streetName ? "normal" : "italic",
+                    }}
                     placeholder="Street Name"
                     placeholderTextColor="#7F7F7F"
                     value={streetName}
@@ -1556,7 +1510,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                   >
                     <Text
                       className={city ? "text-black" : "text-gray-400"}
-                      style={{ fontSize: RESPONSIVE_FONT_SIZE }}
+                      style={{
+                        fontSize: RESPONSIVE_FONT_SIZE,
+                        fontStyle: city ? "normal" : "italic",
+                      }}
                     >
                       {city || "Select Nearest City"}
                     </Text>
@@ -1605,7 +1562,6 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                 </View>
               </TouchableOpacity>
 
-              {/* View Location Link */}
               {latitude && longitude && (
                 <TouchableOpacity
                   onPress={() => {
@@ -1729,6 +1685,12 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
         searchPlaceholder="Search city..."
         multiSelect={false}
         noResultsText="No City Found"
+      />
+         <CustomAlert
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        onClose={() => setAlertConfig((prev) => ({ ...prev, visible: false }))}
       />
     </KeyboardAvoidingView>
   );

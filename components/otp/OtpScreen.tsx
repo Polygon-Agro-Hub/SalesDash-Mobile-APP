@@ -43,6 +43,8 @@ const OtpScreen: React.FC = () => {
   };
 
   const [isOtpInvalid, setIsOtpInvalid] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const otpSectionRef = useRef<View>(null);
 
   // Check if all OTP digits are filled
   const isOtpComplete = otp.every((digit) => digit.length === 1);
@@ -247,12 +249,34 @@ const OtpScreen: React.FC = () => {
   };
 
   useEffect(() => {
-    const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
+    const handleKeyboardShow = () => {
       setKeyboardVisible(true);
-    });
-    const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
+      // Scroll to OTP section as soon as keyboard opens
+      const scrollNode =
+        scrollViewRef.current?.getScrollableNode?.() || scrollViewRef.current;
+      if (scrollNode) {
+        otpSectionRef.current?.measureLayout(
+          scrollNode,
+          (x, y) => {
+            scrollViewRef.current?.scrollTo({ y: y - 20, animated: true });
+          },
+          () => {},
+        );
+      }
+    };
+
+    const handleKeyboardHide = () => {
       setKeyboardVisible(false);
-    });
+      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+    };
+
+    const showEvent =
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent =
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+    const showSubscription = Keyboard.addListener(showEvent, handleKeyboardShow);
+    const hideSubscription = Keyboard.addListener(hideEvent, handleKeyboardHide);
 
     return () => {
       showSubscription.remove();
@@ -264,11 +288,15 @@ const OtpScreen: React.FC = () => {
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       enabled
-      style={{ flex: 1 }}
+      style={{ flex: 1, backgroundColor: "white" }}
     >
       <ScrollView
+        ref={scrollViewRef}
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        overScrollMode="never"
+        style={{ backgroundColor: "white" }}
       >
         <CustomHeader
           title="OTP Verification"
@@ -299,17 +327,21 @@ const OtpScreen: React.FC = () => {
             </Text>
 
             {/* OTP Input Section - Centered */}
-            <View className="flex-row justify-center items-center gap-3 mt-8 mb-4 ">
+            <View
+              ref={otpSectionRef}
+              className="flex-row justify-center items-center gap-3 mt-8 mb-4 "
+            >
               {otp.map((digit, index) => (
                 <TextInput
                   key={`otp-input-${index}`}
                   ref={(el: TextInput | null) => {
                     inputRefs.current[index] = el;
                   }}
-                  className={`w-12 h-12 rounded-lg border-2 ${digit
-                    ? "bg-[#874DDB] border-[#874DDB]"
-                    : "bg-[#E7D7FF] border-[#E7D7FF]"
-                    }`}
+                  className={`w-12 h-12 rounded-lg border-2 ${
+                    digit
+                      ? "bg-[#874DDB] border-[#874DDB]"
+                      : "bg-[#E7D7FF] border-[#E7D7FF]"
+                  }`}
                   style={{
                     textAlign: "center",
                     textAlignVertical: "center",
@@ -382,10 +414,11 @@ const OtpScreen: React.FC = () => {
                     }
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
-                    className={`h-[50px] items-center justify-center rounded-full ${!isOtpComplete || loading || timer <= 0
-                      ? "opacity-50"
-                      : ""
-                      }`}
+                    className={`h-[50px] items-center justify-center rounded-full ${
+                      !isOtpComplete || loading || timer <= 0
+                        ? "opacity-50"
+                        : ""
+                    }`}
                     style={{
                       shadowColor: "#000",
                       shadowOffset: {

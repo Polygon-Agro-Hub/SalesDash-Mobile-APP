@@ -40,6 +40,8 @@ const OtpScreenUp: React.FC = () => {
   const navigation = useNavigation<OtpScreenUpNavigationProp>();
   const [otp, setOtp] = useState<string[]>(["", "", "", "", ""]);
   const inputRefs = useRef<(TextInput | null)[]>([]);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const otpSectionRef = useRef<View>(null);
 
   const [timer, setTimer] = useState(60);
   const [resendDisabled, setResendDisabled] = useState(true);
@@ -342,12 +344,34 @@ const OtpScreenUp: React.FC = () => {
   };
 
   useEffect(() => {
-    const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
+    const handleKeyboardShow = () => {
       setKeyboardVisible(true);
-    });
-    const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
+      // Scroll to OTP section as soon as keyboard opens
+      const scrollNode =
+        scrollViewRef.current?.getScrollableNode?.() || scrollViewRef.current;
+      if (scrollNode) {
+        otpSectionRef.current?.measureLayout(
+          scrollNode,
+          (x, y) => {
+            scrollViewRef.current?.scrollTo({ y: y - 20, animated: true });
+          },
+          () => {},
+        );
+      }
+    };
+
+    const handleKeyboardHide = () => {
       setKeyboardVisible(false);
-    });
+      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+    };
+
+    const showEvent =
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent =
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+    const showSubscription = Keyboard.addListener(showEvent, handleKeyboardShow);
+    const hideSubscription = Keyboard.addListener(hideEvent, handleKeyboardHide);
 
     return () => {
       showSubscription.remove();
@@ -362,6 +386,7 @@ const OtpScreenUp: React.FC = () => {
       style={{ flex: 1 }}
     >
       <ScrollView
+        ref={scrollViewRef}
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
       >
@@ -394,7 +419,10 @@ const OtpScreenUp: React.FC = () => {
             </Text>
 
             {/* OTP Input Section - Centered */}
-            <View className="flex-row justify-center items-center gap-3 mt-8 mb-4">
+            <View
+              ref={otpSectionRef}
+              className="flex-row justify-center items-center gap-3 mt-8 mb-4"
+            >
               {otp.map((digit, index) => (
                 <TextInput
                   key={`otp-input-${index}`}

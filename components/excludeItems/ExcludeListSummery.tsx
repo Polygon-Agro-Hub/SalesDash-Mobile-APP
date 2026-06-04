@@ -22,7 +22,7 @@ import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-import LottieView from "lottie-react-native";
+import NoDataFound from "../common/NoDataFound";
 import CustomHeader from "../common/CustomHeader";
 import { Entypo } from "@expo/vector-icons";
 import FixedMarqueeText from "../common/MarqueeText";
@@ -246,7 +246,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
         </TouchableOpacity>
 
         {/* Title — marquee when long */}
-        <View style={{ flex: 1, alignItems: "center", overflow: "hidden" }}>
+        <View style={{ flex: 1, alignItems: "center", overflow: "hidden", marginHorizontal: 8 }}>
           {fullTitle.length > 25 ? (
             <FixedMarqueeText
               text={fullTitle}
@@ -297,18 +297,10 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
               justifyContent: "center",
               alignItems: "center",
               paddingTop: hp("10%"),
-              paddingBottom: hp("20%"),
+             
             }}
           >
-            <LottieView
-              source={require("@/assets/json/no-data.json")}
-              style={{ width: wp(50), height: wp(50) }}
-              autoPlay
-              loop
-            />
-            <Text className="text-black italic text-center">
-              No items to exclude
-            </Text>
+            <NoDataFound message="No items to exclude" />
           </View>
         ) : (
           // Items exist - show scrollable list

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Dimensions,
+  BackHandler,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -22,6 +23,7 @@ import {
 } from "react-native-responsive-screen";
 import LoadingPage from "../common/LoadingPage";
 import CustomHeader from "../common/CustomHeader";
+import { useFocusEffect } from "@react-navigation/native";
 
 type ProfileScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -125,6 +127,22 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
       console.error(error);
     }
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        navigation.navigate("SidebarScreen" as any);
+        return true;
+      };
+
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress,
+      );
+
+      return () => backHandler.remove();
+    }, [navigation]),
+  );
 
   const fetchAgentStats = async () => {
     try {
@@ -263,11 +281,17 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
         enabled
         style={{ flex: 1 }}
       >
-        <ScrollView keyboardShouldPersistTaps="handled">
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          style={{
+            marginBottom: 60,
+          }}
+        >
           <CustomHeader
             title=""
             showBackButton={true}
             navigation={navigation}
+            onBackPress={() => navigation.navigate("SidebarScreen")}
             transparent
           />
           <View className="bg-[#6839CF]">
@@ -289,7 +313,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
               className="bg-white rounded-t-3xl pt-6"
               style={{ marginTop: hp(15), paddingHorizontal: wp(6) }}
             >
-              <View className="items-center" style={{ marginTop: -hp(12) }}>
+              <View className="items-center" style={{ marginTop: -hp(11) }}>
                 <TouchableOpacity className="relative">
                   {formData.image ? (
                     <Image
@@ -322,7 +346,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
             </View>
 
             <View className="bg-white px-6">
-              <View className="py-4 mx-auto w-full max-w-[500px]" >
+              <View className="py-4 mx-auto w-full max-w-[500px]">
                 <View className="bg-[#6839CF] flex-row justify-between mt-3 py-3 rounded-2xl">
                   <View className="flex-1 items-center">
                     <Image
@@ -371,152 +395,122 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                   marginBottom: 32,
                 }}
               >
-                <View className="mb-4">
-                  <Text
-                    className="text-black mb-1"
-                    style={{ fontSize: hp(2)  }}
-                  >
+                <View className="mb-6 mt-4">
+                  <Text className="text-black mb-1" style={{ fontSize: hp(2) }}>
                     Employee ID
                   </Text>
                   <Text
-                    className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-3 text-black"
-                    style={{ fontSize: hp(2)  }}
+                    className="bg-[#F6F6F6] mt-2 border border-[#F6F6F6] rounded-full px-3 py-3 text-black"
+                    style={{ fontSize: hp(2) }}
                   >
                     {formData.empId}
                   </Text>
                 </View>
 
-                <View className="mb-4">
-                  <Text
-                    className="text-black mb-1"
-                    style={{ fontSize: hp(2)  }}
-                  >
+                <View className="mb-6">
+                  <Text className="text-black mb-1" style={{ fontSize: hp(2) }}>
                     First Name
                   </Text>
                   <Text
-                    className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-3 text-black"
-                    style={{ fontSize: hp(2)  }}
+                    className="bg-[#F6F6F6] mt-2 border border-[#F6F6F6] rounded-full px-3 py-3 text-black"
+                    style={{ fontSize: hp(2) }}
                   >
                     {formData.firstName}
                   </Text>
                 </View>
 
-                <View className="mb-4">
-                  <Text
-                    className="text-black mb-1"
-                    style={{ fontSize: hp(2)  }}
-                  >
+                <View className="mb-6">
+                  <Text className="text-black mb-1" style={{ fontSize: hp(2) }}>
                     Last Name
                   </Text>
                   <Text
-                    className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-3 text-black"
-                    style={{ fontSize: hp(2)  }}
+                    className="bg-[#F6F6F6] mt-2 border border-[#F6F6F6] rounded-full px-3 py-3 text-black"
+                    style={{ fontSize: hp(2) }}
                   >
                     {formData.lastName}
                   </Text>
                 </View>
 
-                <View className="mb-4">
-                  <Text
-                    className="text-black mb-1"
-                    style={{ fontSize: hp(2)  }}
-                  >
+                <View className="mb-6">
+                  <Text className="text-black mb-1" style={{ fontSize: hp(2) }}>
                     Phone Number - 1
                   </Text>
                   <Text
-                    className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-3 text-black"
-                    style={{ fontSize: hp(2)  }}
+                    className="bg-[#F6F6F6] mt-2 border border-[#F6F6F6] rounded-full px-3 py-3 text-black"
+                    style={{ fontSize: hp(2) }}
                   >
                     {formData.phoneNumber1}
                   </Text>
                 </View>
 
-                <View className="mb-4">
-                  <Text
-                    className="text-black mb-1"
-                    style={{ fontSize: hp(2)  }}
-                  >
+                <View className="mb-6">
+                  <Text className="text-black mb-1" style={{ fontSize: hp(2) }}>
                     Phone Number - 2
                   </Text>
                   <Text
-                    className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-3 text-black"
-                    style={{ fontSize: hp(2)  }}
+                    className="bg-[#F6F6F6] mt-2 border border-[#F6F6F6] rounded-full px-3 py-3 text-black"
+                    style={{ fontSize: hp(2) }}
                   >
                     {formData.phoneNumber2 || "---"}
                   </Text>
                 </View>
 
-                <View className="mb-4">
-                  <Text
-                    className="text-black mb-1"
-                    style={{ fontSize: hp(2)  }}
-                  >
+                <View className="mb-6">
+                  <Text className="text-black mb-1" style={{ fontSize: hp(2) }}>
                     NIC Number
                   </Text>
                   <Text
-                    className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-3 text-black"
-                    style={{ fontSize: hp(2)  }}
+                    className="bg-[#F6F6F6] mt-2 border border-[#F6F6F6] rounded-full px-3 py-3 text-black"
+                    style={{ fontSize: hp(2) }}
                   >
                     {formData.nic}
                   </Text>
                 </View>
 
-                <View className="mb-4">
-                  <Text
-                    className="text-black mb-1"
-                    style={{ fontSize: hp(2)  }}
-                  >
+                <View className="mb-6">
+                  <Text className="text-black mb-1" style={{ fontSize: hp(2) }}>
                     Email Address
                   </Text>
 
                   <Text
-                    className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-3 text-black"
-                    style={{ fontSize: hp(2)  }}
+                    className="bg-[#F6F6F6] mt-2 border border-[#F6F6F6] rounded-full px-3 py-3 text-black"
+                    style={{ fontSize: hp(2) }}
                   >
                     {formData.email}
                   </Text>
                 </View>
 
-                <View className="mb-4">
-                  <Text
-                    className="text-black mb-1"
-                    style={{ fontSize: hp(2)  }}
-                  >
+                <View className="mb-6">
+                  <Text className="text-black mb-1" style={{ fontSize: hp(2) }}>
                     Building / House No
                   </Text>
                   <Text
-                    className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-3 text-black"
-                    style={{ fontSize: hp(2)  }}
+                    className="bg-[#F6F6F6] mt-2 border border-[#F6F6F6] rounded-full px-3 py-3 text-black"
+                    style={{ fontSize: hp(2) }}
                   >
                     {formData.houseNumber}
                   </Text>
                 </View>
 
-                <View className="mb-4">
-                  <Text
-                    className="text-black mb-1"
-                    style={{ fontSize: hp(2)  }}
-                  >
+                <View className="mb-6">
+                  <Text className="text-black mb-1" style={{ fontSize: hp(2) }}>
                     Street Name
                   </Text>
                   <Text
-                    className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-3 text-black"
-                    style={{ fontSize: hp(2)  }}
+                    className="bg-[#F6F6F6] mt-2 border border-[#F6F6F6] rounded-full px-3 py-3 text-black"
+                    style={{ fontSize: hp(2) }}
                   >
                     {formData.streetName}
                   </Text>
                 </View>
 
-                <View className="mb-4">
-                  <Text
-                    className="text-black mb-1"
-                    style={{ fontSize: hp(2)  }}
-                  >
+                <View className="mb-6">
+                  <Text className="text-black mb-1" style={{ fontSize: hp(2) }}>
                     City
                   </Text>
                   <Text
-                    className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-3 py-3 text-black"
-                    style={{ fontSize: hp(2)  }}
+                    className="bg-[#F6F6F6] mt-2 border border-[#F6F6F6] rounded-full px-3 py-3 text-black"
+                    style={{ fontSize: hp(2) }}
                   >
                     {formData.city}
                   </Text>
