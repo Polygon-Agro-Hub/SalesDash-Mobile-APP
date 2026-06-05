@@ -10,10 +10,6 @@ import {
   Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import {
-  widthPercentageToDP as wp,
-  heightPercentageToDP as hp,
-} from "react-native-responsive-screen";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
 import { ScrollView } from "react-native-gesture-handler";
@@ -22,8 +18,7 @@ import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-import LottieView from "lottie-react-native";
-import CustomHeader from "../common/CustomHeader";
+import NoDataFound from "../common/NoDataFound";
 import LoadingPage from "../common/LoadingPage";
 import FixedMarqueeText from "../common/MarqueeText";
 import { Entypo } from "@expo/vector-icons";
@@ -85,8 +80,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
             setCrops(response.data.data);
           }
           if (response.data && response.data.data.length > 0) {
-            const { firstName, lastName, title, cusId } =
-              response.data.data[0];
+            const { firstName, lastName, title, cusId } = response.data.data[0];
             setCustomerName({ firstName, lastName, title, cusId });
           }
         } catch (err) {
@@ -220,7 +214,14 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
         </TouchableOpacity>
 
         {/* Title — marquee when long */}
-        <View style={{ flex: 1, alignItems: "center", overflow: "hidden" }}>
+        <View
+          style={{
+            flex: 1,
+            alignItems: "center",
+            overflow: "hidden",
+            marginHorizontal: 8,
+          }}
+        >
           {fullTitle.length > 25 ? (
             <FixedMarqueeText
               text={fullTitle}
@@ -246,10 +247,10 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
       </View>
 
       {/* Customer ID */}
-      <View className="mx-auto w-full  max-w-[500px]">
+      <View className="mx-auto w-full max-w-[500px]">
         <Text
-          style={{ fontSize: 16 ,marginTop: -3}}
-          className="text-center text-black "
+          style={{ fontSize: 16, marginTop: -3 }}
+          className="text-center text-black"
         >
           {customerName.firstName && customerName.lastName
             ? `Customer ID : ${customerName.cusId}`
@@ -270,30 +271,17 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
           showsVerticalScrollIndicator={false}
           className="mb-20"
         >
-          <View className="mt-4">
+          <View style={{ marginTop: 16 }}>
             {crops.length === 0 ||
             crops.every((crop) => crop.excludeId === null) ? (
               <View
                 style={{
-                  flex: 1,
                   justifyContent: "center",
                   alignItems: "center",
-                  height: hp("50%"),
+                  paddingTop: 120,
                 }}
               >
-                <View className="flex-1 justify-center items-center px-4">
-                  <LottieView
-                    source={require("@/assets/json/no-data.json")}
-                    style={{ width: wp(50), height: hp(50) }}
-                    autoPlay
-                    loop
-                  />
-                </View>
-                <View className="justify-center mt-[-30%] items-center">
-                  <Text className="text-black italic text-center mt-[-35%]">
-                    No Exclude Item Found
-                  </Text>
-                </View>
+                <NoDataFound message="No Exclude Item Found" />
               </View>
             ) : (
               crops.map((crop) => (

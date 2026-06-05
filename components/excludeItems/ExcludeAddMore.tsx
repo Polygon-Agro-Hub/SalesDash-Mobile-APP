@@ -24,7 +24,7 @@ import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import LottieView from "lottie-react-native";
+import NoDataFound from "../common/NoDataFound";
 import CustomHeader from "../common/CustomHeader";
 
 type ExcludeAddMoreNavigationProp = StackNavigationProp<
@@ -263,20 +263,8 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
         </View>
 
         {searchError && (
-          <View className="flex-1">
-            <View className="justify-center items-center mt-4">
-              <LottieView
-                source={require("@/assets/json/no-data.json")}
-                style={{ width: wp(50), height: hp(50) }}
-                autoPlay
-                loop
-              />
-            </View>
-            <View className="justify-center items-center mt-[-20%]">
-              <Text className="text-black italic text-center ">
-                {searchError}
-              </Text>
-            </View>
+          <View className="flex-1 justify-center items-center">
+            <NoDataFound message={searchError} />
           </View>
         )}
         <View className="flex-1">

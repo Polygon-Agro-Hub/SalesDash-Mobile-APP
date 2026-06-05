@@ -21,8 +21,9 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import environment from "@/environment/environment";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback } from "react";
 
-// Global state management
 let globalUnreadCount = 0;
 let unreadCountListeners: ((count: number) => void)[] = [];
 
@@ -57,7 +58,7 @@ interface Notification {
   createdAt: string;
   invNo: string;
   orderStatus: string;
-  reportStatus:string;
+  reportStatus: string;
   cusId: string;
   customerId: string;
   customerName: string;
@@ -80,7 +81,14 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
   const highestNotificationId = useRef(0);
   const isFirstLoad = useRef(true);
 
-  // Update global unread count whenever local unreadCount changes
+  const flatListRef = useRef<FlatList>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
+    }, []),
+  );
+
   useEffect(() => {
     updateGlobalUnreadCount(unreadCount);
   }, [unreadCount]);
@@ -91,7 +99,6 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
 
       const storedToken = await AsyncStorage.getItem("authToken");
 
-      // Add this check
       if (!storedToken) {
         return;
       }
@@ -120,11 +127,10 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
         highestNotificationId.current = maxId;
       }
     } catch (err: any) {
-      // If 401/403 and token is gone, just return silently
       if (err.response?.status === 401 || err.response?.status === 403) {
         const token = await AsyncStorage.getItem("authToken");
         if (!token) {
-          return; // User is logged out, don't show error
+          return;
         }
       }
 
@@ -172,7 +178,6 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
             },
           },
         );
-
 
         setNotifications((prev) =>
           prev.map((n) => (n.id === id ? { ...n, readStatus: true } : n)),
@@ -255,7 +260,6 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
           width: "100%",
           justifyContent: "center",
           alignItems: "center",
-         
         }}
       >
         <View className="w-full max-w-[500px] items-center justify-center">
@@ -300,6 +304,7 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
             ) : (
               <FlatList
                 data={notifications}
+                ref={flatListRef}
                 keyExtractor={(item) => item.id.toString()}
                 contentContainerStyle={{ paddingBottom: 120 }}
                 renderItem={({ item }) => {

@@ -206,8 +206,8 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
                   <View className="flex-1 p-5">
                     <TouchableOpacity
                       style={{ marginBottom: hp(2) }}
-                      className="flex-row items-center"
-                      onPress={() => navigation.navigate("ProfileScreen")}
+                      className="flex-row items-center"    
+                      onPress={() =>navigation.navigate("Main", { screen: "ProfileScreen" })}
                     >
                       <View
                         style={{
@@ -304,9 +304,7 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={{ marginTop: hp(1), marginBottom: hp(1) }}
-                          onPress={() =>
-                            navigation.navigate("ViewComplainScreen")
-                          }
+                          onPress={() =>navigation.navigate("Main", { screen: "ViewComplainScreen" })}
                         >
                           <Text className=" text-gray-700 font-bold"
                           style={{  fontSize: hp(2) }}

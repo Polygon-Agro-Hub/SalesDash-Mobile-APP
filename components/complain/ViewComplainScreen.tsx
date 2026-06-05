@@ -224,7 +224,7 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({
                     />
                   }
                   renderItem={({ item }) => (
-                    <View className="bg-white shadow-md p-4 mb-4 border border-gray-300 rounded-lg">
+                    <View className="bg-white p-4 mb-4 border border-gray-300 rounded-lg">
                       <Text className="text-gray-700 font-semibold">
                         Ref No: {item.refNo}
                       </Text>
@@ -240,7 +240,7 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({
                           <Text></Text>
                         ) : (
                           <TouchableOpacity
-                            className="bg-black px-3 py-1 text-xs rounded-lg"
+                            className="bg-black px-3 py-2 text-xs rounded-lg"
                             onPress={() => handleViewResponse(item)}
                           >
                             <Text className="text-white text-xs">
@@ -249,7 +249,7 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({
                           </TouchableOpacity>
                         )}
                         <Text
-                          className={`px-3 py-1 text-xs rounded-lg ${item.status === "Opened" ? "bg-blue-200 text-blue-700" : "bg-purple-200 text-purple-700"}`}
+                          className={`px-3 py-2 text-xs rounded-lg ${item.status === "Opened" ? "bg-blue-200 text-blue-700" : "bg-purple-200 text-purple-700"}`}
                         >
                           {item.status}
                         </Text>

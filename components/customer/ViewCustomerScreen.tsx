@@ -105,8 +105,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   const [customerName, setCustomerName] = useState(initialName);
   const [customerTitle, setCustomerTitle] = useState(initialTitle);
   const [customerNumber, setCustomerNumber] = useState(initialNumber);
+  const isFirstRender = useRef(true);
 
-  // Synchronize state with route params when they change
   useEffect(() => {
     setCustomerName(initialName || "");
     setCustomerTitle(initialTitle || "");
@@ -115,6 +115,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
 
   useFocusEffect(
     React.useCallback(() => {
+      isFirstRender.current = true;
+
       const resetStates = () => {
         setSearchText("");
         setSelectedFilter("Ordered");
@@ -128,7 +130,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       };
 
       resetStates();
-      loadOrders(1, true, false);
+      loadOrders(1, true, false, "Ordered");
       getUserProfile();
 
       return () => {};
@@ -270,7 +272,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
     setCurrentPage(1);
     setHasMore(true);
     setOrders([]);
-    loadOrders(1, true, false);
+    loadOrders(1, true, false, selectedFilter);
   };
 
   useEffect(() => {
@@ -329,6 +331,10 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   );
 
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
     setOrders([]);
     setCurrentPage(1);
     setHasMore(true);
@@ -393,7 +399,14 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
             <Entypo name="chevron-left" size={25} color={"black"} />
           </TouchableOpacity>
 
-          <View style={{ flex: 1, alignItems: "center", overflow: "hidden" }}>
+          <View
+            style={{
+              flex: 1,
+              alignItems: "center",
+              overflow: "hidden",
+              marginHorizontal: 8,
+            }}
+          >
             {(() => {
               const fullDisplayName =
                 `${customerTitle}. ${customerName}`.trim();
@@ -450,7 +463,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
           <View className="flex-1 justify-center items-center gap-1">
             <Text
               className="text-[#393939] text-base"
-              style={{ textAlign: "center", fontSize:16 }}
+              style={{ textAlign: "center", fontSize: 16 }}
             >
               Customer ID: {customerId}
             </Text>
@@ -621,7 +634,6 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 </TouchableOpacity>
               </View>
             ) : searchError ? (
-              // ✅ FIX 1: searchError empty state — now pull-to-refreshable
               <ScrollView
                 contentContainerStyle={{
                   alignItems: "center",
@@ -688,7 +700,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                           Order: #{item.InvNo || "N/A"}
                         </Text>
                         <View
-                          className={`px-3 py-1 rounded-full ${
+                          className={`px-6 py-1 rounded-full ${
                             item.status === "Ordered"
                               ? "bg-[#F5FF85]"
                               : item.status === "Processing"
@@ -766,7 +778,6 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 contentContainerStyle={{ paddingBottom: 100 }}
               />
             ) : (
-              // ✅ FIX 2: Empty orders state — now pull-to-refreshable
               <ScrollView
                 contentContainerStyle={{
                   alignItems: "center",

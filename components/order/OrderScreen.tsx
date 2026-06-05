@@ -1489,6 +1489,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         multiSelect={false}
         showSearch={true}
         isLoading={false}
+        noResultsText="No Packages Found"
       />
 
       {/* Product Selection Modal */}

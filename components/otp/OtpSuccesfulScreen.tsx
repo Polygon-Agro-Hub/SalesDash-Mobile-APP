@@ -9,13 +9,8 @@ import {
   BackHandler,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import {
-  widthPercentageToDP as wp,
-  heightPercentageToDP as hp,
-} from "react-native-responsive-screen";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
-import { ScrollView } from "react-native-gesture-handler";
 import { RouteProp, useFocusEffect } from "@react-navigation/native";
 
 type OtpSuccesfulScreenNavigationProp = StackNavigationProp<
@@ -70,7 +65,7 @@ const OtpSuccesfulScreen: React.FC<OtpSuccesfulScreenProps> = ({
 
           {/* Text Section - Centered */}
           <View className="items-center px-4">
-            <Text className="text-black text-center font-bold text-xl">
+            <Text className="text-black text-center font-bold text-3xl">
               Successfully Verified!
             </Text>
             <Text className="text-[#747474] text-center mt-2 text-base">
