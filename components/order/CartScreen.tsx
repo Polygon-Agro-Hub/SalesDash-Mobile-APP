@@ -232,6 +232,12 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     setIsSelectionMode(false);
   };
 
+  const isAtMin = (item: CartItem) => {
+    const minValue =
+      item.unitType === "g" ? item.minValue * 1000 : item.minValue;
+    return item.changeby <= minValue;
+  };
+
   const calculateItemTotal = (item: CartItem) => {
     let total;
     if (item.unitType === "kg") {
@@ -530,11 +536,12 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
                       <View className="flex-row items-center">
                         <TouchableOpacity
                           onPress={() => decreaseQuantity(item.id)}
+                          disabled={isAtMin(item)}
                         >
                           <FontAwesome6
                             name="circle-minus"
                             size={20}
-                            color="#5D5D5D"
+                            color={isAtMin(item) ? "#D3D3D3" : "#5D5D5D"}
                           />
                         </TouchableOpacity>
 
