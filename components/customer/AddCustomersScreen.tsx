@@ -6,7 +6,6 @@ import {
   TextInput,
   TouchableOpacity,
   KeyboardAvoidingView,
-  Alert,
   ActivityIndicator,
   BackHandler,
   Dimensions,
@@ -22,6 +21,7 @@ import { Entypo, FontAwesome6, MaterialIcons } from "@expo/vector-icons";
 import { Platform } from "react-native";
 import CustomHeader from "../common/CustomHeader";
 import GlobalSearchModal from "../common/GlobalSearchModal";
+import CustomAlert from "../common/CustomAlert";
 
 type AddCustomersScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -116,6 +116,16 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     { label: "House", value: "House" },
     { label: "Apartment", value: "Apartment" },
   ]);
+
+  const [alertConfig, setAlertConfig] = useState<{
+  visible: boolean;
+  title: string;
+  message: string;
+}>({ visible: false, title: "", message: "" });
+
+const showAlert = (title: string, message: string) => {
+  setAlertConfig({ visible: true, title, message });
+};
 
   const isNavigatingToGeoScreen = useRef(false);
 
@@ -218,7 +228,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
 
   const sendOTP = async () => {
     if (!phoneNumber) {
-      Alert.alert("Error", "Please enter a mobile number.");
+      showAlert("Error", "Please enter a mobile number.");
       return;
     }
 
@@ -244,9 +254,9 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       await AsyncStorage.setItem("referenceId", response.data.referenceId);
 
       if (response.status === 200) {
-        Alert.alert("Success", "OTP sent successfully.");
+        showAlert("Success", "OTP sent successfully.");
       } else {
-        Alert.alert("Error", "Failed to send OTP.");
+        showAlert("Error", "Failed to send OTP.");
       }
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -254,13 +264,13 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
           "Axios error details:",
           error.response ? error.response.data : error.message,
         );
-        Alert.alert(
+        showAlert(
           "Error",
           `Error: ${error.response ? error.response.data.message : error.message}`,
         );
       } else {
         console.log("Unexpected error:", error);
-        Alert.alert("Error", "An unexpected error occurred.");
+        showAlert("Error", "An unexpected error occurred.");
       }
     } finally {
       setLoading(false);
@@ -635,237 +645,185 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     fetchCity();
   }, []);
 
-  const handleRegister = async () => {
-    if (isSubmitting) return;
+ const handleRegister = async () => {
+  if (isSubmitting) return;
 
-    setIsSubmitting(true);
+  setIsSubmitting(true);
 
-    setTouchedFields({
-      email: true,
-      phoneNumber: true,
-      firstName: true,
-      lastName: true,
-      title: true,
-      buildingType: true,
-      houseNo: true,
-      streetName: true,
-      city: true,
-      buildingNo: true,
-      buildingName: true,
-      unitNo: true,
-      floorNo: true,
-    });
+  setTouchedFields({
+    email: true,
+    phoneNumber: true,
+    firstName: true,
+    lastName: true,
+    title: true,
+    buildingType: true,
+    houseNo: true,
+    streetName: true,
+    city: true,
+    buildingNo: true,
+    buildingName: true,
+    unitNo: true,
+    floorNo: true,
+  });
 
+  if (
+    !selectedCategory ||
+    !firstName ||
+    !lastName ||
+    !phoneNumber ||
+    !email ||
+    !buildingType
+  ) {
+    showAlert("Error", "Please fill in all required fields.");
+    setIsSubmitting(false);
+    return;
+  }
+
+  if (buildingType === "House") {
+    if (!houseNo || !streetName || !city) {
+      showAlert("Error", "Please fill in all required house fields");
+      setIsSubmitting(false);
+      return;
+    }
+  } else if (buildingType === "Apartment") {
     if (
-      !selectedCategory ||
-      !firstName ||
-      !lastName ||
-      !phoneNumber ||
-      !email ||
-      !buildingType
+      !buildingNo ||
+      !buildingName ||
+      !unitNo ||
+      !floorNo ||
+      !houseNo ||
+      !streetName ||
+      !city
     ) {
-      Alert.alert("Error", "Please fill in all required fields.");
+      showAlert("Error", "Please fill in all required apartment fields");
       setIsSubmitting(false);
       return;
     }
+  }
 
-    if (buildingType === "House") {
-      if (!houseNo || !streetName || !city) {
-        Alert.alert("Error", "Please fill in all required house fields");
-        setIsSubmitting(false);
-        return;
-      }
-    } else if (buildingType === "Apartment") {
-      if (
-        !buildingNo ||
-        !buildingName ||
-        !unitNo ||
-        !floorNo ||
-        !houseNo ||
-        !streetName ||
-        !city
-      ) {
-        Alert.alert("Error", "Please fill in all required apartment fields");
-        setIsSubmitting(false);
-        return;
-      }
-    }
+  if (!validatePhoneNumber(phoneNumber)) {
+    showAlert("Error", "Please enter a valid mobile number.");
+    setIsSubmitting(false);
+    return;
+  }
 
-    if (!validatePhoneNumber(phoneNumber)) {
-      Alert.alert("Error", "Please enter a valid mobile number.");
-      setIsSubmitting(false);
-      return;
-    }
+  if (email && !validateEmail(email)) {
+    showAlert("Error", "Please enter a valid email address.");
+    setIsSubmitting(false);
+    return;
+  }
 
-    if (email && !validateEmail(email)) {
-      Alert.alert("Error", "Please enter a valid email address.");
-      setIsSubmitting(false);
-      return;
-    }
+  if (!latitude || !longitude) {
+    showAlert(
+      "Location Required",
+      "Please capture customer's location before registering.",
+      // [{ text: "OK" }],
+    );
+    setIsSubmitting(false);
+    return;
+  }
 
-    if (!latitude || !longitude) {
-      Alert.alert(
-        "Location Required",
-        "Please capture customer's location before registering.",
-        [{ text: "OK" }],
-      );
-      setIsSubmitting(false);
-      return;
-    }
-
-    try {
-      await axios.post(
-        `${environment.API_BASE_URL}api/customer/check-customer`,
-        {
-          phoneNumber,
-          email: email,
-        },
-      );
-
-      const customerData = {
-        title: selectedCategory,
-        firstName,
-        lastName,
+  try {
+    await axios.post(
+      `${environment.API_BASE_URL}api/customer/check-customer`,
+      {
         phoneNumber,
         email: email,
-        buildingType,
-        houseNo,
-        streetName,
-        city,
-        buildingNo,
-        floorNo,
-        unitNo,
-        buildingName,
-        latitude,
-        longitude,
-      };
+      },
+    );
 
-      await AsyncStorage.setItem(
-        "pendingCustomerData",
-        JSON.stringify(customerData),
-      );
-      const id = new Date().getTime().toString();
-      await sendOTP();
+    const customerData = {
+      title: selectedCategory,
+      firstName,
+      lastName,
+      phoneNumber,
+      email: email,
+      buildingType,
+      houseNo,
+      streetName,
+      city,
+      buildingNo,
+      floorNo,
+      unitNo,
+      buildingName,
+      latitude,
+      longitude,
+    };
 
-      isNavigatingToOtpScreen.current = true;
+    await AsyncStorage.setItem(
+      "pendingCustomerData",
+      JSON.stringify(customerData),
+    );
 
-      navigation.navigate("OtpScreen", { phoneNumber, id });
-    } catch (error: any) {
-      if (axios.isAxiosError(error)) {
-        if (error.response && error.response.status === 400) {
-          if (
-            error.response.data.message &&
-            error.response.data.message.includes(
-              "Mobile number or email already exists",
-            )
-          ) {
-            try {
-              const tempEmail = `temp_${new Date().getTime()}_${Math.random().toString(36).substr(2, 9)}@tempcheck.com`;
+    const id = new Date().getTime().toString();
+    await sendOTP();
 
-              await axios.post(
-                `${environment.API_BASE_URL}api/customer/check-customer`,
-                {
-                  phoneNumber,
-                  email: tempEmail,
-                },
-              );
+    isNavigatingToOtpScreen.current = true;
+    navigation.navigate("OtpScreen", { phoneNumber, id });
 
-              Alert.alert(
-                "Email Already Exists",
-                "This email is already registered. Please sign in or use a different email.",
-              );
-            } catch (phoneCheckError: any) {
-              if (
-                axios.isAxiosError(phoneCheckError) &&
-                phoneCheckError.response?.status === 400 &&
-                phoneCheckError.response?.data?.message?.includes(
-                  "Mobile number or email already exists",
-                )
-              ) {
-                try {
-                  const tempPhone = `+94${new Date().getTime().toString().substr(-9)}`;
+  } catch (error: any) {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      const message = error.response?.data?.message || "";
 
-                  await axios.post(
-                    `${environment.API_BASE_URL}api/customer/check-customer`,
-                    {
-                      phoneNumber: tempPhone,
-                      email,
-                    },
-                  );
-
-                  Alert.alert(
-                    "Mobile Number Already Exists",
-                    "This Mobile number is already registered. Please sign in or use a different mobile number.",
-                  );
-                } catch (emailCheckError: any) {
-                  if (
-                    axios.isAxiosError(emailCheckError) &&
-                    emailCheckError.response?.status === 400 &&
-                    emailCheckError.response?.data?.message?.includes(
-                      "Mobile number or email already exists",
-                    )
-                  ) {
-                    Alert.alert(
-                      "Account Already Exists",
-                      "Both Mobile number and email are already registered. Please sign in instead.",
-                    );
-                  } else {
-                    Alert.alert(
-                      "Mobile Number Already Exists",
-                      "This Mobile number is already registered. Please sign in or use a different mobile number.",
-                    );
-                  }
-                }
-              } else {
-                Alert.alert(
-                  "Registration Error",
-                  "Unable to verify account details. Please try again.",
-                );
-              }
-            }
-          } else {
-            Alert.alert(
-              "Registration Error",
-              error.response.data.message ||
-                "Registration failed. Please check your details and try again.",
-            );
-          }
-        } else if (error.response && error.response.status === 409) {
-          Alert.alert(
+      if (status === 400) {
+        if (message.includes("Mobile Number and Email")) {
+          showAlert(
             "Account Already Exists",
-            "An account with this mobile number or email already exists. Please sign in instead.",
+            "Both mobile number and email are already registered. Please sign in instead.",
           );
-        } else if (error.response && error.response.status >= 500) {
-          Alert.alert(
-            "Server Error",
-            "Our servers are experiencing issues. Please try again later.",
+        } else if (message.includes("Mobile Number")) {
+          showAlert(
+            "Mobile Number Already Exists",
+            "This mobile number is already registered. Please use a different mobile number.",
+          );
+        } else if (message.includes("Email")) {
+          showAlert(
+            "Email Already Exists",
+            "This email is already registered. Please use a different email.",
           );
         } else {
-          Alert.alert(
+          showAlert(
             "Registration Error",
-            "Registration failed. Please try again.",
+            message || "Registration failed. Please check your details and try again.",
           );
         }
-      } else if (
-        error &&
-        typeof error === "object" &&
-        "code" in error &&
-        error.code === "NETWORK_ERROR"
-      ) {
-        Alert.alert(
-          "Network Error",
-          "Please check your internet connection and try again.",
+      } else if (status === 409) {
+        showAlert(
+          "Account Already Exists",
+          "An account with this mobile number or email already exists. Please sign in instead.",
+        );
+      } else if (status && status >= 500) {
+        showAlert(
+          "Server Error",
+          "Our servers are experiencing issues. Please try again later.",
         );
       } else {
-        Alert.alert(
+        showAlert(
           "Registration Error",
           "Registration failed. Please try again.",
         );
       }
-    } finally {
-      setIsSubmitting(false);
+    } else if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === "NETWORK_ERROR"
+    ) {
+      showAlert(
+        "Network Error",
+        "Please check your internet connection and try again.",
+      );
+    } else {
+      showAlert(
+        "Registration Error",
+        "Registration failed. Please try again.",
+      );
     }
-  };
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const handlePhoneNumberChange = (text: string) => {
     if (text.startsWith(" ")) {
@@ -1622,6 +1580,12 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         searchPlaceholder="Search city..."
         multiSelect={false}
         noResultsText="No City Found"
+      />
+      <CustomAlert
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        onClose={() => setAlertConfig((prev) => ({ ...prev, visible: false }))}
       />
     </KeyboardAvoidingView>
   );

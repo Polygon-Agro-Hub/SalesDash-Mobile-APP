@@ -644,7 +644,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                       </View>
 
                       {label ? (
-                        <View className="ml-2 px-4 pb-4">
+                        <View className="pb-2">
                           <Text className="font-semibold text-[#5E5E5E]">
                             Reason:{" "}
                             <Text className="text-black font-medium">
@@ -679,7 +679,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
 
                 {status === "Return" && returnReason && (
                   <View style={{ marginTop: 8 }}>
-                    <View className="mt-[-7] ml-2 p-4">
+                    <View className="mt-[-7]  pt-4">
                       <View
                         style={{
                           flexDirection: "row",
@@ -736,7 +736,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                 )}
 
                 {status === "Cancelled" && (
-                  <View className="flex-row items-center mt-10">
+                  <View className="flex-row items-center ">
                     <View className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]" />
                     <Text className="text-red-500 font-medium">
                       Order is Cancelled

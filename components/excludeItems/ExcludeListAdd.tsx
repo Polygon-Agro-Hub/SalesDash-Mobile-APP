@@ -24,7 +24,7 @@ import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import LottieView from "lottie-react-native";
+import NoDataFound from "../common/NoDataFound";
 import CustomHeader from "../common/CustomHeader";
 import LoadingPage from "../common/LoadingPage";
 
@@ -102,43 +102,44 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
   //   };
   // };
   const getCurrentCustomerData = () => {
-  if (customerData) {
-    const fullName = `${customerData.firstName || ""} ${customerData.lastName || ""}`.trim(); // ✅
+    if (customerData) {
+      const fullName =
+        `${customerData.firstName || ""} ${customerData.lastName || ""}`.trim(); // ✅
 
+      return {
+        name: fullName || name || "",
+        title: customerData.title || title || "",
+        number: customerData.phoneNumber || number || "",
+        id: customerData.id?.toString() || id?.toString() || "",
+        customerId: customerData.cusId?.toString() || customerId.toString(),
+      };
+    }
     return {
-      name: fullName || name || "",
-      title: customerData.title || title || "",
-      number: customerData.phoneNumber || number || "",
-      id: customerData.id?.toString() || id?.toString() || "",
-      customerId: customerData.cusId?.toString() || customerId.toString(),
+      name: name || "",
+      title: title || "",
+      number: number || "",
+      id: id?.toString() || "",
+      customerId: customerId.toString(),
     };
-  }
-  return {
-    name: name || "",
-    title: title || "",
-    number: number || "",
-    id: id?.toString() || "",
-    customerId: customerId.toString(),
   };
-};
 
   // Define handleBackPress outside of useFocusEffect so it can be reused
- const handleBackPress = useCallback(() => {
-  const currentData = getCurrentCustomerData();
+  const handleBackPress = useCallback(() => {
+    const currentData = getCurrentCustomerData();
 
-  navigation.navigate("Main", {
-    screen: "ViewCustomerScreen",
-    params: {
-      number: currentData.number,
-      name: currentData.name,
-      customerId: currentData.customerId,
-      id: currentData.id,
-      title: currentData.title,
-    },
-  });
+    navigation.navigate("Main", {
+      screen: "ViewCustomerScreen",
+      params: {
+        number: currentData.number,
+        name: currentData.name,
+        customerId: currentData.customerId,
+        id: currentData.id,
+        title: currentData.title,
+      },
+    });
 
-  return true;
-}, [navigation, customerData, name, title, number, id, customerId]); // ✅ add all deps
+    return true;
+  }, [navigation, customerData, name, title, number, id, customerId]); // ✅ add all deps
 
   // Fetch customer data
   useEffect(() => {
@@ -414,26 +415,11 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
               />
             </View>
           </View>
-
           {searchError && (
-            <View className="flex-1">
-              <View className="justify-center items-center mt-4">
-                <LottieView
-                  source={require("@/assets/json/no-data.json")}
-                  style={{ width: wp(50), height: hp(50) }}
-                  autoPlay
-                  loop
-                />
-              </View>
-              <View className="justify-center  mt-[-30%] items-center   ">
-               <Text className="text-black italic text-center mt-4">
-                  {searchError}
-                </Text>
-              </View>
+            <View className="flex-1 justify-center items-center">
+              <NoDataFound message={searchError} />
             </View>
-            
           )}
-
           <View className="flex-1">
             <FlatList
               keyboardShouldPersistTaps="handled"

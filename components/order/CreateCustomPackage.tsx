@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   BackHandler,
+  Keyboard,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -16,7 +17,7 @@ import environment from "@/environment/environment";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
-import LottieView from "lottie-react-native";
+import NoDataFound from "../common/NoDataFound";
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
@@ -74,10 +75,25 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
     number,
     customerscreencustomerid,
   } = route.params || {};
+
   const [searchQuery, setSearchQuery] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardDidShow", () =>
+      setIsKeyboardVisible(true),
+    );
+    const hideSub = Keyboard.addListener("keyboardDidHide", () =>
+      setIsKeyboardVisible(false),
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -185,32 +201,28 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
       cleanedQuery = cleanedQuery.replace(/^\s+/, "");
     }
     cleanedQuery = cleanedQuery.replace(/\s+/g, " ");
-
     setSearchQuery(cleanedQuery);
   };
+
   const hasSelectedProducts = products.some((product) => product.selected);
 
   const goToCart = () => {
     const selectedProducts = products
       .filter((product) => product.selected)
-      .map((product) => {
-        const cutId = id;
-
-        return {
-          id: product.id,
-          name: product.displayName,
-          price: product.discountedPrice,
-          pricenoraml: product.normalPrice,
-          normalPrice: product.normalPrice,
-          discount: product.normalPrice - product.discountedPrice,
-          discountedPrice: product.discountedPrice,
-          changeby: product.changeby,
-          unitType: product.unitType,
-          startValue: product.startValue,
-          cutId: cutId,
-          isPackage: isPackage,
-        };
-      });
+      .map((product) => ({
+        id: product.id,
+        name: product.displayName,
+        price: product.discountedPrice,
+        pricenoraml: product.normalPrice,
+        normalPrice: product.normalPrice,
+        discount: product.normalPrice - product.discountedPrice,
+        discountedPrice: product.discountedPrice,
+        changeby: product.changeby,
+        unitType: product.unitType,
+        startValue: product.startValue,
+        cutId: id,
+        isPackage: isPackage,
+      }));
 
     if (selectedProducts.length > 0) {
       navigation.navigate("CratScreen" as any, {
@@ -273,8 +285,10 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
           });
         }}
       />
+
       <View className="flex-1 items-center">
         <View className="flex-1 w-full max-w-[500px] px-6">
+          {/* Search Bar */}
           <View className="mb-4 bg-[#F5F1FC] rounded-full flex-row items-center px-4 py-2 mt-2">
             <TextInput
               className="flex-1 italic text-gray-700"
@@ -286,55 +300,64 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
             <Ionicons name="search" size={20} color="#6839CF" />
           </View>
 
-        {/* Product List */}
-        <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-          {filteredProducts.length > 0 ? (
-            filteredProducts.map((product) => (
-              <TouchableOpacity
-                key={product.id}
-                className="flex-row py-3 border-b border-gray-100"
-                onPress={() => toggleProductSelection(product.id)}
-              >
-                <View className="flex-1 pr-3">
-                  <Text
-                    className="text-base font-medium text-gray-800"
-                    numberOfLines={2}
-                  >
-                    {product.displayName}
-                  </Text>
-                  <Text className="text-sm text-gray-600">
-                    Rs. {formatPrice(product.discountedPrice)} per kg
-                  </Text>
-                </View>
-                <View className="justify-center w-8">
-                  <View
-                    className={`w-6 h-6 rounded border ${
-                      product.selected
-                        ? "bg-black border-black"
-                        : "border-gray-400"
-                    } justify-center items-center`}
-                  >
-                    {product.selected && (
-                      <Ionicons name="checkmark" size={16} color="white" />
-                    )}
+          {/* Product List OR Empty State */}
+          <ScrollView
+            className="flex-1"
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={
+              filteredProducts.length === 0
+                ? {
+                    flexGrow: 1,
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }
+                : undefined
+            }
+          >
+            {filteredProducts.length > 0 ? (
+              filteredProducts.map((product) => (
+                <TouchableOpacity
+                  key={product.id}
+                  className="flex-row py-3 border-b border-gray-100"
+                  onPress={() => toggleProductSelection(product.id)}
+                >
+                  <View className="flex-1 pr-3">
+                    <Text
+                      className="text-base font-medium text-gray-800"
+                      numberOfLines={2}
+                    >
+                      {product.displayName}
+                    </Text>
+                    <Text className="text-sm text-gray-600">
+                      Rs. {formatPrice(product.discountedPrice)} per kg
+                    </Text>
                   </View>
-                </View>
-              </TouchableOpacity>
-            ))
-          ) : (
-            <View className="items-center justify-center mt-[30%]">
-              <LottieView
-                source={require("@/assets/json/no-data.json")}
-                style={{ width: wp(50), height: hp(30) }}
-                autoPlay
-                loop
-              />
-              <Text className="text-black italic mt-[-10%]  text-center ">
-                No products found
-              </Text>
-            </View>
-          )}
-        </ScrollView>
+                  <View className="justify-center w-8">
+                    <View
+                      className={`w-6 h-6 rounded border ${
+                        product.selected
+                          ? "bg-black border-black"
+                          : "border-gray-400"
+                      } justify-center items-center`}
+                    >
+                      {product.selected && (
+                        <Ionicons name="checkmark" size={16} color="white" />
+                      )}
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))
+            ) : (
+              <View  style={{
+                  justifyContent: "center",
+                  alignItems: "center",
+                 paddingBottom:50
+                }}>
+              <NoDataFound message="No products found" />
+              </View>
+            )}
+          </ScrollView>
 
           {/* Go to Cart Button */}
           <View className="py-4 items-center">
