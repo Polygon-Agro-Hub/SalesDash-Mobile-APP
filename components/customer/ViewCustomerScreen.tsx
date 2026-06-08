@@ -700,7 +700,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                           Order: #{item.InvNo || "N/A"}
                         </Text>
                         <View
-                          className={`px-6 py-1 rounded-full ${
+                          className={`min-w-[120px]  py-1 rounded-full ${
                             item.status === "Ordered"
                               ? "bg-[#F5FF85]"
                               : item.status === "Processing"
@@ -723,7 +723,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                           }`}
                         >
                           <Text
-                            className={`text-xs font-semibold ${
+                            className={`text-xs font-semibold mx-auto ${
                               item.status === "Ordered"
                                 ? "text-[#878216]"
                                 : item.status === "Processing"

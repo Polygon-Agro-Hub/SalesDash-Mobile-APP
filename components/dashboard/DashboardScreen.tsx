@@ -116,7 +116,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     setDisplayedPackages(newDisplayedPackages);
     setCurrentPage(page);
     setTotalPages(Math.ceil(packages.length / ITEMS_PER_PAGE));
-    
+
     // Scroll to top when changing pages
     if (flatListRef.current) {
       flatListRef.current.scrollToOffset({ offset: 0, animated: true });
@@ -353,10 +353,10 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     if (totalPages <= 1) return null;
 
     return (
-      <View 
-        style={{ 
-          flexDirection: "row", 
-          justifyContent: "center", 
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "center",
           alignItems: "center",
           paddingVertical: 20,
           paddingHorizontal: 16,
@@ -407,7 +407,8 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
                 key={index}
                 onPress={() => goToPage(pageNum)}
                 style={{
-                  backgroundColor: currentPage === pageNum ? "#9B60E8" : "#F0F0F0",
+                  backgroundColor:
+                    currentPage === pageNum ? "#9B60E8" : "#F0F0F0",
                   borderRadius: 8,
                   paddingVertical: 8,
                   paddingHorizontal: 12,
@@ -484,14 +485,14 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
               </Text>
             </View>
 
-            <View className="flex-row items-center bg-[#E6DBF766] rounded-full px-5 py-3 gap-1  ">
+            <View className="flex-row items-center bg-[#E6DBF766] rounded-full px-5 py-3 gap-1">
               <Image
                 source={require("@/assets/images/icons/star.webp")}
                 className="w-7 h-7"
                 resizeMode="contain"
               />
               <Text
-                className="font-semibold text-black"
+                className="font-semibold text-black mt-1 pr-2"
                 style={{
                   textDecorationLine: "none",
                   includeFontPadding: false,
@@ -560,7 +561,15 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
             />
           }
         >
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, marginBottom: 8 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              paddingHorizontal: 16,
+              marginBottom: 8,
+            }}
+          >
             <Text className="text-lg text-[#874CDB]">Packages</Text>
             {totalPages > 1 && (
               <Text className="text-sm text-gray-500">
@@ -568,7 +577,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
               </Text>
             )}
           </View>
-          
+
           <View style={{ paddingHorizontal: 4 }}>
             <FlatList
               ref={flatListRef}
@@ -591,7 +600,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
               }
             />
           </View>
-          
+
           {renderPagination()}
         </ScrollView>
       </View>
