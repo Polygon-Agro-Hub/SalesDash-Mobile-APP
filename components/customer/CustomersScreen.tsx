@@ -365,7 +365,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
               </TouchableOpacity>
             )}
 
-            <View style={{ paddingVertical: 10 }} className="flex-1 px-6">
+            <View style={{ paddingVertical: 10 }} className="flex-1 px-4">
               {error ? (
                 <View className="flex-1 justify-center items-center px-4">
                   <Text className="text-red-500 text-center mt-4">{error}</Text>
@@ -422,7 +422,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                 <FlatList
                   data={filteredCustomers}
                   keyExtractor={(item) => item.id.toString()}
-                  showsVerticalScrollIndicator={true}
+                  showsVerticalScrollIndicator={false}
                   contentContainerStyle={{ paddingBottom: 120 }}
                   refreshing={refreshing}
                   onRefresh={handleRefresh}
@@ -449,16 +449,19 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                           borderRadius: 20,
                           padding: 16,
                           marginBottom: 12,
+                          marginHorizontal: 4,
                           flexDirection: "row",
                           justifyContent: "space-between",
                           alignItems: "center",
                           borderWidth: 1,
                           borderColor: "#E0E0E0",
-                          shadowColor: "#000",
-                          shadowOffset: { width: 0, height: 4 },
-                          shadowOpacity: 0.08,
-                          shadowRadius: 6,
-                          elevation: 4,
+                          // iOS shadow (matches design: X:1 Y:1 Blur:8 #7E7E7E 25%)
+                          shadowColor: "#7E7E7E",
+                          shadowOffset: { width: 1, height: 1 },
+                          shadowOpacity: 0.25,
+                          shadowRadius: 8,
+                          // Android shadow
+                          elevation: 3,
                         }}
                       >
                         <View className="flex-1 mr-3">

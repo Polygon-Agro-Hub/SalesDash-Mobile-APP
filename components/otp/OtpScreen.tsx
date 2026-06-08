@@ -44,7 +44,6 @@ const OtpScreen: React.FC = () => {
 
   const [isOtpInvalid, setIsOtpInvalid] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
-  const otpSectionRef = useRef<View>(null);
 
   // Check if all OTP digits are filled
   const isOtpComplete = otp.every((digit) => digit.length === 1);
@@ -248,21 +247,15 @@ const OtpScreen: React.FC = () => {
     }
   };
 
+  // FIX: Removed otpSectionRef and measureLayout entirely.
+  // Use a simple fixed scrollTo offset instead — reliable on both iOS and Android
+  // with NativeWind because it avoids the "ref must be a native component" error.
   useEffect(() => {
     const handleKeyboardShow = () => {
       setKeyboardVisible(true);
-      // Scroll to OTP section as soon as keyboard opens
-      const scrollNode =
-        scrollViewRef.current?.getScrollableNode?.() || scrollViewRef.current;
-      if (scrollNode) {
-        otpSectionRef.current?.measureLayout(
-          scrollNode,
-          (x, y) => {
-            scrollViewRef.current?.scrollTo({ y: y - 20, animated: true });
-          },
-          () => {},
-        );
-      }
+      // Scroll down so the OTP inputs stay visible above the keyboard.
+      // Adjust the y value (220) if your header/image height differs.
+      scrollViewRef.current?.scrollTo({ y: 220, animated: true });
     };
 
     const handleKeyboardHide = () => {
@@ -308,7 +301,7 @@ const OtpScreen: React.FC = () => {
         <View className="flex-1 bg-white items-center justify-center">
           <View className="flex-1 justify-center w-full max-w-[500px]">
             {/* Illustration - Centered */}
-            <View className="items-center justify-center mb-6   ">
+            <View className="items-center justify-center mb-6">
               <Image
                 source={require("@/assets/images/otp/otp-check.webp")}
                 style={{
@@ -326,11 +319,8 @@ const OtpScreen: React.FC = () => {
               We have sent a Verification Code to your Customer's mobile number
             </Text>
 
-            {/* OTP Input Section - Centered */}
-            <View
-              ref={otpSectionRef}
-              className="flex-row justify-center items-center gap-3 mt-8 mb-4 "
-            >
+            {/* OTP Input Section - ref removed (was causing measureLayout error) */}
+            <View className="flex-row justify-center items-center gap-3 mt-8 mb-4">
               {otp.map((digit, index) => (
                 <TextInput
                   key={`otp-input-${index}`}
@@ -389,7 +379,7 @@ const OtpScreen: React.FC = () => {
                 </TouchableOpacity>
               </View>
 
-              {/* Verify Button with Bottom Shadow */}
+              {/* Verify Button — hidden while keyboard is open */}
               {!isKeyboardVisible && (
                 <TouchableOpacity
                   onPress={verifyOTP}
@@ -427,7 +417,6 @@ const OtpScreen: React.FC = () => {
                       },
                       shadowOpacity: 0.1,
                       shadowRadius: 3.84,
-
                       overflow: "hidden",
                     }}
                   >
