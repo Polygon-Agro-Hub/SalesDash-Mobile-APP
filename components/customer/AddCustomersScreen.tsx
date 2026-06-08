@@ -118,14 +118,15 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
   ]);
 
   const [alertConfig, setAlertConfig] = useState<{
-  visible: boolean;
-  title: string;
-  message: string;
-}>({ visible: false, title: "", message: "" });
+    visible: boolean;
+    title: string;
+    message: string;
+    onClose?: () => void;
+  }>({ visible: false, title: "", message: "" });
 
-const showAlert = (title: string, message: string) => {
-  setAlertConfig({ visible: true, title, message });
-};
+  const showAlert = (title: string, message: string, onClose?: () => void) => {
+    setAlertConfig({ visible: true, title, message, onClose });
+  };
 
   const isNavigatingToGeoScreen = useRef(false);
 
@@ -229,7 +230,7 @@ const showAlert = (title: string, message: string) => {
   const sendOTP = async () => {
     if (!phoneNumber) {
       showAlert("Error", "Please enter a mobile number.");
-      return;
+      return false;
     }
 
     try {
@@ -254,9 +255,10 @@ const showAlert = (title: string, message: string) => {
       await AsyncStorage.setItem("referenceId", response.data.referenceId);
 
       if (response.status === 200) {
-        showAlert("Success", "OTP sent successfully.");
+        return true;
       } else {
         showAlert("Error", "Failed to send OTP.");
+        return false;
       }
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -272,6 +274,7 @@ const showAlert = (title: string, message: string) => {
         console.log("Unexpected error:", error);
         showAlert("Error", "An unexpected error occurred.");
       }
+      return false;
     } finally {
       setLoading(false);
     }
@@ -756,10 +759,14 @@ const showAlert = (title: string, message: string) => {
     );
 
     const id = new Date().getTime().toString();
-    await sendOTP();
+    const otpSuccess = await sendOTP();
 
-    isNavigatingToOtpScreen.current = true;
-    navigation.navigate("OtpScreen", { phoneNumber, id });
+    if (otpSuccess) {
+      showAlert("Success", "OTP sent successfully.", () => {
+        isNavigatingToOtpScreen.current = true;
+        navigation.navigate("OtpScreen", { phoneNumber, id });
+      });
+    }
 
   } catch (error: any) {
     if (axios.isAxiosError(error)) {
@@ -1585,7 +1592,12 @@ const showAlert = (title: string, message: string) => {
         visible={alertConfig.visible}
         title={alertConfig.title}
         message={alertConfig.message}
-        onClose={() => setAlertConfig((prev) => ({ ...prev, visible: false }))}
+        onClose={() => {
+          setAlertConfig((prev) => ({ ...prev, visible: false }));
+          if (alertConfig.onClose) {
+            alertConfig.onClose();
+          }
+        }}
       />
     </KeyboardAvoidingView>
   );
