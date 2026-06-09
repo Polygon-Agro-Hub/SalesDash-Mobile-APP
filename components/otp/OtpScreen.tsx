@@ -25,7 +25,7 @@ import CustomHeader from "../common/CustomHeader";
 
 type OtpScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
-  "OtpScreen"
+  "OtpScreen" | "OtpScreenUp"
 >;
 
 const OtpScreen: React.FC = () => {
@@ -37,9 +37,10 @@ const OtpScreen: React.FC = () => {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const route = useRoute();
-  const { phoneNumber } = route.params as {
+  const { phoneNumber, id, token: routeToken } = route.params as {
     phoneNumber: string;
     id: string;
+    token?: string;
   };
 
   const [isOtpInvalid, setIsOtpInvalid] = useState(false);
@@ -82,7 +83,11 @@ const OtpScreen: React.FC = () => {
       setLoading(true);
       const referenceId = await AsyncStorage.getItem("referenceId");
 
-      const token = await getUserProfile();
+      let token = routeToken || (await AsyncStorage.getItem("authToken"));
+      if (!token) {
+        token = await getUserProfile();
+      }
+
       if (!referenceId || !token) {
         Alert.alert("Error", "Missing OTP reference or authentication token.");
         return;
@@ -115,46 +120,72 @@ const OtpScreen: React.FC = () => {
           return;
         }
 
-        let customerData;
+        let parsedData;
         try {
-          customerData = JSON.parse(customerDataString);
+          parsedData = JSON.parse(customerDataString);
         } catch (e) {
           console.error("Error parsing customer data:", e);
           Alert.alert("Error", "Failed to parse customer data.");
           return;
         }
 
-        const saveCustomerUrl = `${environment.API_BASE_URL}api/customer/add-customer`;
+        const isEditMode = !!parsedData.customerData;
 
-        const saveResponse = await axios.post(saveCustomerUrl, customerData, {
+        let endpoint;
+        let method: "post" | "put";
+        let data;
+
+        if (isEditMode) {
+          const customerData = parsedData.customerData || {};
+          const buildingData = parsedData.buildingData || {};
+          endpoint = `${environment.API_BASE_URL}api/customer/update-customer-data/${id}`;
+          method = "put";
+          data = { customerData, buildingData };
+        } else {
+          endpoint = `${environment.API_BASE_URL}api/customer/add-customer`;
+          method = "post";
+          data = parsedData;
+        }
+
+        const saveResponse = await axios({
+          method,
+          url: endpoint,
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
+          data,
         });
 
-        if (saveResponse.status === 200) {
-          const customerId = saveResponse.data.customerId;
+        if (saveResponse.status === 200 || saveResponse.status === 201) {
+          const customerId = saveResponse.data?.customerId || id;
 
-          await AsyncStorage.setItem("latestCustomerId", customerId.toString());
+          if (customerId) {
+            await AsyncStorage.setItem("latestCustomerId", customerId.toString());
+          }
 
           navigation.navigate("OtpSuccesfulScreen" as any, {
             customerId: customerId,
-            customerData: customerData,
           });
         } else {
           Alert.alert(
             "Error",
-            `Failed to save customer: ${saveResponse.data.error}`,
+            saveResponse.data?.message || "Failed to save customer data.",
           );
         }
       } else {
         setIsOtpInvalid(true);
         Alert.alert("Error", "Invalid OTP. Please try again.");
       }
-    } catch (error) {
-      console.error("Full error:", error);
-      Alert.alert("Error", "An error occurred while verifying OTP.");
+    } catch (error: any) {
+      console.error("Full error during OTP verification:", error);
+      let errorMessage = "An error occurred while verifying OTP.";
+      if (axios.isAxiosError(error) && error.response) {
+        errorMessage = error.response.data?.message || error.response.data?.error || errorMessage;
+      } else if (error && error.message) {
+        errorMessage = error.message;
+      }
+      Alert.alert("Error", errorMessage);
     } finally {
       setLoading(false);
     }

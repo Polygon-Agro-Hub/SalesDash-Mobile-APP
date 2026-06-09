@@ -27,7 +27,6 @@ import AddCustomersScreen from "@/components/customer/AddCustomersScreen";
 import OtpScreen from "@/components/otp/OtpScreen";
 import OtpSuccesfulScreen from "@/components/otp/OtpSuccesfulScreen";
 import EditCustomerScreen from "@/components/customer/EditCustomerScreen";
-import OtpScreenUp from "@/components/otp/OtpScreenUp";
 import OrderScreen from "@/components/order/OrderScreen";
 import ScheduleScreen from "@/components/order/ScheduleScreen";
 import SelectPaymentMethod from "@/components/order/SelectPaymentMethod";
@@ -151,7 +150,7 @@ function AppContent() {
 
             <Stack.Screen name="OtpScreen" component={OtpScreen} />
             <Stack.Screen name="ViewScreen" component={ViewScreen as any} />
-            <Stack.Screen name="OtpScreenUp" component={OtpScreenUp} />
+            <Stack.Screen name="OtpScreenUp" component={OtpScreen} />
             <Stack.Screen name="OrderScreen" component={OrderScreen as any} />
             <Stack.Screen name="CratScreen" component={CratScreen as any} />
             <Stack.Screen
