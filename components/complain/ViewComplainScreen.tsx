@@ -273,7 +273,7 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({
         <View className="flex-1 items-center bg-white">
           <View
             className="bg-white p-6 rounded-lg shadow-lg w-full max-w-[500px]"
-            style={{ marginTop: 12 }}
+            style={{ marginTop: 35 }}
           >
             {/* Close Button */}
             <TouchableOpacity

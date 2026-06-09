@@ -130,14 +130,15 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
   const [selectedCategory, setSelectedCategory] = useState("");
 
   const [alertConfig, setAlertConfig] = useState<{
-  visible: boolean;
-  title: string;
-  message: string;
-}>({ visible: false, title: "", message: "" });
+    visible: boolean;
+    title: string;
+    message: string;
+    onClose?: () => void;
+  }>({ visible: false, title: "", message: "" });
 
-const showAlert = (title: string, message: string) => {
-  setAlertConfig({ visible: true, title, message });
-};
+  const showAlert = (title: string, message: string, onClose?: () => void) => {
+    setAlertConfig({ visible: true, title, message, onClose });
+  };
 
   // Helper function to prevent leading spaces
   const preventLeadingSpace = (
@@ -635,7 +636,7 @@ const showAlert = (title: string, message: string) => {
           source: "PolygonAgro",
           transport: "sms",
           content: {
-            sms: "Thank you for registering with us a Market Place customer. Please use the bellow OTP to confirm the registration process. {{code}}",
+            sms: "Thank you for registering with us a GoviMart customer. Please use the bellow OTP to confirm the registration process. {{code}}",
           },
           destination: cleanedPhoneNumber,
         },
@@ -850,7 +851,15 @@ const showAlert = (title: string, message: string) => {
       const buildingData =
         buildingType === "House"
           ? { houseNo, streetName, city }
-          : { buildingNo, buildingName, unitNo, floorNo, houseNo, streetName, city };
+          : {
+              buildingNo,
+              buildingName,
+              unitNo,
+              floorNo,
+              houseNo,
+              streetName,
+              city,
+            };
 
       if (phoneNumberChanged) {
         await AsyncStorage.setItem(
@@ -870,13 +879,14 @@ const showAlert = (title: string, message: string) => {
           );
 
           if (response.status === 200) {
-            showAlert("Success", "Customer updated successfully.");
-            navigation.navigate("ViewCustomerScreen" as any, {
-              id,
-              customerId,
-              name: `${firstName} ${lastName}`,
-              title: selectedCategory,
-              number: phoneNumber,
+            showAlert("Success", "Customer updated successfully.", () => {
+              navigation.navigate("ViewCustomerScreen" as any, {
+                id,
+                customerId,
+                name: `${firstName} ${lastName}`,
+                title: selectedCategory,
+                number: phoneNumber,
+              });
             });
           }
         } catch (updateError: any) {
@@ -902,10 +912,7 @@ const showAlert = (title: string, message: string) => {
               showAlert("Update Error", errorMessage);
             }
           } else {
-            showAlert(
-              "Error",
-              "Failed to update customer. Please try again.",
-            );
+            showAlert("Error", "Failed to update customer. Please try again.");
           }
         }
       }
@@ -1686,11 +1693,14 @@ const showAlert = (title: string, message: string) => {
         multiSelect={false}
         noResultsText="No City Found"
       />
-         <CustomAlert
+      <CustomAlert
         visible={alertConfig.visible}
         title={alertConfig.title}
         message={alertConfig.message}
-        onClose={() => setAlertConfig((prev) => ({ ...prev, visible: false }))}
+        onClose={() => {
+          setAlertConfig((prev) => ({ ...prev, visible: false }));
+          alertConfig.onClose?.();
+        }}
       />
     </KeyboardAvoidingView>
   );

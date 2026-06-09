@@ -130,7 +130,7 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
         <ImageBackground
           source={require("@/assets/images/order/order-bg.webp")}
           style={{ height: 220 }}
-          className="rounded-b-3xl shadow-lg bg-[#E6DBF766]"
+          className="rounded-b-3xl bg-[#E6DBF766]"
           resizeMode="cover"
         >
           <CustomHeader

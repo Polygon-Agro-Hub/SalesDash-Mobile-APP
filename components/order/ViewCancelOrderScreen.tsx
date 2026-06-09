@@ -628,7 +628,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                 {holdEvents.map((event, index) => {
                   const label = resolveHoldLabel(event);
                   const isLastHold = index === holdEvents.length - 1;
-
                   const showRestartAfterThisHold =
                     event.restartedTime != null ||
                     (isLastHold &&
@@ -642,7 +641,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                           Driver marked order as Hold
                         </Text>
                       </View>
-
                       {label ? (
                         <View className="pb-2">
                           <Text className="font-semibold text-[#5E5E5E]">
@@ -655,7 +653,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                       ) : (
                         <View className="mb-6" />
                       )}
-
                       {showRestartAfterThisHold && (
                         <View className="flex-row items-center mb-10">
                           <View className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]" />
@@ -674,29 +671,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                     <Text className="font-medium text-[#5E5E5E]">
                       Order marked as Return
                     </Text>
-                  </View>
-                )}
-
-                {status === "Return" && returnReason && (
-                  <View style={{ marginTop: 8 }}>
-                    <View className="mt-[-7]  pt-4">
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "flex-start",
-                        }}
-                      >
-                        <Text className="font-semibold text-[#5E5E5E]">
-                          Reason :{" "}
-                        </Text>
-                        <Text
-                          className="text-black font-medium"
-                          style={{ flex: 1 }}
-                        >
-                          "{returnReason}"
-                        </Text>
-                      </View>
-                    </View>
                   </View>
                 )}
 
@@ -725,7 +699,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                         Order is On the way
                       </Text>
                     </View>
-
                     <View className="flex-row items-center">
                       <View className="p-1.5 rounded-full absolute -left-8 bg-[#D9D9D9] border-4 border-[#EDEDED]" />
                       <Text className="text-[#5E5E5E] font-medium">
@@ -736,7 +709,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                 )}
 
                 {status === "Cancelled" && (
-                  <View className="flex-row items-center ">
+                  <View className="flex-row items-center">
                     <View className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]" />
                     <Text className="text-red-500 font-medium">
                       Order is Cancelled
@@ -744,6 +717,23 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                   </View>
                 )}
               </View>
+
+              {status === "Return" && returnReason && (
+                <View
+                  style={{ paddingLeft: 24, paddingRight: 16, marginTop: 8 }}
+                >
+                  <View
+                    style={{ flexDirection: "row", alignItems: "flex-start" }}
+                  >
+                    <Text style={{ fontWeight: "600", color: "#5E5E5E" }}>
+                      {"Reason : "}
+                    </Text>
+                    <Text style={{ color: "#000", fontWeight: "500", flex: 1 }}>
+                      {`"${returnReason}"`}
+                    </Text>
+                  </View>
+                </View>
+              )}
             </View>
 
             <View className="bg-white border border-gray-200 rounded-lg shadow-sm mx-4 p-4 mb-4">

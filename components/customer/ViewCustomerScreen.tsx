@@ -700,7 +700,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                           Order: #{item.InvNo || "N/A"}
                         </Text>
                         <View
-                          className={`min-w-[120px]  py-1 rounded-full ${
+                          className={`py-1 rounded-full ${
                             item.status === "Ordered"
                               ? "bg-[#F5FF85]"
                               : item.status === "Processing"
@@ -721,8 +721,10 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                                               ? "bg-[#FFDCDA]"
                                               : "bg-[#EAEAEA]"
                           }`}
+                          style={{ width: 120, alignItems: "center", flexShrink: 0 }}
                         >
                           <Text
+                            numberOfLines={1}
                             className={`text-xs font-semibold mx-auto ${
                               item.status === "Ordered"
                                 ? "text-[#878216]"
