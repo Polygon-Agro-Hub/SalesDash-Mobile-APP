@@ -700,7 +700,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                           Order: #{item.InvNo || "N/A"}
                         </Text>
                         <View
-                          className={`min-w-[120px]  py-1 rounded-full ${
+                          className={`min-w-[200px]  py-1 rounded-full ${
                             item.status === "Ordered"
                               ? "bg-[#F5FF85]"
                               : item.status === "Processing"

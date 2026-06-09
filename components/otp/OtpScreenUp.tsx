@@ -30,7 +30,6 @@ type OtpScreenUpNavigationProp = StackNavigationProp<
   "OtpScreenUp"
 >;
 
-// Type definition for API error responses
 interface ApiErrorResponse {
   message?: string;
   error?: string;
@@ -71,10 +70,8 @@ const OtpScreenUp: React.FC = () => {
 
   const [isOtpInvalid, setIsOtpInvalid] = useState(false);
 
-  // Check if all OTP digits are filled
   const isOtpComplete = otp.every((digit) => digit.length === 1);
 
-  // Helper to get auth token - add this if you need token-based authentication
   const getAuthToken = async (): Promise<string | null> => {
     try {
       return await AsyncStorage.getItem("authToken");
@@ -249,11 +246,9 @@ const OtpScreenUp: React.FC = () => {
     }
   };
 
-  // 2. Fixed handleOtpChange function - Add timer check before auto-verification
   const handleOtpChange = (text: string, index: number) => {
     const newOtp = [...otp];
 
-    // Only allow numeric input
     if (text && !/^\d+$/.test(text)) {
       return;
     }
@@ -261,15 +256,13 @@ const OtpScreenUp: React.FC = () => {
     newOtp[index] = text;
     setOtp(newOtp);
 
-    // Move to next input when a digit is entered
     if (text.length === 1 && index < inputRefs.current.length - 1) {
       inputRefs.current[index + 1]?.focus();
     }
 
-    // Submit automatically when last digit is entered, but only if timer hasn't expired
     if (newOtp.every((digit) => digit.length === 1)) {
       Keyboard.dismiss();
-      // Only auto-submit if timer hasn't expired
+
       if (timer > 0) {
         verifyOTP();
       }
@@ -292,7 +285,7 @@ const OtpScreenUp: React.FC = () => {
         source: "PolygonAgro",
         transport: "sms",
         content: {
-          sms: "Thank you for registering with us a Market Place customer. Please use the bellow OTP to confirm the registration process. {{code}}",
+          sms: "Thank you for registering with us a GoviMart customer. Please use the bellow OTP to confirm the registration process. {{code}}",
         },
         destination: phoneNumber,
       };
@@ -338,7 +331,6 @@ const OtpScreenUp: React.FC = () => {
     index: number,
   ) => {
     if (nativeEvent.key === "Backspace" && !otp[index] && index > 0) {
-      // Move focus to previous input on backspace when current is empty
       inputRefs.current[index - 1]?.focus();
     }
   };
@@ -346,7 +338,7 @@ const OtpScreenUp: React.FC = () => {
   useEffect(() => {
     const handleKeyboardShow = () => {
       setKeyboardVisible(true);
-      // Scroll to OTP section as soon as keyboard opens
+
       const scrollNode =
         scrollViewRef.current?.getScrollableNode?.() || scrollViewRef.current;
       if (scrollNode) {
@@ -370,8 +362,14 @@ const OtpScreenUp: React.FC = () => {
     const hideEvent =
       Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
 
-    const showSubscription = Keyboard.addListener(showEvent, handleKeyboardShow);
-    const hideSubscription = Keyboard.addListener(hideEvent, handleKeyboardHide);
+    const showSubscription = Keyboard.addListener(
+      showEvent,
+      handleKeyboardShow,
+    );
+    const hideSubscription = Keyboard.addListener(
+      hideEvent,
+      handleKeyboardHide,
+    );
 
     return () => {
       showSubscription.remove();
@@ -429,10 +427,11 @@ const OtpScreenUp: React.FC = () => {
                   ref={(el: TextInput | null) => {
                     inputRefs.current[index] = el;
                   }}
-                  className={`w-12 h-12 rounded-lg border-2 ${digit
-                    ? "bg-[#874DDB] border-[#874DDB]"
-                    : "bg-[#E7D7FF] border-[#E7D7FF]"
-                    }`}
+                  className={`w-12 h-12 rounded-lg border-2 ${
+                    digit
+                      ? "bg-[#874DDB] border-[#874DDB]"
+                      : "bg-[#E7D7FF] border-[#E7D7FF]"
+                  }`}
                   style={{
                     textAlign: "center",
                     textAlignVertical: "center",
@@ -506,10 +505,11 @@ const OtpScreenUp: React.FC = () => {
                     }
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
-                    className={`h-[50px] items-center justify-center rounded-full ${!isOtpComplete || loading || timer <= 0
-                      ? "opacity-50"
-                      : ""
-                      }`}
+                    className={`h-[50px] items-center justify-center rounded-full ${
+                      !isOtpComplete || loading || timer <= 0
+                        ? "opacity-50"
+                        : ""
+                    }`}
                     style={{
                       shadowColor: "#000",
                       shadowOffset: {

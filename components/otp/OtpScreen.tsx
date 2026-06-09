@@ -45,7 +45,6 @@ const OtpScreen: React.FC = () => {
   const [isOtpInvalid, setIsOtpInvalid] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // Check if all OTP digits are filled
   const isOtpComplete = otp.every((digit) => digit.length === 1);
 
   const getUserProfile = async () => {
@@ -74,7 +73,6 @@ const OtpScreen: React.FC = () => {
       return;
     }
 
-    // Check if timer has expired
     if (timer <= 0) {
       Alert.alert("Error", "OTP has expired. Please request a new one.");
       return;
@@ -178,7 +176,7 @@ const OtpScreen: React.FC = () => {
         source: "PolygonAgro",
         transport: "sms",
         content: {
-          sms: "Thank you for registering with us a Market Place customer. Please use the bellow OTP to confirm the registration process. {{code}}",
+          sms: "Thank you for registering with us a GoviMart customer. Please use the bellow OTP to confirm the registration process. {{code}}",
         },
         destination: phoneNumber,
       };
@@ -208,29 +206,24 @@ const OtpScreen: React.FC = () => {
   }, [timer]);
 
   const handleOtpChange = (text: string, index: number) => {
-    // Only allow numeric input
     if (text && !/^\d+$/.test(text)) {
       return;
     }
 
-    // Update the OTP code
     const updatedOtp = [...otp];
     updatedOtp[index] = text;
     setOtp(updatedOtp);
 
-    // Check if OTP is valid (all digits filled)
     const isValid = updatedOtp.every((digit) => digit.length === 1);
     setIsOtpInvalid(!isValid);
 
-    // Move to next input field if text is entered
     if (text.length === 1 && index < inputRefs.current.length - 1) {
       inputRefs.current[index + 1]?.focus();
     }
 
-    // Dismiss keyboard and submit when last digit is entered
     if (index === otp.length - 1 && text.length === 1) {
       Keyboard.dismiss();
-      // Only auto-submit if timer hasn't expired and OTP is valid
+
       if (isValid && timer > 0) {
         verifyOTP();
       }
@@ -241,20 +234,15 @@ const OtpScreen: React.FC = () => {
     { nativeEvent: { key } }: NativeSyntheticEvent<TextInputKeyPressEventData>,
     index: number,
   ) => {
-    // Handle backspace to move to previous input
     if (key === "Backspace" && !otp[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
   };
 
-  // FIX: Removed otpSectionRef and measureLayout entirely.
-  // Use a simple fixed scrollTo offset instead — reliable on both iOS and Android
-  // with NativeWind because it avoids the "ref must be a native component" error.
   useEffect(() => {
     const handleKeyboardShow = () => {
       setKeyboardVisible(true);
-      // Scroll down so the OTP inputs stay visible above the keyboard.
-      // Adjust the y value (220) if your header/image height differs.
+
       scrollViewRef.current?.scrollTo({ y: 220, animated: true });
     };
 
@@ -268,8 +256,14 @@ const OtpScreen: React.FC = () => {
     const hideEvent =
       Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
 
-    const showSubscription = Keyboard.addListener(showEvent, handleKeyboardShow);
-    const hideSubscription = Keyboard.addListener(hideEvent, handleKeyboardHide);
+    const showSubscription = Keyboard.addListener(
+      showEvent,
+      handleKeyboardShow,
+    );
+    const hideSubscription = Keyboard.addListener(
+      hideEvent,
+      handleKeyboardHide,
+    );
 
     return () => {
       showSubscription.remove();
