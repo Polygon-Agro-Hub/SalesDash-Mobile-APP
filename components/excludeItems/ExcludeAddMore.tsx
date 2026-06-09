@@ -48,6 +48,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
   const toggleSelect = (id: number) => {
     setSelectedCrops((prevSelected) =>
       prevSelected.includes(id)
@@ -161,10 +162,6 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
     }
   };
 
-  const handleNavigateIfNoCropsSelected = () => {
-    handlesubmitexcludelist();
-  };
-
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
@@ -190,15 +187,11 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
       "keyboardDidShow",
-      () => {
-        setIsKeyboardVisible(true);
-      },
+      () => setIsKeyboardVisible(true),
     );
     const keyboardDidHideListener = Keyboard.addListener(
       "keyboardDidHide",
-      () => {
-        setIsKeyboardVisible(false);
-      },
+      () => setIsKeyboardVisible(false),
     );
 
     return () => {
@@ -212,7 +205,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       enabled
       style={{ flex: 1 }}
-      className=" bg-white"
+      className="bg-white"
     >
       <CustomHeader
         title="Exclude Item List"
@@ -229,15 +222,15 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
           });
         }}
       />
+
       <View className="flex-1 mx-auto w-full max-w-[500px]">
         <Text className="text-center text-sm px-6">
-          Exclude any items your customer doesn’t want in their package. Simply
+          Exclude any items your customer doesn't want in their package. Simply
           tap on the Products they want to remove.
         </Text>
 
         <View className="px-6 mt-6 mb-6">
           <View className="relative">
-            {/* TextInput with search icon inside */}
             <TextInput
               className="p-3 pr-10 flex-row justify-between items-center border border-[#6B3BCF] rounded-full bg-[#F5F1FC]"
               placeholder="Search Products"
@@ -246,8 +239,6 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
               onFocus={() => setIsKeyboardVisible(true)}
               onChangeText={handleSearch}
             />
-
-            {/* Search icon positioned inside the TextInput */}
             <Ionicons
               name="search"
               size={24}
@@ -262,54 +253,63 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
           </View>
         </View>
 
-        {searchError && (
-          <View className="flex-1 justify-center items-center">
-            <NoDataFound message={searchError} />
-          </View>
-        )}
-        <View className="flex-1">
-          <FlatList
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ paddingBottom: 100 }}
-            data={filteredCrops}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                onPress={() => toggleSelect(item.id)}
-                className="flex-row justify-between items-center my-1 px-6 mb-2"
-              >
-                {/* Crop name and selection toggle */}
-                <View className="flex-row items-center gap-4">
-                  <View
-                    className={`w-6 h-6 rounded-full border-2 justify-center items-center ${
-                      selectedCrops.includes(item.id)
-                        ? "bg-red-600 border-red-600"
-                        : "bg-white border-gray-400"
-                    }`}
-                  >
-                    {selectedCrops.includes(item.id) && (
-                      <Ionicons name="close" size={16} color="white" />
-                    )}
+        {/* ── List / Empty state ── */}
+        <View style={{ flex: 1 }}>
+          {searchError ? (
+            <View
+              style={{
+                flex: 1,
+                justifyContent: "center",
+                alignItems: "center",
+                paddingBottom: 100,
+              }}
+            >
+              <NoDataFound message={searchError} />
+            </View>
+          ) : (
+            <FlatList
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ paddingBottom: 100 }}
+              data={filteredCrops}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  onPress={() => toggleSelect(item.id)}
+                  className="flex-row justify-between items-center my-1 px-6 mb-2"
+                >
+                  <View className="flex-row items-center gap-4">
+                    <View
+                      className={`w-6 h-6 rounded-full border-2 justify-center items-center ${
+                        selectedCrops.includes(item.id)
+                          ? "bg-red-600 border-red-600"
+                          : "bg-white border-gray-400"
+                      }`}
+                    >
+                      {selectedCrops.includes(item.id) && (
+                        <Ionicons name="close" size={16} color="white" />
+                      )}
+                    </View>
+                    <Text className="text-black text-base font-medium">
+                      {item.displayName}
+                    </Text>
                   </View>
-                  <Text className="text-black text-base font-medium">
-                    {item.displayName}
-                  </Text>
-                </View>
 
-                {/* Crop image */}
-                <Image
-                  source={{ uri: item.image }}
-                  style={{ width: 60, height: 60 }}
-                  resizeMode="contain"
-                />
-              </TouchableOpacity>
-            )}
-          />
+                  <Image
+                    source={{ uri: item.image }}
+                    style={{ width: 60, height: 60 }}
+                    resizeMode="contain"
+                  />
+                </TouchableOpacity>
+              )}
+            />
+          )}
         </View>
       </View>
+
       {!isKeyboardVisible && (
         <View className="absolute bottom-0 left-0 right-0 bg-white pt-4 pb-4 px-6 items-center">
           <TouchableOpacity
-            onPress={handleNavigateIfNoCropsSelected}
+            onPress={handlesubmitexcludelist}
             className="w-full max-w-[500px] items-center"
             disabled={loading}
           >
@@ -324,10 +324,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
                 alignItems: "center",
                 justifyContent: "center",
                 shadowColor: "#000000",
-                shadowOffset: {
-                  width: 0,
-                  height: 2,
-                },
+                shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.2,
                 shadowRadius: 10,
                 elevation: 8,
@@ -336,13 +333,11 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
               {loading ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <View>
-                  <Text
-                    style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}
-                  >
-                    Add
-                  </Text>
-                </View>
+                <Text
+                  style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}
+                >
+                  Add
+                </Text>
               )}
             </LinearGradient>
           </TouchableOpacity>

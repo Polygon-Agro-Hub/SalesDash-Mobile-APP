@@ -41,10 +41,10 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
   route,
   navigation,
 }) => {
-  const { customerId, name, title, phoneNumber, cusId, id } = route.params || {};
+  const { customerId, name, title, phoneNumber, cusId, id } =
+    route.params || {};
   const [crops, setCrops] = useState<any[]>([]);
 
-  // Split name into first and last name if they are passed as a single string
   const nameParts = (name || "").trim().split(/\s+/);
   const initialFirstName = nameParts[0] || "";
   const initialLastName = nameParts.slice(1).join(" ") || "";
@@ -79,7 +79,6 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
           });
 
           if (response.data && response.data.data) {
-            // Set customer name from first item (regardless of crop validity)
             if (response.data.data.length > 0) {
               const { firstName, lastName, title, cusId, phoneNumber } =
                 response.data.data[0];
@@ -91,7 +90,6 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
                 phoneNumber,
               });
             } else {
-              // Fallback to route parameters if no items exist in exclude list
               const nameParts = (name || "").trim().split(/\s+/);
               const initialFirstName = nameParts[0] || "";
               const initialLastName = nameParts.slice(1).join(" ") || "";
@@ -104,14 +102,13 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
               });
             }
 
-            // Filter out any invalid or empty items for crops display
             const validCrops = response.data.data.filter(
               (item: any) => item.excludeId && item.displayName,
             );
             setCrops(validCrops);
           } else {
             setCrops([]);
-            // Fallback to route parameters
+
             const nameParts = (name || "").trim().split(/\s+/);
             const initialFirstName = nameParts[0] || "";
             const initialLastName = nameParts.slice(1).join(" ") || "";
@@ -125,8 +122,8 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
           }
         } catch (err) {
           console.error("Failed to fetch products:", err);
-          setCrops([]); // Set empty array on error
-          // Fallback to route parameters
+          setCrops([]);
+
           const nameParts = (name || "").trim().split(/\s+/);
           const initialFirstName = nameParts[0] || "";
           const initialLastName = nameParts.slice(1).join(" ") || "";
@@ -145,7 +142,6 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
   );
 
   const deleteCrop = async (excludeId: number) => {
-    // Ask for confirmation before deleting
     Alert.alert("Delete", "Are you sure you want to delete this item?", [
       {
         text: "Cancel",
@@ -167,7 +163,6 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
               params: { excludeId },
             });
 
-            // Handle response
             if (response.status === 200) {
               setCrops((prevCrops) =>
                 prevCrops.filter((crop) => crop.excludeId !== excludeId),
@@ -246,7 +241,14 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
         </TouchableOpacity>
 
         {/* Title — marquee when long */}
-        <View style={{ flex: 1, alignItems: "center", overflow: "hidden", marginHorizontal: 8 }}>
+        <View
+          style={{
+            flex: 1,
+            alignItems: "center",
+            overflow: "hidden",
+            marginHorizontal: 8,
+          }}
+        >
           {fullTitle.length > 25 ? (
             <FixedMarqueeText
               text={fullTitle}
@@ -273,7 +275,10 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
 
       {/* Customer ID */}
       <View className="mx-auto w-full max-w-[500px]">
-        <Text style={{ fontSize: 16,marginTop: -3 }} className="text-center text-black">
+        <Text
+          style={{ fontSize: 16, marginTop: -3 }}
+          className="text-center text-black"
+        >
           {customerName.firstName && customerName.lastName
             ? `Customer ID : ${customerName.cusId}`
             : "Loading..."}
@@ -290,24 +295,21 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
 
         {crops.length === 0 ||
         !crops.some((crop) => crop.excludeId && crop.displayName) ? (
-          // Empty state - show Lottie animation
           <View
             style={{
               flex: 1,
               justifyContent: "center",
               alignItems: "center",
-              paddingTop: hp("10%"),
-             
             }}
           >
             <NoDataFound message="No items to exclude" />
           </View>
         ) : (
-          // Items exist - show scrollable list
           <ScrollView
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             className="mb-20"
+            contentContainerStyle={{ flexGrow: 1 }}
           >
             <View className="px-6 mt-4 ">
               {crops

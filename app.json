@@ -55,7 +55,9 @@
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
         "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS"
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
       ]
     },
     "web": {
@@ -106,7 +108,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "bbee3381-e23a-4e97-a02b-ff2b3844436e"
+        "projectId": "65b3e93e-7ca1-42a5-bcf2-7feaeb45256c"
       }
     }
   }

@@ -270,15 +270,16 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           className="mb-20"
+          contentContainerStyle={{ flexGrow: 1 }}
         >
-          <View style={{ marginTop: 16 }}>
+          <View style={{ flex: 1 }}>
             {crops.length === 0 ||
             crops.every((crop) => crop.excludeId === null) ? (
               <View
                 style={{
+                  flex: 1,
                   justifyContent: "center",
                   alignItems: "center",
-                  paddingTop: 120,
                 }}
               >
                 <NoDataFound message="No Exclude Item Found" />
