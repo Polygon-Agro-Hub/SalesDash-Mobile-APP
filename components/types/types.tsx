@@ -158,6 +158,10 @@ export type RootStackParamList = {
   OtpSuccesfulScreen: {
     customerId?: number | string;
   };
+  BannedScreen: {
+    statusType?: "not_approved" | "rejected" | "pending";
+    message?: string;
+  };
   EditCustomerScreen: {
     id: string;
     customerId: string;
