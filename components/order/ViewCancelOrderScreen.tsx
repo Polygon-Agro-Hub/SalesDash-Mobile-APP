@@ -666,13 +666,26 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                 })}
 
                 {status === "Return" && (
-                  <View className="flex-row items-center">
-                    <View className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]" />
-                    <Text className="font-medium text-[#5E5E5E]">
-                      Order marked as Return
-                    </Text>
+                  <View>
+                    <View className={`flex-row items-center ${returnReason ? "mb-2" : ""}`}>
+                      <View className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]" />
+                      <Text className="font-medium text-[#5E5E5E]">
+                        Order marked as Return
+                      </Text>
+                    </View>
+                    {returnReason && (
+                      <View className="pb-2">
+                        <Text className="font-semibold text-[#5E5E5E]">
+                          Reason:{" "}
+                          <Text className="text-black font-medium">
+                            "{returnReason}"
+                          </Text>
+                        </Text>
+                      </View>
+                    )}
                   </View>
                 )}
+
 
                 {status !== "Return" &&
                   status !== "Cancelled" &&
@@ -718,22 +731,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                 )}
               </View>
 
-              {status === "Return" && returnReason && (
-                <View
-                  style={{ paddingLeft: 24, paddingRight: 16, marginTop: 8 }}
-                >
-                  <View
-                    style={{ flexDirection: "row", alignItems: "flex-start" }}
-                  >
-                    <Text style={{ fontWeight: "600", color: "#5E5E5E" }}>
-                      {"Reason : "}
-                    </Text>
-                    <Text style={{ color: "#000", fontWeight: "500", flex: 1 }}>
-                      {`"${returnReason}"`}
-                    </Text>
-                  </View>
-                </View>
-              )}
+
             </View>
 
             <View className="bg-white border border-gray-200 rounded-lg shadow-sm mx-4 p-4 mb-4">

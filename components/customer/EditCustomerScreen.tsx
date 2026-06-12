@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   BackHandler,
   Dimensions,
+  Alert,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -22,7 +23,6 @@ import { Platform } from "react-native";
 import CustomHeader from "../common/CustomHeader";
 import LoadingPage from "../common/LoadingPage";
 import GlobalSearchModal from "../common/GlobalSearchModal";
-import CustomAlert from "../common/CustomAlert";
 
 type EditCustomerScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -129,15 +129,8 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
   ]);
   const [selectedCategory, setSelectedCategory] = useState("");
 
-  const [alertConfig, setAlertConfig] = useState<{
-    visible: boolean;
-    title: string;
-    message: string;
-    onClose?: () => void;
-  }>({ visible: false, title: "", message: "" });
-
   const showAlert = (title: string, message: string, onClose?: () => void) => {
-    setAlertConfig({ visible: true, title, message, onClose });
+    Alert.alert(title, message, [{ text: "OK", onPress: onClose }]);
   };
 
   // Helper function to prevent leading spaces
@@ -866,7 +859,9 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
           "pendingCustomerData",
           JSON.stringify({ customerData, buildingData, originalBuildingType }),
         );
-        navigation.navigate("OtpScreenUp", { phoneNumber, id, token });
+        showAlert("Success", "OTP Sent Successfully.", () => {
+          navigation.navigate("OtpScreenUp", { phoneNumber, id, token });
+        });
       } else {
         try {
           const response = await axios.put(
@@ -1692,15 +1687,6 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
         searchPlaceholder="Search city..."
         multiSelect={false}
         noResultsText="No City Found"
-      />
-      <CustomAlert
-        visible={alertConfig.visible}
-        title={alertConfig.title}
-        message={alertConfig.message}
-        onClose={() => {
-          setAlertConfig((prev) => ({ ...prev, visible: false }));
-          alertConfig.onClose?.();
-        }}
       />
     </KeyboardAvoidingView>
   );

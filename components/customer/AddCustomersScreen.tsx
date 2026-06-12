@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   BackHandler,
   Dimensions,
+  Alert,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -21,7 +22,6 @@ import { Entypo, FontAwesome6, MaterialIcons } from "@expo/vector-icons";
 import { Platform } from "react-native";
 import CustomHeader from "../common/CustomHeader";
 import GlobalSearchModal from "../common/GlobalSearchModal";
-import CustomAlert from "../common/CustomAlert";
 
 type AddCustomersScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -117,15 +117,8 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     { label: "Apartment", value: "Apartment" },
   ]);
 
-  const [alertConfig, setAlertConfig] = useState<{
-    visible: boolean;
-    title: string;
-    message: string;
-    onClose?: () => void;
-  }>({ visible: false, title: "", message: "" });
-
   const showAlert = (title: string, message: string, onClose?: () => void) => {
-    setAlertConfig({ visible: true, title, message, onClose });
+    Alert.alert(title, message, [{ text: "OK", onPress: onClose }]);
   };
 
   const isNavigatingToGeoScreen = useRef(false);
@@ -1587,17 +1580,6 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         searchPlaceholder="Search city..."
         multiSelect={false}
         noResultsText="No City Found"
-      />
-      <CustomAlert
-        visible={alertConfig.visible}
-        title={alertConfig.title}
-        message={alertConfig.message}
-        onClose={() => {
-          setAlertConfig((prev) => ({ ...prev, visible: false }));
-          if (alertConfig.onClose) {
-            alertConfig.onClose();
-          }
-        }}
       />
     </KeyboardAvoidingView>
   );

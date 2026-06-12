@@ -164,9 +164,30 @@ const OtpScreen: React.FC = () => {
             await AsyncStorage.setItem("latestCustomerId", customerId.toString());
           }
 
-          navigation.navigate("OtpSuccesfulScreen" as any, {
-            customerId: customerId,
-          });
+          if (isEditMode) {
+            const customerData = parsedData.customerData || {};
+            Alert.alert("Success", "Customer updated successfully.", [
+              {
+                text: "OK",
+                onPress: () => {
+                  navigation.navigate("Main", {
+                    screen: "ViewCustomerScreen",
+                    params: {
+                      id,
+                      customerId: customerId,
+                      name: `${customerData.firstName || ""} ${customerData.lastName || ""}`.trim(),
+                      title: customerData.title || "",
+                      number: customerData.phoneNumber || phoneNumber,
+                    },
+                  });
+                },
+              },
+            ]);
+          } else {
+            navigation.navigate("OtpSuccesfulScreen" as any, {
+              customerId: customerId,
+            });
+          }
         } else {
           Alert.alert(
             "Error",
@@ -273,13 +294,10 @@ const OtpScreen: React.FC = () => {
   useEffect(() => {
     const handleKeyboardShow = () => {
       setKeyboardVisible(true);
-
-      scrollViewRef.current?.scrollTo({ y: 220, animated: true });
     };
 
     const handleKeyboardHide = () => {
       setKeyboardVisible(false);
-      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
     };
 
     const showEvent =
@@ -304,7 +322,7 @@ const OtpScreen: React.FC = () => {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
       enabled
       style={{ flex: 1, backgroundColor: "white" }}
     >

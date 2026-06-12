@@ -128,14 +128,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           err.response?.data?.message || "Something went wrong.";
         const statusType = err.response?.data?.statusType;
 
-        if (statusType === "rejected") {
-          Alert.alert("Account Rejected", "This Employee ID is rejected.", [
-            { text: "OK" },
-          ]);
-        } else if (
-          statusType === "not_approved" ||
-          statusType === "password_not_set"
-        ) {
+        if (statusType === "rejected" || statusType === "not_approved") {
+          navigation.navigate("BannedScreen", {
+            statusType,
+            message: errorMessage,
+          });
+        } else if (statusType === "password_not_set") {
           Alert.alert("Not Approved EMP ID", "This EMP ID is not approved.", [
             { text: "OK" },
           ]);

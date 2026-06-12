@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
-import { Alert, Platform, StatusBar } from "react-native";
-import { NavigationContainer } from "@react-navigation/native";
+import { Alert, Platform, StatusBar, LogBox } from "react-native";
+import { NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import {
@@ -26,6 +28,7 @@ import ReminderScreen from "@/components/reminder/ReminderScreen";
 import AddCustomersScreen from "@/components/customer/AddCustomersScreen";
 import OtpScreen from "@/components/otp/OtpScreen";
 import OtpSuccesfulScreen from "@/components/otp/OtpSuccesfulScreen";
+import BannedScreen from "@/components/authentication/BannedScreen";
 import EditCustomerScreen from "@/components/customer/EditCustomerScreen";
 import OrderScreen from "@/components/order/OrderScreen";
 import ScheduleScreen from "@/components/order/ScheduleScreen";
@@ -49,9 +52,16 @@ import AttachGeoLocationScreen from "@/components/location/AttachGeoLocationScre
 import ViewLocationScreen from "@/components/location/ViewLocationScreen";
 import AttachGeoLocationScreenEdit from "@/components/location/AttachGeoLocationScreenEdit";
 import * as ExpoNavigationBar from "expo-navigation-bar";
+import { AlertModal, setGlobalAlertListener } from "@/components/common/AlertModal";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
+export const navigationRef = createNavigationContainerRef();
+
+LogBox.ignoreLogs([
+  "InteractionManager has been deprecated",
+  "setBackgroundColorAsync is not supported with edge-to-edge enabled"
+]);
 
 function MainTabNavigator() {
   useEffect(() => {
@@ -106,6 +116,34 @@ function MainTabNavigator() {
 function AppContent() {
   const insets = useSafeAreaInsets();
   const [isOfflineAlertShown, setIsOfflineAlertShown] = useState(false);
+  const [alertState, setAlertState] = useState({
+    visible: false,
+    title: "",
+    message: "" as string | React.ReactNode,
+    type: "error" as "success" | "error",
+    onClose: (() => {}) as () => void,
+    autoClose: true,
+    showOkButton: undefined as boolean | undefined,
+  });
+
+  useEffect(() => {
+    setGlobalAlertListener((title, message, type, onClose, autoClose, showOkButton) => {
+      setAlertState({
+        visible: true,
+        title,
+        message,
+        type,
+        onClose: () => {
+          setAlertState((prev) => ({ ...prev, visible: false }));
+          if (onClose) {
+            onClose();
+          }
+        },
+        autoClose,
+        showOkButton,
+      });
+    });
+  }, []);
 
   useEffect(() => {
     const unsubscribeNetInfo = NetInfo.addEventListener((state) => {
@@ -131,6 +169,66 @@ function AppContent() {
     };
   }, [isOfflineAlertShown]);
 
+  useEffect(() => {
+    const interceptor = axios.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const errorResponse = error.response;
+        if (
+          errorResponse &&
+          (errorResponse.status === 401 || errorResponse.status === 403) &&
+          (errorResponse.data?.statusType === "not_approved" ||
+            errorResponse.data?.statusType === "rejected" ||
+            errorResponse.data?.statusType === "pending" ||
+            errorResponse.data?.message === "This account is not approved" ||
+            errorResponse.data?.message === "This account is rejected" ||
+            errorResponse.data?.message === "Account status is pending verification")
+        ) {
+          let currentRouteName = "";
+          if (navigationRef.isReady()) {
+            const route = navigationRef.getCurrentRoute() as any;
+            currentRouteName = route?.name || "";
+          }
+
+          if (currentRouteName !== "LoginScreen" && currentRouteName !== "Splash" && currentRouteName !== "BannedScreen") {
+            try {
+              // Clear auth tokens
+              await AsyncStorage.multiRemove([
+                "authToken",
+                "tokenStoredTime",
+                "tokenExpirationTime",
+                "userToken",
+              ]);
+
+              if (navigationRef.isReady()) {
+                navigationRef.reset({
+                  index: 0,
+                  routes: [{ 
+                    name: "BannedScreen",
+                    params: { 
+                      statusType: errorResponse.data?.statusType,
+                      message: errorResponse.data?.message 
+                    }
+                  }],
+                });
+              }
+            } catch (e) {
+              console.error("Failed to perform force logout:", e);
+            }
+
+            // Return a promise that never resolves or rejects to prevent component error logs
+            return new Promise(() => {});
+          }
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    return () => {
+      axios.interceptors.response.eject(interceptor);
+    };
+  }, []);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView
@@ -142,7 +240,7 @@ function AppContent() {
         edges={["top", "right", "left"]}
       >
         <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-        <NavigationContainer>
+        <NavigationContainer ref={navigationRef}>
           <Stack.Navigator screenOptions={{ headerShown: false }}>
             <Stack.Screen name="Splash" component={Splash} />
             <Stack.Screen name="LoginScreen" component={LoginScreen} />
@@ -165,6 +263,10 @@ function AppContent() {
             <Stack.Screen
               name="OtpSuccesfulScreen"
               component={OtpSuccesfulScreen as any}
+            />
+            <Stack.Screen
+              name="BannedScreen"
+              component={BannedScreen as any}
             />
             <Stack.Screen
               name="ScheduleScreen"
@@ -229,6 +331,15 @@ function AppContent() {
             <Stack.Screen name="Main" component={MainTabNavigator} />
           </Stack.Navigator>
         </NavigationContainer>
+        <AlertModal
+          visible={alertState.visible}
+          title={alertState.title}
+          message={alertState.message}
+          type={alertState.type}
+          onClose={alertState.onClose}
+          autoClose={alertState.autoClose}
+          showOkButton={alertState.showOkButton}
+        />
       </SafeAreaView>
     </GestureHandlerRootView>
   );
