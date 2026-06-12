@@ -859,7 +859,9 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
           "pendingCustomerData",
           JSON.stringify({ customerData, buildingData, originalBuildingType }),
         );
-        navigation.navigate("OtpScreenUp", { phoneNumber, id, token });
+        showAlert("Success", "OTP Sent Successfully.", () => {
+          navigation.navigate("OtpScreenUp", { phoneNumber, id, token });
+        });
       } else {
         try {
           const response = await axios.put(
