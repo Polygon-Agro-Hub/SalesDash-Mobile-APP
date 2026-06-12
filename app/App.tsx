@@ -180,8 +180,8 @@ function AppContent() {
           (errorResponse.data?.statusType === "not_approved" ||
             errorResponse.data?.statusType === "rejected" ||
             errorResponse.data?.statusType === "pending" ||
-            errorResponse.data?.message === "This Employee ID is not approved" ||
-            errorResponse.data?.message === "This Employee ID is rejected" ||
+            errorResponse.data?.message === "This account is not approved" ||
+            errorResponse.data?.message === "This account is rejected" ||
             errorResponse.data?.message === "Account status is pending verification")
         ) {
           let currentRouteName = "";
