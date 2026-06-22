@@ -579,7 +579,8 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
         ) : order ? (
           <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
             <View className="mx-6 my-4 ml-8">
-              <View className="border-l-2 border-[#D9D9D9] pl-5 relative">
+              <View className="pl-5 relative">
+                <View className="absolute left-0 top-[10px] bottom-[10px] w-[2px] bg-[#D9D9D9]" />
                 <View className="flex-row items-center mb-10">
                   <View
                     className={`p-1.5 rounded-full absolute -left-8 ${isTimelineItemActive("Ordered") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`}
@@ -674,6 +675,8 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                   </View>
                 )}
 
+
+
                 {status !== "Return" &&
                   status !== "Cancelled" &&
                   status !== "Hold" && (
@@ -719,19 +722,13 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
               </View>
 
               {status === "Return" && returnReason && (
-                <View
-                  style={{ paddingLeft: 24, paddingRight: 16, marginTop: 8 }}
-                >
-                  <View
-                    style={{ flexDirection: "row", alignItems: "flex-start" }}
-                  >
-                    <Text style={{ fontWeight: "600", color: "#5E5E5E" }}>
-                      {"Reason : "}
+                <View style={{ paddingLeft: 22, marginTop: 8 }}>
+                  <Text className="font-semibold text-[#5E5E5E]">
+                    Reason:{" "}
+                    <Text className="text-black font-medium">
+                      "{returnReason}"
                     </Text>
-                    <Text style={{ color: "#000", fontWeight: "500", flex: 1 }}>
-                      {`"${returnReason}"`}
-                    </Text>
-                  </View>
+                  </Text>
                 </View>
               )}
             </View>
