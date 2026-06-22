@@ -46,6 +46,7 @@ interface Order {
   total: string;
   discount: string;
   fullTotal: string;
+  deliveryCharge: string | number;
   paymentMethod: string;
   paymentStatus: number;
   orderStatus: string;
@@ -186,12 +187,14 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
           if (response.data.success) {
             setOrder(response.data.data);
             const orderData = response.data.data;
-            if (orderData.fullAddress) {
-              await fetchDeliveryFee(
-                orderData.fullAddress,
-                orderData.userId || userId,
-              );
-              setIsPackage(orderData.isPackage);
+
+            // delivery fee comes straight from the order row now
+            setDeliveryFee(parseFloat(orderData.deliveryCharge) || 0);
+            setIsPackage(orderData.isPackage);
+
+            // keep this only if you still need customerData for name/address display
+            if (orderData.userId || userId) {
+              await fetchCustomerData(orderData.userId || userId);
             }
           } else {
             setError("Failed to load order details");
@@ -212,52 +215,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   useEffect(() => {
     fetchHoldStatus();
   }, [fetchHoldStatus]);
-
-  const fetchDeliveryFee = async (
-    fullAddress: string,
-    customerUserId?: number,
-  ) => {
-    try {
-      const storedToken = await AsyncStorage.getItem("authToken");
-      if (!storedToken) return;
-      if (customerUserId || userId) {
-        const custData = await fetchCustomerData(customerUserId || userId);
-        if (custData && custData.buildingDetails?.city) {
-          const cityName = custData.buildingDetails.city;
-          const cityResponse = await axios.get<{ data: City[] }>(
-            `${environment.API_BASE_URL}api/customer/get-city`,
-            { headers: { Authorization: `Bearer ${storedToken}` } },
-          );
-          if (cityResponse.data && cityResponse.data.data) {
-            const cityData = cityResponse.data.data.find(
-              (c) => c.city.toLowerCase() === cityName.toLowerCase(),
-            );
-            if (cityData) setDeliveryFee(parseFloat(cityData.charge) || 0);
-          }
-          return;
-        }
-      }
-      const addressParts = fullAddress.split(", ");
-      let cityName =
-        addressParts.length >= 2
-          ? addressParts[addressParts.length - 2].trim()
-          : "";
-      if (cityName) {
-        const cityResponse = await axios.get<{ data: City[] }>(
-          `${environment.API_BASE_URL}api/customer/get-city`,
-          { headers: { Authorization: `Bearer ${storedToken}` } },
-        );
-        if (cityResponse.data && cityResponse.data.data) {
-          const cityData = cityResponse.data.data.find(
-            (c) => c.city.toLowerCase() === cityName.toLowerCase(),
-          );
-          if (cityData) setDeliveryFee(parseFloat(cityData.charge) || 0);
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching delivery fee:", error);
-    }
-  };
 
   const fetchCustomerData = async (
     customerUserId: number,
@@ -674,8 +631,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                     </Text>
                   </View>
                 )}
-
-
 
                 {status !== "Return" &&
                   status !== "Cancelled" &&

@@ -306,6 +306,7 @@ export type RootStackParamList = {
     timeDisplay?: string;
     sheduleTime?: string;
     sheduleDate?: string;
+    deliveryCharge?:string;
     paymentMethod?: string;
     // Customer identifiers
     customerId?: string | number;

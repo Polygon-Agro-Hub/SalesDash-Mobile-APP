@@ -45,9 +45,10 @@ interface OrderConfirmedScreenProps {
 
 interface PackageDetail {
   id: number;
-  name: string;
-  quantity: string;
-  category?: string;
+  packageId: number;
+  productTypeId: number;
+  qty: number;
+  productTypeName: string;
 }
 interface PackageInfo {
   displayName: string;
@@ -59,15 +60,17 @@ interface PackageInfo {
   status: string;
 }
 interface AdditionalItem {
-  id: number;
-  name: string;
-  price: string;
-  quantity: string;
+  productId: number;
+  qty: number;
   unit: string;
-  totalPrice: string;
-  marketplacetablenormalPrice: string;
-  marketplacetablediscountedPrice: string;
-  marketplacetablediscount: string;
+  price: string;
+  discount: number;
+  displayName: string;
+  varietyId: number;
+  name?: string;
+  marketplacetablenormalPrice?: number;
+  marketplacetablediscountedPrice?: number;
+  marketplacetablediscount?: number;
 }
 interface CustomerInfo {
   buildingType: string;
@@ -86,6 +89,7 @@ interface Order {
   createdAt: string;
   customerInfo: CustomerInfo;
   discount: string;
+  deliveryCharge: string;
   fullAddress: string;
   fullTotal: string;
   isPackage: number;
@@ -115,28 +119,6 @@ interface CustomerData {
   };
   email?: string;
 }
-interface City {
-  id: number;
-  city: string;
-  charge: string;
-  createdAt?: string;
-}
-interface PackageDetail {
-  id: number;
-  packageId: number;
-  productTypeId: number;
-  qty: number;
-  productTypeName: string;
-}
-interface AdditionalItem {
-  productId: number;
-  qty: number;
-  unit: string;
-  price: string;
-  discount: number;
-  displayName: string;
-  varietyId: number;
-}
 
 const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
   navigation,
@@ -146,7 +128,6 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [deliveryFee, setDeliveryFee] = useState<number>(0);
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
 
@@ -221,7 +202,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
   }, [orderId]);
 
   useEffect(() => {
-    const fetchCustomerDataAndDeliveryFee = async () => {
+    const fetchCustomerData = async () => {
       if (!order?.userId) {
         return;
       }
@@ -243,28 +224,6 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
 
         if (customerResponse.data && customerResponse.data.success) {
           setCustomerData(customerResponse.data.data);
-
-          const customerCity = customerResponse.data.data.buildingDetails?.city;
-
-          if (customerCity) {
-            const cityResponse = await axios.get<{ data: City[] }>(
-              `${environment.API_BASE_URL}api/customer/get-city`,
-              { headers: { Authorization: `Bearer ${storedToken}` } },
-            );
-
-            if (cityResponse.data && cityResponse.data.data) {
-              const cityData = cityResponse.data.data.find(
-                (c) => c.city === customerCity,
-              );
-              if (cityData) {
-                const fee = parseFloat(cityData.charge) || 0;
-                setDeliveryFee(fee);
-              } else {
-                console.log(`City ${customerCity} not found in cities list`);
-              }
-            }
-          }
-
           setLoading(false);
         } else {
           const errorMsg =
@@ -287,7 +246,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
     };
 
     if (order && order.userId) {
-      fetchCustomerDataAndDeliveryFee();
+      fetchCustomerData();
     }
   }, [order]);
 
@@ -340,6 +299,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
       const discountAmount = parseFloat(order?.discount || "0");
       const totalBeforeDiscount = parseFloat(order?.total || "0");
       const totalAmount = totalBeforeDiscount - discountAmount;
+      const deliveryChargeAmount = parseFloat(order?.deliveryCharge || "0");
 
       const additionalItemsTotal =
         order?.additionalItems?.reduce((sum, item) => {
@@ -720,9 +680,9 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
           <p>Discount</p>
           <p> Rs. ${totaldiscount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
         </div>
-        <div style="display: flex; justify-content: space-between; margin-right: 20px;"class="ptext" >
+        <div style="display: flex; justify-content: space-between; margin-right: 20px;" class="ptext">
           <p>Delivery Fee</p>
-          <p>Rs. ${deliveryFee.toFixed(2)}</p>
+          <p>Rs. ${deliveryChargeAmount.toFixed(2)}</p>
         </div>
 
         <div style="margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px;" ></div>
