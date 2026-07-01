@@ -479,7 +479,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
             >
               <View className="flex-row justify-center items-center gap-2">
                 <Text className="text-[#7240D3] underline">
-                  Exclude Item List
+                  Package Preferences
                 </Text>
                 <AntIcons name="external-link" size={20} color="#6C3CD1" />
               </View>
