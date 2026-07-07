@@ -18,10 +18,10 @@ import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-import NoDataFound from "../common/NoDataFound";
 import LoadingPage from "../common/LoadingPage";
 import FixedMarqueeText from "../common/MarqueeText";
-import { Entypo } from "@expo/vector-icons";
+import { Entypo, Ionicons } from "@expo/vector-icons";
+import LottieView from "lottie-react-native";
 
 type ExcludeItemEditSummeryNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -33,13 +33,32 @@ interface ExcludeListAddProps {
   route: RouteProp<RootStackParamList, "ExcludeItemEditSummery">;
 }
 
-const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
+interface ExcludeCrop {
+  excludeId: number;
+  displayName: string;
+  image: string;
+}
+
+interface PreferCrop {
+  preId: number;
+  displayName: string;
+  image: string;
+}
+
+const ExcludeItemEditSummery: React.FC<ExcludeListAddProps> = ({
   route,
   navigation,
 }) => {
   const { id, customerId, name, title } = route.params;
-  const [crops, setCrops] = useState<any[]>([]);
+
+  const [excludeCrops, setExcludeCrops] = useState<ExcludeCrop[]>([]);
+  const [preferCrops, setPreferCrops] = useState<PreferCrop[]>([]);
+
+  const [selectedExcludeIds, setSelectedExcludeIds] = useState<number[]>([]);
+  const [selectedPreferIds, setSelectedPreferIds] = useState<number[]>([]);
+
   const [loading, setLoading] = useState<boolean>(true);
+
   const [customerName, setCustomerName] = useState<{
     firstName: string;
     lastName: string;
@@ -52,47 +71,88 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
     cusId: "",
   });
 
+  const fetchLists = useCallback(async () => {
+    setLoading(true);
+    try {
+      const storedToken = await AsyncStorage.getItem("authToken");
+      if (!storedToken) {
+        setLoading(false);
+        return;
+      }
+
+      const headers = { Authorization: `Bearer ${storedToken}` };
+
+      const [excludeRes, preferRes] = await Promise.allSettled([
+        axios.get(`${environment.API_BASE_URL}api/customer/excludelist`, {
+          params: { customerId: id },
+          headers,
+        }),
+        axios.get(`${environment.API_BASE_URL}api/customer/preferlist`, {
+          params: { customerId: id },
+          headers,
+        }),
+      ]);
+
+      let gotCustomerInfo = false;
+
+      if (excludeRes.status === "fulfilled" && excludeRes.value.data?.data) {
+        const data = excludeRes.value.data.data;
+        const valid = data.filter(
+          (item: any) => item.excludeId && item.displayName,
+        );
+        setExcludeCrops(valid);
+
+        if (data.length > 0) {
+          const { firstName, lastName, title, cusId } = data[0];
+          setCustomerName((prev) => ({
+            ...prev,
+            firstName: firstName || prev.firstName,
+            lastName: lastName || prev.lastName,
+            title: title || prev.title,
+            cusId: cusId || prev.cusId,
+          }));
+          gotCustomerInfo = true;
+        }
+      } else {
+        setExcludeCrops([]);
+      }
+
+      if (preferRes.status === "fulfilled" && preferRes.value.data?.data) {
+        const data = preferRes.value.data.data;
+        const valid = data.filter(
+          (item: any) => item.preId && item.displayName,
+        );
+        setPreferCrops(valid);
+
+        if (data.length > 0 && !gotCustomerInfo) {
+          const { firstName, lastName, title, cusId } = data[0];
+          setCustomerName((prev) => ({
+            ...prev,
+            firstName: firstName || prev.firstName,
+            lastName: lastName || prev.lastName,
+            title: title || prev.title,
+            cusId: cusId || prev.cusId,
+          }));
+        }
+      } else {
+        setPreferCrops([]);
+      }
+    } catch (err) {
+      console.error("Failed to fetch prefer/exclude lists:", err);
+      setExcludeCrops([]);
+      setPreferCrops([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
   useFocusEffect(
     useCallback(() => {
-      const fetchProducts = async () => {
-        setLoading(true);
-        setCrops([]);
-        setCustomerName({
-          firstName: "",
-          lastName: "",
-          title: "",
-          cusId: "",
-        });
-        try {
-          const storedToken = await AsyncStorage.getItem("authToken");
-          if (!storedToken) {
-            setLoading(false);
-            return;
-          }
-
-          const apiUrl = `${environment.API_BASE_URL}api/customer/excludelist`;
-          const response = await axios.get(apiUrl, {
-            params: { customerId: id },
-            headers: { Authorization: `Bearer ${storedToken}` },
-          });
-
-          if (response.data && response.data.data) {
-            setCrops(response.data.data);
-          }
-          if (response.data && response.data.data.length > 0) {
-            const { firstName, lastName, title, cusId } = response.data.data[0];
-            setCustomerName({ firstName, lastName, title, cusId });
-          }
-        } catch (err) {
-          console.error("Failed to fetch products:", err);
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      fetchProducts();
+      setSelectedExcludeIds([]);
+      setSelectedPreferIds([]);
+      fetchLists();
       return () => {};
-    }, [id]),
+    }, [fetchLists]),
   );
 
   const fullTitle =
@@ -112,12 +172,41 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
     });
   };
 
-  const deleteCrop = async (excludeId: number) => {
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        handleBackPress();
+        return true;
+      };
+
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress,
+      );
+
+      return () => backHandler.remove();
+    }, [navigation, id, customerId, name, title]),
+  );
+
+  const toggleSelectExclude = (excludeId: number) => {
+    setSelectedExcludeIds((prev) =>
+      prev.includes(excludeId)
+        ? prev.filter((eId) => eId !== excludeId)
+        : [...prev, excludeId],
+    );
+  };
+
+  const toggleSelectPrefer = (preId: number) => {
+    setSelectedPreferIds((prev) =>
+      prev.includes(preId)
+        ? prev.filter((pId) => pId !== preId)
+        : [...prev, preId],
+    );
+  };
+
+  const deleteExcludeCrop = async (excludeId: number) => {
     Alert.alert("Delete", "Are you sure you want to delete this item?", [
-      {
-        text: "Cancel",
-        style: "cancel",
-      },
+      { text: "Cancel", style: "cancel" },
       {
         text: "OK",
         onPress: async () => {
@@ -135,43 +224,166 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
             });
 
             if (response.status === 200) {
-              setCrops((prevCrops) =>
-                prevCrops.filter((crop) => crop.excludeId !== excludeId),
+              setExcludeCrops((prev) =>
+                prev.filter((crop) => crop.excludeId !== excludeId),
+              );
+              setSelectedExcludeIds((prev) =>
+                prev.filter((eId) => eId !== excludeId),
               );
             } else {
               console.error("Failed to delete item");
             }
           } catch (err) {
-            console.error("Error deleting crop:", err);
+            console.error("Error deleting exclude crop:", err);
           }
         },
       },
     ]);
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      const onBackPress = () => {
-        handleBackPress();
-        return true;
-      };
+  const deletePreferCrop = async (preId: number) => {
+    Alert.alert("Delete", "Are you sure you want to delete this item?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "OK",
+        onPress: async () => {
+          try {
+            const storedToken = await AsyncStorage.getItem("authToken");
+            if (!storedToken) {
+              console.error("No authentication token found");
+              return;
+            }
 
-      const backHandler = BackHandler.addEventListener(
-        "hardwareBackPress",
-        onBackPress,
-      );
+            const apiUrl = `${environment.API_BASE_URL}api/customer/preferlist/delete`;
+            const response = await axios.delete(apiUrl, {
+              headers: { Authorization: `Bearer ${storedToken}` },
+              params: { preferId: preId },
+            });
 
-      return () => backHandler.remove();
-    }, [navigation, id, customerId, name, title]),
+            if (response.status === 200) {
+              setPreferCrops((prev) =>
+                prev.filter((crop) => crop.preId !== preId),
+              );
+              setSelectedPreferIds((prev) =>
+                prev.filter((pId) => pId !== preId),
+              );
+            } else {
+              console.error("Failed to delete item");
+            }
+          } catch (err) {
+            console.error("Error deleting prefer crop:", err);
+          }
+        },
+      },
+    ]);
+  };
+
+  const deleteSelectedExcludeCrops = async () => {
+    if (selectedExcludeIds.length === 0) return;
+
+    Alert.alert(
+      "Delete Selected",
+      `Delete ${selectedExcludeIds.length} selected item(s)?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "OK",
+          onPress: async () => {
+            try {
+              const storedToken = await AsyncStorage.getItem("authToken");
+              if (!storedToken) return;
+
+              const apiUrl = `${environment.API_BASE_URL}api/customer/excludelist/delete`;
+              await Promise.all(
+                selectedExcludeIds.map((excludeId) =>
+                  axios.delete(apiUrl, {
+                    headers: { Authorization: `Bearer ${storedToken}` },
+                    params: { excludeId },
+                  }),
+                ),
+              );
+
+              setExcludeCrops((prev) =>
+                prev.filter(
+                  (crop) => !selectedExcludeIds.includes(crop.excludeId),
+                ),
+              );
+              setSelectedExcludeIds([]);
+            } catch (err) {
+              console.error("Error bulk deleting exclude crops:", err);
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const deleteSelectedPreferCrops = async () => {
+    if (selectedPreferIds.length === 0) return;
+
+    Alert.alert(
+      "Delete Selected",
+      `Delete ${selectedPreferIds.length} selected item(s)?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "OK",
+          onPress: async () => {
+            try {
+              const storedToken = await AsyncStorage.getItem("authToken");
+              if (!storedToken) return;
+
+              const apiUrl = `${environment.API_BASE_URL}api/customer/preferlist/delete`;
+              await Promise.all(
+                selectedPreferIds.map((preId) =>
+                  axios.delete(apiUrl, {
+                    headers: { Authorization: `Bearer ${storedToken}` },
+                    params: { preferId: preId },
+                  }),
+                ),
+              );
+
+              setPreferCrops((prev) =>
+                prev.filter((crop) => !selectedPreferIds.includes(crop.preId)),
+              );
+              setSelectedPreferIds([]);
+            } catch (err) {
+              console.error("Error bulk deleting prefer crops:", err);
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const hasAnyItems = () => excludeCrops.length > 0 || preferCrops.length > 0;
+
+  const getButtonText = () => (hasAnyItems() ? "Add More" : "Add");
+
+  const Checkbox = ({
+    checked,
+    onPress,
+  }: {
+    checked: boolean;
+    onPress: () => void;
+  }) => (
+    <TouchableOpacity onPress={onPress} hitSlop={8}>
+      <View
+        style={{
+          width: 22,
+          height: 22,
+          borderRadius: 6,
+          borderWidth: 1.5,
+          borderColor: checked ? "#374151" : "#9CA3AF",
+          backgroundColor: checked ? "#374151" : "#FFFFFF",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {checked && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
+      </View>
+    </TouchableOpacity>
   );
-
-  const hasExcludedItems = () => {
-    return crops.length > 0 && crops.some((crop) => crop.excludeId !== null);
-  };
-
-  const getButtonText = () => {
-    return hasExcludedItems() ? "Add More" : "Add";
-  };
 
   if (loading) {
     return <LoadingPage message="Loading Details..." fullScreen={true} />;
@@ -194,7 +406,6 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
           backgroundColor: "transparent",
         }}
       >
-        {/* Back button */}
         <TouchableOpacity
           onPress={handleBackPress}
           style={{
@@ -213,7 +424,6 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
           <Entypo name="chevron-left" size={25} color="black" />
         </TouchableOpacity>
 
-        {/* Title — marquee when long */}
         <View
           style={{
             flex: 1,
@@ -242,11 +452,9 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
           )}
         </View>
 
-        {/* Right spacer to keep title centred */}
         <View style={{ width: 45, marginRight: 10 }} />
       </View>
 
-      {/* Customer ID */}
       <View className="mx-auto w-full max-w-[500px]">
         <Text
           style={{ fontSize: 16, marginTop: -3 }}
@@ -258,65 +466,298 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
         </Text>
       </View>
 
-      <View className="flex-1 bg-white px-6 overflow-scroll mx-auto w-full max-w-[500px]">
-        <View className="mt-4">
-          <Text className="text-[#874CDB] text-sm font-semibold">
-            Preferred Items to Exclude
-          </Text>
-          <View className="bg-gray-300 h-[1px] mt-2" />
-        </View>
-
-        <ScrollView
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-          className="mb-20"
-          contentContainerStyle={{ flexGrow: 1 }}
-        >
-          <View style={{ flex: 1 }}>
-            {crops.length === 0 ||
-            crops.every((crop) => crop.excludeId === null) ? (
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        className="flex-1 mb-24"
+        contentContainerStyle={{ flexGrow: 1 }}
+      >
+        <View className="mx-auto w-full max-w-[500px] px-6">
+          {/* ---------------- Items prefer to include ---------------- */}
+          <View
+            style={{
+              marginTop: 24,
+              borderWidth: 1,
+              borderColor: "#E5E7EB",
+              borderRadius: 12,
+              backgroundColor: "#FFFFFF",
+              overflow: "hidden",
+            }}
+          >
+            <View
+              className="flex-row items-center gap-3 px-4 py-3"
+              style={{ backgroundColor: "#E6F2E5" }}
+            >
               <View
                 style={{
-                  flex: 1,
-                  justifyContent: "center",
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  backgroundColor: "#FFFFFF",
                   alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
-                <NoDataFound message="No Exclude Item Found" />
+                <Ionicons name="heart" size={16} color="#16A34A" />
+              </View>
+              <Text style={{ fontSize: 14, color: "#34C759" }}>
+                Items prefer to Include
+              </Text>
+            </View>
+
+            {preferCrops.length === 0 ? (
+              <View className="items-center py-8">
+                <TouchableOpacity
+                  onPress={() =>
+                    navigation.navigate("ExcludeAddMore", {
+                      id: id,
+                      customerId: customerId,
+                      name: name,
+                      title: title,
+                    })
+                  }
+                  className="items-center"
+                >
+                  <LottieView
+                    source={require("../../assets/json/add-items.json")}
+                    autoPlay
+                    loop
+                    style={{ width: 80, height: 80 }}
+                  />
+                  <Text className="text-[#8C46FB] font-semibold">Add Now</Text>
+                </TouchableOpacity>
               </View>
             ) : (
-              crops.map((crop) => (
+              <View className="px-4 pb-3">
+                {selectedPreferIds.length > 0 && (
+                  <View className="flex-row justify-end items-center gap-1 py-2">
+                    <MaterialIcons name="delete" size={16} color="#FF000D" />
+                    <TouchableOpacity onPress={deleteSelectedPreferCrops}>
+                      <Text
+                        style={{
+                          color: "#FF000D",
+                          fontSize: 12,
+                          fontWeight: "600",
+                          textDecorationLine: "underline",
+                        }}
+                      >
+                        Delete Selected Items
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
                 <View
-                  key={crop.excludeId}
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginVertical: 4,
-                  }}
+                  className="flex-row justify-between items-center py-2"
+                  style={{ borderBottomWidth: 1, borderBottomColor: "#E5E7EB" }}
                 >
-                  <View className="flex-row justify-center items-center gap-6">
-                    <Image
-                      source={{ uri: crop.image }}
-                      style={{ width: 60, height: 60, marginRight: 10 }}
-                      resizeMode="contain"
-                    />
-                    <Text style={{ fontSize: 16, color: "#000" }}>
+                  <Text
+                    className="flex-1"
+                    style={{ fontSize: 13, color: "#9CA3AF" }}
+                  >
+                    Item ({String(preferCrops.length).padStart(2, "0")})
+                  </Text>
+                  <Text
+                    className="flex-1 text-center"
+                    style={{ fontSize: 13, color: "#9CA3AF" }}
+                  >
+                    Name
+                  </Text>
+                  <Text
+                    className="flex-1 text-right"
+                    style={{ fontSize: 13, color: "#9CA3AF" }}
+                  >
+                    Action
+                  </Text>
+                </View>
+
+                {preferCrops.map((crop) => (
+                  <View
+                    key={crop.preId}
+                    className="flex-row justify-between items-center py-3"
+                    style={{
+                      borderBottomWidth: 1,
+                      borderBottomColor: "#F3F4F6",
+                    }}
+                  >
+                    <View className="flex-row items-center gap-3 flex-1">
+                      <Checkbox
+                        checked={selectedPreferIds.includes(crop.preId)}
+                        onPress={() => toggleSelectPrefer(crop.preId)}
+                      />
+                      <Image
+                        source={{ uri: crop.image }}
+                        style={{ width: 32, height: 32 }}
+                        resizeMode="contain"
+                      />
+                    </View>
+                    <Text
+                      className="text-sm text-black flex-1 text-center"
+                      numberOfLines={2}
+                    >
                       {crop.displayName}
                     </Text>
-                  </View>
-
-                  <TouchableOpacity onPress={() => deleteCrop(crop.excludeId)}>
-                    <View>
-                      <MaterialIcons name="delete" size={24} color="#FF0000" />
+                    <View className="flex-1 items-end">
+                      <TouchableOpacity
+                        onPress={() => deletePreferCrop(crop.preId)}
+                      >
+                        <MaterialIcons
+                          name="delete"
+                          size={22}
+                          color="#FF000D"
+                        />
+                      </TouchableOpacity>
                     </View>
-                  </TouchableOpacity>
-                </View>
-              ))
+                  </View>
+                ))}
+              </View>
             )}
           </View>
-        </ScrollView>
-      </View>
+
+          {/* ---------------- Items prefer to exclude ---------------- */}
+          <View
+            style={{
+              marginTop: 24,
+              borderWidth: 1,
+              borderColor: "#E5E7EB",
+              borderRadius: 12,
+              backgroundColor: "#FFFFFF",
+              overflow: "hidden",
+            }}
+          >
+            <View
+              className="flex-row items-center gap-3 px-4 py-3"
+              style={{ backgroundColor: "#FDEEEE" }}
+            >
+              <View
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  backgroundColor: "#FFFFFF",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Ionicons name="close" size={16} color="#DC2626" />
+              </View>
+              <Text
+                style={{ fontSize: 15, fontWeight: "500", color: "#DC2626" }}
+              >
+                Items prefer to exclude
+              </Text>
+            </View>
+
+            {excludeCrops.length === 0 ? (
+              <View className="items-center py-8">
+                <TouchableOpacity
+                  onPress={() =>
+                    navigation.navigate("ExcludeAddMore", {
+                      id: id,
+                      customerId: customerId,
+                      name: name,
+                      title: title,
+                    })
+                  }
+                  className="items-center"
+                >
+                  <LottieView
+                    source={require("../../assets/json/add-items.json")}
+                    autoPlay
+                    loop
+                    style={{ width: 80, height: 80 }}
+                  />
+                  <Text className="text-[#8C46FB] font-semibold">Add Now</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View className="px-4 pb-3">
+                {selectedExcludeIds.length > 0 && (
+                  <View className="flex-row justify-end items-center gap-1 py-2">
+                    <MaterialIcons name="delete" size={16} color="#DC2626" />
+                    <TouchableOpacity onPress={deleteSelectedExcludeCrops}>
+                      <Text
+                        style={{
+                          color: "#FF000D",
+                          fontSize: 12,
+                          fontWeight: "600",
+                          textDecorationLine: "underline",
+                        }}
+                      >
+                        Delete Selected Items
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                <View
+                  className="flex-row justify-between items-center py-2"
+                  style={{ borderBottomWidth: 1, borderBottomColor: "#E5E7EB" }}
+                >
+                  <Text
+                    className="flex-1"
+                    style={{ fontSize: 13, color: "#9CA3AF" }}
+                  >
+                    Item ({String(excludeCrops.length).padStart(2, "0")})
+                  </Text>
+                  <Text
+                    className="flex-1 text-center"
+                    style={{ fontSize: 13, color: "#9CA3AF" }}
+                  >
+                    Name
+                  </Text>
+                  <Text
+                    className="flex-1 text-right"
+                    style={{ fontSize: 13, color: "#9CA3AF" }}
+                  >
+                    Action
+                  </Text>
+                </View>
+
+                {excludeCrops.map((crop) => (
+                  <View
+                    key={crop.excludeId}
+                    className="flex-row justify-between items-center py-3"
+                    style={{
+                      borderBottomWidth: 1,
+                      borderBottomColor: "#F3F4F6",
+                    }}
+                  >
+                    <View className="flex-row items-center gap-3 flex-1">
+                      <Checkbox
+                        checked={selectedExcludeIds.includes(crop.excludeId)}
+                        onPress={() => toggleSelectExclude(crop.excludeId)}
+                      />
+                      <Image
+                        source={{ uri: crop.image }}
+                        style={{ width: 32, height: 32 }}
+                        resizeMode="contain"
+                      />
+                    </View>
+                    <Text
+                      className="text-sm text-black flex-1 text-center"
+                      numberOfLines={2}
+                    >
+                      {crop.displayName}
+                    </Text>
+                    <View className="flex-1 items-end">
+                      <TouchableOpacity
+                        onPress={() => deleteExcludeCrop(crop.excludeId)}
+                      >
+                        <MaterialIcons
+                          name="delete"
+                          size={22}
+                          color="#FF0000"
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        </View>
+      </ScrollView>
 
       {/* Add / Add More button */}
       <View className="absolute bottom-0 left-0 right-0 bg-white pt-4 pb-4 px-6 items-center">
@@ -358,4 +799,4 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
   );
 };
 
-export default ExcludeListSummery;
+export default ExcludeItemEditSummery;

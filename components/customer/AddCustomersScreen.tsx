@@ -19,7 +19,7 @@ import axios from "axios";
 import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
-import { Entypo, FontAwesome6, MaterialIcons } from "@expo/vector-icons";
+import { MaterialIcons } from "@expo/vector-icons";
 import { Platform } from "react-native";
 import CustomHeader from "../common/CustomHeader";
 import GlobalSearchModal from "../common/GlobalSearchModal";
@@ -40,6 +40,7 @@ interface City {
   city: string;
   charge: string;
   createdAt?: string;
+  hasCenter: boolean | number;
 }
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -75,7 +76,6 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
   const [loading, setLoading] = useState(false);
   const [emailError, setEmailError] = useState<string>("");
   const [phoneError, setPhoneError] = useState<string>("");
-  const [locationError, setLocationError] = useState<string>("");
   const [touchedFields, setTouchedFields] = useState<{
     [key: string]: boolean;
   }>({
@@ -100,11 +100,8 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
   const [titleError, setTitleError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [cityItems, setCityItems] = useState<
-    { label: string; value: string }[]
+    { label: string; value: string; deliverable: boolean }[]
   >([]);
-  const [selectedLocationName, setSelectedLocationName] = useState<string>("");
-  const [latitude, setLatitude] = useState<number | undefined>(undefined);
-  const [longitude, setLongitude] = useState<number | undefined>(undefined);
   const [titleModalVisible, setTitleModalVisible] = useState(false);
   const [buildingTypeModalVisible, setBuildingTypeModalVisible] =
     useState(false);
@@ -122,35 +119,20 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     { label: "Apartment", value: "Apartment" },
   ]);
 
+  const matchedCity = cityItems.find(
+    (item) => item.label.trim().toLowerCase() === city.trim().toLowerCase(),
+  );
+
+  const isCityKnown = city.trim().length > 0 && !!matchedCity;
+  const isCityDeliverable = isCityKnown && matchedCity!.deliverable;
+
   const showAlert = (title: string, message: string, onClose?: () => void) => {
     Alert.alert(title, message, [{ text: "OK", onPress: onClose }]);
   };
 
-  const isNavigatingToGeoScreen = useRef(false);
-
   const isNavigatingToOtpScreen = useRef(false);
 
   const cityInputRef = useRef<TextInput>(null);
-
-  const isCityDeliverable =
-    city.trim().length > 0 &&
-    cityItems.some(
-      (item) => item.label.trim().toLowerCase() === city.trim().toLowerCase(),
-    );
-
-  const openMapForLocation = () => {
-    isNavigatingToGeoScreen.current = true;
-    navigation.navigate("AttachGeoLocationScreen", {
-      currentLatitude: latitude,
-      currentLongitude: longitude,
-      onLocationSelect: (lat: number, lng: number, name: string) => {
-        setLatitude(lat);
-        setLongitude(lng);
-        setSelectedLocationName(name);
-        setLocationError("");
-      },
-    });
-  };
 
   const resetForm = () => {
     setStep(1);
@@ -183,10 +165,6 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     setUnitNoError("");
     setFloorNoError("");
     setIsSubmitting(false);
-    setLatitude(undefined);
-    setLongitude(undefined);
-    setLocationError("");
-    setSelectedLocationName("");
     setTouchedFields({
       email: false,
       phoneNumber: false,
@@ -208,11 +186,6 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     React.useCallback(() => {
       fetchCity();
 
-      if (isNavigatingToGeoScreen.current) {
-        isNavigatingToGeoScreen.current = false;
-        return;
-      }
-
       if (isNavigatingToOtpScreen.current) {
         isNavigatingToOtpScreen.current = false;
         return;
@@ -221,12 +194,9 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       const routes = navigation.getState()?.routes;
       const previousRoute = routes?.[routes.length - 2];
 
-      const isComingFromGeoScreens =
-        previousRoute?.name === "AttachGeoLocationScreen" ||
-        previousRoute?.name === "ViewLocationScreen" ||
-        previousRoute?.name === "OtpScreen";
+      const isComingFromOtpScreen = previousRoute?.name === "OtpScreen";
 
-      if (isComingFromGeoScreens) {
+      if (isComingFromOtpScreen) {
         return;
       }
 
@@ -643,6 +613,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         const formattedCities = response.data.data.map((city) => ({
           label: city.city,
           value: city.city,
+          deliverable: !!city.hasCenter,
         }));
         setCityItems(formattedCities);
       }
@@ -655,7 +626,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     fetchCity();
   }, []);
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     const isTitleValid = !!selectedCategory;
     const isFirstNameValid = firstName && validateName(firstName);
     const isLastNameValid = lastName && validateName(lastName);
@@ -701,7 +672,68 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       return;
     }
 
-    setStep(2);
+    try {
+      setLoading(true);
+      await axios.post(
+        `${environment.API_BASE_URL}api/customer/check-customer`,
+        {
+          phoneNumber,
+          email: email,
+        },
+      );
+
+      setStep(2);
+    } catch (error: any) {
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status;
+        const message = error.response?.data?.message || "";
+
+        if (status === 400 || status === 409) {
+          if (message.includes("Mobile Number and Email")) {
+            setPhoneError("This mobile number is already registered");
+            setEmailError("This email is already registered");
+            showAlert(
+              "Account Already Exists",
+              "Both mobile number and email are already registered. Please sign in instead.",
+            );
+          } else if (message.includes("Mobile Number")) {
+            setPhoneError("This mobile number is already registered");
+            showAlert(
+              "Mobile Number Already Exists",
+              "This mobile number is already registered. Please use a different mobile number.",
+            );
+          } else if (message.includes("Email")) {
+            setEmailError("This email is already registered");
+            showAlert(
+              "Email Already Exists",
+              "This email is already registered. Please use a different email.",
+            );
+          } else {
+            showAlert(
+              "Registration Error",
+              message || "Please check your details and try again.",
+            );
+          }
+        } else if (status && status >= 500) {
+          showAlert(
+            "Server Error",
+            "Our servers are experiencing issues. Please try again later.",
+          );
+        } else {
+          showAlert(
+            "Error",
+            "Something went wrong while checking your details. Please try again.",
+          );
+        }
+      } else {
+        showAlert(
+          "Network Error",
+          "Please check your internet connection and try again.",
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRegister = async () => {
@@ -778,16 +810,6 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       return;
     }
 
-    if (!latitude || !longitude) {
-      showAlert(
-        "Location Required",
-        "Please capture customer's location before registering.",
-        // [{ text: "OK" }],
-      );
-      setIsSubmitting(false);
-      return;
-    }
-
     try {
       await axios.post(
         `${environment.API_BASE_URL}api/customer/check-customer`,
@@ -811,8 +833,6 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         floorNo,
         unitNo,
         buildingName,
-        latitude,
-        longitude,
       };
 
       await AsyncStorage.setItem(
@@ -1123,6 +1143,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         >
           <TouchableOpacity
             onPress={handleContinue}
+            disabled={loading}
             activeOpacity={0.8}
             style={{ borderRadius: 30 }}
           >
@@ -1134,15 +1155,19 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 borderRadius: 30,
               }}
             >
-              <Text
-                style={{
-                  textAlign: "center",
-                  color: "#FFFFFF",
-                  fontWeight: "bold",
-                }}
-              >
-                Continue
-              </Text>
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text
+                  style={{
+                    textAlign: "center",
+                    color: "#FFFFFF",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Continue
+                </Text>
+              )}
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -1151,15 +1176,6 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
   };
 
   const renderCityField = () => {
-    const cityBorderColor =
-      city.trim().length > 0 && filteredCities.length === 0
-        ? isCityDeliverable
-          ? "#059669"
-          : "#EA580C"
-        : cityError
-          ? "#EF4444"
-          : "#F6F6F6";
-
     return (
       <View className="mb-4" style={{ zIndex: 1000, position: "relative" }}>
         <Text
@@ -1175,7 +1191,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
               backgroundColor: "#F6F6F6",
               height: 50,
               borderWidth: 1.5,
-              borderColor: cityBorderColor,
+              borderColor: "#F6F6F6",
               borderRadius: 999,
               paddingHorizontal: 18,
               paddingRight: 44,
@@ -1303,19 +1319,54 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
   const renderCityDeliveryStatus = () => {
     if (city.trim().length === 0 || filteredCities.length > 0) return null;
 
+    if (!isCityKnown) {
+      return (
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            backgroundColor: "#FEF6ED",
+            borderRadius: 10,
+            paddingVertical: 10,
+            paddingHorizontal: 14,
+            marginTop: 8,
+            borderWidth: 1,
+            borderColor: "#FFDCB5",
+          }}
+        >
+          <MaterialIcons
+            name="error-outline"
+            size={18}
+            color="#DC2626"
+            style={{ marginRight: 8 }}
+          />
+          <Text
+            style={{
+              color: "#991B1B",
+              fontSize: 13,
+              fontWeight: "600",
+              flexShrink: 1,
+            }}
+          >
+            City not found.
+          </Text>
+        </View>
+      );
+    }
+
     if (isCityDeliverable) {
       return (
         <View
           style={{
             flexDirection: "row",
             alignItems: "center",
-            backgroundColor: "#ECFDF5",
+            backgroundColor: "#EEFAF3",
             borderRadius: 10,
             paddingVertical: 10,
             paddingHorizontal: 14,
             marginTop: 8,
             borderWidth: 1,
-            borderColor: "#6EE7B7",
+            borderColor: "#D2ECE1",
           }}
         >
           <MaterialIcons
@@ -1343,13 +1394,13 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         style={{
           flexDirection: "row",
           alignItems: "center",
-          backgroundColor: "#FFF7ED",
+          backgroundColor: "#FEF6ED",
           borderRadius: 10,
           paddingVertical: 10,
           paddingHorizontal: 14,
           marginTop: 8,
           borderWidth: 1,
-          borderColor: "#FDBA74",
+          borderColor: "#FFDCB5",
         }}
       >
         <MaterialIcons
@@ -1366,7 +1417,8 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
             flexShrink: 1,
           }}
         >
-          City not found.
+          Delivery not available in {city} yet, but we're working on it and
+          coming to your area soon!
         </Text>
       </View>
     );

@@ -95,10 +95,7 @@ function MainTabNavigator() {
         name="CustomersScreen"
         component={CustomersScreen}
       />
-      <Tab.Screen
-        name="ViewCustomerScreen"
-        component={ViewCustomerScreen as any}
-      />
+    
       <Tab.Screen
         name="OrderConfirmedScreen"
         component={OrderConfirmedScreen as any}
@@ -245,7 +242,10 @@ function AppContent() {
             <Stack.Screen name="Splash" component={Splash} />
             <Stack.Screen name="LoginScreen" component={LoginScreen} />
             <Stack.Screen name="SidebarScreen" component={SidebarScreen} />
-
+              <Stack.Screen
+        name="ViewCustomerScreen"
+        component={ViewCustomerScreen as any}
+      />
             <Stack.Screen name="OtpScreen" component={OtpScreen} />
             <Stack.Screen name="ViewScreen" component={ViewScreen as any} />
             <Stack.Screen name="OtpScreenUp" component={OtpScreen} />

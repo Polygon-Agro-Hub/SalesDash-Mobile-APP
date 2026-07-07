@@ -37,7 +37,11 @@ const OtpScreen: React.FC = () => {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const route = useRoute();
-  const { phoneNumber, id, token: routeToken } = route.params as {
+  const {
+    phoneNumber,
+    id,
+    token: routeToken,
+  } = route.params as {
     phoneNumber: string;
     id: string;
     token?: string;
@@ -140,7 +144,7 @@ const OtpScreen: React.FC = () => {
           const buildingData = parsedData.buildingData || {};
           endpoint = `${environment.API_BASE_URL}api/customer/update-customer-data/${id}`;
           method = "put";
-          data = { customerData, buildingData };
+          data = { ...customerData, ...buildingData };
         } else {
           endpoint = `${environment.API_BASE_URL}api/customer/add-customer`;
           method = "post";
@@ -161,7 +165,10 @@ const OtpScreen: React.FC = () => {
           const customerId = saveResponse.data?.customerId || id;
 
           if (customerId) {
-            await AsyncStorage.setItem("latestCustomerId", customerId.toString());
+            await AsyncStorage.setItem(
+              "latestCustomerId",
+              customerId.toString(),
+            );
           }
 
           if (isEditMode) {
@@ -170,15 +177,12 @@ const OtpScreen: React.FC = () => {
               {
                 text: "OK",
                 onPress: () => {
-                  navigation.navigate("Main", {
-                    screen: "ViewCustomerScreen",
-                    params: {
-                      id,
-                      customerId: customerId,
-                      name: `${customerData.firstName || ""} ${customerData.lastName || ""}`.trim(),
-                      title: customerData.title || "",
-                      number: customerData.phoneNumber || phoneNumber,
-                    },
+                  navigation.navigate("ViewCustomerScreen" as any, {
+                    id,
+                    customerId: customerId,
+                    name: `${customerData.firstName || ""} ${customerData.lastName || ""}`.trim(),
+                    title: customerData.title || "",
+                    number: customerData.phoneNumber || phoneNumber,
                   });
                 },
               },
@@ -186,6 +190,10 @@ const OtpScreen: React.FC = () => {
           } else {
             navigation.navigate("OtpSuccesfulScreen" as any, {
               customerId: customerId,
+              id: id,
+              name: `${parsedData.firstName || ""} ${parsedData.lastName || ""}`.trim(),
+              title: parsedData.title || "",
+              number: parsedData.phoneNumber || phoneNumber,
             });
           }
         } else {
@@ -202,7 +210,10 @@ const OtpScreen: React.FC = () => {
       console.error("Full error during OTP verification:", error);
       let errorMessage = "An error occurred while verifying OTP.";
       if (axios.isAxiosError(error) && error.response) {
-        errorMessage = error.response.data?.message || error.response.data?.error || errorMessage;
+        errorMessage =
+          error.response.data?.message ||
+          error.response.data?.error ||
+          errorMessage;
       } else if (error && error.message) {
         errorMessage = error.message;
       }

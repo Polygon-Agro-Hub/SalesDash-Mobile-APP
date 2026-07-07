@@ -63,7 +63,6 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   const [totalCount, setTotalCount] = useState(0);
   const isMounted = useRef(true);
 
-  // Safe state setters
   const safeSetCustomers = (data: Customer[]) => {
     if (isMounted.current) {
       setCustomers(data);
@@ -89,10 +88,8 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
     }
   };
 
-  // Add focus listener to clear search when screen comes into focus
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
-      // Clear search when returning to this screen
       setSearchQuery("");
       setFilteredCustomers(customers);
     });
@@ -100,7 +97,6 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
     return unsubscribe;
   }, [navigation, customers]);
 
-  // Helper function to sort customers alphabetically by full name
   const sortCustomersByName = (customerList: Customer[]): Customer[] => {
     return [...customerList].sort((a, b) => {
       const nameA = `${a.firstName} ${a.lastName}`.toLowerCase();
@@ -191,7 +187,6 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   };
 
   useEffect(() => {
-    // Set up listeners
     const unsubscribe = navigation.addListener("focus", () => {
       if (isMounted.current) {
         setCurrentPage(1);
@@ -210,10 +205,8 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
       () => setKeyboardVisible(false),
     );
 
-    // Initial load
     loadCustomers(1, true, false);
 
-    // Cleanup function
     return () => {
       isMounted.current = false;
       unsubscribe();
@@ -230,7 +223,6 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   };
 
   const handleSearch = (query: string) => {
-    // Block special characters - only allow letters, numbers, spaces, and +
     const specialCharRegex = /[^a-zA-Z0-9\s+]/g;
     let cleanedQuery = query.replace(specialCharRegex, "");
 
@@ -317,7 +309,9 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
             >
               Total Customers:{" "}
               <Text className="font-bold">
-                {String(searchQuery ? filteredCustomers.length : totalCount).padStart(2, "0")}
+                {String(
+                  searchQuery ? filteredCustomers.length : totalCount,
+                ).padStart(2, "0")}
               </Text>
             </Text>
           </View>
@@ -329,7 +323,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
         ) : (
           <View className="flex-1 mx-auto w-full max-w-[500px]">
             {/* Search Bar */}
-            <View className="flex-row items-center bg-[#F5F1FC] h-[50px] px-6 py-0 mb-5 rounded-full mt-[-22px] mx-6 shadow-md h-12">
+            <View className="flex-row items-center bg-[#F5F1FC] h-[50px] px-6 py-0 mb-5 rounded-full mt-[-22px] mx-6 shadow-md ">
               <TextInput
                 value={searchQuery}
                 onChangeText={handleSearch}
@@ -341,7 +335,6 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                   includeFontPadding: false,
                   fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
                 }}
-             
               />
               <FontAwesome name="search" size={22} color="#884EDC" />
             </View>
@@ -380,7 +373,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                 <View
                   style={{
                     flex: 1,
-                    marginBottom:80,
+                    marginBottom: 80,
                     justifyContent: "center",
                     alignItems: "center",
                     paddingVertical: 16,
@@ -455,12 +448,12 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                           alignItems: "center",
                           borderWidth: 1,
                           borderColor: "#E0E0E0",
-                          // iOS shadow (matches design: X:1 Y:1 Blur:8 #7E7E7E 25%)
+
                           shadowColor: "#7E7E7E",
                           shadowOffset: { width: 1, height: 1 },
                           shadowOpacity: 0.25,
                           shadowRadius: 8,
-                          // Android shadow
+
                           elevation: 3,
                         }}
                       >
@@ -469,7 +462,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                             className="text-gray-700 font-semibold"
                             numberOfLines={2}
                             ellipsizeMode="tail"
-                            style={{ fontSize: SCREEN_HEIGHT > 900 ? 20 : 14, }}
+                            style={{ fontSize: SCREEN_HEIGHT > 900 ? 20 : 14 }}
                           >
                             {item.title}. {item.firstName} {item.lastName}
                           </Text>

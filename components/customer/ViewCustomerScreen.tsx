@@ -28,11 +28,9 @@ import {
 } from "react-native-responsive-screen";
 import axios from "axios";
 import environment from "@/environment/environment";
-import { Entypo, FontAwesome, Ionicons } from "@expo/vector-icons";
+import { Entypo, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import LoadingPage from "../common/LoadingPage";
-import CustomHeader from "../common/CustomHeader";
-import FixedMarqueeText from "../common/MarqueeText";
 
 type ViewCustomerScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -137,6 +135,9 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
     }, [id, customerId]),
   );
 
+  const [address, setAddress] = useState<string>("Loading...");
+  const [savedCount, setSavedCount] = useState<number>(0);
+
   const getUserProfile = async () => {
     try {
       setLoadingCustomerData(true);
@@ -177,6 +178,41 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
         const locationName =
           `${freshTitle} ${freshFirstName} ${freshLastName}`.trim();
         setSelectedLocationName(locationName || "Customer Location");
+      }
+
+      try {
+        const detailResponse = await axios.get(
+          `${environment.API_BASE_URL}api/customer/get-customer-data/${id}`,
+        );
+
+        if (detailResponse.status === 200) {
+          const building = detailResponse.data.building;
+
+          if (building) {
+            const formattedAddress = [
+              building.houseNo,
+              building.streetName,
+              building.city,
+            ]
+              .filter(Boolean)
+              .join(", ");
+            setAddress(formattedAddress || "No Address Found");
+          } else {
+            setAddress("No Address Found");
+          }
+
+          setSavedCount(Number(detailResponse.data.savedAddressCount) || 0);
+        } else {
+          setAddress("No Address Found");
+          setSavedCount(0);
+        }
+      } catch (detailError) {
+        console.error(
+          "Error fetching detailed customer building address:",
+          detailError,
+        );
+        setAddress("No Address Found");
+        setSavedCount(0);
       }
 
       return storedToken;
@@ -370,103 +406,64 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       enabled
       style={{ flex: 1 }}
     >
-      <View className="flex-1 bg-white">
+      <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+        {/* Top Header Row */}
         <View
           style={{
-            paddingTop: 12,
-            paddingHorizontal: 12,
+            paddingTop: 16,
+            paddingHorizontal: 16,
             flexDirection: "row",
-            alignItems: "center",
+            alignItems: "flex-start",
             backgroundColor: "transparent",
+            zIndex: 10,
           }}
         >
           {/* Back button */}
           <TouchableOpacity
             onPress={() => navigation.navigate("CustomersScreen")}
             style={{
-              width: 45,
-              height: 45,
-              borderRadius: 25,
-              backgroundColor: "#F6F6F680",
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: "#F6F6F6",
               alignItems: "center",
               justifyContent: "center",
-              flexShrink: 0,
-              marginLeft: 10,
-              zIndex: 1,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.1,
+              shadowRadius: 2,
+              elevation: 2,
+              marginTop: 4,
             }}
             activeOpacity={0.7}
           >
-            <Entypo name="chevron-left" size={25} color={"black"} />
+            <Entypo name="chevron-left" size={22} color={"black"} />
           </TouchableOpacity>
 
-          <View
-            style={{
-              flex: 1,
-              alignItems: "center",
-              overflow: "hidden",
-              marginHorizontal: 8,
-            }}
-          >
-            {(() => {
-              const fullDisplayName =
-                `${customerTitle}. ${customerName}`.trim();
-              return fullDisplayName.length > 25 ? (
-                <FixedMarqueeText
-                  key={fullDisplayName}
-                  text={fullDisplayName}
-                  style={{ fontSize: 16, fontWeight: "bold" }}
-                  speed={50}
-                />
-              ) : (
-                <Text
-                  key={fullDisplayName}
-                  style={{
-                    fontSize: 16,
-                    fontWeight: "bold",
-                    color: "#000",
-                    textAlign: "center",
-                  }}
-                >
-                  {fullDisplayName}
-                </Text>
-              );
-            })()}
-          </View>
-
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate("EditCustomerScreen", {
-                id,
-                customerId,
-                name: customerName,
-                title: customerTitle,
-              })
-            }
-            style={{
-              width: 45,
-              height: 45,
-
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-              marginRight: 10,
-              zIndex: 1,
-            }}
-            activeOpacity={0.7}
-          >
-            <MaterialIcons name="edit" size={22} color="#6839CF" />
-          </TouchableOpacity>
-        </View>
-        {/* Header Section */}
-
-        <View className="bg-white flex-row rounded-b-[35px] items-center justify-between z-50  px-5">
-          <View className="flex-1 justify-center items-center gap-1">
+          {/* Center Title Content */}
+          <View style={{ flex: 1, alignItems: "center", marginHorizontal: 12 }}>
             <Text
-              className="text-[#393939] text-base"
-              style={{ textAlign: "center", fontSize: 16 }}
+              style={{
+                fontSize: 18,
+                fontWeight: "bold",
+                color: "#000",
+                textAlign: "center",
+              }}
             >
-              Customer ID: {customerId}
+              {`${customerTitle ? customerTitle + ". " : ""}${customerName}`}
             </Text>
+
+            <Text
+              style={{
+                fontSize: 15,
+                color: "#393939",
+                marginTop: 6,
+                fontWeight: "500",
+              }}
+            >
+              Customer ID : {customerId}
+            </Text>
+
             <TouchableOpacity
               onPress={() =>
                 navigation.navigate("ExcludeItemEditSummery", {
@@ -476,137 +473,252 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                   title: customerTitle,
                 })
               }
+              style={{ marginTop: 8 }}
             >
-              <View className="flex-row justify-center items-center gap-2">
-                <Text className="text-[#7240D3] underline">
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Text
+                  style={{
+                    color: "#7240D3",
+                    textDecorationLine: "underline",
+                    fontWeight: "600",
+                    fontSize: 14,
+                    marginRight: 6,
+                  }}
+                >
                   Package Preferences
                 </Text>
-                <AntIcons name="external-link" size={20} color="#6C3CD1" />
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => {
-                if (latitude !== null && longitude !== null) {
-                  navigation.navigate("ViewLocationScreen", {
-                    latitude: latitude,
-                    longitude: longitude,
-                    locationName: selectedLocationName,
-                  });
-                } else {
-                  Alert.alert(
-                    "Location Unavailable",
-                    "Customer location data is not available.",
-                  );
-                }
-              }}
-            >
-              <View className="flex-row justify-center items-center gap-1 mb-3">
-                <Text className="text-[#FF0000] underline">
-                  {loadingCustomerData
-                    ? "Loading Location"
-                    : "View Geo Location"}
-                </Text>
-                <Entypo name="location-pin" size={20} color="#FF0000" />
+                <AntIcons name="external-link" size={16} color="#7240D3" />
               </View>
             </TouchableOpacity>
           </View>
-        </View>
 
-        {/* Action Buttons */}
-        <View className="bg-[#F1E8FF] rounded-b-[35px] pt-3 shadow-md mt-[-20] items-center z-5">
-          <View className="flex-row justify-between mb-4 gap-x-4 mt-2">
-            <TouchableOpacity
-              onPress={handleGetACall}
-              className="flex-row bg-[#6B3BCF] px-4 py-2 rounded-full items-center mt-5"
-              style={{
-                shadowColor: "#000000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.2,
-                shadowRadius: 4,
-                elevation: 4,
-              }}
-            >
-              <Ionicons name="call" size={20} color="white" />
-              <Text className="text-white font-bold text-lg ml-2">
-                Get a Call
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() =>
-                navigation.navigate("SelectOrderType" as any, {
+          {/* Edit button */}
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate("Main" as any, {
+                screen: "EditCustomerScreen",
+                params: {
                   id,
                   customerId,
                   name: customerName,
                   title: customerTitle,
-                  number: customerNumber,
-                  customerscreencustomerid: customerId,
-                })
-              }
-              className="flex-row bg-[#6B3BCF] px-4 py-2 rounded-full items-center mt-5"
-              style={{
-                shadowColor: "#000000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.2,
-                shadowRadius: 4,
-                elevation: 4,
-              }}
-            >
-              <Ionicons name="add-circle" size={24} color="white" />
-              <Text className="text-white font-bold text-lg ml-2">
-                New Order
-              </Text>
-            </TouchableOpacity>
-          </View>
+                },
+              })
+            }
+            style={{
+              width: 40,
+              height: 40,
+              alignItems: "center",
+              justifyContent: "center",
+              marginTop: 4,
+            }}
+            activeOpacity={0.7}
+          >
+            <MaterialIcons name="edit" size={24} color="#6839CF" />
+          </TouchableOpacity>
         </View>
 
-        <View className="flex-1 mx-auto w-full max-w-[500px]">
-          {/* Search and Filters */}
-          <View className="mx-6">
-            <View className="flex-row items-center bg-[#F5F1FC] px-4 border border-[#6B3BCF] rounded-full mt-4 ">
+        {/* Address Cards Section */}
+        <View
+          style={{
+            flexDirection: "row",
+            paddingHorizontal: 16,
+            marginTop: 20,
+            justifyContent: "space-between",
+          }}
+        >
+          {/* Residential Address Card */}
+          <TouchableOpacity
+            onPress={() => {
+              if (latitude !== null && longitude !== null) {
+                navigation.navigate("ViewLocationScreen", {
+                  latitude: latitude,
+                  longitude: longitude,
+                  locationName: selectedLocationName,
+                });
+              } else {
+                Alert.alert(
+                  "Location Unavailable",
+                  "Customer location data is not available.",
+                );
+              }
+            }}
+            style={{
+              flex: 1,
+              backgroundColor: "#FCFAFF",
+              borderRadius: 20,
+              padding: 14,
+              marginRight: 8,
+              borderWidth: 1.5,
+              borderColor: "#EAE6F5",
+              shadowColor: "#6B3BCF",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.05,
+              shadowRadius: 6,
+              elevation: 2,
+            }}
+          >
+            <View
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 17,
+                backgroundColor: "#F0EBFF",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 10,
+              }}
+            >
+              <Entypo name="location-pin" size={18} color="#6B3BCF" />
+            </View>
+            <Text
+              style={{ fontSize: 13, fontWeight: "bold", color: "#1F2937" }}
+            >
+              Residential Address
+            </Text>
+            <Text
+              numberOfLines={2}
+              style={{
+                fontSize: 11,
+                color: "#9CA3AF",
+                marginTop: 4,
+                lineHeight: 15,
+              }}
+            >
+              {address}
+            </Text>
+            <View style={{ alignSelf: "flex-end", marginTop: 6 }}>
+              <Entypo name="chevron-right" size={16} color="#6B3BCF" />
+            </View>
+          </TouchableOpacity>
+
+          {/* Delivery Address Book Card */}
+          <TouchableOpacity
+            onPress={() => {
+              Alert.alert(
+                "Delivery Address Book",
+                `${savedCount} Saved Addresses.`,
+              );
+            }}
+            style={{
+              flex: 1,
+              backgroundColor: "#FCFAFF",
+              borderRadius: 20,
+              padding: 14,
+              marginLeft: 8,
+              borderWidth: 1.5,
+              borderColor: "#EAE6F5",
+              shadowColor: "#6B3BCF",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.05,
+              shadowRadius: 6,
+              elevation: 2,
+            }}
+          >
+            <View
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 17,
+                backgroundColor: "#F0EBFF",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 10,
+              }}
+            >
+              <MaterialIcons name="folder" size={18} color="#6B3BCF" />
+            </View>
+            <Text
+              style={{ fontSize: 13, fontWeight: "bold", color: "#1F2937" }}
+            >
+              Delivery Address Book
+            </Text>
+            <Text
+              style={{
+                fontSize: 11,
+                color: "#9CA3AF",
+                marginTop: 4,
+                lineHeight: 15,
+              }}
+            >
+              {savedCount} Saved
+            </Text>
+            <View style={{ alignSelf: "flex-end", marginTop: 6 }}>
+              <Entypo name="chevron-right" size={16} color="#6B3BCF" />
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* Scrollable orders content area */}
+        <View style={{ flex: 1, marginTop: 15 }}>
+          {/* Search Bar */}
+          <View style={{ paddingHorizontal: 16 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: "#FAF9FE",
+                paddingHorizontal: 16,
+                borderWidth: 1.5,
+                borderColor: "#E8E2F7",
+                borderRadius: 25,
+                height: 48,
+              }}
+            >
               <TextInput
-                placeholder="Search By Order Number"
-                placeholderTextColor="#6839CF"
-                className="flex-1 text-sm text-gray-700 h-11 py-0"
+                placeholder="Search By Order No"
+                placeholderTextColor="#A389D4"
+                style={{
+                  flex: 1,
+                  fontSize: 14,
+                  color: "#1F2937",
+                  height: "100%",
+                  fontStyle: "italic",
+                }}
                 onChangeText={(text) => {
                   const numericOnly = text.replace(/[^0-9]/g, "");
                   setSearchText(numericOnly);
                 }}
                 value={searchText}
-                style={{ fontStyle: "italic" }}
                 keyboardType="numeric"
               />
               <TouchableOpacity onPress={handleSearch}>
-                <FontAwesome name="search" size={22} color="#884EDC" />
+                <AntIcons name="search" size={20} color="#6B3BCF" />
               </TouchableOpacity>
             </View>
           </View>
 
+          {/* Filters List */}
           {!searchError && (
-            <View className="mt-4">
+            <View style={{ marginTop: 14 }}>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                className="flex-row flex-wrap mt-[2%] mb-[1%] mx-5"
-                contentContainerStyle={{ paddingHorizontal: wp("1%") }}
+                contentContainerStyle={{ paddingHorizontal: 16 }}
               >
                 {filters.map((filter) => (
                   <TouchableOpacity
                     key={filter}
-                    className={`px-4 py-2 rounded-full border mr-2 ${
-                      selectedFilter === filter
-                        ? "bg-[#6B3BCF] border-[#6B3BCF]"
-                        : "border-[#6B3BCF]"
-                    }`}
+                    style={{
+                      paddingHorizontal: 16,
+                      paddingVertical: 8,
+                      borderRadius: 20,
+                      borderWidth: 1.5,
+                      borderColor: "#6B3BCF",
+                      marginRight: 8,
+                      backgroundColor:
+                        selectedFilter === filter ? "#6B3BCF" : "transparent",
+                    }}
                     onPress={() => setSelectedFilter(filter)}
                   >
                     <Text
-                      className={`text-center text-sm ${
-                        selectedFilter === filter
-                          ? "text-white font-bold"
-                          : "text-[#6B3BCF]"
-                      }`}
+                      style={{
+                        textAlign: "center",
+                        fontSize: 13,
+                        fontWeight: "600",
+                        color:
+                          selectedFilter === filter ? "#FFFFFF" : "#6B3BCF",
+                      }}
                     >
                       {filter}
                     </Text>
@@ -616,21 +728,46 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
             </View>
           )}
 
-          <View className="flex-1 mt-3">
-            {/* Orders List */}
+          {/* Orders List */}
+          <View style={{ flex: 1, marginTop: 12 }}>
             {loading ? (
-              <View className="flex-1 justify-center items-center">
+              <View
+                style={{
+                  flex: 1,
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
                 <ActivityIndicator size="large" color="#6B3BCF" />
-                <Text className="text-[#6B3BCF] mt-2">Loading orders...</Text>
+                <Text style={{ color: "#6B3BCF", marginTop: 8 }}>
+                  Loading orders...
+                </Text>
               </View>
             ) : error ? (
-              <View className="flex-1 justify-center items-center px-4">
-                <Text className="text-red-500 text-center">{error}</Text>
+              <View
+                style={{
+                  flex: 1,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  paddingHorizontal: 16,
+                }}
+              >
+                <Text style={{ color: "#EF4444", textAlign: "center" }}>
+                  {error}
+                </Text>
                 <TouchableOpacity
-                  className="mt-4 bg-[#6B3BCF] px-4 py-2 rounded-full"
+                  style={{
+                    marginTop: 16,
+                    backgroundColor: "#6B3BCF",
+                    paddingHorizontal: 20,
+                    paddingVertical: 10,
+                    borderRadius: 25,
+                  }}
                   onPress={handleRefresh}
                 >
-                  <Text className="text-white font-semibold">Retry</Text>
+                  <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>
+                    Retry
+                  </Text>
                 </TouchableOpacity>
               </View>
             ) : searchError ? (
@@ -656,7 +793,14 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                     resizeMode: "contain",
                   }}
                 />
-                <Text className="text-black italic text-center mt-3">
+                <Text
+                  style={{
+                    color: "#000000",
+                    fontStyle: "italic",
+                    textAlign: "center",
+                    marginTop: 12,
+                  }}
+                >
                   No orders found
                 </Text>
               </ScrollView>
@@ -678,74 +822,91 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                     <View
                       style={{
                         backgroundColor: "#FFFFFF",
-                        borderRadius: 16,
+                        borderRadius: 20,
                         padding: 16,
-                        marginBottom: 8,
+                        marginBottom: 12,
                         marginHorizontal: 16,
-                        marginTop: 4,
-                        borderWidth: 1,
-                        borderColor: "#E5E7EB",
+                        borderWidth: 1.5,
+                        borderColor: "#F3F4F6",
                         shadowColor: "#000",
-                        shadowOffset: { width: 0, height: 3 },
-                        shadowOpacity: 0.06,
-                        shadowRadius: 6,
-                        elevation: 3,
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.04,
+                        shadowRadius: 8,
+                        elevation: 2,
                       }}
                     >
-                      <View className="flex-row justify-between items-center">
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        }}
+                      >
                         <Text
-                          className="font-semibold text-gray-900"
-                          style={{ fontSize: SCREEN_HEIGHT > 900 ? 20 : 16 }}
+                          style={{
+                            fontWeight: "bold",
+                            color: "#1F2937",
+                            fontSize: SCREEN_HEIGHT > 900 ? 18 : 15,
+                          }}
                         >
-                          Order: #{item.InvNo || "N/A"}
+                          Order : #{item.InvNo || "N/A"}
                         </Text>
                         <View
-                          className={`py-1 rounded-full ${
-                            item.status === "Ordered"
-                              ? "bg-[#F5FF85]"
-                              : item.status === "Processing"
-                                ? "bg-[#CFE1FF]"
-                                : item.status === "Out For Delivery"
-                                  ? "bg-[#FCD4FF]"
-                                  : item.status === "Collected"
-                                    ? "bg-[#F8FEA5]"
-                                    : item.status === "On the way"
-                                      ? "bg-[#FFEDCF]"
-                                      : item.status === "Hold"
-                                        ? "bg-[#FFEDCF]"
-                                        : item.status === "Delivered"
-                                          ? "bg-[#BBFFC6]"
-                                          : item.status === "Cancelled"
-                                            ? "bg-[#DFDFDF]"
-                                            : item.status === "Return"
-                                              ? "bg-[#FFDCDA]"
-                                              : "bg-[#EAEAEA]"
-                          }`}
-                          style={{ width: 120, alignItems: "center", flexShrink: 0 }}
+                          style={{
+                            paddingVertical: 4,
+                            paddingHorizontal: 12,
+                            borderRadius: 12,
+                            backgroundColor:
+                              item.status === "Ordered"
+                                ? "#F5FF85"
+                                : item.status === "Processing"
+                                  ? "#CFE1FF"
+                                  : item.status === "Out For Delivery" ||
+                                      item.status === "Out for Delivery"
+                                    ? "#FCD4FF"
+                                    : item.status === "Collected"
+                                      ? "#F8FEA5"
+                                      : item.status === "On the way"
+                                        ? "#FFEDCF"
+                                        : item.status === "Hold"
+                                          ? "#FFEDCF"
+                                          : item.status === "Delivered"
+                                            ? "#BBFFC6"
+                                            : item.status === "Cancelled"
+                                              ? "#DFDFDF"
+                                              : item.status === "Return"
+                                                ? "#FFDCDA"
+                                                : "#EAEAEA",
+                            alignItems: "center",
+                          }}
                         >
                           <Text
                             numberOfLines={1}
-                            className={`text-xs font-semibold mx-auto ${
-                              item.status === "Ordered"
-                                ? "text-[#878216]"
-                                : item.status === "Processing"
-                                  ? "text-[#3B82F6]"
-                                  : item.status === "Out For Delivery"
-                                    ? "text-[#80118A]"
-                                    : item.status === "Collected"
-                                      ? "text-[#7E8700]"
-                                      : item.status === "On the way"
-                                        ? "text-[#D17A00]"
-                                        : item.status === "Hold"
-                                          ? "text-[#D17A00]"
-                                          : item.status === "Delivered"
-                                            ? "text-[#308233]"
-                                            : item.status === "Cancelled"
-                                              ? "text-[#5C5C5C]"
-                                              : item.status === "Return"
-                                                ? "text-[#FF1100]"
-                                                : "text-[#393939]"
-                            }`}
+                            style={{
+                              fontSize: 11,
+                              fontWeight: "bold",
+                              color:
+                                item.status === "Ordered"
+                                  ? "#878216"
+                                  : item.status === "Processing"
+                                    ? "#3B82F6"
+                                    : item.status === "Out For Delivery" ||
+                                        item.status === "Out for Delivery"
+                                      ? "#80118A"
+                                      : item.status === "Collected"
+                                        ? "#7E8700"
+                                        : item.status === "On the way"
+                                          ? "#D17A00"
+                                          : item.status === "Hold"
+                                            ? "#D17A00"
+                                            : item.status === "Delivered"
+                                              ? "#308233"
+                                              : item.status === "Cancelled"
+                                                ? "#5C5C5C"
+                                                : item.status === "Return"
+                                                  ? "#FF1100"
+                                                  : "#393939",
+                            }}
                           >
                             {item.status}
                           </Text>
@@ -753,14 +914,20 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                       </View>
 
                       <Text
-                        className="text-[#808FA2] mt-1"
-                        style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                        style={{
+                          color: "#9CA3AF",
+                          marginTop: 6,
+                          fontSize: SCREEN_HEIGHT > 900 ? 14 : 12,
+                        }}
                       >
-                        Scheduled to: {formatsheduleDate(item.sheduleDate)}
+                        Scheduled to : {formatsheduleDate(item.sheduleDate)}
                       </Text>
                       <Text
-                        className="text-[#808FA2]"
-                        style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                        style={{
+                          color: "#9CA3AF",
+                          marginTop: 2,
+                          fontSize: SCREEN_HEIGHT > 900 ? 14 : 12,
+                        }}
                       >
                         {item.sheduleTime}
                       </Text>
@@ -777,7 +944,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                     colors={["#6B3BCF"]}
                   />
                 }
-                contentContainerStyle={{ paddingBottom: 100 }}
+                contentContainerStyle={{ paddingBottom: 40 }}
               />
             ) : (
               <ScrollView
@@ -803,7 +970,14 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                     resizeMode: "contain",
                   }}
                 />
-                <Text className="text-black italic text-center mt-4">
+                <Text
+                  style={{
+                    color: "#000000",
+                    fontStyle: "italic",
+                    textAlign: "center",
+                    marginTop: 16,
+                  }}
+                >
                   {orders.length === 0
                     ? "No orders found"
                     : searchText
@@ -814,6 +988,90 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
             )}
           </View>
         </View>
+
+        {/* Sticky Bottom Action Buttons */}
+        {!isKeyboardVisible && (
+          <View
+            style={{
+              paddingHorizontal: 16,
+              paddingVertical: 14,
+              backgroundColor: "#F5F2FE",
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: -4 },
+              shadowOpacity: 0.08,
+              shadowRadius: 8,
+              elevation: 10,
+            }}
+          >
+            {/* Get a Call Button */}
+            <TouchableOpacity
+              onPress={handleGetACall}
+              style={{
+                flex: 1,
+                flexDirection: "row",
+                height: 48,
+                borderRadius: 24,
+                borderWidth: 1.5,
+                borderColor: "#6B3BCF",
+                backgroundColor: "#FFFFFF",
+                alignItems: "center",
+                justifyContent: "center",
+                marginRight: 8,
+              }}
+            >
+              <Ionicons
+                name="call"
+                size={18}
+                color="#6B3BCF"
+                style={{ marginRight: 6 }}
+              />
+              <Text
+                style={{ color: "#6B3BCF", fontWeight: "bold", fontSize: 15 }}
+              >
+                Get a Call
+              </Text>
+            </TouchableOpacity>
+
+            {/* New Order Button */}
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate("SelectOrderType" as any, {
+                  id,
+                  customerId,
+                  name: customerName,
+                  title: customerTitle,
+                  number: customerNumber,
+                  customerscreencustomerid: customerId,
+                })
+              }
+              style={{
+                flex: 1,
+                flexDirection: "row",
+                height: 48,
+                borderRadius: 24,
+                backgroundColor: "#6B3BCF",
+                alignItems: "center",
+                justifyContent: "center",
+                marginLeft: 8,
+              }}
+            >
+              <Ionicons
+                name="add-circle"
+                size={20}
+                color="#FFFFFF"
+                style={{ marginRight: 6 }}
+              />
+              <Text
+                style={{ color: "#FFFFFF", fontWeight: "bold", fontSize: 15 }}
+              >
+                New Order
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </KeyboardAvoidingView>
   );
