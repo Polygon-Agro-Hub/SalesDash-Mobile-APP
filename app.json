@@ -97,8 +97,7 @@
           }
         }
       ],
-      "expo-web-browser",
-      "expo-sharing"
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
