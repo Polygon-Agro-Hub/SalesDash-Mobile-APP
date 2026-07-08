@@ -60,7 +60,6 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
   const [loading, setLoading] = useState(isEditMode);
   const [saving, setSaving] = useState(false);
 
-  // --- Basic fields ---
   const [saveAddressAs, setSaveAddressAs] = useState("");
   const [title, setTitle] = useState("Mr.");
   const [titleModalVisible, setTitleModalVisible] = useState(false);
@@ -68,14 +67,12 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
   const [phoneNumber1, setPhoneNumber1] = useState("");
   const [phoneNumber2, setPhoneNumber2] = useState("");
 
-  // --- Building type ---
   const [buildingType, setBuildingType] = useState<string>(
     addressType || "House",
   );
   const [buildingTypeModalVisible, setBuildingTypeModalVisible] =
     useState(false);
 
-  // --- Shared address fields ---
   const [houseNo, setHouseNo] = useState("");
   const [streetName, setStreetName] = useState("");
   const [nearestCity, setNearestCity] = useState("");
@@ -89,19 +86,13 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
   >([]);
   const cityInputRef = useRef<TextInput>(null);
 
-  // Whether the user is allowed to change the nearest city — only true once
-  // they have at least one order in "delivered" status. Mirrors the same
-  // rule used on ResidentialAddress.tsx, since nearest city ultimately lives
-  // on marketplaceusers.nearesCity, shared across both screens.
   const [canEditNearestCity, setCanEditNearestCity] = useState(false);
 
-  // --- Apartment-only fields ---
   const [buildingNo, setBuildingNo] = useState("");
   const [buildingName, setBuildingName] = useState("");
   const [unitNo, setUnitNo] = useState("");
   const [floorNo, setFloorNo] = useState("");
 
-  // --- Geo location (set via AttachGeoLocationScreen) ---
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [locationName, setLocationName] = useState("");
@@ -140,8 +131,6 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
     }
   }, []);
 
-  // Same endpoint/pattern as ResidentialAddress.tsx — locks nearest city
-  // unless the customer has at least one delivered order.
   const checkDeliveredOrder = useCallback(async () => {
     try {
       const response = await axios.get(
@@ -150,13 +139,10 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
       setCanEditNearestCity(response.data?.isHaveDeliveryOrder === 1);
     } catch (error) {
       console.error("Error checking delivered order:", error);
-      setCanEditNearestCity(false); // fail safe: lock the field if the check fails
+      setCanEditNearestCity(false);
     }
   }, [customerId]);
 
-  // Only needed in "add new address" mode — prefills the locked nearest
-  // city value from the customer's profile. In edit mode this comes back
-  // from get-saved-address instead (see fetchExistingAddress below).
   const fetchProfileNearestCity = useCallback(async () => {
     try {
       const response = await axios.get(
@@ -171,7 +157,6 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
     }
   }, [customerId]);
 
-  // Prefill fields when editing an existing saved address.
   const fetchExistingAddress = useCallback(async () => {
     if (!addressId) return;
     try {
@@ -269,9 +254,6 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
       return;
     }
 
-    // Only re-validate "known / deliverable" city when the user was actually
-    // allowed to change it. When locked, nearestCity already holds a valid
-    // value pulled from the customer's profile.
     if (canEditNearestCity) {
       if (!isCityKnown) {
         setNearestCityError("Please select a valid city from the list.");
@@ -283,9 +265,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
       }
 
       if (!isCityDeliverable) {
-        setNearestCityError(
-          "This city is not currently in our delivery area.",
-        );
+        setNearestCityError("This city is not currently in our delivery area.");
         Alert.alert(
           "Not Deliverable",
           "This city is not currently in our delivery area.",
@@ -339,9 +319,8 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
   };
 
   const formatPhoneNumber = (text: string) => {
-  // Strip anything that isn't a digit, then cap at 10 digits
-  return text.replace(/[^0-9]/g, "").slice(0, 10);
-};
+    return text.replace(/[^0-9]/g, "").slice(0, 10);
+  };
 
   const renderCityDeliveryStatus = () => {
     if (!canEditNearestCity) return null;
@@ -446,8 +425,8 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
             flexShrink: 1,
           }}
         >
-          Delivery not available in {nearestCity} yet, but we're working on
-          it and coming to your area soon!
+          Delivery not available in {nearestCity} yet, but we're working on it
+          and coming to your area soon!
         </Text>
       </View>
     );
@@ -458,8 +437,6 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
       <Text className="text-sm mb-2">Nearest City *</Text>
 
       {canEditNearestCity ? (
-        // Editable: type-ahead + dropdown search (only when at least one
-        // order has been delivered)
         <View className="mb-5" style={{ zIndex: 1000, position: "relative" }}>
           <View style={{ position: "relative" }}>
             <TextInput
@@ -577,7 +554,6 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
           )}
         </View>
       ) : (
-        // Locked: read-only until the customer has a delivered order
         <>
           <TextInput
             value={nearestCity}
@@ -586,14 +562,13 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
             placeholderTextColor="#9CA3AF"
             className="bg-gray-50 text-gray-400 rounded-3xl px-4 h-[50px] text-[15px] mb-2"
           />
-         
         </>
       )}
     </>
   );
 
   if (loading) {
-    return <LoadingPage  fullScreen={true} />;
+    return <LoadingPage fullScreen={true} />;
   }
 
   return (
@@ -680,7 +655,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
           className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] flex-row items-center justify-between mb-5"
         >
           <Text className="text-black text-[15px]">{buildingType}</Text>
-         <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
+          <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
         </TouchableOpacity>
 
         {/* ===================== APARTMENT FIELDS ===================== */}

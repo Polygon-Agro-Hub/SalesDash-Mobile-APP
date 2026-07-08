@@ -50,7 +50,6 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
 }) => {
   const { customerId } = route.params || {};
 
-  console.log("customer id", customerId);
 
   const BUILDING_TYPES = [
     { label: "House", value: "House" },
@@ -64,21 +63,17 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
   const [buildingTypeModalVisible, setBuildingTypeModalVisible] =
     useState(false);
 
-  // Shared fields (used by both House and Apartment)
   const [houseNo, setHouseNo] = useState("");
   const [streetName, setStreetName] = useState("");
   const [nearestCity, setNearestCity] = useState("");
   const [nearestCityError, setNearestCityError] = useState("");
   const [canEditNearestCity, setCanEditNearestCity] = useState(false);
 
-  // Apartment-only fields — mirrors `dashuserapartment` table columns:
-  // buildingNo, buildingName, unitNo, floorNo, houseNo, streetName
   const [buildingNo, setBuildingNo] = useState("");
   const [buildingName, setBuildingName] = useState("");
   const [unitNo, setUnitNo] = useState("");
   const [floorNo, setFloorNo] = useState("");
 
-  // --- City search / dropdown state (same pattern as AddCustomersScreen) ---
   const [cityItems, setCityItems] = useState<
     { label: string; value: string; deliverable: boolean }[]
   >([]);
@@ -99,9 +94,6 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
     return text.replace(/\b\w/g, (char) => char.toUpperCase());
   };
 
-  // Clears all form state back to defaults. Called every time the screen
-  // gains focus, BEFORE the fresh fetch kicks off, so a user can never see
-  // values left over from a previous visit (e.g. right after an Update).
   const resetFormState = useCallback(() => {
     setBuildingType("House");
     setHouseNo("");
@@ -148,21 +140,14 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
       );
 
       if (detailResponse.status === 200) {
-        // The DAO returns a single `building` key regardless of whether the
-        // underlying row came from `dashuserhouse` or `dashuserapartment`.
-        // `customer.buildingType` (derived server-side, since
-        // marketplaceusers has no buildingType column) tells us which shape
-        // that row is in.
         const building = detailResponse.data.building;
-        const type =
-          detailResponse.data.customer?.buildingType || "House";
+        const type = detailResponse.data.customer?.buildingType || "House";
         const nearestCityValue = detailResponse.data.customer?.nearesCity;
 
         setBuildingType(type);
         setNearestCity(nearestCityValue || "");
 
         if (type === "Apartment" && building) {
-          // dashuserapartment row
           setBuildingNo(building.buildingNo || "");
           setBuildingName(building.buildingName || "");
           setUnitNo(building.unitNo || "");
@@ -170,7 +155,6 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
           setHouseNo(building.houseNo || "");
           setStreetName(building.streetName || "");
         } else if (building) {
-          // dashuserhouse row
           setHouseNo(building.houseNo || "");
           setStreetName(building.streetName || "");
         }
@@ -191,16 +175,10 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
       setCanEditNearestCity(response.data?.isHaveDeliveryOrder === 1);
     } catch (error) {
       console.error("Error checking delivered order:", error);
-      setCanEditNearestCity(false); // fail safe: lock the field if the check fails
+      setCanEditNearestCity(false);
     }
   }, [customerId]);
 
-  // Runs every time this screen comes into focus — including navigating
-  // back to it after an Update. Because the screen component instance
-  // often isn't unmounted on navigation (it's just blurred), state from a
-  // previous visit can otherwise linger. Resetting first + forcing
-  // `loading` back to true guarantees the user always sees the loader,
-  // then fresh server data — never a stale previously-entered value.
   useFocusEffect(
     useCallback(() => {
       if (customerId) {
@@ -231,7 +209,6 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
         return;
       }
     } else {
-      // Apartment: all fields required
       if (
         !buildingNo.trim() ||
         !buildingName.trim() ||
@@ -247,12 +224,13 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
       }
     }
 
-    // Only enforce "known / deliverable" city validation if the user is
-    // actually allowed to change the nearest city.
     if (canEditNearestCity) {
       if (!isCityKnown) {
         setNearestCityError("Please select a valid city from the list.");
-        Alert.alert("Invalid City", "Please select a valid city from the list.");
+        Alert.alert(
+          "Invalid City",
+          "Please select a valid city from the list.",
+        );
         return;
       }
       if (!isCityDeliverable) {
@@ -412,13 +390,9 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
 
   const renderNearestCityField = () => (
     <>
-      <Text className="text-sm mb-2">
-        Nearest City *
-      </Text>
+      <Text className="text-sm mb-2">Nearest City *</Text>
 
       {canEditNearestCity ? (
-        // Editable: type-ahead + dropdown search (only when at least one
-        // order has been delivered)
         <View className="mb-5" style={{ zIndex: 1000, position: "relative" }}>
           <View style={{ position: "relative" }}>
             <TextInput
@@ -535,7 +509,6 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
           )}
         </View>
       ) : (
-        // Locked: read-only, same as before
         <TextInput
           value={nearestCity}
           editable={false}
@@ -548,7 +521,7 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
   );
 
   if (loading) {
-    return <LoadingPage  fullScreen={true} />;
+    return <LoadingPage fullScreen={true} />;
   }
 
   return (
@@ -683,28 +656,26 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
         )}
 
         {/* Update Button */}
-      <View className="px-4 pb-8 pt-5">
-        <TouchableOpacity
-          onPress={handleUpdate}
-          disabled={saving}
-          activeOpacity={0.85}
-        >
-          <LinearGradient
-            colors={["#7B3FE4", "#5B2CC9"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            className="rounded-full py-4 items-center justify-center"
-            style={{ borderRadius: 999, paddingVertical: 16 }}
+        <View className="px-4 pb-8 pt-5">
+          <TouchableOpacity
+            onPress={handleUpdate}
+            disabled={saving}
+            activeOpacity={0.85}
           >
-            <Text className="text-white text-base font-semibold">
-              {saving ? "Updating..." : "Update"}
-            </Text>
-          </LinearGradient>
-        </TouchableOpacity>
-      </View>
+            <LinearGradient
+              colors={["#7B3FE4", "#5B2CC9"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              className="rounded-full py-4 items-center justify-center"
+              style={{ borderRadius: 999, paddingVertical: 16 }}
+            >
+              <Text className="text-white text-base font-semibold">
+                {saving ? "Updating..." : "Update"}
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
-
-      
 
       {/* Building Type Selection Modal */}
       <GlobalSearchModal

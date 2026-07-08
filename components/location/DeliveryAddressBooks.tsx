@@ -37,11 +37,9 @@ interface DeliveryAddressBooksProps {
   };
 }
 
-// One row in the address book — can originate from either the `house` or
-// `apartment` table, both normalised into this shape by the backend.
 interface SavedAddress {
   id: number;
-  label: string; // e.g. "Home", "Parents' House", "Office"
+  label: string;
   type: "House" | "Apartment";
   houseNo?: string;
   streetName?: string;
@@ -71,12 +69,7 @@ interface BillingInfoRow {
   iconBg: string;
 }
 
-// Builds the icon + label + value rows shown in the "View Billing Info"
-// popup. House and Apartment addresses have different field sets, matching
-// the two card layouts in the design.
-const getBillingInfoRows = (
-  address: SavedAddress | null,
-): BillingInfoRow[] => {
+const getBillingInfoRows = (address: SavedAddress | null): BillingInfoRow[] => {
   if (!address) return [];
 
   const rows: BillingInfoRow[] = [];
@@ -199,8 +192,6 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
 
   const [billingModalVisible, setBillingModalVisible] = useState(false);
 
-  // One ref per row's "..." button, keyed by "type-id", so we can measure
-  // its exact on-screen position and anchor the dropdown right under it.
   const menuButtonRefs = useRef<{ [key: string]: View | null }>({});
 
   const fetchAddresses = useCallback(async () => {
@@ -212,7 +203,6 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
           ? { headers: { Authorization: `Bearer ${storedToken}` } }
           : undefined,
       );
-      console.log("data",response.data)
       setAddresses(response.data?.data || []);
     } catch (error) {
       console.error("Error fetching address book:", error);
@@ -222,8 +212,6 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
     }
   }, [customerId]);
 
-  // Refresh every time the screen is focused so a newly added / edited /
-  // deleted address is always reflected, never a stale list.
   useFocusEffect(
     useCallback(() => {
       if (customerId) {
@@ -238,9 +226,6 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
     const buttonRef = menuButtonRefs.current[key];
 
     if (buttonRef) {
-      // measure() gives the button's exact position on screen so the
-      // dropdown can be anchored directly under it, instead of a generic
-      // bottom sheet.
       buttonRef.measure((_fx, _fy, width, height, pageX, pageY) => {
         const screenWidth = Dimensions.get("window").width;
         setMenuPosition({
@@ -276,8 +261,6 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
     if (!selectedAddress) return;
     setMenuVisible(false);
     setBillingModalVisible(true);
-    // Keep selectedAddress set so the billing modal can read from it;
-    // it's cleared when the billing modal is closed.
   };
 
   const closeBillingModal = () => {
@@ -308,8 +291,6 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
     });
   };
 
-
-
   const filteredAddresses = addresses.filter((a) =>
     a.label.toLowerCase().includes(searchQuery.trim().toLowerCase()),
   );
@@ -319,7 +300,7 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
   };
 
   if (loading) {
-    return <LoadingPage  fullScreen={true} />;
+    return <LoadingPage fullScreen={true} />;
   }
 
   return (
@@ -453,10 +434,7 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
         animationType="fade"
         onRequestClose={closeMenu}
       >
-        <Pressable
-          style={{ flex: 1 }}
-          onPress={closeMenu}
-        >
+        <Pressable style={{ flex: 1 }} onPress={closeMenu}>
           <View
             style={{
               position: "absolute",
@@ -496,10 +474,6 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
             <TouchableOpacity onPress={handleEdit} className="px-4 py-3">
               <Text className="text-gray-700 text-[13px]">Edit</Text>
             </TouchableOpacity>
-
-        
-
-          
           </View>
         </Pressable>
       </Modal>
@@ -551,9 +525,9 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
                   <MaterialIcons name="location-on" size={18} color="#7B3FE4" />
                 </View>
                 <View className="items-center">
-                <Text className="text-black text-[16px] font-semibold">
-                  {selectedAddress?.type || "Address"}
-                </Text>
+                  <Text className="text-black text-[16px] font-semibold">
+                    {selectedAddress?.type || "Address"}
+                  </Text>
                 </View>
               </View>
 
