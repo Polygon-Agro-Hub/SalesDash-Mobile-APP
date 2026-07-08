@@ -425,4 +425,13 @@ export type RootStackParamList = {
     name: string;
     title: string;
   };
+  ResidentialAddress:{
+    customerId:string
+  }
+  DeliveryAddressBooks:{
+    customerId:string
+  }
+  AddDeliveryAddress:{
+    customerId:string
+  }
 };

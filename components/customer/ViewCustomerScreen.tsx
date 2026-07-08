@@ -30,6 +30,7 @@ import axios from "axios";
 import environment from "@/environment/environment";
 import { Entypo, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LinearGradient } from "expo-linear-gradient";
 import LoadingPage from "../common/LoadingPage";
 
 type ViewCustomerScreenNavigationProp = StackNavigationProp<
@@ -406,7 +407,13 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       enabled
       style={{ flex: 1 }}
     >
-      <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+      {/* Full-screen linear gradient background: #FBFAFE -> #FFFFFF, top to bottom, 30px corner radius */}
+      <LinearGradient
+        colors={["#FBFAFE", "#FFFFFF"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={{ flex: 1,  overflow: "hidden" }}
+      >
         {/* Top Header Row */}
         <View
           style={{
@@ -530,30 +537,21 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
           {/* Residential Address Card */}
           <TouchableOpacity
             onPress={() => {
-              if (latitude !== null && longitude !== null) {
-                navigation.navigate("ViewLocationScreen", {
-                  latitude: latitude,
-                  longitude: longitude,
-                  locationName: selectedLocationName,
+              navigation.navigate("ResidentialAddress", {
+                  customerId:id
                 });
-              } else {
-                Alert.alert(
-                  "Location Unavailable",
-                  "Customer location data is not available.",
-                );
-              }
             }}
             style={{
               flex: 1,
-              backgroundColor: "#FCFAFF",
+              backgroundColor: "#FFFFFF",
               borderRadius: 20,
               padding: 14,
               marginRight: 8,
-              borderWidth: 1.5,
-              borderColor: "#EAE6F5",
-              shadowColor: "#6B3BCF",
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.05,
+              borderBottomWidth: 2,
+              borderBottomColor: "#6938D3",
+              shadowColor: "#EDEDFF",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 1,
               shadowRadius: 6,
               elevation: 2,
             }}
@@ -595,22 +593,21 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
           {/* Delivery Address Book Card */}
           <TouchableOpacity
             onPress={() => {
-              Alert.alert(
-                "Delivery Address Book",
-                `${savedCount} Saved Addresses.`,
-              );
+              navigation.navigate("DeliveryAddressBooks", {
+                  customerId:id
+                });
             }}
             style={{
               flex: 1,
-              backgroundColor: "#FCFAFF",
+              backgroundColor: "#FFFFFF",
               borderRadius: 20,
               padding: 14,
               marginLeft: 8,
-              borderWidth: 1.5,
-              borderColor: "#EAE6F5",
-              shadowColor: "#6B3BCF",
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.05,
+              borderBottomWidth: 2,
+              borderBottomColor: "#6938D3",
+              shadowColor: "#EDEDFF",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 1,
               shadowRadius: 6,
               elevation: 2,
             }}
@@ -1072,7 +1069,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
             </TouchableOpacity>
           </View>
         )}
-      </View>
+      </LinearGradient>
     </KeyboardAvoidingView>
   );
 };

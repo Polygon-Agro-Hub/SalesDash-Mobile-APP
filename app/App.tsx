@@ -50,9 +50,11 @@ import TermsConditions from "@/components/policies/TermsConditions";
 import NetInfo from "@react-native-community/netinfo";
 import AttachGeoLocationScreen from "@/components/location/AttachGeoLocationScreen";
 import ViewLocationScreen from "@/components/location/ViewLocationScreen";
-import AttachGeoLocationScreenEdit from "@/components/location/AttachGeoLocationScreenEdit";
 import * as ExpoNavigationBar from "expo-navigation-bar";
 import { AlertModal, setGlobalAlertListener } from "@/components/common/AlertModal";
+import ResidentialAddress from "@/components/location/ResidentialAddress";
+import DeliveryAddressBooks from "@/components/location/DeliveryAddressBooks";
+import AddDeliveryAddress from "@/components/location/AddDeliveryAddress";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -296,10 +298,7 @@ function AppContent() {
               name="ViewLocationScreen"
               component={ViewLocationScreen as any}
             />
-            <Stack.Screen
-              name="AttachGeoLocationScreenEdit"
-              component={AttachGeoLocationScreenEdit as any}
-            />
+           
             <Stack.Screen
               name="AttachGeoLocationScreen"
               component={AttachGeoLocationScreen as any}
@@ -327,6 +326,18 @@ function AppContent() {
             <Stack.Screen
               name="ExcludeItemEditSummery"
               component={ExcludeItemEditSummery as any}
+            />
+            <Stack.Screen
+              name="ResidentialAddress"
+              component={ResidentialAddress as any}
+            />
+            <Stack.Screen
+              name="DeliveryAddressBooks"
+              component={DeliveryAddressBooks as any}
+            />
+            <Stack.Screen
+              name="AddDeliveryAddress"
+              component={AddDeliveryAddress as any}
             />
             <Stack.Screen name="Main" component={MainTabNavigator} />
           </Stack.Navigator>
