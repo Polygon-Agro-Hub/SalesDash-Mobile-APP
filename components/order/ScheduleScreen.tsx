@@ -36,13 +36,6 @@ interface AdditionalItem {
   quantity: number;
 }
 
-interface City {
-  id: number;
-  city: string;
-  charge: string;
-  createdAt?: string;
-}
-
 interface CustomerData {
   title?: string;
   firstName?: string;
@@ -80,6 +73,7 @@ interface ScheduleScreenProps {
   navigation: ScheduleScreenNavigationProp;
   route: {
     params: {
+      selectedTimeSlot: any;
       packageId: number | null | undefined;
       customerId: string;
       title: string;
@@ -148,6 +142,9 @@ interface ScheduleScreenProps {
         packageId: number;
         packageTotal: number;
       }>;
+      selectedAddress?: any;
+      deliveryCharge?: number;
+      fullTotal?: number;
     };
   };
 }
@@ -189,6 +186,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     name,
     number,
     customerscreencustomerid,
+    deliveryCharge: incomingDeliveryCharge = 0,
+    selectedAddress,
   } = route.params || {};
 
   const [items, setItems] = useState<CartItem[]>(() => {
@@ -227,7 +226,11 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
   );
   const [isDateSelected, setIsDateSelected] = useState(!!previousSelectedDate);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [deliveryFee, setDeliveryFee] = useState<number>(0);
+
+  const [deliveryFee, setDeliveryFee] = useState<number>(
+    incomingDeliveryCharge || 0,
+  );
+
   const [date, setDate] = useState(() => {
     if (previousSelectedDate) {
       const parts = previousSelectedDate.split(" ");
@@ -304,6 +307,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
           return;
         }
 
+        console.log("customerid", customerIdi);
+
         const apiUrl = `${environment.API_BASE_URL}api/orders/get-customer-data/${customerIdi}`;
         const response = await axios.get(apiUrl, {
           headers: { Authorization: `Bearer ${storedToken}` },
@@ -311,24 +316,6 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
 
         if (response.data && response.data.success) {
           setCustomerData(response.data.data);
-
-          const cityResponse = await axios.get<{ data: City[] }>(
-            `${environment.API_BASE_URL}api/customer/get-city`,
-            { headers: { Authorization: `Bearer ${storedToken}` } },
-          );
-
-          if (cityResponse.data && cityResponse.data.data) {
-            const customerCity = response.data.data.buildingDetails?.city;
-            if (customerCity) {
-              const cityData = cityResponse.data.data.find(
-                (c) => c.city === customerCity,
-              );
-              if (cityData) {
-                const fee = parseFloat(cityData.charge) || 0;
-                setDeliveryFee(fee);
-              }
-            }
-          }
         } else {
           const errorMsg =
             response.data?.message || "Failed to fetch customer data";
@@ -522,142 +509,9 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        const parsedIsPackage =
-          typeof isPackage === "string" ? parseInt(isPackage) : isPackage;
-
-        if (parsedIsPackage === 0) {
-          navigation.navigate("CratScreen" as any, {
-            id: customerId || customerid,
-            customerId: customerId || customerid,
-            title,
-            name,
-            number,
-            customerscreencustomerid,
-            isPackage: 0,
-            items: items.map((item) => ({
-              id: item.id,
-              name: item.name || `Item ${item.id}`,
-              price: item.price,
-              normalPrice:
-                item.normalPrice || item.price + (item.discount || 0),
-              discountedPrice: item.discountedPrice || item.price,
-              discount: item.discount || 0,
-              qty: item.quantity,
-              unitType: item.unitType || "kg",
-              startValue: item.startValue || 0.5,
-              quantity: item.quantity,
-            })),
-            selectedProducts: items.map((item) => ({
-              id: item.id,
-              name: item.name || `Item ${item.id}`,
-              price: item.price,
-              normalPrice:
-                item.normalPrice || item.price + (item.discount || 0),
-              discountedPrice: item.discountedPrice || item.price,
-              discount: item.discount || 0,
-              quantity: (item as any).qty ?? item.quantity ?? 0,
-              selected: false,
-              unitType: item.unitType || "kg",
-              startValue: item.startValue || 0.5,
-              changeby:
-                item.unitType === "g"
-                  ? Number((item as any).qty ?? item.quantity ?? 0) * 1000
-                  : ((item as any).qty ?? item.quantity ?? 0),
-            })),
-            subtotal,
-            discount,
-            total,
-            fullTotal,
-            selectedDate,
-            fromOrderSummary: true,
-          });
-        } else if (parsedIsPackage === 1) {
-          const currentOrderItem = orderItems?.[0] || {};
-
-          const restoredPackageItems = (
-            route.params?.rawPackageItems || []
-          ).map((item: { name: string; qty: string }) => ({
-            id: 0,
-            name: item.name,
-            quantity: item.qty,
-            quantityType: "kg",
-            price: 0,
-          }));
-
-          const restoredAdditionalItems = (
-            route.params?.rawAdditionalItems || []
-          ).map((item: any) => ({
-            productId: item.id,
-            mpItemId: item.id,
-            id: item.id,
-            name: item.name,
-            quantity: item.quantity.toString(),
-            quantityType: item.unit?.toLowerCase() === "kg" ? "kg" : "g",
-            pricePerKg: item.pricePerKg,
-            discountedPricePerKg: item.discountedPricePerKg,
-            price: item.totalAmount,
-            discount: item.discount,
-            changeby: item.changeby || "1",
-            startValue: item.startValue || "1",
-            unitType: item.unit?.toLowerCase() || "kg",
-          }));
-
-          navigation.navigate("OrderScreen" as any, {
-            id: customerId || customerid,
-            customerId,
-            title,
-            name,
-            number,
-            customerscreencustomerid,
-            isPackage: "1",
-            orderItems: orderItems,
-            packageId: route.params?.packageId || currentOrderItem.packageId,
-            packageItems: restoredPackageItems,
-            additionalItems: restoredAdditionalItems,
-            subtotal,
-            discount,
-            total,
-            fullTotal,
-            selectedDate,
-            selectedTimeSlot,
-            isEdit: true,
-            orderData: route.params?.orderData,
-          });
-        } else {
-          navigation.navigate("CratScreen" as any, {
-            id: customerId || customerid,
-            customerId: customerId || customerid,
-            title,
-            name,
-            items: items,
-            number,
-            customerscreencustomerid,
-            selectedProducts: items.map((item) => ({
-              id: item.id,
-              name: item.name || `Item ${item.id}`,
-              price: item.price,
-              normalPrice:
-                item.normalPrice || item.price + (item.discount || 0),
-              discountedPrice: item.discountedPrice || item.price,
-              discount: item.discount || 0,
-              quantity: (item as any).qty ?? item.quantity ?? 0,
-              selected: false,
-              unitType: item.unitType || "kg",
-              startValue: item.startValue || 0.5,
-              changeby:
-                item.unitType === "g"
-                  ? Number((item as any).qty ?? item.quantity ?? 0) * 1000
-                  : ((item as any).qty ?? item.quantity ?? 0),
-            })),
-            subtotal,
-            discount,
-            total,
-            fullTotal,
-            selectedDate,
-            selectedTimeSlot,
-            fromOrderSummary: true,
-          });
-        }
+        navigation.navigate("DeliveryAddress" as any, {
+          ...route.params,
+        });
         return true;
       };
 
@@ -667,8 +521,35 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       );
 
       return () => backHandler.remove();
-    }, [navigation]),
+    }, [navigation, route.params]),
   );
+
+  const handleGoBackToCart = () => {
+    navigation.navigate("CratScreen" as any, {
+      id: route.params?.id,
+      customerId: route.params?.customerId,
+      customerscreencustomerid: route.params?.customerscreencustomerid,
+      number: route.params?.number,
+      title: route.params?.title,
+      name: route.params?.name,
+      isPackage: route.params?.isPackage,
+      items: route.params?.items,
+      subtotal: route.params?.subtotal,
+      discount: route.params?.discount,
+      total: route.params?.total,
+      fullTotal: route.params?.fullTotal,
+      selectedDate: route.params?.selectedDate,
+      timeDisplay: route.params?.timeDisplay,
+      selectedTimeSlot: route.params?.selectedTimeSlot,
+      paymentMethod: (route.params as any)?.paymentMethod,
+      rawPackageItems: route.params?.rawPackageItems,
+      rawAdditionalItems: route.params?.rawAdditionalItems,
+      orderItems: route.params?.orderItems,
+      orderData: route.params?.orderData,
+      selectedAddress: selectedAddress ?? undefined,
+      deliveryCharge: deliveryFee,
+    });
+  };
 
   const handleProceed = () => {
     if (!selectedDate && !selectedTimeSlot) {
@@ -718,6 +599,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
 
       rawPackageItems: route.params?.rawPackageItems,
       rawAdditionalItems: route.params?.rawAdditionalItems,
+      selectedAddress: selectedAddress,
+      deliveryCharge: deliveryFee,
       ...(orderData && { orderData: orderData }),
     };
 
@@ -761,143 +644,9 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
             showBackButton={true}
             navigation={navigation}
             onBackPress={() => {
-              const parsedIsPackage =
-                typeof isPackage === "string" ? parseInt(isPackage) : isPackage;
-              if (parsedIsPackage === 0) {
-                navigation.navigate("CratScreen" as any, {
-                  id: customerId || customerid,
-                  customerId: customerId || customerid,
-                  title,
-                  name,
-                  number,
-                  customerscreencustomerid,
-                  isPackage: 0,
-                  items: items.map((item) => ({
-                    id: item.id,
-                    name: item.name || `Item ${item.id}`,
-                    price: item.price,
-                    normalPrice:
-                      item.normalPrice || item.price + (item.discount || 0),
-                    discountedPrice: item.discountedPrice || item.price,
-                    discount: item.discount || 0,
-                    qty: item.quantity,
-                    unitType: item.unitType || "kg",
-                    startValue: item.startValue || 0.5,
-                    quantity: item.quantity,
-                  })),
-                  selectedProducts: items.map((item) => ({
-                    id: item.id,
-                    name: item.name || `Item ${item.id}`,
-                    price: item.price,
-                    normalPrice:
-                      item.normalPrice || item.price + (item.discount || 0),
-                    discountedPrice: item.discountedPrice || item.price,
-                    discount: item.discount || 0,
-                    quantity: (item as any).qty ?? item.quantity ?? 0,
-                    selected: false,
-                    unitType: item.unitType || "kg",
-                    startValue: item.startValue || 0.5,
-                    changeby:
-                      item.unitType === "g"
-                        ? Number((item as any).qty ?? item.quantity ?? 0) * 1000
-                        : ((item as any).qty ?? item.quantity ?? 0),
-                  })),
-                  subtotal,
-                  discount,
-                  total,
-                  fullTotal,
-                  selectedDate,
-                  fromOrderSummary: true,
-                });
-              } else if (parsedIsPackage === 1) {
-                const currentOrderItem = orderItems?.[0] || {};
-
-                const restoredPackageItems = (
-                  route.params?.rawPackageItems || []
-                ).map((item: { name: string; qty: string }) => ({
-                  id: 0,
-                  name: item.name,
-                  quantity: item.qty,
-                  quantityType: "kg",
-                  price: 0,
-                }));
-
-                const restoredAdditionalItems = (
-                  route.params?.rawAdditionalItems || []
-                ).map((item: any) => ({
-                  productId: item.id,
-                  mpItemId: item.id,
-                  id: item.id,
-                  name: item.name,
-                  quantity: item.quantity.toString(),
-                  quantityType: item.unit?.toLowerCase() === "kg" ? "kg" : "g",
-                  pricePerKg: item.pricePerKg,
-                  discountedPricePerKg: item.discountedPricePerKg,
-                  price: item.totalAmount,
-                  discount: item.discount,
-                  changeby: item.changeby || "1",
-                  startValue: item.startValue || "1",
-                  unitType: item.unit?.toLowerCase() || "kg",
-                }));
-
-                navigation.navigate("OrderScreen" as any, {
-                  id: customerId || customerid,
-                  customerId,
-                  title,
-                  name,
-                  number,
-                  customerscreencustomerid: customerscreencustomerid,
-                  isPackage: "1",
-                  orderItems: orderItems,
-                  packageId:
-                    route.params?.packageId || currentOrderItem.packageId,
-                  packageItems: restoredPackageItems,
-                  additionalItems: restoredAdditionalItems,
-                  subtotal,
-                  discount,
-                  total,
-                  fullTotal,
-                  selectedDate,
-                  selectedTimeSlot,
-                  isEdit: true,
-                  orderData: route.params?.orderData,
-                });
-              } else {
-                navigation.navigate("CratScreen" as any, {
-                  id: customerId || customerid,
-                  customerId: customerId || customerid,
-                  title,
-                  name,
-                  items: items,
-                  number,
-                  customerscreencustomerid,
-                  selectedProducts: items.map((item) => ({
-                    id: item.id,
-                    name: item.name || `Item ${item.id}`,
-                    price: item.price,
-                    normalPrice:
-                      item.normalPrice || item.price + (item.discount || 0),
-                    discountedPrice: item.discountedPrice || item.price,
-                    discount: item.discount || 0,
-                    quantity: (item as any).qty ?? item.quantity ?? 0,
-                    selected: false,
-                    unitType: item.unitType || "kg",
-                    startValue: item.startValue || 0.5,
-                    changeby:
-                      item.unitType === "g"
-                        ? Number((item as any).qty ?? item.quantity ?? 0) * 1000
-                        : ((item as any).qty ?? item.quantity ?? 0),
-                  })),
-                  subtotal,
-                  discount,
-                  total,
-                  fullTotal,
-                  selectedDate,
-                  selectedTimeSlot,
-                  fromOrderSummary: true,
-                });
-              }
-              return true;
+              navigation.navigate("DeliveryAddress" as any, {
+                ...route.params,
+              });
             }}
           />
           <View className="flex-1 bg-white items-center">

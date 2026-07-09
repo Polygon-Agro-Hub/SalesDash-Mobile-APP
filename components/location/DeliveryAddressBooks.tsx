@@ -18,7 +18,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import axios from "axios";
 import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { MaterialIcons, MaterialCommunityIcons, FontAwesome6 } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import CustomHeader from "../common/CustomHeader";
 import LoadingPage from "../common/LoadingPage";
@@ -54,6 +54,7 @@ interface SavedAddress {
   billingPhone2?: string;
   latitude?: number | string | null;
   longitude?: number | string | null;
+  city?: string;
 }
 
 interface MenuPosition {
@@ -64,7 +65,7 @@ interface MenuPosition {
 interface BillingInfoRow {
   label: string;
   value: string;
-  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+  icon: keyof typeof FontAwesome6.glyphMap;
   iconColor: string;
   iconBg: string;
 }
@@ -83,7 +84,7 @@ const getBillingInfoRows = (address: SavedAddress | null): BillingInfoRow[] => {
   rows.push({
     label: "Billing To",
     value: billingTo || "—",
-    icon: "account-circle-outline",
+    icon: "user",
     ...purpleIcon,
   });
 
@@ -91,38 +92,38 @@ const getBillingInfoRows = (address: SavedAddress | null): BillingInfoRow[] => {
     rows.push({
       label: "Building No",
       value: address.houseNo || "—",
-      icon: "office-building-outline",
+      icon: "building",
       ...purpleIcon,
     });
     rows.push({
       label: "Street Name",
       value: address.streetName || "—",
-      icon: "road-variant",
+      icon: "road",
       ...purpleIcon,
     });
     rows.push({
       label: "Nearest City",
-      value: address.nearestCity || "—",
-      icon: "map-marker-outline",
+      value: address.city || "—",
+      icon: "mountain-city",
       ...purpleIcon,
     });
   } else {
     rows.push({
       label: "Building No",
       value: address.buildingNo || "—",
-      icon: "office-building-outline",
+      icon: "building",
       ...purpleIcon,
     });
     rows.push({
       label: "Building Name",
       value: address.buildingName || "—",
-      icon: "tag-outline",
+      icon: "tag",
       ...purpleIcon,
     });
     rows.push({
       label: "Unit No",
       value: address.unitNo || "—",
-      icon: "door",
+      icon: "hotel",
       ...purpleIcon,
     });
     rows.push({
@@ -134,19 +135,19 @@ const getBillingInfoRows = (address: SavedAddress | null): BillingInfoRow[] => {
     rows.push({
       label: "House No",
       value: address.houseNo || "—",
-      icon: "home-outline",
+      icon: "house",
       ...purpleIcon,
     });
     rows.push({
       label: "Street Name",
       value: address.streetName || "—",
-      icon: "road-variant",
+      icon: "road",
       ...purpleIcon,
     });
     rows.push({
       label: "Nearest City",
-      value: address.nearestCity || "—",
-      icon: "map-marker-outline",
+      value: address.city || "—",
+      icon: "mountain-city",
       ...purpleIcon,
     });
   }
@@ -154,7 +155,7 @@ const getBillingInfoRows = (address: SavedAddress | null): BillingInfoRow[] => {
   rows.push({
     label: "Phone Num 1",
     value: address.billingPhone1 || "—",
-    icon: "phone-outline",
+    icon: "phone",
     ...greenIcon,
   });
 
@@ -162,7 +163,7 @@ const getBillingInfoRows = (address: SavedAddress | null): BillingInfoRow[] => {
     rows.push({
       label: "Phone Num 2",
       value: address.billingPhone2,
-      icon: "phone-outline",
+      icon: "phone",
       ...greenIcon,
     });
   }
@@ -569,7 +570,7 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
                       backgroundColor: row.iconBg,
                     }}
                   >
-                    <MaterialCommunityIcons
+                    <FontAwesome6
                       name={row.icon}
                       size={14}
                       color={row.iconColor}

@@ -187,7 +187,6 @@ export type RootStackParamList = {
     title: string;
     number: string;
     customerscreencustomerid: string;
-    // Edit / back-navigation fields
     isEdit?: boolean;
     packageId?: number;
     packageItems?: Array<{
@@ -230,39 +229,34 @@ export type RootStackParamList = {
   };
   ScheduleScreen: {
     totalPrice?: number;
-    // Order data
     items?: CartItem[];
     subtotal?: number;
     discount?: number;
     total?: number;
     fullTotal?: number;
-    // Customer identifiers
     id?: string;
     customerId?: string;
     customerid?: string;
-    // Customer display info
     title?: string;
     name?: string;
     number?: string;
     customerscreencustomerid?: string;
-    // Schedule
     selectedDate?: string;
     selectedTimeSlot?: string;
     timeDisplay?: string;
-    // Order type
     isPackage?: string | number;
     packageId?: number | null;
-    // Raw items for round-trip back navigation
     rawPackageItems?: RawPackageItem[];
     rawAdditionalItems?: RawAdditionalItem[];
-    // Full order items (package flow)
     orderItems?: PackageItem[];
     orderData?: {
       additionalItems?: AdditionalItem[];
       [key: string]: any;
     };
-    // Restore flag
+
     fromOrderSummary?: boolean;
+    selectedAddress?: any;
+    deliveryCharge?: number;
   };
   SelectPaymentMethod: {
     items?: CartItem[];
@@ -275,29 +269,32 @@ export type RootStackParamList = {
     timeDisplay?: string;
     sheduleTime?: string;
     sheduleDate?: string;
-    // Customer identifiers
+
     id?: string;
     customerId?: string;
     customerid?: string;
-    // Customer display info
+
     title?: string;
     name?: string;
     number?: string;
     customerscreencustomerid?: string;
-    // Order type
+
     isPackage?: number | string;
     packageId?: number;
-    // Payment
+
     selectedMethod?: "Card" | "Cash" | null;
-    // Raw items for round-trip back navigation
+
     rawPackageItems?: RawPackageItem[];
     rawAdditionalItems?: RawAdditionalItem[];
-    // Full order items (package flow)
+
     orderItems?: PackageItem[];
     orderData?: {
       additionalItems?: AdditionalItem[];
       [key: string]: any;
     };
+
+    selectedAddress?: any;
+    deliveryCharge?: number;
   };
   OrderSummeryScreen: {
     items?: CartItem[];
@@ -310,29 +307,31 @@ export type RootStackParamList = {
     timeDisplay?: string;
     sheduleTime?: string;
     sheduleDate?: string;
-    deliveryCharge?:string;
+    deliveryCharge?: number;
     paymentMethod?: string;
-    // Customer identifiers
+
     customerId?: string | number;
     customerid?: string | number;
     id?: string;
-    // Customer display info
+
     title?: string;
     name?: string;
     number?: string;
     customerscreencustomerid?: string;
-    // Order type
+
     isPackage?: number | string;
     packageId?: number;
-    // Raw items — source of truth for back navigation to OrderScreen
+
     rawPackageItems?: RawPackageItem[];
     rawAdditionalItems?: RawAdditionalItem[];
-    // Full order items (package flow)
+
     orderItems?: PackageItem[];
     orderData?: {
       additionalItems?: AdditionalItem[];
       [key: string]: any;
     };
+
+    selectedAddress?: any;
   };
   OrderConfirmedScreen: {
     orderId: number;
@@ -425,13 +424,39 @@ export type RootStackParamList = {
     name: string;
     title: string;
   };
-  ResidentialAddress:{
-    customerId:string
-  }
-  DeliveryAddressBooks:{
-    customerId:string
-  }
-  AddDeliveryAddress:{
-    customerId:string
-  }
+  ResidentialAddress: {
+    customerId: string;
+  };
+  DeliveryAddressBooks: {
+    customerId: string;
+  };
+  AddDeliveryAddress: {
+    customerId: string;
+  };
+  DeliveryAddress: {
+    customerId: string;
+    selectedAddressId?: number;
+    onSelectAddress?: (address: any) => void;
+    items?: any[];
+    subtotal?: number;
+    discount?: number;
+    total?: number;
+    fullTotal?: number;
+    id?: string;
+    isPackage?: any;
+    customerscreencustomerid?: string;
+    number?: string;
+    title?: string;
+    name?: string;
+    rawPackageItems?: any[];
+    rawAdditionalItems?: any[];
+    orderItems?: any[];
+    orderData?: any;
+    selectedDate?: string;
+    timeDisplay?: string;
+    selectedTimeSlot?: string;
+    paymentMethod?: string;
+    selectedAddress?: any;
+    deliveryCharge?: number;
+  };
 };

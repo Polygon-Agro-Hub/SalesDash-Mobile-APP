@@ -55,6 +55,7 @@ import { AlertModal, setGlobalAlertListener } from "@/components/common/AlertMod
 import ResidentialAddress from "@/components/location/ResidentialAddress";
 import DeliveryAddressBooks from "@/components/location/DeliveryAddressBooks";
 import AddDeliveryAddress from "@/components/location/AddDeliveryAddress";
+import DeliveryAddress from "@/components/order/DeliveryAddress";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -338,6 +339,10 @@ function AppContent() {
             <Stack.Screen
               name="AddDeliveryAddress"
               component={AddDeliveryAddress as any}
+            />
+             <Stack.Screen
+              name="DeliveryAddress"
+              component={DeliveryAddress as any}
             />
             <Stack.Screen name="Main" component={MainTabNavigator} />
           </Stack.Navigator>

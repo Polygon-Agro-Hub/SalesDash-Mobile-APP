@@ -167,7 +167,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         if (customerResponse.data?.success) {
           const fetchedCustomerData = customerResponse.data.data;
           setCustomerData(fetchedCustomerData);
-          const customerCity = fetchedCustomerData.buildingDetails?.city;
+          const customerCity = route.params?.selectedAddress?.city || fetchedCustomerData.buildingDetails?.city;
 
           if (customerCity) {
             try {
@@ -253,6 +253,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           paymentMethod: paymentMethod,
           isPaid: 0,
           status: "confirmed",
+          deliveryAddress: route.params?.selectedAddress,
           items: safeItems.map((item) => ({
             productId: item.id,
             qty: item.qty === "g" ? Number(item.qty) / 1000 : item.qty,
@@ -290,6 +291,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           paymentMethod: paymentMethod,
           isPaid: 1,
           status: "confirmed",
+          deliveryAddress: route.params?.selectedAddress,
           items: packageItems,
         };
 
@@ -341,6 +343,20 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
   };
 
   const getCustomerInfo = () => {
+    if (route.params?.selectedAddress) {
+      const address = route.params.selectedAddress;
+      const formatted = address.type === "Apartment"
+        ? `${address.buildingNo || ""} ${address.buildingName || ""}, Flat ${address.unitNo || ""}, ${address.floorNo ? address.floorNo + " Floor, " : ""}${address.houseNo ? "House " + address.houseNo + ", " : ""}${address.streetName || ""}, ${address.city || ""}`
+        : `${address.houseNo || ""}, ${address.streetName || ""}, ${address.city || ""}`;
+      const cleaned = formatted.replace(/\s+/g, " ").trim();
+      return {
+        name: [address.billingTitle, address.billingName].filter(Boolean).join(" ") || `${customerData?.title || ""}. ${customerData?.firstName || ""} ${customerData?.lastName || ""}`,
+        phone: [address.billingPhone1, address.billingPhone2].filter(Boolean).join(", ") || customerData?.phoneNumber || "No phone",
+        buildingType: address.type || "Not specified",
+        address: cleaned,
+      };
+    }
+
     if (customerData) {
       const address = customerData.buildingDetails
         ? `${customerData.buildingDetails.buildingNo || ""} ${customerData.buildingDetails.unitNo || ""}, 
@@ -674,6 +690,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
             orderData: route.params?.orderData,
             rawPackageItems: route.params?.rawPackageItems,
             rawAdditionalItems: route.params?.rawAdditionalItems,
+            selectedAddress: route.params?.selectedAddress,
           })
         }
       />
@@ -729,6 +746,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                       orderData: route.params?.orderData,
                       rawPackageItems: route.params?.rawPackageItems,
                       rawAdditionalItems: route.params?.rawAdditionalItems,
+                      selectedAddress: route.params?.selectedAddress,
                     });
                   }}
                   disabled={isSubmitting || isSubmitted}
@@ -761,56 +779,9 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
             </Text>
 
             <Text className="text-[#808FA2] text-s mt-3 mb-2">Address</Text>
-            {customerData && customerData.buildingDetails ? (
-              <View className="-m-1">
-                {customerData.buildingDetails.buildingNo && (
-                  <Text className="text-black font-medium">
-                    {" "}
-                    {customerData.buildingDetails.buildingNo},
-                  </Text>
-                )}
-                {customerData.buildingDetails.unitNo && (
-                  <Text className="text-black font-medium">
-                    {" "}
-                    {customerData.buildingDetails.unitNo},
-                  </Text>
-                )}
-                {customerData.buildingDetails.buildingName && (
-                  <Text className="text-black font-medium">
-                    {" "}
-                    {customerData.buildingDetails.buildingName},
-                  </Text>
-                )}
-                {customerData.buildingDetails.floorNo && (
-                  <Text className="text-black font-medium">
-                    {" "}
-                    {customerData.buildingDetails.floorNo},
-                  </Text>
-                )}
-                {customerData.buildingDetails.houseNo && (
-                  <Text className="text-black font-medium">
-                    {" "}
-                    {customerData.buildingDetails.houseNo},
-                  </Text>
-                )}
-                {customerData.buildingDetails.streetName && (
-                  <Text className="text-black font-medium">
-                    {" "}
-                    {customerData.buildingDetails.streetName},
-                  </Text>
-                )}
-                {customerData.buildingDetails.city && (
-                  <Text className="text-black font-medium">
-                    {" "}
-                    {customerData.buildingDetails.city}
-                  </Text>
-                )}
-              </View>
-            ) : (
-              <Text className="text-black font-medium">
-                Address not available
-              </Text>
-            )}
+            <Text className="text-black font-medium">
+              {customerInfo.address}
+            </Text>
           </View>
 
           {/* ── Payment summary ── */}
@@ -988,6 +959,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                     orderData: route.params?.orderData,
                     rawPackageItems: route.params?.rawPackageItems,
                     rawAdditionalItems: route.params?.rawAdditionalItems,
+                    selectedAddress: route.params?.selectedAddress,
                   })
                 }
                 className="border border-[#6C3CD1] px-3 rounded-full"
@@ -997,7 +969,9 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                 <Text className="text-[#6C3CD1] font-medium">Edit</Text>
               </TouchableOpacity>
             </View>
-            <Text className="text-[#8492A3] mt-1">Cash On Delivery</Text>
+            <Text className="text-[#8492A3] mt-1">
+              {paymentMethod === "Card" ? "Online Payment (Card)" : "Cash On Delivery"}
+            </Text>
           </View>
         </View>
 
