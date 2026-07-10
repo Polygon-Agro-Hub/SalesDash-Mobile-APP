@@ -241,6 +241,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
       let orderPayload;
 
       if (isPackage === 0) {
+        const isCardPayment = paymentMethod === "Card";
         const orderData = {
           userId: customerId || customerid,
           isPackage: 0,
@@ -251,7 +252,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           sheduleDate: selectedDate,
           sheduleTime: selectedTimeSlot,
           paymentMethod: paymentMethod,
-          isPaid: 0,
+          isPaid: isCardPayment ? 1 : 0,
           status: "confirmed",
           deliveryAddress: route.params?.selectedAddress,
           items: safeItems.map((item) => ({
@@ -277,6 +278,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           discount: item.discount,
         }));
 
+        const isCardPaymentPkg = paymentMethod === "Card";
         const packageOrderData = {
           userId: customerId || customerid,
           isPackage: 1,
@@ -284,13 +286,14 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           total: fullTotal + discount,
           fullTotal: fullTotal,
           discount: discount,
-          deliveryCharge: deliveryFee, 
+          deliveryCharge: deliveryFee,
           sheduleDate: selectedDate,
           sheduleTime: selectedTimeSlot,
           transactionId: null,
           paymentMethod: paymentMethod,
-          isPaid: 1,
+          isPaid: isCardPaymentPkg ? 1 : 0,
           status: "confirmed",
+          isFinalizeImdt: route.params?.isFinalizeImdt ?? 0,
           deliveryAddress: route.params?.selectedAddress,
           items: packageItems,
         };
@@ -747,6 +750,8 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                       rawPackageItems: route.params?.rawPackageItems,
                       rawAdditionalItems: route.params?.rawAdditionalItems,
                       selectedAddress: route.params?.selectedAddress,
+                      deliveryCharge: deliveryFee,
+                      fullTotal,
                     });
                   }}
                   disabled={isSubmitting || isSubmitted}

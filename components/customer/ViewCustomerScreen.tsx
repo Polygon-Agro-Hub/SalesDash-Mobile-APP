@@ -28,7 +28,7 @@ import {
 } from "react-native-responsive-screen";
 import axios from "axios";
 import environment from "@/environment/environment";
-import { Entypo, Ionicons } from "@expo/vector-icons";
+import { Entypo, FontAwesome, FontAwesome6, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import LoadingPage from "../common/LoadingPage";
@@ -81,6 +81,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   const ORDERS_PER_PAGE = 5;
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [searchText, setSearchText] = useState("");
+  const [creditBalance, setCreditBalance] = useState<number>(0);
   const [selectedFilter, setSelectedFilter] = useState("Ordered");
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -164,6 +165,9 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
           setLatitude(null);
           setLongitude(null);
         }
+
+        const balance = Number(response.data.creditBalance) || 0;
+        setCreditBalance(balance);
 
         const freshFirstName = response.data.firstName || "";
         const freshLastName = response.data.lastName || "";
@@ -412,7 +416,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
         colors={["#FBFAFE", "#FFFFFF"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
-        style={{ flex: 1,  overflow: "hidden" }}
+        style={{ flex: 1, overflow: "hidden" }}
       >
         {/* Top Header Row */}
         <View
@@ -538,8 +542,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
           <TouchableOpacity
             onPress={() => {
               navigation.navigate("ResidentialAddress", {
-                  customerId:id
-                });
+                customerId: id,
+              });
             }}
             style={{
               flex: 1,
@@ -560,8 +564,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
               style={{
                 width: 34,
                 height: 34,
-                borderRadius: 17,
-                backgroundColor: "#F0EBFF",
+                borderRadius: 10,
+                backgroundColor: "#F5F1FD",
                 alignItems: "center",
                 justifyContent: "center",
                 marginBottom: 10,
@@ -594,8 +598,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
           <TouchableOpacity
             onPress={() => {
               navigation.navigate("DeliveryAddressBooks", {
-                  customerId:id
-                });
+                customerId: id,
+              });
             }}
             style={{
               flex: 1,
@@ -616,14 +620,14 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
               style={{
                 width: 34,
                 height: 34,
-                borderRadius: 17,
-                backgroundColor: "#F0EBFF",
+                borderRadius: 10,
+                backgroundColor: "#F5F1FD",
                 alignItems: "center",
                 justifyContent: "center",
                 marginBottom: 10,
               }}
             >
-              <MaterialIcons name="folder" size={18} color="#6B3BCF" />
+              <FontAwesome name="folder-open" size={18} color="#6B3BCF" />
             </View>
             <Text
               style={{ fontSize: 13, fontWeight: "bold", color: "#1F2937" }}
@@ -645,6 +649,45 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
             </View>
           </TouchableOpacity>
         </View>
+
+        {/* Negative Credit Balance Warning */}
+        {creditBalance < 0 && (
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "flex-start",
+              backgroundColor: "#FEF6F0",
+              borderWidth: 1,
+              borderColor: "#FDE4D4",
+              borderRadius: 14,
+              marginHorizontal: 16,
+              marginTop: 14,
+              padding: 12,
+            }}
+          >
+            <MaterialIcons
+              name="warning"
+              size={18}
+              color="#F5811F"
+              style={{ marginRight: 8, marginTop: 7 }}
+            />
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{ fontSize: 13, fontWeight: "bold", color: "#000000" }}
+              >
+                Negative Credit Balance{" "}
+                <Text
+                  style={{ fontSize: 13, fontWeight: "bold", color: "#FF6400" }}
+                >
+                  ( -Rs. {Math.abs(creditBalance).toFixed(2)} )
+                </Text>
+              </Text>
+              <Text style={{ fontSize: 12, color: "#5E6089", marginTop: 2 }}>
+                Ask the customer to clear the balance first.
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* Scrollable orders content area */}
         <View style={{ flex: 1, marginTop: 15 }}>
@@ -1033,7 +1076,9 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
             </TouchableOpacity>
 
             {/* New Order Button */}
+            {/* New Order Button */}
             <TouchableOpacity
+              disabled={creditBalance < 0}
               onPress={() =>
                 navigation.navigate("SelectOrderType" as any, {
                   id,
@@ -1049,10 +1094,11 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 flexDirection: "row",
                 height: 48,
                 borderRadius: 24,
-                backgroundColor: "#6B3BCF",
+                backgroundColor: creditBalance < 0 ? "#B8B8B8" : "#6B3BCF",
                 alignItems: "center",
                 justifyContent: "center",
                 marginLeft: 8,
+                opacity: creditBalance < 0 ? 0.7 : 1,
               }}
             >
               <Ionicons

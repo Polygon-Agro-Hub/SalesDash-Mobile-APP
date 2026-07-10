@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -110,6 +110,7 @@ interface OrderScreenProps {
         quantityType: string;
         price: number;
       }>;
+      rawPackageItems?: Array<{ name: string; qty: string }>;
       additionalItems?: Array<{
         pricePerKg?: number;
         discountedPricePerKg?: number;
@@ -127,7 +128,9 @@ interface OrderScreenProps {
         startValue?: string;
         unitType?: string;
       }>;
+      rawAdditionalItems?: AdditionalItem[];
       orderItems?: any[];
+      orderData?: any;
       subtotal?: number;
       discount?: number;
       total?: number;
@@ -376,6 +379,53 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     packages,
   ]);
 
+  // ── Restore a previously selected package & additional items ──
+  // When the user leaves this screen mid-flow (e.g. to pick a delivery
+  // address or schedule) and comes back, we don't want their selections
+  // to disappear. This runs once per navigation into the screen and
+  // repopulates state from whatever was passed back in route.params.
+  const hasRestoredPreviousSelection = useRef(false);
+
+  useEffect(() => {
+    if (hasRestoredPreviousSelection.current) return;
+    if (route.params?.isEdit) return; // isEdit has its own restoration above
+
+    const prevPackageId = route.params?.packageId;
+    const prevAdditionalItems = route.params?.rawAdditionalItems;
+
+    let restoredSomething = false;
+
+    if (prevPackageId && !packageValue) {
+      setPackageValue(prevPackageId.toString());
+      restoredSomething = true;
+    }
+
+    if (prevAdditionalItems && prevAdditionalItems.length > 0) {
+      setAdditionalItems(prevAdditionalItems);
+      restoredSomething = true;
+    }
+
+    if (restoredSomething) {
+      hasRestoredPreviousSelection.current = true;
+    }
+  }, [route.params?.packageId, route.params?.rawAdditionalItems, packageValue]);
+
+  // Once packages are loaded, match the restored packageId to its full
+  // package record so the package details & footer total render correctly.
+  useEffect(() => {
+    if (
+      !route.params?.isEdit &&
+      route.params?.packageId &&
+      packages.length > 0 &&
+      !selectedPackage
+    ) {
+      const pkg = packages.find((p) => p.id === route.params?.packageId);
+      if (pkg) {
+        setSelectedPackage(pkg);
+      }
+    }
+  }, [packages, route.params?.packageId, route.params?.isEdit, selectedPackage]);
+
   const handleConfirm = useCallback(async () => {
     setLoading(true);
 
@@ -410,20 +460,28 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         })),
       };
 
-      navigation.navigate("ScheduleScreen" as any, {
-        orderData,
-        customerid: route.params?.id,
-        isPackage,
-        id,
-        title,
-        name,
-        number,
-        customerscreencustomerid,
-
-        packageId: packageValue ? parseInt(packageValue) : null,
-        rawPackageItems: items,
-        rawAdditionalItems: additionalItems,
-      });
+     
+        navigation.navigate("PackageConfirmation" as any, {
+          orderData,
+          customerid: route.params?.id,
+          isPackage,
+          id,
+          title,
+          name,
+          number,
+          customerscreencustomerid,
+          packageId: packageValue ? parseInt(packageValue) : null,
+          rawPackageItems: items,
+          rawAdditionalItems: additionalItems,
+          total:
+            packageTotalAmount +
+            additionalItems.reduce((sum, item) => sum + item.totalAmount, 0),
+          fullTotal:
+            packageTotalAmount +
+            additionalItems.reduce((sum, item) => sum + item.totalAmount, 0),
+          discount: additionalItems.reduce((sum, item) => sum + item.discount, 0),
+        });
+      
     } catch (error) {
       console.error("Error confirming order:", error);
       Alert.alert("Error", "Failed to process order");

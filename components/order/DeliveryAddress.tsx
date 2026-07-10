@@ -59,6 +59,7 @@ interface DeliveryAddressProps {
       timeDisplay?: string;
       selectedTimeSlot?: string;
       paymentMethod?: string;
+      isFinalizeImdt?: number;
     };
   };
 }
@@ -163,31 +164,61 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
     ? parseFloat(cityCharges.find((c) => c.city === selectedCity)?.charge || "0")
     : 0;
 
-  const handleGoBackToCart = () => {
-    navigation.navigate("CratScreen" as any, {
-      id: route.params?.id,
-      customerId: route.params?.customerId,
-      customerscreencustomerid: route.params?.customerscreencustomerid,
-      number: route.params?.number,
-      title: route.params?.title,
-      name: route.params?.name,
-      isPackage: route.params?.isPackage,
-      items: route.params?.items,
-      subtotal: route.params?.subtotal,
-      discount: route.params?.discount,
-      total: route.params?.total,
-      fullTotal: route.params?.fullTotal,
-      selectedDate: route.params?.selectedDate,
-      timeDisplay: route.params?.timeDisplay,
-      selectedTimeSlot: route.params?.selectedTimeSlot,
-      paymentMethod: route.params?.paymentMethod,
-      rawPackageItems: route.params?.rawPackageItems,
-      rawAdditionalItems: route.params?.rawAdditionalItems,
-      orderItems: route.params?.orderItems,
-      orderData: route.params?.orderData,
-      selectedAddress: selectedAddress ?? undefined,
-      deliveryCharge: deliveryFee,
-    });
+  const handleGoBack = () => {
+    const isPackage = route.params?.isPackage;
+
+    if (isPackage === 1 || isPackage === "1") {
+      // Package order: go back to OrderScreen, restoring the previously
+      // selected package and additional items so nothing the user picked
+      // earlier gets lost.
+      navigation.navigate("OrderScreen" as any, {
+        id: route.params?.id,
+        customerId: route.params?.customerId,
+        customerscreencustomerid: route.params?.customerscreencustomerid,
+        number: route.params?.number,
+        title: route.params?.title,
+        name: route.params?.name,
+        isPackage: route.params?.isPackage,
+        packageId: route.params?.orderData?.packageId ?? undefined,
+        rawPackageItems: route.params?.rawPackageItems,
+        rawAdditionalItems: route.params?.rawAdditionalItems,
+        orderData: route.params?.orderData,
+        total: route.params?.total,
+        fullTotal: route.params?.fullTotal,
+        discount: route.params?.discount,
+        selectedDate: route.params?.selectedDate,
+        selectedTimeSlot: route.params?.selectedTimeSlot,
+      });
+    } else {
+      // Regular order: go back to Cart screen.
+      // Going "back" means the address/delivery step hasn't been confirmed
+      // yet, so the cart should show its plain full total (no delivery fee)
+      // — isPackage = 0 always passes the total WITHOUT delivery charge here.
+      navigation.navigate("CratScreen" as any, {
+        id: route.params?.id,
+        customerId: route.params?.customerId,
+        customerscreencustomerid: route.params?.customerscreencustomerid,
+        number: route.params?.number,
+        title: route.params?.title,
+        name: route.params?.name,
+        isPackage: route.params?.isPackage,
+        items: route.params?.items,
+        subtotal: route.params?.subtotal,
+        discount: route.params?.discount,
+        total: route.params?.total,
+        fullTotal: route.params?.total,
+        selectedDate: route.params?.selectedDate,
+        timeDisplay: route.params?.timeDisplay,
+        selectedTimeSlot: route.params?.selectedTimeSlot,
+        paymentMethod: route.params?.paymentMethod,
+        rawPackageItems: route.params?.rawPackageItems,
+        rawAdditionalItems: route.params?.rawAdditionalItems,
+        orderItems: route.params?.orderItems,
+        orderData: route.params?.orderData,
+        selectedAddress: selectedAddress ?? undefined,
+        deliveryCharge: 0,
+      });
+    }
   };
 
   console.log("delivery data",deliveryFee,selectedAddress)
@@ -196,7 +227,7 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
     useCallback(() => {
       const onBackPress = () => {
         if (!onSelectAddress) {
-          handleGoBackToCart();
+          handleGoBack();
           return true;
         }
         return false;
@@ -385,7 +416,7 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
         navigation={navigation}
         onBackPress={() => {
           if (!onSelectAddress) {
-            handleGoBackToCart();
+            handleGoBack();
           } else {
             navigation.goBack();
           }

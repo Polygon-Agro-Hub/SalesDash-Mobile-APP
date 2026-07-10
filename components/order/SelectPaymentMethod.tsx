@@ -81,6 +81,7 @@ interface SelectPaymentMethodProps {
       selectedMethod?: "Card" | "Cash" | null;
       selectedDate?: string;
       selectedTimeSlot?: string;
+      isFinalizeImdt?: number | boolean;
       orderData?: {
         userId: number;
         isPackage: number;
@@ -159,11 +160,15 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
     customerscreencustomerid,
     rawPackageItems,
     rawAdditionalItems,
+    isFinalizeImdt,
   } = route.params || {};
+
+  // Normalize to a strict boolean so both `1` and `true` work
+  const isImmediateFinalize = !!isFinalizeImdt;
 
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<"Cash" | "Card" | null>(
-    previousSelectedMethod || "Cash",
+    isImmediateFinalize ? "Card" : previousSelectedMethod || "Cash",
   );
 
   const [creditBalance, setCreditBalance] = useState<number>(2000);
@@ -204,17 +209,15 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
     fetchCreditBalance();
   }, [userId]);
 
+  // Cash is disabled either when the order needs immediate finalization
+  // (online payment only), or when the order total exceeds the credit balance.
+  const isCashDisabled = isImmediateFinalize || orderTotal >= creditBalance;
+
   useEffect(() => {
-    if (
-      !loadingCredit &&
-      selectedMethod === "Cash" &&
-      orderTotal >= creditBalance
-    ) {
+    if (!loadingCredit && selectedMethod === "Cash" && isCashDisabled) {
       setSelectedMethod("Card");
     }
-  }, [loadingCredit, creditBalance, orderTotal]);
-
-  const isCashDisabled = orderTotal >= creditBalance;
+  }, [loadingCredit, isCashDisabled, selectedMethod]);
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -261,6 +264,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
       name,
       number,
       customerscreencustomerid,
+      isFinalizeImdt: route.params?.isFinalizeImdt,
     };
 
     navigation.navigate("OrderSummeryScreen" as any, navigationData);
@@ -293,6 +297,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
           orderItems,
           selectedAddress: route.params?.selectedAddress,
           deliveryCharge: route.params?.deliveryCharge,
+          isFinalizeImdt: route.params?.isFinalizeImdt,
         });
         return true;
       };
@@ -342,6 +347,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
             rawAdditionalItems,
             selectedAddress: route.params?.selectedAddress,
             deliveryCharge: route.params?.deliveryCharge,
+            isFinalizeImdt: route.params?.isFinalizeImdt,
           })
         }
       />
@@ -396,8 +402,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
                     )}
                   </TouchableOpacity>
 
-                  {/* ── Cash option ── */}
-                  {/* ── Cash option (only shown when eligible) ── */}
+                  {/* ── Cash option (only shown when eligible and not an immediate-finalization order) ── */}
                   {!isCashDisabled && (
                     <TouchableOpacity
                       onPress={handleSelectCash}
@@ -428,7 +433,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
                     </TouchableOpacity>
                   )}
 
-                  {/* ── Cash restriction warning ── */}
+                  {/* ── Restriction warning ── */}
                   {isCashDisabled && (
                     <View
                       style={{
@@ -450,19 +455,31 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
                         color="#DC2626"
                         style={{ marginRight: 8, marginTop: 1 }}
                       />
-                      <Text
-                        style={{
-                          color: "#7F1D1D",
-                          fontSize: 13,
-                          flexShrink: 1,
-                        }}
-                      >
-                        Cash payment is not available for orders equal to or
-                        greater than{" "}
-                        <Text style={{ color: "#DC2626", fontWeight: "700" }}>
-                          Rs. {formatPrice(creditBalance)}.
+                      {isImmediateFinalize ? (
+                        <Text
+                          style={{
+                            color: "#7F1D1D",
+                            fontSize: 13,
+                            flexShrink: 1,
+                          }}
+                        >
+                          Immediate finalization requires online payment.
                         </Text>
-                      </Text>
+                      ) : (
+                        <Text
+                          style={{
+                            color: "#7F1D1D",
+                            fontSize: 13,
+                            flexShrink: 1,
+                          }}
+                        >
+                          Cash payment is not available for orders equal to or
+                          greater than{" "}
+                          <Text style={{ color: "#DC2626", fontWeight: "700" }}>
+                            Rs. {formatPrice(creditBalance)}.
+                          </Text>
+                        </Text>
+                      )}
                     </View>
                   )}
                 </View>

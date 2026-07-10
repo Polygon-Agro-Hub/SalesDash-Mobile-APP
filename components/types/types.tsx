@@ -257,6 +257,7 @@ export type RootStackParamList = {
     fromOrderSummary?: boolean;
     selectedAddress?: any;
     deliveryCharge?: number;
+    isFinalizeImdt?: number;
   };
   SelectPaymentMethod: {
     items?: CartItem[];
@@ -295,6 +296,7 @@ export type RootStackParamList = {
 
     selectedAddress?: any;
     deliveryCharge?: number;
+    isFinalizeImdt?: number;
   };
   OrderSummeryScreen: {
     items?: CartItem[];
@@ -332,6 +334,7 @@ export type RootStackParamList = {
     };
 
     selectedAddress?: any;
+    isFinalizeImdt?: number;
   };
   OrderConfirmedScreen: {
     orderId: number;
@@ -458,5 +461,22 @@ export type RootStackParamList = {
     paymentMethod?: string;
     selectedAddress?: any;
     deliveryCharge?: number;
+    isFinalizeImdt?: number;
+  };
+  PackageConfirmation: {
+    id?: string;
+    customerId?: string;
+    name?: string;
+    title?: string;
+    isPackage?: any;
+    packageId?: number | null;
+    total?: number;
+    fullTotal?: number;
+    discount?: number;
+    orderData?: any;
+    rawPackageItems?: any[];
+    rawAdditionalItems?: any[];
+    number?: string;
+    customerscreencustomerid?: string;
   };
 };

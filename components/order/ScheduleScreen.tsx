@@ -145,6 +145,7 @@ interface ScheduleScreenProps {
       selectedAddress?: any;
       deliveryCharge?: number;
       fullTotal?: number;
+      isFinalizeImdt?: number;
     };
   };
 }
@@ -596,7 +597,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       customerscreencustomerid: customerscreencustomerid,
       sheduleDate: selectedDate,
       sheduleTime: scheduleTime,
-
+      isFinalizeImdt: route.params?.isFinalizeImdt,
       rawPackageItems: route.params?.rawPackageItems,
       rawAdditionalItems: route.params?.rawAdditionalItems,
       selectedAddress: selectedAddress,

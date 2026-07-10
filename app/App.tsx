@@ -56,6 +56,7 @@ import ResidentialAddress from "@/components/location/ResidentialAddress";
 import DeliveryAddressBooks from "@/components/location/DeliveryAddressBooks";
 import AddDeliveryAddress from "@/components/location/AddDeliveryAddress";
 import DeliveryAddress from "@/components/order/DeliveryAddress";
+import PackageConfirmation from "@/components/order/PackageConfirmation";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -343,6 +344,10 @@ function AppContent() {
              <Stack.Screen
               name="DeliveryAddress"
               component={DeliveryAddress as any}
+            />
+            <Stack.Screen
+              name="PackageConfirmation"
+              component={PackageConfirmation as any}
             />
             <Stack.Screen name="Main" component={MainTabNavigator} />
           </Stack.Navigator>
