@@ -155,6 +155,9 @@ export type RootStackParamList = {
     phoneNumber: string;
     id: string;
   };
+  OrderConfimedOTPScreen:{
+    phoneNumber: string;
+  }
   OtpSuccesfulScreen: {
     customerId?: number | string;
     name?: string;
@@ -479,4 +482,10 @@ export type RootStackParamList = {
     number?: string;
     customerscreencustomerid?: string;
   };
+  OnlinePayment:{
+    
+  };
+  OnlinePaymentStatus:{
+    
+  }
 };
