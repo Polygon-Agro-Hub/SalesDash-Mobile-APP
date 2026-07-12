@@ -57,6 +57,9 @@ import DeliveryAddressBooks from "@/components/location/DeliveryAddressBooks";
 import AddDeliveryAddress from "@/components/location/AddDeliveryAddress";
 import DeliveryAddress from "@/components/order/DeliveryAddress";
 import PackageConfirmation from "@/components/order/PackageConfirmation";
+import OnlinePayment from "@/components/order/OnlinePayment";
+import OrderConfimedOTPScreen from "@/components/otp/OrderConfimedOTPScreen";
+import OnlinePaymentStatus from "@/components/order/OnlinePaymentStatus";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -348,6 +351,18 @@ function AppContent() {
             <Stack.Screen
               name="PackageConfirmation"
               component={PackageConfirmation as any}
+            />
+            <Stack.Screen
+              name="OnlinePayment"
+              component={OnlinePayment as any}
+            />
+            <Stack.Screen
+              name="OrderConfimedOTPScreen"
+              component={OrderConfimedOTPScreen as any}
+            />
+             <Stack.Screen
+              name="OnlinePaymentStatus"
+              component={OnlinePaymentStatus as any}
             />
             <Stack.Screen name="Main" component={MainTabNavigator} />
           </Stack.Navigator>

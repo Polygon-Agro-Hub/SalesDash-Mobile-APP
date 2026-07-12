@@ -28,7 +28,12 @@ import {
 } from "react-native-responsive-screen";
 import axios from "axios";
 import environment from "@/environment/environment";
-import { Entypo, FontAwesome, FontAwesome6, Ionicons } from "@expo/vector-icons";
+import {
+  Entypo,
+  FontAwesome,
+  FontAwesome6,
+  Ionicons,
+} from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import LoadingPage from "../common/LoadingPage";
@@ -57,6 +62,7 @@ interface Order {
   fullTotal: string | null;
   fullDiscount: string | null;
   reportStatus: string | null;
+  isPaid: number;
 }
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -233,7 +239,9 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        navigation.navigate("Main", { screen: "CustomersScreen" });
+        navigation.navigate("Main" as any, {
+          screen: "CustomersScreen",
+        });
         return true;
       };
 
@@ -431,7 +439,11 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
         >
           {/* Back button */}
           <TouchableOpacity
-            onPress={() => navigation.navigate("Main", { screen: "CustomersScreen" })}
+            onPress={() =>
+              navigation.navigate("Main" as any, {
+                screen: "CustomersScreen",
+              })
+            }
             style={{
               width: 40,
               height: 40,
@@ -848,132 +860,163 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
               <FlatList
                 data={filteredOrders}
                 keyExtractor={(item) => item.orderId.toString()}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    activeOpacity={1}
-                    onPress={() =>
-                      navigation.navigate("View_CancelOrderScreen" as any, {
-                        orderId: item.orderId,
-                        status: item.status,
-                        reportStatus: item.reportStatus,
-                      })
-                    }
-                  >
-                    <View
-                      style={{
-                        backgroundColor: "#FFFFFF",
-                        borderRadius: 20,
-                        padding: 16,
-                        marginBottom: 12,
-                        marginHorizontal: 16,
-                        borderWidth: 1.5,
-                        borderColor: "#F3F4F6",
-                        shadowColor: "#000",
-                        shadowOffset: { width: 0, height: 4 },
-                        shadowOpacity: 0.04,
-                        shadowRadius: 8,
-                        elevation: 2,
-                      }}
+                renderItem={({ item }) => {
+                  const isPaymentPending =
+                    Number(item.isPaid) === 0 && item.paymentMethod === "Card";
+
+                  return (
+                    <TouchableOpacity
+                      activeOpacity={1}
+                      onPress={() =>
+                        navigation.navigate("View_CancelOrderScreen" as any, {
+                          orderId: item.orderId,
+                          status: item.status,
+                          reportStatus: item.reportStatus,
+                        })
+                      }
                     >
                       <View
                         style={{
-                          flexDirection: "row",
-                          justifyContent: "space-between",
-                          alignItems: "center",
+                          backgroundColor: "#FFFFFF",
+                          borderRadius: 20,
+                          padding: 16,
+                          marginBottom: 12,
+                          marginHorizontal: 16,
+                          borderWidth: 1.5,
+                          borderColor: isPaymentPending ? "#EF4444" : "#F3F4F6",
+                          shadowColor: "#000",
+                          shadowOffset: { width: 0, height: 4 },
+                          shadowOpacity: 0.04,
+                          shadowRadius: 8,
+                          elevation: 2,
                         }}
                       >
-                        <Text
-                          style={{
-                            fontWeight: "bold",
-                            color: "#1F2937",
-                            fontSize: SCREEN_HEIGHT > 900 ? 18 : 15,
-                          }}
-                        >
-                          Order : #{item.InvNo || "N/A"}
-                        </Text>
                         <View
                           style={{
-                            paddingVertical: 4,
-                            paddingHorizontal: 12,
-                            borderRadius: 12,
-                            backgroundColor:
-                              item.status === "Ordered"
-                                ? "#F5FF85"
-                                : item.status === "Processing"
-                                  ? "#CFE1FF"
-                                  : item.status === "Out For Delivery" ||
-                                      item.status === "Out for Delivery"
-                                    ? "#FCD4FF"
-                                    : item.status === "Collected"
-                                      ? "#F8FEA5"
-                                      : item.status === "On the way"
-                                        ? "#FFEDCF"
-                                        : item.status === "Hold"
-                                          ? "#FFEDCF"
-                                          : item.status === "Delivered"
-                                            ? "#BBFFC6"
-                                            : item.status === "Cancelled"
-                                              ? "#DFDFDF"
-                                              : item.status === "Return"
-                                                ? "#FFDCDA"
-                                                : "#EAEAEA",
+                            flexDirection: "row",
+                            justifyContent: "space-between",
                             alignItems: "center",
                           }}
                         >
                           <Text
-                            numberOfLines={1}
                             style={{
-                              fontSize: 11,
                               fontWeight: "bold",
-                              color:
-                                item.status === "Ordered"
-                                  ? "#878216"
-                                  : item.status === "Processing"
-                                    ? "#3B82F6"
-                                    : item.status === "Out For Delivery" ||
-                                        item.status === "Out for Delivery"
-                                      ? "#80118A"
-                                      : item.status === "Collected"
-                                        ? "#7E8700"
-                                        : item.status === "On the way"
-                                          ? "#D17A00"
-                                          : item.status === "Hold"
-                                            ? "#D17A00"
-                                            : item.status === "Delivered"
-                                              ? "#308233"
-                                              : item.status === "Cancelled"
-                                                ? "#5C5C5C"
-                                                : item.status === "Return"
-                                                  ? "#FF1100"
-                                                  : "#393939",
+                              color: "#1F2937",
+                              fontSize: SCREEN_HEIGHT > 900 ? 18 : 15,
                             }}
                           >
-                            {item.status}
+                            Order : #{item.InvNo || "N/A"}
                           </Text>
+                          <View
+                            style={{
+                              paddingVertical: 4,
+                              paddingHorizontal: 12,
+                              borderRadius: 12,
+                              backgroundColor:
+                                item.status === "Ordered"
+                                  ? "#F5FF85"
+                                  : item.status === "Processing"
+                                    ? "#CFE1FF"
+                                    : item.status === "Out For Delivery" ||
+                                        item.status === "Out for Delivery"
+                                      ? "#FCD4FF"
+                                      : item.status === "Collected"
+                                        ? "#F8FEA5"
+                                        : item.status === "On the way"
+                                          ? "#FFEDCF"
+                                          : item.status === "Hold"
+                                            ? "#FFEDCF"
+                                            : item.status === "Delivered"
+                                              ? "#BBFFC6"
+                                              : item.status === "Cancelled"
+                                                ? "#DFDFDF"
+                                                : item.status === "Return"
+                                                  ? "#FFDCDA"
+                                                  : "#EAEAEA",
+                              alignItems: "center",
+                            }}
+                          >
+                            <Text
+                              numberOfLines={1}
+                              style={{
+                                fontSize: 11,
+                                fontWeight: "bold",
+                                color:
+                                  item.status === "Ordered"
+                                    ? "#878216"
+                                    : item.status === "Processing"
+                                      ? "#3B82F6"
+                                      : item.status === "Out For Delivery" ||
+                                          item.status === "Out for Delivery"
+                                        ? "#80118A"
+                                        : item.status === "Collected"
+                                          ? "#7E8700"
+                                          : item.status === "On the way"
+                                            ? "#D17A00"
+                                            : item.status === "Hold"
+                                              ? "#D17A00"
+                                              : item.status === "Delivered"
+                                                ? "#308233"
+                                                : item.status === "Cancelled"
+                                                  ? "#5C5C5C"
+                                                  : item.status === "Return"
+                                                    ? "#FF1100"
+                                                    : "#393939",
+                              }}
+                            >
+                              {item.status}
+                            </Text>
+                          </View>
                         </View>
-                      </View>
 
-                      <Text
-                        style={{
-                          color: "#9CA3AF",
-                          marginTop: 6,
-                          fontSize: SCREEN_HEIGHT > 900 ? 14 : 12,
-                        }}
-                      >
-                        Scheduled to : {formatsheduleDate(item.sheduleDate)}
-                      </Text>
-                      <Text
-                        style={{
-                          color: "#9CA3AF",
-                          marginTop: 2,
-                          fontSize: SCREEN_HEIGHT > 900 ? 14 : 12,
-                        }}
-                      >
-                        {item.sheduleTime}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                )}
+                        {isPaymentPending && (
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              marginTop: 6,
+                            }}
+                          >
+                            <MaterialIcons
+                              name="error"
+                              size={13}
+                              color="#EF4444"
+                              style={{ marginRight: 4 }}
+                            />
+                            <Text
+                              style={{
+                                color: "#EF4444",
+                                fontWeight: "bold",
+                                fontSize: SCREEN_HEIGHT > 900 ? 13 : 11,
+                              }}
+                            >
+                              Payment Pending
+                            </Text>
+                          </View>
+                        )}
+
+                        <Text
+                          style={{
+                            color: "#9CA3AF",
+                            marginTop: 6,
+                            fontSize: SCREEN_HEIGHT > 900 ? 14 : 12,
+                          }}
+                        >
+                          Scheduled to : {formatsheduleDate(item.sheduleDate)}
+                        </Text>
+                        <Text
+                          style={{
+                            color: "#9CA3AF",
+                            marginTop: 2,
+                            fontSize: SCREEN_HEIGHT > 900 ? 14 : 12,
+                          }}
+                        >
+                          {item.sheduleTime}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                }}
                 onEndReached={loadMoreOrders}
                 onEndReachedThreshold={0.1}
                 ListFooterComponent={renderFooter}
@@ -1075,7 +1118,6 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
               </Text>
             </TouchableOpacity>
 
-            {/* New Order Button */}
             {/* New Order Button */}
             <TouchableOpacity
               disabled={creditBalance < 0}
