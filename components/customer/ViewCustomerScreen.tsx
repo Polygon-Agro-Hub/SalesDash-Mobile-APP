@@ -233,7 +233,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        navigation.navigate("CustomersScreen" as any);
+        navigation.navigate("Main", { screen: "CustomersScreen" });
         return true;
       };
 
@@ -431,7 +431,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
         >
           {/* Back button */}
           <TouchableOpacity
-            onPress={() => navigation.navigate("CustomersScreen")}
+            onPress={() => navigation.navigate("Main", { screen: "CustomersScreen" })}
             style={{
               width: 40,
               height: 40,

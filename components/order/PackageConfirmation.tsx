@@ -66,7 +66,7 @@ const PackageConfirmation: React.FC<PackageConfirmationProps> = ({
           <View className="w-15 h-15  items-center justify-center mr-3">
             <Image
               source={require("@/assets/images/order/vegetable-basket.webp")}
-              className="w-14 h-14 mb-4"
+              className="w-14 h-14"
               resizeMode="contain"
             />
           </View>
@@ -169,24 +169,24 @@ const PackageConfirmation: React.FC<PackageConfirmationProps> = ({
                 Confirm the order between 8:00 AM and 6:00 PM to finalize it for
                 dispatch.
               </Text>
-
-              <View className="bg-[#FFF9F5] border border-[#EE7719] rounded-xl p-3 flex-row">
-                <MaterialIcons
-                  name="warning-amber"
-                  size={16}
-                  color="#F97316"
-                  style={{ marginRight: 6, marginTop: 1 }}
-                />
-                <Text className="flex-1 text-xs text-[#EE7719] leading-4">
-                  This facility is available on a first-come, first-served basis
-                  and is limited to a certain number of customers. If we do not
-                  receive your customer's confirmation on time and all slots for
-                  the preferred delivery date are filled, we will be unable to
-                  process this order. Your customer may check again later for
-                  any available slots.
-                </Text>
-              </View>
             </View>
+          </View>
+
+          <View className="bg-[#FFF9F5] border border-[#EE7719] rounded-xl p-3 flex-row mt-3">
+            <MaterialIcons
+              name="warning-amber"
+              size={16}
+              color="#F97316"
+              style={{ marginRight: 6, marginTop: 1 }}
+            />
+            <Text className="flex-1 text-xs text-[#EE7719] leading-4">
+              This facility is available on a first-come, first-served basis
+              and is limited to a certain number of customers. If we do not
+              receive your customer's confirmation on time and all slots for
+              the preferred delivery date are filled, we will be unable to
+              process this order. Your customer may check again later for
+              any available slots.
+            </Text>
           </View>
         </TouchableOpacity>
       </ScrollView>

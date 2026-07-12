@@ -21,7 +21,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { MaterialIcons, MaterialCommunityIcons, FontAwesome6 } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import CustomHeader from "../common/CustomHeader";
+import LottieView from "lottie-react-native";
 import LoadingPage from "../common/LoadingPage";
+
 
 type DeliveryAddressBooksNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -339,21 +341,12 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
       {/* List / Empty state */}
       {filteredAddresses.length === 0 ? (
         <View className="flex-1 items-center justify-center px-10 -mt-16">
-          <View className="w-28 h-28 rounded-2xl bg-gray-100 items-center justify-center mb-5">
-            <MaterialCommunityIcons
-              name="map-marker-radius"
-              size={48}
-              color="#7B3FE4"
-            />
-          </View>
-          <Text className="text-gray-800 text-[15px] font-semibold mb-1">
-            No saved addresses yet
-          </Text>
-          <Text className="text-gray-400 text-[13px] text-center">
-            {searchQuery
-              ? "No addresses match your search."
-              : "Add a delivery address to get started."}
-          </Text>
+          <LottieView
+            source={require("../../assets/json/address.json")}
+            autoPlay
+            loop
+            style={{ width: 150, height: 150 }}
+          />
         </View>
       ) : (
         <ScrollView
@@ -513,28 +506,35 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
             }}
           >
             {/* Header */}
-            <View className="flex-row items-center justify-between px-5 pt-5 pb-4">
-              <View className="flex-row items-center">
+            <LinearGradient
+              colors={["#FFFFFF", "#F3F2FB"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              className="relative flex-row items-center justify-center px-5 pt-5 pb-4"
+              style={{ borderTopLeftRadius: 22, borderTopRightRadius: 22 }}
+            >
+              <View className="flex-row items-center justify-center">
                 <View
-                  className="items-center justify-center rounded-full mr-3"
+                  className="items-center justify-center rounded-full mr-2"
                   style={{
                     width: 34,
                     height: 34,
-                    backgroundColor: "#F3EEFC",
+                    backgroundColor: "#FFFFFF",
                   }}
                 >
                   <MaterialIcons name="location-on" size={18} color="#7B3FE4" />
                 </View>
-                <View className="items-center">
-                  <Text className="text-black text-[16px] font-semibold">
-                    {selectedAddress?.type || "Address"}
-                  </Text>
-                </View>
+                <Text className="text-black text-[16px] font-semibold">
+                  {selectedAddress?.type || "Address"}
+                </Text>
               </View>
 
               <TouchableOpacity
                 onPress={closeBillingModal}
                 style={{
+                  position: "absolute",
+                  right: 20,
+                  top: 20,
                   width: 26,
                   height: 26,
                   borderRadius: 13,
@@ -545,47 +545,54 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
               >
                 <MaterialIcons name="close" size={16} color="#FFFFFF" />
               </TouchableOpacity>
-            </View>
+            </LinearGradient>
 
             <View className="h-[1px] bg-gray-100 mx-5 mb-1" />
 
             {/* Fields */}
             <View className="px-5 pt-2">
               {getBillingInfoRows(selectedAddress).map((row, idx) => (
-                <View
-                  key={row.label}
-                  className="flex-row items-center py-2.5"
-                  style={{
-                    borderBottomWidth:
-                      idx < getBillingInfoRows(selectedAddress).length - 1
-                        ? 0
-                        : 0,
-                  }}
-                >
+                <React.Fragment key={row.label}>
+                  {row.label === "Phone Num 1" && (
+                    <View
+                      className="h-[1px] bg-gray-100 mb-2 mt-1"
+                      style={{ marginHorizontal: -15 }}
+                    />
+                  )}
                   <View
-                    className="items-center justify-center rounded-full mr-3"
+                    className="flex-row items-center py-2.5"
                     style={{
-                      width: 28,
-                      height: 28,
-                      backgroundColor: row.iconBg,
+                      borderBottomWidth:
+                        idx < getBillingInfoRows(selectedAddress).length - 1
+                          ? 0
+                          : 0,
                     }}
                   >
-                    <FontAwesome6
-                      name={row.icon}
-                      size={14}
-                      color={row.iconColor}
-                    />
+                    <View
+                      className="items-center justify-center rounded-full mr-3"
+                      style={{
+                        width: 28,
+                        height: 28,
+                        backgroundColor: row.iconBg,
+                      }}
+                    >
+                      <FontAwesome6
+                        name={row.icon}
+                        size={14}
+                        color={row.iconColor}
+                      />
+                    </View>
+                    <Text
+                      className="text-gray-400 text-[12.5px]"
+                      style={{ width: 92 }}
+                    >
+                      {row.label}
+                    </Text>
+                    <Text className="text-gray-800 text-[13px] flex-1">
+                      : {row.value}
+                    </Text>
                   </View>
-                  <Text
-                    className="text-gray-400 text-[12.5px]"
-                    style={{ width: 92 }}
-                  >
-                    {row.label}
-                  </Text>
-                  <Text className="text-gray-800 text-[13px] flex-1">
-                    : {row.value}
-                  </Text>
-                </View>
+                </React.Fragment>
               ))}
             </View>
           </Pressable>

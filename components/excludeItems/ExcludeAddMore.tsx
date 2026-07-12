@@ -453,13 +453,17 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
           {/* Column headers */}
           <View className="flex-row justify-between items-center px-6 mb-2">
             <Text className="text-black text-sm font-semibold">Product</Text>
-            <View className="flex-row" style={{ gap: 28 }}>
-              <Text className="text-green-600 text-sm font-semibold">
-                Include
-              </Text>
-              <Text className="text-red-500 text-sm font-semibold">
-                Exclude
-              </Text>
+            <View className="flex-row items-center" style={{ gap: 20 }}>
+              <View style={{ width: 52, alignItems: "center" }}>
+                <Text className="text-green-600 text-sm font-semibold" style={{ textAlign: "center" }}>
+                  Include
+                </Text>
+              </View>
+              <View style={{ width: 52, alignItems: "center" }}>
+                <Text className="text-red-500 text-sm font-semibold" style={{ textAlign: "center" }}>
+                  Exclude
+                </Text>
+              </View>
             </View>
           </View>
 

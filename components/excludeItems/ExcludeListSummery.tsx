@@ -169,6 +169,22 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
     );
   };
 
+  const toggleSelectAllExclude = () => {
+    if (selectedExcludeIds.length === excludeCrops.length) {
+      setSelectedExcludeIds([]);
+    } else {
+      setSelectedExcludeIds(excludeCrops.map((crop) => crop.excludeId));
+    }
+  };
+
+  const toggleSelectAllPrefer = () => {
+    if (selectedPreferIds.length === preferCrops.length) {
+      setSelectedPreferIds([]);
+    } else {
+      setSelectedPreferIds(preferCrops.map((crop) => crop.preId));
+    }
+  };
+
   const deleteExcludeCrop = async (excludeId: number) => {
     Alert.alert("Delete", "Are you sure you want to delete this item?", [
       { text: "Cancel", style: "cancel" },
@@ -521,12 +537,17 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
                   className="flex-row justify-between items-center py-2"
                   style={{ borderBottomWidth: 1, borderBottomColor: "#E5E7EB" }}
                 >
-                  <Text
-                    className="flex-1"
-                    style={{ fontSize: 13, color: "#9CA3AF" }}
-                  >
-                    Item ({String(preferCrops.length).padStart(2, "0")})
-                  </Text>
+                  <View className="flex-row items-center gap-3 flex-1">
+                    <Checkbox
+                      checked={preferCrops.length > 0 && selectedPreferIds.length === preferCrops.length}
+                      onPress={toggleSelectAllPrefer}
+                    />
+                    <Text
+                      style={{ fontSize: 13, color: "#9CA3AF" }}
+                    >
+                      Item ({String(preferCrops.length).padStart(2, "0")})
+                    </Text>
+                  </View>
                   <Text
                     className="flex-1 text-center"
                     style={{ fontSize: 13, color: "#9CA3AF" }}
@@ -545,10 +566,6 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
                   <View
                     key={crop.preId}
                     className="flex-row justify-between items-center py-3"
-                    style={{
-                      borderBottomWidth: 1,
-                      borderBottomColor: "#F3F4F6",
-                    }}
                   >
                     <View className="flex-row items-center gap-3 flex-1">
                       <Checkbox
@@ -661,12 +678,17 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
                   className="flex-row justify-between items-center py-2"
                   style={{ borderBottomWidth: 1, borderBottomColor: "#E5E7EB" }}
                 >
-                  <Text
-                    className="flex-1"
-                    style={{ fontSize: 13, color: "#9CA3AF" }}
-                  >
-                    Item ({String(excludeCrops.length).padStart(2, "0")})
-                  </Text>
+                  <View className="flex-row items-center gap-3 flex-1">
+                    <Checkbox
+                      checked={excludeCrops.length > 0 && selectedExcludeIds.length === excludeCrops.length}
+                      onPress={toggleSelectAllExclude}
+                    />
+                    <Text
+                      style={{ fontSize: 13, color: "#9CA3AF" }}
+                    >
+                      Item ({String(excludeCrops.length).padStart(2, "0")})
+                    </Text>
+                  </View>
                   <Text
                     className="flex-1 text-center"
                     style={{ fontSize: 13, color: "#9CA3AF" }}
@@ -685,10 +707,6 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
                   <View
                     key={crop.excludeId}
                     className="flex-row justify-between items-center py-3"
-                    style={{
-                      borderBottomWidth: 1,
-                      borderBottomColor: "#F3F4F6",
-                    }}
                   >
                     <View className="flex-row items-center gap-3 flex-1">
                       <Checkbox

@@ -23,6 +23,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { Platform } from "react-native";
 import CustomHeader from "../common/CustomHeader";
 import GlobalSearchModal from "../common/GlobalSearchModal";
+import CityDeliveryStatus from "../common/CityDeliveryStatus";
 
 type AddCustomersScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -132,7 +133,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
 
   const isNavigatingToOtpScreen = useRef(false);
 
-  const cityInputRef = useRef<TextInput>(null);
+
 
   const resetForm = () => {
     setStep(1);
@@ -944,7 +945,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
           setStep(1);
           return true;
         }
-        navigation.navigate("CustomersScreen" as any);
+        navigation.navigate("Main", { screen: "CustomersScreen" });
         return true;
       };
 
@@ -1177,74 +1178,42 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
 
   const renderCityField = () => {
     return (
-      <View className="mb-4" style={{ zIndex: 1000, position: "relative" }}>
+      <View className="mb-4">
         <Text
           className="text-[#000000] mb-1"
           style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
         >
           Nearest City *
         </Text>
-        <View style={{ position: "relative" }}>
-          <TextInput
-            ref={cityInputRef}
+        <TouchableOpacity
+          onPress={() => {
+            Keyboard.dismiss();
+            setCityModalVisible(true);
+            handleFieldTouch("city");
+          }}
+          style={{
+            backgroundColor: "#F6F6F6",
+            height: 50,
+            borderWidth: 1.5,
+            borderColor: "#F6F6F6",
+            borderRadius: 999,
+            paddingHorizontal: 18,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <Text
             style={{
-              backgroundColor: "#F6F6F6",
-              height: 50,
-              borderWidth: 1.5,
-              borderColor: "#F6F6F6",
-              borderRadius: 999,
-              paddingHorizontal: 18,
-              paddingRight: 44,
+              color: city ? "#111827" : "#7F7F7F",
               fontSize: 14,
-              color: "#111827",
               fontStyle: city ? "normal" : "italic",
             }}
-            placeholder="Type or Select Nearest City"
-            placeholderTextColor="#7F7F7F"
-            value={city}
-            onChangeText={(text) => {
-              setCity(text);
-              if (text.trim() === "") {
-                setFilteredCities([]);
-              } else {
-                const filtered = cityItems.filter((item) =>
-                  item.label.toLowerCase().includes(text.toLowerCase()),
-                );
-                setFilteredCities(filtered);
-              }
-              if (touchedFields.city && !text) {
-                setCityError("City is required");
-              } else {
-                setCityError("");
-              }
-            }}
-            onBlur={() => {
-              handleFieldTouch("city");
-              setTimeout(() => setFilteredCities([]), 200);
-            }}
-            onFocus={() => {
-              const filtered = city.trim()
-                ? cityItems.filter((item) =>
-                    item.label.toLowerCase().includes(city.toLowerCase()),
-                  )
-                : cityItems;
-              setFilteredCities(filtered);
-            }}
-          />
-          {/* Dropdown arrow opens GlobalSearchModal for full search */}
-          <TouchableOpacity
-            onPress={() => {
-              cityInputRef.current?.blur();
-              Keyboard.dismiss();
-              setFilteredCities([]);
-              handleFieldTouch("city");
-              setTimeout(() => setCityModalVisible(true), 50);
-            }}
-            style={{ position: "absolute", right: 12, top: 13 }}
           >
-            <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
-          </TouchableOpacity>
-        </View>
+            {city || "Select Nearest City"}
+          </Text>
+          <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
+        </TouchableOpacity>
 
         {/* Required field error */}
         {cityError ? (
@@ -1252,177 +1221,17 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         ) : null}
 
         {/* "City not found." / "Great news! We deliver to {city}!" banner */}
-        {renderCityDeliveryStatus()}
-
-        {/* Inline type-ahead suggestions while typing */}
-        {filteredCities.length > 0 && (
-          <View
-            style={{
-              position: "absolute",
-              top: SCREEN_HEIGHT > 900 ? 80 : 74,
-              left: 0,
-              right: 0,
-              backgroundColor: "white",
-              borderColor: "#E5E7EB",
-              borderWidth: 1,
-              borderRadius: 12,
-              maxHeight: 180,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 3 },
-              shadowOpacity: 0.12,
-              shadowRadius: 6,
-              elevation: 6,
-              zIndex: 2000,
-              overflow: "hidden",
-            }}
-          >
-            <ScrollView
-              keyboardShouldPersistTaps="always"
-              showsVerticalScrollIndicator={false}
-            >
-              {filteredCities.map((item, idx) => (
-                <TouchableOpacity
-                  key={idx}
-                  onPress={() => {
-                    setCity(item.label);
-                    setFilteredCities([]);
-                    setCityError("");
-                  }}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    paddingHorizontal: 16,
-                    paddingVertical: 13,
-                    borderBottomWidth: idx < filteredCities.length - 1 ? 1 : 0,
-                    borderBottomColor: "#F3F4F6",
-                    backgroundColor: "white",
-                  }}
-                >
-                  <MaterialIcons
-                    name="location-city"
-                    size={16}
-                    color="#9CA3AF"
-                    style={{ marginRight: 10 }}
-                  />
-                  <Text style={{ fontSize: 14, color: "#1F2937" }}>
-                    {item.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        )}
-      </View>
-    );
-  };
-
-  const renderCityDeliveryStatus = () => {
-    if (city.trim().length === 0 || filteredCities.length > 0) return null;
-
-    if (!isCityKnown) {
-      return (
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            backgroundColor: "#FEF6ED",
-            borderRadius: 10,
-            paddingVertical: 10,
-            paddingHorizontal: 14,
-            marginTop: 8,
-            borderWidth: 1,
-            borderColor: "#FFDCB5",
-          }}
-        >
-          <MaterialIcons
-            name="error-outline"
-            size={18}
-            color="#DC2626"
-            style={{ marginRight: 8 }}
-          />
-          <Text
-            style={{
-              color: "#991B1B",
-              fontSize: 13,
-              fontWeight: "600",
-              flexShrink: 1,
-            }}
-          >
-            City not found.
-          </Text>
-        </View>
-      );
-    }
-
-    if (isCityDeliverable) {
-      return (
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            backgroundColor: "#EEFAF3",
-            borderRadius: 10,
-            paddingVertical: 10,
-            paddingHorizontal: 14,
-            marginTop: 8,
-            borderWidth: 1,
-            borderColor: "#D2ECE1",
-          }}
-        >
-          <MaterialIcons
-            name="check-circle"
-            size={18}
-            color="#059669"
-            style={{ marginRight: 8 }}
-          />
-          <Text
-            style={{
-              color: "#065F46",
-              fontSize: 13,
-              fontWeight: "600",
-              flexShrink: 1,
-            }}
-          >
-            Great news! We deliver to {city}!
-          </Text>
-        </View>
-      );
-    }
-
-    return (
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          backgroundColor: "#FEF6ED",
-          borderRadius: 10,
-          paddingVertical: 10,
-          paddingHorizontal: 14,
-          marginTop: 8,
-          borderWidth: 1,
-          borderColor: "#FFDCB5",
-        }}
-      >
-        <MaterialIcons
-          name="error-outline"
-          size={18}
-          color="#EA580C"
-          style={{ marginRight: 8 }}
+        <CityDeliveryStatus
+          city={city}
+          filteredCities={[]}
+          isCityKnown={isCityKnown}
+          isCityDeliverable={isCityDeliverable}
         />
-        <Text
-          style={{
-            color: "#9A3412",
-            fontSize: 13,
-            fontWeight: "600",
-            flexShrink: 1,
-          }}
-        >
-          Delivery not available in {city} yet, but we're working on it and
-          coming to your area soon!
-        </Text>
       </View>
     );
   };
+
+
 
   const renderResidentialAddressForm = () => {
     return (
@@ -1793,7 +1602,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
           if (step === 2) {
             setStep(1);
           } else {
-            navigation.navigate("CustomersScreen");
+            navigation.navigate("Main", { screen: "CustomersScreen" });
           }
         }}
       />

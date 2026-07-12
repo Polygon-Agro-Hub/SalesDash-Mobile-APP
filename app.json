@@ -20,7 +20,7 @@
         "NSCameraUsageDescription": "Camera access is required to scan documents and capture images.",
         "NSMicrophoneUsageDescription": "Microphone access is required for in-app communication.",
         "NSPhotoLibraryUsageDescription": "Photo library access is required to upload sales-related images.",
-        "NSLocationWhenInUseUsageDescription": "Location access is required to track sales activity.",
+        "NSLocationWhenInUseUsageDescription": "Allow $(PRODUCT_NAME) to access your location.",
         "NSUserTrackingUsageDescription": "Tracking is used to improve app experience.",
         "NSUserNotificationUsageDescription": "Notifications are used to send important updates.",
         "NSPhoneUsageDescription": "Phone access is used to call customers directly."
@@ -97,7 +97,8 @@
           }
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-location"
     ],
     "experiments": {
       "typedRoutes": true

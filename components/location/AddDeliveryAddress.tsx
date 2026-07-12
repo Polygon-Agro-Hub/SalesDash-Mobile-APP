@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -21,6 +21,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import CustomHeader from "../common/CustomHeader";
 import LoadingPage from "../common/LoadingPage";
 import GlobalSearchModal from "../common/GlobalSearchModal";
+import CityDeliveryStatus from "../common/CityDeliveryStatus";
 
 type AddDeliveryAddressNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -84,7 +85,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
   const [filteredCities, setFilteredCities] = useState<
     { label: string; value: string }[]
   >([]);
-  const cityInputRef = useRef<TextInput>(null);
+
 
   const [canEditNearestCity, setCanEditNearestCity] = useState(false);
 
@@ -96,6 +97,23 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [locationName, setLocationName] = useState("");
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      "keyboardDidShow",
+      () => setIsKeyboardVisible(true),
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      "keyboardDidHide",
+      () => setIsKeyboardVisible(false),
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
 
   const matchedCity = cityItems.find(
     (item) =>
@@ -322,168 +340,26 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
     return text.replace(/[^0-9]/g, "").slice(0, 10);
   };
 
-  const renderCityDeliveryStatus = () => {
-    if (!canEditNearestCity) return null;
-    if (nearestCity.trim().length === 0 || filteredCities.length > 0)
-      return null;
 
-    if (!isCityKnown) {
-      return (
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            backgroundColor: "#FEF6ED",
-            borderRadius: 10,
-            paddingVertical: 10,
-            paddingHorizontal: 14,
-            marginTop: 8,
-            borderWidth: 1,
-            borderColor: "#FFDCB5",
-          }}
-        >
-          <MaterialIcons
-            name="error-outline"
-            size={18}
-            color="#DC2626"
-            style={{ marginRight: 8 }}
-          />
-          <Text
-            style={{
-              color: "#991B1B",
-              fontSize: 13,
-              fontWeight: "600",
-              flexShrink: 1,
-            }}
-          >
-            City not found.
-          </Text>
-        </View>
-      );
-    }
-
-    if (isCityDeliverable) {
-      return (
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            backgroundColor: "#EEFAF3",
-            borderRadius: 10,
-            paddingVertical: 10,
-            paddingHorizontal: 14,
-            marginTop: 8,
-            borderWidth: 1,
-            borderColor: "#D2ECE1",
-          }}
-        >
-          <MaterialIcons
-            name="check-circle"
-            size={18}
-            color="#059669"
-            style={{ marginRight: 8 }}
-          />
-          <Text
-            style={{
-              color: "#065F46",
-              fontSize: 13,
-              fontWeight: "600",
-              flexShrink: 1,
-            }}
-          >
-            Great news! We deliver to {nearestCity}!
-          </Text>
-        </View>
-      );
-    }
-
-    return (
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          backgroundColor: "#FEF6ED",
-          borderRadius: 10,
-          paddingVertical: 10,
-          paddingHorizontal: 14,
-          marginTop: 8,
-          borderWidth: 1,
-          borderColor: "#FFDCB5",
-        }}
-      >
-        <MaterialIcons
-          name="error-outline"
-          size={18}
-          color="#EA580C"
-          style={{ marginRight: 8 }}
-        />
-        <Text
-          style={{
-            color: "#9A3412",
-            fontSize: 13,
-            fontWeight: "600",
-            flexShrink: 1,
-          }}
-        >
-          Delivery not available in {nearestCity} yet, but we're working on it
-          and coming to your area soon!
-        </Text>
-      </View>
-    );
-  };
 
   const renderNearestCityField = () => (
     <>
       <Text className="text-sm mb-2">Nearest City *</Text>
 
       {canEditNearestCity ? (
-        <View className="mb-5" style={{ zIndex: 1000, position: "relative" }}>
-          <View style={{ position: "relative" }}>
-            <TextInput
-              ref={cityInputRef}
-              value={nearestCity}
-              onChangeText={(text) => {
-                setNearestCity(text);
-                setNearestCityError("");
-                if (text.trim() === "") {
-                  setFilteredCities([]);
-                } else {
-                  const filtered = cityItems.filter((item) =>
-                    item.label.toLowerCase().includes(text.toLowerCase()),
-                  );
-                  setFilteredCities(filtered);
-                }
-              }}
-              onFocus={() => {
-                const filtered = nearestCity.trim()
-                  ? cityItems.filter((item) =>
-                      item.label
-                        .toLowerCase()
-                        .includes(nearestCity.toLowerCase()),
-                    )
-                  : cityItems;
-                setFilteredCities(filtered);
-              }}
-              onBlur={() => {
-                setTimeout(() => setFilteredCities([]), 200);
-              }}
-              placeholder="Type or Select Nearest City"
-              placeholderTextColor="#9CA3AF"
-              className="bg-[#F6F6F6] text-black rounded-3xl px-4 h-[50px] text-[15px]"
-              style={{ paddingRight: 44 }}
-            />
-            <TouchableOpacity
-              onPress={() => {
-                cityInputRef.current?.blur();
-                Keyboard.dismiss();
-                setFilteredCities([]);
-                setTimeout(() => setCityModalVisible(true), 50);
-              }}
-              style={{ position: "absolute", right: 12, top: 15 }}
-            >
-              <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
-            </TouchableOpacity>
-          </View>
+        <View className="mb-5">
+          <TouchableOpacity
+            onPress={() => {
+              Keyboard.dismiss();
+              setCityModalVisible(true);
+            }}
+            className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] flex-row items-center justify-between"
+          >
+            <Text style={{ color: nearestCity ? "black" : "#9CA3AF", fontSize: 15 }}>
+              {nearestCity || "Select Nearest City"}
+            </Text>
+            <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
+          </TouchableOpacity>
 
           {nearestCityError ? (
             <Text className="text-red-500 text-xs pl-4 pt-1">
@@ -491,78 +367,24 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
             </Text>
           ) : null}
 
-          {renderCityDeliveryStatus()}
-
-          {/* Inline type-ahead suggestions while typing */}
-          {filteredCities.length > 0 && (
-            <View
-              style={{
-                position: "absolute",
-                top: 56,
-                left: 0,
-                right: 0,
-                backgroundColor: "white",
-                borderColor: "#E5E7EB",
-                borderWidth: 1,
-                borderRadius: 12,
-                maxHeight: 180,
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 3 },
-                shadowOpacity: 0.12,
-                shadowRadius: 6,
-                elevation: 6,
-                zIndex: 2000,
-                overflow: "hidden",
-              }}
-            >
-              <ScrollView
-                keyboardShouldPersistTaps="always"
-                showsVerticalScrollIndicator={false}
-              >
-                {filteredCities.map((item, idx) => (
-                  <TouchableOpacity
-                    key={idx}
-                    onPress={() => {
-                      setNearestCity(item.label);
-                      setFilteredCities([]);
-                      setNearestCityError("");
-                    }}
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      paddingHorizontal: 16,
-                      paddingVertical: 13,
-                      borderBottomWidth:
-                        idx < filteredCities.length - 1 ? 1 : 0,
-                      borderBottomColor: "#F3F4F6",
-                      backgroundColor: "white",
-                    }}
-                  >
-                    <MaterialIcons
-                      name="location-city"
-                      size={16}
-                      color="#9CA3AF"
-                      style={{ marginRight: 10 }}
-                    />
-                    <Text style={{ fontSize: 14, color: "#1F2937" }}>
-                      {item.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-          )}
+          <CityDeliveryStatus
+            city={nearestCity}
+            filteredCities={[]}
+            isCityKnown={isCityKnown}
+            isCityDeliverable={isCityDeliverable}
+            canEdit={canEditNearestCity}
+          />
         </View>
       ) : (
-        <>
+        <View className="mb-5">
           <TextInput
             value={nearestCity}
             editable={false}
             placeholder=""
             placeholderTextColor="#9CA3AF"
-            className="bg-gray-50 text-gray-400 rounded-3xl px-4 h-[50px] text-[15px] mb-2"
+            className="bg-gray-50 text-gray-400 rounded-3xl px-4 h-[50px] text-[15px]"
           />
-        </>
+        </View>
       )}
     </>
   );
@@ -589,6 +411,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
         className="flex-1 px-6 pt-5"
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 60 }}
       >
         {/* Save Address As */}
         <Text className="text-sm mb-2">Save Address As *</Text>
@@ -826,6 +649,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
             </LinearGradient>
           </TouchableOpacity>
         </View>
+        {isKeyboardVisible && <View style={{ height: 120 }} />}
       </ScrollView>
 
       {/* Title Modal */}

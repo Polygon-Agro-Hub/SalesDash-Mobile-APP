@@ -15,7 +15,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import axios from "axios";
 import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { FontAwesome6, MaterialIcons } from "@expo/vector-icons";
+import { Entypo, FontAwesome6, MaterialIcons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import CustomHeader from "../common/CustomHeader";
 import LoadingPage from "../common/LoadingPage";
@@ -87,7 +87,7 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
   navigation,
   route,
 }) => {
-  const { customerId, selectedAddressId, onSelectAddress , id } =
+  const { customerId, selectedAddressId, onSelectAddress, id } =
     route.params || {};
 
   const [loading, setLoading] = useState(true);
@@ -98,9 +98,8 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
   );
   const [cityCharges, setCityCharges] = useState<City[]>([]);
 
-  console.log("costomerid",customerId , id)
+  console.log("costomerid", customerId, id);
 
- 
   useEffect(() => {
     const fetchCityCharges = async () => {
       try {
@@ -161,7 +160,9 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
   const selectedAddress = addresses.find((a) => a.id === selectedId);
   const selectedCity = selectedAddress?.city;
   const deliveryFee = selectedCity
-    ? parseFloat(cityCharges.find((c) => c.city === selectedCity)?.charge || "0")
+    ? parseFloat(
+        cityCharges.find((c) => c.city === selectedCity)?.charge || "0",
+      )
     : 0;
 
   const handleGoBack = () => {
@@ -221,7 +222,7 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
     }
   };
 
-  console.log("delivery data",deliveryFee,selectedAddress)
+  console.log("delivery data", deliveryFee, selectedAddress);
 
   useFocusEffect(
     useCallback(() => {
@@ -239,7 +240,13 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
       );
 
       return () => backHandler.remove();
-    }, [navigation, route.params, onSelectAddress, selectedAddress, deliveryFee]),
+    }, [
+      navigation,
+      route.params,
+      onSelectAddress,
+      selectedAddress,
+      deliveryFee,
+    ]),
   );
 
   const handleSelect = (address: AddressBookItem) => {
@@ -269,7 +276,7 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
   };
 
   const handleAddNewAddress = () => {
-    navigation.navigate("AddDeliveryAddress" as any, { customerId :id });
+    navigation.navigate("AddDeliveryAddress" as any, { customerId: id });
   };
 
   const handleEditAddress = (address: AddressBookItem) => {
@@ -395,11 +402,11 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
   const renderEmptyState = () => (
     <View className="items-center mt-20 ">
       <LottieView
-                          source={require("../../assets/json/address.json")}
-                          autoPlay
-                          loop
-                          style={{ width: 150, height: 150 }}
-                        />
+        source={require("../../assets/json/address.json")}
+        autoPlay
+        loop
+        style={{ width: 150, height: 150 }}
+      />
     </View>
   );
 
@@ -442,8 +449,11 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
           <TouchableOpacity
             onPress={handleAddNewAddress}
             activeOpacity={0.85}
-            className="flex-row items-center justify-between rounded-2xl px-4 py-4 mb-6"
-            style={{ backgroundColor: "#FAF6FE" ,borderColor:"#E6E1F3"}}
+            className="flex-row items-center justify-between rounded-2xl px-4 py-4 mb-6 border"
+            style={{
+              backgroundColor: "#FAF6FE",
+              borderColor: "#E6E1F3",
+            }}
           >
             <View className="flex-row items-center flex-1">
               <View
@@ -451,20 +461,22 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
                   width: 40,
                   height: 40,
                   borderRadius: 20,
-                  backgroundColor: "#FFFFFF",
+                  backgroundColor: "#FAF6FE",
                   alignItems: "center",
                   justifyContent: "center",
                   marginRight: 12,
+                  borderWidth: 1.5,
+                  borderStyle: "dashed",
+                  borderColor: "#7B3FE4",
                 }}
               >
-                <MaterialIcons
-                  name="add-location-alt"
-                  size={20}
-                  color="#7B3FE4"
-                />
+                <Entypo name="location-pin" size={24} color="#7B3FE4" />
               </View>
               <View className="flex-1">
-                <Text className="text-[14px] font-semibold" style={{ color: "#7B3FE4" }}>
+                <Text
+                  className="text-[14px] font-semibold"
+                  style={{ color: "#7B3FE4" }}
+                >
                   Add New Address
                 </Text>
                 <Text className="text-[12px] text-gray-500 mt-0.5">
@@ -477,7 +489,11 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
 
           {/* Saved Addresses */}
           <Text className="text-[13px] font-semibold text-black mb-3">
-            Saved Addresses ({String(addresses.length).padStart(2, "0")})
+            Saved Addresses (
+            {addresses.length === 0
+              ? "0"
+              : String(addresses.length).padStart(2, "0")}
+            )
           </Text>
 
           {addresses.length === 0
@@ -496,7 +512,8 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
               Delivery Fee : + Rs. {deliveryFee.toFixed(2)}
             </Text>
             <Text className="text-[16px] font-bold text-black mt-1">
-              Full Total : Rs. {((route.params?.total || 0) + deliveryFee).toFixed(2)}
+              Full Total : Rs.{" "}
+              {((route.params?.total || 0) + deliveryFee).toFixed(2)}
             </Text>
           </View>
           <TouchableOpacity
