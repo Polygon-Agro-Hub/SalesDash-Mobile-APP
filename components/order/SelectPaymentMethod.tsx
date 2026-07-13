@@ -10,13 +10,17 @@ import {
   ScrollView,
   Alert,
   BackHandler,
+  ActivityIndicator,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
 import { LinearGradient } from "expo-linear-gradient";
 import { RouteProp, useFocusEffect } from "@react-navigation/native";
 import CustomHeader from "../common/CustomHeader";
-import { Feather } from "@expo/vector-icons";
+import { Feather, MaterialIcons } from "@expo/vector-icons";
+import axios from "axios";
+import environment from "@/environment/environment";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type SelectPaymentMethodRouteProp = RouteProp<
   RootStackParamList,
@@ -77,6 +81,7 @@ interface SelectPaymentMethodProps {
       selectedMethod?: "Card" | "Cash" | null;
       selectedDate?: string;
       selectedTimeSlot?: string;
+      isFinalizeImdt?: number | boolean;
       orderData?: {
         userId: number;
         isPackage: number;
@@ -122,6 +127,13 @@ interface SelectPaymentMethodProps {
   };
 }
 
+const formatPrice = (amount: number) => {
+  return amount.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+};
+
 const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
   navigation,
   route,
@@ -148,12 +160,64 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
     customerscreencustomerid,
     rawPackageItems,
     rawAdditionalItems,
+    isFinalizeImdt,
   } = route.params || {};
+
+  // Normalize to a strict boolean so both `1` and `true` work
+  const isImmediateFinalize = !!isFinalizeImdt;
 
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<"Cash" | "Card" | null>(
-    previousSelectedMethod || "Cash",
+    isImmediateFinalize ? "Card" : previousSelectedMethod || "Cash",
   );
+
+  const [creditBalance, setCreditBalance] = useState<number>(2000);
+  const [deliveredTotal, setDeliveredTotal] = useState<number>(0);
+  const [loadingCredit, setLoadingCredit] = useState(true);
+
+  const orderTotal = fullTotal || total || 0;
+  const userId = customerId || customerid || id;
+
+  useEffect(() => {
+    const fetchCreditBalance = async () => {
+      if (!userId) {
+        setLoadingCredit(false);
+        return;
+      }
+      try {
+        const storedToken = await AsyncStorage.getItem("authToken");
+        const response = await axios.get(
+          `${environment.API_BASE_URL}api/orders/delivered-total/${userId}`,
+          storedToken
+            ? { headers: { Authorization: `Bearer ${storedToken}` } }
+            : undefined,
+        );
+        console.log("data", response.data);
+
+        if (response.data?.success) {
+          setCreditBalance(response.data.data.creditBalance);
+          setDeliveredTotal(response.data.data.deliveredTotal);
+        }
+      } catch (error) {
+        console.error("Error fetching credit balance:", error);
+
+        setCreditBalance(2000);
+      } finally {
+        setLoadingCredit(false);
+      }
+    };
+    fetchCreditBalance();
+  }, [userId]);
+
+  // Cash is disabled either when the order needs immediate finalization
+  // (online payment only), or when the order total exceeds the credit balance.
+  const isCashDisabled = isImmediateFinalize || orderTotal >= creditBalance;
+
+  useEffect(() => {
+    if (!loadingCredit && selectedMethod === "Cash" && isCashDisabled) {
+      setSelectedMethod("Card");
+    }
+  }, [loadingCredit, isCashDisabled, selectedMethod]);
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -171,6 +235,11 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
     };
   }, []);
 
+  const handleSelectCash = () => {
+    if (isCashDisabled) return;
+    setSelectedMethod("Cash");
+  };
+
   const handleProceed = () => {
     if (!selectedMethod) {
       Alert.alert("Required", "Please select a payment method");
@@ -186,7 +255,6 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
       ...route.params,
       paymentMethod: selectedMethod,
       isPackage: isPackage,
-
       customerId: customerId || customerid,
       customerid: customerid || customerId,
       packageId: packageId,
@@ -196,6 +264,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
       name,
       number,
       customerscreencustomerid,
+      isFinalizeImdt: route.params?.isFinalizeImdt,
     };
 
     navigation.navigate("OrderSummeryScreen" as any, navigationData);
@@ -226,6 +295,9 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
           rawPackageItems,
           rawAdditionalItems,
           orderItems,
+          selectedAddress: route.params?.selectedAddress,
+          deliveryCharge: route.params?.deliveryCharge,
+          isFinalizeImdt: route.params?.isFinalizeImdt,
         });
         return true;
       };
@@ -236,7 +308,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
       );
 
       return () => backHandler.remove();
-    }, [navigation]),
+    }, [navigation, route.params]),
   );
 
   return (
@@ -273,6 +345,9 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
             orderData,
             rawPackageItems,
             rawAdditionalItems,
+            selectedAddress: route.params?.selectedAddress,
+            deliveryCharge: route.params?.deliveryCharge,
+            isFinalizeImdt: route.params?.isFinalizeImdt,
           })
         }
       />
@@ -284,75 +359,168 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
             contentContainerStyle={{ flexGrow: 1 }}
           >
             <View className="flex-1 justify-center">
-          <View className="flex items-center justify-center mb-20">
-            <Image
-              source={require("@/assets/images/order/payment.webp")}
-              className="w-84 h-60"
-              resizeMode="contain"
-            />
-          </View>
+              {/* Banner image */}
+              <View className="flex items-center justify-center mb-10">
+                <Image
+                  source={require("@/assets/images/order/payment.webp")}
+                  className="w-84 h-60"
+                  resizeMode="contain"
+                />
+              </View>
 
-          <View className="w-full items-center space-y-5 px-12 mt-5">
-            <TouchableOpacity
-              onPress={() => setSelectedMethod("Cash")}
-              className={`w-full py-5 px-5 rounded-lg flex-row items-center justify-between border border-[#5D5D5D] ${selectedMethod === "Cash"
-                  ? "bg-[#6C3CD1] border-[#6C3CD1]"
-                  : "bg-white border-[#5D5D5D]"
-                }`}
-            >
-              <Text
-                className={`text-lg ${selectedMethod === "Cash" ? "text-white font-bold" : "text-gray-700 font-medium"}`}
-              >
-                Cash On Delivery
-              </Text>
-              {selectedMethod === "Cash" && (
-                <View className="w-7 h-7 bg-white rounded-full flex items-center justify-center">
-                  <Feather name="check" size={24} color="#6C3CD0" />
+              {loadingCredit ? (
+                <View className="items-center py-8">
+                  <ActivityIndicator size="small" color="#6C3CD1" />
+                </View>
+              ) : (
+                <View className="w-full items-center space-y-4 px-8">
+                  {/* ── Card (Online Payment) option ── */}
+                  <TouchableOpacity
+                    onPress={() => setSelectedMethod("Card")}
+                    className={`w-full py-5 px-5 rounded-xl flex-row items-center justify-between border ${
+                      selectedMethod === "Card"
+                        ? "bg-[#6C3CD1] border-[#6C3CD1]"
+                        : "bg-white border-[#5D5D5D]"
+                    }`}
+                    style={{ marginBottom: 12 }}
+                  >
+                    <Text
+                      className={`text-lg ${
+                        selectedMethod === "Card"
+                          ? "text-white font-bold"
+                          : "text-gray-700 font-medium"
+                      }`}
+                    >
+                      Online Payment
+                    </Text>
+                    {selectedMethod === "Card" ? (
+                      <View className="w-7 h-7 bg-white rounded-full flex items-center justify-center">
+                        <Feather name="check" size={18} color="#6C3CD0" />
+                      </View>
+                    ) : (
+                      <View className="w-6 h-6 rounded-full border-2 border-gray-400" />
+                    )}
+                  </TouchableOpacity>
+
+                  {/* ── Cash option (only shown when eligible and not an immediate-finalization order) ── */}
+                  {!isCashDisabled && (
+                    <TouchableOpacity
+                      onPress={handleSelectCash}
+                      activeOpacity={0.8}
+                      className={`w-full py-5 px-5 rounded-xl flex-row items-center justify-between border ${
+                        selectedMethod === "Cash"
+                          ? "bg-[#6C3CD1] border-[#6C3CD1]"
+                          : "bg-white border-[#5D5D5D]"
+                      }`}
+                      style={{ marginBottom: 4 }}
+                    >
+                      <Text
+                        className={`text-lg ${
+                          selectedMethod === "Cash"
+                            ? "text-white font-bold"
+                            : "text-gray-700 font-medium"
+                        }`}
+                      >
+                        Pay By Cash
+                      </Text>
+                      {selectedMethod === "Cash" ? (
+                        <View className="w-7 h-7 bg-white rounded-full flex items-center justify-center">
+                          <Feather name="check" size={18} color="#6C3CD0" />
+                        </View>
+                      ) : (
+                        <View className="w-6 h-6 rounded-full border-2 border-gray-400" />
+                      )}
+                    </TouchableOpacity>
+                  )}
+
+                  {/* ── Restriction warning ── */}
+                  {isCashDisabled && (
+                    <View
+                      style={{
+                        width: "100%",
+                        flexDirection: "row",
+                        alignItems: "flex-start",
+                        backgroundColor: "#FFF5F5",
+                        borderRadius: 10,
+                        paddingVertical: 10,
+                        paddingHorizontal: 14,
+                        borderWidth: 1,
+                        borderColor: "#FECACA",
+                        marginTop: 4,
+                      }}
+                    >
+                      <MaterialIcons
+                        name="info-outline"
+                        size={16}
+                        color="#DC2626"
+                        style={{ marginRight: 8, marginTop: 1 }}
+                      />
+                      {isImmediateFinalize ? (
+                        <Text
+                          style={{
+                            color: "#7F1D1D",
+                            fontSize: 13,
+                            flexShrink: 1,
+                          }}
+                        >
+                          Immediate finalization requires online payment.
+                        </Text>
+                      ) : (
+                        <Text
+                          style={{
+                            color: "#7F1D1D",
+                            fontSize: 13,
+                            flexShrink: 1,
+                          }}
+                        >
+                          Cash payment is not available for orders equal to or
+                          greater than{" "}
+                          <Text style={{ color: "#DC2626", fontWeight: "700" }}>
+                            Rs. {formatPrice(creditBalance)}.
+                          </Text>
+                        </Text>
+                      )}
+                    </View>
+                  )}
                 </View>
               )}
-            </TouchableOpacity>
-          </View>
 
-          <View
-            style={{
-              marginTop: 32,
-              alignItems: "center",
-            }}
-          >
-            <View
-              style={{
-                width: "50%",
-                borderRadius: 24,
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 6 },
-                shadowOpacity: 0.25,
-                shadowRadius: 8,
-                elevation: 10,
-              }}
-            >
-              <TouchableOpacity
-                onPress={handleProceed}
-                activeOpacity={0.8}
-                style={{ borderRadius: 24 }}
-              >
-                <LinearGradient
-                  colors={["#6839CF", "#874DDB"]}
+              {/* ── Proceed button ── */}
+              <View style={{ marginTop: 40, alignItems: "center" }}>
+                <View
                   style={{
-                    paddingVertical: 12,
-                    paddingHorizontal: 16,
+                    width: "50%",
                     borderRadius: 24,
-                    alignItems: "center",
-                    justifyContent: "center",
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 8,
+                    elevation: 10,
                   }}
                 >
-                  <Text style={{ color: "white", fontWeight: "bold" }}>
-                    Proceed
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={handleProceed}
+                    activeOpacity={0.8}
+                    style={{ borderRadius: 24 }}
+                  >
+                    <LinearGradient
+                      colors={["#6839CF", "#874DDB"]}
+                      style={{
+                        paddingVertical: 12,
+                        paddingHorizontal: 16,
+                        borderRadius: 24,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Text style={{ color: "white", fontWeight: "bold" }}>
+                        Proceed
+                      </Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
-          </View>
-        </View>
           </ScrollView>
         </View>
       </View>

@@ -23,13 +23,29 @@ import { useRoute } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import CustomHeader from "../common/CustomHeader";
 
-type OtpScreenNavigationProp = StackNavigationProp<
+type OrderConfimedOTPScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
-  "OtpScreen" | "OtpScreenUp"
+  "OrderConfimedOTPScreen"
 >;
 
-const OtpScreen: React.FC = () => {
-  const navigation = useNavigation<OtpScreenNavigationProp>();
+/**
+ * This screen ONLY does two things:
+ *   1. Verifies the OTP that was sent (from OrderSummeryScreen) to the
+ *      customer's mobile number.
+ *   2. Routes onward depending on payment method:
+ *        - Cash  -> creates the order here, then navigates to
+ *                   Main > OrderConfirmedScreen with the full order-summary
+ *                   params (orderId, isPackage, total, subtotal, discount,
+ *                   paymentMethod, userId, selectedDate, selectedTimeSlot).
+ *        - Card  -> order creation is deferred until the customer taps
+ *                   "Send Payment Request" on the OnlinePayment screen, so
+ *                   here we just forward the order-summary params onward.
+ *
+ * There is no customer add/edit logic here anymore — that responsibility
+ * has been removed from this flow entirely.
+ */
+const OrderConfimedOTPScreen: React.FC = () => {
+  const navigation = useNavigation<OrderConfimedOTPScreenNavigationProp>();
   const [otp, setOtp] = useState<string[]>(["", "", "", "", ""]);
   const inputRefs = useRef<(TextInput | null)[]>([]);
   const [timer, setTimer] = useState(60);
@@ -41,10 +57,48 @@ const OtpScreen: React.FC = () => {
     phoneNumber,
     id,
     token: routeToken,
+    paymentMethod,
+    customerName,
+    customerTitle,
+    isPackage,
+    total,
+    fullTotal,
+    subtotal,
+    discount,
+    selectedDate,
+    selectedTimeSlot,
+    items,
+    orderItems,
+    rawPackageItems,
+    rawAdditionalItems,
+    selectedAddress,
+    customerid,
+    customerscreencustomerid,
+    isFinalizeImdt,
+    deliveryCharge,
   } = route.params as {
     phoneNumber: string;
     id: string;
     token?: string;
+    paymentMethod?: string;
+    customerName?: string;
+    customerTitle?: string;
+    isPackage?: number;
+    total?: number;
+    fullTotal?: number;
+    subtotal?: number;
+    discount?: number;
+    selectedDate?: string;
+    selectedTimeSlot?: string;
+    items?: any[];
+    orderItems?: any[];
+    rawPackageItems?: any[];
+    rawAdditionalItems?: any[];
+    selectedAddress?: any;
+    customerid?: string;
+    customerscreencustomerid?: string;
+    isFinalizeImdt?: number;
+    deliveryCharge?: number;
   };
 
   const [isOtpInvalid, setIsOtpInvalid] = useState(false);
@@ -67,6 +121,74 @@ const OtpScreen: React.FC = () => {
       Alert.alert("Error", "Failed to fetch user profile");
       console.error(error);
       return null;
+    }
+  };
+
+  /**
+   * Cash flow: creates the order from the pending payload, then navigates
+   * to Main > OrderConfirmedScreen with the full order-summary params.
+   */
+  const createOrderAndNavigate = async (token: string) => {
+    const pendingOrderStr = await AsyncStorage.getItem("pendingOrderData");
+
+    if (!pendingOrderStr) {
+      Alert.alert("Error", "No pending order data found.");
+      return;
+    }
+
+    let pendingOrderPayload;
+    try {
+      pendingOrderPayload = JSON.parse(pendingOrderStr);
+    } catch (e) {
+      console.error("Error parsing pending order data:", e);
+      Alert.alert("Error", "Failed to read the pending order.");
+      return;
+    }
+
+    try {
+      const orderResponse = await axios.post(
+        `${environment.API_BASE_URL}api/orders/create-order`,
+        pendingOrderPayload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      if (orderResponse.data.success) {
+        await AsyncStorage.removeItem("pendingOrderData");
+        const orderId = orderResponse.data.data.orderId;
+
+        navigation.navigate("Main" as any, {
+          screen: "OrderConfirmedScreen",
+          params: {
+            orderId,
+            isPackage: isPackage,
+            total: total,
+            subtotal: subtotal,
+            discount: discount,
+            paymentMethod: paymentMethod,
+            userId: id,
+            selectedDate: selectedDate,
+            selectedTimeSlot: selectedTimeSlot,
+          },
+        });
+      } else {
+        Alert.alert(
+          "Error",
+          orderResponse.data.message || "Failed to create order",
+        );
+      }
+    } catch (e: any) {
+      console.error("Error creating order after OTP verification:", e);
+      let errorMessage = "Error creating order after OTP verification";
+      if (axios.isAxiosError(e) && e.response) {
+        errorMessage =
+          e.response.data?.message || e.response.data?.error || errorMessage;
+      }
+      Alert.alert("Error", errorMessage);
     }
   };
 
@@ -115,92 +237,33 @@ const OtpScreen: React.FC = () => {
       const { statusCode } = otpResponse.data;
 
       if (statusCode === "1000") {
-        const customerDataString = await AsyncStorage.getItem(
-          "pendingCustomerData",
-        );
+        if (paymentMethod === "Card") {
+          await AsyncStorage.removeItem("referenceId");
+          navigation.navigate("OnlinePayment" as any, {
+            id: null,
+            customerId: id,
+            name: customerName,
+            title: customerTitle,
 
-        if (!customerDataString) {
-          Alert.alert("Error", "No customer data found.");
-          return;
-        }
-
-        let parsedData;
-        try {
-          parsedData = JSON.parse(customerDataString);
-        } catch (e) {
-          console.error("Error parsing customer data:", e);
-          Alert.alert("Error", "Failed to parse customer data.");
-          return;
-        }
-
-        const isEditMode = !!parsedData.customerData;
-
-        let endpoint;
-        let method: "post" | "put";
-        let data;
-
-        if (isEditMode) {
-          const customerData = parsedData.customerData || {};
-          const buildingData = parsedData.buildingData || {};
-          endpoint = `${environment.API_BASE_URL}api/customer/update-customer-data/${id}`;
-          method = "put";
-          data = { ...customerData, ...buildingData };
+            isPackage,
+            total,
+            fullTotal,
+            subtotal,
+            discount,
+            selectedDate,
+            selectedTimeSlot,
+            items,
+            orderItems,
+            rawPackageItems,
+            rawAdditionalItems,
+            selectedAddress,
+            customerid: customerid || id,
+            customerscreencustomerid,
+            isFinalizeImdt,
+            deliveryCharge,
+          });
         } else {
-          endpoint = `${environment.API_BASE_URL}api/customer/add-customer`;
-          method = "post";
-          data = parsedData;
-        }
-
-        const saveResponse = await axios({
-          method,
-          url: endpoint,
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          data,
-        });
-
-        if (saveResponse.status === 200 || saveResponse.status === 201) {
-          const customerId = saveResponse.data?.customerId || id;
-
-          if (customerId) {
-            await AsyncStorage.setItem(
-              "latestCustomerId",
-              customerId.toString(),
-            );
-          }
-
-          if (isEditMode) {
-            const customerData = parsedData.customerData || {};
-            Alert.alert("Success", "Customer updated successfully.", [
-              {
-                text: "OK",
-                onPress: () => {
-                  navigation.navigate("ViewCustomerScreen" as any, {
-                    id,
-                    customerId: customerId,
-                    name: `${customerData.firstName || ""} ${customerData.lastName || ""}`.trim(),
-                    title: customerData.title || "",
-                    number: customerData.phoneNumber || phoneNumber,
-                  });
-                },
-              },
-            ]);
-          } else {
-            navigation.navigate("OtpSuccesfulScreen" as any, {
-              customerId: customerId,
-              id: id,
-              name: `${parsedData.firstName || ""} ${parsedData.lastName || ""}`.trim(),
-              title: parsedData.title || "",
-              number: parsedData.phoneNumber || phoneNumber,
-            });
-          }
-        } else {
-          Alert.alert(
-            "Error",
-            saveResponse.data?.message || "Failed to save customer data.",
-          );
+          await createOrderAndNavigate(token);
         }
       } else {
         setIsOtpInvalid(true);
@@ -239,7 +302,7 @@ const OtpScreen: React.FC = () => {
         source: "PolygonAgro",
         transport: "sms",
         content: {
-          sms: "Thank you for registering with us a GoviMart customer. Please use the bellow OTP to confirm the registration process. {{code}}",
+          sms: "Thank you for your order with GoviMart. Please use the below OTP to confirm your order. {{code}}",
         },
         destination: phoneNumber,
       };
@@ -373,7 +436,7 @@ const OtpScreen: React.FC = () => {
               We have sent a Verification Code to your Customer's mobile number
             </Text>
 
-            {/* OTP Input Section - ref removed (was causing measureLayout error) */}
+            {/* OTP Input Section */}
             <View className="flex-row justify-center items-center gap-3 mt-8 mb-4">
               {otp.map((digit, index) => (
                 <TextInput
@@ -488,4 +551,4 @@ const OtpScreen: React.FC = () => {
   );
 };
 
-export default OtpScreen;
+export default OrderConfimedOTPScreen;

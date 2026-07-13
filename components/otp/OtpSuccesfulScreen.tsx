@@ -27,7 +27,7 @@ const OtpSuccesfulScreen: React.FC<OtpSuccesfulScreenProps> = ({
   route,
   navigation,
 }) => {
-  const { customerId } = route.params || {};
+  const { customerId, name, number, title, id } = route.params || {};
 
   useFocusEffect(
     useCallback(() => {
@@ -73,8 +73,57 @@ const OtpSuccesfulScreen: React.FC<OtpSuccesfulScreenProps> = ({
             </Text>
           </View>
 
-          {/* Button - Centered */}
+          {/* Go to Profile Button - Centered */}
           <View className="items-center mt-24">
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate("Main" as any, {
+                  screen: "ViewCustomerScreen",
+                  params: {
+                    customerId: String(customerId),
+                    id: String(id || ""),
+                    name: name || "",
+                    title: title || "",
+                    number: number || "",
+                  },
+                })
+              }
+              activeOpacity={0.7}
+              style={{
+                width: "50%",
+                borderRadius: 30,
+                backgroundColor: "transparent",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.25,
+                shadowRadius: 10,
+                elevation: 8,
+              }}
+            >
+              <LinearGradient
+                colors={["#545454", "#808080"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                className="h-[50px] items-center justify-center rounded-full"
+                style={{
+                  shadowColor: "#000",
+                  shadowOffset: {
+                    width: 0,
+                    height: 2,
+                  },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 3.84,
+                  overflow: "hidden",
+                }}
+              >
+                <Text className="text-center text-white font-bold text-lg">
+                  Go to Profile
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+
+          <View className="items-center mt-5">
             <TouchableOpacity
               onPress={() =>
                 navigation.navigate("ExcludeListAdd", {

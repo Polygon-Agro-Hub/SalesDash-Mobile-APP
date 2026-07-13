@@ -46,6 +46,7 @@ interface Order {
   total: string;
   discount: string;
   fullTotal: string;
+  deliveryCharge: string | number;
   paymentMethod: string;
   paymentStatus: number;
   orderStatus: string;
@@ -186,12 +187,14 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
           if (response.data.success) {
             setOrder(response.data.data);
             const orderData = response.data.data;
-            if (orderData.fullAddress) {
-              await fetchDeliveryFee(
-                orderData.fullAddress,
-                orderData.userId || userId,
-              );
-              setIsPackage(orderData.isPackage);
+
+            // delivery fee comes straight from the order row now
+            setDeliveryFee(parseFloat(orderData.deliveryCharge) || 0);
+            setIsPackage(orderData.isPackage);
+
+            // keep this only if you still need customerData for name/address display
+            if (orderData.userId || userId) {
+              await fetchCustomerData(orderData.userId || userId);
             }
           } else {
             setError("Failed to load order details");
@@ -212,52 +215,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   useEffect(() => {
     fetchHoldStatus();
   }, [fetchHoldStatus]);
-
-  const fetchDeliveryFee = async (
-    fullAddress: string,
-    customerUserId?: number,
-  ) => {
-    try {
-      const storedToken = await AsyncStorage.getItem("authToken");
-      if (!storedToken) return;
-      if (customerUserId || userId) {
-        const custData = await fetchCustomerData(customerUserId || userId);
-        if (custData && custData.buildingDetails?.city) {
-          const cityName = custData.buildingDetails.city;
-          const cityResponse = await axios.get<{ data: City[] }>(
-            `${environment.API_BASE_URL}api/customer/get-city`,
-            { headers: { Authorization: `Bearer ${storedToken}` } },
-          );
-          if (cityResponse.data && cityResponse.data.data) {
-            const cityData = cityResponse.data.data.find(
-              (c) => c.city.toLowerCase() === cityName.toLowerCase(),
-            );
-            if (cityData) setDeliveryFee(parseFloat(cityData.charge) || 0);
-          }
-          return;
-        }
-      }
-      const addressParts = fullAddress.split(", ");
-      let cityName =
-        addressParts.length >= 2
-          ? addressParts[addressParts.length - 2].trim()
-          : "";
-      if (cityName) {
-        const cityResponse = await axios.get<{ data: City[] }>(
-          `${environment.API_BASE_URL}api/customer/get-city`,
-          { headers: { Authorization: `Bearer ${storedToken}` } },
-        );
-        if (cityResponse.data && cityResponse.data.data) {
-          const cityData = cityResponse.data.data.find(
-            (c) => c.city.toLowerCase() === cityName.toLowerCase(),
-          );
-          if (cityData) setDeliveryFee(parseFloat(cityData.charge) || 0);
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching delivery fee:", error);
-    }
-  };
 
   const fetchCustomerData = async (
     customerUserId: number,
@@ -579,7 +536,8 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
         ) : order ? (
           <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
             <View className="mx-6 my-4 ml-8">
-              <View className="border-l-2 border-[#D9D9D9] pl-5 relative">
+              <View className="pl-5 relative">
+                <View className="absolute left-0 top-[10px] bottom-[10px] w-[2px] bg-[#D9D9D9]" />
                 <View className="flex-row items-center mb-10">
                   <View
                     className={`p-1.5 rounded-full absolute -left-8 ${isTimelineItemActive("Ordered") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`}
@@ -666,26 +624,13 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                 })}
 
                 {status === "Return" && (
-                  <View>
-                    <View className={`flex-row items-center ${returnReason ? "mb-2" : ""}`}>
-                      <View className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]" />
-                      <Text className="font-medium text-[#5E5E5E]">
-                        Order marked as Return
-                      </Text>
-                    </View>
-                    {returnReason && (
-                      <View className="pb-2">
-                        <Text className="font-semibold text-[#5E5E5E]">
-                          Reason:{" "}
-                          <Text className="text-black font-medium">
-                            "{returnReason}"
-                          </Text>
-                        </Text>
-                      </View>
-                    )}
+                  <View className="flex-row items-center">
+                    <View className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]" />
+                    <Text className="font-medium text-[#5E5E5E]">
+                      Order marked as Return
+                    </Text>
                   </View>
                 )}
-
 
                 {status !== "Return" &&
                   status !== "Cancelled" &&
@@ -731,7 +676,16 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                 )}
               </View>
 
-
+              {status === "Return" && returnReason && (
+                <View style={{ paddingLeft: 22, marginTop: 8 }}>
+                  <Text className="font-semibold text-[#5E5E5E]">
+                    Reason:{" "}
+                    <Text className="text-black font-medium">
+                      "{returnReason}"
+                    </Text>
+                  </Text>
+                </View>
+              )}
             </View>
 
             <View className="bg-white border border-gray-200 rounded-lg shadow-sm mx-4 p-4 mb-4">

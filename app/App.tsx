@@ -50,9 +50,16 @@ import TermsConditions from "@/components/policies/TermsConditions";
 import NetInfo from "@react-native-community/netinfo";
 import AttachGeoLocationScreen from "@/components/location/AttachGeoLocationScreen";
 import ViewLocationScreen from "@/components/location/ViewLocationScreen";
-import AttachGeoLocationScreenEdit from "@/components/location/AttachGeoLocationScreenEdit";
 import * as ExpoNavigationBar from "expo-navigation-bar";
 import { AlertModal, setGlobalAlertListener } from "@/components/common/AlertModal";
+import ResidentialAddress from "@/components/location/ResidentialAddress";
+import DeliveryAddressBooks from "@/components/location/DeliveryAddressBooks";
+import AddDeliveryAddress from "@/components/location/AddDeliveryAddress";
+import DeliveryAddress from "@/components/order/DeliveryAddress";
+import PackageConfirmation from "@/components/order/PackageConfirmation";
+import OnlinePayment from "@/components/order/OnlinePayment";
+import OrderConfimedOTPScreen from "@/components/otp/OrderConfimedOTPScreen";
+import OnlinePaymentStatus from "@/components/order/OnlinePaymentStatus";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -95,10 +102,7 @@ function MainTabNavigator() {
         name="CustomersScreen"
         component={CustomersScreen}
       />
-      <Tab.Screen
-        name="ViewCustomerScreen"
-        component={ViewCustomerScreen as any}
-      />
+    
       <Tab.Screen
         name="OrderConfirmedScreen"
         component={OrderConfirmedScreen as any}
@@ -245,7 +249,10 @@ function AppContent() {
             <Stack.Screen name="Splash" component={Splash} />
             <Stack.Screen name="LoginScreen" component={LoginScreen} />
             <Stack.Screen name="SidebarScreen" component={SidebarScreen} />
-
+              <Stack.Screen
+        name="ViewCustomerScreen"
+        component={ViewCustomerScreen as any}
+      />
             <Stack.Screen name="OtpScreen" component={OtpScreen} />
             <Stack.Screen name="ViewScreen" component={ViewScreen as any} />
             <Stack.Screen name="OtpScreenUp" component={OtpScreen} />
@@ -296,10 +303,7 @@ function AppContent() {
               name="ViewLocationScreen"
               component={ViewLocationScreen as any}
             />
-            <Stack.Screen
-              name="AttachGeoLocationScreenEdit"
-              component={AttachGeoLocationScreenEdit as any}
-            />
+           
             <Stack.Screen
               name="AttachGeoLocationScreen"
               component={AttachGeoLocationScreen as any}
@@ -327,6 +331,38 @@ function AppContent() {
             <Stack.Screen
               name="ExcludeItemEditSummery"
               component={ExcludeItemEditSummery as any}
+            />
+            <Stack.Screen
+              name="ResidentialAddress"
+              component={ResidentialAddress as any}
+            />
+            <Stack.Screen
+              name="DeliveryAddressBooks"
+              component={DeliveryAddressBooks as any}
+            />
+            <Stack.Screen
+              name="AddDeliveryAddress"
+              component={AddDeliveryAddress as any}
+            />
+             <Stack.Screen
+              name="DeliveryAddress"
+              component={DeliveryAddress as any}
+            />
+            <Stack.Screen
+              name="PackageConfirmation"
+              component={PackageConfirmation as any}
+            />
+            <Stack.Screen
+              name="OnlinePayment"
+              component={OnlinePayment as any}
+            />
+            <Stack.Screen
+              name="OrderConfimedOTPScreen"
+              component={OrderConfimedOTPScreen as any}
+            />
+             <Stack.Screen
+              name="OnlinePaymentStatus"
+              component={OnlinePaymentStatus as any}
             />
             <Stack.Screen name="Main" component={MainTabNavigator} />
           </Stack.Navigator>

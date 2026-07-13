@@ -167,7 +167,9 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         if (customerResponse.data?.success) {
           const fetchedCustomerData = customerResponse.data.data;
           setCustomerData(fetchedCustomerData);
-          const customerCity = fetchedCustomerData.buildingDetails?.city;
+          const customerCity =
+            route.params?.selectedAddress?.city ||
+            fetchedCustomerData.buildingDetails?.city;
 
           if (customerCity) {
             try {
@@ -215,6 +217,15 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
     }
   }, [customerId, route.params?.customerId, route.params?.customerid]);
 
+  /**
+   * Confirming an order (Cash OR Card) now always goes through OTP
+   * verification first. The order itself is only created by the OTP
+   * screen once the code has been verified. This screen's job is to:
+   *   1. Build the order payload
+   *   2. Stash it in AsyncStorage as "pendingOrderData"
+   *   3. Send an OTP to the customer's mobile number
+   *   4. Navigate to the OTP screen
+   */
   const handleConfirmOrder = async () => {
     if (isSubmitting || isSubmitted) return;
 
@@ -225,10 +236,8 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
       setIsSubmitting(false);
       return;
     }
-
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
-
       if (!storedToken) {
         Alert.alert(
           "Error",
@@ -241,17 +250,20 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
       let orderPayload;
 
       if (isPackage === 0) {
+        const isCardPayment = paymentMethod === "Card";
         const orderData = {
           userId: customerId || customerid,
           isPackage: 0,
           total: fullTotal + discount,
           fullTotal: fullTotal,
           discount: discount,
+          deliveryCharge: deliveryFee,
           sheduleDate: selectedDate,
           sheduleTime: selectedTimeSlot,
           paymentMethod: paymentMethod,
-          isPaid: 0,
+          isPaid: isCardPayment ? 0 : 1,
           status: "confirmed",
+          deliveryAddress: route.params?.selectedAddress,
           items: safeItems.map((item) => ({
             productId: item.id,
             qty: item.qty === "g" ? Number(item.qty) / 1000 : item.qty,
@@ -275,6 +287,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           discount: item.discount,
         }));
 
+        const isCardPaymentPkg = paymentMethod === "Card";
         const packageOrderData = {
           userId: customerId || customerid,
           isPackage: 1,
@@ -282,53 +295,97 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           total: fullTotal + discount,
           fullTotal: fullTotal,
           discount: discount,
+          deliveryCharge: deliveryFee,
           sheduleDate: selectedDate,
           sheduleTime: selectedTimeSlot,
           transactionId: null,
           paymentMethod: paymentMethod,
-          isPaid: 1,
+          isPaid: isCardPaymentPkg ? 0 : 1,
           status: "confirmed",
+          isFinalizeImdt: route.params?.isFinalizeImdt ?? 0,
+          deliveryAddress: route.params?.selectedAddress,
           items: packageItems,
         };
 
         orderPayload = { orderData: packageOrderData };
       }
 
-      const apiUrl = `${environment.API_BASE_URL}api/orders/create-order`;
-      const response = await axios.post(apiUrl, orderPayload, {
-        headers: {
-          Authorization: `Bearer ${storedToken}`,
-          "Content-Type": "application/json",
+      const phoneNumberForOtp =
+        route.params?.selectedAddress?.billingPhone1 ||
+        customerData?.phoneNumber ||
+        "";
+
+      if (!phoneNumberForOtp) {
+        Alert.alert("Error", "Customer's phone number was not found.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      await AsyncStorage.setItem(
+        "pendingOrderData",
+        JSON.stringify(orderPayload),
+      );
+
+      const otpApiUrl = "https://api.getshoutout.com/otpservice/send";
+      const otpHeaders = {
+        Authorization: `Apikey ${environment.SHOUTOUT_API_KEY}`,
+        "Content-Type": "application/json",
+      };
+      const otpBody = {
+        source: "PolygonAgro",
+        transport: "sms",
+        content: {
+          sms: "Thank you for your order with GoviMart. Please use the below OTP to confirm your order. {{code}}",
         },
+        destination: phoneNumberForOtp,
+      };
+
+      const otpSendResponse = await axios.post(otpApiUrl, otpBody, {
+        headers: otpHeaders,
       });
 
-      if (response.data.success) {
-        setIsSubmitted(true);
+      if (!otpSendResponse.data?.referenceId) {
         setIsSubmitting(false);
-
-        navigation.navigate("Main", {
-          screen: "OrderConfirmedScreen",
-          params: {
-            orderId: response.data.data.orderId,
-            isPackage: isPackage,
-            total: total,
-            subtotal: fullTotal,
-            discount: discount,
-            paymentMethod: paymentMethod,
-            userId: customerId || (customerid as string),
-            selectedDate: selectedDate,
-            selectedTimeSlot: selectedTimeSlot,
-          },
-        });
-      } else {
-        setIsSubmitting(false);
-        Alert.alert("Error", response.data.message || "Failed to create order");
+        Alert.alert("Error", "Failed to send OTP. Please try again.");
+        return;
       }
+
+      await AsyncStorage.setItem(
+        "referenceId",
+        otpSendResponse.data.referenceId,
+      );
+
+      navigation.navigate("OrderConfimedOTPScreen" as any, {
+        phoneNumber: phoneNumberForOtp,
+        id: customerId || customerid,
+        token: storedToken,
+        paymentMethod: paymentMethod,
+        customerName:
+          `${customerData?.firstName || ""} ${customerData?.lastName || ""}`.trim(),
+        customerTitle: customerData?.title || "",
+
+        isPackage,
+        total,
+        fullTotal,
+        subtotal: fullTotal,
+        discount,
+        selectedDate,
+        selectedTimeSlot,
+        items: safeItems,
+        orderItems: safeOrderItems,
+        rawPackageItems: route.params?.rawPackageItems,
+        rawAdditionalItems: route.params?.rawAdditionalItems,
+        selectedAddress: route.params?.selectedAddress,
+        customerid: customerid || customerId,
+        customerscreencustomerid,
+        isFinalizeImdt: route.params?.isFinalizeImdt,
+        deliveryCharge: deliveryFee,
+      });
     } catch (error: any) {
-      console.error("Error creating order:", error);
+      console.error("Error preparing order / sending OTP:", error);
       setIsSubmitting(false);
 
-      let errorMessage = "Failed to create order";
+      let errorMessage = "Failed to send OTP";
       if (error.response && error.response.data) {
         errorMessage = error.response.data.message || errorMessage;
       } else if (error instanceof Error) {
@@ -339,6 +396,30 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
   };
 
   const getCustomerInfo = () => {
+    if (route.params?.selectedAddress) {
+      const address = route.params.selectedAddress;
+      const formatted =
+        address.type === "Apartment"
+          ? `${address.buildingNo || ""} ${address.buildingName || ""}, Flat ${address.unitNo || ""}, ${address.floorNo ? address.floorNo + " Floor, " : ""}${address.houseNo ? "House " + address.houseNo + ", " : ""}${address.streetName || ""}, ${address.city || ""}`
+          : `${address.houseNo || ""}, ${address.streetName || ""}, ${address.city || ""}`;
+      const cleaned = formatted.replace(/\s+/g, " ").trim();
+      return {
+        name:
+          [address.billingTitle, address.billingName]
+            .filter(Boolean)
+            .join(" ") ||
+          `${customerData?.title || ""}. ${customerData?.firstName || ""} ${customerData?.lastName || ""}`,
+        phone:
+          [address.billingPhone1, address.billingPhone2]
+            .filter(Boolean)
+            .join(", ") ||
+          customerData?.phoneNumber ||
+          "No phone",
+        buildingType: address.type || "Not specified",
+        address: cleaned,
+      };
+    }
+
     if (customerData) {
       const address = customerData.buildingDetails
         ? `${customerData.buildingDetails.buildingNo || ""} ${customerData.buildingDetails.unitNo || ""}, 
@@ -672,6 +753,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
             orderData: route.params?.orderData,
             rawPackageItems: route.params?.rawPackageItems,
             rawAdditionalItems: route.params?.rawAdditionalItems,
+            selectedAddress: route.params?.selectedAddress,
           })
         }
       />
@@ -727,6 +809,9 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                       orderData: route.params?.orderData,
                       rawPackageItems: route.params?.rawPackageItems,
                       rawAdditionalItems: route.params?.rawAdditionalItems,
+                      selectedAddress: route.params?.selectedAddress,
+                      deliveryCharge: deliveryFee,
+                      fullTotal,
                     });
                   }}
                   disabled={isSubmitting || isSubmitted}
@@ -759,56 +844,9 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
             </Text>
 
             <Text className="text-[#808FA2] text-s mt-3 mb-2">Address</Text>
-            {customerData && customerData.buildingDetails ? (
-              <View className="-m-1">
-                {customerData.buildingDetails.buildingNo && (
-                  <Text className="text-black font-medium">
-                    {" "}
-                    {customerData.buildingDetails.buildingNo},
-                  </Text>
-                )}
-                {customerData.buildingDetails.unitNo && (
-                  <Text className="text-black font-medium">
-                    {" "}
-                    {customerData.buildingDetails.unitNo},
-                  </Text>
-                )}
-                {customerData.buildingDetails.buildingName && (
-                  <Text className="text-black font-medium">
-                    {" "}
-                    {customerData.buildingDetails.buildingName},
-                  </Text>
-                )}
-                {customerData.buildingDetails.floorNo && (
-                  <Text className="text-black font-medium">
-                    {" "}
-                    {customerData.buildingDetails.floorNo},
-                  </Text>
-                )}
-                {customerData.buildingDetails.houseNo && (
-                  <Text className="text-black font-medium">
-                    {" "}
-                    {customerData.buildingDetails.houseNo},
-                  </Text>
-                )}
-                {customerData.buildingDetails.streetName && (
-                  <Text className="text-black font-medium">
-                    {" "}
-                    {customerData.buildingDetails.streetName},
-                  </Text>
-                )}
-                {customerData.buildingDetails.city && (
-                  <Text className="text-black font-medium">
-                    {" "}
-                    {customerData.buildingDetails.city}
-                  </Text>
-                )}
-              </View>
-            ) : (
-              <Text className="text-black font-medium">
-                Address not available
-              </Text>
-            )}
+            <Text className="text-black font-medium">
+              {customerInfo.address}
+            </Text>
           </View>
 
           {/* ── Payment summary ── */}
@@ -986,6 +1024,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                     orderData: route.params?.orderData,
                     rawPackageItems: route.params?.rawPackageItems,
                     rawAdditionalItems: route.params?.rawAdditionalItems,
+                    selectedAddress: route.params?.selectedAddress,
                   })
                 }
                 className="border border-[#6C3CD1] px-3 rounded-full"
@@ -995,7 +1034,11 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                 <Text className="text-[#6C3CD1] font-medium">Edit</Text>
               </TouchableOpacity>
             </View>
-            <Text className="text-[#8492A3] mt-1">Cash On Delivery</Text>
+            <Text className="text-[#8492A3] mt-1">
+              {paymentMethod === "Card"
+                ? "Online Payment (Card)"
+                : "Cash On Delivery"}
+            </Text>
           </View>
         </View>
 

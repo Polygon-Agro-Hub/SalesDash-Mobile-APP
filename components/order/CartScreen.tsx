@@ -53,6 +53,8 @@ interface CratScreenProps {
       title: string;
       name: string;
       customerscreencustomerid: string;
+      deliveryCharge?: number;
+      selectedAddress?: any;
     };
   };
 }
@@ -68,6 +70,10 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     customerscreencustomerid,
   } = route.params || {};
   const fromOrderSummary = (route.params as any)?.fromOrderSummary;
+
+  const incomingDeliveryCharge = route.params?.deliveryCharge ?? 0;
+  const incomingSelectedAddress = route.params?.selectedAddress ?? null;
+
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -215,6 +221,95 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
   }, [route.params, fromOrderSummary]);
 
   useEffect(() => {
+    const restoreFromReturnedItems = async () => {
+      if (
+        route.params?.selectedProducts ||
+        !route.params?.items ||
+        route.params.items.length === 0 ||
+        cartItems.length > 0
+      ) {
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        const storedToken = await AsyncStorage.getItem("authToken");
+
+        const rebuiltItems = await Promise.all(
+          route.params.items.map(async (raw: any) => {
+            const unitType = raw.unitType?.toLowerCase() === "g" ? "g" : "kg";
+            const qty =
+              typeof raw.qty === "string" ? parseFloat(raw.qty) : raw.qty || 0;
+            const weightInKg = unitType === "g" ? qty / 1000 : qty;
+
+            const totalDiscounted =
+              typeof raw.price === "string"
+                ? parseFloat(raw.price)
+                : raw.price || 0;
+            const totalDiscount =
+              typeof raw.discount === "string"
+                ? parseFloat(raw.discount)
+                : raw.discount || 0;
+
+            const discountedPricePerKg =
+              weightInKg > 0 ? totalDiscounted / weightInKg : totalDiscounted;
+            const discountPerKg =
+              weightInKg > 0 ? totalDiscount / weightInKg : totalDiscount;
+            const normalPricePerKg = discountedPricePerKg + discountPerKg;
+
+            let startValue = unitType === "g" ? 100 : 0.5;
+            let minValue = unitType === "g" ? 100 : 0.5;
+
+            try {
+              const apiUrl = `${environment.API_BASE_URL}api/packages/getChnageby/${raw.id}`;
+              const response = await axios.get(apiUrl, {
+                headers: { Authorization: `Bearer ${storedToken}` },
+              });
+              if (response.data?.data) {
+                const fetchedMin =
+                  typeof response.data.data.startValue === "string"
+                    ? parseFloat(response.data.data.startValue)
+                    : response.data.data.startValue;
+                const fetchedStep =
+                  typeof response.data.data.changeby === "string"
+                    ? parseFloat(response.data.data.changeby)
+                    : response.data.data.changeby;
+                minValue = fetchedMin || minValue;
+                startValue = fetchedStep || fetchedMin || startValue;
+              }
+            } catch (err) {
+              console.error(`Error fetching changeby for item ${raw.id}:`, err);
+            }
+
+            return {
+              id: raw.id,
+              name: raw.name || `Product ${raw.id}`,
+              price: discountedPricePerKg,
+              normalPrice: normalPricePerKg,
+              discountedPrice: discountedPricePerKg,
+              discount: discountPerKg,
+              selected: false,
+              unitType,
+              changeby: qty,
+              quantity: qty,
+              startValue,
+              minValue,
+            } as CartItem;
+          }),
+        );
+
+        setCartItems(rebuiltItems);
+      } catch (error) {
+        console.error("Error restoring cart items:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    restoreFromReturnedItems();
+  }, [route.params?.items, route.params?.selectedProducts]);
+
+  useEffect(() => {
     const hasSelectedItems = cartItems.some((item) => item.selected);
     setIsSelectionMode(hasSelectedItems);
   }, [cartItems]);
@@ -324,6 +419,8 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
   const SERVICE_FEE = 180;
   const fullTotal = roundToTwoDecimals(totalDiscountedValue + SERVICE_FEE);
 
+  const grandTotal = roundToTwoDecimals(fullTotal + incomingDeliveryCharge);
+
   const handleConfirm = () => {
     const hasSelectedItems = cartItems.some((item) => item.selected);
     if (hasSelectedItems) {
@@ -353,44 +450,25 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
         };
       });
 
-      const navigationTarget =
-        (route.params as any)?.returnTo ||
-        (fromOrderSummary ? "OrderSummaryScreen" : "ScheduleScreen");
+      navigation.navigate("DeliveryAddress" as any, {
+        items: itemsToPass,
+        total: fullTotal,
+        subtotal: currentSubtotal,
+        discount: discount,
+        customerId: customerId || customerscreencustomerid || id,
+        customerscreencustomerid: customerscreencustomerid || customerId || id,
+        number: number,
+        id: id || customerId || customerscreencustomerid,
+        isPackage: isPackage,
+        selectedDate: route.params?.selectedDate,
+        timeDisplay: route.params?.timeDisplay,
+        selectedTimeSlot: route.params?.selectedTimeSlot,
+        paymentMethod: route.params?.paymentMethod,
+        title,
+        name,
 
-      if (navigationTarget === "ScheduleScreen") {
-        navigation.navigate("ScheduleScreen" as any, {
-          items: itemsToPass,
-          total: fullTotal,
-          subtotal: currentSubtotal,
-          discount: discount,
-          customerscreencustomerid,
-          number: number,
-          id: id,
-          isPackage: isPackage,
-          selectedDate: route.params?.selectedDate,
-          timeDisplay: route.params?.timeDisplay,
-          selectedTimeSlot: route.params?.selectedTimeSlot,
-          paymentMethod: route.params?.paymentMethod,
-          fullTotal: route.params?.fullTotal,
-          customerId: route.params?.customerId,
-          title,
-          name,
-        });
-      } else {
-        navigation.navigate("ScheduleScreen" as any, {
-          items: itemsToPass,
-          total: fullTotal,
-          subtotal: currentSubtotal,
-          discount: discount,
-          id: id,
-          isPackage: isPackage,
-          customerId,
-          title,
-          name,
-          number,
-          customerscreencustomerid,
-        });
-      }
+        selectedAddressId: incomingSelectedAddress?.id,
+      });
     } else {
       alert("Please add at least one item to your cart");
     }
@@ -600,6 +678,15 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
                   + Rs. {SERVICE_FEE.toFixed(2)}
                 </Text>
               </View>
+
+              {incomingDeliveryCharge > 0 && (
+                <View className="flex-row justify-between py-2">
+                  <Text className="text-[#8492A3]">Delivery Fee</Text>
+                  <Text className="font-medium text-[#686868]">
+                    + Rs. {formatPrice(incomingDeliveryCharge)}
+                  </Text>
+                </View>
+              )}
             </View>
 
             {/* Separator */}
@@ -608,10 +695,15 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
             {/* Full Total */}
             <View className="flex-row justify-between py-5">
               <Text className="font-semibold text-base text-[#414347]">
-                Full Total
+                {incomingDeliveryCharge > 0
+                  ? "Full Total (incl. Delivery)"
+                  : "Full Total"}
               </Text>
               <Text className="font-bold text-xl text-[#212121]">
-                Rs. {formatPrice(fullTotal)}
+                Rs.{" "}
+                {formatPrice(
+                  incomingDeliveryCharge > 0 ? grandTotal : fullTotal,
+                )}
               </Text>
             </View>
 
