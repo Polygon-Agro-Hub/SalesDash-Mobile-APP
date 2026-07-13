@@ -154,9 +154,7 @@ const OnlinePayment: React.FC<OnlinePaymentProps> = ({ navigation, route }) => {
     }
   };
 
-  if (loading) {
-    return <LoadingPage fullScreen={false} />;
-  }
+
 
   return (
     <KeyboardAvoidingView
@@ -198,8 +196,12 @@ const OnlinePayment: React.FC<OnlinePaymentProps> = ({ navigation, route }) => {
         }
       />
 
-      <ScrollView
-        style={{ flex: 1, paddingHorizontal: 20 }}
+      {loading ? (
+        <LoadingPage fullScreen={true} />
+      ) : (
+        <>
+          <ScrollView
+            style={{ flex: 1, paddingHorizontal: 20 }}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 24 }}
       >
@@ -393,7 +395,9 @@ const OnlinePayment: React.FC<OnlinePaymentProps> = ({ navigation, route }) => {
             </Text>
           </LinearGradient>
         </TouchableOpacity>
-      </View>
+        </View>
+        </>
+      )}
     </KeyboardAvoidingView>
   );
 };

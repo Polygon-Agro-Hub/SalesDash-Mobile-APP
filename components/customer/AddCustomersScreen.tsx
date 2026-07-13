@@ -230,6 +230,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       };
 
       const response = await axios.post(apiUrl, body, { headers });
+      console.log("📲 [OTP SEND] Response Data:", response.data);
       await AsyncStorage.setItem("referenceId", response.data.referenceId);
 
       if (response.status === 200) {

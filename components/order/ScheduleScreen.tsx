@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { TIME_SLOTS } from "./constants";
 import {
   View,
   Text,
@@ -346,10 +347,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
 
   const fullTotal = total + deliveryFee;
 
-  const timeSlots = [
-    { label: "Within 8AM - 2PM", value: "Within 8AM - 2PM" },
-    { label: "Within 2PM - 8PM", value: "Within 2PM - 8PM" },
-  ];
+  const timeSlots = TIME_SLOTS;
 
   useEffect(() => {
     if (previousSelectedDate) {
@@ -495,16 +493,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
   };
 
   const convertTimeSlotTo24Hour = (timeSlot: string): string => {
-    switch (timeSlot) {
-      case "Within 8-12 PM":
-        return "10:00";
-      case "Within 12-4 PM":
-        return "14:00";
-      case "Within 4-8 PM":
-        return "18:00";
-      default:
-        return "12:00";
-    }
+    return timeSlot;
   };
 
   useFocusEffect(

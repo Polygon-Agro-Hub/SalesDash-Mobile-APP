@@ -281,7 +281,7 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
 
   const handleEditAddress = (address: AddressBookItem) => {
     navigation.navigate("AddDeliveryAddress" as any, {
-      customerId,
+      customerId: id || customerId,
       addressId: address.id,
       addressType: address.type,
     });
