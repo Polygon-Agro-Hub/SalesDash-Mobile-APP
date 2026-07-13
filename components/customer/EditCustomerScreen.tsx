@@ -389,7 +389,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
             },
           );
         } catch (checkError: any) {
-          console.log("Customer check error:", checkError);
+          console.error("❌ Customer check error:", checkError);
 
           if (checkError.code === "ECONNABORTED") {
             showAlert(

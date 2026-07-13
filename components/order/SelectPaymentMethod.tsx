@@ -192,14 +192,13 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
             ? { headers: { Authorization: `Bearer ${storedToken}` } }
             : undefined,
         );
-        console.log("data", response.data);
 
         if (response.data?.success) {
           setCreditBalance(response.data.data.creditBalance);
           setDeliveredTotal(response.data.data.deliveredTotal);
         }
       } catch (error) {
-        console.error("Error fetching credit balance:", error);
+        console.error("❌ Error fetching credit balance:", error);
 
         setCreditBalance(2000);
       } finally {

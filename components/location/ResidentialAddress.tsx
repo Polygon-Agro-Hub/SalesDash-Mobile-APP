@@ -272,7 +272,7 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
       Alert.alert("Success", "Residential address updated successfully.");
       navigation.goBack();
     } catch (error) {
-      console.log("Error updating residential address:", error);
+      console.error("❌ Error updating residential address:", error);
       Alert.alert("Error", "Failed to update residential address.");
     } finally {
       setSaving(false);

@@ -98,8 +98,6 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
   );
   const [cityCharges, setCityCharges] = useState<City[]>([]);
 
-  console.log("costomerid", customerId, id);
-
   useEffect(() => {
     const fetchCityCharges = async () => {
       try {
@@ -221,8 +219,6 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
       });
     }
   };
-
-  console.log("delivery data", deliveryFee, selectedAddress);
 
   useFocusEffect(
     useCallback(() => {

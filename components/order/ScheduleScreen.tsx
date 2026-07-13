@@ -309,8 +309,6 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
           return;
         }
 
-        console.log("customerid", customerIdi);
-
         const apiUrl = `${environment.API_BASE_URL}api/orders/get-customer-data/${customerIdi}`;
         const response = await axios.get(apiUrl, {
           headers: { Authorization: `Bearer ${storedToken}` },
@@ -321,14 +319,14 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
         } else {
           const errorMsg =
             response.data?.message || "Failed to fetch customer data";
-          console.log("API error:", errorMsg);
+          console.error("❌ API error:", errorMsg);
           setError(errorMsg);
         }
       } catch (error: any) {
-        console.error("Error fetching customer data:", error);
+        console.error("❌ Error fetching customer data:", error);
         if (axios.isAxiosError(error)) {
           const errorMsg = error.response?.data?.message || error.message;
-          console.log("Axios error details:", errorMsg);
+          console.error("❌ Axios error details:", errorMsg);
           setError(errorMsg);
         } else {
           setError("Failed to fetch customer data");
@@ -341,7 +339,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     if (customerid || customerId) {
       fetchCustomerData();
     } else {
-      console.log("No customer ID in route params");
+      console.warn("⚠️ No customer ID in route params");
     }
   }, [route.params]);
 

@@ -324,7 +324,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                         borderRadius: wp(30) / 2,
                       }}
                       onError={(e) =>
-                        console.log("Image load error:", e.nativeEvent.error)
+                        console.warn("⚠️ Image load error:", e.nativeEvent.error)
                       }
                       defaultSource={require("@/assets/images/profile/profile1.webp")}
                     />

@@ -228,15 +228,15 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         } else {
           const errorMsg =
             customerResponse.data?.message || "Failed to fetch customer data";
-          console.log("Customer API error:", errorMsg);
+          console.error("❌ Customer API error:", errorMsg);
           setError(errorMsg);
           setLoading(false);
         }
       } catch (error: any) {
-        console.error("Error fetching customer data:", error);
+        console.error("❌ Error fetching customer data:", error);
         if (axios.isAxiosError(error)) {
           const errorMsg = error.response?.data?.message || error.message;
-          console.log("Axios error details:", errorMsg);
+          console.error("❌ Axios error details:", errorMsg);
           setError(errorMsg);
         } else {
           setError("Failed to fetch customer data");
