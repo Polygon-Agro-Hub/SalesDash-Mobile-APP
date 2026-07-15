@@ -232,7 +232,11 @@ const OrderConfimedOTPScreen: React.FC = () => {
       };
 
       let statusCode;
-      if (environment.isDevelopment && Platform.OS === "android" && otpCode === "05578") {
+      if (
+        environment.isDevelopment &&
+        Platform.OS === "android" &&
+        otpCode === "05578"
+      ) {
         statusCode = "1000";
       } else {
         const otpResponse = await axios.post(otpVerificationUrl, otpBody, {
@@ -409,7 +413,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
     >
       <ScrollView
         ref={scrollViewRef}
-        contentContainerStyle={{ flexGrow: 1 }}
+        contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         overScrollMode="never"

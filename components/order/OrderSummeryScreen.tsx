@@ -217,15 +217,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
     }
   }, [customerId, route.params?.customerId, route.params?.customerid]);
 
-  /**
-   * Confirming an order (Cash OR Card) now always goes through OTP
-   * verification first. The order itself is only created by the OTP
-   * screen once the code has been verified. This screen's job is to:
-   *   1. Build the order payload
-   *   2. Stash it in AsyncStorage as "pendingOrderData"
-   *   3. Send an OTP to the customer's mobile number
-   *   4. Navigate to the OTP screen
-   */
+ 
   const handleConfirmOrder = async () => {
     if (isSubmitting || isSubmitted) return;
 
@@ -311,8 +303,8 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
       }
 
       const phoneNumberForOtp =
-        route.params?.selectedAddress?.billingPhone1 ||
         customerData?.phoneNumber ||
+        route.params?.selectedAddress?.billingPhone1 ||
         "";
 
       if (!phoneNumberForOtp) {
@@ -412,10 +404,10 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
             .join(" ") ||
           `${customerData?.title || ""}. ${customerData?.firstName || ""} ${customerData?.lastName || ""}`,
         phone:
+          customerData?.phoneNumber ||
           [address.billingPhone1, address.billingPhone2]
             .filter(Boolean)
             .join(", ") ||
-          customerData?.phoneNumber ||
           "No phone",
         buildingType: address.type || "Not specified",
         address: cleaned,
