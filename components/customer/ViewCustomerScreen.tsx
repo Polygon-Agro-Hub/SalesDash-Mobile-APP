@@ -290,14 +290,14 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
         setError(response.data.message || "Failed to load orders");
       }
     } catch (err: any) {
-      console.log("Error fetching orders:", err);
+      console.warn("⚠️ Error fetching orders (handled):", err.message || err);
 
       if (err.response && err.response.status === 404) {
         setOrders([]);
         setError(null);
         setHasMore(false);
       } else {
-        console.error("Actual error fetching orders:", err);
+        console.error("❌ Actual error fetching orders:", err);
         setError("Network error. Please try again.");
       }
     } finally {
@@ -310,10 +310,6 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
     if (!loadingMore && hasMore && !loading) {
       const nextPage = currentPage + 1;
       loadOrders(nextPage, false, true);
-    } else {
-      console.log(
-        `Cannot load more - loadingMore: ${loadingMore}, hasMore: ${hasMore}, loading: ${loading}`,
-      );
     }
   };
 

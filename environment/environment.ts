@@ -1,4 +1,6 @@
 const environment = {
+  // If isDevelopment is true, user can use OTP as 05578 in Android only
+  isDevelopment: true,
   // LOCAL --------------------
   API_BASE_URL: "http://192.168.8.101:3000/agro-api/salesdash/",
 

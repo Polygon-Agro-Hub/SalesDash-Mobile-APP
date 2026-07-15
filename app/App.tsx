@@ -61,6 +61,14 @@ import OnlinePayment from "@/components/order/OnlinePayment";
 import OrderConfimedOTPScreen from "@/components/otp/OrderConfimedOTPScreen";
 import OnlinePaymentStatus from "@/components/order/OnlinePaymentStatus";
 
+// Disable console logs in production mode to improve React Native thread performance
+if (!__DEV__) {
+  console.log = () => {};
+  console.warn = () => {};
+  console.info = () => {};
+  console.debug = () => {};
+}
+
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 export const navigationRef = createNavigationContainerRef();
@@ -249,19 +257,13 @@ function AppContent() {
             <Stack.Screen name="Splash" component={Splash} />
             <Stack.Screen name="LoginScreen" component={LoginScreen} />
             <Stack.Screen name="SidebarScreen" component={SidebarScreen} />
-              <Stack.Screen
-        name="ViewCustomerScreen"
-        component={ViewCustomerScreen as any}
-      />
+            <Stack.Screen name="ViewCustomerScreen" component={ViewCustomerScreen as any} />
             <Stack.Screen name="OtpScreen" component={OtpScreen} />
             <Stack.Screen name="ViewScreen" component={ViewScreen as any} />
             <Stack.Screen name="OtpScreenUp" component={OtpScreen} />
             <Stack.Screen name="OrderScreen" component={OrderScreen as any} />
             <Stack.Screen name="CratScreen" component={CratScreen as any} />
-            <Stack.Screen
-              name="SelectOrderType"
-              component={SelectOrderType as any}
-            />
+            <Stack.Screen name="SelectOrderType" component={SelectOrderType as any} />
 
             <Stack.Screen
               name="ChangePasswordScreen"

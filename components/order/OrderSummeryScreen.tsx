@@ -331,18 +331,20 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         Authorization: `Apikey ${environment.SHOUTOUT_API_KEY}`,
         "Content-Type": "application/json",
       };
+      const cleanedPhoneNumber = phoneNumberForOtp.replace(/[^\d]/g, "");
       const otpBody = {
         source: "PolygonAgro",
         transport: "sms",
         content: {
           sms: "Thank you for your order with GoviMart. Please use the below OTP to confirm your order. {{code}}",
         },
-        destination: phoneNumberForOtp,
+        destination: cleanedPhoneNumber,
       };
 
       const otpSendResponse = await axios.post(otpApiUrl, otpBody, {
         headers: otpHeaders,
       });
+      console.log("📲 [OTP ORDER SEND] Response Data:", otpSendResponse.data);
 
       if (!otpSendResponse.data?.referenceId) {
         setIsSubmitting(false);

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { TIME_SLOTS } from "./constants";
 import {
   View,
   Text,
@@ -308,8 +309,6 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
           return;
         }
 
-        console.log("customerid", customerIdi);
-
         const apiUrl = `${environment.API_BASE_URL}api/orders/get-customer-data/${customerIdi}`;
         const response = await axios.get(apiUrl, {
           headers: { Authorization: `Bearer ${storedToken}` },
@@ -320,14 +319,14 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
         } else {
           const errorMsg =
             response.data?.message || "Failed to fetch customer data";
-          console.log("API error:", errorMsg);
+          console.error("❌ API error:", errorMsg);
           setError(errorMsg);
         }
       } catch (error: any) {
-        console.error("Error fetching customer data:", error);
+        console.error("❌ Error fetching customer data:", error);
         if (axios.isAxiosError(error)) {
           const errorMsg = error.response?.data?.message || error.message;
-          console.log("Axios error details:", errorMsg);
+          console.error("❌ Axios error details:", errorMsg);
           setError(errorMsg);
         } else {
           setError("Failed to fetch customer data");
@@ -340,16 +339,13 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     if (customerid || customerId) {
       fetchCustomerData();
     } else {
-      console.log("No customer ID in route params");
+      console.warn("⚠️ No customer ID in route params");
     }
   }, [route.params]);
 
   const fullTotal = total + deliveryFee;
 
-  const timeSlots = [
-    { label: "Within 8AM - 2PM", value: "Within 8AM - 2PM" },
-    { label: "Within 2PM - 8PM", value: "Within 2PM - 8PM" },
-  ];
+  const timeSlots = TIME_SLOTS;
 
   useEffect(() => {
     if (previousSelectedDate) {
@@ -495,16 +491,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
   };
 
   const convertTimeSlotTo24Hour = (timeSlot: string): string => {
-    switch (timeSlot) {
-      case "Within 8-12 PM":
-        return "10:00";
-      case "Within 12-4 PM":
-        return "14:00";
-      case "Within 4-8 PM":
-        return "18:00";
-      default:
-        return "12:00";
-    }
+    return timeSlot;
   };
 
   useFocusEffect(

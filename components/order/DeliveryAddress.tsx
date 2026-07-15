@@ -98,8 +98,6 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
   );
   const [cityCharges, setCityCharges] = useState<City[]>([]);
 
-  console.log("costomerid", customerId, id);
-
   useEffect(() => {
     const fetchCityCharges = async () => {
       try {
@@ -222,8 +220,6 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
     }
   };
 
-  console.log("delivery data", deliveryFee, selectedAddress);
-
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
@@ -281,7 +277,7 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
 
   const handleEditAddress = (address: AddressBookItem) => {
     navigation.navigate("AddDeliveryAddress" as any, {
-      customerId,
+      customerId: id || customerId,
       addressId: address.id,
       addressType: address.type,
     });

@@ -329,7 +329,11 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
       );
       navigation.goBack();
     } catch (error) {
-      console.error("Error saving address:", error);
+      if (axios.isAxiosError(error) && error.response) {
+        console.error("Error saving address details:", error.response.data);
+      } else {
+        console.error("Error saving address:", error);
+      }
       Alert.alert("Error", "Failed to save address.");
     } finally {
       setSaving(false);

@@ -230,6 +230,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       };
 
       const response = await axios.post(apiUrl, body, { headers });
+      console.log("📲 [OTP SEND] Response Data:", response.data);
       await AsyncStorage.setItem("referenceId", response.data.referenceId);
 
       if (response.status === 200) {
@@ -240,8 +241,8 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       }
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        console.log(
-          "Axios error details:",
+        console.error(
+          "❌ Axios error details:",
           error.response ? error.response.data : error.message,
         );
         showAlert(
@@ -249,7 +250,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
           `Error: ${error.response ? error.response.data.message : error.message}`,
         );
       } else {
-        console.log("Unexpected error:", error);
+        console.error("❌ Unexpected error:", error);
         showAlert("Error", "An unexpected error occurred.");
       }
       return false;

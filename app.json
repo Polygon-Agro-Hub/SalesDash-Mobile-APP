@@ -57,7 +57,9 @@
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "android.permission.FOREGROUND_SERVICE",
-        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ]
     },
     "web": {
@@ -108,7 +110,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "65b3e93e-7ca1-42a5-bcf2-7feaeb45256c"
+        "projectId": "2fa8c3d6-ce83-47ce-af6f-e22f571b46f8"
       }
     }
   }
