@@ -136,10 +136,11 @@ function AppContent() {
     onClose: (() => {}) as () => void,
     autoClose: true,
     showOkButton: undefined as boolean | undefined,
+    okButtonText: undefined as string | undefined,
   });
 
   useEffect(() => {
-    setGlobalAlertListener((title, message, type, onClose, autoClose, showOkButton) => {
+    setGlobalAlertListener((title, message, type, onClose, autoClose, showOkButton, okButtonText) => {
       setAlertState({
         visible: true,
         title,
@@ -153,6 +154,7 @@ function AppContent() {
         },
         autoClose,
         showOkButton,
+        okButtonText,
       });
     });
   }, []);
@@ -377,6 +379,7 @@ function AppContent() {
           onClose={alertState.onClose}
           autoClose={alertState.autoClose}
           showOkButton={alertState.showOkButton}
+          okButtonText={alertState.okButtonText}
         />
       </SafeAreaView>
     </GestureHandlerRootView>

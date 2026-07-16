@@ -16,6 +16,7 @@ interface AlertModalProps {
   duration?: number;
   autoClose?: boolean;
   showOkButton?: boolean;
+  okButtonText?: string;
 }
 
 export const AlertModal: React.FC<AlertModalProps> = ({
@@ -31,6 +32,7 @@ export const AlertModal: React.FC<AlertModalProps> = ({
   duration = 4000,
   autoClose = true,
   showOkButton,
+  okButtonText = "OK",
 }) => {
   const isOkButtonVisible = showOkButton !== undefined ? showOkButton : !autoClose;
   const loadingBarWidth = new Animated.Value(1); // 1 = 100%
@@ -149,7 +151,7 @@ export const AlertModal: React.FC<AlertModalProps> = ({
                 activeOpacity={0.8}
                 className="bg-[#6E3DD1] py-3 px-6 rounded-full flex-row items-center justify-center gap-x-2 shadow-md"
               >
-                <Text className="text-white font-bold text-base">OK</Text>
+                <Text className="text-white font-bold text-base">{okButtonText}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -189,7 +191,8 @@ type AlertListener = (
   type: "success" | "error",
   onClose: () => void,
   autoClose: boolean,
-  showOkButton?: boolean
+  showOkButton?: boolean,
+  okButtonText?: string
 ) => void;
 
 let globalAlertListener: AlertListener | null = null;
@@ -215,6 +218,8 @@ Alert.alert = (title, message, buttons, options) => {
       }
     };
 
+    const customOkText = (buttons && buttons.length === 1 && buttons[0].text) || undefined;
+
     if (globalAlertListener) {
       globalAlertListener(
         title || "",
@@ -222,7 +227,8 @@ Alert.alert = (title, message, buttons, options) => {
         type,
         onCloseCallback,
         isSuccess === true,
-        !isSuccess
+        !isSuccess,
+        customOkText
       );
     } else {
       originalAlert(title, message, buttons, options);
