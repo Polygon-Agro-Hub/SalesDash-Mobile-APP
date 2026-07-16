@@ -127,6 +127,12 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
   const isCityKnown = city.trim().length > 0 && !!matchedCity;
   const isCityDeliverable = isCityKnown && matchedCity!.deliverable;
 
+  // NEW: true whenever the "City Not Found" or "Delivery Not Available"
+  // banner would be shown (city typed but unmatched, OR matched but not
+  // in a deliverable/serviceable area). Used to gate the Register button
+  // and to double-check at submit time.
+  const cityBlocksRegistration = city.trim().length > 0 && !isCityDeliverable;
+
   const showAlert = (title: string, message: string, onClose?: () => void) => {
     Alert.alert(title, message, [{ text: "OK", onPress: onClose }]);
   };
@@ -534,11 +540,15 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     if (touchedFields.city) {
       if (!city) {
         setCityError("City is required");
+      } else if (cityBlocksRegistration) {
+        // NEW: surface the error inline as soon as an undeliverable /
+        // unknown city is chosen, not just at submit time.
+        setCityError("Please select a valid city we deliver to");
       } else {
         setCityError("");
       }
     }
-  }, [city, touchedFields.city]);
+  }, [city, touchedFields.city, cityBlocksRegistration]);
 
   useEffect(() => {
     if (touchedFields.buildingNo) {
@@ -778,12 +788,6 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         setIsSubmitting(false);
         return;
       }
-      if (!isCityDeliverable) {
-        setCityError("Please select a valid city we deliver to");
-        showAlert("Error", "This city is not currently in our delivery area.");
-        setIsSubmitting(false);
-        return;
-      }
     } else if (buildingType === "Apartment") {
       if (
         !buildingNo ||
@@ -798,6 +802,16 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         setIsSubmitting(false);
         return;
       }
+    }
+
+    // NEW: applies to both House and Apartment now — previously this
+    // guard only ran inside the "House" branch, so an Apartment
+    // registration with an unknown/undeliverable city could slip through.
+    if (cityBlocksRegistration) {
+      setCityError("Please select a valid city we deliver to");
+      showAlert("Error", "This city is not currently in our delivery area.");
+      setIsSubmitting(false);
+      return;
     }
 
     if (!validatePhoneNumber(phoneNumber)) {
@@ -1556,12 +1570,19 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         >
           <TouchableOpacity
             onPress={handleRegister}
-            disabled={isSubmitting || loading}
+            // NEW: disabled while submitting/loading, OR while the
+            // "City Not Found" / "Delivery Not Available" banner is
+            // showing for the currently selected city.
+            disabled={isSubmitting || loading || cityBlocksRegistration}
             activeOpacity={0.8}
             style={{ borderRadius: 30 }}
           >
             <LinearGradient
-              colors={["#854BDA", "#6E3DD1"]}
+              colors={
+                cityBlocksRegistration
+                  ? ["#B9AEDD", "#A99BD6"]
+                  : ["#854BDA", "#6E3DD1"]
+              }
               style={{
                 paddingVertical: 14,
                 alignItems: "center",
@@ -1663,7 +1684,6 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         onSelect={(items) => {
           if (items.length > 0) {
             setCity(items[0]);
-            setCityError("");
             setFilteredCities([]);
           }
           handleFieldTouch("city");
@@ -1671,6 +1691,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         searchPlaceholder="Search city..."
         multiSelect={false}
         showSearch={true}
+        noResultsText = "No Results Found"
       />
     </KeyboardAvoidingView>
   );

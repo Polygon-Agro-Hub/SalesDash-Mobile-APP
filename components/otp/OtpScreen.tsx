@@ -70,6 +70,8 @@ const OtpScreen: React.FC = () => {
     }
   };
 
+  console.log(phoneNumber)
+
   const verifyOTP = async () => {
     const otpCode = otp.join("");
 

@@ -92,12 +92,33 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
   };
 
   // Validation regex
-  const phoneRegex = /^\+947\d{8}$/;
+  const phoneRegex = /^07\d{8}$/; // local display format e.g. 0712345678
   const nameRegex = /^[A-Z][a-z]*$/;
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
   const validatePhoneNumber = (phone: string) => phoneRegex.test(phone);
   const validateName = (name: string) => nameRegex.test(name);
+
+  // Convert a backend/API formatted number (+947XXXXXXXX) to local display format (07XXXXXXXX)
+  const toLocalPhoneFormat = (phone: string) => {
+    if (!phone) return "";
+    if (phone.startsWith("+94")) {
+      return "0" + phone.slice(3);
+    }
+    if (phone.startsWith("94")) {
+      return "0" + phone.slice(2);
+    }
+    return phone;
+  };
+
+  // Convert local display format (07XXXXXXXX) to API format (+947XXXXXXXX)
+  const toApiPhoneFormat = (phone: string) => {
+    if (!phone) return "";
+    if (phone.startsWith("0")) {
+      return "+94" + phone.slice(1);
+    }
+    return phone;
+  };
 
   const validateEmail = (email: string) => {
     if (!emailRegex.test(email)) return false;
@@ -189,7 +210,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
         setPhoneError("Mobile number is required");
       } else if (!validatePhoneNumber(phoneNumber)) {
         setPhoneError(
-          "Please enter a valid Mobile number (format: +947XXXXXXXX)",
+          "Please enter a valid Mobile number (format: 07XXXXXXXX)",
         );
       } else {
         setPhoneError("");
@@ -262,9 +283,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
         setSelectedCategory(customerData.title || "");
         setFirstName(customerData.firstName || "");
         setLastName(customerData.lastName || "");
-        setPhoneNumber(customerData.phoneNumber || "");
+        const localPhone = toLocalPhoneFormat(customerData.phoneNumber || "");
+        setPhoneNumber(localPhone);
         setEmail(customerData.email || "");
-        setOriginalPhoneNumber(customerData.phoneNumber || "");
+        setOriginalPhoneNumber(localPhone);
         setOriginalEmail(customerData.email || "");
       }
     } catch (error) {
@@ -307,7 +329,8 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
 
     try {
       setLoading(true);
-      const cleanedPhoneNumber = phoneNumber.replace(/[^\d]/g, "");
+      const apiPhoneNumber = toApiPhoneFormat(phoneNumber);
+      const cleanedPhoneNumber = apiPhoneNumber.replace(/[^\d]/g, "");
 
       const response = await axios.post(
         "https://api.getshoutout.com/otpservice/send",
@@ -358,7 +381,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     if (!validatePhoneNumber(phoneNumber)) {
       showAlert(
         "Error",
-        "Please enter a valid mobile number (format: +947XXXXXXXX).",
+        "Please enter a valid mobile number (format: 07XXXXXXXX).",
       );
       return;
     }
@@ -373,13 +396,14 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     try {
       const phoneNumberChanged = phoneNumber !== originalPhoneNumber;
       const emailChanged = email !== originalEmail;
+      const apiPhoneNumber = toApiPhoneFormat(phoneNumber);
 
       if (phoneNumberChanged || emailChanged) {
         try {
           await axios.post(
             `${environment.API_BASE_URL}api/customer/check-customer`,
             {
-              phoneNumber,
+              phoneNumber: apiPhoneNumber,
               email: email || null,
               excludeId: id,
             },
@@ -484,7 +508,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
         title: selectedCategory,
         firstName,
         lastName,
-        phoneNumber,
+        phoneNumber: apiPhoneNumber,
         email,
       };
 
@@ -494,7 +518,11 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
           JSON.stringify({ customerData }),
         );
         showAlert("Success", "OTP Sent Successfully.", () => {
-          navigation.navigate("OtpScreenUp", { phoneNumber, id, token });
+          navigation.navigate("OtpScreenUp", {
+            phoneNumber: apiPhoneNumber,
+            id,
+            token,
+          });
         });
       } else {
         try {
@@ -510,12 +538,12 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
           if (response.status === 200) {
             showAlert("Success", "Customer updated successfully.", () => {
               navigation.navigate("ViewCustomerScreen" as any, {
-                id,
-                customerId,
-                name: `${firstName} ${lastName}`,
-                title: selectedCategory,
-                number: phoneNumber,
-              });
+      id,
+      customerId,
+      name: `${firstName} ${lastName}`,
+      title: selectedCategory,
+      number: phoneNumber,
+    });
             });
           }
         } catch (updateError: any) {
@@ -556,21 +584,21 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
   const handlePhoneNumberChange = (text: string) => {
     if (text.startsWith(" ")) return;
 
-    if (!text.startsWith("+94")) {
-      if (text.length < 3) {
-        setPhoneNumber("+94");
+    if (!text.startsWith("0")) {
+      if (text.length < 1) {
+        setPhoneNumber("0");
         return;
       }
-      const cleanedText = text.replace(/^\+?94?/, "");
-      setPhoneNumber("+94" + cleanedText.replace(/[^\d]/g, ""));
+      const cleanedText = text.replace(/^0?/, "");
+      setPhoneNumber("0" + cleanedText.replace(/[^\d]/g, ""));
       return;
     }
 
-    const numberPart = text.slice(3);
+    const numberPart = text.slice(1);
     const cleanedNumber = numberPart.replace(/[^\d]/g, "");
 
     if (cleanedNumber.length <= 9) {
-      setPhoneNumber("+94" + cleanedNumber);
+      setPhoneNumber("0" + cleanedNumber);
     }
   };
 
@@ -586,14 +614,14 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
   };
 
   const handlePhoneNumberFocus = () => {
-    if (phoneNumber === "" || phoneNumber.length < 3) {
-      setPhoneNumber("+94");
+    if (phoneNumber === "") {
+      setPhoneNumber("0");
     }
   };
 
   const handlePhoneNumberKeyPress = (e: any) => {
     const { key } = e.nativeEvent;
-    if (key === "Backspace" && phoneNumber.length <= 3) {
+    if (key === "Backspace" && phoneNumber.length <= 1) {
       e.preventDefault();
       return false;
     }
@@ -602,16 +630,13 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        navigation.navigate("Main" as any, {
-          screen: "ViewCustomerScreen",
-          params: {
-            id,
-            customerId,
-            name: `${firstName} ${lastName}`,
-            title: selectedCategory,
-            number: phoneNumber,
-          },
-        });
+ navigation.navigate("ViewCustomerScreen" as any, {
+        id,
+        customerId,
+        name: `${firstName} ${lastName}`,
+        title: selectedCategory,
+        number: phoneNumber,
+      });
         return true;
       };
 
@@ -734,7 +759,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
               fontSize: INPUT_FONT_SIZE,
               fontStyle: phoneNumber ? "normal" : "italic",
             }}
-            placeholder="+947XXXXXXXX"
+            placeholder="0712345678"
             placeholderTextColor="#7F7F7F"
             keyboardType="phone-pad"
             value={phoneNumber}
@@ -742,6 +767,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
             onFocus={handlePhoneNumberFocus}
             onKeyPress={handlePhoneNumberKeyPress}
             onBlur={() => handleFieldTouch("phoneNumber")}
+            maxLength={10}
           />
           {phoneError ? (
             <Text className="text-red-500 text-xs mt-1 ml-2">{phoneError}</Text>
@@ -827,24 +853,21 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
       keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })}
       style={{ flex: 1, backgroundColor: "white" }}
     >
-      <CustomHeader
-        title="Basic Details"
-        titleColor="#6C3CD1"
-        showBackButton={true}
-        navigation={navigation}
-        onBackPress={() => {
-          navigation.navigate("Main" as any, {
-            screen: "ViewCustomerScreen",
-            params: {
-              id,
-              customerId,
-              name: `${firstName} ${lastName}`,
-              title: selectedCategory,
-              number: phoneNumber,
-            },
-          });
-        }}
-      />
+   <CustomHeader
+  title="Basic Details"
+  titleColor="#6C3CD1"
+  showBackButton={true}
+  navigation={navigation}
+  onBackPress={() => {
+    navigation.navigate("ViewCustomerScreen" as any, {
+      id,
+      customerId,
+      name: `${firstName} ${lastName}`,
+      title: selectedCategory,
+      number: phoneNumber,
+    });
+  }}
+/>
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <View className="px-6 mx-auto w-full max-w-[500px]">
           {renderBasicDetailsForm()}

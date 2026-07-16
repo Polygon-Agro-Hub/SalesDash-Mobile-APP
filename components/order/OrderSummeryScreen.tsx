@@ -67,6 +67,23 @@ interface CustomerData {
   };
 }
 
+// Converts a phone number to local display format, e.g. "+94701835108" or
+// "94701835108" -> "0701835108". Leaves already-local numbers unchanged.
+const toLocalPhoneFormat = (phone?: string | null) => {
+  if (!phone) return phone || "";
+  let cleaned = phone.replace(/[^0-9]/g, "");
+  if (!cleaned) return phone;
+
+  if (!cleaned.startsWith("0")) {
+    if (cleaned.startsWith("94")) {
+      cleaned = cleaned.slice(2);
+    }
+    cleaned = "0" + cleaned;
+  }
+
+  return cleaned;
+};
+
 const buildRestoredAdditionalItems = (rawAdditionalItems: any[]) =>
   (rawAdditionalItems || []).map((item: any) => ({
     productId: item.id,
@@ -397,6 +414,15 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           ? `${address.buildingNo || ""} ${address.buildingName || ""}, Flat ${address.unitNo || ""}, ${address.floorNo ? address.floorNo + " Floor, " : ""}${address.houseNo ? "House " + address.houseNo + ", " : ""}${address.streetName || ""}, ${address.city || ""}`
           : `${address.houseNo || ""}, ${address.streetName || ""}, ${address.city || ""}`;
       const cleaned = formatted.replace(/\s+/g, " ").trim();
+
+      const rawPhone =
+        customerData?.phoneNumber ||
+        [address.billingPhone1, address.billingPhone2]
+          .filter(Boolean)
+          .map(toLocalPhoneFormat)
+          .join(", ") ||
+        "No phone";
+
       return {
         name:
           [address.billingTitle, address.billingName]
@@ -404,11 +430,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
             .join(" ") ||
           `${customerData?.title || ""}. ${customerData?.firstName || ""} ${customerData?.lastName || ""}`,
         phone:
-          customerData?.phoneNumber ||
-          [address.billingPhone1, address.billingPhone2]
-            .filter(Boolean)
-            .join(", ") ||
-          "No phone",
+          rawPhone === "No phone" ? rawPhone : toLocalPhoneFormat(rawPhone),
         buildingType: address.type || "Not specified",
         address: cleaned,
       };
@@ -428,7 +450,9 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
 
       return {
         name: `${customerData.title || ""}. ${customerData.firstName || ""} ${customerData.lastName || ""}`,
-        phone: customerData.phoneNumber || "No phone",
+        phone: customerData.phoneNumber
+          ? toLocalPhoneFormat(customerData.phoneNumber)
+          : "No phone",
         buildingType: customerData.buildingType || "Not specified",
         address: cleanedAddress,
       };

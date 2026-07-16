@@ -379,6 +379,10 @@ const OrderConfimedOTPScreen: React.FC = () => {
   useEffect(() => {
     const handleKeyboardShow = () => {
       setKeyboardVisible(true);
+      // Keep the OTP boxes visible above the keyboard, same pattern as LoginScreen
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 50);
     };
 
     const handleKeyboardHide = () => {
@@ -413,7 +417,11 @@ const OrderConfimedOTPScreen: React.FC = () => {
     >
       <ScrollView
         ref={scrollViewRef}
-        contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
+        contentContainerStyle={{
+          flexGrow: 1,
+          justifyContent: "center",
+          paddingBottom: 250,
+        }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         overScrollMode="never"
@@ -476,6 +484,10 @@ const OrderConfimedOTPScreen: React.FC = () => {
                   value={digit}
                   onChangeText={(text) => handleOtpChange(text, index)}
                   onKeyPress={(e) => handleKeyPress(e, index)}
+                  onFocus={() =>
+                    // Ensure the tapped box scrolls into view above the keyboard
+                    scrollViewRef.current?.scrollToEnd({ animated: true })
+                  }
                   cursorColor="#FFFFFF"
                   selectionColor={digit ? "#FFFFFF" : "#874DDB"}
                 />
@@ -507,53 +519,46 @@ const OrderConfimedOTPScreen: React.FC = () => {
                 </TouchableOpacity>
               </View>
 
-              {/* Verify Button — hidden while keyboard is open */}
-              {!isKeyboardVisible && (
-                <TouchableOpacity
-                  onPress={verifyOTP}
-                  disabled={!isOtpComplete || loading || timer <= 0}
-                  activeOpacity={0.7}
+              {/* Verify Button — always visible now */}
+              <TouchableOpacity
+                onPress={verifyOTP}
+                disabled={!isOtpComplete || loading || timer <= 0}
+                activeOpacity={0.7}
+                style={{
+                  width: "50%",
+                  borderRadius: 30,
+                  backgroundColor: "transparent",
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 8 },
+                  shadowOpacity: 0.25,
+                  shadowRadius: 10,
+                  elevation: 8,
+                }}
+              >
+                <LinearGradient
+                  colors={
+                    !isOtpComplete || loading || timer <= 0
+                      ? ["#A0A0A0", "#808080"]
+                      : ["#6839CF", "#874DDB"]
+                  }
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  className={`h-[50px] items-center justify-center rounded-full ${
+                    !isOtpComplete || loading || timer <= 0 ? "opacity-50" : ""
+                  }`}
                   style={{
-                    width: "50%",
-                    borderRadius: 30,
-                    backgroundColor: "transparent",
                     shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 8 },
-                    shadowOpacity: 0.25,
-                    shadowRadius: 10,
-                    elevation: 8,
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 3.84,
+                    overflow: "hidden",
                   }}
                 >
-                  <LinearGradient
-                    colors={
-                      !isOtpComplete || loading || timer <= 0
-                        ? ["#A0A0A0", "#808080"]
-                        : ["#6839CF", "#874DDB"]
-                    }
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    className={`h-[50px] items-center justify-center rounded-full ${
-                      !isOtpComplete || loading || timer <= 0
-                        ? "opacity-50"
-                        : ""
-                    }`}
-                    style={{
-                      shadowColor: "#000",
-                      shadowOffset: {
-                        width: 0,
-                        height: 2,
-                      },
-                      shadowOpacity: 0.1,
-                      shadowRadius: 3.84,
-                      overflow: "hidden",
-                    }}
-                  >
-                    <Text className="text-center text-white font-bold text-lg">
-                      {loading ? "Verifying..." : "Verify"}
-                    </Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-              )}
+                  <Text className="text-center text-white font-bold text-lg">
+                    {loading ? "Verifying..." : "Verify"}
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
             </View>
           </View>
         </View>

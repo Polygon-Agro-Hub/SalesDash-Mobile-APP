@@ -77,15 +77,12 @@ const OtpSuccesfulScreen: React.FC<OtpSuccesfulScreenProps> = ({
           <View className="items-center mt-24">
             <TouchableOpacity
               onPress={() =>
-                navigation.navigate("Main" as any, {
-                  screen: "ViewCustomerScreen",
-                  params: {
-                    customerId: String(customerId),
-                    id: String(id || ""),
-                    name: name || "",
-                    title: title || "",
-                    number: number || "",
-                  },
+                navigation.navigate("ViewCustomerScreen" as any, {
+                  customerId: String(customerId),
+                  id: String(id || ""),
+                  name: name || "",
+                  title: title || "",
+                  number: number || "",
                 })
               }
               activeOpacity={0.7}

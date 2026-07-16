@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text } from "react-native";
-import { MaterialIcons } from "@expo/vector-icons";
+import { FontAwesome6, MaterialIcons } from "@expo/vector-icons";
 
 interface CityDeliveryStatusProps {
   city: string;
@@ -35,8 +35,8 @@ const CityDeliveryStatus: React.FC<CityDeliveryStatusProps> = ({
           borderColor: "#FFDCB5",
         }}
       >
-        <MaterialIcons
-          name="error-outline"
+        <FontAwesome6
+          name="circle-info"
           size={18}
           color="#DC2626"
           style={{ marginRight: 8 }}
@@ -70,8 +70,8 @@ const CityDeliveryStatus: React.FC<CityDeliveryStatusProps> = ({
           borderColor: "#D2ECE1",
         }}
       >
-        <MaterialIcons
-          name="check-circle"
+        <FontAwesome6
+          name="circle-info"
           size={18}
           color="#059669"
           style={{ marginRight: 8 }}
@@ -104,15 +104,15 @@ const CityDeliveryStatus: React.FC<CityDeliveryStatusProps> = ({
         borderColor: "#FFDCB5",
       }}
     >
-      <MaterialIcons
-        name="error-outline"
+      <FontAwesome6
+        name="circle-info"
         size={18}
-        color="#EA580C"
+        color="#EC6821"
         style={{ marginRight: 8 }}
       />
       <Text
         style={{
-          color: "#9A3412",
+          color: "#EC6821",
           fontSize: 13,
           fontWeight: "600",
           flexShrink: 1,

@@ -80,6 +80,17 @@ type ViewCustomerScreenProps = {
   navigation: ViewCustomerScreenNavigationProp;
 };
 
+// Maps a raw backend status value to what should be shown in the UI.
+const getDisplayStatus = (status: string) => {
+  if (status === "Return Received") return "Return";
+  return status;
+};
+
+// Maps a filter chip's label to the actual status value the backend expects.
+const FILTER_TO_BACKEND_STATUS: Record<string, string> = {
+  Return: "Return Received",
+};
+
 const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   route,
   navigation,
@@ -269,8 +280,13 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
 
       setError(null);
 
+      // Translate the chip's label (e.g. "Return") into the value the
+      // backend actually stores (e.g. "Return Received") before querying.
+      const backendStatus =
+        FILTER_TO_BACKEND_STATUS[statusFilter] || statusFilter;
+
       const response = await axios.get<OrdersResponse>(
-        `${environment.API_BASE_URL}api/orders/get-order-bycustomerId/${id}?page=${page}&limit=${ORDERS_PER_PAGE}&status=${encodeURIComponent(statusFilter)}`,
+        `${environment.API_BASE_URL}api/orders/get-order-bycustomerId/${id}?page=${page}&limit=${ORDERS_PER_PAGE}&status=${encodeURIComponent(backendStatus)}`,
       );
 
       if (response.data.success) {
@@ -328,7 +344,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
         (order) =>
           order.InvNo &&
           order.InvNo.toLowerCase().includes(searchText.toLowerCase()) &&
-          (selectedFilter === "All" || order.status === selectedFilter),
+          (selectedFilter === "All" ||
+            getDisplayStatus(order.status) === selectedFilter),
       );
 
       if (results.length === 0) {
@@ -859,6 +876,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 renderItem={({ item }) => {
                   const isPaymentPending =
                     Number(item.isPaid) === 0 && item.paymentMethod === "Card";
+                  const displayStatus = getDisplayStatus(item.status);
 
                   return (
                     <TouchableOpacity
@@ -909,24 +927,24 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                               paddingHorizontal: 12,
                               borderRadius: 12,
                               backgroundColor:
-                                item.status === "Ordered"
+                                displayStatus === "Ordered"
                                   ? "#F5FF85"
-                                  : item.status === "Processing"
+                                  : displayStatus === "Processing"
                                     ? "#CFE1FF"
-                                    : item.status === "Out For Delivery" ||
-                                        item.status === "Out for Delivery"
+                                    : displayStatus === "Out For Delivery" ||
+                                        displayStatus === "Out for Delivery"
                                       ? "#FCD4FF"
-                                      : item.status === "Collected"
+                                      : displayStatus === "Collected"
                                         ? "#F8FEA5"
-                                        : item.status === "On the way"
+                                        : displayStatus === "On the way"
                                           ? "#FFEDCF"
-                                          : item.status === "Hold"
+                                          : displayStatus === "Hold"
                                             ? "#FFEDCF"
-                                            : item.status === "Delivered"
+                                            : displayStatus === "Delivered"
                                               ? "#BBFFC6"
-                                              : item.status === "Cancelled"
+                                              : displayStatus === "Cancelled"
                                                 ? "#DFDFDF"
-                                                : item.status === "Return"
+                                                : displayStatus === "Return"
                                                   ? "#FFDCDA"
                                                   : "#EAEAEA",
                               alignItems: "center",
@@ -938,29 +956,29 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                                 fontSize: 11,
                                 fontWeight: "bold",
                                 color:
-                                  item.status === "Ordered"
+                                  displayStatus === "Ordered"
                                     ? "#878216"
-                                    : item.status === "Processing"
+                                    : displayStatus === "Processing"
                                       ? "#3B82F6"
-                                      : item.status === "Out For Delivery" ||
-                                          item.status === "Out for Delivery"
+                                      : displayStatus === "Out For Delivery" ||
+                                          displayStatus === "Out for Delivery"
                                         ? "#80118A"
-                                        : item.status === "Collected"
+                                        : displayStatus === "Collected"
                                           ? "#7E8700"
-                                          : item.status === "On the way"
+                                          : displayStatus === "On the way"
                                             ? "#D17A00"
-                                            : item.status === "Hold"
+                                            : displayStatus === "Hold"
                                               ? "#D17A00"
-                                              : item.status === "Delivered"
+                                              : displayStatus === "Delivered"
                                                 ? "#308233"
-                                                : item.status === "Cancelled"
+                                                : displayStatus === "Cancelled"
                                                   ? "#5C5C5C"
-                                                  : item.status === "Return"
+                                                  : displayStatus === "Return"
                                                     ? "#FF1100"
                                                     : "#393939",
                               }}
                             >
-                              {item.status}
+                              {displayStatus}
                             </Text>
                           </View>
                         </View>

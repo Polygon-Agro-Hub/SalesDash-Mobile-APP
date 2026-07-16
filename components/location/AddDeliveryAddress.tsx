@@ -85,6 +85,10 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
   const [filteredCities, setFilteredCities] = useState<
     { label: string; value: string }[]
   >([]);
+  // NEW: tracks whether the city list fetch has completed, so we don't
+  // treat "no cities loaded yet" as "city is undeliverable" and block
+  // the Submit button prematurely on first render.
+  const [citiesLoading, setCitiesLoading] = useState(true);
 
 
   const [canEditNearestCity, setCanEditNearestCity] = useState(false);
@@ -122,6 +126,16 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
   const isCityKnown = nearestCity.trim().length > 0 && !!matchedCity;
   const isCityDeliverable = isCityKnown && matchedCity!.deliverable;
 
+  // NEW: true exactly when the "City Not Found" / "Delivery Not Available"
+  // banner in CityDeliveryStatus would be showing for the nearest-city
+  // field — i.e. the city field is editable, the city list has finished
+  // loading, a city has been entered/selected, and it isn't deliverable.
+  const cityBlocksSubmit =
+    canEditNearestCity &&
+    !citiesLoading &&
+    nearestCity.trim().length > 0 &&
+    !isCityDeliverable;
+
   const capitalizeWords = (text: string) =>
     text.replace(/\b\w/g, (char) => char.toUpperCase());
 
@@ -146,6 +160,10 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
       }
     } catch (error) {
       console.error("City fetch error:", error);
+    } finally {
+      // NEW: mark the list as settled whether the fetch succeeded or
+      // failed, so cityBlocksSubmit reflects real data, not a loading gap.
+      setCitiesLoading(false);
     }
   }, []);
 
@@ -188,8 +206,8 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
       setSaveAddressAs(data.saveAs || "");
       setTitle(data.billingTitle || "Mr.");
       setBillingName(data.billingName || "");
-      setPhoneNumber1(data.billingPhone1 || "");
-      setPhoneNumber2(data.billingPhone2 || "");
+      setPhoneNumber1(formatPhoneNumber(data.billingPhone1 || ""));
+      setPhoneNumber2(formatPhoneNumber(data.billingPhone2 || ""));
       setBuildingType(data.type || addressType || "House");
       setHouseNo(data.houseNo || "");
       setStreetName(data.streetName || "");
@@ -212,6 +230,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
 
   useFocusEffect(
     useCallback(() => {
+      setCitiesLoading(true); // NEW: reset on every focus/refetch
       fetchCity();
       checkDeliveredOrder();
       if (isEditMode) {
@@ -340,11 +359,36 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
     }
   };
 
+  // Formats a phone number for local display, e.g. "0712345678".
+  // Strips non-digits, removes a Sri Lankan country code ("+94"/"94") if
+  // present so it doesn't get stacked with the local "0" prefix, then
+  // caps the result at 10 digits total.
   const formatPhoneNumber = (text: string) => {
-    return text.replace(/[^0-9]/g, "").slice(0, 10);
+    let cleaned = text.replace(/[^0-9]/g, "");
+    if (cleaned.length === 0) return "";
+
+    if (!cleaned.startsWith("0")) {
+      // e.g. "94712345678" (from "+94712345678") -> "712345678"
+      if (cleaned.startsWith("94")) {
+        cleaned = cleaned.slice(2);
+      }
+      cleaned = "0" + cleaned;
+    }
+
+    return cleaned.slice(0, 10);
   };
 
+  const handlePhoneFocus = (value: string, setter: (v: string) => void) => {
+    if (!value) setter("0");
+  };
 
+  const handlePhoneKeyPress = (e: any, value: string) => {
+    const { key } = e.nativeEvent;
+    if (key === "Backspace" && value.length <= 1) {
+      e.preventDefault();
+      return false;
+    }
+  };
 
   const renderNearestCityField = () => (
     <>
@@ -371,13 +415,18 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
             </Text>
           ) : null}
 
-          <CityDeliveryStatus
-            city={nearestCity}
-            filteredCities={[]}
-            isCityKnown={isCityKnown}
-            isCityDeliverable={isCityDeliverable}
-            canEdit={canEditNearestCity}
-          />
+          {/* NEW: only render once the city list has finished loading, so
+              it never briefly flashes "City Not Found" before the real
+              deliverability status is known. */}
+          {!citiesLoading && (
+            <CityDeliveryStatus
+              city={nearestCity}
+              filteredCities={[]}
+              isCityKnown={isCityKnown}
+              isCityDeliverable={isCityDeliverable}
+              canEdit={canEditNearestCity}
+            />
+          )}
         </View>
       ) : (
         <View className="mb-5">
@@ -458,9 +507,12 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
         <TextInput
           value={phoneNumber1}
           onChangeText={(text) => setPhoneNumber1(formatPhoneNumber(text))}
-          placeholder="e.g. 077 XXXX XXX"
+          onFocus={() => handlePhoneFocus(phoneNumber1, setPhoneNumber1)}
+          onKeyPress={(e) => handlePhoneKeyPress(e, phoneNumber1)}
+          placeholder="0771234567"
           placeholderTextColor="#9CA3AF"
           keyboardType="phone-pad"
+          maxLength={10}
           className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
         />
 
@@ -469,9 +521,12 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
         <TextInput
           value={phoneNumber2}
           onChangeText={(text) => setPhoneNumber2(formatPhoneNumber(text))}
-          placeholder="e.g. 077 XXXX XXX"
+          onFocus={() => handlePhoneFocus(phoneNumber2, setPhoneNumber2)}
+          onKeyPress={(e) => handlePhoneKeyPress(e, phoneNumber2)}
+          placeholder="0771234567"
           placeholderTextColor="#9CA3AF"
           keyboardType="phone-pad"
+          maxLength={10}
           className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
         />
 
@@ -628,12 +683,19 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
         <View className="pb-8">
           <TouchableOpacity
             onPress={handleSubmit}
-            disabled={saving}
+            // NEW: disabled while saving, OR while the "City Not Found" /
+            // "Delivery Not Available" banner is currently showing for
+            // the nearest-city field.
+            disabled={saving || cityBlocksSubmit}
             activeOpacity={0.85}
             className="h-[50px] px-8"
           >
             <LinearGradient
-              colors={["#7B3FE4", "#5B2CC9"]}
+              colors={
+                cityBlocksSubmit
+                  ? ["#B9AEDD", "#A99BD6"]
+                  : ["#7B3FE4", "#5B2CC9"]
+              }
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={{
@@ -706,6 +768,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
         searchPlaceholder="Search city..."
         multiSelect={false}
         showSearch={true}
+        noResultsText = "No Results Found"
       />
     </KeyboardAvoidingView>
   );

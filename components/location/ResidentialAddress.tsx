@@ -51,13 +51,11 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
 }) => {
   const { customerId } = route.params || {};
 
-
   const BUILDING_TYPES = [
     { label: "House", value: "House" },
     { label: "Apartment", value: "Apartment" },
   ];
 
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   const [buildingType, setBuildingType] = useState<string>("House");
@@ -69,11 +67,12 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
   const [nearestCity, setNearestCity] = useState("");
   const [nearestCityError, setNearestCityError] = useState("");
   const [canEditNearestCity, setCanEditNearestCity] = useState(false);
-
+  const [citiesLoading, setCitiesLoading] = useState(true);
   const [buildingNo, setBuildingNo] = useState("");
   const [buildingName, setBuildingName] = useState("");
   const [unitNo, setUnitNo] = useState("");
   const [floorNo, setFloorNo] = useState("");
+  const [loading, setLoading] = useState(true);
 
   const [cityItems, setCityItems] = useState<
     { label: string; value: string; deliverable: boolean }[]
@@ -83,13 +82,24 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
   >([]);
   const [cityModalVisible, setCityModalVisible] = useState(false);
 
-
   const matchedCity = cityItems.find(
     (item) =>
       item.label.trim().toLowerCase() === nearestCity.trim().toLowerCase(),
   );
   const isCityKnown = nearestCity.trim().length > 0 && !!matchedCity;
   const isCityDeliverable = isCityKnown && matchedCity!.deliverable;
+
+  // NEW: true exactly when the "City Not Found" / "Delivery Not Available"
+  // banner in CityDeliveryStatus would be showing for the nearest-city field.
+  // Only relevant when the city is actually editable and the list has
+  // finished loading (mirrors the render condition below), and only once
+  // a city has been entered/selected — an empty field is caught separately
+  // by the "required fields" check in handleUpdate.
+  const cityBlocksUpdate =
+    canEditNearestCity &&
+    !citiesLoading &&
+    nearestCity.trim().length > 0 &&
+    !isCityDeliverable;
 
   const capitalizeWords = (text: string) => {
     return text.replace(/\b\w/g, (char) => char.toUpperCase());
@@ -131,6 +141,10 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
       }
     } catch (error) {
       console.error("City fetch error:", error);
+    } finally {
+      // Always mark the city list as "settled", success or failure,
+      // so the status pill never renders on stale/incomplete data.
+      setCitiesLoading(false);
     }
   }, []);
 
@@ -184,6 +198,7 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
     useCallback(() => {
       if (customerId) {
         setLoading(true);
+        setCitiesLoading(true); // reset on every focus/refetch
         resetFormState();
         fetchCustomerData();
         checkDeliveredOrder();
@@ -279,8 +294,6 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
     }
   };
 
-
-
   const renderNearestCityField = () => (
     <>
       <Text className="text-sm mb-2">Nearest City *</Text>
@@ -294,7 +307,9 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
             }}
             className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] flex-row items-center justify-between"
           >
-            <Text style={{ color: nearestCity ? "black" : "#9CA3AF", fontSize: 15 }}>
+            <Text
+              style={{ color: nearestCity ? "black" : "#9CA3AF", fontSize: 15 }}
+            >
               {nearestCity || "Select Nearest City"}
             </Text>
             <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
@@ -306,13 +321,18 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
             </Text>
           ) : null}
 
-          <CityDeliveryStatus
-            city={nearestCity}
-            filteredCities={[]}
-            isCityKnown={isCityKnown}
-            isCityDeliverable={isCityDeliverable}
-            canEdit={canEditNearestCity}
-          />
+          {/* Only render the delivery status once the city list has
+              actually finished loading, so it never briefly shows
+              "City Not Found" before flipping to "Great News". */}
+          {!citiesLoading && (
+            <CityDeliveryStatus
+              city={nearestCity}
+              filteredCities={[]}
+              isCityKnown={isCityKnown}
+              isCityDeliverable={isCityDeliverable}
+              canEdit={canEditNearestCity}
+            />
+          )}
         </View>
       ) : (
         <View className="mb-5">
@@ -395,8 +415,6 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
         )}
 
         {/* ==================== APARTMENT FIELDS ==================== */}
-        {/* Mirrors dashuserapartment: buildingNo, buildingName, unitNo,
-            floorNo, houseNo, streetName */}
         {buildingType === "Apartment" && (
           <>
             <Text className="text-sm mb-2">Apartment / Building No *</Text>
@@ -467,11 +485,18 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
         <View className="px-4 pb-8 pt-5">
           <TouchableOpacity
             onPress={handleUpdate}
-            disabled={saving}
+            // NEW: disabled while saving, OR while the "City Not Found" /
+            // "Delivery Not Available" banner is currently showing for
+            // the nearest-city field.
+            disabled={saving || cityBlocksUpdate}
             activeOpacity={0.85}
           >
             <LinearGradient
-              colors={["#7B3FE4", "#5B2CC9"]}
+              colors={
+                cityBlocksUpdate
+                  ? ["#B9AEDD", "#A99BD6"]
+                  : ["#7B3FE4", "#5B2CC9"]
+              }
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               className="rounded-full py-4 items-center justify-center"
@@ -521,6 +546,7 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
         searchPlaceholder="Search city..."
         multiSelect={false}
         showSearch={true}
+        noResultsText="No Results Found"
       />
     </KeyboardAvoidingView>
   );
