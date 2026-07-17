@@ -60,8 +60,13 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
 
   const [loading, setLoading] = useState(isEditMode);
   const [saving, setSaving] = useState(false);
+  const dataLoaded = useRef(false);
 
   const [saveAddressAs, setSaveAddressAs] = useState("");
+  const [saveAsError, setSaveAsError] = useState("");
+  const [geoLocationError, setGeoLocationError] = useState("");
+  const [addressLocationError, setAddressLocationError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
   const [title, setTitle] = useState("Mr.");
   const [titleModalVisible, setTitleModalVisible] = useState(false);
   const [billingName, setBillingName] = useState("");
@@ -85,11 +90,8 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
   const [filteredCities, setFilteredCities] = useState<
     { label: string; value: string }[]
   >([]);
-  // NEW: tracks whether the city list fetch has completed, so we don't
-  // treat "no cities loaded yet" as "city is undeliverable" and block
-  // the Submit button prematurely on first render.
-  const [citiesLoading, setCitiesLoading] = useState(true);
 
+  const [citiesLoading, setCitiesLoading] = useState(true);
 
   const [canEditNearestCity, setCanEditNearestCity] = useState(false);
 
@@ -126,10 +128,6 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
   const isCityKnown = nearestCity.trim().length > 0 && !!matchedCity;
   const isCityDeliverable = isCityKnown && matchedCity!.deliverable;
 
-  // NEW: true exactly when the "City Not Found" / "Delivery Not Available"
-  // banner in CityDeliveryStatus would be showing for the nearest-city
-  // field — i.e. the city field is editable, the city list has finished
-  // loading, a city has been entered/selected, and it isn't deliverable.
   const cityBlocksSubmit =
     canEditNearestCity &&
     !citiesLoading &&
@@ -161,8 +159,6 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
     } catch (error) {
       console.error("City fetch error:", error);
     } finally {
-      // NEW: mark the list as settled whether the fetch succeeded or
-      // failed, so cityBlocksSubmit reflects real data, not a loading gap.
       setCitiesLoading(false);
     }
   }, []);
@@ -195,6 +191,8 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
 
   const fetchExistingAddress = useCallback(async () => {
     if (!addressId) return;
+    if (dataLoaded.current) return;
+    dataLoaded.current = true;
     try {
       const response = await axios.get(
         `${environment.API_BASE_URL}api/customer/get-saved-address/${addressId}`,
@@ -216,13 +214,15 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
       setBuildingName(data.buildingName || "");
       setUnitNo(data.unitNo || "");
       setFloorNo(data.floorNo || "");
-      if (data.latitude && data.longitude) {
+
+      if (data.latitude != null && data.longitude != null) {
         setLatitude(Number(data.latitude));
         setLongitude(Number(data.longitude));
       }
     } catch (error) {
       console.error("Error fetching saved address:", error);
       Alert.alert("Error", "Failed to load address data.");
+      dataLoaded.current = false;
     } finally {
       setLoading(false);
     }
@@ -230,7 +230,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
 
   useFocusEffect(
     useCallback(() => {
-      setCitiesLoading(true); // NEW: reset on every focus/refetch
+      setCitiesLoading(true);
       fetchCity();
       checkDeliveredOrder();
       if (isEditMode) {
@@ -265,6 +265,11 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
   };
 
   const handleSubmit = async () => {
+    setSaveAsError("");
+    setGeoLocationError("");
+    setAddressLocationError("");
+    setPhoneError("");
+
     if (
       !saveAddressAs.trim() ||
       !billingName.trim() ||
@@ -311,6 +316,17 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
       }
     }
 
+    if (!latitude || !longitude) {
+      setGeoLocationError(
+        "Geo location is required. Please pin your location before submitting.",
+      );
+      Alert.alert(
+        "Geo Location Required",
+        "Please add a geo location before submitting.",
+      );
+      return;
+    }
+
     const payload = {
       customerId,
       saveAs: saveAddressAs,
@@ -350,6 +366,40 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         console.error("Error saving address details:", error.response.data);
+
+        if (error.response.status === 409) {
+          const { errorCode, error: errMsg } = error.response.data || {};
+          if (errorCode === "DUPLICATE_ADDRESS") {
+            setAddressLocationError(
+              errMsg ||
+                "This address location already exists. Please use a different address.",
+            );
+            Alert.alert(
+              "Duplicate Address",
+              errMsg ||
+                "This address already exists for this customer. Please enter a different address.",
+            );
+          } else if (errorCode === "DUPLICATE_PHONE") {
+            setPhoneError(
+              errMsg ||
+                "This phone number is already saved in another address.",
+            );
+            Alert.alert(
+              "Duplicate Phone Number",
+              errMsg ||
+                "This phone number is already saved in another address.",
+            );
+          } else {
+            setSaveAsError(
+              "This name is already used. Please choose a different name.",
+            );
+            Alert.alert(
+              "Duplicate Name",
+              "An address with this name already exists. Please use a different name.",
+            );
+          }
+          return;
+        }
       } else {
         console.error("Error saving address:", error);
       }
@@ -359,16 +409,11 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
     }
   };
 
-  // Formats a phone number for local display, e.g. "0712345678".
-  // Strips non-digits, removes a Sri Lankan country code ("+94"/"94") if
-  // present so it doesn't get stacked with the local "0" prefix, then
-  // caps the result at 10 digits total.
   const formatPhoneNumber = (text: string) => {
     let cleaned = text.replace(/[^0-9]/g, "");
     if (cleaned.length === 0) return "";
 
     if (!cleaned.startsWith("0")) {
-      // e.g. "94712345678" (from "+94712345678") -> "712345678"
       if (cleaned.startsWith("94")) {
         cleaned = cleaned.slice(2);
       }
@@ -403,7 +448,9 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
             }}
             className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] flex-row items-center justify-between"
           >
-            <Text style={{ color: nearestCity ? "black" : "#9CA3AF", fontSize: 15 }}>
+            <Text
+              style={{ color: nearestCity ? "black" : "#9CA3AF", fontSize: 15 }}
+            >
               {nearestCity || "Select Nearest City"}
             </Text>
             <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
@@ -470,11 +517,23 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
         <Text className="text-sm mb-2">Save Address As *</Text>
         <TextInput
           value={saveAddressAs}
-          onChangeText={setSaveAddressAs}
+          onChangeText={(text) => {
+            setSaveAddressAs(text);
+            if (saveAsError) setSaveAsError("");
+          }}
           placeholder="e.g. Home"
           placeholderTextColor="#9CA3AF"
-          className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
+          style={{
+            borderWidth: saveAsError ? 1 : 0,
+            borderColor: saveAsError ? "#DC2626" : "transparent",
+          }}
+          className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-1"
         />
+        {saveAsError ? (
+          <Text className="text-red-500 text-xs pl-4 mb-4">{saveAsError}</Text>
+        ) : (
+          <View className="mb-4" />
+        )}
 
         {/* Title + Billing Name */}
         <View className="flex-row mb-5" style={{ gap: 12 }}>
@@ -506,13 +565,20 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
         <Text className="text-sm mb-2">Phone Number - 1 *</Text>
         <TextInput
           value={phoneNumber1}
-          onChangeText={(text) => setPhoneNumber1(formatPhoneNumber(text))}
+          onChangeText={(text) => {
+            setPhoneNumber1(formatPhoneNumber(text));
+            if (phoneError) setPhoneError("");
+          }}
           onFocus={() => handlePhoneFocus(phoneNumber1, setPhoneNumber1)}
           onKeyPress={(e) => handlePhoneKeyPress(e, phoneNumber1)}
           placeholder="0771234567"
           placeholderTextColor="#9CA3AF"
           keyboardType="phone-pad"
           maxLength={10}
+          style={{
+            borderWidth: phoneError ? 1 : 0,
+            borderColor: phoneError ? "#DC2626" : "transparent",
+          }}
           className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
         />
 
@@ -520,15 +586,27 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
         <Text className="text-sm mb-2">Phone Number - 2</Text>
         <TextInput
           value={phoneNumber2}
-          onChangeText={(text) => setPhoneNumber2(formatPhoneNumber(text))}
+          onChangeText={(text) => {
+            setPhoneNumber2(formatPhoneNumber(text));
+            if (phoneError) setPhoneError("");
+          }}
           onFocus={() => handlePhoneFocus(phoneNumber2, setPhoneNumber2)}
           onKeyPress={(e) => handlePhoneKeyPress(e, phoneNumber2)}
           placeholder="0771234567"
           placeholderTextColor="#9CA3AF"
           keyboardType="phone-pad"
           maxLength={10}
-          className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
+          style={{
+            borderWidth: phoneError ? 1 : 0,
+            borderColor: phoneError ? "#DC2626" : "transparent",
+          }}
+          className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-1"
         />
+        {phoneError ? (
+          <Text className="text-red-500 text-xs pl-4 mb-4">{phoneError}</Text>
+        ) : (
+          <View className="mb-4" />
+        )}
 
         {/* Building Type */}
         <Text className="text-sm mb-2">Building Type *</Text>
@@ -546,62 +624,111 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
             <Text className="text-sm mb-2">Apartment / Building No *</Text>
             <TextInput
               value={buildingNo}
-              onChangeText={(text) => setBuildingNo(capitalizeWords(text))}
+              onChangeText={(text) => {
+                setBuildingNo(capitalizeWords(text));
+                if (addressLocationError) setAddressLocationError("");
+              }}
               placeholder="Apartment / Building No"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
+              style={{
+                borderWidth: addressLocationError ? 1 : 0,
+                borderColor: addressLocationError ? "#DC2626" : "transparent",
+              }}
               className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
             />
 
             <Text className="text-sm mb-2">Apartment / Building Name *</Text>
             <TextInput
               value={buildingName}
-              onChangeText={(text) => setBuildingName(capitalizeWords(text))}
+              onChangeText={(text) => {
+                setBuildingName(capitalizeWords(text));
+                if (addressLocationError) setAddressLocationError("");
+              }}
               placeholder="Apartment / Building Name"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
+              style={{
+                borderWidth: addressLocationError ? 1 : 0,
+                borderColor: addressLocationError ? "#DC2626" : "transparent",
+              }}
               className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
             />
 
             <Text className="text-sm mb-2">Flat / Unit Number *</Text>
             <TextInput
               value={unitNo}
-              onChangeText={(text) => setUnitNo(capitalizeWords(text))}
+              onChangeText={(text) => {
+                setUnitNo(capitalizeWords(text));
+                if (addressLocationError) setAddressLocationError("");
+              }}
               placeholder="e.g. Building B"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
+              style={{
+                borderWidth: addressLocationError ? 1 : 0,
+                borderColor: addressLocationError ? "#DC2626" : "transparent",
+              }}
               className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
             />
 
             <Text className="text-sm mb-2">Floor Number *</Text>
             <TextInput
               value={floorNo}
-              onChangeText={(text) => setFloorNo(capitalizeWords(text))}
+              onChangeText={(text) => {
+                setFloorNo(capitalizeWords(text));
+                if (addressLocationError) setAddressLocationError("");
+              }}
               placeholder="e.g. 3rd Floor"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
+              style={{
+                borderWidth: addressLocationError ? 1 : 0,
+                borderColor: addressLocationError ? "#DC2626" : "transparent",
+              }}
               className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
             />
 
             <Text className="text-sm mb-2">Building / House No *</Text>
             <TextInput
               value={houseNo}
-              onChangeText={(text) => setHouseNo(capitalizeWords(text))}
+              onChangeText={(text) => {
+                setHouseNo(capitalizeWords(text));
+                if (addressLocationError) setAddressLocationError("");
+              }}
               placeholder="e.g. 14"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
+              style={{
+                borderWidth: addressLocationError ? 1 : 0,
+                borderColor: addressLocationError ? "#DC2626" : "transparent",
+              }}
               className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
             />
 
             <Text className="text-sm mb-2">Street Name *</Text>
             <TextInput
               value={streetName}
-              onChangeText={(text) => setStreetName(capitalizeWords(text))}
+              onChangeText={(text) => {
+                setStreetName(capitalizeWords(text));
+                if (addressLocationError) setAddressLocationError("");
+              }}
               placeholder="Street Name"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
+              style={{
+                borderWidth: addressLocationError ? 1 : 0,
+                borderColor: addressLocationError ? "#DC2626" : "transparent",
+              }}
               className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
             />
+
+            {/* Duplicate address location error */}
+            {addressLocationError ? (
+              <Text className="text-red-500 text-xs pl-1 -mt-3 mb-4">
+                {addressLocationError}
+              </Text>
+            ) : null}
 
             {renderNearestCityField()}
           </>
@@ -613,22 +740,43 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
             <Text className="text-sm mb-2">Building / House No *</Text>
             <TextInput
               value={houseNo}
-              onChangeText={(text) => setHouseNo(capitalizeWords(text))}
+              onChangeText={(text) => {
+                setHouseNo(capitalizeWords(text));
+                if (addressLocationError) setAddressLocationError("");
+              }}
               placeholder="e.g. 14/B"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
+              style={{
+                borderWidth: addressLocationError ? 1 : 0,
+                borderColor: addressLocationError ? "#DC2626" : "transparent",
+              }}
               className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
             />
 
             <Text className="text-sm mb-2">Street Name *</Text>
             <TextInput
               value={streetName}
-              onChangeText={(text) => setStreetName(capitalizeWords(text))}
+              onChangeText={(text) => {
+                setStreetName(capitalizeWords(text));
+                if (addressLocationError) setAddressLocationError("");
+              }}
               placeholder="Street Name"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
+              style={{
+                borderWidth: addressLocationError ? 1 : 0,
+                borderColor: addressLocationError ? "#DC2626" : "transparent",
+              }}
               className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
             />
+
+            {/* Duplicate address location error */}
+            {addressLocationError ? (
+              <Text className="text-red-500 text-xs pl-1 -mt-3 mb-4">
+                {addressLocationError}
+              </Text>
+            ) : null}
 
             {renderNearestCityField()}
           </>
@@ -636,24 +784,42 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
 
         {/* Geo Location */}
         <TouchableOpacity
-          onPress={handlePickLocation}
+          onPress={() => {
+            setGeoLocationError("");
+            handlePickLocation();
+          }}
           activeOpacity={0.8}
-          className="self-center flex-row items-center border rounded-full px-8 py-3 mb-2"
-          style={{ borderColor: "#6C3CD1", maxWidth: "100%" }}
+          className="self-center flex-row items-center border rounded-full px-8 py-3 mb-1"
+          style={{
+            borderColor: geoLocationError ? "#DC2626" : "#6C3CD1",
+            maxWidth: "100%",
+          }}
         >
           <FontAwesome6
             name={"location-crosshairs"}
             size={16}
-            color="#7B3FE4"
+            color={geoLocationError ? "#DC2626" : "#7B3FE4"}
           />
           <Text
             className="ml-2 text-[13px] font-medium"
             numberOfLines={1}
-            style={{ color: "#7B3FE4", maxWidth: 220 }}
+            style={{
+              color: geoLocationError ? "#DC2626" : "#7B3FE4",
+              maxWidth: 220,
+            }}
           >
-            Geo Location
+            {latitude && longitude
+              ? "Update Geo Location"
+              : "Add Geo Location "}
           </Text>
         </TouchableOpacity>
+
+        {/* Geo location error message */}
+        {geoLocationError ? (
+          <Text className="text-red-500 text-xs text-center mb-2">
+            {geoLocationError}
+          </Text>
+        ) : null}
 
         {latitude && longitude ? (
           <TouchableOpacity
@@ -676,16 +842,13 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
             </Text>
           </TouchableOpacity>
         ) : (
-          <View className="mb-6" />
+          <View className="mb-4" />
         )}
 
         {/* Submit */}
         <View className="pb-8">
           <TouchableOpacity
             onPress={handleSubmit}
-            // NEW: disabled while saving, OR while the "City Not Found" /
-            // "Delivery Not Available" banner is currently showing for
-            // the nearest-city field.
             disabled={saving || cityBlocksSubmit}
             activeOpacity={0.85}
             className="h-[50px] px-8"
@@ -768,7 +931,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
         searchPlaceholder="Search city..."
         multiSelect={false}
         showSearch={true}
-        noResultsText = "No Results Found"
+        noResultsText="No Results Found"
       />
     </KeyboardAvoidingView>
   );

@@ -70,8 +70,6 @@ const OtpScreen: React.FC = () => {
     }
   };
 
-  console.log(phoneNumber)
-
   const verifyOTP = async () => {
     const otpCode = otp.join("");
 
@@ -112,7 +110,11 @@ const OtpScreen: React.FC = () => {
       };
 
       let statusCode;
-      if (environment.isDevelopment && Platform.OS === "android" && otpCode === "05578") {
+      if (
+        environment.isDevelopment &&
+        Platform.OS === "android" &&
+        otpCode === "05578"
+      ) {
         statusCode = "1000";
       } else {
         const otpResponse = await axios.post(otpVerificationUrl, otpBody, {
@@ -169,6 +171,8 @@ const OtpScreen: React.FC = () => {
         });
 
         if (saveResponse.status === 200 || saveResponse.status === 201) {
+          const tableId = saveResponse.data?.id || id;
+          // Human-facing generated id, e.g. "CUS-00386"
           const customerId = saveResponse.data?.customerId || id;
 
           if (customerId) {
@@ -185,7 +189,7 @@ const OtpScreen: React.FC = () => {
                 text: "OK",
                 onPress: () => {
                   navigation.navigate("ViewCustomerScreen" as any, {
-                    id,
+                    id: tableId,
                     customerId: customerId,
                     name: `${customerData.firstName || ""} ${customerData.lastName || ""}`.trim(),
                     title: customerData.title || "",
@@ -196,8 +200,8 @@ const OtpScreen: React.FC = () => {
             ]);
           } else {
             navigation.navigate("OtpSuccesfulScreen" as any, {
+              id: tableId,
               customerId: customerId,
-              id: id,
               name: `${parsedData.firstName || ""} ${parsedData.lastName || ""}`.trim(),
               title: parsedData.title || "",
               number: parsedData.phoneNumber || phoneNumber,
@@ -253,7 +257,7 @@ const OtpScreen: React.FC = () => {
       };
 
       const response = await axios.post(apiUrl, body, { headers });
-      console.log("📲 [OTP RESEND] Response Data:", response.data);
+      console.log("[OTP RESEND] Response Data:", response.data);
 
       if (response.data.referenceId) {
         await AsyncStorage.setItem("referenceId", response.data.referenceId);
