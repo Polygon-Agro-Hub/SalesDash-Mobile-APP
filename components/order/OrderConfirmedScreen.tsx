@@ -83,6 +83,10 @@ interface OrderStatus {
   invoiceNumber: string;
   reportStatus: string | null;
   status: string;
+  paymentMethod?: string;
+  isPaid?: number;
+  creditPaid?: string | number;
+  moneyPaid?: string | number;
 }
 interface Order {
   additionalItems: AdditionalItem[];
@@ -90,6 +94,7 @@ interface Order {
   customerInfo: CustomerInfo;
   discount: string;
   deliveryCharge: string;
+  delivaryMethod?: string;
   fullAddress: string;
   fullTotal: string;
   isPackage: number;
@@ -159,7 +164,8 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
 
   useEffect(() => {
     let isMounted = true;
-    let timeoutId = null;
+    let orderLoaded = false;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
     const fetchOrderDetails = async () => {
       try {
@@ -171,6 +177,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         if (!isMounted) return;
 
         if (response.data.success) {
+          orderLoaded = true;
           setOrder(response.data.data);
         } else {
           setError("Failed to load order details");
@@ -188,7 +195,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
     fetchOrderDetails();
 
     timeoutId = setTimeout(() => {
-      if (isMounted && !order) {
+      if (isMounted && !orderLoaded) {
         fetchOrderDetails();
       }
     }, 10000);
@@ -317,6 +324,101 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
               : item.discount || "0";
           return sum + parseFloat(discount);
         }, 0) || 0;
+
+      const orderPaymentMethod = order?.orderStatus?.paymentMethod;
+      const orderIsPaid = Number(order?.orderStatus?.isPaid);
+      const orderDeliveryMethod = order?.delivaryMethod;
+
+      const paymentMethodLower = orderPaymentMethod?.toLowerCase();
+      const deliveryMethodLower = orderDeliveryMethod?.toLowerCase();
+
+      let paymentStatusHtml = "";
+
+      if (paymentMethodLower === "card" && orderIsPaid === 1) {
+        const creditPaid = parseFloat(
+          order?.orderStatus?.creditPaid?.toString() || "0",
+        );
+        const moneyPaid = parseFloat(
+          order?.orderStatus?.moneyPaid?.toString() || "0",
+        );
+
+        const creditRowHtml =
+          creditPaid > 0
+            ? `
+          <div style="display: flex; justify-content: space-between; margin-right: 20px; margin-top: 10px;">
+            <p style="color: #16A34A; font-weight: 600; font-size: 14px;">Credit Balance Used</p>
+            <p style="color: #16A34A; font-weight: 600; font-size: 14px;">Rs. ${creditPaid
+              .toFixed(2)
+              .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
+          </div>
+        `
+            : "";
+
+        const onlineRowHtml =
+          moneyPaid > 0
+            ? `
+          <div style="display: flex; justify-content: space-between; margin-right: 20px; margin-top: ${
+            creditPaid > 0 ? "2px" : "10px"
+          };">
+            <p style="color: #16A34A; font-weight: 600; font-size: 14px;">Online Transferred Amount</p>
+            <p style="color: #16A34A; font-weight: 600; font-size: 14px;">Rs. ${moneyPaid
+              .toFixed(2)
+              .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
+          </div>
+        `
+            : "";
+
+        paymentStatusHtml = `
+          ${creditRowHtml}
+          ${onlineRowHtml}
+        `;
+      } else if (paymentMethodLower === "cash" && orderIsPaid === 0) {
+        const creditPaid = parseFloat(
+          order?.orderStatus?.creditPaid?.toString() || "0",
+        );
+        const fullTotalAmount = parseFloat(order?.fullTotal?.toString() || "0");
+        const cashPendingAmount = fullTotalAmount - creditPaid;
+
+        const label =
+          deliveryMethodLower === "pickup"
+            ? "Cash On Pickup (Pending)"
+            : "Cash On Delivery (Pending)";
+
+        const warningHtml =
+          deliveryMethodLower === "pickup"
+            ? ""
+            : `
+          <p style="font-size: 11px; color: #666666; margin-top: 5px; margin-right: 20px; line-height: 15px;">
+            <span style="display: inline-block; background-color: black; color: white; border-radius: 50%; width: 14px; height: 14px; text-align: center; font-size: 10px; line-height: 14px; font-weight: bold; margin-right: 5px; vertical-align: middle;">i</span>
+            <span style="vertical-align: middle;">The delivery charges might be different on the day of delivery. Your Grand Total might be changed then.</span>
+          </p>
+        `;
+
+        const creditRowHtml =
+          creditPaid > 0
+            ? `
+          <div style="display: flex; justify-content: space-between; margin-right: 20px; margin-top: 10px;">
+            <p style="color: #16A34A; font-weight: 600; font-size: 14px;">Credit Balance Used</p>
+            <p style="color: #16A34A; font-weight: 600; font-size: 14px;">Rs. ${creditPaid
+              .toFixed(2)
+              .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
+          </div>
+        `
+            : "";
+
+        paymentStatusHtml = `
+          ${creditRowHtml}
+          <div style="display: flex; justify-content: space-between; margin-right: 20px; margin-top: ${
+            creditPaid > 0 ? "2px" : "10px"
+          };">
+            <p style="color: #EA9A3E; font-weight: 600; font-size: 14px;">${label}</p>
+            <p style="color: #EA9A3E; font-weight: 600; font-size: 14px;">Rs. ${cashPendingAmount
+              .toFixed(2)
+              .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
+          </div>
+          ${warningHtml}
+        `;
+      }
 
       let packageDetailsRows = "";
       if (
@@ -538,7 +640,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
             <p style="font-weight: 550; font-size: 16px">Rs. ${totalAmount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
             <div class="section" style="margin-top: 30px">
               <p class="bold">Payment Method :</p>
-              <p class="headerp">Cash On Delivery</p>
+              <p class="headerp">${paymentMethodLower === "card" ? "Card Payment" : "Cash On Delivery"}</p>
             </div>
           </div>
         </div>
@@ -565,7 +667,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         >
           <div>
             <p class="bold">Delivery Method :</p>
-            <p class="headerp">Home Delivery</p>
+             <p class="headerp">${deliveryMethodLower?.toLowerCase() === "pickup" ? "Store Pickup" : "Home Delivery"}</p>
           </div>
           <div style="margin-right: 64px">
             <p class="bold">Scheduled Date :</p>
@@ -693,6 +795,9 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         <p>Grand Total</p>
         <p>Rs. ${totalAmount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
       </div>
+
+      <!-- Payment Status Section (dynamic: Online Transferred / Credit Balance Used / Cash On Delivery / Cash On Pickup) -->
+      ${paymentStatusHtml}
 
       <!-- Remarks Section -->
       <div class="section">
