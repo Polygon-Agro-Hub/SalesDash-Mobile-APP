@@ -80,13 +80,11 @@ type ViewCustomerScreenProps = {
   navigation: ViewCustomerScreenNavigationProp;
 };
 
-// Maps a raw backend status value to what should be shown in the UI.
 const getDisplayStatus = (status: string) => {
   if (status === "Return Received") return "Return";
   return status;
 };
 
-// Maps a filter chip's label to the actual status value the backend expects.
 const FILTER_TO_BACKEND_STATUS: Record<string, string> = {
   Return: "Return Received",
 };
@@ -280,8 +278,6 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
 
       setError(null);
 
-      // Translate the chip's label (e.g. "Return") into the value the
-      // backend actually stores (e.g. "Return Received") before querying.
       const backendStatus =
         FILTER_TO_BACKEND_STATUS[statusFilter] || statusFilter;
 
@@ -507,6 +503,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                   customerId,
                   name: customerName,
                   title: customerTitle,
+                  phone: customerNumber,
                 })
               }
               style={{ marginTop: 8 }}

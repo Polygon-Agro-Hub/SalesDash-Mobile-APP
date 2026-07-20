@@ -172,7 +172,7 @@ const OtpScreen: React.FC = () => {
 
         if (saveResponse.status === 200 || saveResponse.status === 201) {
           const tableId = saveResponse.data?.id || id;
-          // Human-facing generated id, e.g. "CUS-00386"
+
           const customerId = saveResponse.data?.customerId || id;
 
           if (customerId) {
@@ -453,7 +453,7 @@ const OtpScreen: React.FC = () => {
                   disabled={!isOtpComplete || loading || timer <= 0}
                   activeOpacity={0.7}
                   style={{
-                    width: "50%",
+                    width: "60%",
                     borderRadius: 30,
                     backgroundColor: "transparent",
                     shadowColor: "#000",
@@ -477,13 +477,10 @@ const OtpScreen: React.FC = () => {
                         : ""
                     }`}
                     style={{
-                      shadowColor: "#000",
-                      shadowOffset: {
-                        width: 0,
-                        height: 2,
-                      },
-                      shadowOpacity: 0.1,
-                      shadowRadius: 3.84,
+                      height: 50,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: 30,
                       overflow: "hidden",
                     }}
                   >

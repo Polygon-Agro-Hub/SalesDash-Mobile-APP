@@ -51,6 +51,8 @@ const BUILDING_TYPES = [
   { label: "Apartment", value: "Apartment" },
 ];
 
+const SAVE_ADDRESS_AS_MAX_LENGTH = 30;
+
 const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
   navigation,
   route,
@@ -134,8 +136,10 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
     nearestCity.trim().length > 0 &&
     !isCityDeliverable;
 
+  const stripLeadingSpace = (text: string) => text.replace(/^\s+/, "");
+
   const capitalizeWords = (text: string) =>
-    text.replace(/\b\w/g, (char) => char.toUpperCase());
+    stripLeadingSpace(text).replace(/\b\w/g, (char) => char.toUpperCase());
 
   const fetchCity = useCallback(async () => {
     try {
@@ -201,7 +205,9 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
       const data = response.data?.data;
       if (!data) return;
 
-      setSaveAddressAs(data.saveAs || "");
+      setSaveAddressAs(
+        (data.saveAs || "").slice(0, SAVE_ADDRESS_AS_MAX_LENGTH),
+      );
       setTitle(data.billingTitle || "Mr.");
       setBillingName(data.billingName || "");
       setPhoneNumber1(formatPhoneNumber(data.billingPhone1 || ""));
@@ -518,11 +524,14 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
         <TextInput
           value={saveAddressAs}
           onChangeText={(text) => {
-            setSaveAddressAs(text);
+            setSaveAddressAs(
+              stripLeadingSpace(text).slice(0, SAVE_ADDRESS_AS_MAX_LENGTH),
+            );
             if (saveAsError) setSaveAsError("");
           }}
           placeholder="e.g. Home"
           placeholderTextColor="#9CA3AF"
+          maxLength={SAVE_ADDRESS_AS_MAX_LENGTH}
           style={{
             borderWidth: saveAsError ? 1 : 0,
             borderColor: saveAsError ? "#DC2626" : "transparent",
@@ -873,7 +882,9 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
                   ? isEditMode
                     ? "Updating..."
                     : "Submitting..."
-                  : "Submit"}
+                  : isEditMode
+                    ? "Update"
+                    : "Submit"}
               </Text>
             </LinearGradient>
           </TouchableOpacity>

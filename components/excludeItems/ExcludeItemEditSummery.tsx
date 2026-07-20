@@ -49,7 +49,7 @@ const ExcludeItemEditSummery: React.FC<ExcludeListAddProps> = ({
   route,
   navigation,
 }) => {
-  const { id, customerId, name, title } = route.params;
+  const { id, customerId, name, title ,phone} = route.params;
 
   const [excludeCrops, setExcludeCrops] = useState<ExcludeCrop[]>([]);
   const [preferCrops, setPreferCrops] = useState<PreferCrop[]>([]);
@@ -161,15 +161,14 @@ const ExcludeItemEditSummery: React.FC<ExcludeListAddProps> = ({
       : "Loading...";
 
   const handleBackPress = () => {
-    navigation.navigate("Main" as any, {
-      screen: "ViewCustomerScreen",
-      params: {
-        id: id,
-        customerId: customerId,
-        name: name,
-        title: title,
-      },
-    });
+   
+        navigation.navigate("ViewCustomerScreen" as any, {
+          id: id,
+          customerId: customerId,
+          name: name,
+          title: title,
+          number: phone,
+        })
   };
 
   useFocusEffect(
@@ -473,7 +472,7 @@ const ExcludeItemEditSummery: React.FC<ExcludeListAddProps> = ({
         contentContainerStyle={{ flexGrow: 1 }}
       >
         <View className="mx-auto w-full max-w-[500px] px-6">
-          {/* ---------------- Items prefer to include ---------------- */}
+          {/* Items prefer to include */}
           <View
             style={{
               marginTop: 24,
@@ -614,7 +613,7 @@ const ExcludeItemEditSummery: React.FC<ExcludeListAddProps> = ({
             )}
           </View>
 
-          {/* ---------------- Items prefer to exclude ---------------- */}
+          {/* Items prefer to exclude  */}
           <View
             style={{
               marginTop: 24,

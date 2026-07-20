@@ -80,7 +80,6 @@ const CropRow = React.memo(
   }: CropRowProps) => {
     return (
       <View className="flex-row justify-between items-center my-1 px-6 mb-2">
-        {/* Crop image + name */}
         <View className="flex-row items-center gap-4 flex-1">
           <Image
             source={{ uri: item.image }}
@@ -95,7 +94,6 @@ const CropRow = React.memo(
           </Text>
         </View>
 
-        {/* Include / Exclude toggles */}
         <View className="flex-row items-center" style={{ gap: 20 }}>
           <ToggleSwitch
             isOn={isIncluded}
@@ -535,6 +533,10 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
                 value={searchQuery}
                 onFocus={() => setIsKeyboardVisible(true)}
                 onChangeText={handleSearch}
+                style={{
+                  height: 50,
+                  justifyContent: "center",
+                }}
               />
 
               <Ionicons
@@ -562,12 +564,18 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
             <Text className="text-black text-sm font-semibold">Product</Text>
             <View className="flex-row items-center" style={{ gap: 20 }}>
               <View style={{ width: 52, alignItems: "center" }}>
-                <Text className="text-green-600 text-sm font-semibold" style={{ textAlign: "center" }}>
+                <Text
+                  className="text-green-600 text-sm font-semibold"
+                  style={{ textAlign: "center" }}
+                >
                   Include
                 </Text>
               </View>
               <View style={{ width: 52, alignItems: "center" }}>
-                <Text className="text-red-500 text-sm font-semibold" style={{ textAlign: "center" }}>
+                <Text
+                  className="text-red-500 text-sm font-semibold"
+                  style={{ textAlign: "center" }}
+                >
                   Exclude
                 </Text>
               </View>

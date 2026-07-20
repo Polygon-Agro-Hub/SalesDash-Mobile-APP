@@ -89,12 +89,6 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
   const isCityKnown = nearestCity.trim().length > 0 && !!matchedCity;
   const isCityDeliverable = isCityKnown && matchedCity!.deliverable;
 
-  // NEW: true exactly when the "City Not Found" / "Delivery Not Available"
-  // banner in CityDeliveryStatus would be showing for the nearest-city field.
-  // Only relevant when the city is actually editable and the list has
-  // finished loading (mirrors the render condition below), and only once
-  // a city has been entered/selected — an empty field is caught separately
-  // by the "required fields" check in handleUpdate.
   const cityBlocksUpdate =
     canEditNearestCity &&
     !citiesLoading &&
@@ -103,6 +97,10 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
 
   const capitalizeWords = (text: string) => {
     return text.replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+
+  const sanitizeInput = (text: string) => {
+    return capitalizeWords(text.replace(/^\s+/, ""));
   };
 
   const resetFormState = useCallback(() => {
@@ -142,8 +140,6 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
     } catch (error) {
       console.error("City fetch error:", error);
     } finally {
-      // Always mark the city list as "settled", success or failure,
-      // so the status pill never renders on stale/incomplete data.
       setCitiesLoading(false);
     }
   }, []);
@@ -198,7 +194,7 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
     useCallback(() => {
       if (customerId) {
         setLoading(true);
-        setCitiesLoading(true); // reset on every focus/refetch
+        setCitiesLoading(true);
         resetFormState();
         fetchCustomerData();
         checkDeliveredOrder();
@@ -393,7 +389,7 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
             <Text className="text-sm mb-2">Building / House No *</Text>
             <TextInput
               value={houseNo}
-              onChangeText={(text) => setHouseNo(capitalizeWords(text))}
+              onChangeText={(text) => setHouseNo(sanitizeInput(text))}
               placeholder="e.g. 14/B"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
@@ -403,7 +399,7 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
             <Text className="text-sm mb-2">Street Name *</Text>
             <TextInput
               value={streetName}
-              onChangeText={(text) => setStreetName(capitalizeWords(text))}
+              onChangeText={(text) => setStreetName(sanitizeInput(text))}
               placeholder="e.g. Diyagama Road"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
@@ -420,7 +416,7 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
             <Text className="text-sm mb-2">Apartment / Building No *</Text>
             <TextInput
               value={buildingNo}
-              onChangeText={(text) => setBuildingNo(capitalizeWords(text))}
+              onChangeText={(text) => setBuildingNo(sanitizeInput(text))}
               placeholder="e.g. Building B"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
@@ -430,7 +426,7 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
             <Text className="text-sm mb-2">Apartment / Building Name *</Text>
             <TextInput
               value={buildingName}
-              onChangeText={(text) => setBuildingName(capitalizeWords(text))}
+              onChangeText={(text) => setBuildingName(sanitizeInput(text))}
               placeholder="e.g. Elite Residencies"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
@@ -440,7 +436,7 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
             <Text className="text-sm mb-2">Flat / Unit Number *</Text>
             <TextInput
               value={unitNo}
-              onChangeText={(text) => setUnitNo(capitalizeWords(text))}
+              onChangeText={(text) => setUnitNo(sanitizeInput(text))}
               placeholder="e.g. Unit 4B"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
@@ -450,7 +446,7 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
             <Text className="text-sm mb-2">Floor Number *</Text>
             <TextInput
               value={floorNo}
-              onChangeText={(text) => setFloorNo(capitalizeWords(text))}
+              onChangeText={(text) => setFloorNo(sanitizeInput(text))}
               placeholder="e.g. 3rd Floor"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
@@ -460,7 +456,7 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
             <Text className="text-sm mb-2">House No *</Text>
             <TextInput
               value={houseNo}
-              onChangeText={(text) => setHouseNo(capitalizeWords(text))}
+              onChangeText={(text) => setHouseNo(sanitizeInput(text))}
               placeholder="e.g. 14"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
@@ -470,7 +466,7 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
             <Text className="text-sm mb-2">Street Name *</Text>
             <TextInput
               value={streetName}
-              onChangeText={(text) => setStreetName(capitalizeWords(text))}
+              onChangeText={(text) => setStreetName(sanitizeInput(text))}
               placeholder="e.g. Diyagama Road"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
@@ -483,13 +479,37 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
 
         {/* Update Button */}
         <View className="px-4 pb-8 pt-5">
+          {/*
+            FIX (iOS "Update" button: text not centered + corners not
+            fully rounded):
+
+            Relying on NativeWind className props ("rounded-full",
+            "items-center", "justify-center") on <LinearGradient> is
+            inconsistent on iOS — LinearGradient is a native view wrapped
+            by expo-linear-gradient, and its gradient layer does not
+            reliably get masked to the view's border radius purely from a
+            className. It can render with squared-off corners, and the
+            single-child centering can silently fail, leaving the text
+            pinned to the left.
+
+            The fix:
+            1. Move borderRadius + overflow:'hidden' to the outer
+               TouchableOpacity, so iOS actually clips the gradient layer
+               to a pill shape (masksToBounds needs overflow:hidden to
+               kick in on iOS).
+            2. Set alignItems/justifyContent/flexDirection as explicit
+               inline styles directly on the LinearGradient, instead of
+               via className, so the centering is guaranteed to apply.
+          */}
           <TouchableOpacity
             onPress={handleUpdate}
-            // NEW: disabled while saving, OR while the "City Not Found" /
-            // "Delivery Not Available" banner is currently showing for
-            // the nearest-city field.
             disabled={saving || cityBlocksUpdate}
             activeOpacity={0.85}
+            style={{
+              borderRadius: 999,
+              overflow: "hidden",
+              height: 50,
+            }}
           >
             <LinearGradient
               colors={
@@ -499,8 +519,13 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
               }
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              className="rounded-full py-4 items-center justify-center"
-              style={{ borderRadius: 999, paddingVertical: 16 }}
+              style={{
+                borderRadius: 999,
+                paddingVertical: 16,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
             >
               <Text className="text-white text-base font-semibold">
                 {saving ? "Updating..." : "Update"}

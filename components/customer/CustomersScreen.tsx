@@ -25,6 +25,7 @@ import environment from "@/environment/environment";
 import CustomersScreenSkeleton from "./CustomerScreenSkeleton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { FontAwesome, Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type CustomersScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -50,6 +51,10 @@ const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   const CUSTOMERS_PER_PAGE = 10;
+  const insets = useSafeAreaInsets();
+  
+  const topInset = Platform.OS === "ios" ? insets.top : 0;
+
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -300,7 +305,12 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
         {/* Header */}
         <LinearGradient
           colors={["#854BDA", "#6E3DD1"]}
-          className="h-24 shadow-md px-4 pt-4 pb-10 items-center justify-center"
+          className="shadow-md px-4 items-center justify-center"
+          style={{
+            height: hp(12) + topInset,
+            paddingTop: Platform.OS === "ios" ? topInset + 8 : 16,
+            paddingBottom: 24,
+          }}
         >
           <View className="w-full max-w-[500px] items-center">
             <Text
@@ -323,7 +333,24 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
         ) : (
           <View className="flex-1 mx-auto w-full max-w-[500px]">
             {/* Search Bar */}
-            <View className="flex-row items-center bg-[#F5F1FC] h-[50px] px-6 py-0 mb-5 rounded-full mt-[-22px] mx-6 shadow-md ">
+            <View
+              className="flex-row items-center bg-[#F5F1FC] h-[50px] px-6 py-0 mb-5 rounded-full mt-[-6%] mx-6"
+              style={{
+                borderRadius: 999,
+                backgroundColor: "#F5F1FC",
+                ...Platform.select({
+                  ios: {
+                    shadowColor: "#7E7E7E",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.15,
+                    shadowRadius: 6,
+                  },
+                  android: {
+                    elevation: 4,
+                  },
+                }),
+              }}
+            >
               <TextInput
                 value={searchQuery}
                 onChangeText={handleSearch}
@@ -436,56 +463,79 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                         })
                       }
                     >
+                     
                       <View
                         style={{
-                          backgroundColor: "white",
-                          borderRadius: 20,
-                          padding: 16,
                           marginBottom: 12,
                           marginHorizontal: 4,
-                          flexDirection: "row",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          borderWidth: 1,
-                          borderColor: "#E0E0E0",
-
-                          shadowColor: "#7E7E7E",
-                          shadowOffset: { width: 1, height: 1 },
-                          shadowOpacity: 0.25,
-                          shadowRadius: 8,
-
-                          elevation: 3,
+                          borderRadius: 20,
+                          ...Platform.select({
+                            ios: {
+                              backgroundColor: "white",
+                              shadowColor: "#7E7E7E",
+                              shadowOffset: { width: 0, height: 2 },
+                              shadowOpacity: 0.15,
+                              shadowRadius: 6,
+                            },
+                            android: {
+                              backgroundColor: "white",
+                              borderWidth: 1,
+                              borderColor: "#E0E0E0",
+                              elevation: 3,
+                            },
+                          }),
                         }}
                       >
-                        <View className="flex-1 mr-3">
-                          <Text
-                            className="text-gray-700 font-semibold"
-                            numberOfLines={2}
-                            ellipsizeMode="tail"
-                            style={{ fontSize: SCREEN_HEIGHT > 900 ? 20 : 14 }}
-                          >
-                            {item.title}. {item.firstName} {item.lastName}
-                          </Text>
-                          <Text
-                            className="text-gray-500"
-                            style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
-                          >
-                            {formatPhoneNumber(item.phoneNumber)}
-                          </Text>
-                        </View>
                         <View
-                          className="items-end justify-center"
-                          style={{ minWidth: 45 }}
+                          style={{
+                            borderRadius: 20,
+                            ...Platform.select({
+                              ios: {
+                                overflow: "hidden",
+                                borderWidth: 1,
+                                borderColor: "#E0E0E0",
+                                backgroundColor: "white",
+                              },
+                              android: {
+                                backgroundColor: "transparent",
+                              },
+                            }),
+                            padding: 16,
+                            flexDirection: "row",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                          }}
                         >
-                          <Text
-                            className="text-gray-700 font-semibold"
-                            style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 16 }}
+                          <View className="flex-1 mr-3">
+                            <Text
+                              className="text-gray-700 font-semibold"
+                              numberOfLines={2}
+                              ellipsizeMode="tail"
+                              style={{ fontSize: SCREEN_HEIGHT > 900 ? 20 : 14 }}
+                            >
+                              {item.title}. {item.firstName} {item.lastName}
+                            </Text>
+                            <Text
+                              className="text-gray-500"
+                              style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                            >
+                              {formatPhoneNumber(item.phoneNumber)}
+                            </Text>
+                          </View>
+                          <View
+                            className="items-end justify-center"
+                            style={{ minWidth: 45 }}
                           >
-                            #
-                            {item.orderCount < 10
-                              ? `0${item.orderCount}`
-                              : item.orderCount}
-                          </Text>
+                            <Text
+                              className="text-gray-700 font-semibold"
+                              style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 16 }}
+                            >
+                              #
+                              {item.orderCount < 10
+                                ? `0${item.orderCount}`
+                                : item.orderCount}
+                            </Text>
+                          </View>
                         </View>
                       </View>
                     </TouchableOpacity>

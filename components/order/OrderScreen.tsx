@@ -214,6 +214,9 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
       setSelectedUnit("Kg");
       handleProductSearchChange("");
       handlePackageSearchChange("");
+    } else {
+      setProductModalVisible(false);
+      setUnitModalVisible(false);
     }
   }, [showAddModal]);
 
@@ -379,16 +382,11 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     packages,
   ]);
 
-  // ── Restore a previously selected package & additional items ──
-  // When the user leaves this screen mid-flow (e.g. to pick a delivery
-  // address or schedule) and comes back, we don't want their selections
-  // to disappear. This runs once per navigation into the screen and
-  // repopulates state from whatever was passed back in route.params.
   const hasRestoredPreviousSelection = useRef(false);
 
   useEffect(() => {
     if (hasRestoredPreviousSelection.current) return;
-    if (route.params?.isEdit) return; // isEdit has its own restoration above
+    if (route.params?.isEdit) return;
 
     const prevPackageId = route.params?.packageId;
     const prevAdditionalItems = route.params?.rawAdditionalItems;
@@ -410,8 +408,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     }
   }, [route.params?.packageId, route.params?.rawAdditionalItems, packageValue]);
 
-  // Once packages are loaded, match the restored packageId to its full
-  // package record so the package details & footer total render correctly.
   useEffect(() => {
     if (
       !route.params?.isEdit &&
@@ -424,7 +420,12 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         setSelectedPackage(pkg);
       }
     }
-  }, [packages, route.params?.packageId, route.params?.isEdit, selectedPackage]);
+  }, [
+    packages,
+    route.params?.packageId,
+    route.params?.isEdit,
+    selectedPackage,
+  ]);
 
   const handleConfirm = useCallback(async () => {
     setLoading(true);
@@ -460,28 +461,26 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         })),
       };
 
-     
-        navigation.navigate("PackageConfirmation" as any, {
-          orderData,
-          customerid: route.params?.id,
-          isPackage,
-          id,
-          title,
-          name,
-          number,
-          customerscreencustomerid,
-          packageId: packageValue ? parseInt(packageValue) : null,
-          rawPackageItems: items,
-          rawAdditionalItems: additionalItems,
-          total:
-            packageTotalAmount +
-            additionalItems.reduce((sum, item) => sum + item.totalAmount, 0),
-          fullTotal:
-            packageTotalAmount +
-            additionalItems.reduce((sum, item) => sum + item.totalAmount, 0),
-          discount: additionalItems.reduce((sum, item) => sum + item.discount, 0),
-        });
-      
+      navigation.navigate("PackageConfirmation" as any, {
+        orderData,
+        customerid: route.params?.id,
+        isPackage,
+        id,
+        title,
+        name,
+        number,
+        customerscreencustomerid,
+        packageId: packageValue ? parseInt(packageValue) : null,
+        rawPackageItems: items,
+        rawAdditionalItems: additionalItems,
+        total:
+          packageTotalAmount +
+          additionalItems.reduce((sum, item) => sum + item.totalAmount, 0),
+        fullTotal:
+          packageTotalAmount +
+          additionalItems.reduce((sum, item) => sum + item.totalAmount, 0),
+        discount: additionalItems.reduce((sum, item) => sum + item.discount, 0),
+      });
     } catch (error) {
       console.error("Error confirming order:", error);
       Alert.alert("Error", "Failed to process order");
@@ -1417,6 +1416,67 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
             </View>
           </View>
         </View>
+
+        {/* Product Selection Modal (inside Add More Modal for iOS stacking) */}
+        <GlobalSearchModal
+          visible={productModalVisible}
+          onClose={() => setProductModalVisible(false)}
+          title="Select Product"
+          data={filteredProductItems}
+          selectedItems={productValue ? [productValue] : []}
+          onSelect={(items) => {
+            if (items.length > 0) {
+              setProductValue(items[0]);
+              const selectedItem = productItems.find(
+                (p) => p.value === items[0],
+              );
+              if (selectedItem) {
+                setSelectedProduct(selectedItem.label);
+                const discountedPrice = selectedItem.discountedPrice
+                  ? parseFloat(selectedItem.discountedPrice)
+                  : parseFloat(selectedItem.price);
+                setPricePerKg(discountedPrice);
+
+                const unitType =
+                  selectedItem.unitType?.toLowerCase() === "g" ? "g" : "Kg";
+                setSelectedUnit(unitType);
+
+                const startValue = selectedItem.startValue
+                  ? Number(selectedItem.startValue)
+                  : 1;
+                const adjustedStartValue =
+                  unitType === "Kg" ? startValue : startValue * 1000;
+                setQuantity(adjustedStartValue);
+              }
+            }
+            setProductModalVisible(false);
+          }}
+          searchPlaceholder="Search product..."
+          multiSelect={false}
+          isLoading={productDropdownLoading}
+        />
+
+        {/* Unit Selection Modal (inside Add More Modal for iOS stacking) */}
+        <GlobalSearchModal
+          visible={unitModalVisible}
+          onClose={() => setUnitModalVisible(false)}
+          title="Select Unit"
+          data={[
+            { label: "Kg", value: "Kg" },
+            { label: "g", value: "g" },
+          ]}
+          selectedItems={[selectedUnit]}
+          onSelect={(items) => {
+            if (items.length > 0) {
+              handleUnitConversion(items[0]);
+            }
+            setUnitModalVisible(false);
+          }}
+          searchPlaceholder="Search unit..."
+          multiSelect={false}
+          showSearch={false}
+          isLoading={false}
+        />
       </Modal>
 
       {/* Edit Item Modal */}
@@ -1550,64 +1610,10 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         noResultsText="No Packages Found"
       />
 
-      {/* Product Selection Modal */}
-      <GlobalSearchModal
-        visible={productModalVisible}
-        onClose={() => setProductModalVisible(false)}
-        title="Select Product"
-        data={filteredProductItems}
-        selectedItems={productValue ? [productValue] : []}
-        onSelect={(items) => {
-          if (items.length > 0) {
-            setProductValue(items[0]);
-            const selectedItem = productItems.find((p) => p.value === items[0]);
-            if (selectedItem) {
-              setSelectedProduct(selectedItem.label);
-              const discountedPrice = selectedItem.discountedPrice
-                ? parseFloat(selectedItem.discountedPrice)
-                : parseFloat(selectedItem.price);
-              setPricePerKg(discountedPrice);
-
-              const unitType =
-                selectedItem.unitType?.toLowerCase() === "g" ? "g" : "Kg";
-              setSelectedUnit(unitType);
-
-              const startValue = selectedItem.startValue
-                ? Number(selectedItem.startValue)
-                : 1;
-              const adjustedStartValue =
-                unitType === "Kg" ? startValue : startValue * 1000;
-              setQuantity(adjustedStartValue);
-            }
-          }
-          setProductModalVisible(false);
-        }}
-        searchPlaceholder="Search product..."
-        multiSelect={false}
-        isLoading={productDropdownLoading}
-      />
-
-      {/* Unit Selection Modal */}
-      <GlobalSearchModal
-        visible={unitModalVisible}
-        onClose={() => setUnitModalVisible(false)}
-        title="Select Unit"
-        data={[
-          { label: "Kg", value: "Kg" },
-          { label: "g", value: "g" },
-        ]}
-        selectedItems={[selectedUnit]}
-        onSelect={(items) => {
-          if (items.length > 0) {
-            handleUnitConversion(items[0]);
-          }
-          setUnitModalVisible(false);
-        }}
-        searchPlaceholder="Search unit..."
-        multiSelect={false}
-        showSearch={false}
-        isLoading={false}
-      />
+      {/* NOTE: Product Selection Modal and Unit Selection Modal have been moved
+          inside the Add More Modal above. This is required on iOS because nested
+          Modals must be children of their parent Modal to appear correctly on
+          the native modal stack. The duplicates below have been removed. */}
 
       {/* Edit Unit Selection Modal */}
       <GlobalSearchModal

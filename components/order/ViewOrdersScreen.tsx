@@ -33,6 +33,7 @@ import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import { FontAwesome } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type ViewOrdersScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -52,6 +53,7 @@ interface Order {
   weeklyDate: string;
   paymentMethod: string;
   paymentStatus: number;
+  isPaid: number;
   status: string;
   createdAt: string;
   InvNo: string;
@@ -77,6 +79,10 @@ interface OrdersResponse {
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
+
+  const topInset = Platform.OS === "ios" ? insets.top : 0;
+
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -234,7 +240,6 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
     }
 
     return orders.filter((order) => {
-      if (order.status === "Return Received") return false;
       try {
         const matchesFilter = () => {
           if (selectedFilter === "All") return true;
@@ -287,6 +292,11 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
       }
     });
   }, [orders, selectedFilter, searchText]);
+
+  const getDisplayStatus = (status: string) => {
+    if (status === "Return Received") return "Return";
+    return status;
+  };
 
   const formatDate = (dateString: string) => {
     try {
@@ -363,14 +373,22 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
         {/* Header */}
         <LinearGradient
           colors={["#854BDA", "#6E3DD1"]}
-          className="h-24 shadow-md px-4 pt-4 pb-10 items-center justify-center"
+          className="shadow-md px-4 items-center justify-center"
+          style={{
+            height: hp(12) + topInset,
+            paddingTop: Platform.OS === "ios" ? topInset + 8 : 16,
+            paddingBottom: 24,
+          }}
         >
           <View className="w-full max-w-[500px] items-center">
             <Text
               className="text-white font-semibold"
               style={{ fontSize: SCREEN_HEIGHT > 900 ? 20 : 18 }}
             >
-              Total Orders: <Text className="font-bold">{String(totalCount).padStart(2, '0')}</Text>
+              Total Orders:{" "}
+              <Text className="font-bold">
+                {String(totalCount).padStart(2, "0")}
+              </Text>
             </Text>
           </View>
         </LinearGradient>
@@ -409,7 +427,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                   paddingHorizontal: 16,
                   height: 40,
                   marginBottom: 5,
-                  marginTop:14
+                  marginTop: 14,
                 }}
                 className="my-2"
               >
@@ -498,8 +516,9 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                           borderRadius: 12,
                           padding: 16,
                           marginBottom: 16,
-                          borderWidth: 1,
-                          borderColor: "#EAEAEA",
+                          borderWidth: item.isPaid === 0 ? 1.5 : 1,
+                          borderColor:
+                            item.isPaid === 0 ? "#FF4C4C" : "#EAEAEA",
                           shadowColor: "#000",
                           shadowOpacity: 0.12,
                           shadowOffset: { width: 0, height: 8 },
@@ -527,23 +546,31 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                           </Text>
                           <View
                             className={`px-3 py-1 rounded-full ${
-                              item.status === "Ordered"
+                              getDisplayStatus(item.status) === "Ordered"
                                 ? "bg-[#F5FF85]"
-                                : item.status === "Processing"
+                                : getDisplayStatus(item.status) === "Processing"
                                   ? "bg-[#CFE1FF]"
-                                  : item.status === "Out For Delivery"
+                                  : getDisplayStatus(item.status) ===
+                                      "Out For Delivery"
                                     ? "bg-[#FCD4FF]"
-                                    : item.status === "Collected"
+                                    : getDisplayStatus(item.status) ===
+                                        "Collected"
                                       ? "bg-[#F8FEA5]"
-                                      : item.status === "On the way"
+                                      : getDisplayStatus(item.status) ===
+                                          "On the way"
                                         ? "bg-[#FFEDCF]"
-                                        : item.status === "Hold"
+                                        : getDisplayStatus(item.status) ===
+                                            "Hold"
                                           ? "bg-[#FFEDCF]"
-                                          : item.status === "Delivered"
+                                          : getDisplayStatus(item.status) ===
+                                              "Delivered"
                                             ? "bg-[#BBFFC6]"
-                                            : item.status === "Cancelled"
+                                            : getDisplayStatus(item.status) ===
+                                                "Cancelled"
                                               ? "bg-[#DFDFDF]"
-                                              : item.status === "Return"
+                                              : getDisplayStatus(
+                                                    item.status,
+                                                  ) === "Return"
                                                 ? "bg-[#FFDCDA]"
                                                 : "bg-[#EAEAEA]"
                             }`}
@@ -555,32 +582,68 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                                 fontWeight: "600",
                                 textAlign: "center",
                                 color:
-                                  item.status === "Ordered"
+                                  getDisplayStatus(item.status) === "Ordered"
                                     ? "#878216"
-                                    : item.status === "On the way"
+                                    : getDisplayStatus(item.status) ===
+                                        "On the way"
                                       ? "#D17A00"
-                                      : item.status === "Processing"
+                                      : getDisplayStatus(item.status) ===
+                                          "Processing"
                                         ? "#3B82F6"
-                                        : item.status === "Delivered"
+                                        : getDisplayStatus(item.status) ===
+                                            "Delivered"
                                           ? "#308233"
-                                          : item.status === "Collected"
+                                          : getDisplayStatus(item.status) ===
+                                              "Collected"
                                             ? "#7E8700"
-                                            : item.status === "Hold"
+                                            : getDisplayStatus(item.status) ===
+                                                "Hold"
                                               ? "#D17A00"
-                                              : item.status === "Cancelled"
+                                              : getDisplayStatus(
+                                                    item.status,
+                                                  ) === "Cancelled"
                                                 ? "#5C5C5C"
-                                                : item.status === "Return"
+                                                : getDisplayStatus(
+                                                      item.status,
+                                                    ) === "Return"
                                                   ? "#FF1100"
-                                                  : item.status ===
-                                                      "Out For Delivery"
+                                                  : getDisplayStatus(
+                                                        item.status,
+                                                      ) === "Out For Delivery"
                                                     ? "#80118A"
                                                     : "#393939",
                               }}
                             >
-                              {item.status}
+                              {getDisplayStatus(item.status)}
                             </Text>
                           </View>
                         </View>
+
+                        {item.isPaid === 0 && (
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              marginTop: 6,
+                            }}
+                          >
+                            <FontAwesome
+                              name="exclamation-circle"
+                              size={14}
+                              color="#FF4C4C"
+                              style={{ marginRight: 6 }}
+                            />
+                            <Text
+                              style={{
+                                fontSize: SCREEN_HEIGHT > 900 ? 14 : 12,
+                                fontWeight: "600",
+                                color: "#FF4C4C",
+                              }}
+                            >
+                              Payment Pending
+                            </Text>
+                          </View>
+                        )}
 
                         <Text
                           style={{
@@ -620,7 +683,11 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                       </View>
                     </TouchableOpacity>
                   )}
-                  contentContainerStyle={{ paddingBottom: hp(5), paddingTop: 4, paddingHorizontal: 2 }}
+                  contentContainerStyle={{
+                    paddingBottom: hp(5),
+                    paddingTop: 4,
+                    paddingHorizontal: 2,
+                  }}
                 />
               )}
             </View>

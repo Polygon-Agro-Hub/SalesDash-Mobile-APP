@@ -91,15 +91,13 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     Alert.alert(title, message, [{ text: "OK", onPress: onClose }]);
   };
 
-  // Validation regex
-  const phoneRegex = /^07\d{8}$/; // local display format e.g. 0712345678
+  const phoneRegex = /^07\d{8}$/;
   const nameRegex = /^[A-Z][a-z]*$/;
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
   const validatePhoneNumber = (phone: string) => phoneRegex.test(phone);
   const validateName = (name: string) => nameRegex.test(name);
 
-  // Convert a backend/API formatted number (+947XXXXXXXX) to local display format (07XXXXXXXX)
   const toLocalPhoneFormat = (phone: string) => {
     if (!phone) return "";
     if (phone.startsWith("+94")) {
@@ -111,7 +109,6 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     return phone;
   };
 
-  // Convert local display format (07XXXXXXXX) to API format (+947XXXXXXXX)
   const toApiPhoneFormat = (phone: string) => {
     if (!phone) return "";
     if (phone.startsWith("0")) {
@@ -538,12 +535,12 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
           if (response.status === 200) {
             showAlert("Success", "Customer updated successfully.", () => {
               navigation.navigate("ViewCustomerScreen" as any, {
-      id,
-      customerId,
-      name: `${firstName} ${lastName}`,
-      title: selectedCategory,
-      number: phoneNumber,
-    });
+                id,
+                customerId,
+                name: `${firstName} ${lastName}`,
+                title: selectedCategory,
+                number: phoneNumber,
+              });
             });
           }
         } catch (updateError: any) {
@@ -630,13 +627,13 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
- navigation.navigate("ViewCustomerScreen" as any, {
-        id,
-        customerId,
-        name: `${firstName} ${lastName}`,
-        title: selectedCategory,
-        number: phoneNumber,
-      });
+        navigation.navigate("ViewCustomerScreen" as any, {
+          id,
+          customerId,
+          name: `${firstName} ${lastName}`,
+          title: selectedCategory,
+          number: phoneNumber,
+        });
         return true;
       };
 
@@ -853,21 +850,21 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
       keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })}
       style={{ flex: 1, backgroundColor: "white" }}
     >
-   <CustomHeader
-  title="Basic Details"
-  titleColor="#6C3CD1"
-  showBackButton={true}
-  navigation={navigation}
-  onBackPress={() => {
-    navigation.navigate("ViewCustomerScreen" as any, {
-      id,
-      customerId,
-      name: `${firstName} ${lastName}`,
-      title: selectedCategory,
-      number: phoneNumber,
-    });
-  }}
-/>
+      <CustomHeader
+        title="Edit Basic Details"
+        titleColor="#6C3CD1"
+        showBackButton={true}
+        navigation={navigation}
+        onBackPress={() => {
+          navigation.navigate("ViewCustomerScreen" as any, {
+            id,
+            customerId,
+            name: `${firstName} ${lastName}`,
+            title: selectedCategory,
+            number: phoneNumber,
+          });
+        }}
+      />
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <View className="px-6 mx-auto w-full max-w-[500px]">
           {renderBasicDetailsForm()}

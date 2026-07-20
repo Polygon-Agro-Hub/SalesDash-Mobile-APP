@@ -67,6 +67,13 @@ interface Order {
   sheduleTime?: string;
   sheduleType?: string;
   title?: string;
+  customerInfo?: {
+    title?: string;
+    firstName?: string;
+    lastName?: string;
+    phoneNumber?: string;
+    buildingType?: string;
+  };
 }
 
 interface City {
@@ -712,35 +719,37 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
               </Text>
               <Text className="text-black font-medium mb-3">
                 {customerData?.buildingType ||
+                  order.customerInfo?.buildingType ||
                   order.buildingType ||
                   "Not Available"}
               </Text>
               <Text className="text-[#808FA2] font-medium mb-1">Address</Text>
               <Text className="text-black font-medium">
-                {customerData?.buildingDetails
+                {order.fullAddress
+                  ? order.fullAddress
+                  : customerData?.buildingDetails
                   ? (() => {
                       const buildingType =
-                        customerData?.buildingType || order.buildingType;
+                        customerData?.buildingType ||
+                        order.customerInfo?.buildingType ||
+                        order.buildingType;
                       if (buildingType === "Apartment") {
                         return (
                           `${customerData.buildingDetails.houseNo || ""}, ${customerData.buildingDetails.floorNo || ""}, ${customerData.buildingDetails.buildingNo || ""}, ${customerData.buildingDetails.buildingName || ""}, ${customerData.buildingDetails.unitNo || ""}, ${customerData.buildingDetails.streetName || ""}, ${customerData.buildingDetails.city || ""}`
                             .replace(/,\s*,/g, ",")
                             .replace(/^,\s*|,\s*$/g, "")
-                            .trim() ||
-                          order.fullAddress ||
-                          "Not Available"
+                            .trim() || "Not Available"
                         );
                       } else if (buildingType === "House") {
                         return (
                           `${customerData.buildingDetails.houseNo || ""}, ${customerData.buildingDetails.streetName || ""}, ${customerData.buildingDetails.city || ""}`.trim() ||
-                          order.fullAddress ||
                           "Not Available"
                         );
                       } else {
-                        return order.fullAddress || "Not Available";
+                        return "Not Available";
                       }
                     })()
-                  : order.fullAddress || "Not Available"}
+                  : "Not Available"}
               </Text>
             </View>
 

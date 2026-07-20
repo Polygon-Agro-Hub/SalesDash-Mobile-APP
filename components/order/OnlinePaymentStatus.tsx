@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   Platform,
   Image,
   BackHandler,
+  ActivityIndicator,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -34,6 +35,8 @@ interface StepConfig {
   icon: React.ReactNode;
 }
 
+const POLL_INTERVAL_SECONDS = 30;
+
 const OnlinePaymentStatus: React.FC<OnlinePaymentStatusProps> = ({
   navigation,
   route,
@@ -54,6 +57,14 @@ const OnlinePaymentStatus: React.FC<OnlinePaymentStatusProps> = ({
     selectedTimeSlot,
     paymentMethod,
   } = route.params || {};
+
+  const [countdown, setCountdown] = useState<number>(POLL_INTERVAL_SECONDS);
+  const [checking, setChecking] = useState<boolean>(false);
+
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isMountedRef = useRef<boolean>(true);
+  const hasNavigatedRef = useRef<boolean>(false);
 
   const steps: StepConfig[] = [
     {
@@ -81,77 +92,132 @@ const OnlinePaymentStatus: React.FC<OnlinePaymentStatusProps> = ({
     return "pending";
   };
 
-  const handleBackPress = useCallback(async () => {
-    if (!orderId) {
-      navigation.goBack();
-      return true;
+  const clearIntervals = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
-
-    try {
-      const response = await axios.get(
-        `${environment.API_BASE_URL}api/orders/check-payment-status/${orderId}`,
-      );
-
-      const { isPaid, amount, cusId } = response.data.data;
-
-      if (Number(isPaid) === 0) {
-        navigation.navigate("ViewCustomerScreen" as any, {
-          id: customerId,
-          customerId: cusId,
-          name,
-          title,
-          number,
-        });
-      } else {
-        navigation.navigate("Main" as any, {
-          screen: "OrderConfirmedScreen",
-          params: {
-            orderId,
-            isPackage,
-            total,
-            subtotal,
-            discount,
-            paymentMethod,
-            userId: customerId,
-            selectedDate,
-            selectedTimeSlot,
-          },
-        });
-      }
-    } catch (error) {
-      console.error("Error checking payment status on back:", error);
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current);
+      countdownRef.current = null;
     }
+  }, []);
 
-    return true;
+  const navigateToConfirmed = useCallback(() => {
+    if (hasNavigatedRef.current) return;
+    hasNavigatedRef.current = true;
+    clearIntervals();
+    
+    navigation.navigate("Main" as any, {
+      screen: "OrderConfirmedScreen",
+      params: {
+        orderId,
+        isPackage,
+        total,
+        subtotal,
+        discount,
+        paymentMethod,
+        customerId,        
+        selectedDate,
+        selectedTimeSlot,
+      },
+    });
   }, [
     orderId,
-    customerId,
-    name,
-    title,
-    number,
     isPackage,
     total,
     subtotal,
     discount,
     paymentMethod,
+    customerId,
     selectedDate,
     selectedTimeSlot,
     navigation,
+    clearIntervals,
   ]);
+
+  
+  const checkPaymentStatus = useCallback(
+    async () => {
+      if (!orderId || hasNavigatedRef.current) return;
+
+      try {
+        setChecking(true);
+        const response = await axios.get(
+          `${environment.API_BASE_URL}api/orders/check-payment-status/${orderId}`
+        );
+
+        if (!isMountedRef.current || hasNavigatedRef.current) return;
+
+        const { isPaid } = response.data?.data ?? {};
+
+        if (Number(isPaid) === 1) {
+          navigateToConfirmed();
+        }
+        
+      } catch (error) {
+        console.error("Error checking payment status:", error);
+      } finally {
+        if (isMountedRef.current) {
+          setChecking(false);
+        }
+      }
+    },
+    [orderId, navigateToConfirmed]
+  );
+
+  const startPolling = useCallback(() => {
+    clearIntervals();
+    hasNavigatedRef.current = false;
+
+    
+    checkPaymentStatus();
+
+    
+    setCountdown(POLL_INTERVAL_SECONDS);
+
+    
+    countdownRef.current = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) return POLL_INTERVAL_SECONDS;
+        return prev - 1;
+      });
+    }, 1000);
+
+    
+    intervalRef.current = setInterval(() => {
+      setCountdown(POLL_INTERVAL_SECONDS);
+      checkPaymentStatus();
+    }, POLL_INTERVAL_SECONDS * 1000);
+  }, [checkPaymentStatus, clearIntervals]);
 
   useFocusEffect(
     useCallback(() => {
+      isMountedRef.current = true;
+      startPolling();
+
       const backHandler = BackHandler.addEventListener(
         "hardwareBackPress",
         () => {
-          handleBackPress();
+          checkPaymentStatus();
           return true;
-        },
+        }
       );
 
-      return () => backHandler.remove();
-    }, [handleBackPress]),
+      return () => {
+        isMountedRef.current = false;
+        clearIntervals();
+        backHandler.remove();
+      };
+    }, [startPolling, checkPaymentStatus, clearIntervals])
   );
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      clearIntervals();
+    };
+  }, [clearIntervals]);
 
   return (
     <KeyboardAvoidingView
@@ -164,7 +230,7 @@ const OnlinePaymentStatus: React.FC<OnlinePaymentStatusProps> = ({
         titleColor="#6C3CD1"
         showBackButton={true}
         navigation={navigation}
-        onBackPress={handleBackPress}
+        onBackPress={() => checkPaymentStatus()}
       />
 
       <ScrollView
@@ -211,7 +277,7 @@ const OnlinePaymentStatus: React.FC<OnlinePaymentStatusProps> = ({
             borderColor: "#DDD1F8",
             borderRadius: 16,
             padding: 16,
-            marginBottom: 32,
+            marginBottom: 20,
           }}
         >
           <View
@@ -248,6 +314,55 @@ const OnlinePaymentStatus: React.FC<OnlinePaymentStatusProps> = ({
           </View>
         </View>
 
+        {/* Auto-refresh status row */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "#F9FAFB",
+            borderRadius: 12,
+            paddingVertical: 10,
+            paddingHorizontal: 16,
+            marginBottom: 32,
+            borderWidth: 1,
+            borderColor: "#E5E7EB",
+          }}
+        >
+          {checking ? (
+            <>
+              <ActivityIndicator size="small" color="#7B2FF7" />
+              <Text
+                style={{
+                  marginLeft: 8,
+                  fontSize: 12,
+                  color: "#6B7280",
+                  fontWeight: "500",
+                }}
+              >
+                Checking payment status…
+              </Text>
+            </>
+          ) : (
+            <>
+              <Ionicons name="refresh-circle" size={18} color="#7B2FF7" />
+              <Text
+                style={{
+                  marginLeft: 6,
+                  fontSize: 12,
+                  color: "#6B7280",
+                  fontWeight: "500",
+                }}
+              >
+                Next check in{" "}
+                <Text style={{ color: "#7B2FF7", fontWeight: "700" }}>
+                  {countdown}s
+                </Text>
+              </Text>
+            </>
+          )}
+        </View>
+
         {/* Vertical stepper */}
         <View style={{ alignItems: "center" }}>
           {steps.map((step, index) => {
@@ -281,7 +396,6 @@ const OnlinePaymentStatus: React.FC<OnlinePaymentStatusProps> = ({
                   {step.label}
                 </Text>
 
-                {/* Dotted connector to next step */}
                 {index < steps.length - 1 && (
                   <View
                     style={{
