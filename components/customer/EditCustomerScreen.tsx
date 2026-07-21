@@ -53,6 +53,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
 
   const [firstName, setFirstName] = useState<string>("");
   const [lastName, setLastName] = useState<string>("");
+  // phoneNumber is always kept in full API format: +947XXXXXXXX
   const [phoneNumber, setPhoneNumber] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [originalPhoneNumber, setOriginalPhoneNumber] = useState<string>("");
@@ -91,13 +92,26 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     Alert.alert(title, message, [{ text: "OK", onPress: onClose }]);
   };
 
-  // Validation regex
+  // Matches AddCustomersScreen: full +94 format, locked prefix
   const phoneRegex = /^\+947\d{8}$/;
   const nameRegex = /^[A-Z][a-z]*$/;
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
-  const validatePhoneNumber = (phone: string) => phoneRegex.test(phone);
+  const validatePhoneNumber = (phone: string) => {
+    if (phone.length > 12) return false;
+    return phoneRegex.test(phone);
+  };
   const validateName = (name: string) => nameRegex.test(name);
+
+  // Normalizes whatever format the backend stores (0XXXXXXXXX, 94XXXXXXXXX,
+  // or +94XXXXXXXXX) into the single +94XXXXXXXXX format used in this screen.
+  const normalizeToApiFormat = (phone: string) => {
+    if (!phone) return "+94";
+    if (phone.startsWith("+94")) return phone;
+    if (phone.startsWith("94")) return "+" + phone;
+    if (phone.startsWith("0")) return "+94" + phone.slice(1);
+    return phone;
+  };
 
   const validateEmail = (email: string) => {
     if (!emailRegex.test(email)) return false;
@@ -189,7 +203,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
         setPhoneError("Mobile number is required");
       } else if (!validatePhoneNumber(phoneNumber)) {
         setPhoneError(
-          "Please enter a valid Mobile number (format: +947XXXXXXXX)",
+          "Please enter a valid mobile number (format: +947XXXXXXXX)",
         );
       } else {
         setPhoneError("");
@@ -262,9 +276,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
         setSelectedCategory(customerData.title || "");
         setFirstName(customerData.firstName || "");
         setLastName(customerData.lastName || "");
-        setPhoneNumber(customerData.phoneNumber || "");
+        const apiPhone = normalizeToApiFormat(customerData.phoneNumber || "");
+        setPhoneNumber(apiPhone);
+        setOriginalPhoneNumber(apiPhone);
         setEmail(customerData.email || "");
-        setOriginalPhoneNumber(customerData.phoneNumber || "");
         setOriginalEmail(customerData.email || "");
       }
     } catch (error) {
@@ -373,13 +388,14 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     try {
       const phoneNumberChanged = phoneNumber !== originalPhoneNumber;
       const emailChanged = email !== originalEmail;
+      const apiPhoneNumber = phoneNumber;
 
       if (phoneNumberChanged || emailChanged) {
         try {
           await axios.post(
             `${environment.API_BASE_URL}api/customer/check-customer`,
             {
-              phoneNumber,
+              phoneNumber: apiPhoneNumber,
               email: email || null,
               excludeId: id,
             },
@@ -484,7 +500,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
         title: selectedCategory,
         firstName,
         lastName,
-        phoneNumber,
+        phoneNumber: apiPhoneNumber,
         email,
       };
 
@@ -494,7 +510,11 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
           JSON.stringify({ customerData }),
         );
         showAlert("Success", "OTP Sent Successfully.", () => {
-          navigation.navigate("OtpScreenUp", { phoneNumber, id, token });
+          navigation.navigate("OtpScreenUp", {
+            phoneNumber: apiPhoneNumber,
+            id,
+            token,
+          });
         });
       } else {
         try {
@@ -553,6 +573,9 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     }
   };
 
+  // Mirrors AddCustomersScreen: the "+94" prefix is always enforced and
+  // cannot be deleted — if the text no longer starts with +94, it's
+  // reconstructed from whatever digits remain.
   const handlePhoneNumberChange = (text: string) => {
     if (text.startsWith(" ")) return;
 
@@ -561,17 +584,17 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
         setPhoneNumber("+94");
         return;
       }
-      const cleanedText = text.replace(/^\+?94?/, "");
-      setPhoneNumber("+94" + cleanedText.replace(/[^\d]/g, ""));
-      return;
+      text = "+94" + text.replace(/^\+?94?/, "");
     }
 
-    const numberPart = text.slice(3);
-    const cleanedNumber = numberPart.replace(/[^\d]/g, "");
-
-    if (cleanedNumber.length <= 9) {
-      setPhoneNumber("+94" + cleanedNumber);
+    if (text.length > 12) {
+      text = text.substring(0, 12);
     }
+
+    const cleanText =
+      text.substring(0, 3) + text.substring(3).replace(/[^0-9]/g, "");
+
+    setPhoneNumber(cleanText);
   };
 
   const handlePhoneNumberChangeWithErrorClear = (text: string) => {
@@ -586,31 +609,20 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
   };
 
   const handlePhoneNumberFocus = () => {
-    if (phoneNumber === "" || phoneNumber.length < 3) {
+    if (!phoneNumber || phoneNumber.length < 3) {
       setPhoneNumber("+94");
-    }
-  };
-
-  const handlePhoneNumberKeyPress = (e: any) => {
-    const { key } = e.nativeEvent;
-    if (key === "Backspace" && phoneNumber.length <= 3) {
-      e.preventDefault();
-      return false;
     }
   };
 
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        navigation.navigate("Main" as any, {
-          screen: "ViewCustomerScreen",
-          params: {
-            id,
-            customerId,
-            name: `${firstName} ${lastName}`,
-            title: selectedCategory,
-            number: phoneNumber,
-          },
+        navigation.navigate("ViewCustomerScreen" as any, {
+          id,
+          customerId,
+          name: `${firstName} ${lastName}`,
+          title: selectedCategory,
+          number: phoneNumber,
         });
         return true;
       };
@@ -740,8 +752,8 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
             value={phoneNumber}
             onChangeText={handlePhoneNumberChangeWithErrorClear}
             onFocus={handlePhoneNumberFocus}
-            onKeyPress={handlePhoneNumberKeyPress}
             onBlur={() => handleFieldTouch("phoneNumber")}
+            maxLength={12}
           />
           {phoneError ? (
             <Text className="text-red-500 text-xs mt-1 ml-2">{phoneError}</Text>
@@ -828,20 +840,17 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
       style={{ flex: 1, backgroundColor: "white" }}
     >
       <CustomHeader
-        title="Basic Details"
+        title="Edit Basic Details"
         titleColor="#6C3CD1"
         showBackButton={true}
         navigation={navigation}
         onBackPress={() => {
-          navigation.navigate("Main" as any, {
-            screen: "ViewCustomerScreen",
-            params: {
-              id,
-              customerId,
-              name: `${firstName} ${lastName}`,
-              title: selectedCategory,
-              number: phoneNumber,
-            },
+          navigation.navigate("ViewCustomerScreen" as any, {
+            id,
+            customerId,
+            name: `${firstName} ${lastName}`,
+            title: selectedCategory,
+            number: phoneNumber,
           });
         }}
       />

@@ -49,7 +49,7 @@ const ExcludeItemEditSummery: React.FC<ExcludeListAddProps> = ({
   route,
   navigation,
 }) => {
-  const { id, customerId, name, title } = route.params;
+  const { id, customerId, name, title, phone } = route.params;
 
   const [excludeCrops, setExcludeCrops] = useState<ExcludeCrop[]>([]);
   const [preferCrops, setPreferCrops] = useState<PreferCrop[]>([]);
@@ -161,14 +161,12 @@ const ExcludeItemEditSummery: React.FC<ExcludeListAddProps> = ({
       : "Loading...";
 
   const handleBackPress = () => {
-    navigation.navigate("Main" as any, {
-      screen: "ViewCustomerScreen",
-      params: {
-        id: id,
-        customerId: customerId,
-        name: name,
-        title: title,
-      },
+    navigation.navigate("ViewCustomerScreen" as any, {
+      id: id,
+      customerId: customerId,
+      name: name,
+      title: title,
+      number: phone,
     });
   };
 
@@ -316,6 +314,22 @@ const ExcludeItemEditSummery: React.FC<ExcludeListAddProps> = ({
         },
       ],
     );
+  };
+
+  const toggleSelectAllPrefer = () => {
+    if (selectedPreferIds.length === preferCrops.length) {
+      setSelectedPreferIds([]);
+    } else {
+      setSelectedPreferIds(preferCrops.map((crop) => crop.preId));
+    }
+  };
+
+  const toggleSelectAllExclude = () => {
+    if (selectedExcludeIds.length === excludeCrops.length) {
+      setSelectedExcludeIds([]);
+    } else {
+      setSelectedExcludeIds(excludeCrops.map((crop) => crop.excludeId));
+    }
   };
 
   const deleteSelectedPreferCrops = async () => {
@@ -473,7 +487,7 @@ const ExcludeItemEditSummery: React.FC<ExcludeListAddProps> = ({
         contentContainerStyle={{ flexGrow: 1 }}
       >
         <View className="mx-auto w-full max-w-[500px] px-6">
-          {/* ---------------- Items prefer to include ---------------- */}
+          {/* Items prefer to include */}
           <View
             style={{
               marginTop: 24,
@@ -551,12 +565,18 @@ const ExcludeItemEditSummery: React.FC<ExcludeListAddProps> = ({
                   className="flex-row justify-between items-center py-2"
                   style={{ borderBottomWidth: 1, borderBottomColor: "#E5E7EB" }}
                 >
-                  <Text
-                    className="flex-1"
-                    style={{ fontSize: 13, color: "#9CA3AF" }}
-                  >
-                    Item ({String(preferCrops.length).padStart(2, "0")})
-                  </Text>
+                  <View className="flex-row items-center gap-3 flex-1">
+                    <Checkbox
+                      checked={
+                        preferCrops.length > 0 &&
+                        selectedPreferIds.length === preferCrops.length
+                      }
+                      onPress={toggleSelectAllPrefer}
+                    />
+                    <Text style={{ fontSize: 13, color: "#9CA3AF" }}>
+                      Item ({String(preferCrops.length).padStart(2, "0")})
+                    </Text>
+                  </View>
                   <Text
                     className="flex-1 text-center"
                     style={{ fontSize: 13, color: "#9CA3AF" }}
@@ -592,8 +612,9 @@ const ExcludeItemEditSummery: React.FC<ExcludeListAddProps> = ({
                       />
                     </View>
                     <Text
-                      className="text-sm text-black flex-1 text-center"
+                      className="text-sm text-black flex-1 text-left"
                       numberOfLines={2}
+                      style={{ paddingLeft: 4 }}
                     >
                       {crop.displayName}
                     </Text>
@@ -614,7 +635,7 @@ const ExcludeItemEditSummery: React.FC<ExcludeListAddProps> = ({
             )}
           </View>
 
-          {/* ---------------- Items prefer to exclude ---------------- */}
+          {/* Items prefer to exclude  */}
           <View
             style={{
               marginTop: 24,
@@ -694,12 +715,18 @@ const ExcludeItemEditSummery: React.FC<ExcludeListAddProps> = ({
                   className="flex-row justify-between items-center py-2"
                   style={{ borderBottomWidth: 1, borderBottomColor: "#E5E7EB" }}
                 >
-                  <Text
-                    className="flex-1"
-                    style={{ fontSize: 13, color: "#9CA3AF" }}
-                  >
-                    Item ({String(excludeCrops.length).padStart(2, "0")})
-                  </Text>
+                  <View className="flex-row items-center gap-3 flex-1">
+                    <Checkbox
+                      checked={
+                        excludeCrops.length > 0 &&
+                        selectedExcludeIds.length === excludeCrops.length
+                      }
+                      onPress={toggleSelectAllExclude}
+                    />
+                    <Text style={{ fontSize: 13, color: "#9CA3AF" }}>
+                      Item ({String(excludeCrops.length).padStart(2, "0")})
+                    </Text>
+                  </View>
                   <Text
                     className="flex-1 text-center"
                     style={{ fontSize: 13, color: "#9CA3AF" }}
@@ -735,8 +762,9 @@ const ExcludeItemEditSummery: React.FC<ExcludeListAddProps> = ({
                       />
                     </View>
                     <Text
-                      className="text-sm text-black flex-1 text-center"
+                      className="text-sm text-black flex-1 text-left"
                       numberOfLines={2}
+                      style={{ paddingLeft: 4 }}
                     >
                       {crop.displayName}
                     </Text>

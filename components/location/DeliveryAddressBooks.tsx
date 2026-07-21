@@ -18,12 +18,15 @@ import { LinearGradient } from "expo-linear-gradient";
 import axios from "axios";
 import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { MaterialIcons, MaterialCommunityIcons, FontAwesome6 } from "@expo/vector-icons";
+import {
+  MaterialIcons,
+  MaterialCommunityIcons,
+  FontAwesome6,
+} from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import CustomHeader from "../common/CustomHeader";
 import LottieView from "lottie-react-native";
 import LoadingPage from "../common/LoadingPage";
-
 
 type DeliveryAddressBooksNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -294,9 +297,14 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
     });
   };
 
-  const filteredAddresses = addresses.filter((a) =>
-    a.label.toLowerCase().includes(searchQuery.trim().toLowerCase()),
-  );
+  const filteredAddresses = addresses
+    .slice()
+    .sort((a, b) =>
+      a.label.localeCompare(b.label, undefined, { sensitivity: "base" }),
+    )
+    .filter((a) =>
+      a.label.toLowerCase().includes(searchQuery.trim().toLowerCase()),
+    );
 
   const handleAddNew = () => {
     navigation.navigate("AddDeliveryAddress" as any, { customerId });
@@ -505,13 +513,17 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
               elevation: 10,
             }}
           >
-            {/* Header */}
             <LinearGradient
               colors={["#FFFFFF", "#F3F2FB"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 0, y: 1 }}
-              className="relative flex-row items-center justify-center px-5 pt-5 pb-4"
-              style={{ borderTopLeftRadius: 22, borderTopRightRadius: 22 }}
+              className="relative flex-row items-center justify-center px-5 "
+              style={{
+                borderTopLeftRadius: 22,
+                borderTopRightRadius: 22,
+                height: 65,
+                justifyContent: "center",
+              }}
             >
               <View className="flex-row items-center justify-center">
                 <View
@@ -528,24 +540,28 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
                   {selectedAddress?.type || "Address"}
                 </Text>
               </View>
-
-              <TouchableOpacity
-                onPress={closeBillingModal}
-                style={{
-                  position: "absolute",
-                  right: 20,
-                  top: 20,
-                  width: 26,
-                  height: 26,
-                  borderRadius: 13,
-                  backgroundColor: "#111827",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <MaterialIcons name="close" size={16} color="#FFFFFF" />
-              </TouchableOpacity>
             </LinearGradient>
+
+            {/* Close button — now a sibling of the gradient header rather
+                than a child, so it renders fully on both iOS and Android. */}
+            <TouchableOpacity
+              onPress={closeBillingModal}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={{
+                position: "absolute",
+                right: 10,
+                top: 10,
+                width: 26,
+                height: 26,
+                borderRadius: 13,
+                backgroundColor: "#111827",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 10,
+              }}
+            >
+              <MaterialIcons name="close" size={16} color="#FFFFFF" />
+            </TouchableOpacity>
 
             <View className="h-[1px] bg-gray-100 mx-5 mb-1" />
 

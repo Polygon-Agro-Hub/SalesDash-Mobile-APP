@@ -6,12 +6,9 @@ import {
   FlatList,
   TouchableOpacity,
   Alert,
-  Platform,
-  KeyboardAvoidingView,
   ScrollView,
   BackHandler,
   RefreshControl,
-  Dimensions,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -26,6 +23,7 @@ import {
   heightPercentageToDP as hp,
 } from "react-native-responsive-screen";
 import { useFocusEffect } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type DashboardScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -66,6 +64,8 @@ interface AgentStats {
 }
 
 const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
+
   const [isLoading, setIsLoading] = useState(true);
   const [token, setToken] = useState<string | null>(null);
   const [formData, setFormData] = useState({ firstName: "", image: "" });
@@ -86,7 +86,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
   });
 
   const flatListRef = useRef<FlatList>(null);
-  const ITEMS_PER_PAGE = 6; // 3 rows * 2 columns = 6 items
+  const ITEMS_PER_PAGE = 6;
 
   const refreshData = async () => {
     setIsLoading(true);
@@ -448,163 +448,157 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      enabled
-      className="flex-1"
-    >
-      <View className="flex-1 bg-white">
-        {/* Header Section */}
-        <View
-          className="bg-white rounded-b-3xl px-4"
-          style={{
-            paddingTop: Platform.OS === "ios" ? 50 : 20,
-            paddingBottom: 20,
-          }}
-        >
-          <View className="flex-row items-center justify-between">
-            <View className="flex-row items-center">
-              <TouchableOpacity
-                onPress={() => navigation.navigate("SidebarScreen")}
-                activeOpacity={0.8}
-                style={{ marginRight: 12 }}
-              >
-                <Image
-                  source={
-                    formData?.image
-                      ? { uri: formData.image }
-                      : require("@/assets/images/profile/profile1.webp")
-                  }
-                  className="w-14 h-14 rounded-full border-2 border-purple-200"
-                  resizeMode="cover"
-                />
-              </TouchableOpacity>
-
-              <Text className="text-lg font-bold text-gray-800">
-                Hello, {formData?.firstName || "User"}
-              </Text>
-            </View>
-
-            <View className="flex-row items-center bg-[#E6DBF766] rounded-full px-5 py-3 gap-1">
+    <View className="flex-1 bg-white">
+      {/* Header Section */}
+      <View
+        className="bg-white rounded-b-3xl px-4"
+        style={{
+          paddingTop: 8,
+          paddingBottom: 20,
+        }}
+      >
+        <View className="flex-row items-center justify-between">
+          <View className="flex-row items-center">
+            <TouchableOpacity
+              onPress={() => navigation.navigate("SidebarScreen")}
+              activeOpacity={0.8}
+              style={{ marginRight: 12 }}
+            >
               <Image
-                source={require("@/assets/images/icons/star.webp")}
-                className="w-7 h-7"
-                resizeMode="contain"
+                source={
+                  formData?.image
+                    ? { uri: formData.image }
+                    : require("@/assets/images/profile/profile1.webp")
+                }
+                className="w-14 h-14 rounded-full border-2 border-purple-200"
+                resizeMode="cover"
               />
-              <Text
-                className="font-semibold text-black mt-1 pr-2"
-                style={{
-                  textDecorationLine: "none",
-                  includeFontPadding: false,
-                }}
-              >
-                {agentStats?.monthly?.totalStars ?? 0}
-              </Text>
-            </View>
+            </TouchableOpacity>
+
+            <Text className="text-lg font-bold text-gray-800">
+              Hello, {formData?.firstName || "User"}
+            </Text>
           </View>
 
-          {/* Progress Bar */}
-          <View style={{ marginTop: 24 }}>
-            <Text className="text-lg text-[#874CDB]">Your Daily Target</Text>
-            <View
-              className="bg-[#824AD933] rounded-2xl relative overflow-hidden"
+          <View className="flex-row items-center bg-[#E6DBF766] rounded-full px-5 py-3 gap-1">
+            <Image
+              source={require("@/assets/images/icons/star.webp")}
+              className="w-7 h-7"
+              resizeMode="contain"
+            />
+            <Text
+              className="font-semibold text-black mt-1 pr-2"
               style={{
-                marginTop: 12,
-                paddingHorizontal: 20,
-                paddingVertical: 16,
+                textDecorationLine: "none",
+                includeFontPadding: false,
               }}
             >
-              {/* Progress Count (Centered Top) */}
-              <Text className="absolute top-2 self-center text-sm font-bold text-[#693ACF]">
-                {agentStats?.daily?.completed ?? 0}/
-                {agentStats?.daily?.target ?? 0}
-              </Text>
-
-              {/* Progress Bar */}
-              <View style={{ marginTop: 20 }}>
-                <Bar
-                  progress={agentStats?.daily?.progress ?? 0}
-                  width={wp("65%")}
-                  height={12}
-                  color="#6D28D9"
-                  unfilledColor="#FFFFFF"
-                  borderWidth={0}
-                />
-              </View>
-
-              {/* Star Icon */}
-              <Image
-                source={require("@/assets/images/icons/star.webp")}
-                style={{
-                  width: 40,
-                  height: 40,
-                  position: "absolute",
-                  right: 16,
-                  top: "50%",
-                  marginTop: -5,
-                }}
-                resizeMode="contain"
-              />
-            </View>
+              {agentStats?.monthly?.totalStars ?? 0}
+            </Text>
           </View>
         </View>
 
-        {/* Packages Section with Pagination */}
-        <ScrollView
-          className="flex-1 mb-10 "
-          refreshControl={
-            <RefreshControl
-              refreshing={isLoading}
-              onRefresh={refreshData}
-              colors={["#854BDA"]}
-              tintColor="#854BDA"
-            />
-          }
-        >
+        {/* Progress Bar */}
+        <View style={{ marginTop: 24 }}>
+          <Text className="text-lg text-[#874CDB]">Your Daily Target</Text>
           <View
+            className="bg-[#824AD933] rounded-2xl relative overflow-hidden"
             style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-              paddingHorizontal: 16,
-              marginBottom: 8,
+              marginTop: 12,
+              paddingHorizontal: 20,
+              paddingVertical: 16,
             }}
           >
-            <Text className="text-lg text-[#874CDB]">Packages</Text>
-            {totalPages > 1 && (
-              <Text className="text-sm text-gray-500">
-                Page {currentPage} of {totalPages}
-              </Text>
-            )}
-          </View>
+            {/* Progress Count (Centered Top) */}
+            <Text className="absolute top-2 self-center text-sm font-bold text-[#693ACF]">
+              {agentStats?.daily?.completed ?? 0}/
+              {agentStats?.daily?.target ?? 0}
+            </Text>
 
-          <View style={{ paddingHorizontal: 4 }}>
-            <FlatList
-              ref={flatListRef}
-              data={displayedPackages}
-              renderItem={renderPackage}
-              keyExtractor={(item) => item.id.toString()}
-              numColumns={2}
-              scrollEnabled={false}
-              contentContainerStyle={{
-                paddingHorizontal: 10,
-                paddingLeft: 2,
-                paddingBottom: 60,
+            {/* Progress Bar */}
+            <View style={{ marginTop: 20 }}>
+              <Bar
+                progress={agentStats?.daily?.progress ?? 0}
+                width={wp("65%")}
+                height={12}
+                color="#6D28D9"
+                unfilledColor="#FFFFFF"
+                borderWidth={0}
+              />
+            </View>
+
+            {/* Star Icon */}
+            <Image
+              source={require("@/assets/images/icons/star.webp")}
+              style={{
+                width: 40,
+                height: 40,
+                position: "absolute",
+                right: 16,
+                top: "50%",
+                marginTop: -5,
               }}
-              ListEmptyComponent={
-                <View style={{ padding: 40, alignItems: "center" }}>
-                  <Text style={{ color: "#999", fontSize: 16 }}>
-                    No packages available
-                  </Text>
-                </View>
-              }
+              resizeMode="contain"
             />
           </View>
-
-          {renderPagination()}
-        </ScrollView>
+        </View>
       </View>
-    </KeyboardAvoidingView>
+
+      {/* Packages Section with Pagination */}
+      <ScrollView
+        className="flex-1 mb-10 "
+        refreshControl={
+          <RefreshControl
+            refreshing={isLoading}
+            onRefresh={refreshData}
+            colors={["#854BDA"]}
+            tintColor="#854BDA"
+          />
+        }
+      >
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            paddingHorizontal: 16,
+            marginBottom: 8,
+          }}
+        >
+          <Text className="text-lg text-[#874CDB]">Packages</Text>
+          {totalPages > 1 && (
+            <Text className="text-sm text-gray-500">
+              Page {currentPage} of {totalPages}
+            </Text>
+          )}
+        </View>
+
+        <View style={{ paddingHorizontal: 4 }}>
+          <FlatList
+            ref={flatListRef}
+            data={displayedPackages}
+            renderItem={renderPackage}
+            keyExtractor={(item) => item.id.toString()}
+            numColumns={2}
+            scrollEnabled={false}
+            contentContainerStyle={{
+              paddingHorizontal: 10,
+              paddingLeft: 2,
+              paddingBottom: 60,
+            }}
+            ListEmptyComponent={
+              <View style={{ padding: 40, alignItems: "center" }}>
+                <Text style={{ color: "#999", fontSize: 16 }}>
+                  No packages available
+                </Text>
+              </View>
+            }
+          />
+        </View>
+
+        {renderPagination()}
+      </ScrollView>
+    </View>
   );
 };
 

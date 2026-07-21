@@ -174,6 +174,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
   const [creditBalance, setCreditBalance] = useState<number>(2000);
   const [deliveredTotal, setDeliveredTotal] = useState<number>(0);
   const [loadingCredit, setLoadingCredit] = useState(true);
+  const [isValidating, setIsValidating] = useState(false);
 
   const orderTotal = fullTotal || total || 0;
   const userId = customerId || customerid || id;
@@ -239,7 +240,8 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
     setSelectedMethod("Cash");
   };
 
-  const handleProceed = () => {
+  const handleProceed = async () => {
+    if (isValidating) return;
     if (!selectedMethod) {
       Alert.alert("Required", "Please select a payment method");
       return;
@@ -248,6 +250,71 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
     if (!route.params) {
       Alert.alert("Error", "Order data is missing");
       return;
+    }
+
+    try {
+      setIsValidating(true);
+
+      // Collect all item IDs from items, rawAdditionalItems, and orderData.additionalItems
+      const itemIds: number[] = [];
+      if (items && items.length > 0) {
+        items.forEach((item) => {
+          if (item.id) itemIds.push(item.id);
+        });
+      }
+      if (rawAdditionalItems && rawAdditionalItems.length > 0) {
+        rawAdditionalItems.forEach((item) => {
+          if (item.id) itemIds.push(item.id);
+        });
+      }
+      if (orderData?.additionalItems && orderData.additionalItems.length > 0) {
+        orderData.additionalItems.forEach((item) => {
+          if (item.productId) itemIds.push(item.productId);
+        });
+      }
+      const uniqueItemIds = Array.from(new Set(itemIds));
+
+      const storedToken = await AsyncStorage.getItem("authToken");
+      const validationResponse = await axios.post(
+        `${environment.API_BASE_URL}api/packages/validate-items`,
+        {
+          packageId: isPackage === 1 || isPackage === "1" ? packageId : null,
+          itemIds: uniqueItemIds,
+        },
+        storedToken
+          ? { headers: { Authorization: `Bearer ${storedToken}` } }
+          : undefined
+      );
+
+      if (validationResponse.data?.hasDisabled) {
+        Alert.alert(
+          "Some Items No Longer Available!",
+          "Sorry, the package / a product in your cart is no longer available to order. Please go to your cart and update it before continuing.",
+          [
+            {
+              text: "Go to Cart",
+              onPress: () => {
+                navigation.navigate("OrderScreen" as any, {
+                  id,
+                  customerId: customerId || customerid,
+                  title,
+                  name,
+                  number,
+                  customerscreencustomerid,
+                });
+              },
+            },
+          ],
+          { cancelable: false }
+        );
+        return;
+      }
+    } catch (validationErr) {
+      console.error("❌ Error running item validation:", validationErr);
+      Alert.alert("Error", "Failed to validate item availability. Please try again.");
+      return;
+    } finally {
+      setIsValidating(false);
     }
 
     const navigationData = {
@@ -475,7 +542,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
                           Cash payment is not available for orders equal to or
                           greater than{" "}
                           <Text style={{ color: "#DC2626", fontWeight: "700" }}>
-                            Rs. {formatPrice(creditBalance)}.
+                            Rs. {formatPrice(creditBalance)}
                           </Text>
                         </Text>
                       )}
@@ -500,6 +567,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
                   <TouchableOpacity
                     onPress={handleProceed}
                     activeOpacity={0.8}
+                    disabled={isValidating}
                     style={{ borderRadius: 24 }}
                   >
                     <LinearGradient
@@ -510,11 +578,16 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
                         borderRadius: 24,
                         alignItems: "center",
                         justifyContent: "center",
+                        minHeight: 48,
                       }}
                     >
-                      <Text style={{ color: "white", fontWeight: "bold" }}>
-                        Proceed
-                      </Text>
+                      {isValidating ? (
+                        <ActivityIndicator size="small" color="white" />
+                      ) : (
+                        <Text style={{ color: "white", fontWeight: "bold" }}>
+                          Proceed
+                        </Text>
+                      )}
                     </LinearGradient>
                   </TouchableOpacity>
                 </View>

@@ -67,6 +67,23 @@ interface CustomerData {
   };
 }
 
+// Converts a phone number to local display format, e.g. "+94701835108" or
+// "94701835108" -> "0701835108". Leaves already-local numbers unchanged.
+const toLocalPhoneFormat = (phone?: string | null) => {
+  if (!phone) return phone || "";
+  let cleaned = phone.replace(/[^0-9]/g, "");
+  if (!cleaned) return phone;
+
+  if (!cleaned.startsWith("0")) {
+    if (cleaned.startsWith("94")) {
+      cleaned = cleaned.slice(2);
+    }
+    cleaned = "0" + cleaned;
+  }
+
+  return cleaned;
+};
+
 const buildRestoredAdditionalItems = (rawAdditionalItems: any[]) =>
   (rawAdditionalItems || []).map((item: any) => ({
     productId: item.id,
@@ -126,6 +143,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
     isPackage: isPackageRaw = 0,
     orderItems = [],
     customerscreencustomerid = "",
+    id,
   } = route.params || {};
 
   const isPackage =
@@ -217,15 +235,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
     }
   }, [customerId, route.params?.customerId, route.params?.customerid]);
 
-  /**
-   * Confirming an order (Cash OR Card) now always goes through OTP
-   * verification first. The order itself is only created by the OTP
-   * screen once the code has been verified. This screen's job is to:
-   *   1. Build the order payload
-   *   2. Stash it in AsyncStorage as "pendingOrderData"
-   *   3. Send an OTP to the customer's mobile number
-   *   4. Navigate to the OTP screen
-   */
+ 
   const handleConfirmOrder = async () => {
     if (isSubmitting || isSubmitted) return;
 
@@ -252,12 +262,12 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
       if (isPackage === 0) {
         const isCardPayment = paymentMethod === "Card";
         const orderData = {
-          userId: customerId || customerid,
+          userId: Number(id || customerId || customerid),
           isPackage: 0,
-          total: fullTotal + discount,
-          fullTotal: fullTotal,
-          discount: discount,
-          deliveryCharge: deliveryFee,
+          total: Number(fullTotal + discount),
+          fullTotal: Number(fullTotal),
+          discount: Number(discount),
+          deliveryCharge: Number(deliveryFee),
           sheduleDate: selectedDate,
           sheduleTime: selectedTimeSlot,
           paymentMethod: paymentMethod,
@@ -265,11 +275,11 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           status: "confirmed",
           deliveryAddress: route.params?.selectedAddress,
           items: safeItems.map((item) => ({
-            productId: item.id,
-            qty: item.qty === "g" ? Number(item.qty) / 1000 : item.qty,
+            productId: Number(item.id),
+            qty: Number(item.qty === "g" ? Number(item.qty) / 1000 : item.qty),
             unit: item.unitType === "g" ? "g" : "kg",
-            price: item.price,
-            discount: item.discount,
+            price: Number(item.price || 0),
+            discount: Number(item.discount || 0),
           })),
         };
         orderPayload = { orderData };
@@ -280,29 +290,29 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           route.params?.orderData?.additionalItems ||
           [];
         const packageItems = additionalItems.map((item: any) => ({
-          productId: item.productId || item.id,
-          qty: item.qty || item.quantity,
+          productId: Number(item.productId || item.id),
+          qty: Number(item.qty || item.quantity),
           unit: item.unit || "kg",
-          price: item.price,
-          discount: item.discount,
+          price: Number(item.price || 0),
+          discount: Number(item.discount || 0),
         }));
 
         const isCardPaymentPkg = paymentMethod === "Card";
         const packageOrderData = {
-          userId: customerId || customerid,
+          userId: Number(id || customerId || customerid),
           isPackage: 1,
-          packageId: currentPackageItem.packageId || route.params?.packageId,
-          total: fullTotal + discount,
-          fullTotal: fullTotal,
-          discount: discount,
-          deliveryCharge: deliveryFee,
+          packageId: Number(currentPackageItem.packageId || route.params?.packageId),
+          total: Number(fullTotal + discount),
+          fullTotal: Number(fullTotal),
+          discount: Number(discount),
+          deliveryCharge: Number(deliveryFee),
           sheduleDate: selectedDate,
           sheduleTime: selectedTimeSlot,
           transactionId: null,
           paymentMethod: paymentMethod,
           isPaid: isCardPaymentPkg ? 0 : 1,
           status: "confirmed",
-          isFinalizeImdt: route.params?.isFinalizeImdt ?? 0,
+          isFinalizeImdt: Number(route.params?.isFinalizeImdt ?? 0),
           deliveryAddress: route.params?.selectedAddress,
           items: packageItems,
         };
@@ -311,8 +321,8 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
       }
 
       const phoneNumberForOtp =
-        route.params?.selectedAddress?.billingPhone1 ||
         customerData?.phoneNumber ||
+        route.params?.selectedAddress?.billingPhone1 ||
         "";
 
       if (!phoneNumberForOtp) {
@@ -405,6 +415,15 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           ? `${address.buildingNo || ""} ${address.buildingName || ""}, Flat ${address.unitNo || ""}, ${address.floorNo ? address.floorNo + " Floor, " : ""}${address.houseNo ? "House " + address.houseNo + ", " : ""}${address.streetName || ""}, ${address.city || ""}`
           : `${address.houseNo || ""}, ${address.streetName || ""}, ${address.city || ""}`;
       const cleaned = formatted.replace(/\s+/g, " ").trim();
+
+      const rawPhone =
+        customerData?.phoneNumber ||
+        [address.billingPhone1, address.billingPhone2]
+          .filter(Boolean)
+          .map(toLocalPhoneFormat)
+          .join(", ") ||
+        "No phone";
+
       return {
         name:
           [address.billingTitle, address.billingName]
@@ -412,11 +431,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
             .join(" ") ||
           `${customerData?.title || ""}. ${customerData?.firstName || ""} ${customerData?.lastName || ""}`,
         phone:
-          [address.billingPhone1, address.billingPhone2]
-            .filter(Boolean)
-            .join(", ") ||
-          customerData?.phoneNumber ||
-          "No phone",
+          rawPhone === "No phone" ? rawPhone : toLocalPhoneFormat(rawPhone),
         buildingType: address.type || "Not specified",
         address: cleaned,
       };
@@ -436,7 +451,9 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
 
       return {
         name: `${customerData.title || ""}. ${customerData.firstName || ""} ${customerData.lastName || ""}`,
-        phone: customerData.phoneNumber || "No phone",
+        phone: customerData.phoneNumber
+          ? toLocalPhoneFormat(customerData.phoneNumber)
+          : "No phone",
         buildingType: customerData.buildingType || "Not specified",
         address: cleanedAddress,
       };

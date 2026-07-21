@@ -110,7 +110,11 @@ const OtpScreen: React.FC = () => {
       };
 
       let statusCode;
-      if (environment.isDevelopment && Platform.OS === "android" && otpCode === "05578") {
+      if (
+        environment.isDevelopment &&
+        Platform.OS === "android" &&
+        otpCode === "05578"
+      ) {
         statusCode = "1000";
       } else {
         const otpResponse = await axios.post(otpVerificationUrl, otpBody, {
@@ -167,6 +171,8 @@ const OtpScreen: React.FC = () => {
         });
 
         if (saveResponse.status === 200 || saveResponse.status === 201) {
+          const tableId = saveResponse.data?.id || id;
+
           const customerId = saveResponse.data?.customerId || id;
 
           if (customerId) {
@@ -183,7 +189,7 @@ const OtpScreen: React.FC = () => {
                 text: "OK",
                 onPress: () => {
                   navigation.navigate("ViewCustomerScreen" as any, {
-                    id,
+                    id: tableId,
                     customerId: customerId,
                     name: `${customerData.firstName || ""} ${customerData.lastName || ""}`.trim(),
                     title: customerData.title || "",
@@ -194,8 +200,8 @@ const OtpScreen: React.FC = () => {
             ]);
           } else {
             navigation.navigate("OtpSuccesfulScreen" as any, {
+              id: tableId,
               customerId: customerId,
-              id: id,
               name: `${parsedData.firstName || ""} ${parsedData.lastName || ""}`.trim(),
               title: parsedData.title || "",
               number: parsedData.phoneNumber || phoneNumber,
@@ -251,7 +257,7 @@ const OtpScreen: React.FC = () => {
       };
 
       const response = await axios.post(apiUrl, body, { headers });
-      console.log("📲 [OTP RESEND] Response Data:", response.data);
+      console.log("[OTP RESEND] Response Data:", response.data);
 
       if (response.data.referenceId) {
         await AsyncStorage.setItem("referenceId", response.data.referenceId);
@@ -447,7 +453,7 @@ const OtpScreen: React.FC = () => {
                   disabled={!isOtpComplete || loading || timer <= 0}
                   activeOpacity={0.7}
                   style={{
-                    width: "50%",
+                    width: "60%",
                     borderRadius: 30,
                     backgroundColor: "transparent",
                     shadowColor: "#000",
@@ -471,13 +477,10 @@ const OtpScreen: React.FC = () => {
                         : ""
                     }`}
                     style={{
-                      shadowColor: "#000",
-                      shadowOffset: {
-                        width: 0,
-                        height: 2,
-                      },
-                      shadowOpacity: 0.1,
-                      shadowRadius: 3.84,
+                      height: 50,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: 30,
                       overflow: "hidden",
                     }}
                   >

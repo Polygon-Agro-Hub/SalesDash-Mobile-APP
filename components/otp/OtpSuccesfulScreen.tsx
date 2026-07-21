@@ -31,13 +31,24 @@ const OtpSuccesfulScreen: React.FC<OtpSuccesfulScreenProps> = ({
 
   useFocusEffect(
     useCallback(() => {
-      const onBackPress = () => true;
-      const subscription = BackHandler.addEventListener(
+      const onBackPress = () => {
+        navigation.navigate("ViewCustomerScreen" as any, {
+          customerId: String(customerId),
+          id: String(id || ""),
+          name: name || "",
+          title: title || "",
+          number: number || "",
+        });
+        return true;
+      };
+
+      const backHandler = BackHandler.addEventListener(
         "hardwareBackPress",
         onBackPress,
       );
-      return () => subscription.remove();
-    }, []),
+
+      return () => backHandler.remove();
+    }, [navigation, id, customerId, name, title]),
   );
 
   return (
@@ -77,20 +88,17 @@ const OtpSuccesfulScreen: React.FC<OtpSuccesfulScreenProps> = ({
           <View className="items-center mt-24">
             <TouchableOpacity
               onPress={() =>
-                navigation.navigate("Main" as any, {
-                  screen: "ViewCustomerScreen",
-                  params: {
-                    customerId: String(customerId),
-                    id: String(id || ""),
-                    name: name || "",
-                    title: title || "",
-                    number: number || "",
-                  },
+                navigation.navigate("ViewCustomerScreen" as any, {
+                  customerId: String(customerId),
+                  id: String(id || ""),
+                  name: name || "",
+                  title: title || "",
+                  number: number || "",
                 })
               }
               activeOpacity={0.7}
               style={{
-                width: "50%",
+                width: "60%",
                 borderRadius: 30,
                 backgroundColor: "transparent",
                 shadowColor: "#000",
@@ -106,13 +114,10 @@ const OtpSuccesfulScreen: React.FC<OtpSuccesfulScreenProps> = ({
                 end={{ x: 1, y: 0 }}
                 className="h-[50px] items-center justify-center rounded-full"
                 style={{
-                  shadowColor: "#000",
-                  shadowOffset: {
-                    width: 0,
-                    height: 2,
-                  },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 3.84,
+                  height: 50,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: 30,
                   overflow: "hidden",
                 }}
               >
@@ -127,12 +132,12 @@ const OtpSuccesfulScreen: React.FC<OtpSuccesfulScreenProps> = ({
             <TouchableOpacity
               onPress={() =>
                 navigation.navigate("ExcludeListAdd", {
-                  customerId: Number(customerId),
+                  customerId: Number(id),
                 })
               }
               activeOpacity={0.7}
               style={{
-                width: "50%",
+                width: "60%",
                 borderRadius: 30,
                 backgroundColor: "transparent",
                 shadowColor: "#000",
@@ -148,13 +153,10 @@ const OtpSuccesfulScreen: React.FC<OtpSuccesfulScreenProps> = ({
                 end={{ x: 1, y: 0 }}
                 className="h-[50px] items-center justify-center rounded-full"
                 style={{
-                  shadowColor: "#000",
-                  shadowOffset: {
-                    width: 0,
-                    height: 2,
-                  },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 3.84,
+                  height: 50,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: 30,
                   overflow: "hidden",
                 }}
               >

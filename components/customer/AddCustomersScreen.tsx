@@ -127,13 +127,13 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
   const isCityKnown = city.trim().length > 0 && !!matchedCity;
   const isCityDeliverable = isCityKnown && matchedCity!.deliverable;
 
+  const cityBlocksRegistration = city.trim().length > 0 && !isCityDeliverable;
+
   const showAlert = (title: string, message: string, onClose?: () => void) => {
     Alert.alert(title, message, [{ text: "OK", onPress: onClose }]);
   };
 
   const isNavigatingToOtpScreen = useRef(false);
-
-
 
   const resetForm = () => {
     setStep(1);
@@ -534,11 +534,13 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     if (touchedFields.city) {
       if (!city) {
         setCityError("City is required");
+      } else if (cityBlocksRegistration) {
+        setCityError("Please select a valid city we deliver to");
       } else {
         setCityError("");
       }
     }
-  }, [city, touchedFields.city]);
+  }, [city, touchedFields.city, cityBlocksRegistration]);
 
   useEffect(() => {
     if (touchedFields.buildingNo) {
@@ -778,12 +780,6 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         setIsSubmitting(false);
         return;
       }
-      if (!isCityDeliverable) {
-        setCityError("Please select a valid city we deliver to");
-        showAlert("Error", "This city is not currently in our delivery area.");
-        setIsSubmitting(false);
-        return;
-      }
     } else if (buildingType === "Apartment") {
       if (
         !buildingNo ||
@@ -798,6 +794,13 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         setIsSubmitting(false);
         return;
       }
+    }
+
+    if (cityBlocksRegistration) {
+      setCityError("Please select a valid city we deliver to");
+      showAlert("Error", "This city is not currently in our delivery area.");
+      setIsSubmitting(false);
+      return;
     }
 
     if (!validatePhoneNumber(phoneNumber)) {
@@ -1232,8 +1235,6 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     );
   };
 
-
-
   const renderResidentialAddressForm = () => {
     return (
       <View>
@@ -1556,12 +1557,16 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         >
           <TouchableOpacity
             onPress={handleRegister}
-            disabled={isSubmitting || loading}
+            disabled={isSubmitting || loading || cityBlocksRegistration}
             activeOpacity={0.8}
             style={{ borderRadius: 30 }}
           >
             <LinearGradient
-              colors={["#854BDA", "#6E3DD1"]}
+              colors={
+                cityBlocksRegistration
+                  ? ["#B9AEDD", "#A99BD6"]
+                  : ["#854BDA", "#6E3DD1"]
+              }
               style={{
                 paddingVertical: 14,
                 alignItems: "center",
@@ -1591,7 +1596,6 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })}
       style={{ flex: 1, backgroundColor: "white" }}
     >
       <CustomHeader
@@ -1608,7 +1612,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         }}
       />
       <View className="flex-1 bg-white">
-        <ScrollView keyboardShouldPersistTaps="handled">
+        <ScrollView keyboardShouldPersistTaps="handled" className="bg-white">
           <View className="flex-1 mx-auto w-full max-w-[500px] py-2 px-6">
             {step === 1
               ? renderBasicDetailsForm()
@@ -1663,7 +1667,6 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         onSelect={(items) => {
           if (items.length > 0) {
             setCity(items[0]);
-            setCityError("");
             setFilteredCities([]);
           }
           handleFieldTouch("city");
@@ -1671,6 +1674,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         searchPlaceholder="Search city..."
         multiSelect={false}
         showSearch={true}
+        noResultsText="No Results Found"
       />
     </KeyboardAvoidingView>
   );

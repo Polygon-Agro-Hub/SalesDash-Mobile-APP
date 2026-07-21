@@ -364,6 +364,17 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       return processedItems;
     } else if (originalItems && originalItems.length > 0) {
       return originalItems;
+    } else if (route.params?.rawAdditionalItems && route.params?.rawAdditionalItems.length > 0) {
+      return route.params.rawAdditionalItems.map((item: any) => ({
+        id: item.id || item.productId,
+        name: item.name || "",
+        qty: item.quantity || item.qty || 0,
+        unitType: item.unit || item.unitType || "kg",
+        price: item.totalAmount || item.price || 0,
+        discount: item.discount || 0,
+        pricePerKg: item.pricePerKg || 0,
+        discountedPricePerKg: item.discountedPricePerKg || 0,
+      }));
     }
     return [];
   }
@@ -804,7 +815,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                   style={{
                     width: "100%",
                     borderRadius: 30,
-                    shadowColor: "#000",
+                    shadowColor: "#00000033",
                     shadowOffset: { width: 0, height: 6 },
                     shadowOpacity: 0.25,
                     shadowRadius: 8,
@@ -827,13 +838,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                         justifyContent: "center",
                       }}
                     >
-                      <Text
-                        style={{
-                          color: "white",
-                          fontWeight: "600",
-                          marginRight: 8,
-                        }}
-                      >
+                     <Text className="text-white font-bold text-lg mr-2">
                         Proceed
                       </Text>
                       <Feather name="check" size={20} color="white" />

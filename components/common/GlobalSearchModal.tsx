@@ -126,19 +126,23 @@ const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
 
   const renderSearchInput = () => (
     <View className="px-4 py-2 border-b border-gray-200">
-      <View className="bg-gray-100 rounded-lg px-3 flex-row items-center">
+      <View
+        className="bg-gray-100 rounded-lg px-3 flex-row items-center"
+        style={{ height: 44 }}
+      >
         <MaterialIcons name="search" size={20} color="#666" />
         <TextInput
           placeholder={searchPlaceholder}
           value={searchValue}
           onChangeText={setSearchValue}
-          className="flex-1 ml-2 text-base"
+          className="ml-2 text-base"
+          style={{ flex: 1, minWidth: 0, paddingVertical: 0 }}
           placeholderTextColor="#7F7F7F"
           autoCapitalize="none"
           autoCorrect={false}
         />
         {searchValue ? (
-          <TouchableOpacity onPress={clearSearch}>
+          <TouchableOpacity onPress={clearSearch} hitSlop={8}>
             <MaterialIcons name="close" size={20} color="#666" />
           </TouchableOpacity>
         ) : null}

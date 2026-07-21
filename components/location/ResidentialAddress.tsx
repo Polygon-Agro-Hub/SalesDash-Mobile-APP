@@ -51,13 +51,11 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
 }) => {
   const { customerId } = route.params || {};
 
-
   const BUILDING_TYPES = [
     { label: "House", value: "House" },
     { label: "Apartment", value: "Apartment" },
   ];
 
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   const [buildingType, setBuildingType] = useState<string>("House");
@@ -69,11 +67,12 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
   const [nearestCity, setNearestCity] = useState("");
   const [nearestCityError, setNearestCityError] = useState("");
   const [canEditNearestCity, setCanEditNearestCity] = useState(false);
-
+  const [citiesLoading, setCitiesLoading] = useState(true);
   const [buildingNo, setBuildingNo] = useState("");
   const [buildingName, setBuildingName] = useState("");
   const [unitNo, setUnitNo] = useState("");
   const [floorNo, setFloorNo] = useState("");
+  const [loading, setLoading] = useState(true);
 
   const [cityItems, setCityItems] = useState<
     { label: string; value: string; deliverable: boolean }[]
@@ -83,7 +82,6 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
   >([]);
   const [cityModalVisible, setCityModalVisible] = useState(false);
 
-
   const matchedCity = cityItems.find(
     (item) =>
       item.label.trim().toLowerCase() === nearestCity.trim().toLowerCase(),
@@ -91,8 +89,18 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
   const isCityKnown = nearestCity.trim().length > 0 && !!matchedCity;
   const isCityDeliverable = isCityKnown && matchedCity!.deliverable;
 
+  const cityBlocksUpdate =
+    canEditNearestCity &&
+    !citiesLoading &&
+    nearestCity.trim().length > 0 &&
+    !isCityDeliverable;
+
   const capitalizeWords = (text: string) => {
     return text.replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+
+  const sanitizeInput = (text: string) => {
+    return capitalizeWords(text.replace(/^\s+/, ""));
   };
 
   const resetFormState = useCallback(() => {
@@ -131,6 +139,8 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
       }
     } catch (error) {
       console.error("City fetch error:", error);
+    } finally {
+      setCitiesLoading(false);
     }
   }, []);
 
@@ -184,6 +194,7 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
     useCallback(() => {
       if (customerId) {
         setLoading(true);
+        setCitiesLoading(true);
         resetFormState();
         fetchCustomerData();
         checkDeliveredOrder();
@@ -279,8 +290,6 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
     }
   };
 
-
-
   const renderNearestCityField = () => (
     <>
       <Text className="text-sm mb-2">Nearest City *</Text>
@@ -294,7 +303,9 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
             }}
             className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] flex-row items-center justify-between"
           >
-            <Text style={{ color: nearestCity ? "black" : "#9CA3AF", fontSize: 15 }}>
+            <Text
+              style={{ color: nearestCity ? "black" : "#9CA3AF", fontSize: 15 }}
+            >
               {nearestCity || "Select Nearest City"}
             </Text>
             <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
@@ -306,13 +317,18 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
             </Text>
           ) : null}
 
-          <CityDeliveryStatus
-            city={nearestCity}
-            filteredCities={[]}
-            isCityKnown={isCityKnown}
-            isCityDeliverable={isCityDeliverable}
-            canEdit={canEditNearestCity}
-          />
+          {/* Only render the delivery status once the city list has
+              actually finished loading, so it never briefly shows
+              "City Not Found" before flipping to "Great News". */}
+          {!citiesLoading && (
+            <CityDeliveryStatus
+              city={nearestCity}
+              filteredCities={[]}
+              isCityKnown={isCityKnown}
+              isCityDeliverable={isCityDeliverable}
+              canEdit={canEditNearestCity}
+            />
+          )}
         </View>
       ) : (
         <View className="mb-5">
@@ -373,7 +389,7 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
             <Text className="text-sm mb-2">Building / House No *</Text>
             <TextInput
               value={houseNo}
-              onChangeText={(text) => setHouseNo(capitalizeWords(text))}
+              onChangeText={(text) => setHouseNo(sanitizeInput(text))}
               placeholder="e.g. 14/B"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
@@ -383,7 +399,7 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
             <Text className="text-sm mb-2">Street Name *</Text>
             <TextInput
               value={streetName}
-              onChangeText={(text) => setStreetName(capitalizeWords(text))}
+              onChangeText={(text) => setStreetName(sanitizeInput(text))}
               placeholder="e.g. Diyagama Road"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
@@ -395,14 +411,12 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
         )}
 
         {/* ==================== APARTMENT FIELDS ==================== */}
-        {/* Mirrors dashuserapartment: buildingNo, buildingName, unitNo,
-            floorNo, houseNo, streetName */}
         {buildingType === "Apartment" && (
           <>
             <Text className="text-sm mb-2">Apartment / Building No *</Text>
             <TextInput
               value={buildingNo}
-              onChangeText={(text) => setBuildingNo(capitalizeWords(text))}
+              onChangeText={(text) => setBuildingNo(sanitizeInput(text))}
               placeholder="e.g. Building B"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
@@ -412,7 +426,7 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
             <Text className="text-sm mb-2">Apartment / Building Name *</Text>
             <TextInput
               value={buildingName}
-              onChangeText={(text) => setBuildingName(capitalizeWords(text))}
+              onChangeText={(text) => setBuildingName(sanitizeInput(text))}
               placeholder="e.g. Elite Residencies"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
@@ -422,7 +436,7 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
             <Text className="text-sm mb-2">Flat / Unit Number *</Text>
             <TextInput
               value={unitNo}
-              onChangeText={(text) => setUnitNo(capitalizeWords(text))}
+              onChangeText={(text) => setUnitNo(sanitizeInput(text))}
               placeholder="e.g. Unit 4B"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
@@ -432,7 +446,7 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
             <Text className="text-sm mb-2">Floor Number *</Text>
             <TextInput
               value={floorNo}
-              onChangeText={(text) => setFloorNo(capitalizeWords(text))}
+              onChangeText={(text) => setFloorNo(sanitizeInput(text))}
               placeholder="e.g. 3rd Floor"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
@@ -442,7 +456,7 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
             <Text className="text-sm mb-2">House No *</Text>
             <TextInput
               value={houseNo}
-              onChangeText={(text) => setHouseNo(capitalizeWords(text))}
+              onChangeText={(text) => setHouseNo(sanitizeInput(text))}
               placeholder="e.g. 14"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
@@ -452,7 +466,7 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
             <Text className="text-sm mb-2">Street Name *</Text>
             <TextInput
               value={streetName}
-              onChangeText={(text) => setStreetName(capitalizeWords(text))}
+              onChangeText={(text) => setStreetName(sanitizeInput(text))}
               placeholder="e.g. Diyagama Road"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
@@ -465,17 +479,53 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
 
         {/* Update Button */}
         <View className="px-4 pb-8 pt-5">
+          {/*
+            FIX (iOS "Update" button: text not centered + corners not
+            fully rounded):
+
+            Relying on NativeWind className props ("rounded-full",
+            "items-center", "justify-center") on <LinearGradient> is
+            inconsistent on iOS — LinearGradient is a native view wrapped
+            by expo-linear-gradient, and its gradient layer does not
+            reliably get masked to the view's border radius purely from a
+            className. It can render with squared-off corners, and the
+            single-child centering can silently fail, leaving the text
+            pinned to the left.
+
+            The fix:
+            1. Move borderRadius + overflow:'hidden' to the outer
+               TouchableOpacity, so iOS actually clips the gradient layer
+               to a pill shape (masksToBounds needs overflow:hidden to
+               kick in on iOS).
+            2. Set alignItems/justifyContent/flexDirection as explicit
+               inline styles directly on the LinearGradient, instead of
+               via className, so the centering is guaranteed to apply.
+          */}
           <TouchableOpacity
             onPress={handleUpdate}
-            disabled={saving}
+            disabled={saving || cityBlocksUpdate}
             activeOpacity={0.85}
+            style={{
+              borderRadius: 999,
+              overflow: "hidden",
+              height: 50,
+            }}
           >
             <LinearGradient
-              colors={["#7B3FE4", "#5B2CC9"]}
+              colors={
+                cityBlocksUpdate
+                  ? ["#B9AEDD", "#A99BD6"]
+                  : ["#7B3FE4", "#5B2CC9"]
+              }
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              className="rounded-full py-4 items-center justify-center"
-              style={{ borderRadius: 999, paddingVertical: 16 }}
+              style={{
+                borderRadius: 999,
+                paddingVertical: 16,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
             >
               <Text className="text-white text-base font-semibold">
                 {saving ? "Updating..." : "Update"}
@@ -521,6 +571,7 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
         searchPlaceholder="Search city..."
         multiSelect={false}
         showSearch={true}
+        noResultsText="No Results Found"
       />
     </KeyboardAvoidingView>
   );

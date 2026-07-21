@@ -24,10 +24,7 @@ interface BannedScreenProps {
   route: RouteProp<RootStackParamList, "BannedScreen">;
 }
 
-const BannedScreen: React.FC<BannedScreenProps> = ({
-  route,
-  navigation,
-}) => {
+const BannedScreen: React.FC<BannedScreenProps> = ({ route, navigation }) => {
   const { statusType, message } = route.params || {};
 
   useFocusEffect(
@@ -64,10 +61,12 @@ const BannedScreen: React.FC<BannedScreenProps> = ({
 
   if (statusType === "rejected") {
     title = "Account Rejected";
-    description = "Your account approval has been revoked by the administrator.";
+    description =
+      "Your account approval has been revoked by the administrator.";
   } else if (statusType === "not_approved") {
     title = "Account Not Approved";
-    description = "Your account approval has been revoked by the administrator.";
+    description =
+      "Your account approval has been revoked by the administrator.";
   } else if (statusType === "pending") {
     title = "Pending Verification";
     description = "Your account status is pending verification.";
@@ -134,19 +133,22 @@ const BannedScreen: React.FC<BannedScreenProps> = ({
                 colors={["#6839CF", "#874DDB"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
-                className="h-[50px] items-center justify-center rounded-full"
                 style={{
-                  shadowColor: "#000",
-                  shadowOffset: {
-                    width: 0,
-                    height: 2,
-                  },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 3.84,
+                  height: 50,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: 30,
                   overflow: "hidden",
                 }}
               >
-                <Text className="text-center text-white font-bold text-lg">
+                <Text
+                  style={{
+                    textAlign: "center",
+                    color: "#fff",
+                    fontWeight: "bold",
+                    fontSize: 18,
+                  }}
+                >
                   Back to Login
                 </Text>
               </LinearGradient>
