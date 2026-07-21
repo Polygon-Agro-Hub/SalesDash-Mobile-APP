@@ -53,6 +53,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
 
   const [firstName, setFirstName] = useState<string>("");
   const [lastName, setLastName] = useState<string>("");
+  // phoneNumber is always kept in full API format: +947XXXXXXXX
   const [phoneNumber, setPhoneNumber] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [originalPhoneNumber, setOriginalPhoneNumber] = useState<string>("");
@@ -91,29 +92,24 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     Alert.alert(title, message, [{ text: "OK", onPress: onClose }]);
   };
 
-  const phoneRegex = /^07\d{8}$/;
+  // Matches AddCustomersScreen: full +94 format, locked prefix
+  const phoneRegex = /^\+947\d{8}$/;
   const nameRegex = /^[A-Z][a-z]*$/;
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
-  const validatePhoneNumber = (phone: string) => phoneRegex.test(phone);
+  const validatePhoneNumber = (phone: string) => {
+    if (phone.length > 12) return false;
+    return phoneRegex.test(phone);
+  };
   const validateName = (name: string) => nameRegex.test(name);
 
-  const toLocalPhoneFormat = (phone: string) => {
-    if (!phone) return "";
-    if (phone.startsWith("+94")) {
-      return "0" + phone.slice(3);
-    }
-    if (phone.startsWith("94")) {
-      return "0" + phone.slice(2);
-    }
-    return phone;
-  };
-
-  const toApiPhoneFormat = (phone: string) => {
-    if (!phone) return "";
-    if (phone.startsWith("0")) {
-      return "+94" + phone.slice(1);
-    }
+  // Normalizes whatever format the backend stores (0XXXXXXXXX, 94XXXXXXXXX,
+  // or +94XXXXXXXXX) into the single +94XXXXXXXXX format used in this screen.
+  const normalizeToApiFormat = (phone: string) => {
+    if (!phone) return "+94";
+    if (phone.startsWith("+94")) return phone;
+    if (phone.startsWith("94")) return "+" + phone;
+    if (phone.startsWith("0")) return "+94" + phone.slice(1);
     return phone;
   };
 
@@ -207,7 +203,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
         setPhoneError("Mobile number is required");
       } else if (!validatePhoneNumber(phoneNumber)) {
         setPhoneError(
-          "Please enter a valid Mobile number (format: 07XXXXXXXX)",
+          "Please enter a valid mobile number (format: +947XXXXXXXX)",
         );
       } else {
         setPhoneError("");
@@ -280,10 +276,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
         setSelectedCategory(customerData.title || "");
         setFirstName(customerData.firstName || "");
         setLastName(customerData.lastName || "");
-        const localPhone = toLocalPhoneFormat(customerData.phoneNumber || "");
-        setPhoneNumber(localPhone);
+        const apiPhone = normalizeToApiFormat(customerData.phoneNumber || "");
+        setPhoneNumber(apiPhone);
+        setOriginalPhoneNumber(apiPhone);
         setEmail(customerData.email || "");
-        setOriginalPhoneNumber(localPhone);
         setOriginalEmail(customerData.email || "");
       }
     } catch (error) {
@@ -326,8 +322,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
 
     try {
       setLoading(true);
-      const apiPhoneNumber = toApiPhoneFormat(phoneNumber);
-      const cleanedPhoneNumber = apiPhoneNumber.replace(/[^\d]/g, "");
+      const cleanedPhoneNumber = phoneNumber.replace(/[^\d]/g, "");
 
       const response = await axios.post(
         "https://api.getshoutout.com/otpservice/send",
@@ -378,7 +373,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     if (!validatePhoneNumber(phoneNumber)) {
       showAlert(
         "Error",
-        "Please enter a valid mobile number (format: 07XXXXXXXX).",
+        "Please enter a valid mobile number (format: +947XXXXXXXX).",
       );
       return;
     }
@@ -393,7 +388,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     try {
       const phoneNumberChanged = phoneNumber !== originalPhoneNumber;
       const emailChanged = email !== originalEmail;
-      const apiPhoneNumber = toApiPhoneFormat(phoneNumber);
+      const apiPhoneNumber = phoneNumber;
 
       if (phoneNumberChanged || emailChanged) {
         try {
@@ -578,25 +573,28 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     }
   };
 
+  // Mirrors AddCustomersScreen: the "+94" prefix is always enforced and
+  // cannot be deleted — if the text no longer starts with +94, it's
+  // reconstructed from whatever digits remain.
   const handlePhoneNumberChange = (text: string) => {
     if (text.startsWith(" ")) return;
 
-    if (!text.startsWith("0")) {
-      if (text.length < 1) {
-        setPhoneNumber("0");
+    if (!text.startsWith("+94")) {
+      if (text.length < 3) {
+        setPhoneNumber("+94");
         return;
       }
-      const cleanedText = text.replace(/^0?/, "");
-      setPhoneNumber("0" + cleanedText.replace(/[^\d]/g, ""));
-      return;
+      text = "+94" + text.replace(/^\+?94?/, "");
     }
 
-    const numberPart = text.slice(1);
-    const cleanedNumber = numberPart.replace(/[^\d]/g, "");
-
-    if (cleanedNumber.length <= 9) {
-      setPhoneNumber("0" + cleanedNumber);
+    if (text.length > 12) {
+      text = text.substring(0, 12);
     }
+
+    const cleanText =
+      text.substring(0, 3) + text.substring(3).replace(/[^0-9]/g, "");
+
+    setPhoneNumber(cleanText);
   };
 
   const handlePhoneNumberChangeWithErrorClear = (text: string) => {
@@ -611,16 +609,8 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
   };
 
   const handlePhoneNumberFocus = () => {
-    if (phoneNumber === "") {
-      setPhoneNumber("0");
-    }
-  };
-
-  const handlePhoneNumberKeyPress = (e: any) => {
-    const { key } = e.nativeEvent;
-    if (key === "Backspace" && phoneNumber.length <= 1) {
-      e.preventDefault();
-      return false;
+    if (!phoneNumber || phoneNumber.length < 3) {
+      setPhoneNumber("+94");
     }
   };
 
@@ -756,15 +746,14 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
               fontSize: INPUT_FONT_SIZE,
               fontStyle: phoneNumber ? "normal" : "italic",
             }}
-            placeholder="0712345678"
+            placeholder="+947XXXXXXXX"
             placeholderTextColor="#7F7F7F"
             keyboardType="phone-pad"
             value={phoneNumber}
             onChangeText={handlePhoneNumberChangeWithErrorClear}
             onFocus={handlePhoneNumberFocus}
-            onKeyPress={handlePhoneNumberKeyPress}
             onBlur={() => handleFieldTouch("phoneNumber")}
-            maxLength={10}
+            maxLength={12}
           />
           {phoneError ? (
             <Text className="text-red-500 text-xs mt-1 ml-2">{phoneError}</Text>

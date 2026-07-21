@@ -804,7 +804,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                   style={{
                     width: "100%",
                     borderRadius: 30,
-                    shadowColor: "#000",
+                    shadowColor: "#00000033",
                     shadowOffset: { width: 0, height: 6 },
                     shadowOpacity: 0.25,
                     shadowRadius: 8,
@@ -827,13 +827,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                         justifyContent: "center",
                       }}
                     >
-                      <Text
-                        style={{
-                          color: "white",
-                          fontWeight: "600",
-                          marginRight: 8,
-                        }}
-                      >
+                     <Text className="text-white font-bold text-lg mr-2">
                         Proceed
                       </Text>
                       <Feather name="check" size={20} color="white" />

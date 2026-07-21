@@ -399,8 +399,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={{ flex: 1 }}
-      keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })}
+      style={{ flex: 1, backgroundColor: "white" }}
     >
       <View className="flex-1 bg-white">
         <CustomHeader
@@ -422,7 +421,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
           <View className="px-6 my-6">
             <View className="relative">
               <TextInput
-                className="p-3 pl-4 flex-row justify-between items-center border border-[#6B3BCF] rounded-full bg-[#F5F1FC]"
+                className="p-3 pl-4 flex-row justify-between h-[50px] items-center border border-[#6B3BCF] rounded-full bg-[#F5F1FC]"
                 placeholder="Search Products"
                 placeholderTextColor="black"
                 value={searchQuery}
@@ -437,8 +436,8 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
                 style={{
                   position: "absolute",
                   right: 16,
-                  marginTop: Platform.OS === "ios" ? 10 : 20,
-                  transform: [{ translateY: -12 }],
+                  marginTop: Platform.OS === "ios" ? 12 : 12,
+                  justifyContent: "center",
                 }}
               />
             </View>
@@ -455,12 +454,18 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
             <Text className="text-black text-sm font-semibold">Product</Text>
             <View className="flex-row items-center" style={{ gap: 20 }}>
               <View style={{ width: 52, alignItems: "center" }}>
-                <Text className="text-green-600 text-sm font-semibold" style={{ textAlign: "center" }}>
+                <Text
+                  className="text-green-600 text-sm font-semibold"
+                  style={{ textAlign: "center" }}
+                >
                   Include
                 </Text>
               </View>
               <View style={{ width: 52, alignItems: "center" }}>
-                <Text className="text-red-500 text-sm font-semibold" style={{ textAlign: "center" }}>
+                <Text
+                  className="text-red-500 text-sm font-semibold"
+                  style={{ textAlign: "center" }}
+                >
                   Exclude
                 </Text>
               </View>

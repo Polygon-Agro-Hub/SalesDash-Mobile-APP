@@ -542,7 +542,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
                           Cash payment is not available for orders equal to or
                           greater than{" "}
                           <Text style={{ color: "#DC2626", fontWeight: "700" }}>
-                            Rs. {formatPrice(creditBalance)}.
+                            Rs. {formatPrice(creditBalance)}
                           </Text>
                         </Text>
                       )}

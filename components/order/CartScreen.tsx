@@ -567,7 +567,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
                               : "bg-white border-[#A3A3A3]"
                           }`}
                           style={{
-                            shadowColor: "#000",
+                            shadowColor: "#00000040",
                             shadowOpacity: 0.5,
                             shadowRadius: 10,
                             elevation: 10,
@@ -592,7 +592,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
                               : "bg-white border-[#A3A3A3]"
                           }`}
                           style={{
-                            shadowColor: "#000",
+                            shadowColor: "#00000040",
                             shadowOpacity: 0.5,
                             shadowRadius: 10,
                             elevation: 10,

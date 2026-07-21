@@ -248,31 +248,39 @@ const OrderConfimedOTPScreen: React.FC = () => {
       if (statusCode === "1000") {
         if (paymentMethod === "Card") {
           await AsyncStorage.removeItem("referenceId");
-          navigation.navigate("OnlinePayment" as any, {
-            id: null,
-            customerId: id,
-            name: customerName,
-            title: customerTitle,
-
-            isPackage,
-            total,
-            fullTotal,
-            subtotal,
-            discount,
-            selectedDate,
-            selectedTimeSlot,
-            items,
-            orderItems,
-            rawPackageItems,
-            rawAdditionalItems,
-            selectedAddress,
-            customerid: customerid || id,
-            customerscreencustomerid,
-            isFinalizeImdt,
-            deliveryCharge,
-          });
+          Alert.alert("Success", "OTP verified successfully.", [
+            {
+              text: "OK",
+              onPress: () => {
+                navigation.navigate("OnlinePayment" as any, {
+                  id: null,
+                  customerId: id,
+                  name: customerName,
+                  title: customerTitle,
+                  isPackage,
+                  total,
+                  fullTotal,
+                  subtotal,
+                  discount,
+                  selectedDate,
+                  selectedTimeSlot,
+                  items,
+                  orderItems,
+                  rawPackageItems,
+                  rawAdditionalItems,
+                  selectedAddress,
+                  customerid: customerid || id,
+                  customerscreencustomerid,
+                  isFinalizeImdt,
+                  deliveryCharge,
+                });
+              },
+            },
+          ]);
         } else {
-          await createOrderAndNavigate(token);
+          Alert.alert("Success", "OTP verified successfully.", [
+            { text: "OK", onPress: () => createOrderAndNavigate(token) },
+          ]);
         }
       } else {
         setIsOtpInvalid(true);
@@ -525,7 +533,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
                 disabled={!isOtpComplete || loading || timer <= 0}
                 activeOpacity={0.7}
                 style={{
-                  width: "50%",
+                  width: "60%",
                   borderRadius: 30,
                   backgroundColor: "transparent",
                   shadowColor: "#000",
@@ -547,10 +555,10 @@ const OrderConfimedOTPScreen: React.FC = () => {
                     !isOtpComplete || loading || timer <= 0 ? "opacity-50" : ""
                   }`}
                   style={{
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 3.84,
+                    height: 50,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: 30,
                     overflow: "hidden",
                   }}
                 >
