@@ -143,6 +143,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
     isPackage: isPackageRaw = 0,
     orderItems = [],
     customerscreencustomerid = "",
+    id,
   } = route.params || {};
 
   const isPackage =
@@ -261,12 +262,12 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
       if (isPackage === 0) {
         const isCardPayment = paymentMethod === "Card";
         const orderData = {
-          userId: customerId || customerid,
+          userId: Number(id || customerId || customerid),
           isPackage: 0,
-          total: fullTotal + discount,
-          fullTotal: fullTotal,
-          discount: discount,
-          deliveryCharge: deliveryFee,
+          total: Number(fullTotal + discount),
+          fullTotal: Number(fullTotal),
+          discount: Number(discount),
+          deliveryCharge: Number(deliveryFee),
           sheduleDate: selectedDate,
           sheduleTime: selectedTimeSlot,
           paymentMethod: paymentMethod,
@@ -274,11 +275,11 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           status: "confirmed",
           deliveryAddress: route.params?.selectedAddress,
           items: safeItems.map((item) => ({
-            productId: item.id,
-            qty: item.qty === "g" ? Number(item.qty) / 1000 : item.qty,
+            productId: Number(item.id),
+            qty: Number(item.qty === "g" ? Number(item.qty) / 1000 : item.qty),
             unit: item.unitType === "g" ? "g" : "kg",
-            price: item.price,
-            discount: item.discount,
+            price: Number(item.price || 0),
+            discount: Number(item.discount || 0),
           })),
         };
         orderPayload = { orderData };
@@ -289,29 +290,29 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           route.params?.orderData?.additionalItems ||
           [];
         const packageItems = additionalItems.map((item: any) => ({
-          productId: item.productId || item.id,
-          qty: item.qty || item.quantity,
+          productId: Number(item.productId || item.id),
+          qty: Number(item.qty || item.quantity),
           unit: item.unit || "kg",
-          price: item.price,
-          discount: item.discount,
+          price: Number(item.price || 0),
+          discount: Number(item.discount || 0),
         }));
 
         const isCardPaymentPkg = paymentMethod === "Card";
         const packageOrderData = {
-          userId: customerId || customerid,
+          userId: Number(id || customerId || customerid),
           isPackage: 1,
-          packageId: currentPackageItem.packageId || route.params?.packageId,
-          total: fullTotal + discount,
-          fullTotal: fullTotal,
-          discount: discount,
-          deliveryCharge: deliveryFee,
+          packageId: Number(currentPackageItem.packageId || route.params?.packageId),
+          total: Number(fullTotal + discount),
+          fullTotal: Number(fullTotal),
+          discount: Number(discount),
+          deliveryCharge: Number(deliveryFee),
           sheduleDate: selectedDate,
           sheduleTime: selectedTimeSlot,
           transactionId: null,
           paymentMethod: paymentMethod,
           isPaid: isCardPaymentPkg ? 0 : 1,
           status: "confirmed",
-          isFinalizeImdt: route.params?.isFinalizeImdt ?? 0,
+          isFinalizeImdt: Number(route.params?.isFinalizeImdt ?? 0),
           deliveryAddress: route.params?.selectedAddress,
           items: packageItems,
         };

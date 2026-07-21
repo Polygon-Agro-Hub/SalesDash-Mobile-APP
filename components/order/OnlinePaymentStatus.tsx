@@ -14,8 +14,8 @@ import { RootStackParamList } from "../types/types";
 import { Ionicons, Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import CustomHeader from "../common/CustomHeader";
 import axios from "axios";
-import { useFocusEffect } from "@react-navigation/native";
 import environment from "@/environment/environment";
+import { io } from "socket.io-client";
 
 type OnlinePaymentStatusNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -34,8 +34,6 @@ interface StepConfig {
   label: string;
   icon: React.ReactNode;
 }
-
-const POLL_INTERVAL_SECONDS = 30;
 
 const OnlinePaymentStatus: React.FC<OnlinePaymentStatusProps> = ({
   navigation,
@@ -58,11 +56,8 @@ const OnlinePaymentStatus: React.FC<OnlinePaymentStatusProps> = ({
     paymentMethod,
   } = route.params || {};
 
-  const [countdown, setCountdown] = useState<number>(POLL_INTERVAL_SECONDS);
   const [checking, setChecking] = useState<boolean>(false);
 
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isMountedRef = useRef<boolean>(true);
   const hasNavigatedRef = useRef<boolean>(false);
 
@@ -92,21 +87,9 @@ const OnlinePaymentStatus: React.FC<OnlinePaymentStatusProps> = ({
     return "pending";
   };
 
-  const clearIntervals = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    if (countdownRef.current) {
-      clearInterval(countdownRef.current);
-      countdownRef.current = null;
-    }
-  }, []);
-
   const navigateToConfirmed = useCallback(() => {
     if (hasNavigatedRef.current) return;
     hasNavigatedRef.current = true;
-    clearIntervals();
     
     navigation.navigate("Main" as any, {
       screen: "OrderConfirmedScreen",
@@ -133,10 +116,8 @@ const OnlinePaymentStatus: React.FC<OnlinePaymentStatusProps> = ({
     selectedDate,
     selectedTimeSlot,
     navigation,
-    clearIntervals,
   ]);
 
-  
   const checkPaymentStatus = useCallback(
     async () => {
       if (!orderId || hasNavigatedRef.current) return;
@@ -166,58 +147,88 @@ const OnlinePaymentStatus: React.FC<OnlinePaymentStatusProps> = ({
     [orderId, navigateToConfirmed]
   );
 
-  const startPolling = useCallback(() => {
-    clearIntervals();
+  useEffect(() => {
+    if (!orderId) return;
+
+    isMountedRef.current = true;
     hasNavigatedRef.current = false;
 
-    
+    let socket: any = null;
+    let fallbackInterval: any = null;
+
+    // Parse URL manually to ensure compatibility with all JS engines
+    let socketUrl = environment.API_BASE_URL;
+    let socketPath = "/socket.io";
+    const urlMatch = environment.API_BASE_URL.match(/^(https?:\/\/[^\/]+)(.*)$/);
+    if (urlMatch) {
+      socketUrl = urlMatch[1];
+      let pathname = urlMatch[2];
+      if (pathname.endsWith("/")) {
+        pathname = pathname.slice(0, -1);
+      }
+      socketPath = `${pathname}/socket.io`;
+    }
+
+    const socketOptions = {
+      path: socketPath,
+      transports: ["websocket"],
+      timeout: 5000,
+    };
+
+    socket = io(socketUrl, socketOptions);
+
+    socket.on("connect", () => {
+      console.log("🔌 Connected to socket server");
+      socket.emit("joinOrder", orderId);
+      if (fallbackInterval) {
+        clearInterval(fallbackInterval);
+        fallbackInterval = null;
+      }
+    });
+
+    socket.on("connect_error", () => {
+      console.log("🔌 Socket connection error. Using REST polling fallback.");
+      if (!fallbackInterval) {
+        fallbackInterval = setInterval(checkPaymentStatus, 5000);
+      }
+    });
+
+    socket.on("paymentStatusChanged", (data) => {
+      console.log("💲 Payment status changed via socket:", data);
+      if (Number(data.isPaid) === 1) {
+        navigateToConfirmed();
+      }
+    });
+
+    socket.on("disconnect", () => {
+      console.log("🔌 Disconnected from socket server");
+    });
+
+    // Initial check
     checkPaymentStatus();
 
-    
-    setCountdown(POLL_INTERVAL_SECONDS);
+    // Start fallback polling immediately just in case serverless doesn't support websockets
+    fallbackInterval = setInterval(checkPaymentStatus, 5000);
 
-    
-    countdownRef.current = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) return POLL_INTERVAL_SECONDS;
-        return prev - 1;
-      });
-    }, 1000);
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        checkPaymentStatus();
+        return true;
+      }
+    );
 
-    
-    intervalRef.current = setInterval(() => {
-      setCountdown(POLL_INTERVAL_SECONDS);
-      checkPaymentStatus();
-    }, POLL_INTERVAL_SECONDS * 1000);
-  }, [checkPaymentStatus, clearIntervals]);
-
-  useFocusEffect(
-    useCallback(() => {
-      isMountedRef.current = true;
-      startPolling();
-
-      const backHandler = BackHandler.addEventListener(
-        "hardwareBackPress",
-        () => {
-          checkPaymentStatus();
-          return true;
-        }
-      );
-
-      return () => {
-        isMountedRef.current = false;
-        clearIntervals();
-        backHandler.remove();
-      };
-    }, [startPolling, checkPaymentStatus, clearIntervals])
-  );
-
-  useEffect(() => {
     return () => {
       isMountedRef.current = false;
-      clearIntervals();
+      if (socket) {
+        socket.disconnect();
+      }
+      if (fallbackInterval) {
+        clearInterval(fallbackInterval);
+      }
+      backHandler.remove();
     };
-  }, [clearIntervals]);
+  }, [orderId, checkPaymentStatus, navigateToConfirmed]);
 
   return (
     <KeyboardAvoidingView
@@ -329,38 +340,17 @@ const OnlinePaymentStatus: React.FC<OnlinePaymentStatusProps> = ({
             borderColor: "#E5E7EB",
           }}
         >
-          {checking ? (
-            <>
-              <ActivityIndicator size="small" color="#7B2FF7" />
-              <Text
-                style={{
-                  marginLeft: 8,
-                  fontSize: 12,
-                  color: "#6B7280",
-                  fontWeight: "500",
-                }}
-              >
-                Checking payment status…
-              </Text>
-            </>
-          ) : (
-            <>
-              <Ionicons name="refresh-circle" size={18} color="#7B2FF7" />
-              <Text
-                style={{
-                  marginLeft: 6,
-                  fontSize: 12,
-                  color: "#6B7280",
-                  fontWeight: "500",
-                }}
-              >
-                Next check in{" "}
-                <Text style={{ color: "#7B2FF7", fontWeight: "700" }}>
-                  {countdown}s
-                </Text>
-              </Text>
-            </>
-          )}
+          <ActivityIndicator size="small" color="#7B2FF7" />
+          <Text
+            style={{
+              marginLeft: 8,
+              fontSize: 12,
+              color: "#6B7280",
+              fontWeight: "500",
+            }}
+          >
+            Waiting for payment confirmation...
+          </Text>
         </View>
 
         {/* Vertical stepper */}

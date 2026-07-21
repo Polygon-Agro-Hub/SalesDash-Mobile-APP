@@ -60,6 +60,9 @@ import PackageConfirmation from "@/components/order/PackageConfirmation";
 import OnlinePayment from "@/components/order/OnlinePayment";
 import OrderConfimedOTPScreen from "@/components/otp/OrderConfimedOTPScreen";
 import OnlinePaymentStatus from "@/components/order/OnlinePaymentStatus";
+import { io } from "socket.io-client";
+import { updateGlobalUnreadCount } from "@/components/reminder/ReminderScreen";
+import environment from "@/environment/environment";
 
 // Disable console logs in production mode to improve React Native thread performance
 if (!__DEV__) {
@@ -182,6 +185,101 @@ function AppContent() {
       unsubscribeNetInfo();
     };
   }, [isOfflineAlertShown]);
+
+  useEffect(() => {
+    let socket: any = null;
+    let checkInterval: any = null;
+    let currentUserId: number | null = null;
+
+    const initSocket = async () => {
+      const token = await AsyncStorage.getItem("authToken");
+      if (!token) {
+        if (socket) {
+          socket.disconnect();
+          socket = null;
+        }
+        currentUserId = null;
+        return;
+      }
+
+      if (!currentUserId) {
+        try {
+          const response = await axios.get(
+            `${environment.API_BASE_URL}api/auth/user/profile`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          if (response.data?.data?.id) {
+            currentUserId = response.data.data.id;
+          }
+        } catch (err) {
+          console.log("Error fetching profile for socket registration:", err);
+          return;
+        }
+      }
+
+      if (currentUserId && !socket) {
+        let socketUrl = environment.API_BASE_URL;
+        let socketPath = "/socket.io";
+        const urlMatch = environment.API_BASE_URL.match(/^(https?:\/\/[^\/]+)(.*)$/);
+        if (urlMatch) {
+          socketUrl = urlMatch[1];
+          let pathname = urlMatch[2];
+          if (pathname.endsWith("/")) {
+            pathname = pathname.slice(0, -1);
+          }
+          socketPath = `${pathname}/socket.io`;
+        }
+
+        socket = io(socketUrl, {
+          path: socketPath,
+          transports: ["websocket"],
+        });
+
+        socket.on("connect", () => {
+          console.log("🔌 Global notification socket connected for agent ID:", currentUserId);
+          socket.emit("registerSalesAgent", currentUserId);
+        });
+
+        socket.on("newNotification", (data: any) => {
+          console.log("🔔 Real-time notification received via socket:", data);
+          if (typeof data.unreadCount === "number") {
+            updateGlobalUnreadCount(data.unreadCount);
+          }
+        });
+
+        socket.on("disconnect", () => {
+          console.log("🔌 Global notification socket disconnected");
+        });
+      }
+
+      // Fallback REST check if socket is not connected
+      if (token && (!socket || !socket.connected)) {
+        try {
+          const response = await axios.get(
+            `${environment.API_BASE_URL}api/notifications/`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          if (typeof response.data?.unreadCount === "number") {
+            updateGlobalUnreadCount(response.data.unreadCount);
+          }
+        } catch (err) {
+          console.log("Error in fallback notification fetch:", err);
+        }
+      }
+    };
+
+    initSocket();
+    checkInterval = setInterval(initSocket, 5000);
+
+    return () => {
+      if (socket) {
+        socket.disconnect();
+      }
+      if (checkInterval) {
+        clearInterval(checkInterval);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const interceptor = axios.interceptors.response.use(

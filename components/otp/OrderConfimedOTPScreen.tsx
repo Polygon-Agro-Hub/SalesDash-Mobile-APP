@@ -423,25 +423,25 @@ const OrderConfimedOTPScreen: React.FC = () => {
       enabled
       style={{ flex: 1, backgroundColor: "white" }}
     >
+      <CustomHeader
+        title="OTP Verification"
+        titleColor="#6C3CD1"
+        showBackButton={true}
+        navigation={navigation}
+        onBackPress={() => navigation.goBack()}
+      />
       <ScrollView
         ref={scrollViewRef}
         contentContainerStyle={{
           flexGrow: 1,
           justifyContent: "center",
-          paddingBottom: 250,
+          paddingBottom: isKeyboardVisible ? 100 : 0,
         }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         overScrollMode="never"
         style={{ backgroundColor: "white" }}
       >
-        <CustomHeader
-          title="OTP Verification"
-          titleColor="#6C3CD1"
-          showBackButton={true}
-          navigation={navigation}
-          onBackPress={() => navigation.goBack()}
-        />
         <View className="flex-1 bg-white items-center justify-center">
           <View className="flex-1 justify-center w-full max-w-[500px]">
             {/* Illustration - Centered */}

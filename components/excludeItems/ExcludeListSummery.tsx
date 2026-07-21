@@ -329,7 +329,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
     useCallback(() => {
       const onBackPress = () => {
         navigation.navigate("ExcludeListAdd", {
-          customerId: Number(customerId),
+          customerId: Number(id),
         });
         return true;
       };
@@ -340,7 +340,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
       );
 
       return () => backHandler.remove();
-    }, [navigation, customerId]),
+    }, [navigation, id]),
   );
 
   const fullTitle =
@@ -393,7 +393,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
         <TouchableOpacity
           onPress={() =>
             navigation.navigate("ExcludeListAdd", {
-              customerId: Number(customerId),
+              customerId: Number(id),
             })
           }
           style={{
@@ -499,7 +499,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
                 <TouchableOpacity
                   onPress={() =>
                     navigation.navigate("ExcludeListAdd", {
-                      customerId: Number(customerId),
+                      customerId: Number(id),
                     })
                   }
                   className="items-center"
@@ -640,7 +640,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
                 <TouchableOpacity
                   onPress={() =>
                     navigation.navigate("ExcludeListAdd", {
-                      customerId: Number(customerId),
+                      customerId: Number(id),
                     })
                   }
                   className="items-center"

@@ -364,6 +364,17 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       return processedItems;
     } else if (originalItems && originalItems.length > 0) {
       return originalItems;
+    } else if (route.params?.rawAdditionalItems && route.params?.rawAdditionalItems.length > 0) {
+      return route.params.rawAdditionalItems.map((item: any) => ({
+        id: item.id || item.productId,
+        name: item.name || "",
+        qty: item.quantity || item.qty || 0,
+        unitType: item.unit || item.unitType || "kg",
+        price: item.totalAmount || item.price || 0,
+        discount: item.discount || 0,
+        pricePerKg: item.pricePerKg || 0,
+        discountedPricePerKg: item.discountedPricePerKg || 0,
+      }));
     }
     return [];
   }

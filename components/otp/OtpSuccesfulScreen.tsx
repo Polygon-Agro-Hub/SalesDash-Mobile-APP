@@ -132,7 +132,7 @@ const OtpSuccesfulScreen: React.FC<OtpSuccesfulScreenProps> = ({
             <TouchableOpacity
               onPress={() =>
                 navigation.navigate("ExcludeListAdd", {
-                  customerId: Number(customerId),
+                  customerId: Number(id),
                 })
               }
               activeOpacity={0.7}
