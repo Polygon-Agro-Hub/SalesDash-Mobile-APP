@@ -479,28 +479,6 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
 
         {/* Update Button */}
         <View className="px-4 pb-8 pt-5">
-          {/*
-            FIX (iOS "Update" button: text not centered + corners not
-            fully rounded):
-
-            Relying on NativeWind className props ("rounded-full",
-            "items-center", "justify-center") on <LinearGradient> is
-            inconsistent on iOS — LinearGradient is a native view wrapped
-            by expo-linear-gradient, and its gradient layer does not
-            reliably get masked to the view's border radius purely from a
-            className. It can render with squared-off corners, and the
-            single-child centering can silently fail, leaving the text
-            pinned to the left.
-
-            The fix:
-            1. Move borderRadius + overflow:'hidden' to the outer
-               TouchableOpacity, so iOS actually clips the gradient layer
-               to a pill shape (masksToBounds needs overflow:hidden to
-               kick in on iOS).
-            2. Set alignItems/justifyContent/flexDirection as explicit
-               inline styles directly on the LinearGradient, instead of
-               via className, so the centering is guaranteed to apply.
-          */}
           <TouchableOpacity
             onPress={handleUpdate}
             disabled={saving || cityBlocksUpdate}
@@ -571,7 +549,7 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
         searchPlaceholder="Search city..."
         multiSelect={false}
         showSearch={true}
-        noResultsText="No Results Found"
+        noResultsText="No City Found"
       />
     </KeyboardAvoidingView>
   );

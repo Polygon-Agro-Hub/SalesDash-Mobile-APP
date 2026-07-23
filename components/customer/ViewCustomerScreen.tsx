@@ -37,6 +37,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import LoadingPage from "../common/LoadingPage";
+import FixedMarqueeText from "../common/MarqueeText";
 
 type ViewCustomerScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -121,6 +122,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   const [customerTitle, setCustomerTitle] = useState(initialTitle);
   const [customerNumber, setCustomerNumber] = useState(initialNumber);
   const isFirstRender = useRef(true);
+
+  const fullName = `${customerTitle ? customerTitle + ". " : ""}${customerName}`;
 
   useEffect(() => {
     setCustomerName(initialName || "");
@@ -474,16 +477,24 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
 
           {/* Center Title Content */}
           <View style={{ flex: 1, alignItems: "center", marginHorizontal: 12 }}>
-            <Text
-              style={{
-                fontSize: 18,
-                fontWeight: "bold",
-                color: "#000",
-                textAlign: "center",
-              }}
-            >
-              {`${customerTitle ? customerTitle + ". " : ""}${customerName}`}
-            </Text>
+            {fullName.length > 25 ? (
+              <FixedMarqueeText
+                text={fullName}
+                style={{ fontSize: 18, fontWeight: "bold", color: "#000" }}
+                speed={50}
+              />
+            ) : (
+              <Text
+                style={{
+                  fontSize: 18,
+                  fontWeight: "bold",
+                  color: "#000",
+                  textAlign: "center",
+                }}
+              >
+                {fullName}
+              </Text>
+            )}
 
             <Text
               style={{
@@ -835,8 +846,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
             ) : searchError ? (
               <ScrollView
                 contentContainerStyle={{
+                  justifyContent: "center",
                   alignItems: "center",
-                  marginTop: hp("8%"),
                   flexGrow: 1,
                 }}
                 refreshControl={
@@ -1043,9 +1054,9 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
             ) : (
               <ScrollView
                 contentContainerStyle={{
+                  justifyContent: "center",
                   alignItems: "center",
                   paddingHorizontal: 16,
-                  marginTop: hp("4%"),
                   flexGrow: 1,
                 }}
                 refreshControl={
@@ -1114,6 +1125,12 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 alignItems: "center",
                 justifyContent: "center",
                 marginRight: 8,
+
+                shadowColor: "#000000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.2,
+                shadowRadius: 4,
+                elevation: 3,
               }}
             >
               <Ionicons
@@ -1152,6 +1169,12 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 justifyContent: "center",
                 marginLeft: 8,
                 opacity: creditBalance < 0 ? 0.7 : 1,
+
+                shadowColor: "#000000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.2,
+                shadowRadius: 4,
+                elevation: 3,
               }}
             >
               <Ionicons

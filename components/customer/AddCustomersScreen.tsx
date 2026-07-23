@@ -1674,7 +1674,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         searchPlaceholder="Search city..."
         multiSelect={false}
         showSearch={true}
-        noResultsText="No Results Found"
+        noResultsText="No City Found"
       />
     </KeyboardAvoidingView>
   );

@@ -504,8 +504,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={{ flex: 1 }}
-      keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })}
+      style={{ flex: 1, backgroundColor: "white" }}
     >
       <View className="flex-1 bg-white">
         <CustomHeader
@@ -527,7 +526,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
           <View className="px-6 my-6">
             <View className="relative">
               <TextInput
-                className="p-3 pl-4 flex-row justify-between items-center border border-[#6B3BCF] rounded-full bg-[#F5F1FC]"
+                className="p-3 pl-4 flex-row justify-between h-[50px] items-center border border-[#6B3BCF] rounded-full bg-[#F5F1FC]"
                 placeholder="Search Products"
                 placeholderTextColor="black"
                 value={searchQuery}
@@ -546,63 +545,76 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
                 style={{
                   position: "absolute",
                   right: 16,
-                  marginTop: Platform.OS === "ios" ? 10 : 20,
-                  transform: [{ translateY: -12 }],
+                  marginTop: Platform.OS === "ios" ? 12 : 12,
+                  justifyContent: "center",
                 }}
               />
             </View>
           </View>
 
-          {searchError && (
-            <View className="flex-1 justify-center items-center">
-              <NoDataFound message={searchError} />
+          {filteredCrops.length === 0 ? (
+            <View
+              className="items-center justify-center px-6"
+              style={{ flex: 1, paddingBottom: 80 }}
+            >
+              <NoDataFound
+                message={
+                  searchQuery.trim() !== ""
+                    ? "No products found matching your search"
+                    : "No products found"
+                }
+              />
             </View>
-          )}
-
-          {/* Column headers */}
-          <View className="flex-row justify-between items-center px-6 mb-2">
-            <Text className="text-black text-sm font-semibold">Product</Text>
-            <View className="flex-row items-center" style={{ gap: 20 }}>
-              <View style={{ width: 52, alignItems: "center" }}>
-                <Text
-                  className="text-green-600 text-sm font-semibold"
-                  style={{ textAlign: "center" }}
-                >
-                  Include
+          ) : (
+            <>
+              {/* Column headers */}
+              <View className="flex-row justify-between items-center px-6 mb-2">
+                <Text className="text-black text-sm font-semibold">
+                  Product
                 </Text>
+                <View className="flex-row items-center" style={{ gap: 20 }}>
+                  <View style={{ width: 52, alignItems: "center" }}>
+                    <Text
+                      className="text-green-600 text-sm font-semibold"
+                      style={{ textAlign: "center" }}
+                    >
+                      Include
+                    </Text>
+                  </View>
+                  <View style={{ width: 52, alignItems: "center" }}>
+                    <Text
+                      className="text-red-500 text-sm font-semibold"
+                      style={{ textAlign: "center" }}
+                    >
+                      Exclude
+                    </Text>
+                  </View>
+                </View>
               </View>
-              <View style={{ width: 52, alignItems: "center" }}>
-                <Text
-                  className="text-red-500 text-sm font-semibold"
-                  style={{ textAlign: "center" }}
-                >
-                  Exclude
-                </Text>
-              </View>
-            </View>
-          </View>
 
-          <View className="flex-1">
-            <FlatList
-              keyboardShouldPersistTaps="handled"
-              data={filteredCrops}
-              keyExtractor={(item) => item.id.toString()}
-              contentContainerStyle={{ paddingBottom: 100 }}
-              renderItem={({ item }) => (
-                <CropRow
-                  item={item}
-                  isIncluded={selectedIncludeCrops.includes(item.id)}
-                  isExcluded={selectedExcludeCrops.includes(item.id)}
-                  onToggleInclude={toggleInclude}
-                  onToggleExclude={toggleExclude}
+              <View className="flex-1">
+                <FlatList
+                  keyboardShouldPersistTaps="handled"
+                  data={filteredCrops}
+                  keyExtractor={(item) => item.id.toString()}
+                  contentContainerStyle={{ paddingBottom: 100 }}
+                  renderItem={({ item }) => (
+                    <CropRow
+                      item={item}
+                      isIncluded={selectedIncludeCrops.includes(item.id)}
+                      isExcluded={selectedExcludeCrops.includes(item.id)}
+                      onToggleInclude={toggleInclude}
+                      onToggleExclude={toggleExclude}
+                    />
+                  )}
+                  initialNumToRender={12}
+                  maxToRenderPerBatch={12}
+                  windowSize={7}
+                  removeClippedSubviews={Platform.OS === "android"}
                 />
-              )}
-              initialNumToRender={12}
-              maxToRenderPerBatch={12}
-              windowSize={7}
-              removeClippedSubviews={Platform.OS === "android"}
-            />
-          </View>
+              </View>
+            </>
+          )}
         </View>
       </View>
 
@@ -613,38 +625,46 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
             className="w-full max-w-[500px] items-center"
             disabled={loading}
           >
-            <LinearGradient
-              colors={["#6839CF", "#874DDB"]}
-              start={[0, 0]}
-              end={[1, 1]}
+            <View
               style={{
                 width: "70%",
-                paddingVertical: 12,
                 borderRadius: 25,
-                alignItems: "center",
-                justifyContent: "center",
+                backgroundColor: "#874DDB",
                 shadowColor: "#000000",
-                shadowOffset: {
-                  width: 0,
-                  height: 2,
-                },
-                shadowOpacity: 0.2,
-                shadowRadius: 10,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 6,
                 elevation: 8,
               }}
             >
-              {loading ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <View>
-                  <Text
-                    style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}
-                  >
-                    Continue
-                  </Text>
-                </View>
-              )}
-            </LinearGradient>
+              <LinearGradient
+                colors={["#6839CF", "#874DDB"]}
+                start={[0, 0]}
+                end={[1, 1]}
+                style={{
+                  paddingVertical: 12,
+                  borderRadius: 25,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <View>
+                    <Text
+                      style={{
+                        color: "#fff",
+                        fontSize: 18,
+                        fontWeight: "bold",
+                      }}
+                    >
+                      Continue
+                    </Text>
+                  </View>
+                )}
+              </LinearGradient>
+            </View>
           </TouchableOpacity>
         </View>
       )}

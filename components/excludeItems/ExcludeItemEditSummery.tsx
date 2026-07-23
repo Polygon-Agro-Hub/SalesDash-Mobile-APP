@@ -406,9 +406,7 @@ const ExcludeItemEditSummery: React.FC<ExcludeListAddProps> = ({
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      enabled
-      style={{ flex: 1 }}
-      className="bg-white"
+      style={{ flex: 1, backgroundColor: "white" }}
     >
       {/* ── Inline header with marquee support ── */}
       <View
@@ -791,6 +789,7 @@ const ExcludeItemEditSummery: React.FC<ExcludeListAddProps> = ({
       <View className="absolute bottom-0 left-0 right-0 bg-white pt-4 pb-4 px-6 items-center">
         <TouchableOpacity
           className="w-full max-w-[500px] items-center"
+          activeOpacity={0.85}
           onPress={() =>
             navigation.navigate("ExcludeAddMore", {
               id: id,
@@ -800,27 +799,44 @@ const ExcludeItemEditSummery: React.FC<ExcludeListAddProps> = ({
             })
           }
         >
-          <LinearGradient
-            colors={["#6839CF", "#874DDB"]}
-            start={[0, 0]}
-            end={[1, 1]}
+          {/*
+            Shadow wrapper: the shadow now lives on this plain View instead of
+            the LinearGradient. On iOS, a shadow applied directly to a view
+            with borderRadius + overflow (which the gradient needs to clip its
+            colors to the rounded corners) gets clipped away and never shows.
+            Putting the shadow on this outer wrapper (no overflow: hidden) and
+            an increased vertical offset + soft radius gives a proper, visible
+            drop shadow underneath the button. `elevation` handles Android.
+          */}
+          <View
             style={{
               width: "70%",
-              paddingVertical: 12,
               borderRadius: 25,
-              alignItems: "center",
-              justifyContent: "center",
-              shadowColor: "#000000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.2,
-              shadowRadius: 10,
-              elevation: 8,
+              backgroundColor: "#874DDB",
+              shadowColor: "#6839CF",
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.35,
+              shadowRadius: 12,
+              elevation: 10,
             }}
           >
-            <Text style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}>
-              {getButtonText()}
-            </Text>
-          </LinearGradient>
+            <LinearGradient
+              colors={["#6839CF", "#874DDB"]}
+              start={[0, 0]}
+              end={[1, 1]}
+              style={{
+                paddingVertical: 12,
+                borderRadius: 25,
+                alignItems: "center",
+                justifyContent: "center",
+                overflow: "hidden",
+              }}
+            >
+              <Text style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}>
+                {getButtonText()}
+              </Text>
+            </LinearGradient>
+          </View>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>

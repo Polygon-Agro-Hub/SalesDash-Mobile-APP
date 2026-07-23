@@ -1225,30 +1225,30 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
 
           <TouchableOpacity onPress={handleConfirm} activeOpacity={0.8}>
             <View
-                 style={{
-                  width: "60%",
-                  borderRadius: 30,
-                  backgroundColor: "transparent",
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 8 },
-                  shadowOpacity: 0.25,
-                  shadowRadius: 10,
-                  elevation: 8,
-                }}
+              style={{
+                width: "60%",
+                borderRadius: 30,
+                backgroundColor: "transparent",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.25,
+                shadowRadius: 10,
+                elevation: 8,
+              }}
             >
               <LinearGradient
                 colors={["#6839CF", "#874DDB"]}
                 className="py-3 px-6 rounded-full"
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
-                  style={{
-                    height: 40,
-                    width:120,
-                    justifyContent:'center',
-                    alignItems:'center',
-                    borderRadius:30,
-                    overflow: "hidden",
-                  }}
+                style={{
+                  height: 40,
+                  width: 120,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  borderRadius: 30,
+                  overflow: "hidden",
+                }}
               >
                 <View
                   className="w-20 flex-row justify-center items-center"
@@ -1413,11 +1413,11 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                 onPress={handleSaveItem}
                 className="bg-purple-600 py-3 rounded-full items-center"
                 style={{
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.12,
-                  shadowRadius: 4,
-                  elevation: 3,
+                  shadowColor: "#7C3AED",
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 6,
+                  elevation: 6,
                 }}
               >
                 <Text className="text-white font-semibold text-base">Save</Text>
@@ -1583,11 +1583,11 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                 className="bg-purple-700 py-3 rounded-full items-center justify-center"
                 onPress={saveUpdatedItem}
                 style={{
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.12,
-                  shadowRadius: 4,
-                  elevation: 4,
+                  shadowColor: "#7C3AED",
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 6,
+                  elevation: 6,
                 }}
               >
                 <Text className="text-white font-semibold text-center">
