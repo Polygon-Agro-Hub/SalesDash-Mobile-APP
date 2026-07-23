@@ -443,56 +443,69 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
             </View>
           </View>
 
-          {searchError && (
-            <View className="flex-1 justify-center items-center">
-              <NoDataFound message={searchError} />
+          {filteredCrops.length === 0 ? (
+            <View
+              className="items-center justify-center px-6"
+              style={{ flex: 1, paddingBottom: 80 }}
+            >
+              <NoDataFound
+                message={
+                  searchQuery.trim() !== ""
+                    ? "No products found matching your search"
+                    : "No products found"
+                }
+              />
             </View>
-          )}
-
-          {/* Column headers */}
-          <View className="flex-row justify-between items-center px-6 mb-2">
-            <Text className="text-black text-sm font-semibold">Product</Text>
-            <View className="flex-row items-center" style={{ gap: 20 }}>
-              <View style={{ width: 52, alignItems: "center" }}>
-                <Text
-                  className="text-green-600 text-sm font-semibold"
-                  style={{ textAlign: "center" }}
-                >
-                  Include
+          ) : (
+            <>
+              {/* Column headers */}
+              <View className="flex-row justify-between items-center px-6 mb-2">
+                <Text className="text-black text-sm font-semibold">
+                  Product
                 </Text>
+                <View className="flex-row items-center" style={{ gap: 20 }}>
+                  <View style={{ width: 52, alignItems: "center" }}>
+                    <Text
+                      className="text-green-600 text-sm font-semibold"
+                      style={{ textAlign: "center" }}
+                    >
+                      Include
+                    </Text>
+                  </View>
+                  <View style={{ width: 52, alignItems: "center" }}>
+                    <Text
+                      className="text-red-500 text-sm font-semibold"
+                      style={{ textAlign: "center" }}
+                    >
+                      Exclude
+                    </Text>
+                  </View>
+                </View>
               </View>
-              <View style={{ width: 52, alignItems: "center" }}>
-                <Text
-                  className="text-red-500 text-sm font-semibold"
-                  style={{ textAlign: "center" }}
-                >
-                  Exclude
-                </Text>
-              </View>
-            </View>
-          </View>
 
-          <View className="flex-1">
-            <FlatList
-              keyboardShouldPersistTaps="handled"
-              data={filteredCrops}
-              keyExtractor={(item) => item.id.toString()}
-              contentContainerStyle={{ paddingBottom: 100 }}
-              renderItem={({ item }) => (
-                <CropRow
-                  item={item}
-                  isIncluded={selectedIncludeCrops.includes(item.id)}
-                  isExcluded={selectedExcludeCrops.includes(item.id)}
-                  onToggleInclude={toggleInclude}
-                  onToggleExclude={toggleExclude}
+              <View className="flex-1">
+                <FlatList
+                  keyboardShouldPersistTaps="handled"
+                  data={filteredCrops}
+                  keyExtractor={(item) => item.id.toString()}
+                  contentContainerStyle={{ paddingBottom: 100 }}
+                  renderItem={({ item }) => (
+                    <CropRow
+                      item={item}
+                      isIncluded={selectedIncludeCrops.includes(item.id)}
+                      isExcluded={selectedExcludeCrops.includes(item.id)}
+                      onToggleInclude={toggleInclude}
+                      onToggleExclude={toggleExclude}
+                    />
+                  )}
+                  initialNumToRender={12}
+                  maxToRenderPerBatch={12}
+                  windowSize={7}
+                  removeClippedSubviews={Platform.OS === "android"}
                 />
-              )}
-              initialNumToRender={12}
-              maxToRenderPerBatch={12}
-              windowSize={7}
-              removeClippedSubviews={Platform.OS === "android"}
-            />
-          </View>
+              </View>
+            </>
+          )}
         </View>
       </View>
 

@@ -376,9 +376,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      enabled
-      style={{ flex: 1 }}
-      className="bg-white"
+      style={{ flex: 1, backgroundColor: "white" }}
     >
       {/* Header */}
       <View
@@ -539,12 +537,13 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
                 >
                   <View className="flex-row items-center gap-3 flex-1">
                     <Checkbox
-                      checked={preferCrops.length > 0 && selectedPreferIds.length === preferCrops.length}
+                      checked={
+                        preferCrops.length > 0 &&
+                        selectedPreferIds.length === preferCrops.length
+                      }
                       onPress={toggleSelectAllPrefer}
                     />
-                    <Text
-                      style={{ fontSize: 13, color: "#9CA3AF" }}
-                    >
+                    <Text style={{ fontSize: 13, color: "#9CA3AF" }}>
                       Item ({String(preferCrops.length).padStart(2, "0")})
                     </Text>
                   </View>
@@ -680,12 +679,13 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
                 >
                   <View className="flex-row items-center gap-3 flex-1">
                     <Checkbox
-                      checked={excludeCrops.length > 0 && selectedExcludeIds.length === excludeCrops.length}
+                      checked={
+                        excludeCrops.length > 0 &&
+                        selectedExcludeIds.length === excludeCrops.length
+                      }
                       onPress={toggleSelectAllExclude}
                     />
-                    <Text
-                      style={{ fontSize: 13, color: "#9CA3AF" }}
-                    >
+                    <Text style={{ fontSize: 13, color: "#9CA3AF" }}>
                       Item ({String(excludeCrops.length).padStart(2, "0")})
                     </Text>
                   </View>

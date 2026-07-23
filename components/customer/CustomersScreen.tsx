@@ -356,7 +356,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                 onChangeText={handleSearch}
                 placeholder="Search By Name, Phone Number"
                 placeholderTextColor="#6839CF"
-                className="flex-1 text-sm text-gray-700 h-11 py-0"
+                className="flex-1 text-sm text-gray-700 bg-[#F5F1FC] h-11 py-0"
                 style={{
                   fontStyle: "italic",
                   includeFontPadding: false,
@@ -400,17 +400,18 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                 <View
                   style={{
                     flex: 1,
-                    marginBottom: 80,
                     justifyContent: "center",
                     alignItems: "center",
-                    paddingVertical: 16,
+                    paddingBottom: 110,
                   }}
                 >
                   <Image
                     source={require("@/assets/images/public/no-data.webp")}
                     style={{
-                      width: wp("60%"),
-                      height: hp("30%"),
+                      width: wp("50%"),
+                      height: wp("50%"),
+                      maxWidth: 200,
+                      maxHeight: 200,
                       resizeMode: "contain",
                     }}
                   />
@@ -421,6 +422,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                         fontStyle: "italic",
                         textAlign: "center",
                         marginTop: 16,
+                        fontSize: SCREEN_HEIGHT > 900 ? 18 : 14,
                       }}
                     >
                       No customers found for "{searchQuery}"
@@ -432,6 +434,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                         fontStyle: "italic",
                         textAlign: "center",
                         marginTop: 16,
+                        fontSize: SCREEN_HEIGHT > 900 ? 18 : 14,
                       }}
                     >
                       No registered customers yet

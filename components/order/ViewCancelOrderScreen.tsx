@@ -195,11 +195,9 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
             setOrder(response.data.data);
             const orderData = response.data.data;
 
-            // delivery fee comes straight from the order row now
             setDeliveryFee(parseFloat(orderData.deliveryCharge) || 0);
             setIsPackage(orderData.isPackage);
 
-            // keep this only if you still need customerData for name/address display
             if (orderData.userId || userId) {
               await fetchCustomerData(orderData.userId || userId);
             }
@@ -505,6 +503,42 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
     }, [navigation]),
   );
 
+  const formatApartmentAddress = (details: {
+    houseNo?: string;
+    floorNo?: string;
+    buildingNo?: string;
+    buildingName?: string;
+    unitNo?: string;
+    streetName?: string;
+    city?: string;
+  }): string => {
+    const parts = [
+      details.houseNo,
+      details.floorNo,
+      details.buildingNo,
+      details.buildingName,
+      details.unitNo,
+      details.streetName,
+      details.city,
+    ]
+      .map((p) => p?.trim())
+      .filter((p) => p && p.length > 0);
+
+    return parts.length > 0 ? parts.join(", ") : "Not Available";
+  };
+
+  const formatHouseAddress = (details: {
+    houseNo?: string;
+    streetName?: string;
+    city?: string;
+  }): string => {
+    const parts = [details.houseNo, details.streetName, details.city]
+      .map((p) => p?.trim())
+      .filter((p) => p && p.length > 0);
+
+    return parts.length > 0 ? parts.join(", ") : "Not Available";
+  };
+
   const resolveHoldLabel = (event: HoldEvent): string =>
     event.holdReason === "Other" && event.otherReason
       ? event.otherReason
@@ -728,28 +762,25 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                 {order.fullAddress
                   ? order.fullAddress
                   : customerData?.buildingDetails
-                  ? (() => {
-                      const buildingType =
-                        customerData?.buildingType ||
-                        order.customerInfo?.buildingType ||
-                        order.buildingType;
-                      if (buildingType === "Apartment") {
-                        return (
-                          `${customerData.buildingDetails.houseNo || ""}, ${customerData.buildingDetails.floorNo || ""}, ${customerData.buildingDetails.buildingNo || ""}, ${customerData.buildingDetails.buildingName || ""}, ${customerData.buildingDetails.unitNo || ""}, ${customerData.buildingDetails.streetName || ""}, ${customerData.buildingDetails.city || ""}`
-                            .replace(/,\s*,/g, ",")
-                            .replace(/^,\s*|,\s*$/g, "")
-                            .trim() || "Not Available"
-                        );
-                      } else if (buildingType === "House") {
-                        return (
-                          `${customerData.buildingDetails.houseNo || ""}, ${customerData.buildingDetails.streetName || ""}, ${customerData.buildingDetails.city || ""}`.trim() ||
-                          "Not Available"
-                        );
-                      } else {
-                        return "Not Available";
-                      }
-                    })()
-                  : "Not Available"}
+                    ? (() => {
+                        const buildingType =
+                          customerData?.buildingType ||
+                          order.customerInfo?.buildingType ||
+                          order.buildingType;
+
+                        if (buildingType === "Apartment") {
+                          return formatApartmentAddress(
+                            customerData.buildingDetails,
+                          );
+                        } else if (buildingType === "House") {
+                          return formatHouseAddress(
+                            customerData.buildingDetails,
+                          );
+                        } else {
+                          return "Not Available";
+                        }
+                      })()
+                    : "Not Available"}
               </Text>
             </View>
 

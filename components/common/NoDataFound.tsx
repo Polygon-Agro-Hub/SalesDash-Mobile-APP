@@ -48,7 +48,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 14,
     letterSpacing: 0.3,
-    fontFamily: Platform.OS === "ios" ? "System" : "Roboto",
   },
 });
 

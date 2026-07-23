@@ -375,8 +375,8 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
           colors={["#854BDA", "#6E3DD1"]}
           className="shadow-md px-4 items-center justify-center"
           style={{
-            height: hp(12) + topInset,
-            paddingTop: Platform.OS === "ios" ? topInset + 8 : 16,
+            height: hp(10) + topInset,
+            paddingTop: Platform.OS === "ios" ? topInset + 8 : 8,
             paddingBottom: 24,
           }}
         >
@@ -518,8 +518,8 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                           marginBottom: 16,
                           borderWidth: item.isPaid === 0 ? 1.5 : 1,
                           borderColor:
-                            item.isPaid === 0 ? "#FF4C4C" : "#EAEAEA",
-                          shadowColor: "#000",
+                            item.isPaid === 0 ? "#FF4C4C" : "#E0E0E0",
+                          shadowColor: "#0000001A",
                           shadowOpacity: 0.12,
                           shadowOffset: { width: 0, height: 8 },
                           shadowRadius: 10,
@@ -669,7 +669,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                               color: "#808FA2",
                             }}
                           >
-                            {item.sheduleTime}
+                           Within {item.sheduleTime}
                           </Text>
                           <Text
                             style={{
