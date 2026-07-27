@@ -698,7 +698,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
             setEmailError("This email is already registered");
             showAlert(
               "Account Already Exists",
-              "Both mobile number and email are already registered. Please sign in instead.",
+              "Both mobile number and email are already registered. Please use different credentials.",
             );
           } else if (message.includes("Mobile Number")) {
             setPhoneError("This mobile number is already registered");
