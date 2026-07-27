@@ -576,8 +576,8 @@ const ExcludeItemEditSummery: React.FC<ExcludeListAddProps> = ({
                     </Text>
                   </View>
                   <Text
-                    className="flex-1 text-center"
-                    style={{ fontSize: 13, color: "#9CA3AF" }}
+                    className="flex-1 text-left"
+                    style={{ fontSize: 13, color: "#9CA3AF", paddingLeft: 4 }}
                   >
                     Name
                   </Text>
@@ -726,8 +726,8 @@ const ExcludeItemEditSummery: React.FC<ExcludeListAddProps> = ({
                     </Text>
                   </View>
                   <Text
-                    className="flex-1 text-center"
-                    style={{ fontSize: 13, color: "#9CA3AF" }}
+                    className="flex-1 text-left"
+                    style={{ fontSize: 13, color: "#9CA3AF", paddingLeft: 4 }}
                   >
                     Name
                   </Text>
