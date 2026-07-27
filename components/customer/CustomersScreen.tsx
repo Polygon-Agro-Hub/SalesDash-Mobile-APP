@@ -47,6 +47,59 @@ interface Customer {
   orderCount: number;
 }
 
+const DUMMY_CUSTOMERS: Customer[] = [
+  {
+    id: "1",
+    firstName: "Pasindu",
+    lastName: "Perera",
+    phoneNumber: "+94771234567",
+    order: 1,
+    cusId: "CUS-406",
+    title: "Mr",
+    orderCount: 5,
+  },
+  {
+    id: "2",
+    firstName: "Nimal",
+    lastName: "Silva",
+    phoneNumber: "+94777654321",
+    order: 2,
+    cusId: "CUS-407",
+    title: "Mr",
+    orderCount: 12,
+  },
+  {
+    id: "3",
+    firstName: "Kamal",
+    lastName: "Gunawardena",
+    phoneNumber: "+94712345678",
+    order: 3,
+    cusId: "CUS-408",
+    title: "Mr",
+    orderCount: 3,
+  },
+  {
+    id: "4",
+    firstName: "Ruwan",
+    lastName: "Fernando",
+    phoneNumber: "+94754321098",
+    order: 4,
+    cusId: "CUS-409",
+    title: "Mr",
+    orderCount: 8,
+  },
+  {
+    id: "5",
+    firstName: "Saman",
+    lastName: "Kumara",
+    phoneNumber: "+94723456789",
+    order: 5,
+    cusId: "CUS-410",
+    title: "Mr",
+    orderCount: 1,
+  },
+];
+
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
@@ -119,48 +172,22 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
     if (isLoadMore) safeSetLoadingMore(true);
 
     try {
-      const storedToken = await AsyncStorage.getItem("authToken");
-      if (!storedToken) {
-        Alert.alert("Error", "No authentication token found");
-        safeSetLoading(false);
-        return;
+      setError(null);
+      // Simulate small load delay
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      const sortedCustomers = sortCustomersByName(DUMMY_CUSTOMERS);
+
+      if (isLoadMore) {
+        // No-op for load more since we load all at once locally
+      } else {
+        safeSetCustomers(sortedCustomers);
       }
 
-      const customersUrl = `${environment.API_BASE_URL.replace(/\/$/, "")}/api/customer/get-customers?page=${page}&limit=${CUSTOMERS_PER_PAGE}`;
-
-      const response = await axios.get(customersUrl, {
-        headers: {
-          Authorization: `Bearer ${storedToken}`,
-        },
-      });
-
-      if (response.data.success && response.data.data) {
-        const sortedCustomers = sortCustomersByName(response.data.data);
-
-        if (isLoadMore) {
-          if (isMounted.current) {
-            setCustomers((prevCustomers) => {
-              const updatedCustomers = [...prevCustomers, ...sortedCustomers];
-              setFilteredCustomers(updatedCustomers);
-              return updatedCustomers;
-            });
-          }
-        } else {
-          safeSetCustomers(sortedCustomers);
-        }
-
-        if (isMounted.current) {
-          setHasMore(response.data.hasMore);
-          setCurrentPage(response.data.currentPage);
-          setTotalCount(response.data.totalCount);
-        }
-      } else {
-        if (!isLoadMore) {
-          safeSetCustomers([]);
-        }
-        if (isMounted.current) {
-          setHasMore(false);
-        }
+      if (isMounted.current) {
+        setHasMore(false);
+        setCurrentPage(1);
+        setTotalCount(sortedCustomers.length);
       }
     } catch (error) {
       console.error("Failed to fetch customers:", error);
@@ -171,13 +198,6 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
         setHasMore(false);
         setError("Failed to load customers");
       }
-
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        await AsyncStorage.removeItem("authToken");
-        if (isMounted.current) {
-          navigation.navigate("LoginScreen" as any);
-        }
-      }
     } finally {
       if (showFullLoading) safeSetLoading(false);
       if (isLoadMore) safeSetLoadingMore(false);
@@ -186,9 +206,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   };
 
   const loadMoreCustomers = () => {
-    if (!loadingMore && hasMore && searchQuery === "") {
-      loadCustomers(currentPage + 1, false, true);
-    }
+    // No-op
   };
 
   useEffect(() => {
@@ -366,24 +384,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
               <FontAwesome name="search" size={22} color="#884EDC" />
             </View>
 
-            {/* Floating Button */}
-            {!isKeyboardVisible && (
-              <TouchableOpacity
-                className="absolute bottom-28 right-6 w-14 h-14 rounded-full items-center justify-center"
-                onPress={() => navigation.navigate("AddCustomersScreen" as any)}
-                style={{
-                  backgroundColor: "#7743D4",
-                  shadowColor: "#8149D8",
-                  shadowOffset: { width: 1, height: 2 },
-                  shadowOpacity: 0.4,
-                  shadowRadius: 4,
-                  elevation: 6,
-                  zIndex: 1000,
-                }}
-              >
-                <Ionicons name="add" size={45} color="#fff" />
-              </TouchableOpacity>
-            )}
+
 
             <View style={{ paddingVertical: 10 }} className="flex-1 px-4">
               {error ? (
@@ -454,18 +455,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                   ListFooterComponent={renderFooter}
                   scrollEventThrottle={16}
                   renderItem={({ item }: { item: Customer }) => (
-                    <TouchableOpacity
-                      activeOpacity={1}
-                      onPress={() =>
-                        navigation.navigate("ViewCustomerScreen", {
-                          name: `${item.firstName} ${item.lastName}`,
-                          title: item.title,
-                          number: item.phoneNumber,
-                          customerId: item.cusId,
-                          id: item.id,
-                        })
-                      }
-                    >
+                    <View>
                      
                       <View
                         style={{
@@ -541,7 +531,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                           </View>
                         </View>
                       </View>
-                    </TouchableOpacity>
+                    </View>
                   )}
                 />
               )}

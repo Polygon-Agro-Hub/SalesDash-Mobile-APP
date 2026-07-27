@@ -17,9 +17,6 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import ReminderScreenSkeleton from "./ReminderSkeleton";
-import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import environment from "@/environment/environment";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback } from "react";
@@ -67,15 +64,67 @@ interface Notification {
   status: string;
 }
 
+// Module-level persistent dummy notifications
+let localDummyNotifications: Notification[] = [
+  {
+    id: 1,
+    orderId: 1024,
+    title: "Order is Processing",
+    readStatus: false,
+    createdAt: new Date().toISOString(),
+    invNo: "78394",
+    orderStatus: "Processing",
+    reportStatus: "Pending",
+    cusId: "406",
+    customerId: "406",
+    customerName: "Pasindu Perera",
+    phoneNumber: "+94771234567",
+    orderid: 1024,
+    status: "Processing",
+  },
+  {
+    id: 2,
+    orderId: 1025,
+    title: "Payment Reminder",
+    readStatus: false,
+    createdAt: new Date(Date.now() - 3600000).toISOString(),
+    invNo: "78395",
+    orderStatus: "Ordered",
+    reportStatus: "Approved",
+    cusId: "407",
+    customerId: "407",
+    customerName: "Pasindu Perera",
+    phoneNumber: "+94771234567",
+    orderid: 1025,
+    status: "Ordered",
+  },
+  {
+    id: 3,
+    orderId: 1026,
+    title: "Order is Delivered",
+    readStatus: true,
+    createdAt: new Date(Date.now() - 7200000).toISOString(),
+    invNo: "78396",
+    orderStatus: "Delivered",
+    reportStatus: "Delivered",
+    cusId: "408",
+    customerId: "408",
+    customerName: "Pasindu Perera",
+    phoneNumber: "+94771234567",
+    orderid: 1026,
+    status: "Delivered",
+  }
+];
+
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>(localDummyNotifications);
   const [unreadCount, setUnreadCount] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedNotification, setSelectedNotification] =
     useState<Notification | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const insets = useSafeAreaInsets();
   const highestNotificationId = useRef(0);
@@ -102,58 +151,20 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
     return unsubscribe;
   }, [unreadCount, isLoading]);
 
-  const fetchNotifications = async () => {
-    try {
-      setError(null);
-
-      const storedToken = await AsyncStorage.getItem("authToken");
-
-      if (!storedToken) {
-        return;
-      }
-
-      const response = await axios.get(
-        `${environment.API_BASE_URL}api/notifications/`,
-        {
-          headers: {
-            Authorization: `Bearer ${storedToken}`,
-          },
-        },
-      );
-
-      const data = response.data.data || {};
-      const newNotifications = data.notifications || [];
-      const newUnreadCount = data.unreadCount || 0;
-
-      setNotifications(newNotifications);
-      setUnreadCount(newUnreadCount);
+  const fetchNotifications = () => {
+    setIsLoading(true);
+    setError(null);
+    setTimeout(() => {
+      setNotifications([...localDummyNotifications]);
       setIsLoading(false);
-
-      if (newNotifications.length > 0) {
-        const maxId = Math.max(
-          ...newNotifications.map((n: Notification) => n.id),
-        );
-        highestNotificationId.current = maxId;
-      }
-    } catch (err: any) {
-      if (err.response?.status === 401 || err.response?.status === 403) {
-        const token = await AsyncStorage.getItem("authToken");
-        if (!token) {
-          return;
-        }
-      }
-
-      console.error("Failed to fetch notifications:", err);
-      setError("Failed to load notifications. Please try again.");
-      setNotifications([]);
-      setUnreadCount(0);
-      setIsLoading(false);
-    } finally {
-      if (isFirstLoad.current) {
-        isFirstLoad.current = false;
-      }
-    }
+    }, 400); // Small delay to simulate loading
   };
+
+  // Update unread count automatically when notifications state updates
+  useEffect(() => {
+    const unread = notifications.filter((n) => !n.readStatus).length;
+    setUnreadCount(unread);
+  }, [notifications]);
 
   useEffect(() => {
     fetchNotifications();
@@ -172,69 +183,31 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
     setModalVisible(true);
   };
 
-  const markAsRead = async (id: number) => {
-    try {
-      const notificationToUpdate = notifications.find((n) => n.id === id);
+  const markAsRead = (id: number) => {
+    localDummyNotifications = localDummyNotifications.map((n) =>
+      n.id === id ? { ...n, readStatus: true } : n
+    );
+    setNotifications([...localDummyNotifications]);
 
-      if (notificationToUpdate && !notificationToUpdate.readStatus) {
-        const storedToken = await AsyncStorage.getItem("authToken");
-        await axios.patch(
-          `${environment.API_BASE_URL}api/notifications/mark-read/${id}`,
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${storedToken}`,
-            },
-          },
-        );
-
-        setNotifications((prev) =>
-          prev.map((n) => (n.id === id ? { ...n, readStatus: true } : n)),
-        );
-
-        setUnreadCount((prev) => Math.max(0, prev - 1));
-      }
-
-      if (notificationToUpdate) {
-        navigation.navigate("View_CancelOrderScreen" as any, {
-          orderId: notificationToUpdate.orderid,
-          userId: notificationToUpdate.cusId || notificationToUpdate.customerId,
-          status: notificationToUpdate.status,
-          reportStatus: notificationToUpdate.reportStatus,
-        });
-      }
-    } catch (err) {
-      console.error("Failed to mark as read:", err);
+    const notificationToUpdate = localDummyNotifications.find((n) => n.id === id);
+    if (notificationToUpdate) {
+      navigation.navigate("View_CancelOrderScreen" as any, {
+        orderId: notificationToUpdate.orderid,
+        userId: notificationToUpdate.cusId || notificationToUpdate.customerId,
+        status: notificationToUpdate.status,
+        reportStatus: notificationToUpdate.reportStatus,
+      });
     }
   };
 
-  const deleteNotification = async () => {
+  const deleteNotification = () => {
     if (!selectedNotification) return;
 
-    try {
-      const storedToken = await AsyncStorage.getItem("authToken");
-      await axios.delete(
-        `${environment.API_BASE_URL}api/notifications/${selectedNotification.id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${storedToken}`,
-          },
-        },
-      );
-
-      setNotifications((prev) =>
-        prev.filter((n) => n.id !== selectedNotification.id),
-      );
-
-      if (!selectedNotification.readStatus) {
-        setUnreadCount((prev) => Math.max(0, prev - 1));
-      }
-
-      setModalVisible(false);
-    } catch (err) {
-      console.error("Failed to delete notification:", err);
-      setError("Failed to delete notification");
-    }
+    localDummyNotifications = localDummyNotifications.filter(
+      (n) => n.id !== selectedNotification.id
+    );
+    setNotifications([...localDummyNotifications]);
+    setModalVisible(false);
   };
 
   const getNotificationIcon = (title: string) => {
@@ -281,7 +254,7 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
         </View>
       </LinearGradient>
 
-      {isLoading ? (
+      {isLoading && isFirstLoad.current ? (
         <ReminderScreenSkeleton />
       ) : error ? (
         <View className="flex-1 justify-center items-center">
@@ -321,47 +294,42 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
                     ? "bg-white"
                     : "bg-[#F4EDFF]";
                   return (
-                    <TouchableOpacity
-                      onPress={() => markAsRead(item.id)}
-                      activeOpacity={0.8}
+                    <View
+                      className={`shadow-md p-4 mb-3  flex-row justify-between items-center rounded-lg ${itemStyle}`}
                     >
-                      <View
-                        className={`shadow-md p-4 mb-3  flex-row justify-between items-center rounded-lg ${itemStyle}`}
-                      >
-                        <Image
-                          source={getNotificationIcon(item.title)}
-                          style={{ width: 45, height: 45 }}
-                        />
-                        <View className="flex-1 ml-5">
-                          <Text
-                            className="text-gray-800 font-bold"
-                            style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 14 }}
-                          >
-                            {item.title}
-                          </Text>
-                          <Text
-                            className="text-gray-600"
-                            style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
-                          >
-                            Order No: #{item.invNo}
-                          </Text>
-                          <Text
-                            className="text-gray-600"
-                            style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
-                          >
-                            Customer ID: {item.customerId}
-                          </Text>
-                        </View>
-
-                        <TouchableOpacity onPress={() => showDeleteModal(item)}>
-                          <MaterialIcons
-                            name="more-vert"
-                            size={24}
-                            color="black"
-                          />
-                        </TouchableOpacity>
+                      <Image
+                        source={getNotificationIcon(item.title)}
+                        style={{ width: 45, height: 45 }}
+                      />
+                      <View className="flex-1 ml-5">
+                        <Text
+                          className="text-gray-800 font-bold"
+                          style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 14 }}
+                        >
+                          {item.title}
+                        </Text>
+                        <Text
+                          className="text-gray-600"
+                          style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                        >
+                          Order No: #{item.invNo}
+                        </Text>
+                        <Text
+                          className="text-gray-600"
+                          style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                        >
+                          Customer ID: {item.customerId}
+                        </Text>
                       </View>
-                    </TouchableOpacity>
+
+                      <TouchableOpacity onPress={() => showDeleteModal(item)}>
+                        <MaterialIcons
+                          name="more-vert"
+                          size={24}
+                          color="black"
+                        />
+                      </TouchableOpacity>
+                    </View>
                   );
                 }}
               />
