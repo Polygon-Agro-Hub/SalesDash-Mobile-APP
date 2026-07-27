@@ -99,7 +99,7 @@ const CityDeliveryStatus: React.FC<CityDeliveryStatusProps> = ({
         borderRadius: 10,
         paddingVertical: 10,
         paddingHorizontal: 14,
-        marginTop: 18,
+        marginTop: 10,
         borderWidth: 1,
         borderColor: "#FFDCB5",
       }}
