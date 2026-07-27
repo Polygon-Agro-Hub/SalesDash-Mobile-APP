@@ -76,6 +76,72 @@ interface OrdersResponse {
   data: Order[];
 }
 
+const DUMMY_ORDERS: Order[] = [
+  {
+    orderId: 1024,
+    deliveryType: "Standard",
+    sheduleDate: "2026-07-28T09:00:00.000Z",
+    sheduleTime: "09:00 AM - 12:00 PM",
+    weeklyDate: "",
+    paymentMethod: "Card",
+    paymentStatus: 1,
+    isPaid: 1,
+    status: "Processing",
+    createdAt: new Date().toISOString(),
+    InvNo: "78394",
+    reportStatus: "Pending",
+    fullTotal: "12500.00",
+    fullDiscount: "500.00",
+    firstName: "Pasindu",
+    lastName: "Perera",
+    phoneNumber: "+94771234567",
+    buildingType: "Apartment",
+    fullAddress: "No. 12, Flower Road, Colombo 03",
+  },
+  {
+    orderId: 1025,
+    deliveryType: "Standard",
+    sheduleDate: "2026-07-29T10:00:00.000Z",
+    sheduleTime: "10:00 AM - 01:00 PM",
+    weeklyDate: "",
+    paymentMethod: "Cash",
+    paymentStatus: 0,
+    isPaid: 0,
+    status: "Ordered",
+    createdAt: new Date(Date.now() - 3600000).toISOString(),
+    InvNo: "78395",
+    reportStatus: "Approved",
+    fullTotal: "8500.00",
+    fullDiscount: "0.00",
+    firstName: "Nimal",
+    lastName: "Silva",
+    phoneNumber: "+94777654321",
+    buildingType: "House",
+    fullAddress: "No. 45, Temple Road, Kandy",
+  },
+  {
+    orderId: 1026,
+    deliveryType: "Express",
+    sheduleDate: "2026-07-27T08:00:00.000Z",
+    sheduleTime: "08:00 AM - 10:00 AM",
+    weeklyDate: "",
+    paymentMethod: "Card",
+    paymentStatus: 1,
+    isPaid: 1,
+    status: "Delivered",
+    createdAt: new Date(Date.now() - 7200000).toISOString(),
+    InvNo: "78396",
+    reportStatus: "Delivered",
+    fullTotal: "4500.00",
+    fullDiscount: "200.00",
+    firstName: "Kamal",
+    lastName: "Gunawardena",
+    phoneNumber: "+94712345678",
+    buildingType: "Office",
+    fullAddress: "Level 15, World Trade Center, Colombo 01",
+  }
+];
+
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
@@ -130,42 +196,19 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
     if (isLoadMore) safeSetLoadingMore(true);
 
     try {
-      const token = await AsyncStorage.getItem("authToken");
-      if (!token) {
-        if (isMounted.current) {
-          navigation.navigate("LoginScreen" as any);
-        }
-        return;
+      // Simulate loading delay
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      if (isLoadMore) {
+        // No-op for load more since list is small and loaded at once
+      } else {
+        safeSetOrders(DUMMY_ORDERS);
       }
 
-      const response = await axios.get<OrdersResponse>(
-        `${environment.API_BASE_URL}api/orders/get-orders?page=${page}&limit=${ORDERS_PER_PAGE}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-
-      if (response.data.success && response.data.data) {
-        if (isLoadMore) {
-          if (isMounted.current) {
-            setOrders((prevOrders) => [...prevOrders, ...response.data.data]);
-          }
-        } else {
-          safeSetOrders(response.data.data);
-        }
-
-        if (isMounted.current) {
-          setHasMore(response.data.hasMore);
-          setCurrentPage(response.data.currentPage);
-          setTotalCount(response.data.totalCount);
-        }
-      } else {
-        if (!isLoadMore) {
-          safeSetOrders([]);
-        }
-        if (isMounted.current) {
-          setHasMore(false);
-        }
+      if (isMounted.current) {
+        setHasMore(false);
+        setCurrentPage(1);
+        setTotalCount(DUMMY_ORDERS.length);
       }
     } catch (error) {
       console.error("Failed to fetch orders:", error);
@@ -174,13 +217,6 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
       }
       if (isMounted.current) {
         setHasMore(false);
-      }
-
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        await AsyncStorage.removeItem("authToken");
-        if (isMounted.current) {
-          navigation.navigate("LoginScreen" as any);
-        }
       }
     } finally {
       if (showFullLoading) safeSetLoading(false);
@@ -500,16 +536,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                   onEndReached={loadMoreOrders}
                   onEndReachedThreshold={0.1}
                   renderItem={({ item }) => (
-                    <TouchableOpacity
-                      activeOpacity={1}
-                      onPress={() =>
-                        navigation.navigate("View_CancelOrderScreen" as any, {
-                          orderId: item.orderId,
-                          status: item.status,
-                          reportStatus: item.reportStatus,
-                        })
-                      }
-                    >
+                    <View>
                       <View
                         style={{
                           backgroundColor: "white",
@@ -681,7 +708,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                           </Text>
                         </View>
                       </View>
-                    </TouchableOpacity>
+                    </View>
                   )}
                   contentContainerStyle={{
                     paddingBottom: hp(5),

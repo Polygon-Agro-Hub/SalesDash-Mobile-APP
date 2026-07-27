@@ -358,7 +358,6 @@ export type RootStackParamList = {
     userId: number;
     status: string;
     reportStatus: string | null;
-  };
   AttachGeoLocationScreen: {
     currentLatitude?: number;
     currentLongitude?: number;
