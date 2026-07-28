@@ -883,7 +883,9 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 keyExtractor={(item) => item.orderId.toString()}
                 renderItem={({ item }) => {
                   const isPaymentPending =
-                    Number(item.isPaid) === 0 && item.paymentMethod === "Card";
+                    Number(item.isPaid) === 0 &&
+                    item.paymentMethod === "Card" &&
+                    item.status !== "Cancelled";
                   const displayStatus = getDisplayStatus(item.status);
 
                   return (

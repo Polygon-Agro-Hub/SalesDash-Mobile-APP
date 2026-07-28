@@ -12,6 +12,7 @@ import {
   ScrollView,
   TextInputKeyPressEventData,
   NativeSyntheticEvent,
+  Modal,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -22,28 +23,16 @@ import environment from "@/environment/environment";
 import { useRoute } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import CustomHeader from "../common/CustomHeader";
+import LoadingPage from "../common/LoadingPage";
+import { AlertModal } from "../common/AlertModal";
 
 type OrderConfimedOTPScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
   "OrderConfimedOTPScreen"
 >;
 
-/**
- * This screen ONLY does two things:
- *   1. Verifies the OTP that was sent (from OrderSummeryScreen) to the
- *      customer's mobile number.
- *   2. Routes onward depending on payment method:
- *        - Cash  -> creates the order here, then navigates to
- *                   Main > OrderConfirmedScreen with the full order-summary
- *                   params (orderId, isPackage, total, subtotal, discount,
- *                   paymentMethod, userId, selectedDate, selectedTimeSlot).
- *        - Card  -> order creation is deferred until the customer taps
- *                   "Send Payment Request" on the OnlinePayment screen, so
- *                   here we just forward the order-summary params onward.
- *
- * There is no customer add/edit logic here anymore — that responsibility
- * has been removed from this flow entirely.
- */
+const SUCCESS_POPUP_MIN_MS = 1100;
+
 const OrderConfimedOTPScreen: React.FC = () => {
   const navigation = useNavigation<OrderConfimedOTPScreenNavigationProp>();
   const [otp, setOtp] = useState<string[]>(["", "", "", "", ""]);
@@ -53,6 +42,13 @@ const OrderConfimedOTPScreen: React.FC = () => {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const route = useRoute();
+
+  // --- Result popup state ---
+  // "OTP Verified Successfully" is now shown via the shared AlertModal.
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  // The "Confirming Order..." loading state keeps using its own lightweight Modal.
+  const [showOrderLoading, setShowOrderLoading] = useState(false);
+
   const {
     phoneNumber,
     id,
@@ -124,16 +120,14 @@ const OrderConfimedOTPScreen: React.FC = () => {
     }
   };
 
-  /**
-   * Cash flow: creates the order from the pending payload, then navigates
-   * to Main > OrderConfirmedScreen with the full order-summary params.
-   */
-  const createOrderAndNavigate = async (token: string) => {
+  const createOrderAndNavigate = async (
+    token: string,
+  ): Promise<Record<string, any> | null> => {
     const pendingOrderStr = await AsyncStorage.getItem("pendingOrderData");
 
     if (!pendingOrderStr) {
       Alert.alert("Error", "No pending order data found.");
-      return;
+      return null;
     }
 
     let pendingOrderPayload;
@@ -142,7 +136,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
     } catch (e) {
       console.error("Error parsing pending order data:", e);
       Alert.alert("Error", "Failed to read the pending order.");
-      return;
+      return null;
     }
 
     try {
@@ -161,25 +155,23 @@ const OrderConfimedOTPScreen: React.FC = () => {
         await AsyncStorage.removeItem("pendingOrderData");
         const orderId = orderResponse.data.data.orderId;
 
-        navigation.navigate("Main" as any, {
-          screen: "OrderConfirmedScreen",
-          params: {
-            orderId,
-            isPackage: isPackage,
-            total: total,
-            subtotal: subtotal,
-            discount: discount,
-            paymentMethod: paymentMethod,
-            userId: id,
-            selectedDate: selectedDate,
-            selectedTimeSlot: selectedTimeSlot,
-          },
-        });
+        return {
+          orderId,
+          isPackage: isPackage,
+          total: total,
+          subtotal: subtotal,
+          discount: discount,
+          paymentMethod: paymentMethod,
+          userId: id,
+          selectedDate: selectedDate,
+          selectedTimeSlot: selectedTimeSlot,
+        };
       } else {
         Alert.alert(
           "Error",
           orderResponse.data.message || "Failed to create order",
         );
+        return null;
       }
     } catch (e: any) {
       console.error("Error creating order after OTP verification:", e);
@@ -189,7 +181,70 @@ const OrderConfimedOTPScreen: React.FC = () => {
           e.response.data?.message || e.response.data?.error || errorMessage;
       }
       Alert.alert("Error", errorMessage);
+      return null;
     }
+  };
+
+  const handleCashSuccess = async (token: string) => {
+    setShowSuccessAlert(true);
+
+    const minDelay = new Promise<void>((resolve) =>
+      setTimeout(resolve, SUCCESS_POPUP_MIN_MS),
+    );
+
+    const switchToLoadingTimer = setTimeout(() => {
+      setShowSuccessAlert(false);
+      setShowOrderLoading(true);
+    }, SUCCESS_POPUP_MIN_MS);
+
+    const [, navParams] = await Promise.all([
+      minDelay,
+      createOrderAndNavigate(token),
+    ]);
+
+    clearTimeout(switchToLoadingTimer);
+    setShowSuccessAlert(false);
+    setShowOrderLoading(false);
+
+    if (navParams) {
+      navigation.navigate("Main" as any, {
+        screen: "OrderConfirmedScreen",
+        params: navParams,
+      });
+    }
+  };
+
+  const handleCardSuccess = async () => {
+    setShowSuccessAlert(true);
+
+    await new Promise<void>((resolve) =>
+      setTimeout(resolve, SUCCESS_POPUP_MIN_MS),
+    );
+
+    setShowSuccessAlert(false);
+
+    navigation.navigate("OnlinePayment" as any, {
+      id: null,
+      customerId: id,
+      name: customerName,
+      title: customerTitle,
+      isPackage,
+      total,
+      fullTotal,
+      subtotal,
+      discount,
+      selectedDate,
+      selectedTimeSlot,
+      items,
+      orderItems,
+      rawPackageItems,
+      rawAdditionalItems,
+      selectedAddress,
+      customerid: customerid || id,
+      customerscreencustomerid,
+      isFinalizeImdt,
+      deliveryCharge,
+    });
   };
 
   const verifyOTP = async () => {
@@ -246,41 +301,12 @@ const OrderConfimedOTPScreen: React.FC = () => {
       }
 
       if (statusCode === "1000") {
+        await AsyncStorage.removeItem("referenceId");
+
         if (paymentMethod === "Card") {
-          await AsyncStorage.removeItem("referenceId");
-          Alert.alert("Success", "OTP verified successfully.", [
-            {
-              text: "OK",
-              onPress: () => {
-                navigation.navigate("OnlinePayment" as any, {
-                  id: null,
-                  customerId: id,
-                  name: customerName,
-                  title: customerTitle,
-                  isPackage,
-                  total,
-                  fullTotal,
-                  subtotal,
-                  discount,
-                  selectedDate,
-                  selectedTimeSlot,
-                  items,
-                  orderItems,
-                  rawPackageItems,
-                  rawAdditionalItems,
-                  selectedAddress,
-                  customerid: customerid || id,
-                  customerscreencustomerid,
-                  isFinalizeImdt,
-                  deliveryCharge,
-                });
-              },
-            },
-          ]);
+          await handleCardSuccess();
         } else {
-          Alert.alert("Success", "OTP verified successfully.", [
-            { text: "OK", onPress: () => createOrderAndNavigate(token) },
-          ]);
+          await handleCashSuccess(token);
         }
       } else {
         setIsOtpInvalid(true);
@@ -387,7 +413,6 @@ const OrderConfimedOTPScreen: React.FC = () => {
   useEffect(() => {
     const handleKeyboardShow = () => {
       setKeyboardVisible(true);
-      // Keep the OTP boxes visible above the keyboard, same pattern as LoginScreen
       setTimeout(() => {
         scrollViewRef.current?.scrollToEnd({ animated: true });
       }, 50);
@@ -444,7 +469,6 @@ const OrderConfimedOTPScreen: React.FC = () => {
       >
         <View className="flex-1 bg-white items-center justify-center">
           <View className="flex-1 justify-center w-full max-w-[500px]">
-            {/* Illustration - Centered */}
             <View className="items-center justify-center mb-6">
               <Image
                 source={require("@/assets/images/otp/otp-check.webp")}
@@ -463,7 +487,6 @@ const OrderConfimedOTPScreen: React.FC = () => {
               We have sent a Verification Code to your Customer's mobile number
             </Text>
 
-            {/* OTP Input Section */}
             <View className="flex-row justify-center items-center gap-3 mt-8 mb-4">
               {otp.map((digit, index) => (
                 <TextInput
@@ -493,7 +516,6 @@ const OrderConfimedOTPScreen: React.FC = () => {
                   onChangeText={(text) => handleOtpChange(text, index)}
                   onKeyPress={(e) => handleKeyPress(e, index)}
                   onFocus={() =>
-                    // Ensure the tapped box scrolls into view above the keyboard
                     scrollViewRef.current?.scrollToEnd({ animated: true })
                   }
                   cursorColor="#FFFFFF"
@@ -503,14 +525,12 @@ const OrderConfimedOTPScreen: React.FC = () => {
             </View>
 
             <View className="items-center justify-center bg-white">
-              {/* Timer */}
               <Text className="text-black">
                 {timer > 0
                   ? `00:${timer < 10 ? `0${timer}` : timer}`
                   : "OTP expired"}
               </Text>
 
-              {/* Resend OTP */}
               <View className="flex-row items-center justify-center mb-5 my-3">
                 <Text className="text-black font-semibold">
                   Didn't receive the OTP ?
@@ -527,7 +547,6 @@ const OrderConfimedOTPScreen: React.FC = () => {
                 </TouchableOpacity>
               </View>
 
-              {/* Verify Button — always visible now */}
               <TouchableOpacity
                 onPress={verifyOTP}
                 disabled={!isOtpComplete || loading || timer <= 0}
@@ -571,6 +590,45 @@ const OrderConfimedOTPScreen: React.FC = () => {
           </View>
         </View>
       </ScrollView>
+
+      <AlertModal
+        visible={showSuccessAlert}
+        title="Success"
+        message="OTP Verified Successfully"
+        type="success"
+        onClose={() => setShowSuccessAlert(false)}
+        autoClose={false}
+        showOkButton={false}
+      />
+
+      <Modal
+        visible={showOrderLoading}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.35)",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <View
+            style={{
+              width: "78%",
+              backgroundColor: "white",
+              borderRadius: 20,
+              paddingVertical: 28,
+              paddingHorizontal: 20,
+              alignItems: "center",
+            }}
+          >
+            <LoadingPage message="Confiming Order..." />
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 };

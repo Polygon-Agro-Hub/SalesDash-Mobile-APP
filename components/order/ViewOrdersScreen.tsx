@@ -145,6 +145,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
         },
       );
 
+
       if (response.data.success && response.data.data) {
         if (isLoadMore) {
           if (isMounted.current) {
@@ -516,9 +517,18 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                           borderRadius: 12,
                           padding: 16,
                           marginBottom: 16,
-                          borderWidth: item.isPaid === 0 ? 1.5 : 1,
+                          borderWidth:
+                            item.isPaid === 0 &&
+                            item.paymentMethod === "Card" &&
+                            item.status !== "Cancelled"
+                              ? 1.5
+                              : 1,
                           borderColor:
-                            item.isPaid === 0 ? "#FF4C4C" : "#E0E0E0",
+                            item.isPaid === 0 &&
+                            item.paymentMethod === "Card" &&
+                            item.status !== "Cancelled"
+                              ? "#FF4C4C"
+                              : "#E0E0E0",
                           shadowColor: "#0000001A",
                           shadowOpacity: 0.12,
                           shadowOffset: { width: 0, height: 8 },
@@ -619,31 +629,33 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                           </View>
                         </View>
 
-                        {item.isPaid === 0 && (
-                          <View
-                            style={{
-                              flexDirection: "row",
-                              alignItems: "center",
-                              marginTop: 6,
-                            }}
-                          >
-                            <FontAwesome
-                              name="exclamation-circle"
-                              size={14}
-                              color="#FF4C4C"
-                              style={{ marginRight: 6 }}
-                            />
-                            <Text
+                        {item.isPaid === 0 &&
+                          item.paymentMethod === "Card" &&
+                          item.status !== "Cancelled" && (
+                            <View
                               style={{
-                                fontSize: SCREEN_HEIGHT > 900 ? 14 : 12,
-                                fontWeight: "600",
-                                color: "#FF4C4C",
+                                flexDirection: "row",
+                                alignItems: "center",
+                                marginTop: 6,
                               }}
                             >
-                              Payment Pending
-                            </Text>
-                          </View>
-                        )}
+                              <FontAwesome
+                                name="exclamation-circle"
+                                size={14}
+                                color="#FF4C4C"
+                                style={{ marginRight: 6 }}
+                              />
+                              <Text
+                                style={{
+                                  fontSize: SCREEN_HEIGHT > 900 ? 14 : 12,
+                                  fontWeight: "600",
+                                  color: "#FF4C4C",
+                                }}
+                              >
+                                Payment Pending
+                              </Text>
+                            </View>
+                          )}
 
                         <Text
                           style={{
@@ -669,7 +681,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                               color: "#808FA2",
                             }}
                           >
-                           Within {item.sheduleTime}
+                            Within {item.sheduleTime}
                           </Text>
                           <Text
                             style={{
