@@ -159,8 +159,8 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
   const selectedCity = selectedAddress?.city;
   const deliveryFee = selectedCity
     ? parseFloat(
-        cityCharges.find((c) => c.city === selectedCity)?.charge || "0",
-      )
+      cityCharges.find((c) => c.city === selectedCity)?.charge || "0",
+    )
     : 0;
 
   const handleGoBack = () => {
@@ -406,6 +406,12 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
     </View>
   );
 
+  const formatCurrency = (amount: number) =>
+    amount.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -509,7 +515,7 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
             </Text>
             <Text className="text-[16px] font-bold text-black mt-1">
               Full Total : Rs.{" "}
-              {((route.params?.total || 0) + deliveryFee).toFixed(2)}
+              {formatCurrency((route.params?.total || 0) + deliveryFee)}
             </Text>
           </View>
           <TouchableOpacity
