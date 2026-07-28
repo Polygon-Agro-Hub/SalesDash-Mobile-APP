@@ -1084,7 +1084,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                     color: "#000000",
                     fontStyle: "italic",
                     textAlign: "center",
-                    marginTop: 16,
+                    marginTop: 1,
                   }}
                 >
                   {orders.length === 0
