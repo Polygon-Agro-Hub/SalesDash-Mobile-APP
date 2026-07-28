@@ -528,7 +528,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
           );
 
           if (response.status === 200) {
-            showAlert("Success", "Customer updated successfully.", () => {
+            showAlert("Success", "Customer's Basic Details updated successfully.", () => {
               navigation.navigate("ViewCustomerScreen" as any, {
                 id,
                 customerId,
