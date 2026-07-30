@@ -258,21 +258,21 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
     const payload =
       buildingType === "House"
         ? {
-            buildingType,
-            houseNo,
-            streetName,
-            ...(canEditNearestCity ? { nearestCity } : {}),
-          }
+          buildingType,
+          houseNo,
+          streetName,
+          ...(canEditNearestCity ? { nearestCity } : {}),
+        }
         : {
-            buildingType,
-            buildingNo,
-            buildingName,
-            unitNo,
-            floorNo,
-            houseNo,
-            streetName,
-            ...(canEditNearestCity ? { nearestCity } : {}),
-          };
+          buildingType,
+          buildingNo,
+          buildingName,
+          unitNo,
+          floorNo,
+          houseNo,
+          streetName,
+          ...(canEditNearestCity ? { nearestCity } : {}),
+        };
 
     try {
       setSaving(true);
@@ -483,7 +483,14 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
               onPress={handleUpdate}
               disabled={saving || cityBlocksUpdate}
               activeOpacity={0.85}
-              style={{ borderRadius: 999, overflow: "hidden", height: 50 }}
+              style={{
+                borderRadius: 999, overflow: "hidden", height: 50,
+                shadowColor: "#000000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.2,
+                shadowRadius: 4,
+                elevation: 10,
+              }}
             >
               <LinearGradient
                 colors={
