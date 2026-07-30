@@ -183,6 +183,19 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     });
   };
 
+  const isRegisterDisabled =
+  loading ||
+  isSubmitting ||
+  cityBlocksRegistration ||
+  !!buildingTypeError ||
+  !!houseNoError ||
+  !!streetNameError ||
+  !!cityError ||
+  !!buildingNoError ||
+  !!buildingNameError ||
+  !!unitNoError ||
+  !!floorNoError;
+
   useFocusEffect(
     React.useCallback(() => {
       fetchCity();
@@ -698,7 +711,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
             setEmailError("This email is already registered");
             showAlert(
               "Account Already Exists",
-              "Both mobile number and email are already registered. Please sign in instead.",
+              "Both mobile number and email are already registered. Please use different credentials.",
             );
           } else if (message.includes("Mobile Number")) {
             setPhoneError("This mobile number is already registered");
@@ -1563,8 +1576,8 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
           >
             <LinearGradient
               colors={
-                cityBlocksRegistration
-                  ? ["#B9AEDD", "#A99BD6"]
+                isRegisterDisabled
+                  ? ["#B6B7BC", "#B6B7BC"]
                   : ["#854BDA", "#6E3DD1"]
               }
               style={{

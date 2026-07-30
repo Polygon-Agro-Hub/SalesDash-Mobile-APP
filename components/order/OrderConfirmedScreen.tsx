@@ -79,6 +79,17 @@ interface CustomerInfo {
   phoneNumber: string;
   title: string;
 }
+
+interface BuildingDetails {
+  buildingNo?: string;
+  unitNo?: string;
+  buildingName?: string;
+  floorNo?: string;
+  houseNo?: string;
+  streetName?: string;
+  city?: string;
+}
+
 interface OrderStatus {
   invoiceNumber: string;
   reportStatus: string | null;
@@ -96,6 +107,7 @@ interface Order {
   deliveryCharge: string;
   delivaryMethod?: string;
   fullAddress: string;
+  buildingDetails?: BuildingDetails;
   fullTotal: string;
   isPackage: number;
   orderId: number;
@@ -107,21 +119,12 @@ interface Order {
   total: string;
   userId: number;
 }
+
 interface CustomerData {
   title?: string;
   firstName?: string;
   lastName?: string;
   phoneNumber?: string;
-  buildingType?: string;
-  buildingDetails?: {
-    buildingNo?: string;
-    unitNo?: string;
-    buildingName?: string;
-    floorNo?: string;
-    houseNo?: string;
-    streetName?: string;
-    city?: string;
-  };
   email?: string;
 }
 
@@ -616,19 +619,19 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         order?.customerInfo?.buildingType === "Apartment"
           ? `
   <p class="bold">Apartment Address :</p>
-  ${customerData?.buildingDetails?.buildingNo ? `<p class="headerp"><span class="label">No : </span><span class="value">${customerData.buildingDetails.buildingNo},</span></p>` : ""}
-  ${customerData?.buildingDetails?.buildingName ? `<p class="headerp"><span class="label">Name : </span><span class="value">${customerData.buildingDetails.buildingName},</span></p>` : ""}
-  ${customerData?.buildingDetails?.unitNo ? `<p class="headerp"><span class="label">Flat : </span><span class="value">${customerData.buildingDetails.unitNo},</span></p>` : ""}
-  ${customerData?.buildingDetails?.floorNo ? `<p class="headerp"><span class="label">Floor : </span><span class="value">${customerData.buildingDetails.floorNo},</span></p>` : ""}
-  ${customerData?.buildingDetails?.houseNo ? `<p class="headerp"><span class="label">House No : </span><span class="value">${customerData.buildingDetails.houseNo},</span></p>` : ""}
-  ${customerData?.buildingDetails?.streetName ? `<p class="headerp"><span class="label">Street Name : </span><span class="value">${customerData.buildingDetails.streetName},</span></p>` : ""}
-  ${customerData?.buildingDetails?.city ? `<p class="headerp"><span class="label">City : </span><span class="value">${customerData.buildingDetails.city}</span></p>` : ""}
+  ${order?.buildingDetails?.buildingNo ? `<p class="headerp"><span class="label">No : </span><span class="value">${order.buildingDetails.buildingNo},</span></p>` : ""}
+  ${order?.buildingDetails?.buildingName ? `<p class="headerp"><span class="label">Name : </span><span class="value">${order.buildingDetails.buildingName},</span></p>` : ""}
+  ${order?.buildingDetails?.unitNo ? `<p class="headerp"><span class="label">Flat : </span><span class="value">${order.buildingDetails.unitNo},</span></p>` : ""}
+  ${order?.buildingDetails?.floorNo ? `<p class="headerp"><span class="label">Floor : </span><span class="value">${order.buildingDetails.floorNo},</span></p>` : ""}
+  ${order?.buildingDetails?.houseNo ? `<p class="headerp"><span class="label">House No : </span><span class="value">${order.buildingDetails.houseNo},</span></p>` : ""}
+  ${order?.buildingDetails?.streetName ? `<p class="headerp"><span class="label">Street Name : </span><span class="value">${order.buildingDetails.streetName},</span></p>` : ""}
+  ${order?.buildingDetails?.city ? `<p class="headerp"><span class="label">City : </span><span class="value">${order.buildingDetails.city}</span></p>` : ""}
     `
           : `
   <p class="bold">House Address :</p>
-  ${customerData?.buildingDetails?.houseNo ? `<p class="headerp"><span class="label">House No : </span><span class="value">${customerData.buildingDetails.houseNo},</span></p>` : ""}
-  ${customerData?.buildingDetails?.streetName ? `<p class="headerp"><span class="label">Street Name : </span><span class="value">${customerData.buildingDetails.streetName},</span></p>` : ""}
-  ${customerData?.buildingDetails?.city ? `<p class="headerp"><span class="label">City : </span><span class="value">${customerData.buildingDetails.city}</span></p>` : ""}
+  ${order?.buildingDetails?.houseNo ? `<p class="headerp"><span class="label">House No : </span><span class="value">${order.buildingDetails.houseNo},</span></p>` : ""}
+  ${order?.buildingDetails?.streetName ? `<p class="headerp"><span class="label">Street Name : </span><span class="value">${order.buildingDetails.streetName},</span></p>` : ""}
+  ${order?.buildingDetails?.city ? `<p class="headerp"><span class="label">City : </span><span class="value">${order.buildingDetails.city}</span></p>` : ""}
     `
       }
     </div>

@@ -157,19 +157,19 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
 
   const selectedAddress = addresses.find((a) => a.id === selectedId);
   const selectedCity = selectedAddress?.city;
-  const deliveryFee = selectedCity
-    ? parseFloat(
-        cityCharges.find((c) => c.city === selectedCity)?.charge || "0",
-      )
+  const matchedCityCharge = selectedCity
+    ? cityCharges.find((c) => c.city === selectedCity)
+    : undefined;
+  const deliveryFee = matchedCityCharge
+    ? parseFloat(matchedCityCharge.charge || "0")
     : 0;
+
+  const isDeliveryFeeReady = !!selectedAddress && !!matchedCityCharge;
 
   const handleGoBack = () => {
     const isPackage = route.params?.isPackage;
 
     if (isPackage === 1 || isPackage === "1") {
-      // Package order: go back to OrderScreen, restoring the previously
-      // selected package and additional items so nothing the user picked
-      // earlier gets lost.
       navigation.navigate("OrderScreen" as any, {
         id: route.params?.id,
         customerId: route.params?.customerId,
@@ -189,10 +189,6 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
         selectedTimeSlot: route.params?.selectedTimeSlot,
       });
     } else {
-      // Regular order: go back to Cart screen.
-      // Going "back" means the address/delivery step hasn't been confirmed
-      // yet, so the cart should show its plain full total (no delivery fee)
-      // — isPackage = 0 always passes the total WITHOUT delivery charge here.
       navigation.navigate("CratScreen" as any, {
         id: route.params?.id,
         customerId: route.params?.customerId,
@@ -406,6 +402,12 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
     </View>
   );
 
+  const formatCurrency = (amount: number) =>
+    amount.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -509,15 +511,15 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
             </Text>
             <Text className="text-[16px] font-bold text-black mt-1">
               Full Total : Rs.{" "}
-              {((route.params?.total || 0) + deliveryFee).toFixed(2)}
+              {formatCurrency((route.params?.total || 0) + deliveryFee)}
             </Text>
           </View>
           <TouchableOpacity
             onPress={handleConfirmSelection}
-            disabled={!selectedAddress}
+            disabled={!isDeliveryFeeReady}
             className="py-4 rounded-full items-center justify-center flex-row px-8"
             style={{
-              backgroundColor: selectedAddress ? "#6C3CD1" : "#C4C4C4",
+              backgroundColor: isDeliveryFeeReady ? "#6C3CD1" : "#C4C4C4",
             }}
           >
             <Text className="text-white font-bold text-lg mr-2">Confirm</Text>

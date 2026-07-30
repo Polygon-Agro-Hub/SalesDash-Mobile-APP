@@ -9,6 +9,7 @@ import {
   BackHandler,
   ActivityIndicator,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
 import { Ionicons, Feather, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -54,6 +55,9 @@ const OnlinePaymentStatus: React.FC<OnlinePaymentStatusProps> = ({
     selectedDate,
     selectedTimeSlot,
     paymentMethod,
+    id,
+    customerid,
+    customerscreencustomerid,
   } = route.params || {};
 
   const [checking, setChecking] = useState<boolean>(false);
@@ -90,7 +94,7 @@ const OnlinePaymentStatus: React.FC<OnlinePaymentStatusProps> = ({
   const navigateToConfirmed = useCallback(() => {
     if (hasNavigatedRef.current) return;
     hasNavigatedRef.current = true;
-    
+
     navigation.navigate("Main" as any, {
       screen: "OrderConfirmedScreen",
       params: {
@@ -100,7 +104,7 @@ const OnlinePaymentStatus: React.FC<OnlinePaymentStatusProps> = ({
         subtotal,
         discount,
         paymentMethod,
-        customerId,        
+        customerId,
         selectedDate,
         selectedTimeSlot,
       },
@@ -118,34 +122,30 @@ const OnlinePaymentStatus: React.FC<OnlinePaymentStatusProps> = ({
     navigation,
   ]);
 
-  const checkPaymentStatus = useCallback(
-    async () => {
-      if (!orderId || hasNavigatedRef.current) return;
+  const checkPaymentStatus = useCallback(async () => {
+    if (!orderId || hasNavigatedRef.current) return;
 
-      try {
-        setChecking(true);
-        const response = await axios.get(
-          `${environment.API_BASE_URL}api/orders/check-payment-status/${orderId}`
-        );
+    try {
+      setChecking(true);
+      const response = await axios.get(
+        `${environment.API_BASE_URL}api/orders/check-payment-status/${orderId}`,
+      );
 
-        if (!isMountedRef.current || hasNavigatedRef.current) return;
+      if (!isMountedRef.current || hasNavigatedRef.current) return;
 
-        const { isPaid } = response.data?.data ?? {};
+      const { isPaid } = response.data?.data ?? {};
 
-        if (Number(isPaid) === 1) {
-          navigateToConfirmed();
-        }
-        
-      } catch (error) {
-        console.error("Error checking payment status:", error);
-      } finally {
-        if (isMountedRef.current) {
-          setChecking(false);
-        }
+      if (Number(isPaid) === 1) {
+        navigateToConfirmed();
       }
-    },
-    [orderId, navigateToConfirmed]
-  );
+    } catch (error) {
+      console.error("Error checking payment status:", error);
+    } finally {
+      if (isMountedRef.current) {
+        setChecking(false);
+      }
+    }
+  }, [orderId, navigateToConfirmed]);
 
   useEffect(() => {
     if (!orderId) return;
@@ -159,7 +159,9 @@ const OnlinePaymentStatus: React.FC<OnlinePaymentStatusProps> = ({
     // Parse URL manually to ensure compatibility with all JS engines
     let socketUrl = environment.API_BASE_URL;
     let socketPath = "/socket.io";
-    const urlMatch = environment.API_BASE_URL.match(/^(https?:\/\/[^\/]+)(.*)$/);
+    const urlMatch = environment.API_BASE_URL.match(
+      /^(https?:\/\/[^\/]+)(.*)$/,
+    );
     if (urlMatch) {
       socketUrl = urlMatch[1];
       let pathname = urlMatch[2];
@@ -193,7 +195,8 @@ const OnlinePaymentStatus: React.FC<OnlinePaymentStatusProps> = ({
       }
     });
 
-    socket.on("paymentStatusChanged", (data) => {
+  
+    socket.on("paymentStatusChanged", (data: { isPaid: number | string }) => {
       console.log("💲 Payment status changed via socket:", data);
       if (Number(data.isPaid) === 1) {
         navigateToConfirmed();
@@ -210,14 +213,6 @@ const OnlinePaymentStatus: React.FC<OnlinePaymentStatusProps> = ({
     // Start fallback polling immediately just in case serverless doesn't support websockets
     fallbackInterval = setInterval(checkPaymentStatus, 5000);
 
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      () => {
-        checkPaymentStatus();
-        return true;
-      }
-    );
-
     return () => {
       isMountedRef.current = false;
       if (socket) {
@@ -226,9 +221,43 @@ const OnlinePaymentStatus: React.FC<OnlinePaymentStatusProps> = ({
       if (fallbackInterval) {
         clearInterval(fallbackInterval);
       }
-      backHandler.remove();
     };
   }, [orderId, checkPaymentStatus, navigateToConfirmed]);
+
+  const handleBackToViewCustomer = useCallback(() => {
+    navigation.navigate("ViewCustomerScreen" as any, {
+      id: id ?? customerId ?? customerid ?? customerscreencustomerid,
+      customerId: customerscreencustomerid ?? customerId ?? customerid ?? id,
+      name: name ?? "",
+      title: title ?? "",
+      number: number ?? "",
+    });
+  }, [
+    navigation,
+    id,
+    customerId,
+    customerid,
+    customerscreencustomerid,
+    name,
+    title,
+    number,
+  ]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        handleBackToViewCustomer();
+        return true;
+      };
+
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress,
+      );
+
+      return () => backHandler.remove();
+    }, [handleBackToViewCustomer]),
+  );
 
   return (
     <KeyboardAvoidingView
@@ -241,7 +270,7 @@ const OnlinePaymentStatus: React.FC<OnlinePaymentStatusProps> = ({
         titleColor="#6C3CD1"
         showBackButton={true}
         navigation={navigation}
-        onBackPress={() => checkPaymentStatus()}
+        onBackPress={handleBackToViewCustomer}
       />
 
       <ScrollView
