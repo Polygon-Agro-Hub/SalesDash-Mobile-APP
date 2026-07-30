@@ -520,6 +520,11 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
             className="py-4 rounded-full items-center justify-center flex-row px-8"
             style={{
               backgroundColor: isDeliveryFeeReady ? "#6C3CD1" : "#C4C4C4",
+              shadowColor: "#000000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.2,
+                shadowRadius: 4,
+                elevation: 10,
             }}
           >
             <Text className="text-white font-bold text-lg mr-2">Confirm</Text>
