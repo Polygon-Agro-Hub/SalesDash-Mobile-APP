@@ -742,11 +742,6 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
             )}
           </View>
 
-          {excludeCrops.length === 0 && preferCrops.length === 0 && (
-            <View className="mt-2">
-              <NoDataFound message="No preferred or excluded items yet" />
-            </View>
-          )}
         </View>
       </ScrollView>
 
