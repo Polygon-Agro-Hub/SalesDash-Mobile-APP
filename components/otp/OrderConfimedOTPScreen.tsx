@@ -25,6 +25,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import CustomHeader from "../common/CustomHeader";
 import LoadingPage from "../common/LoadingPage";
 import { AlertModal } from "../common/AlertModal";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 type OrderConfimedOTPScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -99,6 +100,10 @@ const OrderConfimedOTPScreen: React.FC = () => {
 
   const [isOtpInvalid, setIsOtpInvalid] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
+
+  // --- Layout tracking for keyboard-aware scrolling ---
+  const [otpRowY, setOtpRowY] = useState(0);
+  const [buttonRowY, setButtonRowY] = useState(0);
 
   const isOtpComplete = otp.every((digit) => digit.length === 1);
 
@@ -410,12 +415,28 @@ const OrderConfimedOTPScreen: React.FC = () => {
     }
   };
 
+  // --- Keyboard-aware scrolling (mirrors OtpScreen) ---
+  const scrollToOtpRow = () => {
+    setTimeout(
+      () => {
+        const targetY = buttonRowY > 0 ? buttonRowY : otpRowY;
+        scrollViewRef.current?.scrollTo({
+          y: Math.max(targetY - 260, 0),
+          animated: true,
+        });
+      },
+      Platform.OS === "ios" ? 50 : 150,
+    );
+  };
+
+  const handleInputFocus = () => {
+    scrollToOtpRow();
+  };
+
   useEffect(() => {
     const handleKeyboardShow = () => {
       setKeyboardVisible(true);
-      setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: true });
-      }, 50);
+      scrollToOtpRow();
     };
 
     const handleKeyboardHide = () => {
@@ -440,156 +461,171 @@ const OrderConfimedOTPScreen: React.FC = () => {
       showSubscription.remove();
       hideSubscription.remove();
     };
-  }, []);
+  }, [otpRowY, buttonRowY]);
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      enabled
+    <SafeAreaView
+      edges={["bottom"]}
       style={{ flex: 1, backgroundColor: "white" }}
     >
-      <CustomHeader
-        title="OTP Verification"
-        titleColor="#6C3CD1"
-        showBackButton={true}
-        navigation={navigation}
-        onBackPress={() => navigation.goBack()}
-      />
-      <ScrollView
-        ref={scrollViewRef}
-        contentContainerStyle={{
-          flexGrow: 1,
-          justifyContent: "center",
-          paddingBottom: isKeyboardVisible ? 100 : 0,
-        }}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        overScrollMode="never"
-        style={{ backgroundColor: "white" }}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+        enabled
+        style={{ flex: 1, backgroundColor: "white" }}
       >
-        <View className="flex-1 bg-white items-center justify-center">
-          <View className="flex-1 justify-center w-full max-w-[500px]">
-            <View className="items-center justify-center mb-6">
-              <Image
-                source={require("@/assets/images/otp/otp-check.webp")}
-                style={{
-                  width: 200,
-                  height: 200,
-                }}
-                resizeMode="contain"
-              />
-            </View>
-
-            <Text className="text-black text-center font-bold text-xl">
-              Enter Verification Code.
-            </Text>
-            <Text className="text-[#808080] text-center mt-3 px-4">
-              We have sent a Verification Code to your Customer's mobile number
-            </Text>
-
-            <View className="flex-row justify-center items-center gap-3 mt-8 mb-4">
-              {otp.map((digit, index) => (
-                <TextInput
-                  key={`otp-input-${index}`}
-                  ref={(el: TextInput | null) => {
-                    inputRefs.current[index] = el;
-                  }}
-                  className={`w-12 h-12 rounded-lg border-2 ${
-                    digit
-                      ? "bg-[#874DDB] border-[#874DDB]"
-                      : "bg-[#E7D7FF] border-[#E7D7FF]"
-                  }`}
+        <ScrollView
+          ref={scrollViewRef}
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          overScrollMode="never"
+          style={{ backgroundColor: "white" }}
+        >
+          <CustomHeader
+            title="OTP Verification"
+            titleColor="#6C3CD1"
+            showBackButton={true}
+            navigation={navigation}
+            onBackPress={() => navigation.goBack()}
+          />
+          <View className="flex-1 bg-white items-center justify-center">
+            <View className="flex-1 justify-center w-full max-w-[500px]">
+              <View className="items-center justify-center mb-6">
+                <Image
+                  source={require("@/assets/images/otp/otp-check.webp")}
                   style={{
-                    textAlign: "center",
-                    textAlignVertical: "center",
-                    fontSize: 16,
-                    fontWeight: "600",
-                    lineHeight: 20,
-                    color: digit ? "#FFFFFF" : "#86198f",
-                    padding: 0,
-                    paddingTop: 0,
-                    paddingBottom: 0,
+                    width: 200,
+                    height: 200,
                   }}
-                  keyboardType="numeric"
-                  maxLength={1}
-                  value={digit}
-                  onChangeText={(text) => handleOtpChange(text, index)}
-                  onKeyPress={(e) => handleKeyPress(e, index)}
-                  onFocus={() =>
-                    scrollViewRef.current?.scrollToEnd({ animated: true })
-                  }
-                  cursorColor="#FFFFFF"
-                  selectionColor={digit ? "#FFFFFF" : "#874DDB"}
+                  resizeMode="contain"
                 />
-              ))}
-            </View>
-
-            <View className="items-center justify-center bg-white">
-              <Text className="text-black">
-                {timer > 0
-                  ? `00:${timer < 10 ? `0${timer}` : timer}`
-                  : "OTP expired"}
-              </Text>
-
-              <View className="flex-row items-center justify-center mb-5 my-3">
-                <Text className="text-black font-semibold">
-                  Didn't receive the OTP ?
-                </Text>
-                <TouchableOpacity
-                  disabled={resendDisabled}
-                  onPress={handleResendOtp}
-                >
-                  <Text
-                    className={`ml-2 font-semibold ${resendDisabled ? "text-gray-500" : "text-[#874DDB]"}`}
-                  >
-                    RESEND OTP
-                  </Text>
-                </TouchableOpacity>
               </View>
 
-              <TouchableOpacity
-                onPress={verifyOTP}
-                disabled={!isOtpComplete || loading || timer <= 0}
-                activeOpacity={0.7}
-                style={{
-                  width: "60%",
-                  borderRadius: 30,
-                  backgroundColor: "transparent",
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 8 },
-                  shadowOpacity: 0.25,
-                  shadowRadius: 10,
-                  elevation: 8,
-                }}
+              <Text className="text-black text-center font-bold text-xl">
+                Enter Verification Code.
+              </Text>
+              <Text className="text-[#808080] text-center mt-3 px-4">
+                We have sent a Verification Code to your Customer's mobile number
+              </Text>
+
+              {/* OTP Input Section — onLayout captures its Y position for scrolling */}
+              <View
+                onLayout={(e) => setOtpRowY(e.nativeEvent.layout.y)}
+                className="flex-row justify-center items-center gap-3 mt-8 mb-4"
               >
-                <LinearGradient
-                  colors={
-                    !isOtpComplete || loading || timer <= 0
-                      ? ["#A0A0A0", "#808080"]
-                      : ["#6839CF", "#874DDB"]
-                  }
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  className={`h-[50px] items-center justify-center rounded-full ${
-                    !isOtpComplete || loading || timer <= 0 ? "opacity-50" : ""
-                  }`}
+                {otp.map((digit, index) => (
+                  <TextInput
+                    key={`otp-input-${index}`}
+                    ref={(el: TextInput | null) => {
+                      inputRefs.current[index] = el;
+                    }}
+                    className={`w-12 h-12 rounded-lg border-2 ${
+                      digit
+                        ? "bg-[#874DDB] border-[#874DDB]"
+                        : "bg-[#E7D7FF] border-[#E7D7FF]"
+                    }`}
+                    style={{
+                      textAlign: "center",
+                      textAlignVertical: "center",
+                      fontSize: 16,
+                      fontWeight: "600",
+                      lineHeight: 20,
+                      color: digit ? "#FFFFFF" : "#86198f",
+                      padding: 0,
+                      paddingTop: 0,
+                      paddingBottom: 0,
+                    }}
+                    keyboardType="numeric"
+                    maxLength={1}
+                    value={digit}
+                    onChangeText={(text) => handleOtpChange(text, index)}
+                    onKeyPress={(e) => handleKeyPress(e, index)}
+                    onFocus={handleInputFocus}
+                    cursorColor="#FFFFFF"
+                    selectionColor={digit ? "#FFFFFF" : "#874DDB"}
+                  />
+                ))}
+              </View>
+
+              <View className="items-center justify-center bg-white">
+                <Text className="text-black">
+                  {timer > 0
+                    ? `00:${timer < 10 ? `0${timer}` : timer}`
+                    : "OTP expired"}
+                </Text>
+
+                <View className="flex-row items-center justify-center mb-5 my-3">
+                  <Text className="text-black font-semibold">
+                    Didn't receive the OTP ?
+                  </Text>
+                  <TouchableOpacity
+                    disabled={resendDisabled}
+                    onPress={handleResendOtp}
+                  >
+                    <Text
+                      className={`ml-2 font-semibold ${resendDisabled ? "text-gray-500" : "text-[#874DDB]"}`}
+                    >
+                      RESEND OTP
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View
+                  onLayout={(e) => setButtonRowY(e.nativeEvent.layout.y)}
                   style={{
-                    height: 50,
+                    width: "100%",
                     alignItems: "center",
-                    justifyContent: "center",
-                    borderRadius: 30,
-                    overflow: "hidden",
+                    paddingBottom: 24,
                   }}
                 >
-                  <Text className="text-center text-white font-bold text-lg">
-                    {loading ? "Verifying..." : "Verify"}
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={verifyOTP}
+                    disabled={!isOtpComplete || loading || timer <= 0}
+                    activeOpacity={0.7}
+                    style={{
+                      width: "60%",
+                      borderRadius: 30,
+                      backgroundColor: "transparent",
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 8 },
+                      shadowOpacity: 0.25,
+                      shadowRadius: 10,
+                      elevation: 8,
+                    }}
+                  >
+                    <LinearGradient
+                      colors={
+                        !isOtpComplete || loading || timer <= 0
+                          ? ["#A0A0A0", "#808080"]
+                          : ["#6839CF", "#874DDB"]
+                      }
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      className={`h-[50px] items-center justify-center rounded-full ${
+                        !isOtpComplete || loading || timer <= 0
+                          ? "opacity-50"
+                          : ""
+                      }`}
+                      style={{
+                        height: 50,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderRadius: 30,
+                        overflow: "hidden",
+                      }}
+                    >
+                      <Text className="text-center text-white font-bold text-lg">
+                        {loading ? "Verifying..." : "Verify"}
+                      </Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       <AlertModal
         visible={showSuccessAlert}
@@ -629,7 +665,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
           </View>
         </View>
       </Modal>
-    </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
