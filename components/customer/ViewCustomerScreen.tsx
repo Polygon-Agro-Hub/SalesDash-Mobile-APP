@@ -712,7 +712,11 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 <Text
                   style={{ fontSize: 13, fontWeight: "bold", color: "#FF6400" }}
                 >
-                  ( -Rs. {Math.abs(creditBalance).toFixed(2)} )
+                  ( -Rs.{" "}
+                  {Math.abs(creditBalance).toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })} )
                 </Text>
               </Text>
               <Text style={{ fontSize: 12, color: "#5E6089", marginTop: 2 }}>
@@ -1082,7 +1086,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                     color: "#000000",
                     fontStyle: "italic",
                     textAlign: "center",
-                    marginTop: 16,
+                    marginTop: 1,
                   }}
                 >
                   {orders.length === 0
