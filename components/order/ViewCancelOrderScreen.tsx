@@ -49,7 +49,17 @@ interface Order {
   deliveryCharge: string | number;
   paymentMethod: string;
   paymentStatus: number;
-  orderStatus: string;
+  orderStatus:
+    | string
+    | {
+        creditPaid?: string;
+        invoiceNumber?: string;
+        isPaid?: number;
+        moneyPaid?: string;
+        paymentMethod?: string;
+        reportStatus?: string | null;
+        status?: string;
+      };
   createdAt: string;
   InvNo: string;
   reportStatus: string;
@@ -194,6 +204,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
           if (response.data.success) {
             setOrder(response.data.data);
             const orderData = response.data.data;
+
 
             setDeliveryFee(parseFloat(orderData.deliveryCharge) || 0);
             setIsPackage(orderData.isPackage);
@@ -848,7 +859,9 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                 Payment Method
               </Text>
               <Text className="text-[#8492A3]">
-                {order.paymentMethod === "Credit Card"
+                {(typeof order.orderStatus === "object"
+                  ? order.orderStatus?.paymentMethod
+                  : order.paymentMethod) === "Card"
                   ? "Online Payment"
                   : "Cash on Delivery"}
               </Text>

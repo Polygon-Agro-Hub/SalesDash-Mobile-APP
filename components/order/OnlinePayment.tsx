@@ -31,23 +31,14 @@ interface OnlinePaymentProps {
 
 type DeliveryMethod = "app" | "sms";
 
-/**
- * For Card payments, the order is NOT created back in the OTP screen —
- * it's deferred until the customer actually taps "Send Payment Request"
- * here. That keeps us from creating an order the customer never intended
- * to follow through on (e.g. they back out before choosing app/SMS).
- *
- * Flow on tap:
- *   1. Read "pendingOrderData" from AsyncStorage (stashed by OrderSummeryScreen)
- *   2. POST it to create-order to actually create the order
- *   3. POST to payment/send-request with the new orderId + chosen method
- *   4. Navigate to OnlinePaymentStatus
- */
+
 const OnlinePayment: React.FC<OnlinePaymentProps> = ({ navigation, route }) => {
   const {
+    id,
     customerId,
     name,
     title,
+    number,
     isPackage,
     total,
     fullTotal,
@@ -64,7 +55,7 @@ const OnlinePayment: React.FC<OnlinePaymentProps> = ({ navigation, route }) => {
     customerscreencustomerid,
     isFinalizeImdt,
     deliveryCharge,
-  } = route.params;
+  } = route.params || {};
 
   const [selectedMethod, setSelectedMethod] = useState<DeliveryMethod>("app");
   const [loading, setLoading] = useState(false);
@@ -127,9 +118,13 @@ const OnlinePayment: React.FC<OnlinePaymentProps> = ({ navigation, route }) => {
 
       navigation.navigate("OnlinePaymentStatus" as any, {
         orderId,
+        id,
         customerId,
         name,
         title,
+        number,
+        customerid,
+        customerscreencustomerid,
         isPackage,
         total,
         subtotal,
