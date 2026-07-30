@@ -274,7 +274,7 @@ const OnlinePaymentStatus: React.FC<OnlinePaymentStatusProps> = ({
         >
           <Image
             source={require("@/assets/images/order/online-payment-status.webp")}
-            style={{ width: 220, height: 220 }}
+            style={{ width: 300, height: 300 }}
             resizeMode="contain"
           />
         </View>

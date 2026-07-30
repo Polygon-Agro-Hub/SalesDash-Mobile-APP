@@ -225,13 +225,13 @@ const OnlinePayment: React.FC<OnlinePaymentProps> = ({ navigation, route }) => {
           style={{
             alignItems: "center",
             justifyContent: "center",
-            marginTop: 24,
-            marginBottom: 24,
+            marginTop: 15,
+            marginBottom: 15,
           }}
         >
           <Image
             source={require("@/assets/images/order/online-payment.webp")}
-            style={{ width: 180, height: 180 }}
+            style={{ width: 300, height: 300 }}
             resizeMode="contain"
           />
         </View>
