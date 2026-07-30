@@ -172,6 +172,103 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     </Text>
   );
 
+    const validateEmailAddress = (email: string): boolean => {
+    const generalEmailRegex =
+      /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+    if (!generalEmailRegex.test(email)) {
+      return false;
+    }
+
+    const emailLower = email.toLowerCase();
+    const [localPart, domain] = emailLower.split("@");
+
+    if (domain && domain.includes("..")) {
+      return false;
+    }
+
+    const allowedTLDs = [".com", ".gov", ".lk"];
+
+    if (domain === "gmail.com" || domain === "googlemail.com") {
+      return validateGmailLocalPart(localPart);
+    }
+
+    if (domain === "yahoo.com") {
+      return validateYahooLocalPart(localPart);
+    }
+
+    for (const tld of allowedTLDs) {
+      if (domain.endsWith(tld)) {
+        return validateGeneralLocalPart(localPart);
+      }
+    }
+
+    return false;
+  };
+
+  const validateGmailLocalPart = (localPart: string): boolean => {
+    const validCharsRegex = /^[a-zA-Z0-9.+]+$/;
+    if (!validCharsRegex.test(localPart)) {
+      return false;
+    }
+
+    if (localPart.startsWith(".") || localPart.endsWith(".")) {
+      return false;
+    }
+
+    if (localPart.includes("..")) {
+      return false;
+    }
+
+    if (localPart.length === 0) {
+      return false;
+    }
+
+    return true;
+  };
+
+  const validateYahooLocalPart = (localPart: string): boolean => {
+    if (localPart.length < 4 || localPart.length > 32) {
+      return false;
+    }
+
+    const validCharsRegex = /^[a-zA-Z0-9._-]+$/;
+    if (!validCharsRegex.test(localPart)) {
+      return false;
+    }
+
+    if (/^[._-]|[._-]$/.test(localPart)) {
+      return false;
+    }
+
+    if (localPart.includes("..")) {
+      return false;
+    }
+
+    return true;
+  };
+
+  const validateGeneralLocalPart = (localPart: string): boolean => {
+    if (localPart.length < 1 || localPart.length > 64) {
+      return false;
+    }
+
+    const validCharsRegex = /^[a-zA-Z0-9._%+-]+$/;
+    if (!validCharsRegex.test(localPart)) {
+      return false;
+    }
+
+    if (localPart.startsWith(".") || localPart.endsWith(".")) {
+      return false;
+    }
+
+    if (localPart.includes("..")) {
+      return false;
+    }
+
+    return true;
+  };
+
   // Validation effects
   useEffect(() => {
     if (touchedFields.firstName) {
@@ -184,6 +281,91 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
       }
     }
   }, [firstName, touchedFields.firstName]);
+
+  useEffect(() => {
+    if (touchedFields.email) {
+      if (!email) {
+        setEmailError("Email is required");
+      } else if (!validateEmailAddress(email)) {
+        const emailLower = email.toLowerCase();
+        const [localPart, domain] = emailLower.split("@");
+
+        const generalEmailRegex =
+          /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!generalEmailRegex.test(email)) {
+          setEmailError("Please enter a valid email address");
+          return;
+        }
+        if (domain && domain.includes("..")) {
+          setEmailError(
+            "Email domain cannot contain consecutive dots (e.g., gmail..com is invalid)",
+          );
+          return;
+        }
+
+        if (domain === "gmail.com" || domain === "googlemail.com") {
+          if (localPart.length > 30) {
+            setEmailError(
+              "Gmail addresses cannot exceed 30 characters before @",
+            );
+          } else if (/\.{2,}/.test(localPart)) {
+            setEmailError("Gmail addresses cannot have consecutive dots");
+          } else if (/^\.|\.$/.test(localPart)) {
+            setEmailError("Gmail addresses cannot start or end with a dot");
+          } else if (!/^[a-zA-Z0-9.+]+$/.test(localPart)) {
+            setEmailError(
+              "Gmail addresses can only contain letters, numbers, dots and plus signs",
+            );
+          } else {
+            setEmailError("Please enter a valid Gmail address");
+          }
+        } else if (domain === "yahoo.com") {
+          if (localPart.length > 32) {
+            setEmailError(
+              "Yahoo addresses cannot exceed 32 characters before @",
+            );
+          } else if (/\.{2,}/.test(localPart)) {
+            setEmailError("Yahoo addresses cannot have consecutive dots");
+          } else if (/^[._-]|[._-]$/.test(localPart)) {
+            setEmailError(
+              "Yahoo addresses cannot start or end with dots, underscores or hyphens",
+            );
+          } else if (!/^[a-zA-Z0-9._-]+$/.test(localPart)) {
+            setEmailError(
+              "Yahoo addresses can only contain letters, numbers, dots, underscores and hyphens",
+            );
+          } else {
+            setEmailError("Please enter a valid Yahoo address");
+          }
+        } else {
+          const allowedTLDs = [".com", ".gov", ".lk"];
+          const isDomainSupported = allowedTLDs.some((tld) =>
+            domain.endsWith(tld),
+          );
+
+          if (!isDomainSupported) {
+            setEmailError(
+              "Please enter a valid email address with a supported domain (.com, .gov, .lk)",
+            );
+          } else {
+            if (localPart.length > 64) {
+              setEmailError("Email address is too long");
+            } else if (/\.{2,}/.test(localPart)) {
+              setEmailError("Email addresses cannot have consecutive dots");
+            } else if (/^\.|\.$/.test(localPart)) {
+              setEmailError("Email addresses cannot start or end with a dot");
+            } else if (!/^[a-zA-Z0-9._%+-]+$/.test(localPart)) {
+              setEmailError("Please enter a valid email address");
+            } else {
+              setEmailError("Please enter a valid email address");
+            }
+          }
+        }
+      } else {
+        setEmailError("");
+      }
+    }
+  }, [email, touchedFields.email]);
 
   useEffect(() => {
     if (touchedFields.lastName) {
@@ -211,17 +393,6 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     }
   }, [phoneNumber, touchedFields.phoneNumber]);
 
-  useEffect(() => {
-    if (touchedFields.email) {
-      if (!email) {
-        setEmailError("Email is required");
-      } else if (!validateEmail(email)) {
-        setEmailError("Please enter a valid email address");
-      } else {
-        setEmailError("");
-      }
-    }
-  }, [email, touchedFields.email]);
 
   useEffect(() => {
     if (touchedFields.title) {
@@ -362,8 +533,6 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
       email: true,
       title: true,
     });
-    setPhoneError("");
-    setEmailError("");
 
     if (!selectedCategory || !firstName || !lastName || !phoneNumber) {
       showAlert("Error", "Please fill in all required fields.");
@@ -378,7 +547,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
       return;
     }
 
-    if (!validateEmail(email)) {
+    if (!validateEmailAddress(email)) {
       showAlert("Error", "Please enter a valid email address.");
       return;
     }
@@ -598,12 +767,18 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
   };
 
   const handlePhoneNumberChangeWithErrorClear = (text: string) => {
-    if (phoneError) setPhoneError("");
+    if (!touchedFields.phoneNumber) {
+      handleFieldTouch("phoneNumber");
+    }
+
     handlePhoneNumberChange(text);
   };
 
   const handleEmailChangeWithErrorClear = (text: string) => {
-    if (emailError) setEmailError("");
+    if (!touchedFields.email) {
+      handleFieldTouch("email");
+    }
+
     if (text.startsWith(" ")) return;
     setEmail(text.toLowerCase());
   };
@@ -658,9 +833,8 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                   setTitleModalVisible(true);
                   handleFieldTouch("title");
                 }}
-                className={`bg-[#F6F6F6] border flex-row h-[50px] justify-between items-center ${
-                  titleError ? "border-red-500" : "border-[#F6F6F6]"
-                } rounded-full px-4 h-10`}
+                className={`bg-[#F6F6F6] border flex-row h-[50px] justify-between items-center ${titleError ? "border-red-500" : "border-[#F6F6F6]"
+                  } rounded-full px-4 h-10`}
               >
                 <Text
                   className={selectedCategory ? "text-black" : "text-gray-400"}
@@ -684,9 +858,8 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
           <View className="flex-[2] ml-2">
             <RequiredField>First Name</RequiredField>
             <TextInput
-              className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${
-                firstNameError ? "border-red-500" : "border-[#F6F6F6]"
-              }`}
+              className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${firstNameError ? "border-red-500" : "border-[#F6F6F6]"
+                }`}
               style={{
                 fontSize: INPUT_FONT_SIZE,
                 fontStyle: firstName ? "normal" : "italic",
@@ -695,6 +868,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
               placeholderTextColor="#7F7F7F"
               value={firstName}
               onChangeText={(text) => {
+                if (!touchedFields.firstName) {
+                  handleFieldTouch("firstName");
+                }
+
                 if (text.startsWith(" ")) return;
                 setFirstName(formatNameInput(text));
               }}
@@ -712,9 +889,8 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
         <View className="mb-4">
           <RequiredField>Last Name</RequiredField>
           <TextInput
-            className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${
-              lastNameError ? "border-red-500" : "border-[#F6F6F6]"
-            }`}
+            className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${lastNameError ? "border-red-500" : "border-[#F6F6F6]"
+              }`}
             style={{
               fontSize: INPUT_FONT_SIZE,
               fontStyle: lastName ? "normal" : "italic",
@@ -723,6 +899,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
             placeholderTextColor="#7F7F7F"
             value={lastName}
             onChangeText={(text) => {
+              if (!touchedFields.lastName) {
+                handleFieldTouch("lastName");
+              }
+
               if (text.startsWith(" ")) return;
               setLastName(formatNameInput(text));
             }}
@@ -739,9 +919,8 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
         <View className="mb-4">
           <RequiredField>Mobile Number</RequiredField>
           <TextInput
-            className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${
-              phoneError ? "border-red-500" : "border-[#F6F6F6]"
-            }`}
+            className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${phoneError ? "border-red-500" : "border-[#F6F6F6]"
+              }`}
             style={{
               fontSize: INPUT_FONT_SIZE,
               fontStyle: phoneNumber ? "normal" : "italic",
@@ -763,9 +942,8 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
         <View className="mb-4">
           <RequiredField>Email Address</RequiredField>
           <TextInput
-            className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${
-              emailError ? "border-red-500" : "border-[#F6F6F6]"
-            }`}
+            className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${emailError ? "border-red-500" : "border-[#F6F6F6]"
+              }`}
             style={{
               fontSize: INPUT_FONT_SIZE,
               fontStyle: email ? "normal" : "italic",
@@ -835,7 +1013,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })}
       style={{ flex: 1, backgroundColor: "white" }}
     >
