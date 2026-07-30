@@ -598,12 +598,18 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
   };
 
   const handlePhoneNumberChangeWithErrorClear = (text: string) => {
-    if (phoneError) setPhoneError("");
+    if (!touchedFields.phoneNumber) {
+      handleFieldTouch("phoneNumber");
+    }
+
     handlePhoneNumberChange(text);
   };
 
   const handleEmailChangeWithErrorClear = (text: string) => {
-    if (emailError) setEmailError("");
+    if (!touchedFields.email) {
+      handleFieldTouch("email");
+    }
+
     if (text.startsWith(" ")) return;
     setEmail(text.toLowerCase());
   };
@@ -658,9 +664,8 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                   setTitleModalVisible(true);
                   handleFieldTouch("title");
                 }}
-                className={`bg-[#F6F6F6] border flex-row h-[50px] justify-between items-center ${
-                  titleError ? "border-red-500" : "border-[#F6F6F6]"
-                } rounded-full px-4 h-10`}
+                className={`bg-[#F6F6F6] border flex-row h-[50px] justify-between items-center ${titleError ? "border-red-500" : "border-[#F6F6F6]"
+                  } rounded-full px-4 h-10`}
               >
                 <Text
                   className={selectedCategory ? "text-black" : "text-gray-400"}
@@ -684,9 +689,8 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
           <View className="flex-[2] ml-2">
             <RequiredField>First Name</RequiredField>
             <TextInput
-              className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${
-                firstNameError ? "border-red-500" : "border-[#F6F6F6]"
-              }`}
+              className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${firstNameError ? "border-red-500" : "border-[#F6F6F6]"
+                }`}
               style={{
                 fontSize: INPUT_FONT_SIZE,
                 fontStyle: firstName ? "normal" : "italic",
@@ -695,6 +699,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
               placeholderTextColor="#7F7F7F"
               value={firstName}
               onChangeText={(text) => {
+                if (!touchedFields.firstName) {
+                  handleFieldTouch("firstName");
+                }
+
                 if (text.startsWith(" ")) return;
                 setFirstName(formatNameInput(text));
               }}
@@ -712,9 +720,8 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
         <View className="mb-4">
           <RequiredField>Last Name</RequiredField>
           <TextInput
-            className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${
-              lastNameError ? "border-red-500" : "border-[#F6F6F6]"
-            }`}
+            className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${lastNameError ? "border-red-500" : "border-[#F6F6F6]"
+              }`}
             style={{
               fontSize: INPUT_FONT_SIZE,
               fontStyle: lastName ? "normal" : "italic",
@@ -723,6 +730,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
             placeholderTextColor="#7F7F7F"
             value={lastName}
             onChangeText={(text) => {
+              if (!touchedFields.lastName) {
+                handleFieldTouch("lastName");
+              }
+
               if (text.startsWith(" ")) return;
               setLastName(formatNameInput(text));
             }}
@@ -739,9 +750,8 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
         <View className="mb-4">
           <RequiredField>Mobile Number</RequiredField>
           <TextInput
-            className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${
-              phoneError ? "border-red-500" : "border-[#F6F6F6]"
-            }`}
+            className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${phoneError ? "border-red-500" : "border-[#F6F6F6]"
+              }`}
             style={{
               fontSize: INPUT_FONT_SIZE,
               fontStyle: phoneNumber ? "normal" : "italic",
@@ -763,9 +773,8 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
         <View className="mb-4">
           <RequiredField>Email Address</RequiredField>
           <TextInput
-            className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${
-              emailError ? "border-red-500" : "border-[#F6F6F6]"
-            }`}
+            className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${emailError ? "border-red-500" : "border-[#F6F6F6]"
+              }`}
             style={{
               fontSize: INPUT_FONT_SIZE,
               fontStyle: email ? "normal" : "italic",
