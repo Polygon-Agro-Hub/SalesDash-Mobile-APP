@@ -79,18 +79,16 @@ const PackageConfirmation: React.FC<PackageConfirmationProps> = ({
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={() => setIsFinalizeImdt(true)}
-          className={`rounded-2xl p-4 mb-4 border ${
-            isFinalizeImdt
-              ? "bg-[#F7F1FF] border-[#B186EF]"
-              : "bg-white border-gray-200"
-          }`}
+          className={`rounded-2xl p-4 mb-4 border ${isFinalizeImdt
+            ? "bg-[#F7F1FF] border-[#B186EF]"
+            : "bg-white border-gray-200"
+            }`}
         >
           <View className="flex-row items-start">
             {/* Radio */}
             <View
-              className={`w-5 h-5 rounded-full border-2 items-center justify-center mt-1 mr-3 ${
-                isFinalizeImdt ? "border-[#3E206D]" : "border-gray-300"
-              }`}
+              className={`w-5 h-5 rounded-full border-2 items-center justify-center mt-1 mr-3 ${isFinalizeImdt ? "border-[#3E206D]" : "border-gray-300"
+                }`}
             >
               {isFinalizeImdt && (
                 <View className="w-2.5 h-2.5 rounded-full bg-[#3E206D]" />
@@ -131,18 +129,16 @@ const PackageConfirmation: React.FC<PackageConfirmationProps> = ({
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={() => setIsFinalizeImdt(false)}
-          className={`rounded-2xl p-4 mb-4 border ${
-            !isFinalizeImdt
-              ? "bg-[#F7F1FF] border-[#B186EF]"
-              : "bg-white border-gray-200"
-          }`}
+          className={`rounded-2xl p-4 mb-4 border ${!isFinalizeImdt
+            ? "bg-[#F7F1FF] border-[#B186EF]"
+            : "bg-white border-gray-200"
+            }`}
         >
           <View className="flex-row items-start">
             {/* Radio */}
             <View
-              className={`w-5 h-5 rounded-full border-2 items-center justify-center mt-1 mr-3 ${
-                !isFinalizeImdt ? "border-[#3E206D]" : "border-gray-300"
-              }`}
+              className={`w-5 h-5 rounded-full border-2 items-center justify-center mt-1 mr-3 ${!isFinalizeImdt ? "border-[#3E206D]" : "border-gray-300"
+                }`}
             >
               {!isFinalizeImdt && (
                 <View className="w-2.5 h-2.5 rounded-full bg-[#3E206D]" />
@@ -193,24 +189,42 @@ const PackageConfirmation: React.FC<PackageConfirmationProps> = ({
 
       {/* Continue button */}
       <View className="px-10 pb-6 pt-2">
-        <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={handleContinue}
-          className="px-3 h-[50px]"
+        <View
+          style={{
+            borderRadius: 999,
+            shadowColor: "#000000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.2,
+            shadowRadius: 4,
+            elevation: 5,
+          }}
         >
-          <LinearGradient
-            colors={["#6839CF", "#874DDB"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={handleContinue}
             style={{
               borderRadius: 999,
-              paddingVertical: 16,
-              alignItems: "center",
+              overflow: "hidden",
+              height: 50,
             }}
           >
-            <Text className="text-white text-base font-bold">Continue</Text>
-          </LinearGradient>
-        </TouchableOpacity>
+            <LinearGradient
+              colors={["#6839CF", "#874DDB"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={{
+                flex: 1,
+                borderRadius: 999,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Text className="text-white text-base font-bold">
+                Continue
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );
