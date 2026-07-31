@@ -913,8 +913,8 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
                 style={{ fontSize: 16 }}
                 className="text-[#747474] text-center mt-5"
               >
-                Order Confirmation message and Payment Gateway Link has been
-                sent to your Customer
+                Order Confirmation message has been
+                sent to your Customer.
               </Text>
             </View>
 
