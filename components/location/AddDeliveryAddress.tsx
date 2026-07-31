@@ -438,22 +438,22 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
           if (errorCode === "DUPLICATE_ADDRESS") {
             setAddressLocationError(
               errMsg ||
-                "This address location already exists. Please use a different address.",
+              "This address location already exists. Please use a different address.",
             );
             Alert.alert(
               "Duplicate Address",
               errMsg ||
-                "This address already exists for this customer. Please enter a different address.",
+              "This address already exists for this customer. Please enter a different address.",
             );
           } else if (errorCode === "DUPLICATE_PHONE") {
             setPhoneError1(
               errMsg ||
-                "This phone number is already saved in another address.",
+              "This phone number is already saved in another address.",
             );
             Alert.alert(
               "Duplicate Phone Number",
               errMsg ||
-                "This phone number is already saved in another address.",
+              "This phone number is already saved in another address.",
             );
           } else {
             setSaveAsError(
@@ -574,16 +574,17 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
           value={saveAddressAs}
           onChangeText={(text) => {
             setSaveAddressAs(
-              stripLeadingSpace(text).slice(0, SAVE_ADDRESS_AS_MAX_LENGTH),
+              capitalizeWords(stripLeadingSpace(text).slice(0, SAVE_ADDRESS_AS_MAX_LENGTH)),
             );
             if (saveAsError) setSaveAsError("");
           }}
-          placeholder="e.g. Home"
+          placeholder="e.g. : Home"
           placeholderTextColor="#9CA3AF"
           maxLength={SAVE_ADDRESS_AS_MAX_LENGTH}
           style={{
             borderWidth: saveAsError ? 1 : 0,
             borderColor: saveAsError ? "#DC2626" : "transparent",
+            fontStyle: saveAddressAs ? "normal" : "italic"
           }}
           className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-1"
         />
@@ -610,11 +611,15 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
             <Text className="text-sm mb-2">Billing Name *</Text>
             <TextInput
               value={billingName}
-              onChangeText={(text) => setBillingName(capitalizeWords(text))}
-              placeholder="e.g. Billing Name"
+              onChangeText={(text) => { // Allow only letters and spaces
+                const filteredText = text.replace(/[^A-Za-z\s]/g, "");
+                setBillingName(capitalizeWords(filteredText));
+              }}
+              placeholder="e.g. : Billing Name"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
               className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black"
+              style={[{ fontStyle: billingName ? "normal" : "italic" }]}
             />
           </View>
         </View>
@@ -630,13 +635,15 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
           onFocus={() => handlePhoneFocus(phoneNumber1, setPhoneNumber1)}
           onBlur={() => handlePhoneBlur(phoneNumber1, setPhoneNumber1)}
           onKeyPress={(e) => handlePhoneKeyPress(e, phoneNumber1)}
-          placeholder="+947XXXXXXXX"
+          placeholder="e.g. : 077 XXXX XXX"
           placeholderTextColor="#9CA3AF"
           keyboardType="phone-pad"
           maxLength={12}
           style={{
             borderWidth: phoneError1 ? 1 : 0,
             borderColor: phoneError1 ? "#DC2626" : "transparent",
+            fontStyle: phoneNumber1 ? "normal" : "italic"
+
           }}
           className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-1"
         />
@@ -657,13 +664,14 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
           onFocus={() => handlePhoneFocus(phoneNumber2, setPhoneNumber2)}
           onBlur={() => handlePhoneBlur(phoneNumber2, setPhoneNumber2)}
           onKeyPress={(e) => handlePhoneKeyPress(e, phoneNumber2)}
-          placeholder="+947XXXXXXXX"
+          placeholder="e.g. : 077 XXXX XXX"
           placeholderTextColor="#9CA3AF"
           keyboardType="phone-pad"
           maxLength={12}
           style={{
             borderWidth: phoneError2 ? 1 : 0,
             borderColor: phoneError2 ? "#DC2626" : "transparent",
+            fontStyle: phoneNumber2 ? "normal" : "italic"
           }}
           className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-1"
         />
@@ -699,6 +707,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
               style={{
                 borderWidth: addressLocationError ? 1 : 0,
                 borderColor: addressLocationError ? "#DC2626" : "transparent",
+                fontStyle: buildingNo ? "normal" : "italic"
               }}
               className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
             />
@@ -716,6 +725,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
               style={{
                 borderWidth: addressLocationError ? 1 : 0,
                 borderColor: addressLocationError ? "#DC2626" : "transparent",
+                fontStyle: buildingName ? "normal" : "italic"
               }}
               className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
             />
@@ -727,12 +737,13 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
                 setUnitNo(capitalizeWords(text));
                 if (addressLocationError) setAddressLocationError("");
               }}
-              placeholder="e.g. Building B"
+              placeholder="e.g. : Building B"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
               style={{
                 borderWidth: addressLocationError ? 1 : 0,
                 borderColor: addressLocationError ? "#DC2626" : "transparent",
+                fontStyle: unitNo ? "normal" : "italic"
               }}
               className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
             />
@@ -744,12 +755,13 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
                 setFloorNo(capitalizeWords(text));
                 if (addressLocationError) setAddressLocationError("");
               }}
-              placeholder="e.g. 3rd Floor"
+              placeholder="e.g. : 3rd Floor"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
               style={{
                 borderWidth: addressLocationError ? 1 : 0,
                 borderColor: addressLocationError ? "#DC2626" : "transparent",
+                fontStyle: floorNo ? "normal" : "italic"
               }}
               className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
             />
@@ -761,12 +773,13 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
                 setHouseNo(capitalizeWords(text));
                 if (addressLocationError) setAddressLocationError("");
               }}
-              placeholder="e.g. 14"
+              placeholder="e.g. : 14"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
               style={{
                 borderWidth: addressLocationError ? 1 : 0,
                 borderColor: addressLocationError ? "#DC2626" : "transparent",
+                fontStyle: houseNo ? "normal" : "italic"
               }}
               className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
             />
@@ -784,6 +797,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
               style={{
                 borderWidth: addressLocationError ? 1 : 0,
                 borderColor: addressLocationError ? "#DC2626" : "transparent",
+                fontStyle: streetName ? "normal" : "italic"
               }}
               className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
             />
@@ -809,12 +823,13 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
                 setHouseNo(capitalizeWords(text));
                 if (addressLocationError) setAddressLocationError("");
               }}
-              placeholder="e.g. 14/B"
+              placeholder="e.g. : 14/B"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
               style={{
                 borderWidth: addressLocationError ? 1 : 0,
                 borderColor: addressLocationError ? "#DC2626" : "transparent",
+                fontStyle: houseNo ? "normal" : "italic"
               }}
               className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
             />
@@ -832,6 +847,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
               style={{
                 borderWidth: addressLocationError ? 1 : 0,
                 borderColor: addressLocationError ? "#DC2626" : "transparent",
+                fontStyle: streetName ? "normal" : "italic"
               }}
               className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
             />
@@ -857,7 +873,16 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
           className="self-center flex-row items-center border rounded-full px-8 py-3 mb-1"
           style={{
             borderColor: geoLocationError ? "#DC2626" : "#6C3CD1",
-            maxWidth: "100%",
+            borderWidth: 1,
+            backgroundColor: "#FFF",
+            // Border glow (iOS)
+            shadowColor: geoLocationError ? "#DC2626" : "#6C3CD1",
+            shadowOffset: { width: 0, height: 0 },
+            shadowOpacity: 0.3,
+            shadowRadius: 4,
+
+            // Android
+            elevation: 5,
           }}
         >
           <FontAwesome6
@@ -916,7 +941,13 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
             onPress={handleSubmit}
             disabled={saving || cityBlocksSubmit}
             activeOpacity={0.85}
-            style={{ borderRadius: 999, overflow: "hidden", height: 50 }}
+            style={{
+              borderRadius: 999, overflow: "hidden", height: 50, shadowColor: "#000000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.2,
+              shadowRadius: 4,
+              elevation: 6,
+            }}
           >
             <LinearGradient
               colors={

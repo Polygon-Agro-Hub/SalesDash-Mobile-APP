@@ -501,7 +501,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
           source: "PolygonAgro",
           transport: "sms",
           content: {
-            sms: "Thank you for registering with us a GoviMart customer. Please use the bellow OTP to confirm the registration process. {{code}}",
+            sms: "This is your OTP for your account details update: {{code}}",
           },
           destination: cleanedPhoneNumber,
         },

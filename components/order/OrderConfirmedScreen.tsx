@@ -588,7 +588,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         <div>
           <p>
             <span style="font-weight: 550; font-size: 16px"
-              >Polygon Holdings (Private) Ltd</span
+              >Polygon Holdings (Private) Limited</span
             >
           </p>
           <p class="headerp">No. 42/46, Nawam Mawatha, Colombo 02.</p>
@@ -643,7 +643,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
             <p style="font-weight: 550; font-size: 16px">Rs. ${totalAmount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
             <div class="section" style="margin-top: 30px">
               <p class="bold">Payment Method :</p>
-              <p class="headerp">${paymentMethodLower === "card" ? "Card Payment" : "Cash On Delivery"}</p>
+              <p class="headerp">${paymentMethodLower === "card" ? "Online Transfer" : "Cash On Delivery"}</p>
             </div>
           </div>
         </div>
@@ -913,8 +913,8 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
                 style={{ fontSize: 16 }}
                 className="text-[#747474] text-center mt-5"
               >
-                Order Confirmation message and Payment Gateway Link has been
-                sent to your Customer
+                Order Confirmation message has been
+                sent to your Customer.
               </Text>
             </View>
 

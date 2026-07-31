@@ -136,10 +136,10 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
       product.category === "Retail" &&
       (searchQuery
         ? product.displayName
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
-          (product.tags &&
-            product.tags.toLowerCase().includes(searchQuery.toLowerCase()))
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase()) ||
+        (product.tags &&
+          product.tags.toLowerCase().includes(searchQuery.toLowerCase()))
         : true),
   );
 
@@ -260,6 +260,18 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
     );
   }
 
+  const shadowHandler = () =>{
+   if (isKeyboardVisible) {
+    return 0;
+   }
+   else if (hasSelectedProducts) {
+    return 5;
+   }
+   else {
+    return 0;
+   }
+  }
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -304,10 +316,10 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
             contentContainerStyle={
               filteredProducts.length === 0
                 ? {
-                    flexGrow: 1,
-                    justifyContent: "center",
-                    alignItems: "center",
-                  }
+                  flexGrow: 1,
+                  justifyContent: "center",
+                  alignItems: "center",
+                }
                 : undefined
             }
           >
@@ -331,11 +343,10 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
                   </View>
                   <View className="justify-center w-8">
                     <View
-                      className={`w-6 h-6 rounded border ${
-                        product.selected
+                      className={`w-6 h-6 rounded border ${product.selected
                           ? "bg-black border-black"
                           : "border-gray-400"
-                      } justify-center items-center`}
+                        } justify-center items-center`}
                     >
                       {product.selected && (
                         <Ionicons name="checkmark" size={16} color="white" />
@@ -345,12 +356,12 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
                 </TouchableOpacity>
               ))
             ) : (
-              <View  style={{
-                  justifyContent: "center",
-                  alignItems: "center",
-                 paddingBottom:50
-                }}>
-              <NoDataFound message="No products found" />
+              <View style={{
+                justifyContent: "center",
+                alignItems: "center",
+                paddingBottom: 50
+              }}>
+                <NoDataFound message="No products found" />
               </View>
             )}
           </ScrollView>
@@ -365,7 +376,13 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
                 shadowOffset: { width: 0, height: 6 },
                 shadowOpacity: hasSelectedProducts ? 0.25 : 0,
                 shadowRadius: 8,
-                elevation: hasSelectedProducts ? 10 : 0,
+                elevation: shadowHandler(),
+                
+                paddingBottom: isKeyboardVisible
+                  ? Platform.OS === "android"
+                    ? 28
+                    : 10
+                  : 0,
               }}
             >
               <TouchableOpacity
