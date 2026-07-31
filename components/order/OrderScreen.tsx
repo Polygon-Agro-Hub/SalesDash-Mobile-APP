@@ -711,6 +711,8 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     return (discountPerKg * quantityInKg).toFixed(2);
   };
 
+  const discount = Number(calculateDiscountForQuantity());
+
   const calculateGrandTotal = () => {
     let packageTotalAmount = 0;
 
@@ -1380,6 +1382,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
             </View>
 
             {/* Dynamic Discount Message */}
+            {discount > 0 ? (
             <View className="mb-4">
               <Text className="text-purple-600 text-center text-sm font-medium">
                 You received a discount of Rs.{" "}
@@ -1389,7 +1392,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                 )}{" "}
                 for this product
               </Text>
-            </View>
+            </View>): null}
 
             {/* Action Buttons */}
             <View className="gap-3">

@@ -438,22 +438,22 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
           if (errorCode === "DUPLICATE_ADDRESS") {
             setAddressLocationError(
               errMsg ||
-                "This address location already exists. Please use a different address.",
+              "This address location already exists. Please use a different address.",
             );
             Alert.alert(
               "Duplicate Address",
               errMsg ||
-                "This address already exists for this customer. Please enter a different address.",
+              "This address already exists for this customer. Please enter a different address.",
             );
           } else if (errorCode === "DUPLICATE_PHONE") {
             setPhoneError1(
               errMsg ||
-                "This phone number is already saved in another address.",
+              "This phone number is already saved in another address.",
             );
             Alert.alert(
               "Duplicate Phone Number",
               errMsg ||
-                "This phone number is already saved in another address.",
+              "This phone number is already saved in another address.",
             );
           } else {
             setSaveAsError(
@@ -630,7 +630,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
           onFocus={() => handlePhoneFocus(phoneNumber1, setPhoneNumber1)}
           onBlur={() => handlePhoneBlur(phoneNumber1, setPhoneNumber1)}
           onKeyPress={(e) => handlePhoneKeyPress(e, phoneNumber1)}
-          placeholder="+947XXXXXXXX"
+          placeholder="e.g. : 077 XXXX XXX"
           placeholderTextColor="#9CA3AF"
           keyboardType="phone-pad"
           maxLength={12}
@@ -657,7 +657,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
           onFocus={() => handlePhoneFocus(phoneNumber2, setPhoneNumber2)}
           onBlur={() => handlePhoneBlur(phoneNumber2, setPhoneNumber2)}
           onKeyPress={(e) => handlePhoneKeyPress(e, phoneNumber2)}
-          placeholder="+947XXXXXXXX"
+          placeholder="e.g. : 077 XXXX XXX"
           placeholderTextColor="#9CA3AF"
           keyboardType="phone-pad"
           maxLength={12}
@@ -857,7 +857,16 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
           className="self-center flex-row items-center border rounded-full px-8 py-3 mb-1"
           style={{
             borderColor: geoLocationError ? "#DC2626" : "#6C3CD1",
-            maxWidth: "100%",
+            borderWidth: 1,
+            backgroundColor: "#FFF",
+            // Border glow (iOS)
+            shadowColor: geoLocationError ? "#DC2626" : "#6C3CD1",
+            shadowOffset: { width: 0, height: 0 },
+            shadowOpacity: 0.3,
+            shadowRadius: 4,
+
+            // Android
+            elevation: 5,
           }}
         >
           <FontAwesome6
@@ -916,7 +925,13 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
             onPress={handleSubmit}
             disabled={saving || cityBlocksSubmit}
             activeOpacity={0.85}
-            style={{ borderRadius: 999, overflow: "hidden", height: 50 }}
+            style={{
+              borderRadius: 999, overflow: "hidden", height: 50, shadowColor: "#000000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.2,
+              shadowRadius: 4,
+              elevation: 10,
+            }}
           >
             <LinearGradient
               colors={
