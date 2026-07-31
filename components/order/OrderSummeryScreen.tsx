@@ -1062,7 +1062,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
             </View>
             <Text className="text-[#8492A3] mt-1">
               {paymentMethod === "Card"
-                ? "Online Payment (Card)"
+                ? "Online Payment"
                 : "Cash On Delivery"}
             </Text>
           </View>
