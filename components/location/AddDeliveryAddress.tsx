@@ -574,7 +574,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
           value={saveAddressAs}
           onChangeText={(text) => {
             setSaveAddressAs(
-              stripLeadingSpace(text).slice(0, SAVE_ADDRESS_AS_MAX_LENGTH),
+              capitalizeWords(stripLeadingSpace(text).slice(0, SAVE_ADDRESS_AS_MAX_LENGTH)),
             );
             if (saveAsError) setSaveAsError("");
           }}
@@ -611,7 +611,10 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
             <Text className="text-sm mb-2">Billing Name *</Text>
             <TextInput
               value={billingName}
-              onChangeText={(text) => setBillingName(capitalizeWords(text))}
+              onChangeText={(text) => { // Allow only letters and spaces
+                const filteredText = text.replace(/[^A-Za-z\s]/g, "");
+                setBillingName(capitalizeWords(filteredText));
+              }}
               placeholder="e.g. : Billing Name"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
