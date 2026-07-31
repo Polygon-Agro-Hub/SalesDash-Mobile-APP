@@ -188,9 +188,10 @@ const PackageConfirmation: React.FC<PackageConfirmationProps> = ({
       </ScrollView>
 
       {/* Continue button */}
-      <View className="px-10 pb-6 pt-2">
+      <View className="px-10 pb-6 pt-2 items-center">
         <View
           style={{
+            width: "75%",
             borderRadius: 999,
             shadowColor: "#000000",
             shadowOffset: { width: 0, height: 2 },
