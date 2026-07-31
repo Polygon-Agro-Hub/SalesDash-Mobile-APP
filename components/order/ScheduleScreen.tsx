@@ -233,6 +233,9 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     incomingDeliveryCharge || 0,
   );
 
+  const isDeliveryFeeReady =
+    !!selectedAddress && typeof route.params?.deliveryCharge === "number";
+
   const [date, setDate] = useState(() => {
     if (previousSelectedDate) {
       const parts = previousSelectedDate.split(" ");
@@ -364,7 +367,10 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       return processedItems;
     } else if (originalItems && originalItems.length > 0) {
       return originalItems;
-    } else if (route.params?.rawAdditionalItems && route.params?.rawAdditionalItems.length > 0) {
+    } else if (
+      route.params?.rawAdditionalItems &&
+      route.params?.rawAdditionalItems.length > 0
+    ) {
       return route.params.rawAdditionalItems.map((item: any) => ({
         id: item.id || item.productId,
         name: item.name || "",
@@ -551,6 +557,14 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
   };
 
   const handleProceed = () => {
+    if (!isDeliveryFeeReady) {
+      Alert.alert(
+        "Delivery Address Required",
+        "Please go back and select a valid delivery address.",
+      );
+      return;
+    }
+
     if (!selectedDate && !selectedTimeSlot) {
       Alert.alert("Required", "Please select a delivery date & time slot");
       return;
@@ -825,10 +839,18 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                   <TouchableOpacity
                     onPress={handleProceed}
                     activeOpacity={0.8}
-                    style={{ borderRadius: 30 }}
+                    disabled={!isDeliveryFeeReady}
+                    style={{
+                      borderRadius: 30,
+                      opacity: isDeliveryFeeReady ? 1 : 0.5,
+                    }}
                   >
                     <LinearGradient
-                      colors={["#854BDA", "#6E3DD1"]}
+                      colors={
+                        isDeliveryFeeReady
+                          ? ["#854BDA", "#6E3DD1"]
+                          : ["#B9B9B9", "#A0A0A0"]
+                      }
                       style={{
                         paddingVertical: 12,
                         paddingHorizontal: 24,
@@ -838,7 +860,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                         justifyContent: "center",
                       }}
                     >
-                     <Text className="text-white font-bold text-lg mr-2">
+                      <Text className="text-white font-bold text-lg mr-2">
                         Proceed
                       </Text>
                       <Feather name="check" size={20} color="white" />

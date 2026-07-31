@@ -258,21 +258,21 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
     const payload =
       buildingType === "House"
         ? {
-            buildingType,
-            houseNo,
-            streetName,
-            ...(canEditNearestCity ? { nearestCity } : {}),
-          }
+          buildingType,
+          houseNo,
+          streetName,
+          ...(canEditNearestCity ? { nearestCity } : {}),
+        }
         : {
-            buildingType,
-            buildingNo,
-            buildingName,
-            unitNo,
-            floorNo,
-            houseNo,
-            streetName,
-            ...(canEditNearestCity ? { nearestCity } : {}),
-          };
+          buildingType,
+          buildingNo,
+          buildingName,
+          unitNo,
+          floorNo,
+          houseNo,
+          streetName,
+          ...(canEditNearestCity ? { nearestCity } : {}),
+        };
 
     try {
       setSaving(true);
@@ -317,9 +317,6 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
             </Text>
           ) : null}
 
-          {/* Only render the delivery status once the city list has
-              actually finished loading, so it never briefly shows
-              "City Not Found" before flipping to "Great News". */}
           {!citiesLoading && (
             <CityDeliveryStatus
               city={nearestCity}
@@ -349,11 +346,8 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
   }
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })}
-      className="flex-1 bg-white"
-    >
+    <View className="flex-1 bg-white">
+      {/* Header stays fixed, OUTSIDE the KeyboardAvoidingView */}
       <CustomHeader
         title="Update Residential Address"
         titleColor="#000000"
@@ -362,158 +356,168 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
         onBackPress={() => navigation.goBack()}
       />
 
-      <ScrollView
-        className="flex-1 px-6 pt-4"
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView
+        className="flex-1"
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.select({ ios: 0, android: 0 })}
       >
-        {/* Building Type */}
-        <Text className="text-sm mb-2">Building Type *</Text>
-        <View className="mb-5">
-          <TouchableOpacity
-            onPress={() => setBuildingTypeModalVisible(true)}
-            className="bg-gray-100 rounded-3xl px-4 h-[50px] flex-row items-center justify-between"
-          >
-            <Text className="text-black text-[15px]">{buildingType}</Text>
-            <MaterialIcons
-              name="keyboard-arrow-down"
-              size={22}
-              color="#6B7280"
-            />
-          </TouchableOpacity>
-        </View>
+        <ScrollView
+          className="flex-1 px-6 pt-4"
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Building Type */}
+          <Text className="text-sm mb-2">Building Type *</Text>
+          <View className="mb-5">
+            <TouchableOpacity
+              onPress={() => setBuildingTypeModalVisible(true)}
+              className="bg-gray-100 rounded-3xl px-4 h-[50px] flex-row items-center justify-between"
+            >
+              <Text className="text-black text-[15px]">{buildingType}</Text>
+              <MaterialIcons
+                name="keyboard-arrow-down"
+                size={22}
+                color="#6B7280"
+              />
+            </TouchableOpacity>
+          </View>
 
-        {/* ===================== HOUSE FIELDS ===================== */}
-        {buildingType === "House" && (
-          <>
-            <Text className="text-sm mb-2">Building / House No *</Text>
-            <TextInput
-              value={houseNo}
-              onChangeText={(text) => setHouseNo(sanitizeInput(text))}
-              placeholder="e.g. 14/B"
-              placeholderTextColor="#9CA3AF"
-              autoCapitalize="words"
-              className="bg-gray-100 rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
-            />
+          {/* ===================== HOUSE FIELDS ===================== */}
+          {buildingType === "House" && (
+            <>
+              <Text className="text-sm mb-2">Building / House No *</Text>
+              <TextInput
+                value={houseNo}
+                onChangeText={(text) => setHouseNo(sanitizeInput(text))}
+                placeholder="e.g. 14/B"
+                placeholderTextColor="#9CA3AF"
+                autoCapitalize="words"
+                className="bg-gray-100 rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
+              />
 
-            <Text className="text-sm mb-2">Street Name *</Text>
-            <TextInput
-              value={streetName}
-              onChangeText={(text) => setStreetName(sanitizeInput(text))}
-              placeholder="e.g. Diyagama Road"
-              placeholderTextColor="#9CA3AF"
-              autoCapitalize="words"
-              className="bg-gray-100 rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
-            />
+              <Text className="text-sm mb-2">Street Name *</Text>
+              <TextInput
+                value={streetName}
+                onChangeText={(text) => setStreetName(sanitizeInput(text))}
+                placeholder="e.g. Diyagama Road"
+                placeholderTextColor="#9CA3AF"
+                autoCapitalize="words"
+                className="bg-gray-100 rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
+              />
 
-            {renderNearestCityField()}
-          </>
-        )}
+              {renderNearestCityField()}
+            </>
+          )}
 
-        {/* ==================== APARTMENT FIELDS ==================== */}
-        {buildingType === "Apartment" && (
-          <>
-            <Text className="text-sm mb-2">Apartment / Building No *</Text>
-            <TextInput
-              value={buildingNo}
-              onChangeText={(text) => setBuildingNo(sanitizeInput(text))}
-              placeholder="e.g. Building B"
-              placeholderTextColor="#9CA3AF"
-              autoCapitalize="words"
-              className="bg-gray-100 rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
-            />
+          {/* ==================== APARTMENT FIELDS ==================== */}
+          {buildingType === "Apartment" && (
+            <>
+              <Text className="text-sm mb-2">Apartment / Building No *</Text>
+              <TextInput
+                value={buildingNo}
+                onChangeText={(text) => setBuildingNo(sanitizeInput(text))}
+                placeholder="e.g. Building B"
+                placeholderTextColor="#9CA3AF"
+                autoCapitalize="words"
+                className="bg-gray-100 rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
+              />
 
-            <Text className="text-sm mb-2">Apartment / Building Name *</Text>
-            <TextInput
-              value={buildingName}
-              onChangeText={(text) => setBuildingName(sanitizeInput(text))}
-              placeholder="e.g. Elite Residencies"
-              placeholderTextColor="#9CA3AF"
-              autoCapitalize="words"
-              className="bg-gray-100 rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
-            />
+              <Text className="text-sm mb-2">Apartment / Building Name *</Text>
+              <TextInput
+                value={buildingName}
+                onChangeText={(text) => setBuildingName(sanitizeInput(text))}
+                placeholder="e.g. Elite Residencies"
+                placeholderTextColor="#9CA3AF"
+                autoCapitalize="words"
+                className="bg-gray-100 rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
+              />
 
-            <Text className="text-sm mb-2">Flat / Unit Number *</Text>
-            <TextInput
-              value={unitNo}
-              onChangeText={(text) => setUnitNo(sanitizeInput(text))}
-              placeholder="e.g. Unit 4B"
-              placeholderTextColor="#9CA3AF"
-              autoCapitalize="words"
-              className="bg-gray-100 rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
-            />
+              <Text className="text-sm mb-2">Flat / Unit Number *</Text>
+              <TextInput
+                value={unitNo}
+                onChangeText={(text) => setUnitNo(sanitizeInput(text))}
+                placeholder="e.g. Unit 4B"
+                placeholderTextColor="#9CA3AF"
+                autoCapitalize="words"
+                className="bg-gray-100 rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
+              />
 
-            <Text className="text-sm mb-2">Floor Number *</Text>
-            <TextInput
-              value={floorNo}
-              onChangeText={(text) => setFloorNo(sanitizeInput(text))}
-              placeholder="e.g. 3rd Floor"
-              placeholderTextColor="#9CA3AF"
-              autoCapitalize="words"
-              className="bg-gray-100 rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
-            />
+              <Text className="text-sm mb-2">Floor Number *</Text>
+              <TextInput
+                value={floorNo}
+                onChangeText={(text) => setFloorNo(sanitizeInput(text))}
+                placeholder="e.g. 3rd Floor"
+                placeholderTextColor="#9CA3AF"
+                autoCapitalize="words"
+                className="bg-gray-100 rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
+              />
 
-            <Text className="text-sm mb-2">House No *</Text>
-            <TextInput
-              value={houseNo}
-              onChangeText={(text) => setHouseNo(sanitizeInput(text))}
-              placeholder="e.g. 14"
-              placeholderTextColor="#9CA3AF"
-              autoCapitalize="words"
-              className="bg-gray-100 rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
-            />
+              <Text className="text-sm mb-2">House No *</Text>
+              <TextInput
+                value={houseNo}
+                onChangeText={(text) => setHouseNo(sanitizeInput(text))}
+                placeholder="e.g. 14"
+                placeholderTextColor="#9CA3AF"
+                autoCapitalize="words"
+                className="bg-gray-100 rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
+              />
 
-            <Text className="text-sm mb-2">Street Name *</Text>
-            <TextInput
-              value={streetName}
-              onChangeText={(text) => setStreetName(sanitizeInput(text))}
-              placeholder="e.g. Diyagama Road"
-              placeholderTextColor="#9CA3AF"
-              autoCapitalize="words"
-              className="bg-gray-100 rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
-            />
+              <Text className="text-sm mb-2">Street Name *</Text>
+              <TextInput
+                value={streetName}
+                onChangeText={(text) => setStreetName(sanitizeInput(text))}
+                placeholder="e.g. Diyagama Road"
+                placeholderTextColor="#9CA3AF"
+                autoCapitalize="words"
+                className="bg-gray-100 rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
+              />
 
-            {renderNearestCityField()}
-          </>
-        )}
+              {renderNearestCityField()}
+            </>
+          )}
 
-        {/* Update Button */}
-        <View className="px-4 pb-8 pt-5">
-          <TouchableOpacity
-            onPress={handleUpdate}
-            disabled={saving || cityBlocksUpdate}
-            activeOpacity={0.85}
-            style={{
-              borderRadius: 999,
-              overflow: "hidden",
-              height: 50,
-            }}
-          >
-            <LinearGradient
-              colors={
-                cityBlocksUpdate
-                  ? ["#B9AEDD", "#A99BD6"]
-                  : ["#7B3FE4", "#5B2CC9"]
-              }
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
+          {/* Update Button */}
+          <View className="px-4 pb-8 pt-5">
+            <TouchableOpacity
+              onPress={handleUpdate}
+              disabled={saving || cityBlocksUpdate}
+              activeOpacity={0.85}
               style={{
-                borderRadius: 999,
-                paddingVertical: 16,
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
+                borderRadius: 999, overflow: "hidden", height: 50,
+                shadowColor: "#000000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.2,
+                shadowRadius: 4,
+                elevation: 10,
               }}
             >
-              <Text className="text-white text-base font-semibold">
-                {saving ? "Updating..." : "Update"}
-              </Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+              <LinearGradient
+                colors={
+                  cityBlocksUpdate
+                    ? ["#B9AEDD", "#A99BD6"]
+                    : ["#7B3FE4", "#5B2CC9"]
+                }
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={{
+                  borderRadius: 999,
+                  paddingVertical: 16,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Text className="text-white text-base font-semibold">
+                  {saving ? "Updating..." : "Update"}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
-      {/* Building Type Selection Modal */}
+      {/* Modals stay outside, same as before */}
       <GlobalSearchModal
         visible={buildingTypeModalVisible}
         onClose={() => setBuildingTypeModalVisible(false)}
@@ -521,9 +525,7 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
         data={BUILDING_TYPES}
         selectedItems={buildingType ? [buildingType] : []}
         onSelect={(items) => {
-          if (items.length > 0) {
-            setBuildingType(items[0]);
-          }
+          if (items.length > 0) setBuildingType(items[0]);
           setBuildingTypeModalVisible(false);
         }}
         searchPlaceholder="Search building type..."
@@ -531,7 +533,6 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
         showSearch={false}
       />
 
-      {/* City Selection Modal (only used when nearest city is editable) */}
       <GlobalSearchModal
         visible={cityModalVisible}
         onClose={() => setCityModalVisible(false)}
@@ -551,7 +552,7 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
         showSearch={true}
         noResultsText="No City Found"
       />
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 

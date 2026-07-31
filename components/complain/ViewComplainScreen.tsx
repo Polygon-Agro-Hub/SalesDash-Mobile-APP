@@ -183,6 +183,15 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({
     }, [navigation]),
   );
 
+  const formatCreatedAt = (dateString: string) => {
+    const [time, date] = dateString.split(",");
+
+    return `${time
+      .replace(".", ":")
+      .replace("AM", " AM")
+      .replace("PM", " PM")}, ${date}`;
+  };
+
   return (
     <View className="flex-1 bg-white">
       <CustomHeader
@@ -229,7 +238,7 @@ const ViewComplainScreen: React.FC<ViewComplainScreenProps> = ({
                         Ref No: {item.refNo}
                       </Text>
                       <Text className="text-gray-500 text-sm">
-                        Sent {item.createdAt}
+                        Sent {formatCreatedAt(item.createdAt)}
                       </Text>
                       <Text className="text-gray-700 mt-2">
                         {item.complain}

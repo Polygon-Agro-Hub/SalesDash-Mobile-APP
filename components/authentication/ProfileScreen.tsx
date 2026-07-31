@@ -314,7 +314,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
               style={{ marginTop: hp(15), paddingHorizontal: wp(6) }}
             >
               <View className="items-center" style={{ marginTop: -hp(11) }}>
-                <TouchableOpacity className="relative">
+                
                   {formData.image ? (
                     <Image
                       source={{ uri: formData.image }}
@@ -338,7 +338,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                       }}
                     />
                   )}
-                </TouchableOpacity>
                 <Text className="text-black text-2xl font-bold mb-2">
                   {formData.firstName} {formData.lastName}
                 </Text>

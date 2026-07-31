@@ -67,8 +67,6 @@ interface CustomerData {
   };
 }
 
-// Converts a phone number to local display format, e.g. "+94701835108" or
-// "94701835108" -> "0701835108". Leaves already-local numbers unchanged.
 const toLocalPhoneFormat = (phone?: string | null) => {
   if (!phone) return phone || "";
   let cleaned = phone.replace(/[^0-9]/g, "");
@@ -235,7 +233,6 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
     }
   }, [customerId, route.params?.customerId, route.params?.customerid]);
 
- 
   const handleConfirmOrder = async () => {
     if (isSubmitting || isSubmitted) return;
 
@@ -301,7 +298,9 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         const packageOrderData = {
           userId: Number(id || customerId || customerid),
           isPackage: 1,
-          packageId: Number(currentPackageItem.packageId || route.params?.packageId),
+          packageId: Number(
+            currentPackageItem.packageId || route.params?.packageId,
+          ),
           total: Number(fullTotal + discount),
           fullTotal: Number(fullTotal),
           discount: Number(discount),
@@ -393,6 +392,8 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         isFinalizeImdt: route.params?.isFinalizeImdt,
         deliveryCharge: deliveryFee,
       });
+
+      setIsSubmitting(false);
     } catch (error: any) {
       console.error("Error preparing order / sending OTP:", error);
       setIsSubmitting(false);
@@ -408,6 +409,10 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
   };
 
   const getCustomerInfo = () => {
+    const name = customerData
+      ? `${customerData.title || ""}. ${customerData.firstName || ""} ${customerData.lastName || ""}`.trim()
+      : "Guest User";
+
     if (route.params?.selectedAddress) {
       const address = route.params.selectedAddress;
       const formatted =
@@ -425,11 +430,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         "No phone";
 
       return {
-        name:
-          [address.billingTitle, address.billingName]
-            .filter(Boolean)
-            .join(" ") ||
-          `${customerData?.title || ""}. ${customerData?.firstName || ""} ${customerData?.lastName || ""}`,
+        name,
         phone:
           rawPhone === "No phone" ? rawPhone : toLocalPhoneFormat(rawPhone),
         buildingType: address.type || "Not specified",
@@ -450,7 +451,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
       const cleanedAddress = address.replace(/\s+/g, " ").trim();
 
       return {
-        name: `${customerData.title || ""}. ${customerData.firstName || ""} ${customerData.lastName || ""}`,
+        name,
         phone: customerData.phoneNumber
           ? toLocalPhoneFormat(customerData.phoneNumber)
           : "No phone",
@@ -460,7 +461,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
     }
 
     return {
-      name: "Guest User",
+      name,
       phone: "Not available",
       buildingType: "Not specified",
       address: "Address not available",
@@ -693,6 +694,12 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
 
       return () => backHandler.remove();
     }, [navigation, customerData]),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      setIsSubmitting(false);
+    }, []),
   );
 
   const formatPrice = (amount: number) => {
@@ -1055,7 +1062,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
             </View>
             <Text className="text-[#8492A3] mt-1">
               {paymentMethod === "Card"
-                ? "Online Payment (Card)"
+                ? "Online Payment"
                 : "Cash On Delivery"}
             </Text>
           </View>
