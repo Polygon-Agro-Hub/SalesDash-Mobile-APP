@@ -294,8 +294,8 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
     if (address.type === "Apartment") {
       if (address.houseNo) parts.push(address.houseNo);
       if (address.buildingName) parts.push(address.buildingName);
-      if (address.unitNo) parts.push(`Flat ${address.unitNo}`);
-      if (address.floorNo) parts.push(`${address.floorNo} Floor`);
+      if (address.unitNo) parts.push(`${address.unitNo}`);
+      if (address.floorNo) parts.push(`${address.floorNo}`);
       if (address.buildingNo) parts.push(address.buildingNo);
     } else {
       if (address.houseNo) parts.push(address.houseNo);
