@@ -191,7 +191,7 @@ const PackageConfirmation: React.FC<PackageConfirmationProps> = ({
       <View className="px-10 pb-6 pt-2 items-center">
         <View
           style={{
-            width: "75%",
+            width: "68%",
             borderRadius: 999,
             shadowColor: "#000000",
             shadowOffset: { width: 0, height: 2 },
