@@ -630,7 +630,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
           onFocus={() => handlePhoneFocus(phoneNumber1, setPhoneNumber1)}
           onBlur={() => handlePhoneBlur(phoneNumber1, setPhoneNumber1)}
           onKeyPress={(e) => handlePhoneKeyPress(e, phoneNumber1)}
-          placeholder="+947XXXXXXXX"
+          placeholder="e.g. : 077 XXXX XXX"
           placeholderTextColor="#9CA3AF"
           keyboardType="phone-pad"
           maxLength={12}
@@ -657,7 +657,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
           onFocus={() => handlePhoneFocus(phoneNumber2, setPhoneNumber2)}
           onBlur={() => handlePhoneBlur(phoneNumber2, setPhoneNumber2)}
           onKeyPress={(e) => handlePhoneKeyPress(e, phoneNumber2)}
-          placeholder="+947XXXXXXXX"
+          placeholder="e.g. : 077 XXXX XXX"
           placeholderTextColor="#9CA3AF"
           keyboardType="phone-pad"
           maxLength={12}
