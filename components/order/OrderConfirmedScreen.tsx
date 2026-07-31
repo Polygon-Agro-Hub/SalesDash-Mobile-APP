@@ -643,7 +643,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
             <p style="font-weight: 550; font-size: 16px">Rs. ${totalAmount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
             <div class="section" style="margin-top: 30px">
               <p class="bold">Payment Method :</p>
-              <p class="headerp">${paymentMethodLower === "card" ? "Card Payment" : "Cash On Delivery"}</p>
+              <p class="headerp">${paymentMethodLower === "card" ? "Online Transfer" : "Cash On Delivery"}</p>
             </div>
           </div>
         </div>
