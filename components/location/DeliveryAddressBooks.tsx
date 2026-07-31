@@ -95,7 +95,7 @@ const getBillingInfoRows = (address: SavedAddress | null): BillingInfoRow[] => {
 
   if (address.type === "House") {
     rows.push({
-      label: "Building No",
+      label: "House No",
       value: address.houseNo || "—",
       icon: "building",
       ...purpleIcon,
