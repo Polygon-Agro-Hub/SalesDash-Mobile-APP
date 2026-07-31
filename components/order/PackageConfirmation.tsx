@@ -158,7 +158,7 @@ const PackageConfirmation: React.FC<PackageConfirmationProps> = ({
                     resizeMode="contain"
                   />
                 </View>
-                <Text className="text-base font-bold text-gray-900">
+                <Text className="flex-1 text-base font-bold text-gray-900">
                   Review and confirm before delivery
                 </Text>
               </View>
