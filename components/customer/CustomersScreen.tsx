@@ -25,6 +25,7 @@ import environment from "@/environment/environment";
 import CustomersScreenSkeleton from "./CustomerScreenSkeleton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { FontAwesome, Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type CustomersScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -50,6 +51,10 @@ const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   const CUSTOMERS_PER_PAGE = 10;
+  const insets = useSafeAreaInsets();
+  
+  const topInset = Platform.OS === "ios" ? insets.top : 0;
+
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -63,7 +68,6 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   const [totalCount, setTotalCount] = useState(0);
   const isMounted = useRef(true);
 
-  // Safe state setters
   const safeSetCustomers = (data: Customer[]) => {
     if (isMounted.current) {
       setCustomers(data);
@@ -89,10 +93,8 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
     }
   };
 
-  // Add focus listener to clear search when screen comes into focus
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
-      // Clear search when returning to this screen
       setSearchQuery("");
       setFilteredCustomers(customers);
     });
@@ -100,7 +102,6 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
     return unsubscribe;
   }, [navigation, customers]);
 
-  // Helper function to sort customers alphabetically by full name
   const sortCustomersByName = (customerList: Customer[]): Customer[] => {
     return [...customerList].sort((a, b) => {
       const nameA = `${a.firstName} ${a.lastName}`.toLowerCase();
@@ -191,7 +192,6 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   };
 
   useEffect(() => {
-    // Set up listeners
     const unsubscribe = navigation.addListener("focus", () => {
       if (isMounted.current) {
         setCurrentPage(1);
@@ -210,10 +210,8 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
       () => setKeyboardVisible(false),
     );
 
-    // Initial load
     loadCustomers(1, true, false);
 
-    // Cleanup function
     return () => {
       isMounted.current = false;
       unsubscribe();
@@ -230,7 +228,6 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   };
 
   const handleSearch = (query: string) => {
-    // Block special characters - only allow letters, numbers, spaces, and +
     const specialCharRegex = /[^a-zA-Z0-9\s+]/g;
     let cleanedQuery = query.replace(specialCharRegex, "");
 
@@ -308,7 +305,12 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
         {/* Header */}
         <LinearGradient
           colors={["#854BDA", "#6E3DD1"]}
-          className="h-24 shadow-md px-4 pt-4 pb-10 items-center justify-center"
+          className="shadow-md px-4 items-center justify-center"
+          style={{
+            height: hp(12) + topInset,
+            paddingTop: Platform.OS === "ios" ? topInset + 8 : 16,
+            paddingBottom: 24,
+          }}
         >
           <View className="w-full max-w-[500px] items-center">
             <Text
@@ -317,7 +319,9 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
             >
               Total Customers:{" "}
               <Text className="font-bold">
-                {String(searchQuery ? filteredCustomers.length : totalCount).padStart(2, "0")}
+                {String(
+                  searchQuery ? filteredCustomers.length : totalCount,
+                ).padStart(2, "0")}
               </Text>
             </Text>
           </View>
@@ -329,19 +333,35 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
         ) : (
           <View className="flex-1 mx-auto w-full max-w-[500px]">
             {/* Search Bar */}
-            <View className="flex-row items-center bg-[#F5F1FC] h-[50px] px-6 py-0 mb-5 rounded-full mt-[-22px] mx-6 shadow-md h-12">
+            <View
+              className="flex-row items-center bg-[#F5F1FC] h-[50px] px-6 py-0 mb-5 rounded-full mt-[-6%] mx-6"
+              style={{
+                borderRadius: 999,
+                backgroundColor: "#F5F1FC",
+                ...Platform.select({
+                  ios: {
+                    shadowColor: "#7E7E7E",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.15,
+                    shadowRadius: 6,
+                  },
+                  android: {
+                    elevation: 4,
+                  },
+                }),
+              }}
+            >
               <TextInput
                 value={searchQuery}
                 onChangeText={handleSearch}
                 placeholder="Search By Name, Phone Number"
                 placeholderTextColor="#6839CF"
-                className="flex-1 text-sm text-gray-700 h-11 py-0"
+                className="flex-1 text-sm text-gray-700 bg-[#F5F1FC] h-11 py-0"
                 style={{
                   fontStyle: "italic",
                   includeFontPadding: false,
                   fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
                 }}
-             
               />
               <FontAwesome name="search" size={22} color="#884EDC" />
             </View>
@@ -380,17 +400,18 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                 <View
                   style={{
                     flex: 1,
-                    marginBottom:80,
                     justifyContent: "center",
                     alignItems: "center",
-                    paddingVertical: 16,
+                    paddingBottom: 110,
                   }}
                 >
                   <Image
                     source={require("@/assets/images/public/no-data.webp")}
                     style={{
-                      width: wp("60%"),
-                      height: hp("30%"),
+                      width: wp("50%"),
+                      height: wp("50%"),
+                      maxWidth: 200,
+                      maxHeight: 200,
                       resizeMode: "contain",
                     }}
                   />
@@ -401,6 +422,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                         fontStyle: "italic",
                         textAlign: "center",
                         marginTop: 16,
+                        fontSize: SCREEN_HEIGHT > 900 ? 18 : 14,
                       }}
                     >
                       No customers found for "{searchQuery}"
@@ -412,6 +434,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                         fontStyle: "italic",
                         textAlign: "center",
                         marginTop: 16,
+                        fontSize: SCREEN_HEIGHT > 900 ? 18 : 14,
                       }}
                     >
                       No registered customers yet
@@ -443,56 +466,79 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                         })
                       }
                     >
+                     
                       <View
                         style={{
-                          backgroundColor: "white",
-                          borderRadius: 20,
-                          padding: 16,
                           marginBottom: 12,
                           marginHorizontal: 4,
-                          flexDirection: "row",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          borderWidth: 1,
-                          borderColor: "#E0E0E0",
-                          // iOS shadow (matches design: X:1 Y:1 Blur:8 #7E7E7E 25%)
-                          shadowColor: "#7E7E7E",
-                          shadowOffset: { width: 1, height: 1 },
-                          shadowOpacity: 0.25,
-                          shadowRadius: 8,
-                          // Android shadow
-                          elevation: 3,
+                          borderRadius: 20,
+                          ...Platform.select({
+                            ios: {
+                              backgroundColor: "white",
+                              shadowColor: "#7E7E7E",
+                              shadowOffset: { width: 0, height: 2 },
+                              shadowOpacity: 0.15,
+                              shadowRadius: 6,
+                            },
+                            android: {
+                              backgroundColor: "white",
+                              borderWidth: 1,
+                              borderColor: "#E0E0E0",
+                              elevation: 3,
+                            },
+                          }),
                         }}
                       >
-                        <View className="flex-1 mr-3">
-                          <Text
-                            className="text-gray-700 font-semibold"
-                            numberOfLines={2}
-                            ellipsizeMode="tail"
-                            style={{ fontSize: SCREEN_HEIGHT > 900 ? 20 : 14, }}
-                          >
-                            {item.title}. {item.firstName} {item.lastName}
-                          </Text>
-                          <Text
-                            className="text-gray-500"
-                            style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
-                          >
-                            {formatPhoneNumber(item.phoneNumber)}
-                          </Text>
-                        </View>
                         <View
-                          className="items-end justify-center"
-                          style={{ minWidth: 45 }}
+                          style={{
+                            borderRadius: 20,
+                            ...Platform.select({
+                              ios: {
+                                overflow: "hidden",
+                                borderWidth: 1,
+                                borderColor: "#E0E0E0",
+                                backgroundColor: "white",
+                              },
+                              android: {
+                                backgroundColor: "transparent",
+                              },
+                            }),
+                            padding: 16,
+                            flexDirection: "row",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                          }}
                         >
-                          <Text
-                            className="text-gray-700 font-semibold"
-                            style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 16 }}
+                          <View className="flex-1 mr-3">
+                            <Text
+                              className="text-gray-700 font-semibold"
+                              numberOfLines={2}
+                              ellipsizeMode="tail"
+                              style={{ fontSize: SCREEN_HEIGHT > 900 ? 20 : 14 }}
+                            >
+                              {item.title}. {item.firstName} {item.lastName}
+                            </Text>
+                            <Text
+                              className="text-gray-500"
+                              style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                            >
+                              {formatPhoneNumber(item.phoneNumber)}
+                            </Text>
+                          </View>
+                          <View
+                            className="items-end justify-center"
+                            style={{ minWidth: 45 }}
                           >
-                            #
-                            {item.orderCount < 10
-                              ? `0${item.orderCount}`
-                              : item.orderCount}
-                          </Text>
+                            <Text
+                              className="text-gray-700 font-semibold"
+                              style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 16 }}
+                            >
+                              #
+                              {item.orderCount < 10
+                                ? `0${item.orderCount}`
+                                : item.orderCount}
+                            </Text>
+                          </View>
                         </View>
                       </View>
                     </TouchableOpacity>

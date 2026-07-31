@@ -46,9 +46,20 @@ interface Order {
   total: string;
   discount: string;
   fullTotal: string;
+  deliveryCharge: string | number;
   paymentMethod: string;
   paymentStatus: number;
-  orderStatus: string;
+  orderStatus:
+    | string
+    | {
+        creditPaid?: string;
+        invoiceNumber?: string;
+        isPaid?: number;
+        moneyPaid?: string;
+        paymentMethod?: string;
+        reportStatus?: string | null;
+        status?: string;
+      };
   createdAt: string;
   InvNo: string;
   reportStatus: string;
@@ -66,6 +77,13 @@ interface Order {
   sheduleTime?: string;
   sheduleType?: string;
   title?: string;
+  customerInfo?: {
+    title?: string;
+    firstName?: string;
+    lastName?: string;
+    phoneNumber?: string;
+    buildingType?: string;
+  };
 }
 
 interface City {
@@ -186,12 +204,13 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
           if (response.data.success) {
             setOrder(response.data.data);
             const orderData = response.data.data;
-            if (orderData.fullAddress) {
-              await fetchDeliveryFee(
-                orderData.fullAddress,
-                orderData.userId || userId,
-              );
-              setIsPackage(orderData.isPackage);
+
+
+            setDeliveryFee(parseFloat(orderData.deliveryCharge) || 0);
+            setIsPackage(orderData.isPackage);
+
+            if (orderData.userId || userId) {
+              await fetchCustomerData(orderData.userId || userId);
             }
           } else {
             setError("Failed to load order details");
@@ -212,52 +231,6 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   useEffect(() => {
     fetchHoldStatus();
   }, [fetchHoldStatus]);
-
-  const fetchDeliveryFee = async (
-    fullAddress: string,
-    customerUserId?: number,
-  ) => {
-    try {
-      const storedToken = await AsyncStorage.getItem("authToken");
-      if (!storedToken) return;
-      if (customerUserId || userId) {
-        const custData = await fetchCustomerData(customerUserId || userId);
-        if (custData && custData.buildingDetails?.city) {
-          const cityName = custData.buildingDetails.city;
-          const cityResponse = await axios.get<{ data: City[] }>(
-            `${environment.API_BASE_URL}api/customer/get-city`,
-            { headers: { Authorization: `Bearer ${storedToken}` } },
-          );
-          if (cityResponse.data && cityResponse.data.data) {
-            const cityData = cityResponse.data.data.find(
-              (c) => c.city.toLowerCase() === cityName.toLowerCase(),
-            );
-            if (cityData) setDeliveryFee(parseFloat(cityData.charge) || 0);
-          }
-          return;
-        }
-      }
-      const addressParts = fullAddress.split(", ");
-      let cityName =
-        addressParts.length >= 2
-          ? addressParts[addressParts.length - 2].trim()
-          : "";
-      if (cityName) {
-        const cityResponse = await axios.get<{ data: City[] }>(
-          `${environment.API_BASE_URL}api/customer/get-city`,
-          { headers: { Authorization: `Bearer ${storedToken}` } },
-        );
-        if (cityResponse.data && cityResponse.data.data) {
-          const cityData = cityResponse.data.data.find(
-            (c) => c.city.toLowerCase() === cityName.toLowerCase(),
-          );
-          if (cityData) setDeliveryFee(parseFloat(cityData.charge) || 0);
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching delivery fee:", error);
-    }
-  };
 
   const fetchCustomerData = async (
     customerUserId: number,
@@ -541,6 +514,42 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
     }, [navigation]),
   );
 
+  const formatApartmentAddress = (details: {
+    houseNo?: string;
+    floorNo?: string;
+    buildingNo?: string;
+    buildingName?: string;
+    unitNo?: string;
+    streetName?: string;
+    city?: string;
+  }): string => {
+    const parts = [
+      details.houseNo,
+      details.floorNo,
+      details.buildingNo,
+      details.buildingName,
+      details.unitNo,
+      details.streetName,
+      details.city,
+    ]
+      .map((p) => p?.trim())
+      .filter((p) => p && p.length > 0);
+
+    return parts.length > 0 ? parts.join(", ") : "Not Available";
+  };
+
+  const formatHouseAddress = (details: {
+    houseNo?: string;
+    streetName?: string;
+    city?: string;
+  }): string => {
+    const parts = [details.houseNo, details.streetName, details.city]
+      .map((p) => p?.trim())
+      .filter((p) => p && p.length > 0);
+
+    return parts.length > 0 ? parts.join(", ") : "Not Available";
+  };
+
   const resolveHoldLabel = (event: HoldEvent): string =>
     event.holdReason === "Other" && event.otherReason
       ? event.otherReason
@@ -579,7 +588,8 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
         ) : order ? (
           <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
             <View className="mx-6 my-4 ml-8">
-              <View className="border-l-2 border-[#D9D9D9] pl-5 relative">
+              <View className="pl-5 relative">
+                <View className="absolute left-0 top-[10px] bottom-[10px] w-[2px] bg-[#D9D9D9]" />
                 <View className="flex-row items-center mb-10">
                   <View
                     className={`p-1.5 rounded-full absolute -left-8 ${isTimelineItemActive("Ordered") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`}
@@ -654,7 +664,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                         <View className="mb-6" />
                       )}
                       {showRestartAfterThisHold && (
-                        <View className="flex-row items-center mb-10">
+                        <View className="flex-row items-center mt-3 mb-10">
                           <View className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]" />
                           <Text className="text-[#5E5E5E] font-medium">
                             Order is On the way
@@ -693,7 +703,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
 
                 {status === "Hold" && (
                   <>
-                    <View className="flex-row items-center mb-10">
+                    <View className="flex-row items-center mt-3 mb-10">
                       <View className="p-1.5 rounded-full absolute -left-8 bg-[#D9D9D9] border-4 border-[#EDEDED]" />
                       <Text className="text-[#5E5E5E] font-medium">
                         Order is On the way
@@ -719,19 +729,13 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
               </View>
 
               {status === "Return" && returnReason && (
-                <View
-                  style={{ paddingLeft: 24, paddingRight: 16, marginTop: 8 }}
-                >
-                  <View
-                    style={{ flexDirection: "row", alignItems: "flex-start" }}
-                  >
-                    <Text style={{ fontWeight: "600", color: "#5E5E5E" }}>
-                      {"Reason : "}
+                <View style={{ paddingLeft: 22, marginTop: 8 }}>
+                  <Text className="font-semibold text-[#5E5E5E]">
+                    Reason:{" "}
+                    <Text className="text-black font-medium">
+                      "{returnReason}"
                     </Text>
-                    <Text style={{ color: "#000", fontWeight: "500", flex: 1 }}>
-                      {`"${returnReason}"`}
-                    </Text>
-                  </View>
+                  </Text>
                 </View>
               )}
             </View>
@@ -760,35 +764,34 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
               </Text>
               <Text className="text-black font-medium mb-3">
                 {customerData?.buildingType ||
+                  order.customerInfo?.buildingType ||
                   order.buildingType ||
                   "Not Available"}
               </Text>
               <Text className="text-[#808FA2] font-medium mb-1">Address</Text>
               <Text className="text-black font-medium">
-                {customerData?.buildingDetails
-                  ? (() => {
-                      const buildingType =
-                        customerData?.buildingType || order.buildingType;
-                      if (buildingType === "Apartment") {
-                        return (
-                          `${customerData.buildingDetails.houseNo || ""}, ${customerData.buildingDetails.floorNo || ""}, ${customerData.buildingDetails.buildingNo || ""}, ${customerData.buildingDetails.buildingName || ""}, ${customerData.buildingDetails.unitNo || ""}, ${customerData.buildingDetails.streetName || ""}, ${customerData.buildingDetails.city || ""}`
-                            .replace(/,\s*,/g, ",")
-                            .replace(/^,\s*|,\s*$/g, "")
-                            .trim() ||
-                          order.fullAddress ||
-                          "Not Available"
-                        );
-                      } else if (buildingType === "House") {
-                        return (
-                          `${customerData.buildingDetails.houseNo || ""}, ${customerData.buildingDetails.streetName || ""}, ${customerData.buildingDetails.city || ""}`.trim() ||
-                          order.fullAddress ||
-                          "Not Available"
-                        );
-                      } else {
-                        return order.fullAddress || "Not Available";
-                      }
-                    })()
-                  : order.fullAddress || "Not Available"}
+                {order.fullAddress
+                  ? order.fullAddress
+                  : customerData?.buildingDetails
+                    ? (() => {
+                        const buildingType =
+                          customerData?.buildingType ||
+                          order.customerInfo?.buildingType ||
+                          order.buildingType;
+
+                        if (buildingType === "Apartment") {
+                          return formatApartmentAddress(
+                            customerData.buildingDetails,
+                          );
+                        } else if (buildingType === "House") {
+                          return formatHouseAddress(
+                            customerData.buildingDetails,
+                          );
+                        } else {
+                          return "Not Available";
+                        }
+                      })()
+                    : "Not Available"}
               </Text>
             </View>
 
@@ -856,7 +859,9 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                 Payment Method
               </Text>
               <Text className="text-[#8492A3]">
-                {order.paymentMethod === "Credit Card"
+                {(typeof order.orderStatus === "object"
+                  ? order.orderStatus?.paymentMethod
+                  : order.paymentMethod) === "Card"
                   ? "Online Payment"
                   : "Cash on Delivery"}
               </Text>

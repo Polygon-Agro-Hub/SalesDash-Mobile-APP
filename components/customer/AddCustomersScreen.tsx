@@ -9,6 +9,8 @@ import {
   ActivityIndicator,
   BackHandler,
   Dimensions,
+  Alert,
+  Keyboard,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -17,11 +19,11 @@ import axios from "axios";
 import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
-import { Entypo, FontAwesome6, MaterialIcons } from "@expo/vector-icons";
+import { MaterialIcons } from "@expo/vector-icons";
 import { Platform } from "react-native";
 import CustomHeader from "../common/CustomHeader";
 import GlobalSearchModal from "../common/GlobalSearchModal";
-import CustomAlert from "../common/CustomAlert";
+import CityDeliveryStatus from "../common/CityDeliveryStatus";
 
 type AddCustomersScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -39,6 +41,7 @@ interface City {
   city: string;
   charge: string;
   createdAt?: string;
+  hasCenter: boolean | number;
 }
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -47,6 +50,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
   navigation,
   route,
 }) => {
+  const [step, setStep] = useState<1 | 2>(1);
   const [firstName, setFirstName] = useState<string>("");
   const [lastName, setLastName] = useState<string>("");
   const [phoneNumber, setPhoneNumber] = useState<string>("");
@@ -54,6 +58,9 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
   const [houseNo, setHouseNo] = useState<string>("");
   const [streetName, setStreetName] = useState<string>("");
   const [city, setCity] = useState<string>("");
+  const [filteredCities, setFilteredCities] = useState<
+    { label: string; value: string }[]
+  >([]);
   const [houseNoError, setHouseNoError] = useState<string>("");
   const [streetNameError, setStreetNameError] = useState<string>("");
   const [cityError, setCityError] = useState<string>("");
@@ -70,7 +77,6 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
   const [loading, setLoading] = useState(false);
   const [emailError, setEmailError] = useState<string>("");
   const [phoneError, setPhoneError] = useState<string>("");
-  const [locationError, setLocationError] = useState<string>("");
   const [touchedFields, setTouchedFields] = useState<{
     [key: string]: boolean;
   }>({
@@ -95,11 +101,8 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
   const [titleError, setTitleError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [cityItems, setCityItems] = useState<
-    { label: string; value: string }[]
+    { label: string; value: string; deliverable: boolean }[]
   >([]);
-  const [selectedLocationName, setSelectedLocationName] = useState<string>("");
-  const [latitude, setLatitude] = useState<number | undefined>(undefined);
-  const [longitude, setLongitude] = useState<number | undefined>(undefined);
   const [titleModalVisible, setTitleModalVisible] = useState(false);
   const [buildingTypeModalVisible, setBuildingTypeModalVisible] =
     useState(false);
@@ -117,36 +120,23 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     { label: "Apartment", value: "Apartment" },
   ]);
 
-  const [alertConfig, setAlertConfig] = useState<{
-    visible: boolean;
-    title: string;
-    message: string;
-    onClose?: () => void;
-  }>({ visible: false, title: "", message: "" });
+  const matchedCity = cityItems.find(
+    (item) => item.label.trim().toLowerCase() === city.trim().toLowerCase(),
+  );
+
+  const isCityKnown = city.trim().length > 0 && !!matchedCity;
+  const isCityDeliverable = isCityKnown && matchedCity!.deliverable;
+
+  const cityBlocksRegistration = city.trim().length > 0 && !isCityDeliverable;
 
   const showAlert = (title: string, message: string, onClose?: () => void) => {
-    setAlertConfig({ visible: true, title, message, onClose });
+    Alert.alert(title, message, [{ text: "OK", onPress: onClose }]);
   };
-
-  const isNavigatingToGeoScreen = useRef(false);
 
   const isNavigatingToOtpScreen = useRef(false);
 
-  const openMapForLocation = () => {
-    isNavigatingToGeoScreen.current = true;
-    navigation.navigate("AttachGeoLocationScreen", {
-      currentLatitude: latitude,
-      currentLongitude: longitude,
-      onLocationSelect: (lat: number, lng: number, name: string) => {
-        setLatitude(lat);
-        setLongitude(lng);
-        setSelectedLocationName(name);
-        setLocationError("");
-      },
-    });
-  };
-
   const resetForm = () => {
+    setStep(1);
     setFirstName("");
     setLastName("");
     setPhoneNumber("");
@@ -176,10 +166,6 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     setUnitNoError("");
     setFloorNoError("");
     setIsSubmitting(false);
-    setLatitude(undefined);
-    setLongitude(undefined);
-    setLocationError("");
-    setSelectedLocationName("");
     setTouchedFields({
       email: false,
       phoneNumber: false,
@@ -197,14 +183,22 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     });
   };
 
+  const isRegisterDisabled =
+  loading ||
+  isSubmitting ||
+  cityBlocksRegistration ||
+  !!buildingTypeError ||
+  !!houseNoError ||
+  !!streetNameError ||
+  !!cityError ||
+  !!buildingNoError ||
+  !!buildingNameError ||
+  !!unitNoError ||
+  !!floorNoError;
+
   useFocusEffect(
     React.useCallback(() => {
       fetchCity();
-
-      if (isNavigatingToGeoScreen.current) {
-        isNavigatingToGeoScreen.current = false;
-        return;
-      }
 
       if (isNavigatingToOtpScreen.current) {
         isNavigatingToOtpScreen.current = false;
@@ -214,12 +208,9 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       const routes = navigation.getState()?.routes;
       const previousRoute = routes?.[routes.length - 2];
 
-      const isComingFromGeoScreens =
-        previousRoute?.name === "AttachGeoLocationScreen" ||
-        previousRoute?.name === "ViewLocationScreen" ||
-        previousRoute?.name === "OtpScreen";
+      const isComingFromOtpScreen = previousRoute?.name === "OtpScreen";
 
-      if (isComingFromGeoScreens) {
+      if (isComingFromOtpScreen) {
         return;
       }
 
@@ -252,6 +243,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       };
 
       const response = await axios.post(apiUrl, body, { headers });
+      console.log("📲 [OTP SEND] Response Data:", response.data);
       await AsyncStorage.setItem("referenceId", response.data.referenceId);
 
       if (response.status === 200) {
@@ -262,8 +254,8 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       }
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        console.log(
-          "Axios error details:",
+        console.error(
+          "❌ Axios error details:",
           error.response ? error.response.data : error.message,
         );
         showAlert(
@@ -271,7 +263,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
           `Error: ${error.response ? error.response.data.message : error.message}`,
         );
       } else {
-        console.log("Unexpected error:", error);
+        console.error("❌ Unexpected error:", error);
         showAlert("Error", "An unexpected error occurred.");
       }
       return false;
@@ -555,11 +547,13 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     if (touchedFields.city) {
       if (!city) {
         setCityError("City is required");
+      } else if (cityBlocksRegistration) {
+        setCityError("Please select a valid city we deliver to");
       } else {
         setCityError("");
       }
     }
-  }, [city, touchedFields.city]);
+  }, [city, touchedFields.city, cityBlocksRegistration]);
 
   useEffect(() => {
     if (touchedFields.buildingNo) {
@@ -636,6 +630,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         const formattedCities = response.data.data.map((city) => ({
           label: city.city,
           value: city.city,
+          deliverable: !!city.hasCenter,
         }));
         setCityItems(formattedCities);
       }
@@ -648,162 +643,283 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     fetchCity();
   }, []);
 
- const handleRegister = async () => {
-  if (isSubmitting) return;
+  const handleContinue = async () => {
+    const isTitleValid = !!selectedCategory;
+    const isFirstNameValid = firstName && validateName(firstName);
+    const isLastNameValid = lastName && validateName(lastName);
+    const isPhoneValid = phoneNumber && validatePhoneNumber(phoneNumber);
+    const isEmailValid = email && validateEmail(email);
 
-  setIsSubmitting(true);
-
-  setTouchedFields({
-    email: true,
-    phoneNumber: true,
-    firstName: true,
-    lastName: true,
-    title: true,
-    buildingType: true,
-    houseNo: true,
-    streetName: true,
-    city: true,
-    buildingNo: true,
-    buildingName: true,
-    unitNo: true,
-    floorNo: true,
-  });
-
-  if (
-    !selectedCategory ||
-    !firstName ||
-    !lastName ||
-    !phoneNumber ||
-    !email ||
-    !buildingType
-  ) {
-    showAlert("Error", "Please fill in all required fields.");
-    setIsSubmitting(false);
-    return;
-  }
-
-  if (buildingType === "House") {
-    if (!houseNo || !streetName || !city) {
-      showAlert("Error", "Please fill in all required house fields");
-      setIsSubmitting(false);
-      return;
-    }
-  } else if (buildingType === "Apartment") {
     if (
-      !buildingNo ||
-      !buildingName ||
-      !unitNo ||
-      !floorNo ||
-      !houseNo ||
-      !streetName ||
-      !city
+      !isTitleValid ||
+      !isFirstNameValid ||
+      !isLastNameValid ||
+      !isPhoneValid ||
+      !isEmailValid
     ) {
-      showAlert("Error", "Please fill in all required apartment fields");
+      setTouchedFields((prev) => ({
+        ...prev,
+        title: true,
+        firstName: true,
+        lastName: true,
+        phoneNumber: true,
+        email: true,
+      }));
+
+      if (!selectedCategory) setTitleError("Title is required");
+      if (!firstName) setFirstNameError("First name is required");
+      else if (!validateName(firstName))
+        setFirstNameError("First name must start with a capital letter");
+
+      if (!lastName) setLastNameError("Last name is required");
+      else if (!validateName(lastName))
+        setLastNameError("Last name must start with a capital letter");
+
+      if (!phoneNumber) setPhoneError("Mobile number is required");
+      else if (!validatePhoneNumber(phoneNumber))
+        setPhoneError(
+          "Please enter a valid mobile number (format: +947XXXXXXXX)",
+        );
+
+      if (!email) setEmailError("Email is required");
+      else if (!validateEmail(email))
+        setEmailError("Please enter a valid email address");
+
+      showAlert("Error", "Please fill in all required fields correctly.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await axios.post(
+        `${environment.API_BASE_URL}api/customer/check-customer`,
+        {
+          phoneNumber,
+          email: email,
+        },
+      );
+
+      setStep(2);
+    } catch (error: any) {
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status;
+        const message = error.response?.data?.message || "";
+
+        if (status === 400 || status === 409) {
+          if (message.includes("Mobile Number and Email")) {
+            setPhoneError("This mobile number is already registered");
+            setEmailError("This email is already registered");
+            showAlert(
+              "Account Already Exists",
+              "Both mobile number and email are already registered. Please use different credentials.",
+            );
+          } else if (message.includes("Mobile Number")) {
+            setPhoneError("This mobile number is already registered");
+            showAlert(
+              "Mobile Number Already Exists",
+              "This mobile number is already registered. Please use a different mobile number.",
+            );
+          } else if (message.includes("Email")) {
+            setEmailError("This email is already registered");
+            showAlert(
+              "Email Already Exists",
+              "This email is already registered. Please use a different email.",
+            );
+          } else {
+            showAlert(
+              "Registration Error",
+              message || "Please check your details and try again.",
+            );
+          }
+        } else if (status && status >= 500) {
+          showAlert(
+            "Server Error",
+            "Our servers are experiencing issues. Please try again later.",
+          );
+        } else {
+          showAlert(
+            "Error",
+            "Something went wrong while checking your details. Please try again.",
+          );
+        }
+      } else {
+        showAlert(
+          "Network Error",
+          "Please check your internet connection and try again.",
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async () => {
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
+
+    setTouchedFields({
+      email: true,
+      phoneNumber: true,
+      firstName: true,
+      lastName: true,
+      title: true,
+      buildingType: true,
+      houseNo: true,
+      streetName: true,
+      city: true,
+      buildingNo: true,
+      buildingName: true,
+      unitNo: true,
+      floorNo: true,
+    });
+
+    if (
+      !selectedCategory ||
+      !firstName ||
+      !lastName ||
+      !phoneNumber ||
+      !email ||
+      !buildingType
+    ) {
+      showAlert("Error", "Please fill in all required fields.");
       setIsSubmitting(false);
       return;
     }
-  }
 
-  if (!validatePhoneNumber(phoneNumber)) {
-    showAlert("Error", "Please enter a valid mobile number.");
-    setIsSubmitting(false);
-    return;
-  }
+    if (buildingType === "House") {
+      if (!houseNo || !streetName || !city) {
+        showAlert("Error", "Please fill in all required house fields");
+        setIsSubmitting(false);
+        return;
+      }
+    } else if (buildingType === "Apartment") {
+      if (
+        !buildingNo ||
+        !buildingName ||
+        !unitNo ||
+        !floorNo ||
+        !houseNo ||
+        !streetName ||
+        !city
+      ) {
+        showAlert("Error", "Please fill in all required apartment fields");
+        setIsSubmitting(false);
+        return;
+      }
+    }
 
-  if (email && !validateEmail(email)) {
-    showAlert("Error", "Please enter a valid email address.");
-    setIsSubmitting(false);
-    return;
-  }
+    if (cityBlocksRegistration) {
+      setCityError("Please select a valid city we deliver to");
+      showAlert("Error", "This city is not currently in our delivery area.");
+      setIsSubmitting(false);
+      return;
+    }
 
-  if (!latitude || !longitude) {
-    showAlert(
-      "Location Required",
-      "Please capture customer's location before registering.",
-      // [{ text: "OK" }],
-    );
-    setIsSubmitting(false);
-    return;
-  }
+    if (!validatePhoneNumber(phoneNumber)) {
+      showAlert("Error", "Please enter a valid mobile number.");
+      setIsSubmitting(false);
+      return;
+    }
 
-  try {
-    await axios.post(
-      `${environment.API_BASE_URL}api/customer/check-customer`,
-      {
+    if (email && !validateEmail(email)) {
+      showAlert("Error", "Please enter a valid email address.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      await axios.post(
+        `${environment.API_BASE_URL}api/customer/check-customer`,
+        {
+          phoneNumber,
+          email: email,
+        },
+      );
+
+      const customerData = {
+        title: selectedCategory,
+        firstName,
+        lastName,
         phoneNumber,
         email: email,
-      },
-    );
+        buildingType,
+        houseNo,
+        streetName,
+        city,
+        buildingNo,
+        floorNo,
+        unitNo,
+        buildingName,
+      };
 
-    const customerData = {
-      title: selectedCategory,
-      firstName,
-      lastName,
-      phoneNumber,
-      email: email,
-      buildingType,
-      houseNo,
-      streetName,
-      city,
-      buildingNo,
-      floorNo,
-      unitNo,
-      buildingName,
-      latitude,
-      longitude,
-    };
+      await AsyncStorage.setItem(
+        "pendingCustomerData",
+        JSON.stringify(customerData),
+      );
 
-    await AsyncStorage.setItem(
-      "pendingCustomerData",
-      JSON.stringify(customerData),
-    );
+      const id = new Date().getTime().toString();
+      const otpSuccess = await sendOTP();
 
-    const id = new Date().getTime().toString();
-    const otpSuccess = await sendOTP();
+      if (otpSuccess) {
+        showAlert("Success", "OTP sent successfully.", () => {
+          isNavigatingToOtpScreen.current = true;
+          navigation.navigate("OtpScreen", { phoneNumber, id });
+        });
+      }
+    } catch (error: any) {
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status;
+        const message = error.response?.data?.message || "";
 
-    if (otpSuccess) {
-      showAlert("Success", "OTP sent successfully.", () => {
-        isNavigatingToOtpScreen.current = true;
-        navigation.navigate("OtpScreen", { phoneNumber, id });
-      });
-    }
-
-  } catch (error: any) {
-    if (axios.isAxiosError(error)) {
-      const status = error.response?.status;
-      const message = error.response?.data?.message || "";
-
-      if (status === 400) {
-        if (message.includes("Mobile Number and Email")) {
+        if (status === 400) {
+          if (message.includes("Mobile Number and Email")) {
+            showAlert(
+              "Account Already Exists",
+              "Both mobile number and email are already registered. Please sign in instead.",
+            );
+          } else if (message.includes("Mobile Number")) {
+            showAlert(
+              "Mobile Number Already Exists",
+              "This mobile number is already registered. Please use a different mobile number.",
+            );
+          } else if (message.includes("Email")) {
+            showAlert(
+              "Email Already Exists",
+              "This email is already registered. Please use a different email.",
+            );
+          } else {
+            showAlert(
+              "Registration Error",
+              message ||
+                "Registration failed. Please check your details and try again.",
+            );
+          }
+        } else if (status === 409) {
           showAlert(
             "Account Already Exists",
-            "Both mobile number and email are already registered. Please sign in instead.",
+            "An account with this mobile number or email already exists. Please sign in instead.",
           );
-        } else if (message.includes("Mobile Number")) {
+        } else if (status && status >= 500) {
           showAlert(
-            "Mobile Number Already Exists",
-            "This mobile number is already registered. Please use a different mobile number.",
-          );
-        } else if (message.includes("Email")) {
-          showAlert(
-            "Email Already Exists",
-            "This email is already registered. Please use a different email.",
+            "Server Error",
+            "Our servers are experiencing issues. Please try again later.",
           );
         } else {
           showAlert(
             "Registration Error",
-            message || "Registration failed. Please check your details and try again.",
+            "Registration failed. Please try again.",
           );
         }
-      } else if (status === 409) {
+      } else if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "NETWORK_ERROR"
+      ) {
         showAlert(
-          "Account Already Exists",
-          "An account with this mobile number or email already exists. Please sign in instead.",
-        );
-      } else if (status && status >= 500) {
-        showAlert(
-          "Server Error",
-          "Our servers are experiencing issues. Please try again later.",
+          "Network Error",
+          "Please check your internet connection and try again.",
         );
       } else {
         showAlert(
@@ -811,26 +927,10 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
           "Registration failed. Please try again.",
         );
       }
-    } else if (
-      error &&
-      typeof error === "object" &&
-      "code" in error &&
-      error.code === "NETWORK_ERROR"
-    ) {
-      showAlert(
-        "Network Error",
-        "Please check your internet connection and try again.",
-      );
-    } else {
-      showAlert(
-        "Registration Error",
-        "Registration failed. Please try again.",
-      );
+    } finally {
+      setIsSubmitting(false);
     }
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
   const handlePhoneNumberChange = (text: string) => {
     if (text.startsWith(" ")) {
@@ -858,7 +958,11 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        navigation.navigate("CustomersScreen" as any);
+        if (step === 2) {
+          setStep(1);
+          return true;
+        }
+        navigation.navigate("Main", { screen: "CustomersScreen" });
         return true;
       };
 
@@ -868,669 +972,664 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       );
 
       return () => backHandler.remove();
-    }, [navigation]),
+    }, [navigation, step]),
   );
 
   const capitalizeWords = (text: string) => {
     return text.replace(/\b\w/g, (char) => char.toUpperCase());
   };
 
+  const renderBasicDetailsForm = () => {
+    return (
+      <View>
+        {/* Title and First Name */}
+        <View className="mb-4 mt-4 flex-row justify-between">
+          <View className="flex-[1]">
+            <Text
+              className="text-[#000000] mb-1"
+              style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+            >
+              Title *
+            </Text>
+            <TouchableOpacity
+              onPress={() => {
+                setTitleModalVisible(true);
+                handleFieldTouch("title");
+              }}
+              className={`bg-[#F6F6F6] border flex-row justify-between h-[50px] items-center ${
+                titleError ? "border-red-500" : "border-[#F6F6F6]"
+              } rounded-full px-4 h-10`}
+            >
+              <Text
+                className={selectedCategory ? "text-black" : "text-[#7F7F7F]"}
+                style={!selectedCategory ? { fontStyle: "italic" } : {}}
+              >
+                {selectedCategory || "Title"}
+              </Text>
+              <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
+            </TouchableOpacity>
+            {titleError ? (
+              <Text className="text-red-500 text-xs pl-4 pt-1">
+                {titleError}
+              </Text>
+            ) : null}
+          </View>
+
+          <View className="flex-[2] ml-2">
+            <Text
+              className="text-[#000000] mb-1"
+              style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+            >
+              First Name *
+            </Text>
+            <TextInput
+              className={`bg-[#F6F6F6] h-[50px] border ${firstNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
+              placeholder="First Name"
+              placeholderTextColor="#7F7F7F"
+              value={firstName}
+              onChangeText={(text) => {
+                if (text.startsWith(" ")) return;
+                setFirstName(formatNameInput(text));
+                if (touchedFields.firstName && !text) {
+                  setFirstNameError("First name is required");
+                } else if (touchedFields.firstName) {
+                  setFirstNameError("");
+                }
+              }}
+              onBlur={() => {
+                handleFieldTouch("firstName");
+              }}
+              style={[{ fontStyle: firstName ? "normal" : "italic" }]}
+            />
+            {firstNameError ? (
+              <Text className="text-red-500 text-xs pl-4 pt-1">
+                {firstNameError}
+              </Text>
+            ) : null}
+          </View>
+        </View>
+
+        {/* Last Name */}
+        <View className="mb-4">
+          <Text
+            className="text-[#000000] mb-1"
+            style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+          >
+            Last Name *
+          </Text>
+          <TextInput
+            className={`bg-[#F6F6F6] h-[50px] border ${lastNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
+            placeholder="Last Name"
+            placeholderTextColor="#7F7F7F"
+            value={lastName}
+            onChangeText={(text) => {
+              if (text.startsWith(" ")) return;
+              setLastName(formatNameInput(text));
+              if (touchedFields.lastName && !text) {
+                setLastNameError("Last name is required");
+              } else if (touchedFields.lastName) {
+                setLastNameError("");
+              }
+            }}
+            onBlur={() => {
+              handleFieldTouch("lastName");
+            }}
+            style={[{ fontStyle: lastName ? "normal" : "italic" }]}
+          />
+          {lastNameError ? (
+            <Text className="text-red-500 text-xs pl-4 pt-1">
+              {lastNameError}
+            </Text>
+          ) : null}
+        </View>
+
+        {/* Mobile Number */}
+        <View className="mb-4">
+          <Text
+            className="text-[#000000] mb-1"
+            style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+          >
+            Mobile Number *
+          </Text>
+          <TextInput
+            className={`bg-[#F6F6F6] h-[50px] border ${phoneError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
+            placeholder="+947XXXXXXXX"
+            placeholderTextColor="#7F7F7F"
+            value={phoneNumber}
+            onChangeText={handlePhoneNumberChange}
+            onBlur={() => handleFieldTouch("phoneNumber")}
+            keyboardType="phone-pad"
+            maxLength={12}
+            onFocus={() => {
+              if (!phoneNumber || phoneNumber.length < 3) {
+                setPhoneNumber("+94");
+              }
+            }}
+            style={[{ fontStyle: phoneNumber ? "normal" : "italic" }]}
+          />
+          {phoneError ? (
+            <Text className="text-red-500 text-xs pl-4 pt-1">{phoneError}</Text>
+          ) : null}
+        </View>
+
+        {/* Email */}
+        <View className="mb-4">
+          <Text
+            className="text-[#000000] mb-1"
+            style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+          >
+            Email Address *
+          </Text>
+          <TextInput
+            className={`bg-[#F6F6F6] h-[50px] border ${emailError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
+            placeholder="Email Address"
+            placeholderTextColor="#7F7F7F"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            value={email}
+            onChangeText={(text) => {
+              if (text.startsWith(" ")) return;
+              setEmail(text.toLowerCase());
+              if (touchedFields.email) {
+                handleFieldTouch("email");
+              }
+            }}
+            onBlur={() => {
+              handleFieldTouch("email");
+            }}
+            style={[{ fontStyle: email ? "normal" : "italic" }]}
+          />
+          {emailError ? (
+            <Text className="text-red-500 text-xs pl-4 pt-1">{emailError}</Text>
+          ) : null}
+        </View>
+
+        {/* Continue Button */}
+        <View
+          style={{
+            marginTop: 24,
+            marginHorizontal: "20%",
+            marginBottom: "40%",
+            borderRadius: 30,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 6 },
+            shadowOpacity: 0.25,
+            shadowRadius: 8,
+            elevation: 10,
+          }}
+        >
+          <TouchableOpacity
+            onPress={handleContinue}
+            disabled={loading}
+            activeOpacity={0.8}
+            style={{ borderRadius: 30 }}
+          >
+            <LinearGradient
+              colors={["#854BDA", "#6E3DD1"]}
+              style={{
+                paddingVertical: 14,
+                alignItems: "center",
+                borderRadius: 30,
+              }}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text
+                  style={{
+                    textAlign: "center",
+                    color: "#FFFFFF",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Continue
+                </Text>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
+  const renderCityField = () => {
+    return (
+      <View className="mb-4">
+        <Text
+          className="text-[#000000] mb-1"
+          style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+        >
+          Nearest City *
+        </Text>
+        <TouchableOpacity
+          onPress={() => {
+            Keyboard.dismiss();
+            setCityModalVisible(true);
+            handleFieldTouch("city");
+          }}
+          style={{
+            backgroundColor: "#F6F6F6",
+            height: 50,
+            borderWidth: 1.5,
+            borderColor: "#F6F6F6",
+            borderRadius: 999,
+            paddingHorizontal: 18,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <Text
+            style={{
+              color: city ? "#111827" : "#7F7F7F",
+              fontSize: 14,
+              fontStyle: city ? "normal" : "italic",
+            }}
+          >
+            {city || "Select Nearest City"}
+          </Text>
+          <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
+        </TouchableOpacity>
+
+        {/* Required field error */}
+        {cityError ? (
+          <Text className="text-red-500 text-xs pl-4 pt-1">{cityError}</Text>
+        ) : null}
+
+        {/* "City not found." / "Great news! We deliver to {city}!" banner */}
+        <CityDeliveryStatus
+          city={city}
+          filteredCities={[]}
+          isCityKnown={isCityKnown}
+          isCityDeliverable={isCityDeliverable}
+        />
+      </View>
+    );
+  };
+
+  const renderResidentialAddressForm = () => {
+    return (
+      <View>
+        {/* Building Type */}
+        <View className="mb-4">
+          <Text
+            className="text-[#000000] mb-1"
+            style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+          >
+            Building Type *
+          </Text>
+          <TouchableOpacity
+            onPress={() => {
+              setBuildingTypeModalVisible(true);
+              handleFieldTouch("buildingType");
+            }}
+            className={`bg-[#F6F6F6] h-[50px] border ${buildingTypeError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 flex-row items-center justify-between`}
+          >
+            <Text
+              className={buildingType ? "text-black" : "text-[#7F7F7F]"}
+              style={!buildingType ? { fontStyle: "italic" } : {}}
+            >
+              {buildingType || "Select Building Type"}
+            </Text>
+            <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
+          </TouchableOpacity>
+          {buildingTypeError ? (
+            <Text className="text-red-500 text-xs pl-4 pt-1">
+              {buildingTypeError}
+            </Text>
+          ) : null}
+        </View>
+
+        {/* House Fields */}
+        {buildingType === "House" && (
+          <>
+            <View className="mb-4">
+              <Text
+                className="text-[#000000] mb-1"
+                style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+              >
+                Building / House No *
+              </Text>
+              <TextInput
+                className={`bg-[#F6F6F6] h-[50px] border ${houseNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
+                placeholder="Building / House No (e.g., 14/B)"
+                placeholderTextColor="#7F7F7F"
+                value={houseNo}
+                onChangeText={(text) => {
+                  if (text.startsWith(" ")) return;
+                  const capitalizedText = capitalizeWords(text);
+                  setHouseNo(capitalizedText);
+                  if (touchedFields.houseNo && !text) {
+                    setHouseNoError("House number is required");
+                  } else if (touchedFields.houseNo) {
+                    setHouseNoError("");
+                  }
+                }}
+                onBlur={() => handleFieldTouch("houseNo")}
+                autoCapitalize="words"
+                style={[{ fontStyle: houseNo ? "normal" : "italic" }]}
+              />
+              {houseNoError ? (
+                <Text className="text-red-500 text-xs pl-4 pt-1">
+                  {houseNoError}
+                </Text>
+              ) : null}
+            </View>
+
+            <View className="mb-4">
+              <Text
+                className="text-[#000000] mb-1"
+                style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+              >
+                Street Name *
+              </Text>
+              <TextInput
+                className={`bg-[#F6F6F6] h-[50px] border ${streetNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
+                placeholder="Street Name"
+                placeholderTextColor="#7F7F7F"
+                value={streetName}
+                onChangeText={(text) => {
+                  if (text.startsWith(" ")) return;
+                  const capitalizedText = capitalizeWords(text);
+                  setStreetName(capitalizedText);
+                  if (touchedFields.streetName && !text) {
+                    setStreetNameError("Street name is required");
+                  } else if (touchedFields.streetName) {
+                    setStreetNameError("");
+                  }
+                }}
+                onBlur={() => handleFieldTouch("streetName")}
+                autoCapitalize="words"
+                style={[{ fontStyle: streetName ? "normal" : "italic" }]}
+              />
+              {streetNameError ? (
+                <Text className="text-red-500 text-xs pl-4 pt-1">
+                  {streetNameError}
+                </Text>
+              ) : null}
+            </View>
+
+            {renderCityField()}
+          </>
+        )}
+
+        {/* Apartment Fields */}
+        {buildingType === "Apartment" && (
+          <>
+            <View className="mb-4">
+              <Text
+                className="text-[#000000] mb-1"
+                style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+              >
+                Apartment / Building No *
+              </Text>
+              <TextInput
+                className={`bg-[#F6F6F6] h-[50px] border ${buildingNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
+                placeholder="Apartment / Building No"
+                placeholderTextColor="#7F7F7F"
+                value={buildingNo}
+                onChangeText={(text) => {
+                  if (text.startsWith(" ")) return;
+                  const capitalizedText = capitalizeWords(text);
+                  setbuildingNo(capitalizedText);
+                  if (touchedFields.buildingNo && !text) {
+                    setBuildingNoError("Building number is required");
+                  } else if (touchedFields.buildingNo) {
+                    setBuildingNoError("");
+                  }
+                }}
+                onBlur={() => handleFieldTouch("buildingNo")}
+                autoCapitalize="words"
+                style={[{ fontStyle: buildingNo ? "normal" : "italic" }]}
+              />
+              {buildingNoError ? (
+                <Text className="text-red-500 text-xs pl-4 pt-1">
+                  {buildingNoError}
+                </Text>
+              ) : null}
+            </View>
+
+            <View className="mb-4">
+              <Text
+                className="text-[#000000] mb-1"
+                style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+              >
+                Apartment / Building Name *
+              </Text>
+              <TextInput
+                className={`bg-[#F6F6F6] h-[50px] border ${buildingNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
+                placeholder="Apartment / Building Name"
+                placeholderTextColor="#7F7F7F"
+                value={buildingName}
+                onChangeText={(text) => {
+                  if (text.startsWith(" ")) return;
+                  const capitalizedText = capitalizeWords(text);
+                  setbuildingName(capitalizedText);
+                  if (touchedFields.buildingName && !text) {
+                    setBuildingNameError("Building name is required");
+                  } else if (touchedFields.buildingName) {
+                    setBuildingNameError("");
+                  }
+                }}
+                onBlur={() => handleFieldTouch("buildingName")}
+                autoCapitalize="words"
+                style={[{ fontStyle: buildingName ? "normal" : "italic" }]}
+              />
+              {buildingNameError ? (
+                <Text className="text-red-500 text-xs pl-4 pt-1">
+                  {buildingNameError}
+                </Text>
+              ) : null}
+            </View>
+
+            <View className="mb-4">
+              <Text
+                className="text-[#000000] mb-1"
+                style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+              >
+                Flat / Unit Number *
+              </Text>
+              <TextInput
+                className={`bg-[#F6F6F6] h-[50px] border ${unitNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
+                placeholder="ex : Building B"
+                placeholderTextColor="#7F7F7F"
+                value={unitNo}
+                onChangeText={(text) => {
+                  if (text.startsWith(" ")) return;
+                  const capitalizedText = capitalizeWords(text);
+                  setunitNo(capitalizedText);
+                  if (touchedFields.unitNo && !text) {
+                    setUnitNoError("Unit number is required");
+                  } else if (touchedFields.unitNo) {
+                    setUnitNoError("");
+                  }
+                }}
+                onBlur={() => handleFieldTouch("unitNo")}
+                autoCapitalize="words"
+                style={[{ fontStyle: unitNo ? "normal" : "italic" }]}
+              />
+              {unitNoError ? (
+                <Text className="text-red-500 text-xs pl-4 pt-1">
+                  {unitNoError}
+                </Text>
+              ) : null}
+            </View>
+
+            <View className="mb-4">
+              <Text
+                className="text-[#000000] mb-1"
+                style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+              >
+                Floor Number *
+              </Text>
+              <TextInput
+                className={`bg-[#F6F6F6] h-[50px] border ${floorNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
+                placeholder="ex : 3rd Floor"
+                placeholderTextColor="#7F7F7F"
+                value={floorNo}
+                onChangeText={(text) => {
+                  if (text.startsWith(" ")) return;
+                  const capitalizedText = capitalizeWords(text);
+                  setfloorNo(capitalizedText);
+                  if (touchedFields.floorNo && !text) {
+                    setFloorNoError("Floor number is required");
+                  } else if (touchedFields.floorNo) {
+                    setFloorNoError("");
+                  }
+                }}
+                onBlur={() => handleFieldTouch("floorNo")}
+                autoCapitalize="words"
+                style={[{ fontStyle: floorNo ? "normal" : "italic" }]}
+              />
+              {floorNoError ? (
+                <Text className="text-red-500 text-xs pl-4 pt-1">
+                  {floorNoError}
+                </Text>
+              ) : null}
+            </View>
+
+            <View className="mb-4">
+              <Text className="text-[#000000] mb-1">House No *</Text>
+              <TextInput
+                className={`bg-[#F6F6F6] h-[50px] border ${houseNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
+                placeholder="ex : 14"
+                placeholderTextColor="#7F7F7F"
+                value={houseNo}
+                onChangeText={(text) => {
+                  if (text.startsWith(" ")) return;
+                  const capitalizedText = capitalizeWords(text);
+                  setHouseNo(capitalizedText);
+                  if (touchedFields.houseNo && !text) {
+                    setHouseNoError("House number is required");
+                  } else if (touchedFields.houseNo) {
+                    setHouseNoError("");
+                  }
+                }}
+                onBlur={() => handleFieldTouch("houseNo")}
+                autoCapitalize="words"
+                style={[{ fontStyle: houseNo ? "normal" : "italic" }]}
+              />
+              {houseNoError ? (
+                <Text className="text-red-500 text-xs pl-4 pt-1">
+                  {houseNoError}
+                </Text>
+              ) : null}
+            </View>
+
+            <View className="mb-4">
+              <Text
+                className="text-[#000000] mb-1"
+                style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+              >
+                Street Name *
+              </Text>
+              <TextInput
+                className={`bg-[#F6F6F6] h-[50px] border ${streetNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
+                placeholder="Street Name"
+                placeholderTextColor="#7F7F7F"
+                value={streetName}
+                onChangeText={(text) => {
+                  if (text.startsWith(" ")) return;
+                  const capitalizedText = capitalizeWords(text);
+                  setStreetName(capitalizedText);
+                  if (touchedFields.streetName && !text) {
+                    setStreetNameError("Street name is required");
+                  } else if (touchedFields.streetName) {
+                    setStreetNameError("");
+                  }
+                }}
+                onBlur={() => handleFieldTouch("streetName")}
+                autoCapitalize="words"
+                style={[{ fontStyle: streetName ? "normal" : "italic" }]}
+              />
+              {streetNameError ? (
+                <Text className="text-red-500 text-xs pl-4 pt-1">
+                  {streetNameError}
+                </Text>
+              ) : null}
+            </View>
+
+            {renderCityField()}
+          </>
+        )}
+
+        {/* Register Button */}
+        <View
+          style={{
+            marginTop: 24,
+            marginHorizontal: "20%",
+            marginBottom: "40%",
+            borderRadius: 30,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 6 },
+            shadowOpacity: 0.25,
+            shadowRadius: 8,
+            elevation: 10,
+          }}
+        >
+          <TouchableOpacity
+            onPress={handleRegister}
+            disabled={isSubmitting || loading || cityBlocksRegistration}
+            activeOpacity={0.8}
+            style={{ borderRadius: 30 }}
+          >
+            <LinearGradient
+              colors={
+                isRegisterDisabled
+                  ? ["#B6B7BC", "#B6B7BC"]
+                  : ["#854BDA", "#6E3DD1"]
+              }
+              style={{
+                paddingVertical: 14,
+                alignItems: "center",
+                borderRadius: 30,
+              }}
+            >
+              {isSubmitting || loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text
+                  style={{
+                    textAlign: "center",
+                    color: "#FFFFFF",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Register
+                </Text>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
       style={{ flex: 1, backgroundColor: "white" }}
     >
       <CustomHeader
-        title="New Customer Registration"
+        title={step === 1 ? "Basic Details" : "Residential Address"}
         titleColor="#6C3CD1"
         showBackButton={true}
         navigation={navigation}
-        onBackPress={() => navigation.navigate("CustomersScreen")}
+        onBackPress={() => {
+          if (step === 2) {
+            setStep(1);
+          } else {
+            navigation.navigate("Main", { screen: "CustomersScreen" });
+          }
+        }}
       />
       <View className="flex-1 bg-white">
-        <ScrollView keyboardShouldPersistTaps="handled">
+        <ScrollView keyboardShouldPersistTaps="handled" className="bg-white">
           <View className="flex-1 mx-auto w-full max-w-[500px] py-2 px-6">
-            {/* Title and First Name */}
-            <View className="mb-4 mt-4 flex-row justify-between">
-              <View className="flex-[1]">
-                <Text
-                  className="text-[#000000] mb-1"
-                  style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
-                >
-                  Title *
-                </Text>
-                <TouchableOpacity
-                  onPress={() => {
-                    setTitleModalVisible(true);
-                    handleFieldTouch("title");
-                  }}
-                  className={`bg-[#F6F6F6] border flex-row justify-between h-[50px] items-center ${
-                    titleError ? "border-red-500" : "border-[#F6F6F6]"
-                  } rounded-full px-4 h-10`}
-                >
-                  <Text
-                    className={
-                      selectedCategory ? "text-black" : "text-[#7F7F7F]"
-                    }
-                    style={!selectedCategory ? { fontStyle: "italic" } : {}}
-                  >
-                    {selectedCategory || "Title"}
-                  </Text>
-                  <MaterialIcons
-                    name="arrow-drop-down"
-                    size={24}
-                    color="#666"
-                  />
-                </TouchableOpacity>
-                {titleError ? (
-                  <Text className="text-red-500 text-xs pl-4 pt-1">
-                    {titleError}
-                  </Text>
-                ) : null}
-              </View>
-
-              <View className="flex-[2] ml-2">
-                <Text
-                  className="text-[#000000] mb-1"
-                  style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
-                >
-                  First Name *
-                </Text>
-                <TextInput
-                  className={`bg-[#F6F6F6] h-[50px] border ${firstNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
-                  placeholder="First Name"
-                  placeholderTextColor="#7F7F7F"
-                  value={firstName}
-                  onChangeText={(text) => {
-                    if (text.startsWith(" ")) return;
-                    setFirstName(formatNameInput(text));
-                    if (touchedFields.firstName && !text) {
-                      setFirstNameError("First name is required");
-                    } else if (touchedFields.firstName) {
-                      setFirstNameError("");
-                    }
-                  }}
-                  onBlur={() => {
-                    handleFieldTouch("firstName");
-                  }}
-                  style={[{ fontStyle: firstName ? "normal" : "italic" }]}
-                />
-                {firstNameError ? (
-                  <Text className="text-red-500 text-xs pl-4 pt-1">
-                    {firstNameError}
-                  </Text>
-                ) : null}
-              </View>
-            </View>
-
-            {/* Last Name */}
-            <View className="mb-4">
-              <Text
-                className="text-[#000000] mb-1"
-                style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
-              >
-                Last Name *
-              </Text>
-              <TextInput
-                className={`bg-[#F6F6F6] h-[50px] border ${lastNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
-                placeholder="Last Name"
-                placeholderTextColor="#7F7F7F"
-                value={lastName}
-                onChangeText={(text) => {
-                  if (text.startsWith(" ")) return;
-                  setLastName(formatNameInput(text));
-                  if (touchedFields.lastName && !text) {
-                    setLastNameError("Last name is required");
-                  } else if (touchedFields.lastName) {
-                    setLastNameError("");
-                  }
-                }}
-                onBlur={() => {
-                  handleFieldTouch("lastName");
-                }}
-                style={[{ fontStyle: lastName ? "normal" : "italic" }]}
-              />
-              {lastNameError ? (
-                <Text className="text-red-500 text-xs pl-4 pt-1">
-                  {lastNameError}
-                </Text>
-              ) : null}
-            </View>
-
-            {/* Mobile Number */}
-            <View className="mb-4">
-              <Text
-                className="text-[#000000] mb-1"
-                style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
-              >
-                Mobile Number *
-              </Text>
-              <TextInput
-                className={`bg-[#F6F6F6] h-[50px] border ${phoneError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
-                placeholder="+947XXXXXXXX"
-                placeholderTextColor="#7F7F7F"
-                value={phoneNumber}
-                onChangeText={handlePhoneNumberChange}
-                onBlur={() => handleFieldTouch("phoneNumber")}
-                keyboardType="phone-pad"
-                maxLength={12}
-                onFocus={() => {
-                  if (!phoneNumber || phoneNumber.length < 3) {
-                    setPhoneNumber("+94");
-                  }
-                }}
-                style={[{ fontStyle: phoneNumber ? "normal" : "italic" }]}
-              />
-              {phoneError ? (
-                <Text className="text-red-500 text-xs pl-4 pt-1">
-                  {phoneError}
-                </Text>
-              ) : null}
-            </View>
-
-            {/* Email */}
-            <View className="mb-4">
-              <Text
-                className="text-[#000000] mb-1"
-                style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
-              >
-                Email Address *
-              </Text>
-              <TextInput
-                className={`bg-[#F6F6F6] h-[50px] border ${emailError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
-                placeholder="Email Address"
-                placeholderTextColor="#7F7F7F"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                value={email}
-                onChangeText={(text) => {
-                  if (text.startsWith(" ")) return;
-                  setEmail(text.toLowerCase());
-                  if (touchedFields.email) {
-                    handleFieldTouch("email");
-                  }
-                }}
-                onBlur={() => {
-                  handleFieldTouch("email");
-                }}
-                style={[{ fontStyle: email ? "normal" : "italic" }]}
-              />
-              {emailError ? (
-                <Text className="text-red-500 text-xs pl-4 pt-1">
-                  {emailError}
-                </Text>
-              ) : null}
-            </View>
-
-            {/* Building Type */}
-            <View className="mb-4">
-              <Text
-                className="text-[#000000] mb-1"
-                style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
-              >
-                Building Type *
-              </Text>
-              <TouchableOpacity
-                onPress={() => {
-                  setBuildingTypeModalVisible(true);
-                  handleFieldTouch("buildingType");
-                }}
-                className={`bg-[#F6F6F6] h-[50px] border ${buildingTypeError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 flex-row items-center justify-between`}
-              >
-                <Text
-                  className={buildingType ? "text-black" : "text-[#7F7F7F]"}
-                  style={!buildingType ? { fontStyle: "italic" } : {}}
-                >
-                  {buildingType || "Select Building Type"}
-                </Text>
-                <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
-              </TouchableOpacity>
-              {buildingTypeError ? (
-                <Text className="text-red-500 text-xs pl-4 pt-1">
-                  {buildingTypeError}
-                </Text>
-              ) : null}
-            </View>
-
-            {/* House Fields */}
-            {buildingType === "House" && (
-              <>
-                <View className="mb-4">
-                  <Text
-                    className="text-[#000000] mb-1"
-                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
-                  >
-                    Building / House No *
-                  </Text>
-                  <TextInput
-                    className={`bg-[#F6F6F6] h-[50px] border ${houseNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
-                    placeholder="Building / House No (e.g., 14/B)"
-                    placeholderTextColor="#7F7F7F"
-                    value={houseNo}
-                    onChangeText={(text) => {
-                      if (text.startsWith(" ")) return;
-                      const capitalizedText = capitalizeWords(text);
-                      setHouseNo(capitalizedText);
-                      if (touchedFields.houseNo && !text) {
-                        setHouseNoError("House number is required");
-                      } else if (touchedFields.houseNo) {
-                        setHouseNoError("");
-                      }
-                    }}
-                    onBlur={() => handleFieldTouch("houseNo")}
-                    autoCapitalize="words"
-                    style={[{ fontStyle: houseNo ? "normal" : "italic" }]}
-                  />
-                  {houseNoError ? (
-                    <Text className="text-red-500 text-xs pl-4 pt-1">
-                      {houseNoError}
-                    </Text>
-                  ) : null}
-                </View>
-
-                <View className="mb-4">
-                  <Text
-                    className="text-[#000000] mb-1"
-                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
-                  >
-                    Street Name *
-                  </Text>
-                  <TextInput
-                    className={`bg-[#F6F6F6] h-[50px] border ${streetNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
-                    placeholder="Street Name"
-                    placeholderTextColor="#7F7F7F"
-                    value={streetName}
-                    onChangeText={(text) => {
-                      if (text.startsWith(" ")) return;
-                      const capitalizedText = capitalizeWords(text);
-                      setStreetName(capitalizedText);
-                      if (touchedFields.streetName && !text) {
-                        setStreetNameError("Street name is required");
-                      } else if (touchedFields.streetName) {
-                        setStreetNameError("");
-                      }
-                    }}
-                    onBlur={() => handleFieldTouch("streetName")}
-                    autoCapitalize="words"
-                    style={[{ fontStyle: streetName ? "normal" : "italic" }]}
-                  />
-                  {streetNameError ? (
-                    <Text className="text-red-500 text-xs pl-4 pt-1">
-                      {streetNameError}
-                    </Text>
-                  ) : null}
-                </View>
-
-                <View className="mb-4">
-                  <Text
-                    className="text-[#000000] mb-1"
-                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
-                  >
-                    Nearest City *
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setCityModalVisible(true);
-                      handleFieldTouch("city");
-                    }}
-                    className={`bg-[#F6F6F6] h-[50px] border ${cityError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 flex-row items-center justify-between`}
-                  >
-                    <Text
-                      className={city ? "text-black" : "text-[#7F7F7F]"}
-                      style={!city ? { fontStyle: "italic" } : {}}
-                    >
-                      {city || "Select Nearest City"}
-                    </Text>
-                    <MaterialIcons
-                      name="arrow-drop-down"
-                      size={24}
-                      color="#666"
-                    />
-                  </TouchableOpacity>
-                  {cityError ? (
-                    <Text className="text-red-500 text-xs pl-4 pt-1">
-                      {cityError}
-                    </Text>
-                  ) : null}
-                </View>
-              </>
-            )}
-
-            {/* Apartment Fields */}
-            {buildingType === "Apartment" && (
-              <>
-                <View className="mb-4">
-                  <Text
-                    className="text-[#000000] mb-1"
-                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
-                  >
-                    Apartment / Building No *
-                  </Text>
-                  <TextInput
-                    className={`bg-[#F6F6F6] h-[50px] border ${buildingNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
-                    placeholder="Apartment / Building No"
-                    placeholderTextColor="#7F7F7F"
-                    value={buildingNo}
-                    onChangeText={(text) => {
-                      if (text.startsWith(" ")) return;
-                      const capitalizedText = capitalizeWords(text);
-                      setbuildingNo(capitalizedText);
-                      if (touchedFields.buildingNo && !text) {
-                        setBuildingNoError("Building number is required");
-                      } else if (touchedFields.buildingNo) {
-                        setBuildingNoError("");
-                      }
-                    }}
-                    onBlur={() => handleFieldTouch("buildingNo")}
-                    autoCapitalize="words"
-                    style={[{ fontStyle: buildingNo ? "normal" : "italic" }]}
-                  />
-                  {buildingNoError ? (
-                    <Text className="text-red-500 text-xs pl-4 pt-1">
-                      {buildingNoError}
-                    </Text>
-                  ) : null}
-                </View>
-
-                <View className="mb-4">
-                  <Text
-                    className="text-[#000000] mb-1"
-                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
-                  >
-                    Apartment / Building Name *
-                  </Text>
-                  <TextInput
-                    className={`bg-[#F6F6F6] h-[50px] border ${buildingNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
-                    placeholder="Apartment / Building Name"
-                    placeholderTextColor="#7F7F7F"
-                    value={buildingName}
-                    onChangeText={(text) => {
-                      if (text.startsWith(" ")) return;
-                      const capitalizedText = capitalizeWords(text);
-                      setbuildingName(capitalizedText);
-                      if (touchedFields.buildingName && !text) {
-                        setBuildingNameError("Building name is required");
-                      } else if (touchedFields.buildingName) {
-                        setBuildingNameError("");
-                      }
-                    }}
-                    onBlur={() => handleFieldTouch("buildingName")}
-                    autoCapitalize="words"
-                    style={[{ fontStyle: buildingName ? "normal" : "italic" }]}
-                  />
-                  {buildingNameError ? (
-                    <Text className="text-red-500 text-xs pl-4 pt-1">
-                      {buildingNameError}
-                    </Text>
-                  ) : null}
-                </View>
-
-                <View className="mb-4">
-                  <Text
-                    className="text-[#000000] mb-1"
-                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
-                  >
-                    Flat / Unit Number *
-                  </Text>
-                  <TextInput
-                    className={`bg-[#F6F6F6] h-[50px] border ${unitNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
-                    placeholder="ex : Building B"
-                    placeholderTextColor="#7F7F7F"
-                    value={unitNo}
-                    onChangeText={(text) => {
-                      if (text.startsWith(" ")) return;
-                      const capitalizedText = capitalizeWords(text);
-                      setunitNo(capitalizedText);
-                      if (touchedFields.unitNo && !text) {
-                        setUnitNoError("Unit number is required");
-                      } else if (touchedFields.unitNo) {
-                        setUnitNoError("");
-                      }
-                    }}
-                    onBlur={() => handleFieldTouch("unitNo")}
-                    autoCapitalize="words"
-                    style={[{ fontStyle: unitNo ? "normal" : "italic" }]}
-                  />
-                  {unitNoError ? (
-                    <Text className="text-red-500 text-xs pl-4 pt-1">
-                      {unitNoError}
-                    </Text>
-                  ) : null}
-                </View>
-
-                <View className="mb-4">
-                  <Text
-                    className="text-[#000000] mb-1"
-                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
-                  >
-                    Floor Number *
-                  </Text>
-                  <TextInput
-                    className={`bg-[#F6F6F6] h-[50px] border ${floorNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
-                    placeholder="ex : 3rd Floor"
-                    placeholderTextColor="#7F7F7F"
-                    value={floorNo}
-                    onChangeText={(text) => {
-                      if (text.startsWith(" ")) return;
-                      const capitalizedText = capitalizeWords(text);
-                      setfloorNo(capitalizedText);
-                      if (touchedFields.floorNo && !text) {
-                        setFloorNoError("Floor number is required");
-                      } else if (touchedFields.floorNo) {
-                        setFloorNoError("");
-                      }
-                    }}
-                    onBlur={() => handleFieldTouch("floorNo")}
-                    autoCapitalize="words"
-                    style={[{ fontStyle: floorNo ? "normal" : "italic" }]}
-                  />
-                  {floorNoError ? (
-                    <Text className="text-red-500 text-xs pl-4 pt-1">
-                      {floorNoError}
-                    </Text>
-                  ) : null}
-                </View>
-
-                <View className="mb-4">
-                  <Text className="text-[#000000] mb-1">House No *</Text>
-                  <TextInput
-                    className={`bg-[#F6F6F6] h-[50px] border ${houseNoError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
-                    placeholder="ex : 14"
-                    placeholderTextColor="#7F7F7F"
-                    value={houseNo}
-                    onChangeText={(text) => {
-                      if (text.startsWith(" ")) return;
-                      const capitalizedText = capitalizeWords(text);
-                      setHouseNo(capitalizedText);
-                      if (touchedFields.houseNo && !text) {
-                        setHouseNoError("House number is required");
-                      } else if (touchedFields.houseNo) {
-                        setHouseNoError("");
-                      }
-                    }}
-                    onBlur={() => handleFieldTouch("houseNo")}
-                    autoCapitalize="words"
-                    style={[{ fontStyle: houseNo ? "normal" : "italic" }]}
-                  />
-                  {houseNoError ? (
-                    <Text className="text-red-500 text-xs pl-4 pt-1">
-                      {houseNoError}
-                    </Text>
-                  ) : null}
-                </View>
-
-                <View className="mb-4">
-                  <Text
-                    className="text-[#000000] mb-1"
-                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
-                  >
-                    Street Name *
-                  </Text>
-                  <TextInput
-                    className={`bg-[#F6F6F6] h-[50px] border ${streetNameError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
-                    placeholder="Street Name"
-                    placeholderTextColor="#7F7F7F"
-                    value={streetName}
-                    onChangeText={(text) => {
-                      if (text.startsWith(" ")) return;
-                      const capitalizedText = capitalizeWords(text);
-                      setStreetName(capitalizedText);
-                      if (touchedFields.streetName && !text) {
-                        setStreetNameError("Street name is required");
-                      } else if (touchedFields.streetName) {
-                        setStreetNameError("");
-                      }
-                    }}
-                    onBlur={() => handleFieldTouch("streetName")}
-                    autoCapitalize="words"
-                    style={[{ fontStyle: streetName ? "normal" : "italic" }]}
-                  />
-                  {streetNameError ? (
-                    <Text className="text-red-500 text-xs pl-4 pt-1">
-                      {streetNameError}
-                    </Text>
-                  ) : null}
-                </View>
-
-                <View className="mb-4">
-                  <Text
-                    className="text-[#000000] mb-1"
-                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
-                  >
-                    Nearest City *
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setCityModalVisible(true);
-                      handleFieldTouch("city");
-                    }}
-                    className={`bg-[#F6F6F6] h-[50px] border ${cityError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10 flex-row items-center justify-between`}
-                  >
-                    <Text
-                      className={city ? "text-black" : "text-[#7F7F7F]"}
-                      style={!city ? { fontStyle: "italic" } : {}}
-                    >
-                      {city || "Select Nearest City"}
-                    </Text>
-                    <MaterialIcons
-                      name="arrow-drop-down"
-                      size={24}
-                      color="#666"
-                    />
-                  </TouchableOpacity>
-                  {cityError ? (
-                    <Text className="text-red-500 text-xs pl-4 pt-1">
-                      {cityError}
-                    </Text>
-                  ) : null}
-                </View>
-              </>
-            )}
-
-            {/* Geolocation Section */}
-            <View className="mb-4 mt-2 items-center">
-              <TouchableOpacity
-                onPress={openMapForLocation}
-                className="w-1/2"
-                activeOpacity={0.7}
-              >
-                <View
-                  className="border border-[#6C3CD1] bg-white rounded-full py-3 flex-row items-center justify-center"
-                  style={{
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 6 },
-                    shadowOpacity: 0.25,
-                    shadowRadius: 8,
-                    elevation: 10,
-                  }}
-                >
-                  <FontAwesome6
-                    name="location-crosshairs"
-                    size={20}
-                    color="#7C3AED"
-                  />
-                  <Text className="text-[#6C3CD1] font-medium ml-2">
-                    Geo Location
-                  </Text>
-                </View>
-              </TouchableOpacity>
-
-              {locationError ? (
-                <Text className="text-red-500 text-xs pl-4 pt-2">
-                  {locationError}
-                </Text>
-              ) : null}
-            </View>
-
-            {latitude && longitude && (
-              <View className="items-center justify-center rounded-2xl p-3 mb-3">
-                <TouchableOpacity
-                  onPress={() => {
-                    isNavigatingToGeoScreen.current = true;
-                    navigation.navigate("ViewLocationScreen", {
-                      latitude: latitude,
-                      longitude: longitude,
-                      locationName: selectedLocationName,
-                    });
-                  }}
-                  className="mt-[-8]"
-                >
-                  <View className="flex-row items-center">
-                    <Entypo name="location-pin" size={16} color="#DC2626" />
-                    <Text className="text-red-600 font-semibold ml-1 underline">
-                      View Here
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {/* Register Button */}
-            <View
-              style={{
-                marginTop: 24,
-                marginHorizontal: "20%",
-                marginBottom: "40%",
-                borderRadius: 30,
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 6 },
-                shadowOpacity: 0.25,
-                shadowRadius: 8,
-                elevation: 10,
-              }}
-            >
-              <TouchableOpacity
-                onPress={handleRegister}
-                disabled={isSubmitting || loading}
-                activeOpacity={0.8}
-                style={{ borderRadius: 30 }}
-              >
-                <LinearGradient
-                  colors={["#854BDA", "#6E3DD1"]}
-                  style={{
-                    paddingVertical: 14,
-                    alignItems: "center",
-                    borderRadius: 30,
-                  }}
-                >
-                  {isSubmitting || loading ? (
-                    <ActivityIndicator color="#FFFFFF" />
-                  ) : (
-                    <Text
-                      style={{
-                        textAlign: "center",
-                        color: "#FFFFFF",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      Register
-                    </Text>
-                  )}
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
+            {step === 1
+              ? renderBasicDetailsForm()
+              : renderResidentialAddressForm()}
           </View>
         </ScrollView>
       </View>
@@ -1581,23 +1680,14 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         onSelect={(items) => {
           if (items.length > 0) {
             setCity(items[0]);
+            setFilteredCities([]);
           }
           handleFieldTouch("city");
         }}
         searchPlaceholder="Search city..."
         multiSelect={false}
+        showSearch={true}
         noResultsText="No City Found"
-      />
-      <CustomAlert
-        visible={alertConfig.visible}
-        title={alertConfig.title}
-        message={alertConfig.message}
-        onClose={() => {
-          setAlertConfig((prev) => ({ ...prev, visible: false }));
-          if (alertConfig.onClose) {
-            alertConfig.onClose();
-          }
-        }}
       />
     </KeyboardAvoidingView>
   );

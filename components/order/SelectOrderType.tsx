@@ -54,15 +54,12 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        navigation.navigate("Main" as any, {
-          screen: "ViewCustomerScreen",
-          params: {
-            id: id,
-            customerId: customerscreencustomerid,
-            name: name,
-            title: title,
-            number: number,
-          },
+        navigation.navigate("ViewCustomerScreen" as any, {
+          id: id,
+          customerId: customerscreencustomerid,
+          name: name,
+          title: title,
+          number: number,
         });
         return true;
       };
@@ -97,16 +94,13 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({
         showBackButton={true}
         navigation={navigation}
         onBackPress={() =>
-          navigation.navigate("Main" as any, {
-            screen: "ViewCustomerScreen",
-            params: {
-              id: id,
-              customerId: customerscreencustomerid,
-              name: name,
-              title: title,
-              number: number,
-            },
-          })
+            navigation.navigate("ViewCustomerScreen" as any, {
+          id: id,
+          customerId: customerscreencustomerid,
+          name: name,
+          title: title,
+          number: number,
+        })
         }
       />
 

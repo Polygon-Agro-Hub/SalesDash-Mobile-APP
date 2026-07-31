@@ -100,10 +100,10 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
       if (response.data && response.data.data) {
         setItems(response.data.data);
       } else {
-        console.log("No items found for this package.");
+        console.warn("⚠️ No items found for this package.");
       }
     } catch (error) {
-      console.error("Error fetching items:", error);
+      console.error("❌ Error fetching items:", error);
       Alert.alert("Error", "Failed to fetch items for the package");
     }
   };

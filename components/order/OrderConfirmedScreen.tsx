@@ -45,9 +45,10 @@ interface OrderConfirmedScreenProps {
 
 interface PackageDetail {
   id: number;
-  name: string;
-  quantity: string;
-  category?: string;
+  packageId: number;
+  productTypeId: number;
+  qty: number;
+  productTypeName: string;
 }
 interface PackageInfo {
   displayName: string;
@@ -59,15 +60,17 @@ interface PackageInfo {
   status: string;
 }
 interface AdditionalItem {
-  id: number;
-  name: string;
-  price: string;
-  quantity: string;
+  productId: number;
+  qty: number;
   unit: string;
-  totalPrice: string;
-  marketplacetablenormalPrice: string;
-  marketplacetablediscountedPrice: string;
-  marketplacetablediscount: string;
+  price: string;
+  discount: number;
+  displayName: string;
+  varietyId: number;
+  name?: string;
+  marketplacetablenormalPrice?: number;
+  marketplacetablediscountedPrice?: number;
+  marketplacetablediscount?: number;
 }
 interface CustomerInfo {
   buildingType: string;
@@ -76,17 +79,35 @@ interface CustomerInfo {
   phoneNumber: string;
   title: string;
 }
+
+interface BuildingDetails {
+  buildingNo?: string;
+  unitNo?: string;
+  buildingName?: string;
+  floorNo?: string;
+  houseNo?: string;
+  streetName?: string;
+  city?: string;
+}
+
 interface OrderStatus {
   invoiceNumber: string;
   reportStatus: string | null;
   status: string;
+  paymentMethod?: string;
+  isPaid?: number;
+  creditPaid?: string | number;
+  moneyPaid?: string | number;
 }
 interface Order {
   additionalItems: AdditionalItem[];
   createdAt: string;
   customerInfo: CustomerInfo;
   discount: string;
+  deliveryCharge: string;
+  delivaryMethod?: string;
   fullAddress: string;
+  buildingDetails?: BuildingDetails;
   fullTotal: string;
   isPackage: number;
   orderId: number;
@@ -98,44 +119,13 @@ interface Order {
   total: string;
   userId: number;
 }
+
 interface CustomerData {
   title?: string;
   firstName?: string;
   lastName?: string;
   phoneNumber?: string;
-  buildingType?: string;
-  buildingDetails?: {
-    buildingNo?: string;
-    unitNo?: string;
-    buildingName?: string;
-    floorNo?: string;
-    houseNo?: string;
-    streetName?: string;
-    city?: string;
-  };
   email?: string;
-}
-interface City {
-  id: number;
-  city: string;
-  charge: string;
-  createdAt?: string;
-}
-interface PackageDetail {
-  id: number;
-  packageId: number;
-  productTypeId: number;
-  qty: number;
-  productTypeName: string;
-}
-interface AdditionalItem {
-  productId: number;
-  qty: number;
-  unit: string;
-  price: string;
-  discount: number;
-  displayName: string;
-  varietyId: number;
 }
 
 const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
@@ -146,7 +136,6 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [deliveryFee, setDeliveryFee] = useState<number>(0);
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
 
@@ -178,7 +167,8 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
 
   useEffect(() => {
     let isMounted = true;
-    let timeoutId = null;
+    let orderLoaded = false;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
     const fetchOrderDetails = async () => {
       try {
@@ -190,6 +180,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         if (!isMounted) return;
 
         if (response.data.success) {
+          orderLoaded = true;
           setOrder(response.data.data);
         } else {
           setError("Failed to load order details");
@@ -207,7 +198,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
     fetchOrderDetails();
 
     timeoutId = setTimeout(() => {
-      if (isMounted && !order) {
+      if (isMounted && !orderLoaded) {
         fetchOrderDetails();
       }
     }, 10000);
@@ -221,7 +212,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
   }, [orderId]);
 
   useEffect(() => {
-    const fetchCustomerDataAndDeliveryFee = async () => {
+    const fetchCustomerData = async () => {
       if (!order?.userId) {
         return;
       }
@@ -243,41 +234,19 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
 
         if (customerResponse.data && customerResponse.data.success) {
           setCustomerData(customerResponse.data.data);
-
-          const customerCity = customerResponse.data.data.buildingDetails?.city;
-
-          if (customerCity) {
-            const cityResponse = await axios.get<{ data: City[] }>(
-              `${environment.API_BASE_URL}api/customer/get-city`,
-              { headers: { Authorization: `Bearer ${storedToken}` } },
-            );
-
-            if (cityResponse.data && cityResponse.data.data) {
-              const cityData = cityResponse.data.data.find(
-                (c) => c.city === customerCity,
-              );
-              if (cityData) {
-                const fee = parseFloat(cityData.charge) || 0;
-                setDeliveryFee(fee);
-              } else {
-                console.log(`City ${customerCity} not found in cities list`);
-              }
-            }
-          }
-
           setLoading(false);
         } else {
           const errorMsg =
             customerResponse.data?.message || "Failed to fetch customer data";
-          console.log("Customer API error:", errorMsg);
+          console.error("❌ Customer API error:", errorMsg);
           setError(errorMsg);
           setLoading(false);
         }
       } catch (error: any) {
-        console.error("Error fetching customer data:", error);
+        console.error("❌ Error fetching customer data:", error);
         if (axios.isAxiosError(error)) {
           const errorMsg = error.response?.data?.message || error.message;
-          console.log("Axios error details:", errorMsg);
+          console.error("❌ Axios error details:", errorMsg);
           setError(errorMsg);
         } else {
           setError("Failed to fetch customer data");
@@ -287,7 +256,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
     };
 
     if (order && order.userId) {
-      fetchCustomerDataAndDeliveryFee();
+      fetchCustomerData();
     }
   }, [order]);
 
@@ -340,6 +309,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
       const discountAmount = parseFloat(order?.discount || "0");
       const totalBeforeDiscount = parseFloat(order?.total || "0");
       const totalAmount = totalBeforeDiscount - discountAmount;
+      const deliveryChargeAmount = parseFloat(order?.deliveryCharge || "0");
 
       const additionalItemsTotal =
         order?.additionalItems?.reduce((sum, item) => {
@@ -357,6 +327,101 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
               : item.discount || "0";
           return sum + parseFloat(discount);
         }, 0) || 0;
+
+      const orderPaymentMethod = order?.orderStatus?.paymentMethod;
+      const orderIsPaid = Number(order?.orderStatus?.isPaid);
+      const orderDeliveryMethod = order?.delivaryMethod;
+
+      const paymentMethodLower = orderPaymentMethod?.toLowerCase();
+      const deliveryMethodLower = orderDeliveryMethod?.toLowerCase();
+
+      let paymentStatusHtml = "";
+
+      if (paymentMethodLower === "card" && orderIsPaid === 1) {
+        const creditPaid = parseFloat(
+          order?.orderStatus?.creditPaid?.toString() || "0",
+        );
+        const moneyPaid = parseFloat(
+          order?.orderStatus?.moneyPaid?.toString() || "0",
+        );
+
+        const creditRowHtml =
+          creditPaid > 0
+            ? `
+          <div style="display: flex; justify-content: space-between; margin-right: 20px; margin-top: 10px;">
+            <p style="color: #16A34A; font-weight: 600; font-size: 14px;">Credit Balance Used</p>
+            <p style="color: #16A34A; font-weight: 600; font-size: 14px;">Rs. ${creditPaid
+              .toFixed(2)
+              .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
+          </div>
+        `
+            : "";
+
+        const onlineRowHtml =
+          moneyPaid > 0
+            ? `
+          <div style="display: flex; justify-content: space-between; margin-right: 20px; margin-top: ${
+            creditPaid > 0 ? "2px" : "10px"
+          };">
+            <p style="color: #16A34A; font-weight: 600; font-size: 14px;">Online Transferred Amount</p>
+            <p style="color: #16A34A; font-weight: 600; font-size: 14px;">Rs. ${moneyPaid
+              .toFixed(2)
+              .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
+          </div>
+        `
+            : "";
+
+        paymentStatusHtml = `
+          ${creditRowHtml}
+          ${onlineRowHtml}
+        `;
+      } else if (paymentMethodLower === "cash" && orderIsPaid === 0) {
+        const creditPaid = parseFloat(
+          order?.orderStatus?.creditPaid?.toString() || "0",
+        );
+        const fullTotalAmount = parseFloat(order?.fullTotal?.toString() || "0");
+        const cashPendingAmount = fullTotalAmount - creditPaid;
+
+        const label =
+          deliveryMethodLower === "pickup"
+            ? "Cash On Pickup (Pending)"
+            : "Cash On Delivery (Pending)";
+
+        const warningHtml =
+          deliveryMethodLower === "pickup"
+            ? ""
+            : `
+          <p style="font-size: 11px; color: #666666; margin-top: 5px; margin-right: 20px; line-height: 15px;">
+            <span style="display: inline-block; background-color: black; color: white; border-radius: 50%; width: 14px; height: 14px; text-align: center; font-size: 10px; line-height: 14px; font-weight: bold; margin-right: 5px; vertical-align: middle;">i</span>
+            <span style="vertical-align: middle;">The delivery charges might be different on the day of delivery. Your Grand Total might be changed then.</span>
+          </p>
+        `;
+
+        const creditRowHtml =
+          creditPaid > 0
+            ? `
+          <div style="display: flex; justify-content: space-between; margin-right: 20px; margin-top: 10px;">
+            <p style="color: #16A34A; font-weight: 600; font-size: 14px;">Credit Balance Used</p>
+            <p style="color: #16A34A; font-weight: 600; font-size: 14px;">Rs. ${creditPaid
+              .toFixed(2)
+              .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
+          </div>
+        `
+            : "";
+
+        paymentStatusHtml = `
+          ${creditRowHtml}
+          <div style="display: flex; justify-content: space-between; margin-right: 20px; margin-top: ${
+            creditPaid > 0 ? "2px" : "10px"
+          };">
+            <p style="color: #EA9A3E; font-weight: 600; font-size: 14px;">${label}</p>
+            <p style="color: #EA9A3E; font-weight: 600; font-size: 14px;">Rs. ${cashPendingAmount
+              .toFixed(2)
+              .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
+          </div>
+          ${warningHtml}
+        `;
+      }
 
       let packageDetailsRows = "";
       if (
@@ -523,7 +588,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         <div>
           <p>
             <span style="font-weight: 550; font-size: 16px"
-              >Polygon Holdings (Private) Ltd</span
+              >Polygon Holdings (Private) Limited</span
             >
           </p>
           <p class="headerp">No. 42/46, Nawam Mawatha, Colombo 02.</p>
@@ -554,19 +619,19 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         order?.customerInfo?.buildingType === "Apartment"
           ? `
   <p class="bold">Apartment Address :</p>
-  ${customerData?.buildingDetails?.buildingNo ? `<p class="headerp"><span class="label">No : </span><span class="value">${customerData.buildingDetails.buildingNo},</span></p>` : ""}
-  ${customerData?.buildingDetails?.buildingName ? `<p class="headerp"><span class="label">Name : </span><span class="value">${customerData.buildingDetails.buildingName},</span></p>` : ""}
-  ${customerData?.buildingDetails?.unitNo ? `<p class="headerp"><span class="label">Flat : </span><span class="value">${customerData.buildingDetails.unitNo},</span></p>` : ""}
-  ${customerData?.buildingDetails?.floorNo ? `<p class="headerp"><span class="label">Floor : </span><span class="value">${customerData.buildingDetails.floorNo},</span></p>` : ""}
-  ${customerData?.buildingDetails?.houseNo ? `<p class="headerp"><span class="label">House No : </span><span class="value">${customerData.buildingDetails.houseNo},</span></p>` : ""}
-  ${customerData?.buildingDetails?.streetName ? `<p class="headerp"><span class="label">Street Name : </span><span class="value">${customerData.buildingDetails.streetName},</span></p>` : ""}
-  ${customerData?.buildingDetails?.city ? `<p class="headerp"><span class="label">City : </span><span class="value">${customerData.buildingDetails.city}</span></p>` : ""}
+  ${order?.buildingDetails?.buildingNo ? `<p class="headerp"><span class="label">No : </span><span class="value">${order.buildingDetails.buildingNo},</span></p>` : ""}
+  ${order?.buildingDetails?.buildingName ? `<p class="headerp"><span class="label">Name : </span><span class="value">${order.buildingDetails.buildingName},</span></p>` : ""}
+  ${order?.buildingDetails?.unitNo ? `<p class="headerp"><span class="label">Flat : </span><span class="value">${order.buildingDetails.unitNo},</span></p>` : ""}
+  ${order?.buildingDetails?.floorNo ? `<p class="headerp"><span class="label">Floor : </span><span class="value">${order.buildingDetails.floorNo},</span></p>` : ""}
+  ${order?.buildingDetails?.houseNo ? `<p class="headerp"><span class="label">House No : </span><span class="value">${order.buildingDetails.houseNo},</span></p>` : ""}
+  ${order?.buildingDetails?.streetName ? `<p class="headerp"><span class="label">Street Name : </span><span class="value">${order.buildingDetails.streetName},</span></p>` : ""}
+  ${order?.buildingDetails?.city ? `<p class="headerp"><span class="label">City : </span><span class="value">${order.buildingDetails.city}</span></p>` : ""}
     `
           : `
   <p class="bold">House Address :</p>
-  ${customerData?.buildingDetails?.houseNo ? `<p class="headerp"><span class="label">House No : </span><span class="value">${customerData.buildingDetails.houseNo},</span></p>` : ""}
-  ${customerData?.buildingDetails?.streetName ? `<p class="headerp"><span class="label">Street Name : </span><span class="value">${customerData.buildingDetails.streetName},</span></p>` : ""}
-  ${customerData?.buildingDetails?.city ? `<p class="headerp"><span class="label">City : </span><span class="value">${customerData.buildingDetails.city}</span></p>` : ""}
+  ${order?.buildingDetails?.houseNo ? `<p class="headerp"><span class="label">House No : </span><span class="value">${order.buildingDetails.houseNo},</span></p>` : ""}
+  ${order?.buildingDetails?.streetName ? `<p class="headerp"><span class="label">Street Name : </span><span class="value">${order.buildingDetails.streetName},</span></p>` : ""}
+  ${order?.buildingDetails?.city ? `<p class="headerp"><span class="label">City : </span><span class="value">${order.buildingDetails.city}</span></p>` : ""}
     `
       }
     </div>
@@ -578,7 +643,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
             <p style="font-weight: 550; font-size: 16px">Rs. ${totalAmount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
             <div class="section" style="margin-top: 30px">
               <p class="bold">Payment Method :</p>
-              <p class="headerp">Cash On Delivery</p>
+              <p class="headerp">${paymentMethodLower === "card" ? "Online Transfer" : "Cash On Delivery"}</p>
             </div>
           </div>
         </div>
@@ -605,7 +670,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         >
           <div>
             <p class="bold">Delivery Method :</p>
-            <p class="headerp">Home Delivery</p>
+             <p class="headerp">${deliveryMethodLower?.toLowerCase() === "pickup" ? "Store Pickup" : "Home Delivery"}</p>
           </div>
           <div style="margin-right: 64px">
             <p class="bold">Scheduled Date :</p>
@@ -720,9 +785,9 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
           <p>Discount</p>
           <p> Rs. ${totaldiscount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
         </div>
-        <div style="display: flex; justify-content: space-between; margin-right: 20px;"class="ptext" >
+        <div style="display: flex; justify-content: space-between; margin-right: 20px;" class="ptext">
           <p>Delivery Fee</p>
-          <p>Rs. ${deliveryFee.toFixed(2)}</p>
+          <p>Rs. ${deliveryChargeAmount.toFixed(2)}</p>
         </div>
 
         <div style="margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px;" ></div>
@@ -733,6 +798,9 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         <p>Grand Total</p>
         <p>Rs. ${totalAmount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
       </div>
+
+      <!-- Payment Status Section (dynamic: Online Transferred / Credit Balance Used / Cash On Delivery / Cash On Pickup) -->
+      ${paymentStatusHtml}
 
       <!-- Remarks Section -->
       <div class="section">
@@ -845,8 +913,8 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
                 style={{ fontSize: 16 }}
                 className="text-[#747474] text-center mt-5"
               >
-                Order Confirmation message and Payment Gateway Link has been
-                sent to your Customer
+                Order Confirmation message has been
+                sent to your Customer.
               </Text>
             </View>
 

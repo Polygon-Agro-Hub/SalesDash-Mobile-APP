@@ -12,6 +12,7 @@ import {
   ScrollView,
   TextInputKeyPressEventData,
   NativeSyntheticEvent,
+  Modal,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -22,15 +23,19 @@ import environment from "@/environment/environment";
 import { useRoute } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import CustomHeader from "../common/CustomHeader";
+import LoadingPage from "../common/LoadingPage";
+import { AlertModal } from "../common/AlertModal";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-type OtpScreenNavigationProp = StackNavigationProp<
+type OrderConfimedOTPScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
-  "OtpScreen" | "OtpScreenUp"
+  "OrderConfimedOTPScreen"
 >;
 
-const OtpScreen: React.FC = () => {
-  const navigation = useNavigation<OtpScreenNavigationProp>();
+const SUCCESS_POPUP_MIN_MS = 1100;
+
+const OrderConfimedOTPScreen: React.FC = () => {
+  const navigation = useNavigation<OrderConfimedOTPScreenNavigationProp>();
   const [otp, setOtp] = useState<string[]>(["", "", "", "", ""]);
   const inputRefs = useRef<(TextInput | null)[]>([]);
   const [timer, setTimer] = useState(60);
@@ -38,21 +43,66 @@ const OtpScreen: React.FC = () => {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const route = useRoute();
+
+  // --- Result popup state ---
+  // "OTP Verified Successfully" is now shown via the shared AlertModal.
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  // The "Confirming Order..." loading state keeps using its own lightweight Modal.
+  const [showOrderLoading, setShowOrderLoading] = useState(false);
+
   const {
     phoneNumber,
     id,
     token: routeToken,
+    paymentMethod,
+    customerName,
+    customerTitle,
+    isPackage,
+    total,
+    fullTotal,
+    subtotal,
+    discount,
+    selectedDate,
+    selectedTimeSlot,
+    items,
+    orderItems,
+    rawPackageItems,
+    rawAdditionalItems,
+    selectedAddress,
+    customerid,
+    customerscreencustomerid,
+    isFinalizeImdt,
+    deliveryCharge,
   } = route.params as {
     phoneNumber: string;
     id: string;
     token?: string;
+    paymentMethod?: string;
+    customerName?: string;
+    customerTitle?: string;
+    isPackage?: number;
+    total?: number;
+    fullTotal?: number;
+    subtotal?: number;
+    discount?: number;
+    selectedDate?: string;
+    selectedTimeSlot?: string;
+    items?: any[];
+    orderItems?: any[];
+    rawPackageItems?: any[];
+    rawAdditionalItems?: any[];
+    selectedAddress?: any;
+    customerid?: string;
+    customerscreencustomerid?: string;
+    isFinalizeImdt?: number;
+    deliveryCharge?: number;
   };
 
   const [isOtpInvalid, setIsOtpInvalid] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
+  // --- Layout tracking for keyboard-aware scrolling ---
   const [otpRowY, setOtpRowY] = useState(0);
-
   const [buttonRowY, setButtonRowY] = useState(0);
 
   const isOtpComplete = otp.every((digit) => digit.length === 1);
@@ -73,6 +123,133 @@ const OtpScreen: React.FC = () => {
       console.error(error);
       return null;
     }
+  };
+
+  const createOrderAndNavigate = async (
+    token: string,
+  ): Promise<Record<string, any> | null> => {
+    const pendingOrderStr = await AsyncStorage.getItem("pendingOrderData");
+
+    if (!pendingOrderStr) {
+      Alert.alert("Error", "No pending order data found.");
+      return null;
+    }
+
+    let pendingOrderPayload;
+    try {
+      pendingOrderPayload = JSON.parse(pendingOrderStr);
+    } catch (e) {
+      console.error("Error parsing pending order data:", e);
+      Alert.alert("Error", "Failed to read the pending order.");
+      return null;
+    }
+
+    try {
+      const orderResponse = await axios.post(
+        `${environment.API_BASE_URL}api/orders/create-order`,
+        pendingOrderPayload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      if (orderResponse.data.success) {
+        await AsyncStorage.removeItem("pendingOrderData");
+        const orderId = orderResponse.data.data.orderId;
+
+        return {
+          orderId,
+          isPackage: isPackage,
+          total: total,
+          subtotal: subtotal,
+          discount: discount,
+          paymentMethod: paymentMethod,
+          userId: id,
+          selectedDate: selectedDate,
+          selectedTimeSlot: selectedTimeSlot,
+        };
+      } else {
+        Alert.alert(
+          "Error",
+          orderResponse.data.message || "Failed to create order",
+        );
+        return null;
+      }
+    } catch (e: any) {
+      console.error("Error creating order after OTP verification:", e);
+      let errorMessage = "Error creating order after OTP verification";
+      if (axios.isAxiosError(e) && e.response) {
+        errorMessage =
+          e.response.data?.message || e.response.data?.error || errorMessage;
+      }
+      Alert.alert("Error", errorMessage);
+      return null;
+    }
+  };
+
+  const handleCashSuccess = async (token: string) => {
+    setShowSuccessAlert(true);
+
+    const minDelay = new Promise<void>((resolve) =>
+      setTimeout(resolve, SUCCESS_POPUP_MIN_MS),
+    );
+
+    const switchToLoadingTimer = setTimeout(() => {
+      setShowSuccessAlert(false);
+      setShowOrderLoading(true);
+    }, SUCCESS_POPUP_MIN_MS);
+
+    const [, navParams] = await Promise.all([
+      minDelay,
+      createOrderAndNavigate(token),
+    ]);
+
+    clearTimeout(switchToLoadingTimer);
+    setShowSuccessAlert(false);
+    setShowOrderLoading(false);
+
+    if (navParams) {
+      navigation.navigate("Main" as any, {
+        screen: "OrderConfirmedScreen",
+        params: navParams,
+      });
+    }
+  };
+
+  const handleCardSuccess = async () => {
+    setShowSuccessAlert(true);
+
+    await new Promise<void>((resolve) =>
+      setTimeout(resolve, SUCCESS_POPUP_MIN_MS),
+    );
+
+    setShowSuccessAlert(false);
+
+    navigation.navigate("OnlinePayment" as any, {
+      id: null,
+      customerId: id,
+      name: customerName,
+      title: customerTitle,
+      isPackage,
+      total,
+      fullTotal,
+      subtotal,
+      discount,
+      selectedDate,
+      selectedTimeSlot,
+      items,
+      orderItems,
+      rawPackageItems,
+      rawAdditionalItems,
+      selectedAddress,
+      customerid: customerid || id,
+      customerscreencustomerid,
+      isFinalizeImdt,
+      deliveryCharge,
+    });
   };
 
   const verifyOTP = async () => {
@@ -129,95 +306,12 @@ const OtpScreen: React.FC = () => {
       }
 
       if (statusCode === "1000") {
-        const customerDataString = await AsyncStorage.getItem(
-          "pendingCustomerData",
-        );
+        await AsyncStorage.removeItem("referenceId");
 
-        if (!customerDataString) {
-          Alert.alert("Error", "No customer data found.");
-          return;
-        }
-
-        let parsedData;
-        try {
-          parsedData = JSON.parse(customerDataString);
-        } catch (e) {
-          console.error("Error parsing customer data:", e);
-          Alert.alert("Error", "Failed to parse customer data.");
-          return;
-        }
-
-        const isEditMode = !!parsedData.customerData;
-
-        let endpoint;
-        let method: "post" | "put";
-        let data;
-
-        if (isEditMode) {
-          const customerData = parsedData.customerData || {};
-          const buildingData = parsedData.buildingData || {};
-          endpoint = `${environment.API_BASE_URL}api/customer/update-customer-data/${id}`;
-          method = "put";
-          data = { ...customerData, ...buildingData };
+        if (paymentMethod === "Card") {
+          await handleCardSuccess();
         } else {
-          endpoint = `${environment.API_BASE_URL}api/customer/add-customer`;
-          method = "post";
-          data = parsedData;
-        }
-
-        const saveResponse = await axios({
-          method,
-          url: endpoint,
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          data,
-        });
-
-        if (saveResponse.status === 200 || saveResponse.status === 201) {
-          const tableId = saveResponse.data?.id || id;
-          const customerId = saveResponse.data?.customerId || id;
-          const cusId = saveResponse.data?.result?.cusId;
-
-          if (customerId) {
-            await AsyncStorage.setItem(
-              "latestCustomerId",
-              customerId.toString(),
-            );
-          }
-
-          if (isEditMode) {
-            const customerData = parsedData.customerData || {};
-
-            Alert.alert("Success", "Customer updated successfully.", [
-              {
-                text: "OK",
-                onPress: () => {
-                  navigation.navigate("ViewCustomerScreen" as any, {
-                    id: tableId,
-                    customerId: cusId,
-                    name: `${customerData.firstName || ""} ${customerData.lastName || ""}`.trim(),
-                    title: customerData.title || "",
-                    number: customerData.phoneNumber || phoneNumber,
-                  });
-                },
-              },
-            ]);
-          } else {
-            navigation.navigate("OtpSuccesfulScreen" as any, {
-              id: tableId,
-              customerId: customerId,
-              name: `${parsedData.firstName || ""} ${parsedData.lastName || ""}`.trim(),
-              title: parsedData.title || "",
-              number: parsedData.phoneNumber || phoneNumber,
-            });
-          }
-        } else {
-          Alert.alert(
-            "Error",
-            saveResponse.data?.message || "Failed to save customer data.",
-          );
+          await handleCashSuccess(token);
         }
       } else {
         setIsOtpInvalid(true);
@@ -257,13 +351,13 @@ const OtpScreen: React.FC = () => {
         source: "PolygonAgro",
         transport: "sms",
         content: {
-          sms: "Thank you for registering with us a GoviMart customer. Please use the bellow OTP to confirm the registration process. {{code}}",
+          sms: "Thank you for your order with GoviMart. Please use the below OTP to confirm your order. {{code}}",
         },
         destination: cleanedPhoneNumber,
       };
 
       const response = await axios.post(apiUrl, body, { headers });
-      console.log("[OTP RESEND] Response Data:", response.data);
+      console.log("📲 [OTP ORDER RESEND] Response Data:", response.data);
 
       if (response.data.referenceId) {
         await AsyncStorage.setItem("referenceId", response.data.referenceId);
@@ -321,6 +415,7 @@ const OtpScreen: React.FC = () => {
     }
   };
 
+  // --- Keyboard-aware scrolling (mirrors OtpScreen) ---
   const scrollToOtpRow = () => {
     setTimeout(
       () => {
@@ -396,7 +491,6 @@ const OtpScreen: React.FC = () => {
           />
           <View className="flex-1 bg-white items-center justify-center">
             <View className="flex-1 justify-center w-full max-w-[500px]">
-              {/* Illustration - Centered */}
               <View className="items-center justify-center mb-6">
                 <Image
                   source={require("@/assets/images/otp/otp-check.webp")}
@@ -412,8 +506,7 @@ const OtpScreen: React.FC = () => {
                 Enter Verification Code.
               </Text>
               <Text className="text-[#808080] text-center mt-3 px-4">
-                We have sent a Verification Code to your Customer's mobile
-                number
+                We have sent a Verification Code to your Customer's mobile number
               </Text>
 
               {/* OTP Input Section — onLayout captures its Y position for scrolling */}
@@ -456,14 +549,12 @@ const OtpScreen: React.FC = () => {
               </View>
 
               <View className="items-center justify-center bg-white">
-                {/* Timer */}
                 <Text className="text-black">
                   {timer > 0
                     ? `00:${timer < 10 ? `0${timer}` : timer}`
                     : "OTP expired"}
                 </Text>
 
-                {/* Resend OTP */}
                 <View className="flex-row items-center justify-center mb-5 my-3">
                   <Text className="text-black font-semibold">
                     Didn't receive the OTP ?
@@ -535,8 +626,47 @@ const OtpScreen: React.FC = () => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <AlertModal
+        visible={showSuccessAlert}
+        title="Success"
+        message="OTP Verified Successfully"
+        type="success"
+        onClose={() => setShowSuccessAlert(false)}
+        autoClose={false}
+        showOkButton={false}
+      />
+
+      <Modal
+        visible={showOrderLoading}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.35)",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <View
+            style={{
+              width: "78%",
+              backgroundColor: "white",
+              borderRadius: 20,
+              paddingVertical: 28,
+              paddingHorizontal: 20,
+              alignItems: "center",
+            }}
+          >
+            <LoadingPage message="Confiming Order..." />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
 
-export default OtpScreen;
+export default OrderConfimedOTPScreen;

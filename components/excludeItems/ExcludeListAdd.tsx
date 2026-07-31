@@ -12,10 +12,6 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import {
-  widthPercentageToDP as wp,
-  heightPercentageToDP as hp,
-} from "react-native-responsive-screen";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
 import { TextInput } from "react-native-gesture-handler";
@@ -27,6 +23,7 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 import NoDataFound from "../common/NoDataFound";
 import CustomHeader from "../common/CustomHeader";
 import LoadingPage from "../common/LoadingPage";
+import ToggleSwitch from "../common/ToggleSwitch";
 
 type ExcludeListAddNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -57,15 +54,90 @@ interface ExcludeListAddProps {
   route: RouteProp<RootStackParamList, "ExcludeListAdd">;
 }
 
+interface Crop {
+  id: number;
+  displayName: string;
+  image: string;
+  isIncluded?: boolean;
+  isExcluded?: boolean;
+}
+
+interface CropRowProps {
+  item: Crop;
+  isIncluded: boolean;
+  isExcluded: boolean;
+  onToggleInclude: (cropId: number) => void;
+  onToggleExclude: (cropId: number) => void;
+}
+
+const CropRow = React.memo(
+  ({
+    item,
+    isIncluded,
+    isExcluded,
+    onToggleInclude,
+    onToggleExclude,
+  }: CropRowProps) => {
+    return (
+      <View
+        className="flex-row justify-between items-center px-6 py-3"
+        style={{
+          borderBottomWidth: 1,
+          borderBottomColor: "#F3F4F6",
+        }}
+      >
+        <View className="flex-row items-center gap-4 flex-1">
+          <Image
+            source={{ uri: item.image }}
+            style={{ width: 40, height: 40 }}
+            resizeMode="contain"
+          />
+          <Text
+            className="text-black text-base font-medium flex-1"
+            numberOfLines={2}
+          >
+            {item.displayName}
+          </Text>
+        </View>
+
+        <View className="flex-row items-center" style={{ gap: 20 }}>
+          <ToggleSwitch
+            isOn={isIncluded}
+            onColor="#22C55E"
+            offColor="#D9D9D9"
+            size="medium"
+            onToggle={() => onToggleInclude(item.id)}
+          />
+          <ToggleSwitch
+            isOn={isExcluded}
+            onColor="#EF4444"
+            offColor="#D9D9D9"
+            size="medium"
+            onToggle={() => onToggleExclude(item.id)}
+          />
+        </View>
+      </View>
+    );
+  },
+);
+
 const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
   route,
   navigation,
 }) => {
   const { customerId, name, title, number, id } =
     (route.params as RouteParams) || {};
-  const [crops, setCrops] = useState<any[]>([]);
-  const [selectedCrops, setSelectedCrops] = useState<number[]>([]);
-  const [filteredCrops, setFilteredCrops] = useState<any[]>([]);
+
+  const [crops, setCrops] = useState<Crop[]>([]);
+  const [filteredCrops, setFilteredCrops] = useState<Crop[]>([]);
+
+  const [selectedIncludeCrops, setSelectedIncludeCrops] = useState<number[]>(
+    [],
+  );
+  const [selectedExcludeCrops, setSelectedExcludeCrops] = useState<number[]>(
+    [],
+  );
+
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
@@ -74,37 +146,28 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
   const [listLoading, setListLoading] = useState(true);
   const [searchError, setSearchError] = useState<string | null>(null);
 
-  const toggleSelect = (id: number) => {
-    setSelectedCrops((prevSelected) =>
-      prevSelected.includes(id)
-        ? prevSelected.filter((cropId) => cropId !== id)
-        : [...prevSelected, id],
+  const toggleInclude = useCallback((cropId: number) => {
+    setSelectedExcludeCrops((prev) => prev.filter((id) => id !== cropId));
+    setSelectedIncludeCrops((prev) =>
+      prev.includes(cropId)
+        ? prev.filter((id) => id !== cropId)
+        : [...prev, cropId],
     );
-  };
+  }, []);
 
-  // Get current customer data (either from state or route params)
-  // const getCurrentCustomerData = () => {
-  //   if (customerData) {
-  //     return {
-  //       name: customerData.name || customerData.firstName || name || "",
-  //       title: customerData.title || title || "",
-  //       number: customerData.number || customerData.phoneNumber || number || "",
-  //       id: customerData.id?.toString() || id?.toString() || "",
-  //       customerId: customerData.cusId?.toString() || customerId.toString(),
-  //     };
-  //   }
-  //   return {
-  //     name: name || "",
-  //     title: title || "",
-  //     number: number || "",
-  //     id: id?.toString() || "",
-  //     customerId: customerId.toString(),
-  //   };
-  // };
+  const toggleExclude = useCallback((cropId: number) => {
+    setSelectedIncludeCrops((prev) => prev.filter((id) => id !== cropId));
+    setSelectedExcludeCrops((prev) =>
+      prev.includes(cropId)
+        ? prev.filter((id) => id !== cropId)
+        : [...prev, cropId],
+    );
+  }, []);
+
   const getCurrentCustomerData = () => {
     if (customerData) {
       const fullName =
-        `${customerData.firstName || ""} ${customerData.lastName || ""}`.trim(); // ✅
+        `${customerData.firstName || ""} ${customerData.lastName || ""}`.trim();
 
       return {
         name: fullName || name || "",
@@ -123,7 +186,6 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
     };
   };
 
-  // Define handleBackPress outside of useFocusEffect so it can be reused
   const handleBackPress = useCallback(() => {
     const currentData = getCurrentCustomerData();
 
@@ -139,9 +201,8 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
     });
 
     return true;
-  }, [navigation, customerData, name, title, number, id, customerId]); // ✅ add all deps
+  }, [navigation, customerData, name, title, number, id, customerId]);
 
-  // Fetch customer data
   useEffect(() => {
     const fetchCustomerData = async () => {
       try {
@@ -153,7 +214,6 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
           return;
         }
 
-        // Fixed the API endpoint name
         const response = await axios.get(
           `${environment.API_BASE_URL}api/customer/get-customer-excludelist/${customerId}`,
           {
@@ -176,10 +236,20 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
     }
   }, [customerId]);
 
+  const initialiseSelections = (cropList: Crop[]) => {
+    const includeIds = cropList
+      .filter((crop) => crop.isIncluded)
+      .map((crop) => crop.id);
+    const excludeIds = cropList
+      .filter((crop) => crop.isExcluded)
+      .map((crop) => crop.id);
+
+    setSelectedIncludeCrops(includeIds);
+    setSelectedExcludeCrops(excludeIds);
+  };
+
   useFocusEffect(
     useCallback(() => {
-      setSelectedCrops([]);
-
       const unsubscribe = navigation.addListener("beforeRemove", (e) => {
         e.preventDefault();
         const currentData = getCurrentCustomerData();
@@ -192,7 +262,6 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
         });
       });
 
-      // Handle hardware back button
       const backHandler = BackHandler.addEventListener(
         "hardwareBackPress",
         handleBackPress,
@@ -207,16 +276,77 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
             return;
           }
 
-          const apiUrl = `${environment.API_BASE_URL}api/customer/croplist`;
-          const response = await axios.get(apiUrl, {
-            headers: { Authorization: `Bearer ${storedToken}` },
-            params: { customerId: customerId },
-          });
+          const headers = { Authorization: `Bearer ${storedToken}` };
 
-          if (response.data && response.data.data) {
-            setCrops(response.data.data);
-            setFilteredCrops(response.data.data);
+          const [cropListRes, excludeRes, preferRes] = await Promise.allSettled(
+            [
+              axios.get(`${environment.API_BASE_URL}api/customer/croplist`, {
+                headers,
+                params: { customerId },
+              }),
+              axios.get(`${environment.API_BASE_URL}api/customer/excludelist`, {
+                headers,
+                params: { customerId },
+              }),
+              axios.get(`${environment.API_BASE_URL}api/customer/preferlist`, {
+                headers,
+                params: { customerId },
+              }),
+            ],
+          );
+
+          if (
+            cropListRes.status !== "fulfilled" ||
+            !cropListRes.value.data?.data
+          ) {
+            console.error("Failed to fetch products:", cropListRes);
+            setCrops([]);
+            setFilteredCrops([]);
+            return;
           }
+
+          const cropList: Crop[] = cropListRes.value.data.data;
+
+          if (excludeRes.status === "rejected") {
+            console.error(
+              "excludelist fetch failed (treating as empty):",
+              excludeRes.reason?.response?.status,
+              excludeRes.reason?.response?.data || excludeRes.reason?.message,
+            );
+          }
+          if (preferRes.status === "rejected") {
+            console.error(
+              "preferlist fetch failed (treating as empty):",
+              preferRes.reason?.response?.status,
+              preferRes.reason?.response?.data || preferRes.reason?.message,
+            );
+          }
+
+          const excludedItemIds = new Set<number>(
+            excludeRes.status === "fulfilled"
+              ? (excludeRes.value.data?.data || [])
+                  .map((row: any) => row.marketplaceItemId)
+                  .filter((itemId: number | null) => itemId != null)
+              : [],
+          );
+
+          const includedItemIds = new Set<number>(
+            preferRes.status === "fulfilled"
+              ? (preferRes.value.data?.data || [])
+                  .map((row: any) => row.marketplaceItemId)
+                  .filter((itemId: number | null) => itemId != null)
+              : [],
+          );
+
+          const mergedCropList: Crop[] = cropList.map((crop) => ({
+            ...crop,
+            isIncluded: includedItemIds.has(crop.id),
+            isExcluded: excludedItemIds.has(crop.id),
+          }));
+
+          setCrops(mergedCropList);
+          setFilteredCrops(mergedCropList);
+          initialiseSelections(mergedCropList);
         } catch (err) {
           console.error("Failed to fetch products:", err);
         } finally {
@@ -240,26 +370,41 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
       const token = await AsyncStorage.getItem("authToken");
       if (!token) {
         console.error("No authentication token found");
+        setLoading(false);
         return;
       }
 
-      const payload = {
-        customerId,
-        selectedCrops,
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       };
 
-      const checkResponse = await axios.post(
-        `${environment.API_BASE_URL}api/customer/add/excludelist`,
-        payload,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        },
-      );
+      const requests: Promise<any>[] = [];
 
-      if (checkResponse.status === 200) {
+      if (selectedExcludeCrops.length > 0) {
+        requests.push(
+          axios.post(
+            `${environment.API_BASE_URL}api/customer/add/excludelist`,
+            { customerId, selectedCrops: selectedExcludeCrops },
+            { headers },
+          ),
+        );
+      }
+
+      if (selectedIncludeCrops.length > 0) {
+        requests.push(
+          axios.post(
+            `${environment.API_BASE_URL}api/customer/add/preferlist`,
+            { customerId, selectedCrops: selectedIncludeCrops },
+            { headers },
+          ),
+        );
+      }
+
+      const responses = await Promise.all(requests);
+      const allOk = responses.every((res) => res.status === 200);
+
+      if (allOk) {
         const currentData = getCurrentCustomerData();
         navigation.navigate("ExcludeListSummery", {
           customerId: Number(customerId),
@@ -269,13 +414,11 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
           cusId: currentData.customerId,
           id: Number(currentData.id) || undefined,
         });
-      } else if (checkResponse.status === 400) {
-        console.error("Bad request:", checkResponse.data.message);
-      } else if (checkResponse.status === 404) {
-        console.error("Not Found:", checkResponse.data.message);
+      } else {
+        console.error("One of the list updates did not return 200");
       }
     } catch (err) {
-      console.error("Error posting exclude list:", err);
+      console.error("Error posting include/exclude list:", err);
     } finally {
       setLoading(false);
     }
@@ -284,15 +427,12 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
   const handleSearch = (query: string) => {
     let cleanedQuery = query;
 
-    // Remove special characters, keep only letters (a-z, A-Z), numbers (0-9), and spaces
     cleanedQuery = cleanedQuery.replace(/[^a-zA-Z0-9\s]/g, "");
 
-    // If the query starts with space and there's no letter/number before it, remove the leading space
     if (cleanedQuery.length > 0 && cleanedQuery[0] === " ") {
       cleanedQuery = cleanedQuery.replace(/^\s+/, "");
     }
 
-    // Prevent multiple consecutive spaces
     cleanedQuery = cleanedQuery.replace(/\s+/g, " ");
 
     setSearchQuery(cleanedQuery);
@@ -306,7 +446,6 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
       );
       setFilteredCrops(filtered);
 
-      // Set error if no results found
       if (filtered.length === 0) {
         setSearchError("No products found matching your search");
       }
@@ -314,7 +453,10 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
   };
 
   const handleNavigateIfNoCropsSelected = () => {
-    if (selectedCrops.length === 0) {
+    if (
+      selectedIncludeCrops.length === 0 &&
+      selectedExcludeCrops.length === 0
+    ) {
       const currentData = getCurrentCustomerData();
       navigation.navigate("ExcludeListSummery", {
         customerId: Number(customerId),
@@ -331,10 +473,8 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
-      // Clear search state when screen comes into focus
       setSearchQuery("");
       setSearchError(null);
-      // Reset filtered crops to show all crops
       if (crops.length > 0) {
         setFilteredCrops(crops);
       }
@@ -363,7 +503,6 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
     };
   }, []);
 
-  // Show loading while fetching customer data
   if (listLoading) {
     return <LoadingPage message="Loading Item List..." fullScreen={true} />;
   }
@@ -371,12 +510,11 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={{ flex: 1 }}
-      keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })}
+      style={{ flex: 1, backgroundColor: "white" }}
     >
       <View className="flex-1 bg-white">
         <CustomHeader
-          title="Exclude Item List"
+          title="Customize Packages"
           titleColor="#6C3CD1"
           showBackButton={true}
           navigation={navigation}
@@ -385,21 +523,25 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
 
         <View className="flex-1 mx-auto w-full max-w-[500px]">
           <View className="px-5">
-            <Text className="text-center text-sm">
-              Exclude any items your customer doesn't want in their package.
-              Simply tap on the Products they want to remove.
+            <Text className="text-center text-sm text-gray-500">
+              Choose items the customer would prefer to include or exclude from
+              the package. An item cannot be both preferred and excluded.
             </Text>
           </View>
 
           <View className="px-6 my-6">
             <View className="relative">
               <TextInput
-                className="p-3 pl-4 flex-row justify-between items-center border border-[#6B3BCF] rounded-full bg-[#F5F1FC]"
+                className="p-3 pl-4 flex-row justify-between h-[50px] items-center border border-[#6B3BCF] rounded-full bg-[#F5F1FC]"
                 placeholder="Search Products"
                 placeholderTextColor="black"
                 value={searchQuery}
                 onFocus={() => setIsKeyboardVisible(true)}
                 onChangeText={handleSearch}
+                style={{
+                  height: 50,
+                  justifyContent: "center",
+                }}
               />
 
               <Ionicons
@@ -409,55 +551,83 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
                 style={{
                   position: "absolute",
                   right: 16,
-                  marginTop: Platform.OS === "ios" ? 10 : 20,
-                  transform: [{ translateY: -12 }],
+                  marginTop: Platform.OS === "ios" ? 12 : 12,
+                  justifyContent: "center",
                 }}
               />
             </View>
           </View>
-          {searchError && (
-            <View className="flex-1 justify-center items-center">
-              <NoDataFound message={searchError} />
+
+          {filteredCrops.length === 0 ? (
+            <View
+              className="items-center justify-center px-6"
+              style={{ flex: 1, paddingBottom: 80 }}
+            >
+              <NoDataFound
+                message={
+                  searchQuery.trim() !== ""
+                    ? "No products found matching your search"
+                    : "No products found"
+                }
+              />
             </View>
-          )}
-          <View className="flex-1">
-            <FlatList
-              keyboardShouldPersistTaps="handled"
-              data={filteredCrops}
-              contentContainerStyle={{ paddingBottom: 100 }}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  onPress={() => toggleSelect(item.id)}
-                  className="flex-row justify-between items-center my-1 px-6 mb-2"
-                >
-                  {/* Crop name and selection toggle */}
-                  <View className="flex-row items-center gap-4">
-                    <View
-                      className={`w-6 h-6 rounded-full border-2 justify-center items-center ${
-                        selectedCrops.includes(item.id)
-                          ? "bg-red-600 border-red-600"
-                          : "bg-white border-gray-400"
-                      }`}
+          ) : (
+            <>
+              {/* Column headers */}
+              <View
+                className="flex-row justify-between items-center px-6 py-2"
+                style={{
+                  borderTopWidth: 1,
+                  borderBottomWidth: 1,
+                  borderColor: "#F3F4F6",
+                }}
+              >
+                <Text className="text-black text-sm font-semibold">
+                  Product
+                </Text>
+                <View className="flex-row items-center" style={{ gap: 20 }}>
+                  <View style={{ width: 52, alignItems: "center" }}>
+                    <Text
+                      className="text-green-600 text-sm font-semibold"
+                      style={{ textAlign: "center" }}
                     >
-                      {selectedCrops.includes(item.id) && (
-                        <Ionicons name="close" size={16} color="white" />
-                      )}
-                    </View>
-                    <Text className="text-black text-base font-medium">
-                      {item.displayName}
+                      Include
                     </Text>
                   </View>
+                  <View style={{ width: 52, alignItems: "center" }}>
+                    <Text
+                      className="text-red-500 text-sm font-semibold"
+                      style={{ textAlign: "center" }}
+                    >
+                      Exclude
+                    </Text>
+                  </View>
+                </View>
+              </View>
 
-                  {/* Crop image */}
-                  <Image
-                    source={{ uri: item.image }}
-                    style={{ width: 60, height: 60 }}
-                    resizeMode="contain"
-                  />
-                </TouchableOpacity>
-              )}
-            />
-          </View>
+              <View className="flex-1">
+                <FlatList
+                  keyboardShouldPersistTaps="handled"
+                  data={filteredCrops}
+                  keyExtractor={(item) => item.id.toString()}
+                  contentContainerStyle={{ paddingBottom: 100 }}
+                  renderItem={({ item }) => (
+                    <CropRow
+                      item={item}
+                      isIncluded={selectedIncludeCrops.includes(item.id)}
+                      isExcluded={selectedExcludeCrops.includes(item.id)}
+                      onToggleInclude={toggleInclude}
+                      onToggleExclude={toggleExclude}
+                    />
+                  )}
+                  initialNumToRender={12}
+                  maxToRenderPerBatch={12}
+                  windowSize={7}
+                  removeClippedSubviews={Platform.OS === "android"}
+                />
+              </View>
+            </>
+          )}
         </View>
       </View>
 
@@ -468,38 +638,46 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
             className="w-full max-w-[500px] items-center"
             disabled={loading}
           >
-            <LinearGradient
-              colors={["#6839CF", "#874DDB"]}
-              start={[0, 0]}
-              end={[1, 1]}
+            <View
               style={{
                 width: "70%",
-                paddingVertical: 12,
                 borderRadius: 25,
-                alignItems: "center",
-                justifyContent: "center",
+                backgroundColor: "#874DDB",
                 shadowColor: "#000000",
-                shadowOffset: {
-                  width: 0,
-                  height: 2,
-                },
-                shadowOpacity: 0.2,
-                shadowRadius: 10,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 6,
                 elevation: 8,
               }}
             >
-              {loading ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <View>
-                  <Text
-                    style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}
-                  >
-                    Continue
-                  </Text>
-                </View>
-              )}
-            </LinearGradient>
+              <LinearGradient
+                colors={["#6839CF", "#874DDB"]}
+                start={[0, 0]}
+                end={[1, 1]}
+                style={{
+                  paddingVertical: 12,
+                  borderRadius: 25,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <View>
+                    <Text
+                      style={{
+                        color: "#fff",
+                        fontSize: 18,
+                        fontWeight: "bold",
+                      }}
+                    >
+                      Continue
+                    </Text>
+                  </View>
+                )}
+              </LinearGradient>
+            </View>
           </TouchableOpacity>
         </View>
       )}

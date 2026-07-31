@@ -36,7 +36,7 @@ export const subscribeToUnreadCount = (listener: (count: number) => void) => {
   };
 };
 
-const updateGlobalUnreadCount = (count: number) => {
+export const updateGlobalUnreadCount = (count: number) => {
   globalUnreadCount = count;
   unreadCountListeners.forEach((listener) => listener(count));
 };
@@ -92,6 +92,15 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
   useEffect(() => {
     updateGlobalUnreadCount(unreadCount);
   }, [unreadCount]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToUnreadCount((count) => {
+      if (count !== unreadCount && !isLoading) {
+        fetchNotifications();
+      }
+    });
+    return unsubscribe;
+  }, [unreadCount, isLoading]);
 
   const fetchNotifications = async () => {
     try {

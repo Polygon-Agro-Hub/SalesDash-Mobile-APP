@@ -161,17 +161,15 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({
     const selectedValue = items[0];
     setSelectedCategory(selectedValue);
 
-    // Find and set the label for display
     const selectedItem = category.find((item) => item.value === selectedValue);
     setSelectedCategoryLabel(selectedItem?.label || "");
   };
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })}
-      style={{ flex: 1, backgroundColor: "white" }}
-    >
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1, backgroundColor: "white" }}
+        >
       <ScrollView
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{

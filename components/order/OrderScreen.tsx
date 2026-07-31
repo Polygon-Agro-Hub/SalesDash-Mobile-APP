@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -110,6 +110,7 @@ interface OrderScreenProps {
         quantityType: string;
         price: number;
       }>;
+      rawPackageItems?: Array<{ name: string; qty: string }>;
       additionalItems?: Array<{
         pricePerKg?: number;
         discountedPricePerKg?: number;
@@ -127,7 +128,9 @@ interface OrderScreenProps {
         startValue?: string;
         unitType?: string;
       }>;
+      rawAdditionalItems?: AdditionalItem[];
       orderItems?: any[];
+      orderData?: any;
       subtotal?: number;
       discount?: number;
       total?: number;
@@ -211,6 +214,9 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
       setSelectedUnit("Kg");
       handleProductSearchChange("");
       handlePackageSearchChange("");
+    } else {
+      setProductModalVisible(false);
+      setUnitModalVisible(false);
     }
   }, [showAddModal]);
 
@@ -376,6 +382,51 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     packages,
   ]);
 
+  const hasRestoredPreviousSelection = useRef(false);
+
+  useEffect(() => {
+    if (hasRestoredPreviousSelection.current) return;
+    if (route.params?.isEdit) return;
+
+    const prevPackageId = route.params?.packageId;
+    const prevAdditionalItems = route.params?.rawAdditionalItems;
+
+    let restoredSomething = false;
+
+    if (prevPackageId && !packageValue) {
+      setPackageValue(prevPackageId.toString());
+      restoredSomething = true;
+    }
+
+    if (prevAdditionalItems && prevAdditionalItems.length > 0) {
+      setAdditionalItems(prevAdditionalItems);
+      restoredSomething = true;
+    }
+
+    if (restoredSomething) {
+      hasRestoredPreviousSelection.current = true;
+    }
+  }, [route.params?.packageId, route.params?.rawAdditionalItems, packageValue]);
+
+  useEffect(() => {
+    if (
+      !route.params?.isEdit &&
+      route.params?.packageId &&
+      packages.length > 0 &&
+      !selectedPackage
+    ) {
+      const pkg = packages.find((p) => p.id === route.params?.packageId);
+      if (pkg) {
+        setSelectedPackage(pkg);
+      }
+    }
+  }, [
+    packages,
+    route.params?.packageId,
+    route.params?.isEdit,
+    selectedPackage,
+  ]);
+
   const handleConfirm = useCallback(async () => {
     setLoading(true);
 
@@ -410,7 +461,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         })),
       };
 
-      navigation.navigate("ScheduleScreen" as any, {
+      navigation.navigate("PackageConfirmation" as any, {
         orderData,
         customerid: route.params?.id,
         isPackage,
@@ -419,10 +470,16 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         name,
         number,
         customerscreencustomerid,
-
         packageId: packageValue ? parseInt(packageValue) : null,
         rawPackageItems: items,
         rawAdditionalItems: additionalItems,
+        total:
+          packageTotalAmount +
+          additionalItems.reduce((sum, item) => sum + item.totalAmount, 0),
+        fullTotal:
+          packageTotalAmount +
+          additionalItems.reduce((sum, item) => sum + item.totalAmount, 0),
+        discount: additionalItems.reduce((sum, item) => sum + item.discount, 0),
       });
     } catch (error) {
       console.error("Error confirming order:", error);
@@ -653,6 +710,8 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
 
     return (discountPerKg * quantityInKg).toFixed(2);
   };
+
+  const discount = Number(calculateDiscountForQuantity());
 
   const calculateGrandTotal = () => {
     let packageTotalAmount = 0;
@@ -1169,12 +1228,14 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
           <TouchableOpacity onPress={handleConfirm} activeOpacity={0.8}>
             <View
               style={{
+                width: "60%",
+                borderRadius: 30,
+                backgroundColor: "transparent",
                 shadowColor: "#000",
-                shadowOffset: { width: 0, height: 4 },
+                shadowOffset: { width: 0, height: 8 },
                 shadowOpacity: 0.25,
-                shadowRadius: 6,
+                shadowRadius: 10,
                 elevation: 8,
-                borderRadius: 999,
               }}
             >
               <LinearGradient
@@ -1182,7 +1243,14 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                 className="py-3 px-6 rounded-full"
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
-                style={{ overflow: "hidden" }}
+                style={{
+                  height: 40,
+                  width: 120,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  borderRadius: 30,
+                  overflow: "hidden",
+                }}
               >
                 <View
                   className="w-20 flex-row justify-center items-center"
@@ -1314,6 +1382,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
             </View>
 
             {/* Dynamic Discount Message */}
+            {discount > 0 ? (
             <View className="mb-4">
               <Text className="text-purple-600 text-center text-sm font-medium">
                 You received a discount of Rs.{" "}
@@ -1323,7 +1392,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                 )}{" "}
                 for this product
               </Text>
-            </View>
+            </View>): null}
 
             {/* Action Buttons */}
             <View className="gap-3">
@@ -1347,11 +1416,11 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                 onPress={handleSaveItem}
                 className="bg-purple-600 py-3 rounded-full items-center"
                 style={{
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.12,
-                  shadowRadius: 4,
-                  elevation: 3,
+                  shadowColor: "#7C3AED",
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 6,
+                  elevation: 6,
                 }}
               >
                 <Text className="text-white font-semibold text-base">Save</Text>
@@ -1359,6 +1428,67 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
             </View>
           </View>
         </View>
+
+        {/* Product Selection Modal (inside Add More Modal for iOS stacking) */}
+        <GlobalSearchModal
+          visible={productModalVisible}
+          onClose={() => setProductModalVisible(false)}
+          title="Select Product"
+          data={filteredProductItems}
+          selectedItems={productValue ? [productValue] : []}
+          onSelect={(items) => {
+            if (items.length > 0) {
+              setProductValue(items[0]);
+              const selectedItem = productItems.find(
+                (p) => p.value === items[0],
+              );
+              if (selectedItem) {
+                setSelectedProduct(selectedItem.label);
+                const discountedPrice = selectedItem.discountedPrice
+                  ? parseFloat(selectedItem.discountedPrice)
+                  : parseFloat(selectedItem.price);
+                setPricePerKg(discountedPrice);
+
+                const unitType =
+                  selectedItem.unitType?.toLowerCase() === "g" ? "g" : "Kg";
+                setSelectedUnit(unitType);
+
+                const startValue = selectedItem.startValue
+                  ? Number(selectedItem.startValue)
+                  : 1;
+                const adjustedStartValue =
+                  unitType === "Kg" ? startValue : startValue * 1000;
+                setQuantity(adjustedStartValue);
+              }
+            }
+            setProductModalVisible(false);
+          }}
+          searchPlaceholder="Search product..."
+          multiSelect={false}
+          isLoading={productDropdownLoading}
+        />
+
+        {/* Unit Selection Modal (inside Add More Modal for iOS stacking) */}
+        <GlobalSearchModal
+          visible={unitModalVisible}
+          onClose={() => setUnitModalVisible(false)}
+          title="Select Unit"
+          data={[
+            { label: "Kg", value: "Kg" },
+            { label: "g", value: "g" },
+          ]}
+          selectedItems={[selectedUnit]}
+          onSelect={(items) => {
+            if (items.length > 0) {
+              handleUnitConversion(items[0]);
+            }
+            setUnitModalVisible(false);
+          }}
+          searchPlaceholder="Search unit..."
+          multiSelect={false}
+          showSearch={false}
+          isLoading={false}
+        />
       </Modal>
 
       {/* Edit Item Modal */}
@@ -1456,11 +1586,11 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                 className="bg-purple-700 py-3 rounded-full items-center justify-center"
                 onPress={saveUpdatedItem}
                 style={{
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.12,
-                  shadowRadius: 4,
-                  elevation: 4,
+                  shadowColor: "#7C3AED",
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 6,
+                  elevation: 6,
                 }}
               >
                 <Text className="text-white font-semibold text-center">
@@ -1492,64 +1622,10 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         noResultsText="No Packages Found"
       />
 
-      {/* Product Selection Modal */}
-      <GlobalSearchModal
-        visible={productModalVisible}
-        onClose={() => setProductModalVisible(false)}
-        title="Select Product"
-        data={filteredProductItems}
-        selectedItems={productValue ? [productValue] : []}
-        onSelect={(items) => {
-          if (items.length > 0) {
-            setProductValue(items[0]);
-            const selectedItem = productItems.find((p) => p.value === items[0]);
-            if (selectedItem) {
-              setSelectedProduct(selectedItem.label);
-              const discountedPrice = selectedItem.discountedPrice
-                ? parseFloat(selectedItem.discountedPrice)
-                : parseFloat(selectedItem.price);
-              setPricePerKg(discountedPrice);
-
-              const unitType =
-                selectedItem.unitType?.toLowerCase() === "g" ? "g" : "Kg";
-              setSelectedUnit(unitType);
-
-              const startValue = selectedItem.startValue
-                ? Number(selectedItem.startValue)
-                : 1;
-              const adjustedStartValue =
-                unitType === "Kg" ? startValue : startValue * 1000;
-              setQuantity(adjustedStartValue);
-            }
-          }
-          setProductModalVisible(false);
-        }}
-        searchPlaceholder="Search product..."
-        multiSelect={false}
-        isLoading={productDropdownLoading}
-      />
-
-      {/* Unit Selection Modal */}
-      <GlobalSearchModal
-        visible={unitModalVisible}
-        onClose={() => setUnitModalVisible(false)}
-        title="Select Unit"
-        data={[
-          { label: "Kg", value: "Kg" },
-          { label: "g", value: "g" },
-        ]}
-        selectedItems={[selectedUnit]}
-        onSelect={(items) => {
-          if (items.length > 0) {
-            handleUnitConversion(items[0]);
-          }
-          setUnitModalVisible(false);
-        }}
-        searchPlaceholder="Search unit..."
-        multiSelect={false}
-        showSearch={false}
-        isLoading={false}
-      />
+      {/* NOTE: Product Selection Modal and Unit Selection Modal have been moved
+          inside the Add More Modal above. This is required on iOS because nested
+          Modals must be children of their parent Modal to appear correctly on
+          the native modal stack. The duplicates below have been removed. */}
 
       {/* Edit Unit Selection Modal */}
       <GlobalSearchModal
