@@ -1090,7 +1090,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                   }}
                 >
                   {orders.length === 0
-                    ? "No orders found"
+                    ? " No orders found "
                     : searchText
                       ? "No matching orders found"
                       : `No orders found with status "${selectedFilter}"`}
