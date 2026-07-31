@@ -93,6 +93,10 @@ const OnlinePayment: React.FC<OnlinePaymentProps> = ({ navigation, route }) => {
         return;
       }
 
+      if (pendingOrderPayload && pendingOrderPayload.orderData) {
+        pendingOrderPayload.orderData.isPaySMS = selectedMethod === "sms" ? 1 : 0;
+      }
+
       const orderResponse = await axios.post(
         `${environment.API_BASE_URL}api/orders/create-order`,
         pendingOrderPayload,
