@@ -588,7 +588,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         <div>
           <p>
             <span style="font-weight: 550; font-size: 16px"
-              >Polygon Holdings (Private) Ltd</span
+              >Polygon Holdings (Private) Limited</span
             >
           </p>
           <p class="headerp">No. 42/46, Nawam Mawatha, Colombo 02.</p>
