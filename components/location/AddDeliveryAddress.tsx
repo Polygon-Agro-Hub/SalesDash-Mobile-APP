@@ -574,16 +574,17 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
           value={saveAddressAs}
           onChangeText={(text) => {
             setSaveAddressAs(
-              stripLeadingSpace(text).slice(0, SAVE_ADDRESS_AS_MAX_LENGTH),
+              capitalizeWords(stripLeadingSpace(text).slice(0, SAVE_ADDRESS_AS_MAX_LENGTH)),
             );
             if (saveAsError) setSaveAsError("");
           }}
-          placeholder="e.g. Home"
+          placeholder="e.g. : Home"
           placeholderTextColor="#9CA3AF"
           maxLength={SAVE_ADDRESS_AS_MAX_LENGTH}
           style={{
             borderWidth: saveAsError ? 1 : 0,
             borderColor: saveAsError ? "#DC2626" : "transparent",
+            fontStyle: saveAddressAs ? "normal" : "italic"
           }}
           className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-1"
         />
@@ -610,11 +611,15 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
             <Text className="text-sm mb-2">Billing Name *</Text>
             <TextInput
               value={billingName}
-              onChangeText={(text) => setBillingName(capitalizeWords(text))}
-              placeholder="e.g. Billing Name"
+              onChangeText={(text) => { // Allow only letters and spaces
+                const filteredText = text.replace(/[^A-Za-z\s]/g, "");
+                setBillingName(capitalizeWords(filteredText));
+              }}
+              placeholder="e.g. : Billing Name"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
               className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black"
+              style={[{ fontStyle: billingName ? "normal" : "italic" }]}
             />
           </View>
         </View>
@@ -637,6 +642,8 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
           style={{
             borderWidth: phoneError1 ? 1 : 0,
             borderColor: phoneError1 ? "#DC2626" : "transparent",
+            fontStyle: phoneNumber1 ? "normal" : "italic"
+
           }}
           className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-1"
         />
@@ -664,6 +671,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
           style={{
             borderWidth: phoneError2 ? 1 : 0,
             borderColor: phoneError2 ? "#DC2626" : "transparent",
+            fontStyle: phoneNumber2 ? "normal" : "italic"
           }}
           className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-1"
         />
@@ -699,6 +707,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
               style={{
                 borderWidth: addressLocationError ? 1 : 0,
                 borderColor: addressLocationError ? "#DC2626" : "transparent",
+                fontStyle: buildingNo ? "normal" : "italic"
               }}
               className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
             />
@@ -716,6 +725,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
               style={{
                 borderWidth: addressLocationError ? 1 : 0,
                 borderColor: addressLocationError ? "#DC2626" : "transparent",
+                fontStyle: buildingName ? "normal" : "italic"
               }}
               className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
             />
@@ -727,12 +737,13 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
                 setUnitNo(capitalizeWords(text));
                 if (addressLocationError) setAddressLocationError("");
               }}
-              placeholder="e.g. Building B"
+              placeholder="e.g. : Building B"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
               style={{
                 borderWidth: addressLocationError ? 1 : 0,
                 borderColor: addressLocationError ? "#DC2626" : "transparent",
+                fontStyle: unitNo ? "normal" : "italic"
               }}
               className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
             />
@@ -744,12 +755,13 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
                 setFloorNo(capitalizeWords(text));
                 if (addressLocationError) setAddressLocationError("");
               }}
-              placeholder="e.g. 3rd Floor"
+              placeholder="e.g. : 3rd Floor"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
               style={{
                 borderWidth: addressLocationError ? 1 : 0,
                 borderColor: addressLocationError ? "#DC2626" : "transparent",
+                fontStyle: floorNo ? "normal" : "italic"
               }}
               className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
             />
@@ -761,12 +773,13 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
                 setHouseNo(capitalizeWords(text));
                 if (addressLocationError) setAddressLocationError("");
               }}
-              placeholder="e.g. 14"
+              placeholder="e.g. : 14"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
               style={{
                 borderWidth: addressLocationError ? 1 : 0,
                 borderColor: addressLocationError ? "#DC2626" : "transparent",
+                fontStyle: houseNo ? "normal" : "italic"
               }}
               className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
             />
@@ -784,6 +797,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
               style={{
                 borderWidth: addressLocationError ? 1 : 0,
                 borderColor: addressLocationError ? "#DC2626" : "transparent",
+                fontStyle: streetName ? "normal" : "italic"
               }}
               className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
             />
@@ -809,12 +823,13 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
                 setHouseNo(capitalizeWords(text));
                 if (addressLocationError) setAddressLocationError("");
               }}
-              placeholder="e.g. 14/B"
+              placeholder="e.g. : 14/B"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
               style={{
                 borderWidth: addressLocationError ? 1 : 0,
                 borderColor: addressLocationError ? "#DC2626" : "transparent",
+                fontStyle: houseNo ? "normal" : "italic"
               }}
               className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
             />
@@ -832,6 +847,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
               style={{
                 borderWidth: addressLocationError ? 1 : 0,
                 borderColor: addressLocationError ? "#DC2626" : "transparent",
+                fontStyle: streetName ? "normal" : "italic"
               }}
               className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
             />

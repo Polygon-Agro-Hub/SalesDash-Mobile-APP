@@ -719,7 +719,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
                 shadowOpacity: 0.25,
                 shadowOffset: { width: 0, height: 6 },
                 shadowRadius: 8,
-                elevation: 10,
+                elevation: 5,
               }}
             >
               <TouchableOpacity onPress={handleConfirm} activeOpacity={0.8}>
