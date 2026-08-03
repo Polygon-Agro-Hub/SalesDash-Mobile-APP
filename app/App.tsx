@@ -81,6 +81,7 @@ LogBox.ignoreLogs([
   "setBackgroundColorAsync is not supported with edge-to-edge enabled"
 ]);
 
+// MainTabNavigator component handles the bottom tab navigation and sets up the Android navigation bar appearance.
 function MainTabNavigator() {
   useEffect(() => {
     if (Platform.OS === "android") {
