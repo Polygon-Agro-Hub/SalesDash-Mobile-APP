@@ -82,12 +82,16 @@ type ViewCustomerScreenProps = {
 };
 
 const getDisplayStatus = (status: string) => {
-  if (status === "Return Received") return "Return";
-  return status;
+  if (!status) return "";
+  const normalizedStatus = status.trim();
+  if (normalizedStatus === "Return Received" || normalizedStatus === "Return") {
+    return "Return";
+  }
+  return normalizedStatus;
 };
 
 const FILTER_TO_BACKEND_STATUS: Record<string, string> = {
-  Return: "Return Received",
+  Return: "Return",
 };
 
 const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
@@ -137,7 +141,6 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
 
       const resetStates = () => {
         setSearchText("");
-        setSelectedFilter("Ordered");
         setOrders([]);
         setCurrentPage(1);
         setHasMore(true);
@@ -148,7 +151,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       };
 
       resetStates();
-      loadOrders(1, true, false, "Ordered");
+      loadOrders(1, true, false, selectedFilter);
       getUserProfile();
 
       return () => {};
@@ -281,15 +284,16 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
 
       setError(null);
 
-      const backendStatus =
-        FILTER_TO_BACKEND_STATUS[statusFilter] || statusFilter;
-
       const response = await axios.get<OrdersResponse>(
-        `${environment.API_BASE_URL}api/orders/get-order-bycustomerId/${id}?page=${page}&limit=${ORDERS_PER_PAGE}&status=${encodeURIComponent(backendStatus)}`,
+        `${environment.API_BASE_URL}api/orders/get-order-bycustomerId/${id}?page=${page}&limit=${ORDERS_PER_PAGE}`,
       );
 
       if (response.data.success) {
         const newOrders = response.data.data;
+        console.log(
+          `Fetched ${newOrders.length} orders for page ${page} from customer order list`,
+        );
+        console.log("Response data:", response.data);
 
         if (isLoadMore) {
           setOrders((prevOrders) => {
@@ -384,12 +388,17 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
 
   const handleSearch = () => {};
 
-  const filteredOrders = orders.filter(
-    (order) =>
+  const filteredOrders = orders.filter((order) => {
+    const matchesStatus =
+      selectedFilter === "All" ||
+      getDisplayStatus(order.status) === selectedFilter;
+    const matchesSearch =
       !searchText ||
       (order.InvNo &&
-        order.InvNo.toLowerCase().includes(searchText.toLowerCase())),
-  );
+        order.InvNo.toLowerCase().includes(searchText.toLowerCase()));
+
+    return matchesStatus && matchesSearch;
+  });
 
   useEffect(() => {
     if (isFirstRender.current) {
@@ -884,7 +893,12 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
             ) : filteredOrders.length > 0 ? (
               <FlatList
                 data={filteredOrders}
-                keyExtractor={(item) => item.orderId.toString()}
+                keyExtractor={(item, index) => {
+                  const safeOrderId = item.orderId || "unknown";
+                  const safeInvNo = item.InvNo || "";
+                  const safeCreatedAt = item.createdAt || "";
+                  return `${safeOrderId}-${safeInvNo}-${safeCreatedAt}-${index}`;
+                }}
                 renderItem={({ item }) => {
                   const isPaymentPending =
                     Number(item.isPaid) === 0 &&

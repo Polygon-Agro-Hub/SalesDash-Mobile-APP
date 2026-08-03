@@ -681,7 +681,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                               color: "#808FA2",
                             }}
                           >
-                            Within {item.sheduleTime}
+                          {item.sheduleTime}
                           </Text>
                           <Text
                             style={{
