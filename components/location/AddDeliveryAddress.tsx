@@ -563,17 +563,8 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
               errMsg ||
               "This address already exists for this customer. Please enter a different address.",
             );
-          } else if (errorCode === "DUPLICATE_PHONE") {
-            setPhoneError1(
-              errMsg ||
-              "This phone number is already saved in another address.",
-            );
-            Alert.alert(
-              "Duplicate Phone Number",
-              errMsg ||
-              "This phone number is already saved in another address.",
-            );
-          } else {
+          }
+           else {
             setSaveAsError(
               "This name is already used. Please choose a different name.",
             );

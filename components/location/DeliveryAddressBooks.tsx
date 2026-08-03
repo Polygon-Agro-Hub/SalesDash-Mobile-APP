@@ -234,9 +234,10 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
     if (buttonRef) {
       buttonRef.measure((_fx, _fy, width, height, pageX, pageY) => {
         const screenWidth = Dimensions.get("window").width;
+        const rightOffset = Math.max(12, screenWidth - (pageX + width) - 10);
         setMenuPosition({
-          top: pageY + height + 4,
-          right: screenWidth - (pageX + width),
+          top: Math.max(8, pageY - 5),
+          right: rightOffset,
         });
         setSelectedAddress(address);
         setMenuVisible(true);
@@ -444,13 +445,14 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
               right: menuPosition.right,
               backgroundColor: "white",
               borderRadius: 12,
-              minWidth: 160,
+              minWidth: 135,
               paddingVertical: 4,
               shadowColor: "#000",
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.15,
               shadowRadius: 10,
               elevation: 8,
+              
             }}
           >
             <TouchableOpacity

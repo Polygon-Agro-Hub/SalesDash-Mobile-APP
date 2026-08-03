@@ -417,7 +417,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
       const address = route.params.selectedAddress;
       const formatted =
         address.type === "Apartment"
-          ? `${address.buildingNo || ""} ${address.buildingName || ""}, Flat ${address.unitNo || ""}, ${address.floorNo ? address.floorNo + " Floor, " : ""}${address.houseNo ? "House " + address.houseNo + ", " : ""}${address.streetName || ""}, ${address.city || ""}`
+          ? `${address.buildingNo || ""}, ${address.buildingName || ""}, Flat ${address.unitNo || ""}, ${address.floorNo ? address.floorNo + " Floor, " : ""}${address.houseNo ? "House " + address.houseNo + ", " : ""}${address.streetName || ""}, ${address.city || ""}`
           : `${address.houseNo || ""}, ${address.streetName || ""}, ${address.city || ""}`;
       const cleaned = formatted.replace(/\s+/g, " ").trim();
 

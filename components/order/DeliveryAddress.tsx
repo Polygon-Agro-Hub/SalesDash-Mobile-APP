@@ -506,10 +506,10 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
       {!onSelectAddress && !loading && (
         <View className="px-6 py-4 bg-white border-t border-gray-100 flex-row items-center justify-between pb-8 shadow-lg">
           <View>
-            <Text className="text-[12px] text-gray-500 font-medium">
+            <Text className=" text-[#5C5C5C] font-semibold">
               Delivery Fee : + Rs. {deliveryFee.toFixed(2)}
             </Text>
-            <Text className="text-[16px] font-bold text-black mt-1">
+            <Text className="text-base font-semibold text-black mt-2">
               Full Total : Rs.{" "}
               {formatCurrency((route.params?.total || 0) + deliveryFee)}
             </Text>
@@ -524,7 +524,7 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.2,
                 shadowRadius: 4,
-                elevation: 10,
+                elevation: 6,
             }}
           >
             <Text className="text-white font-bold text-lg mr-2">Confirm</Text>

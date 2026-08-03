@@ -224,8 +224,7 @@ const OnlinePayment: React.FC<OnlinePaymentProps> = ({ navigation, route }) => {
           style={{
             alignItems: "center",
             justifyContent: "center",
-            marginTop: 15,
-            marginBottom: 15,
+            
           }}
         >
           <Image
@@ -377,6 +376,11 @@ const OnlinePayment: React.FC<OnlinePaymentProps> = ({ navigation, route }) => {
         <TouchableOpacity
           activeOpacity={0.85}
           onPress={handleSendPaymentRequest}
+          style={{shadowColor: "#000000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.2,
+              shadowRadius: 4,
+              elevation: 10, }}
         >
           <LinearGradient
             colors={["#7B2FF7", "#5B1FC9"]}
