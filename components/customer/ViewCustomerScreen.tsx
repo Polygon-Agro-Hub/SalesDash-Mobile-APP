@@ -887,7 +887,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                     marginTop: 12,
                   }}
                 >
-                  No orders found
+                  {" "}No orders found{" "}
                 </Text>
               </ScrollView>
             ) : filteredOrders.length > 0 ? (

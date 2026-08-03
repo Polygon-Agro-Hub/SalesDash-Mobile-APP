@@ -481,7 +481,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                     className="text-black italic text-center mt-4"
                     style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 14 }}
                   >
-                    No orders found
+                  {" "} No orders found {" "}
                   </Text>
                 </View>
               ) : (
