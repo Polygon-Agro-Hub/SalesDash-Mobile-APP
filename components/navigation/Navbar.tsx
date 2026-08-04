@@ -63,13 +63,14 @@ const NavigationBar = ({
 
   let currentTabName = state?.routes?.[state.index]?.name || "DashboardScreen";
 
-  if (
+  if (currentTabName === "AddCustomersScreen") {
+    currentTabName = "";
+  } else if (
     [
       "ViewCustomerScreen",
       "EditCustomerScreen",
       "SelectOrderType",
       "ExcludeListAdd",
-      "AddCustomersScreen",
     ].includes(currentTabName)
   ) {
     currentTabName = "CustomersScreen";
