@@ -279,7 +279,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
   const convertLogoToBase64 = async () => {
     try {
       const asset = Asset.fromModule(
-        require("../../assets/images/order/logo.webp"),
+        require("../../assets/images/order/logo.png"),
       );
       if (!asset.downloaded) await asset.downloadAsync();
 
