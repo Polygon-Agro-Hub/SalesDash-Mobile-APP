@@ -118,36 +118,43 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
     fetchCityCharges();
   }, []);
 
-  const fetchAddressBook = useCallback(
-    async (isRefresh = false) => {
-      try {
-        if (isRefresh) setRefreshing(true);
-        else setLoading(true);
+const fetchAddressBook = useCallback(
+  async (isRefresh = false) => {
+    try {
+      if (isRefresh) setRefreshing(true);
+      else setLoading(true);
 
-        const storedToken = await AsyncStorage.getItem("authToken");
-        const response = await axios.get<{ data: AddressBookItem[] }>(
-          `${environment.API_BASE_URL}api/customer/get-address-book/${id}`,
-          storedToken
-            ? { headers: { Authorization: `Bearer ${storedToken}` } }
-            : undefined,
-        );
+      const storedToken = await AsyncStorage.getItem("authToken");
+      const response = await axios.get<{ data: AddressBookItem[] }>(
+        `${environment.API_BASE_URL}api/customer/get-address-book/${id}`,
+        storedToken
+          ? { headers: { Authorization: `Bearer ${storedToken}` } }
+          : undefined,
+      );
 
-        const data = response.data?.data || [];
-        setAddresses(data);
+      const data = response.data?.data || [];
 
-        setSelectedId((prev) => {
-          if (prev && data.some((a) => a.id === prev)) return prev;
-          return data.length > 0 ? data[0].id : null;
-        });
-      } catch (error) {
-        console.error("Error fetching address book:", error);
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [customerId],
-  );
+      const sortedData = [...data].sort((a, b) =>
+        (a.label || "").localeCompare(b.label || "", undefined, {
+          sensitivity: "base",
+        }),
+      );
+
+      setAddresses(sortedData);
+
+      setSelectedId((prev) => {
+        if (prev && sortedData.some((a) => a.id === prev)) return prev;
+        return sortedData.length > 0 ? sortedData[0].id : null;
+      });
+    } catch (error) {
+      console.error("Error fetching address book:", error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  },
+  [customerId],
+);
 
   useFocusEffect(
     useCallback(() => {
