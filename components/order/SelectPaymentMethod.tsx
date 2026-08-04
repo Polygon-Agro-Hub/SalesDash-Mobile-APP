@@ -287,6 +287,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
       );
 
       if (validationResponse.data?.hasDisabled) {
+       console.log(id,customerId,name,title,number,customerscreencustomerid)
         Alert.alert(
           "Some Items No Longer Available!",
           "Sorry, the package / a product in your cart is no longer available to order. Please go to your cart and update it before continuing.",
@@ -296,6 +297,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
               onPress: () => {
                 navigation.navigate("OrderScreen" as any, {
                   id,
+                  isPackage: 1,
                   customerId: customerId || customerid,
                   title,
                   name,
