@@ -290,10 +290,10 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
 
       if (response.data.success) {
         const newOrders = response.data.data;
-        console.log(
-          `Fetched ${newOrders.length} orders for page ${page} from customer order list`,
-        );
-        console.log("Response data:", response.data);
+        // console.log(
+        //   `Fetched ${newOrders.length} orders for page ${page} from customer order list`,
+        // );
+        // console.log("Response data:", response.data);
 
         if (isLoadMore) {
           setOrders((prevOrders) => {

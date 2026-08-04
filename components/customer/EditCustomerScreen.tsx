@@ -534,21 +534,27 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
       title: true,
     });
 
-    if (!selectedCategory || !firstName || !lastName || !phoneNumber) {
-      showAlert("Error", "Please fill in all required fields.");
-      return;
-    }
+    const missingRequiredFields: string[] = [];
+    if (!selectedCategory) missingRequiredFields.push("Title");
+    if (!firstName) missingRequiredFields.push("First Name");
+    if (!lastName) missingRequiredFields.push("Last Name");
+    if (!phoneNumber) missingRequiredFields.push("Mobile Number");
 
-    if (!validatePhoneNumber(phoneNumber)) {
+    if (missingRequiredFields.length > 0) {
       showAlert(
         "Error",
-        "Please enter a valid mobile number (format: +947XXXXXXXX).",
+        `Please fill in the following required fields: ${missingRequiredFields.join(", ")}.`,
       );
       return;
     }
 
+    if (!validatePhoneNumber(phoneNumber)) {
+      showAlert("Error", "Please enter a valid Mobile Number.");
+      return;
+    }
+
     if (!validateEmailAddress(email)) {
-      showAlert("Error", "Please enter a valid email address.");
+      showAlert("Error", "Please enter a valid Email Address.");
       return;
     }
 
@@ -767,17 +773,13 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
   };
 
   const handlePhoneNumberChangeWithErrorClear = (text: string) => {
-    if (!touchedFields.phoneNumber) {
-      handleFieldTouch("phoneNumber");
-    }
+    handleFieldTouch("phoneNumber");
 
     handlePhoneNumberChange(text);
   };
 
   const handleEmailChangeWithErrorClear = (text: string) => {
-    if (!touchedFields.email) {
-      handleFieldTouch("email");
-    }
+    handleFieldTouch("email");
 
     if (text.startsWith(" ")) return;
     setEmail(text.toLowerCase());
@@ -868,9 +870,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
               placeholderTextColor="#7F7F7F"
               value={firstName}
               onChangeText={(text) => {
-                if (!touchedFields.firstName) {
-                  handleFieldTouch("firstName");
-                }
+                handleFieldTouch("firstName");
 
                 if (text.startsWith(" ")) return;
                 setFirstName(formatNameInput(text));
@@ -899,9 +899,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
             placeholderTextColor="#7F7F7F"
             value={lastName}
             onChangeText={(text) => {
-              if (!touchedFields.lastName) {
-                handleFieldTouch("lastName");
-              }
+              handleFieldTouch("lastName");
 
               if (text.startsWith(" ")) return;
               setLastName(formatNameInput(text));

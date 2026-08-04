@@ -133,6 +133,18 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     Alert.alert(title, message, [{ text: "OK", onPress: onClose }]);
   };
 
+  const getFieldValidationMessage = (fields: string[]) => {
+    if (fields.length === 0) {
+      return "Please fill in all required fields correctly.";
+    }
+
+    if (fields.length === 1) {
+      return `Please enter a valid ${fields[0]}.`;
+    }
+
+    return `Please correct the following fields: ${fields.join(", ")}.`;
+  };
+
   const isNavigatingToOtpScreen = useRef(false);
 
   const resetForm = () => {
@@ -649,14 +661,15 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     const isLastNameValid = lastName && validateName(lastName);
     const isPhoneValid = phoneNumber && validatePhoneNumber(phoneNumber);
     const isEmailValid = email && validateEmail(email);
+    const invalidFields: string[] = [];
 
-    if (
-      !isTitleValid ||
-      !isFirstNameValid ||
-      !isLastNameValid ||
-      !isPhoneValid ||
-      !isEmailValid
-    ) {
+    if (!isTitleValid) invalidFields.push("Title");
+    if (!firstName || !isFirstNameValid) invalidFields.push("First Name");
+    if (!lastName || !isLastNameValid) invalidFields.push("Last Name");
+    if (!phoneNumber || !isPhoneValid) invalidFields.push("Mobile Number");
+    if (!email || !isEmailValid) invalidFields.push("Email");
+
+    if (invalidFields.length > 0) {
       setTouchedFields((prev) => ({
         ...prev,
         title: true,
@@ -685,7 +698,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       else if (!validateEmail(email))
         setEmailError("Please enter a valid email address");
 
-      showAlert("Error", "Please fill in all required fields correctly.");
+      showAlert("Error", getFieldValidationMessage(invalidFields));
       return;
     }
 
@@ -774,36 +787,53 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       floorNo: true,
     });
 
-    if (
-      !selectedCategory ||
-      !firstName ||
-      !lastName ||
-      !phoneNumber ||
-      !email ||
-      !buildingType
-    ) {
-      showAlert("Error", "Please fill in all required fields.");
+    const missingRequiredFields: string[] = [];
+
+    if (!selectedCategory) missingRequiredFields.push("Title");
+    if (!firstName) missingRequiredFields.push("First Name");
+    if (!lastName) missingRequiredFields.push("Last Name");
+    if (!phoneNumber) missingRequiredFields.push("Mobile Number");
+    if (!email) missingRequiredFields.push("Email");
+    if (!buildingType) missingRequiredFields.push("Building Type");
+
+    if (missingRequiredFields.length > 0) {
+      showAlert(
+        "Error",
+        `Please fill in the following required fields: ${missingRequiredFields.join(", ")}.`,
+      );
       setIsSubmitting(false);
       return;
     }
 
     if (buildingType === "House") {
-      if (!houseNo || !streetName || !city) {
-        showAlert("Error", "Please fill in all required house fields");
+      const missingHouseFields: string[] = [];
+      if (!houseNo) missingHouseFields.push("House Number");
+      if (!streetName) missingHouseFields.push("Street Name");
+      if (!city) missingHouseFields.push("City");
+
+      if (missingHouseFields.length > 0) {
+        showAlert(
+          "Error",
+          `Please fill in the following house fields: ${missingHouseFields.join(", ")}.`,
+        );
         setIsSubmitting(false);
         return;
       }
     } else if (buildingType === "Apartment") {
-      if (
-        !buildingNo ||
-        !buildingName ||
-        !unitNo ||
-        !floorNo ||
-        !houseNo ||
-        !streetName ||
-        !city
-      ) {
-        showAlert("Error", "Please fill in all required apartment fields");
+      const missingApartmentFields: string[] = [];
+      if (!buildingNo) missingApartmentFields.push("Building Number");
+      if (!buildingName) missingApartmentFields.push("Building Name");
+      if (!unitNo) missingApartmentFields.push("Unit Number");
+      if (!floorNo) missingApartmentFields.push("Floor Number");
+      if (!houseNo) missingApartmentFields.push("House Number");
+      if (!streetName) missingApartmentFields.push("Street Name");
+      if (!city) missingApartmentFields.push("City");
+
+      if (missingApartmentFields.length > 0) {
+        showAlert(
+          "Error",
+          `Please fill in the following apartment fields: ${missingApartmentFields.join(", ")}.`,
+        );
         setIsSubmitting(false);
         return;
       }
@@ -817,13 +847,13 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     }
 
     if (!validatePhoneNumber(phoneNumber)) {
-      showAlert("Error", "Please enter a valid mobile number.");
+      showAlert("Error", "Please enter a valid Mobile Number.");
       setIsSubmitting(false);
       return;
     }
 
     if (email && !validateEmail(email)) {
-      showAlert("Error", "Please enter a valid email address.");
+      showAlert("Error", "Please enter a valid Email Address.");
       setIsSubmitting(false);
       return;
     }
@@ -1028,13 +1058,9 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
               placeholderTextColor="#7F7F7F"
               value={firstName}
               onChangeText={(text) => {
+                handleFieldTouch("firstName");
                 if (text.startsWith(" ")) return;
                 setFirstName(formatNameInput(text));
-                if (touchedFields.firstName && !text) {
-                  setFirstNameError("First name is required");
-                } else if (touchedFields.firstName) {
-                  setFirstNameError("");
-                }
               }}
               onBlur={() => {
                 handleFieldTouch("firstName");
@@ -1063,13 +1089,9 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
             placeholderTextColor="#7F7F7F"
             value={lastName}
             onChangeText={(text) => {
+              handleFieldTouch("lastName");
               if (text.startsWith(" ")) return;
               setLastName(formatNameInput(text));
-              if (touchedFields.lastName && !text) {
-                setLastNameError("Last name is required");
-              } else if (touchedFields.lastName) {
-                setLastNameError("");
-              }
             }}
             onBlur={() => {
               handleFieldTouch("lastName");
@@ -1096,7 +1118,10 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
             placeholder="+947XXXXXXXX"
             placeholderTextColor="#7F7F7F"
             value={phoneNumber}
-            onChangeText={handlePhoneNumberChange}
+            onChangeText={(text) => {
+              handleFieldTouch("phoneNumber");
+              handlePhoneNumberChange(text);
+            }}
             onBlur={() => handleFieldTouch("phoneNumber")}
             keyboardType="phone-pad"
             maxLength={12}
@@ -1129,11 +1154,9 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
             autoCorrect={false}
             value={email}
             onChangeText={(text) => {
+              handleFieldTouch("email");
               if (text.startsWith(" ")) return;
               setEmail(text.toLowerCase());
-              if (touchedFields.email) {
-                handleFieldTouch("email");
-              }
             }}
             onBlur={() => {
               handleFieldTouch("email");
@@ -1297,14 +1320,10 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 placeholderTextColor="#7F7F7F"
                 value={houseNo}
                 onChangeText={(text) => {
+                  handleFieldTouch("houseNo");
                   if (text.startsWith(" ")) return;
                   const capitalizedText = capitalizeWords(text);
                   setHouseNo(capitalizedText);
-                  if (touchedFields.houseNo && !text) {
-                    setHouseNoError("House number is required");
-                  } else if (touchedFields.houseNo) {
-                    setHouseNoError("");
-                  }
                 }}
                 onBlur={() => handleFieldTouch("houseNo")}
                 autoCapitalize="words"
@@ -1330,14 +1349,10 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 placeholderTextColor="#7F7F7F"
                 value={streetName}
                 onChangeText={(text) => {
+                  handleFieldTouch("streetName");
                   if (text.startsWith(" ")) return;
                   const capitalizedText = capitalizeWords(text);
                   setStreetName(capitalizedText);
-                  if (touchedFields.streetName && !text) {
-                    setStreetNameError("Street name is required");
-                  } else if (touchedFields.streetName) {
-                    setStreetNameError("");
-                  }
                 }}
                 onBlur={() => handleFieldTouch("streetName")}
                 autoCapitalize="words"
@@ -1370,14 +1385,10 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 placeholderTextColor="#7F7F7F"
                 value={buildingNo}
                 onChangeText={(text) => {
+                  handleFieldTouch("buildingNo");
                   if (text.startsWith(" ")) return;
                   const capitalizedText = capitalizeWords(text);
                   setbuildingNo(capitalizedText);
-                  if (touchedFields.buildingNo && !text) {
-                    setBuildingNoError("Building number is required");
-                  } else if (touchedFields.buildingNo) {
-                    setBuildingNoError("");
-                  }
                 }}
                 onBlur={() => handleFieldTouch("buildingNo")}
                 autoCapitalize="words"
@@ -1403,14 +1414,10 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 placeholderTextColor="#7F7F7F"
                 value={buildingName}
                 onChangeText={(text) => {
+                  handleFieldTouch("buildingName");
                   if (text.startsWith(" ")) return;
                   const capitalizedText = capitalizeWords(text);
                   setbuildingName(capitalizedText);
-                  if (touchedFields.buildingName && !text) {
-                    setBuildingNameError("Building name is required");
-                  } else if (touchedFields.buildingName) {
-                    setBuildingNameError("");
-                  }
                 }}
                 onBlur={() => handleFieldTouch("buildingName")}
                 autoCapitalize="words"
@@ -1436,14 +1443,10 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 placeholderTextColor="#7F7F7F"
                 value={unitNo}
                 onChangeText={(text) => {
+                  handleFieldTouch("unitNo");
                   if (text.startsWith(" ")) return;
                   const capitalizedText = capitalizeWords(text);
                   setunitNo(capitalizedText);
-                  if (touchedFields.unitNo && !text) {
-                    setUnitNoError("Unit number is required");
-                  } else if (touchedFields.unitNo) {
-                    setUnitNoError("");
-                  }
                 }}
                 onBlur={() => handleFieldTouch("unitNo")}
                 autoCapitalize="words"
@@ -1469,14 +1472,10 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 placeholderTextColor="#7F7F7F"
                 value={floorNo}
                 onChangeText={(text) => {
+                  handleFieldTouch("floorNo");
                   if (text.startsWith(" ")) return;
                   const capitalizedText = capitalizeWords(text);
                   setfloorNo(capitalizedText);
-                  if (touchedFields.floorNo && !text) {
-                    setFloorNoError("Floor number is required");
-                  } else if (touchedFields.floorNo) {
-                    setFloorNoError("");
-                  }
                 }}
                 onBlur={() => handleFieldTouch("floorNo")}
                 autoCapitalize="words"
@@ -1497,14 +1496,10 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 placeholderTextColor="#7F7F7F"
                 value={houseNo}
                 onChangeText={(text) => {
+                  handleFieldTouch("houseNo");
                   if (text.startsWith(" ")) return;
                   const capitalizedText = capitalizeWords(text);
                   setHouseNo(capitalizedText);
-                  if (touchedFields.houseNo && !text) {
-                    setHouseNoError("House number is required");
-                  } else if (touchedFields.houseNo) {
-                    setHouseNoError("");
-                  }
                 }}
                 onBlur={() => handleFieldTouch("houseNo")}
                 autoCapitalize="words"
