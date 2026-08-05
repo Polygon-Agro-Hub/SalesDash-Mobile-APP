@@ -906,7 +906,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                   </TouchableOpacity>
                 </View>
               )}
-              {!isCancelDisabled() && (
+              {getActualStatus() === "Ordered" && (
                 <View
                   style={{
                     marginHorizontal: 20,

@@ -213,16 +213,29 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
 
         if (detailResponse.status === 200) {
           const building = detailResponse.data.building;
+          const customer = detailResponse.data.customer;
+          const nearestCity = customer?.nearesCity || "";
+          const isApartment = customer?.buildingType === "Apartment";
 
           if (building) {
+            const houseOrBuildingNo = building.houseNo || building.buildingNo;
+
             const formattedAddress = [
-              building.houseNo,
+              houseOrBuildingNo ? `No.${houseOrBuildingNo}` : null,
               building.streetName,
-              building.city,
+              nearestCity,
             ]
               .filter(Boolean)
               .join(", ");
-            setAddress(formattedAddress || "No Address Found");
+
+            // Only append "..." for apartments, house stays clean
+            setAddress(
+              formattedAddress
+                ? isApartment
+                  ? `${formattedAddress}...`
+                  : formattedAddress
+                : "No Address Found",
+            );
           } else {
             setAddress("No Address Found");
           }
@@ -290,10 +303,6 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
 
       if (response.data.success) {
         const newOrders = response.data.data;
-        // console.log(
-        //   `Fetched ${newOrders.length} orders for page ${page} from customer order list`,
-        // );
-        // console.log("Response data:", response.data);
 
         if (isLoadMore) {
           setOrders((prevOrders) => {
@@ -581,115 +590,150 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
           }}
         >
           {/* Residential Address Card */}
-          <TouchableOpacity
-            onPress={() => {
-              navigation.navigate("ResidentialAddress", {
-                customerId: id,
-              });
-            }}
-            style={{
-              flex: 1,
-              backgroundColor: "#FFFFFF",
-              borderRadius: 20,
-              padding: 14,
-              marginRight: 8,
-              borderBottomWidth: 2,
-              borderBottomColor: "#6938D3",
-              shadowColor: "#EDEDFF",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 1,
-              shadowRadius: 6,
-              elevation: 2,
-            }}
-          >
+          <View style={{ flex: 1, marginRight: 8 }}>
+            {/* Purple curved underline peeking from behind */}
             <View
               style={{
-                width: 34,
-                height: 34,
-                borderRadius: 10,
-                backgroundColor: "#F5F1FD",
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: 10,
+                position: "absolute",
+                top: 6,
+                left: 4,
+                right: 4,
+                bottom: -4,
+                backgroundColor: "#6938D3",
+                borderRadius: 20,
               }}
-            >
-              <Entypo name="location-pin" size={18} color="#6B3BCF" />
-            </View>
-            <Text
-              style={{ fontSize: 13, fontWeight: "bold", color: "#1F2937" }}
-            >
-              Residential Address
-            </Text>
-            <Text
-              numberOfLines={2}
+            />
+            <TouchableOpacity
+              onPress={() => {
+                navigation.navigate("ResidentialAddress", {
+                  customerId: id,
+                });
+              }}
               style={{
-                fontSize: 11,
-                color: "#9CA3AF",
-                marginTop: 4,
-                lineHeight: 15,
+                backgroundColor: "#FFFFFF",
+                borderRadius: 20,
+                padding: 14,
+                borderWidth: 1,
+                borderColor: "#E5E7EB",
+                shadowColor: "#EDEDFF",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 1,
+                shadowRadius: 6,
+                elevation: 2,
+                height: 140,
+                justifyContent: "space-between",
               }}
             >
-              {address}
-            </Text>
-            <View style={{ alignSelf: "flex-end", marginTop: 6 }}>
-              <Entypo name="chevron-right" size={16} color="#6B3BCF" />
-            </View>
-          </TouchableOpacity>
+              <View>
+                <View
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 10,
+                    backgroundColor: "#F5F1FD",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginBottom: 10,
+                  }}
+                >
+                  <Entypo name="location-pin" size={18} color="#6B3BCF" />
+                </View>
+                <Text
+                  style={{ fontSize: 13, fontWeight: "bold", color: "#1F2937" }}
+                >
+                  Residential Address
+                </Text>
+                <Text
+                  numberOfLines={2}
+                  ellipsizeMode="tail"
+                  style={{
+                    fontSize: 11,
+                    color: "#9CA3AF",
+                    marginTop: 4,
+                    lineHeight: 15,
+                  }}
+                >
+                  {address}
+                </Text>
+              </View>
+              <View style={{ alignSelf: "flex-end" }}>
+                <Entypo name="chevron-right" size={16} color="#6B3BCF" />
+              </View>
+            </TouchableOpacity>
+          </View>
 
           {/* Delivery Address Book Card */}
-          <TouchableOpacity
-            onPress={() => {
-              navigation.navigate("DeliveryAddressBooks", {
-                customerId: id,
-              });
-            }}
-            style={{
-              flex: 1,
-              backgroundColor: "#FFFFFF",
-              borderRadius: 20,
-              padding: 14,
-              marginLeft: 8,
-              borderBottomWidth: 2,
-              borderBottomColor: "#6938D3",
-              shadowColor: "#EDEDFF",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 1,
-              shadowRadius: 6,
-              elevation: 2,
-            }}
-          >
+          <View style={{ flex: 1, marginLeft: 8 }}>
+            {/* Purple curved underline peeking from behind */}
             <View
               style={{
-                width: 34,
-                height: 34,
-                borderRadius: 10,
-                backgroundColor: "#F5F1FD",
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: 10,
+                position: "absolute",
+                top: 6,
+                left: 4,
+                right: 4,
+                bottom: -4,
+                backgroundColor: "#6938D3",
+                borderRadius: 20,
               }}
-            >
-              <FontAwesome name="folder-open" size={18} color="#6B3BCF" />
-            </View>
-            <Text
-              style={{ fontSize: 13, fontWeight: "bold", color: "#1F2937" }}
-            >
-              Delivery Address Book
-            </Text>
-            <Text
+            />
+            <TouchableOpacity
+              onPress={() => {
+                navigation.navigate("DeliveryAddressBooks", {
+                  customerId: id,
+                });
+              }}
               style={{
-                fontSize: 11,
-                color: "#9CA3AF",
-                marginTop: 4,
-                lineHeight: 15,
+                backgroundColor: "#FFFFFF",
+                borderRadius: 20,
+                padding: 14,
+                borderWidth: 1,
+                borderColor: "#E5E7EB",
+                shadowColor: "#EDEDFF",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 1,
+                shadowRadius: 4,
+                elevation: 2,
+                height: 140,
+                justifyContent: "space-between",
               }}
             >
-              {savedCount} Saved
-            </Text>
-            <View style={{ alignSelf: "flex-end", marginTop: 6 }}>
-              <Entypo name="chevron-right" size={16} color="#6B3BCF" />
-            </View>
-          </TouchableOpacity>
+              <View>
+                <View
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 10,
+                    backgroundColor: "#F5F1FD",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginBottom: 10,
+                  }}
+                >
+                  <FontAwesome name="folder-open" size={18} color="#6B3BCF" />
+                </View>
+                <Text
+                  style={{ fontSize: 13, fontWeight: "bold", color: "#1F2937" }}
+                >
+                  Delivery Address Book
+                </Text>
+                <Text
+                  numberOfLines={2}
+                  ellipsizeMode="tail"
+                  style={{
+                    fontSize: 11,
+                    color: "#9CA3AF",
+                    marginTop: 4,
+                    lineHeight: 15,
+                  }}
+                >
+                  {savedCount} Saved
+                </Text>
+              </View>
+              <View style={{ alignSelf: "flex-end" }}>
+                <Entypo name="chevron-right" size={16} color="#6B3BCF" />
+              </View>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Negative Credit Balance Warning */}
@@ -725,7 +769,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                   {Math.abs(creditBalance).toLocaleString("en-US", {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
-                  })} )
+                  })}{" "}
+                  )
                 </Text>
               </Text>
               <Text style={{ fontSize: 12, color: "#5E6089", marginTop: 2 }}>
@@ -887,7 +932,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                     marginTop: 12,
                   }}
                 >
-                  {" "}No orders found{" "}
+                  {" "}
+                  No orders found{" "}
                 </Text>
               </ScrollView>
             ) : filteredOrders.length > 0 ? (
