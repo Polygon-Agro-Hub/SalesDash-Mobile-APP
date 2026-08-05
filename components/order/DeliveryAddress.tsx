@@ -60,6 +60,8 @@ interface DeliveryAddressProps {
       selectedTimeSlot?: string;
       paymentMethod?: string;
       isFinalizeImdt?: number;
+      packageId?: number | null;
+      isNewCustomer?: boolean;
     };
   };
 }
@@ -168,8 +170,9 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
 
   const handleGoBack = () => {
     const isPackage = route.params?.isPackage;
+    const isPackageNum = isPackage === 1 || isPackage === "1" ? 1 : 0;
 
-    if (isPackage === 1 || isPackage === "1") {
+    if (isPackageNum === 1) {
       navigation.navigate("OrderScreen" as any, {
         id: route.params?.id,
         customerId: route.params?.customerId,
@@ -177,8 +180,8 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
         number: route.params?.number,
         title: route.params?.title,
         name: route.params?.name,
-        isPackage: route.params?.isPackage,
-        packageId: route.params?.orderData?.packageId ?? undefined,
+        isPackage: 1,
+        packageId: route.params?.orderData?.packageId ?? route.params?.packageId ?? undefined,
         rawPackageItems: route.params?.rawPackageItems,
         rawAdditionalItems: route.params?.rawAdditionalItems,
         orderData: route.params?.orderData,
@@ -196,7 +199,8 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
         number: route.params?.number,
         title: route.params?.title,
         name: route.params?.name,
-        isPackage: route.params?.isPackage,
+        isPackage: 0,
+        packageId: null,
         items: route.params?.items,
         subtotal: route.params?.subtotal,
         discount: route.params?.discount,
@@ -259,8 +263,13 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
     const baseTotal = route.params?.total || 0;
     const computedFullTotal = baseTotal + charge;
 
+    const isPackage = route.params?.isPackage;
+    const isPackageNum = isPackage === 1 || isPackage === "1" ? 1 : 0;
+
     navigation.navigate("ScheduleScreen" as any, {
       ...route.params,
+      isPackage: isPackageNum,
+      packageId: isPackageNum === 1 ? route.params?.packageId : null,
       selectedAddress: selectedAddress,
       deliveryCharge: charge,
       fullTotal: computedFullTotal,

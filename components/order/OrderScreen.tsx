@@ -145,6 +145,7 @@ interface OrderScreenProps {
       title: string;
       number: string;
       customerscreencustomerid: string;
+      isNewCustomer?: boolean;
     };
   };
 }
@@ -159,6 +160,8 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     number,
     customerscreencustomerid,
   } = route.params || {};
+
+  const isPackageNum = Number(isPackage) === 1 ? 1 : 0;
   const [loading, setLoading] = useState<boolean>(false);
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [selectedProduct, setSelectedProduct] = useState<string>("");
@@ -441,7 +444,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
 
       const orderData = {
         userId: route.params?.id,
-        isPackage: isPackage === "1" ? 1 : 0,
+        isPackage: isPackageNum,
         packageId: packageValue ? parseInt(packageValue) : null,
         total:
           packageTotalAmount +
@@ -464,7 +467,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
       navigation.navigate("PackageConfirmation" as any, {
         orderData,
         customerid: route.params?.id,
-        isPackage,
+        isPackage: isPackageNum,
         id,
         title,
         name,
@@ -473,6 +476,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         packageId: packageValue ? parseInt(packageValue) : null,
         rawPackageItems: items,
         rawAdditionalItems: additionalItems,
+        isNewCustomer: route.params?.isNewCustomer,
         total:
           packageTotalAmount +
           additionalItems.reduce((sum, item) => sum + item.totalAmount, 0),
@@ -488,7 +492,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
       setLoading(false);
     }
   }, [
-    isPackage,
+    isPackageNum,
     packageValue,
     additionalItems,
     items,

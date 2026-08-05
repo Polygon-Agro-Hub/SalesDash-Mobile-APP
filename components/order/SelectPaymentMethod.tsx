@@ -123,6 +123,7 @@ interface SelectPaymentMethodProps {
         packageId: number;
         packageTotal: number;
       }>;
+      isNewCustomer?: boolean;
     };
   };
 }
@@ -160,8 +161,11 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
     customerscreencustomerid,
     rawPackageItems,
     rawAdditionalItems,
+    isNewCustomer,
     isFinalizeImdt,
   } = route.params || {};
+
+  const isPackageNum = isPackage === 1 || isPackage === "1" ? 1 : 0;
 
   // Normalize to a strict boolean so both `1` and `true` work
   const isImmediateFinalize = !!isFinalizeImdt;
@@ -278,7 +282,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
       const validationResponse = await axios.post(
         `${environment.API_BASE_URL}api/packages/validate-items`,
         {
-          packageId: isPackage === 1 || isPackage === "1" ? packageId : null,
+          packageId: isPackageNum === 1 ? packageId : null,
           itemIds: uniqueItemIds,
         },
         storedToken
@@ -294,14 +298,24 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
             {
               text: "Go to Cart",
               onPress: () => {
-                navigation.navigate("OrderScreen" as any, {
-                  id,
-                  customerId: customerId || customerid,
-                  title,
-                  name,
-                  number,
-                  customerscreencustomerid,
-                });
+                if (isNewCustomer) {
+                  navigation.navigate("SelectOrderTypeNewCustomer" as any, {
+                    id: Number(id || customerId || customerid),
+                    name,
+                    title,
+                    customerId: customerId || customerid,
+                    phoneNumber: number || "",
+                  });
+                } else {
+                  navigation.navigate("SelectOrderType" as any, {
+                    id,
+                    customerId: customerId || customerid,
+                    title,
+                    name,
+                    number,
+                    customerscreencustomerid,
+                  });
+                }
               },
             },
           ],
@@ -320,10 +334,10 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
     const navigationData = {
       ...route.params,
       paymentMethod: selectedMethod,
-      isPackage: isPackage,
+      isPackage: isPackageNum,
       customerId: customerId || customerid,
       customerid: customerid || customerId,
-      packageId: packageId,
+      packageId: isPackageNum === 1 ? packageId : null,
       orderData: orderData,
       id,
       title,
