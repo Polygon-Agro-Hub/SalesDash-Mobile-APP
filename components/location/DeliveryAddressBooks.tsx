@@ -200,6 +200,19 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
 
   const menuButtonRefs = useRef<{ [key: string]: View | null }>({});
 
+  const sortAddresses = useCallback((items: SavedAddress[]) => {
+    return [...items].sort((a, b) => {
+      const labelA = (a.label || "").trim().toLowerCase();
+      const labelB = (b.label || "").trim().toLowerCase();
+
+      if (labelA === labelB) {
+        return (a.id || 0) - (b.id || 0);
+      }
+
+      return labelA.localeCompare(labelB, undefined, { sensitivity: "base" });
+    });
+  }, []);
+
   const fetchAddresses = useCallback(async () => {
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
@@ -209,7 +222,8 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
           ? { headers: { Authorization: `Bearer ${storedToken}` } }
           : undefined,
       );
-      setAddresses(response.data?.data || []);
+      const fetchedAddresses = response.data?.data || [];
+      setAddresses(sortAddresses(fetchedAddresses));
     } catch (error) {
       console.error("Error fetching address book:", error);
       setAddresses([]);
@@ -298,14 +312,9 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
     });
   };
 
-  const filteredAddresses = addresses
-    .slice()
-    .sort((a, b) =>
-      a.label.localeCompare(b.label, undefined, { sensitivity: "base" }),
-    )
-    .filter((a) =>
-      a.label.toLowerCase().includes(searchQuery.trim().toLowerCase()),
-    );
+  const filteredAddresses = sortAddresses(addresses).filter((a) =>
+    (a.label || "").toLowerCase().includes(searchQuery.trim().toLowerCase()),
+  );
 
   const handleAddNew = () => {
     navigation.navigate("AddDeliveryAddress" as any, { customerId });

@@ -1234,8 +1234,8 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
           >
             <LinearGradient
               colors={
-                cityBlocksSubmit
-                  ? ["#B9AEDD", "#A99BD6"]
+                saving || cityBlocksSubmit
+                  ? ["#D1D5DB", "#9CA3AF"]
                   : ["#7B3FE4", "#5B2CC9"]
               }
               start={{ x: 0, y: 0 }}
