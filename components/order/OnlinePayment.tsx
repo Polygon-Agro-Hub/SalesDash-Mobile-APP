@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -8,8 +8,10 @@ import {
   Platform,
   Alert,
   Image,
+  BackHandler,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
+import { useFocusEffect } from "@react-navigation/native";
 import { RootStackParamList } from "../types/types";
 import { LinearGradient } from "expo-linear-gradient";
 import axios from "axios";
@@ -30,7 +32,6 @@ interface OnlinePaymentProps {
 }
 
 type DeliveryMethod = "app" | "sms";
-
 
 const OnlinePayment: React.FC<OnlinePaymentProps> = ({ navigation, route }) => {
   const {
@@ -94,7 +95,8 @@ const OnlinePayment: React.FC<OnlinePaymentProps> = ({ navigation, route }) => {
       }
 
       if (pendingOrderPayload && pendingOrderPayload.orderData) {
-        pendingOrderPayload.orderData.isPaySMS = selectedMethod === "sms" ? 1 : 0;
+        pendingOrderPayload.orderData.isPaySMS =
+          selectedMethod === "sms" ? 1 : 0;
       }
 
       const orderResponse = await axios.post(
@@ -153,7 +155,40 @@ const OnlinePayment: React.FC<OnlinePaymentProps> = ({ navigation, route }) => {
     }
   };
 
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        navigation.navigate("OrderSummeryScreen" as any, {
+          customerId,
+          customerid: customerid || customerId,
+          customerscreencustomerid,
+          isPackage,
+          total,
+          fullTotal,
+          subtotal,
+          discount,
+          selectedDate,
+          selectedTimeSlot,
+          items,
+          orderItems,
+          rawPackageItems,
+          rawAdditionalItems,
+          selectedAddress,
+          deliveryCharge,
+          isFinalizeImdt,
+          paymentMethod: "Card",
+        });
+        return true;
+      };
 
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress,
+      );
+
+      return () => backHandler.remove();
+    }, [navigation]),
+  );
 
   return (
     <KeyboardAvoidingView
@@ -224,7 +259,6 @@ const OnlinePayment: React.FC<OnlinePaymentProps> = ({ navigation, route }) => {
               style={{
                 alignItems: "center",
                 justifyContent: "center",
-
               }}
             >
               <Image
@@ -259,7 +293,8 @@ const OnlinePayment: React.FC<OnlinePaymentProps> = ({ navigation, route }) => {
                 borderRadius: 16,
                 borderWidth: 1,
                 marginBottom: 12,
-                backgroundColor: selectedMethod === "app" ? "#FAF5FF" : "#FFFFFF",
+                backgroundColor:
+                  selectedMethod === "app" ? "#FAF5FF" : "#FFFFFF",
                 borderColor: selectedMethod === "app" ? "#A855F7" : "#E5E7EB",
               }}
             >
@@ -281,7 +316,9 @@ const OnlinePayment: React.FC<OnlinePaymentProps> = ({ navigation, route }) => {
                 />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 14, fontWeight: "600", color: "#1F2937" }}>
+                <Text
+                  style={{ fontSize: 14, fontWeight: "600", color: "#1F2937" }}
+                >
                   Yes, They have the GoViMart{"\n"}Mobile App
                 </Text>
                 <Text style={{ fontSize: 12, color: "#6B7280", marginTop: 4 }}>
@@ -320,7 +357,8 @@ const OnlinePayment: React.FC<OnlinePaymentProps> = ({ navigation, route }) => {
                 borderRadius: 16,
                 borderWidth: 1,
                 marginBottom: 12,
-                backgroundColor: selectedMethod === "sms" ? "#FAF5FF" : "#FFFFFF",
+                backgroundColor:
+                  selectedMethod === "sms" ? "#FAF5FF" : "#FFFFFF",
                 borderColor: selectedMethod === "sms" ? "#A855F7" : "#E5E7EB",
               }}
             >
@@ -342,7 +380,9 @@ const OnlinePayment: React.FC<OnlinePaymentProps> = ({ navigation, route }) => {
                 />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 14, fontWeight: "600", color: "#1F2937" }}>
+                <Text
+                  style={{ fontSize: 14, fontWeight: "600", color: "#1F2937" }}
+                >
                   No, Send SMS with Payment Link
                 </Text>
                 <Text style={{ fontSize: 12, color: "#6B7280", marginTop: 4 }}>
@@ -387,7 +427,7 @@ const OnlinePayment: React.FC<OnlinePaymentProps> = ({ navigation, route }) => {
                 shadowRadius: 6,
                 elevation: 6,
                 borderRadius: 25,
-                backgroundColor: "transparent", // or "#7B2FF7"
+                backgroundColor: "transparent", 
               }}
             >
               <TouchableOpacity
