@@ -50,16 +50,16 @@ interface Order {
   paymentMethod: string;
   paymentStatus: number;
   orderStatus:
-    | string
-    | {
-        creditPaid?: string;
-        invoiceNumber?: string;
-        isPaid?: number;
-        moneyPaid?: string;
-        paymentMethod?: string;
-        reportStatus?: string | null;
-        status?: string;
-      };
+  | string
+  | {
+    creditPaid?: string;
+    invoiceNumber?: string;
+    isPaid?: number;
+    moneyPaid?: string;
+    paymentMethod?: string;
+    reportStatus?: string | null;
+    status?: string;
+  };
   createdAt: string;
   InvNo: string;
   reportStatus: string;
@@ -494,7 +494,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
       Alert.alert(
         "Error",
         error.response?.data?.message ||
-          "Failed to cancel the order. Please try again.",
+        "Failed to cancel the order. Please try again.",
       );
     } finally {
       setLoading(false);
@@ -589,7 +589,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
           <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
             <View className="mx-6 my-4 ml-8">
               <View className="pl-5 relative">
-                <View className="absolute left-0 top-[10px] bottom-[10px] w-[2px] bg-[#D9D9D9]" />
+                <View className="absolute left-[-1px] top-[10px] bottom-[10px] w-[2px] bg-[#D9D9D9]" />
                 <View className="flex-row items-center mb-10">
                   <View
                     className={`p-1.5 rounded-full absolute -left-8 ${isTimelineItemActive("Ordered") ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]" : "bg-[#D9D9D9] border-4 border-[#EDEDED]"}`}
@@ -689,11 +689,10 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                   status !== "Hold" && (
                     <View className="flex-row items-center">
                       <View
-                        className={`p-1.5 rounded-full absolute -left-8 ${
-                          status === "Delivered"
-                            ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]"
-                            : "bg-[#D9D9D9] border-4 border-[#EDEDED]"
-                        }`}
+                        className={`p-1.5 rounded-full absolute -left-8 ${status === "Delivered"
+                          ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]"
+                          : "bg-[#D9D9D9] border-4 border-[#EDEDED]"
+                          }`}
                       />
                       <Text className="text-[#5E5E5E] font-medium">
                         Order is Delivered
@@ -747,9 +746,9 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
               <Text className="text-black font-medium mb-3">
                 {customerData
                   ? `${customerData.title || ""}. ${customerData.firstName || ""} ${customerData.lastName || ""}`.trim() ||
-                    "Not Available"
+                  "Not Available"
                   : `${order.title || ""}  ${order.firstName || ""} ${order.lastName || ""}`.trim() ||
-                    "Not Available"}
+                  "Not Available"}
               </Text>
               <Text className="text-[#808FA2] font-medium mb-1">
                 Customer's Mobile Number
@@ -774,23 +773,23 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                   ? order.fullAddress
                   : customerData?.buildingDetails
                     ? (() => {
-                        const buildingType =
-                          customerData?.buildingType ||
-                          order.customerInfo?.buildingType ||
-                          order.buildingType;
+                      const buildingType =
+                        customerData?.buildingType ||
+                        order.customerInfo?.buildingType ||
+                        order.buildingType;
 
-                        if (buildingType === "Apartment") {
-                          return formatApartmentAddress(
-                            customerData.buildingDetails,
-                          );
-                        } else if (buildingType === "House") {
-                          return formatHouseAddress(
-                            customerData.buildingDetails,
-                          );
-                        } else {
-                          return "Not Available";
-                        }
-                      })()
+                      if (buildingType === "Apartment") {
+                        return formatApartmentAddress(
+                          customerData.buildingDetails,
+                        );
+                      } else if (buildingType === "House") {
+                        return formatHouseAddress(
+                          customerData.buildingDetails,
+                        );
+                      } else {
+                        return "Not Available";
+                      }
+                    })()
                     : "Not Available"}
               </Text>
             </View>
@@ -906,7 +905,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                   </TouchableOpacity>
                 </View>
               )}
-              {!isCancelDisabled() && (
+              {getActualStatus() === "Ordered" && (
                 <View
                   style={{
                     marginHorizontal: 20,

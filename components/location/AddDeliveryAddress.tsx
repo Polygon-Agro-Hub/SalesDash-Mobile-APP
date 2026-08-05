@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -41,10 +41,10 @@ interface AddDeliveryAddressProps {
 }
 
 const TITLE_OPTIONS = [
-  { label: "Mr.", value: "Mr." },
-  { label: "Ms.", value: "Ms." },
-  { label: "Mrs.", value: "Mrs." },
-  { label: "Dr.", value: "Dr." },
+  { label: "Rev", value: "Rev" },
+  { label: "Mr", value: "Mr" },
+  { label: "Ms", value: "Ms" },
+  { label: "Mrs", value: "Mrs" },
 ];
 
 const BUILDING_TYPES = [
@@ -71,15 +71,20 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
   const [addressLocationError, setAddressLocationError] = useState("");
   const [phoneError1, setPhoneError1] = useState("");
   const [phoneError2, setPhoneError2] = useState("");
-  const [title, setTitle] = useState("Mr.");
+  const [title, setTitle] = useState("");
   const [titleModalVisible, setTitleModalVisible] = useState(false);
   const [billingName, setBillingName] = useState("");
   const [phoneNumber1, setPhoneNumber1] = useState("");
   const [phoneNumber2, setPhoneNumber2] = useState("");
+  const [billingNameError, setBillingNameError] = useState("");
+  const [houseNoError, setHouseNoError] = useState("");
+  const [streetNameError, setStreetNameError] = useState("");
+  const [buildingNoError, setBuildingNoError] = useState("");
+  const [buildingNameError, setBuildingNameError] = useState("");
+  const [unitNoError, setUnitNoError] = useState("");
+  const [floorNoError, setFloorNoError] = useState("");
 
-  const [buildingType, setBuildingType] = useState<string>(
-    addressType || "House",
-  );
+  const [buildingType, setBuildingType] = useState<string>(addressType || "");
   const [buildingTypeModalVisible, setBuildingTypeModalVisible] =
     useState(false);
 
@@ -103,7 +108,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
   const [buildingName, setBuildingName] = useState("");
   const [unitNo, setUnitNo] = useState("");
   const [floorNo, setFloorNo] = useState("");
-
+  const [buildingTypeError, setBuildingTypeError] = useState("");
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [locationName, setLocationName] = useState("");
@@ -133,6 +138,24 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
     return phoneRegex.test(phone);
   };
 
+  const handleRequiredFieldBlur = (
+    value: string,
+    setError: (value: string) => void,
+  ) => {
+    if (!value.trim()) {
+      setError("Required");
+    }
+  };
+
+  const handleRequiredFieldChange = (
+    value: string,
+    setter: (value: string) => void,
+    setError: (value: string) => void,
+  ) => {
+    setter(value);
+    setError(value.trim() ? "" : "Required");
+  };
+
   const formatPhoneNumber = (text: string) => {
     if (text.startsWith(" ")) return text;
 
@@ -148,6 +171,48 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
     }
 
     return text.substring(0, 3) + text.substring(3).replace(/[^0-9]/g, "");
+  };
+
+  const handlePhoneValidationChange = (
+    value: string,
+    field: "phone1" | "phone2",
+  ) => {
+    const nextValue = formatPhoneNumber(value);
+
+    if (field === "phone1") {
+      setPhoneNumber1(nextValue);
+
+      if (!nextValue.trim()) {
+        setPhoneError1("Required");
+        return;
+      }
+
+      if (!validatePhoneNumber(nextValue)) {
+        setPhoneError1(
+          "Please enter a valid mobile number (format: +947XXXXXXXX)",
+        );
+        return;
+      }
+
+      setPhoneError1("");
+      return;
+    }
+
+    setPhoneNumber2(nextValue);
+
+    if (!nextValue.trim()) {
+      setPhoneError2("");
+      return;
+    }
+
+    if (!validatePhoneNumber(nextValue)) {
+      setPhoneError2(
+        "Please enter a valid mobile number (format: +947XXXXXXXX)",
+      );
+      return;
+    }
+
+    setPhoneError2("");
   };
 
   const normalizeLegacyPhoneNumber = (rawNumber: string) => {
@@ -232,11 +297,11 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
       setSaveAddressAs(
         (data.saveAs || "").slice(0, SAVE_ADDRESS_AS_MAX_LENGTH),
       );
-      setTitle(data.billingTitle || "Mr.");
+      setTitle(data.billingTitle || "");
       setBillingName(data.billingName || "");
       setPhoneNumber1(normalizeLegacyPhoneNumber(data.billingPhone1 || ""));
       setPhoneNumber2(normalizeLegacyPhoneNumber(data.billingPhone2 || ""));
-      setBuildingType(data.type || addressType || "House");
+      setBuildingType(data.type || addressType || "");
       setHouseNo(data.houseNo || "");
       setStreetName(data.streetName || "");
       setNearestCity(data.nearestCity || "");
@@ -305,33 +370,106 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
   };
 
   const handleSubmit = async () => {
+    let hasError = false;
+    let alertTitle = "Required";
+    let alertMessage = "Please fill in all required fields.";
+
     setSaveAsError("");
+    setBillingNameError("");
+    setPhoneError1("");
+    setBuildingTypeError("");
+    setHouseNoError("");
+    setStreetNameError("");
+    setBuildingNoError("");
+    setBuildingNameError("");
+    setUnitNoError("");
+    setFloorNoError("");
+    setNearestCityError("");
     setGeoLocationError("");
     setAddressLocationError("");
-    setPhoneError1("");
     setPhoneError2("");
 
-    if (
-      !saveAddressAs.trim() ||
-      !billingName.trim() ||
-      !phoneNumber1.trim() ||
-      !streetName.trim() ||
-      !nearestCity.trim() ||
-      !houseNo.trim()
-    ) {
-      Alert.alert("Missing Fields", "Please fill in all required fields.");
-      return;
+    if (!saveAddressAs.trim()) {
+      setSaveAsError("Required");
+      hasError = true;
+      alertTitle = "Required";
+      alertMessage = "Please enter a save address name.";
+    }
+    if (!buildingType.trim()) {
+      setBuildingTypeError("Required");
+      hasError = true;
+      alertTitle = "Required";
+      alertMessage = "Please select a building type.";
     }
 
-    if (!validatePhoneNumber(phoneNumber1)) {
+    if (!billingName.trim()) {
+      setBillingNameError("Required");
+      hasError = true;
+      alertTitle = "Required";
+      alertMessage = "Please enter the billing name.";
+    }
+
+    if (!phoneNumber1.trim()) {
+      setPhoneError1("Required");
+      hasError = true;
+      alertTitle = "Required";
+      alertMessage = "Phone Number 1 is required.";
+    } else if (!validatePhoneNumber(phoneNumber1)) {
       setPhoneError1(
         "Please enter a valid mobile number (format: +947XXXXXXXX)",
       );
-      Alert.alert(
-        "Invalid Phone Number",
-        "Please enter a valid mobile number (format: +947XXXXXXXX).",
-      );
-      return;
+      hasError = true;
+      alertTitle = "Invalid Phone Number";
+      alertMessage =
+        "Please enter a valid mobile number (format: +947XXXXXXXX).";
+    }
+
+    if (!houseNo.trim()) {
+      setHouseNoError("Required");
+      hasError = true;
+      alertTitle = "Required";
+      alertMessage = "Please enter the house or building number.";
+    }
+
+    if (!streetName.trim()) {
+      setStreetNameError("Required");
+      hasError = true;
+      alertTitle = "Required";
+      alertMessage = "Please enter the street name.";
+    }
+
+    if (!nearestCity.trim()) {
+      setNearestCityError("Required");
+      hasError = true;
+      alertTitle = "Required";
+      alertMessage = "Please select the nearest city.";
+    }
+
+    if (buildingType === "Apartment") {
+      if (!buildingNo.trim()) {
+        setBuildingNoError("Required");
+        hasError = true;
+        alertTitle = "Required";
+        alertMessage = "Please enter the apartment or building number.";
+      }
+      if (!buildingName.trim()) {
+        setBuildingNameError("Required");
+        hasError = true;
+        alertTitle = "Required";
+        alertMessage = "Please enter the apartment or building name.";
+      }
+      if (!unitNo.trim()) {
+        setUnitNoError("Required");
+        hasError = true;
+        alertTitle = "Required";
+        alertMessage = "Please enter the flat or unit number.";
+      }
+      if (!floorNo.trim()) {
+        setFloorNoError("Required");
+        hasError = true;
+        alertTitle = "Required";
+        alertMessage = "Please enter the floor number.";
+      }
     }
 
     const phoneNumber2ToSubmit =
@@ -341,44 +479,23 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
       setPhoneError2(
         "Please enter a valid mobile number (format: +947XXXXXXXX)",
       );
-      Alert.alert(
-        "Invalid Phone Number",
-        "Please enter a valid second mobile number (format: +947XXXXXXXX).",
-      );
-      return;
-    }
-
-    if (
-      buildingType === "Apartment" &&
-      (!buildingNo.trim() ||
-        !buildingName.trim() ||
-        !unitNo.trim() ||
-        !floorNo.trim())
-    ) {
-      Alert.alert(
-        "Missing Fields",
-        "Please fill in all required apartment fields.",
-      );
-      return;
+      hasError = true;
+      alertTitle = "Invalid Phone Number";
+      alertMessage =
+        "Please enter a valid second mobile number (format: +947XXXXXXXX).";
     }
 
     if (canEditNearestCity) {
       if (!isCityKnown) {
         setNearestCityError("Please select a valid city from the list.");
-        Alert.alert(
-          "Invalid City",
-          "Please select a valid city from the list.",
-        );
-        return;
-      }
-
-      if (!isCityDeliverable) {
+        hasError = true;
+        alertTitle = "Invalid City";
+        alertMessage = "Please select a valid city from the list.";
+      } else if (!isCityDeliverable) {
         setNearestCityError("This city is not currently in our delivery area.");
-        Alert.alert(
-          "Not Deliverable",
-          "This city is not currently in our delivery area.",
-        );
-        return;
+        hasError = true;
+        alertTitle = "Not Deliverable";
+        alertMessage = "This city is not currently in our delivery area.";
       }
     }
 
@@ -386,9 +503,31 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
       setGeoLocationError(
         "Geo location is required. Please pin your location before submitting.",
       );
+      hasError = true;
+      alertTitle = "Geo Location Required";
+      alertMessage = "Please add a geo location before submitting.";
+    }
+
+    if (hasError) {
+      const hasSpecificRequiredFieldError =
+        !saveAddressAs.trim() ||
+        !billingName.trim() ||
+        !phoneNumber1.trim() ||
+        !buildingType.trim() ||
+        !houseNo.trim() ||
+        !streetName.trim() ||
+        !nearestCity.trim() ||
+        (buildingType === "Apartment" &&
+          (!buildingNo.trim() ||
+            !buildingName.trim() ||
+            !unitNo.trim() ||
+            !floorNo.trim()));
+
       Alert.alert(
-        "Geo Location Required",
-        "Please add a geo location before submitting.",
+        hasSpecificRequiredFieldError ? "Required" : alertTitle,
+        hasSpecificRequiredFieldError
+          ? "Please fill in all required fields"
+          : alertMessage,
       );
       return;
     }
@@ -438,22 +577,12 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
           if (errorCode === "DUPLICATE_ADDRESS") {
             setAddressLocationError(
               errMsg ||
-              "This address location already exists. Please use a different address.",
+                "This address location already exists. Please use a different address.",
             );
             Alert.alert(
               "Duplicate Address",
               errMsg ||
-              "This address already exists for this customer. Please enter a different address.",
-            );
-          } else if (errorCode === "DUPLICATE_PHONE") {
-            setPhoneError1(
-              errMsg ||
-              "This phone number is already saved in another address.",
-            );
-            Alert.alert(
-              "Duplicate Phone Number",
-              errMsg ||
-              "This phone number is already saved in another address.",
+                "This address already exists for this customer. Please enter a different address.",
             );
           } else {
             setSaveAsError(
@@ -500,6 +629,9 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
           <TouchableOpacity
             onPress={() => {
               Keyboard.dismiss();
+              if (!nearestCity.trim()) {
+                setNearestCityError("Required");
+              }
               setCityModalVisible(true);
             }}
             className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] flex-row items-center justify-between"
@@ -573,18 +705,23 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
         <TextInput
           value={saveAddressAs}
           onChangeText={(text) => {
-            setSaveAddressAs(
-              capitalizeWords(stripLeadingSpace(text).slice(0, SAVE_ADDRESS_AS_MAX_LENGTH)),
+            const nextValue = capitalizeWords(
+              stripLeadingSpace(text).slice(0, SAVE_ADDRESS_AS_MAX_LENGTH),
             );
-            if (saveAsError) setSaveAsError("");
+            handleRequiredFieldChange(
+              nextValue,
+              setSaveAddressAs,
+              setSaveAsError,
+            );
           }}
+          onBlur={() => handleRequiredFieldBlur(saveAddressAs, setSaveAsError)}
           placeholder="e.g. : Home"
           placeholderTextColor="#9CA3AF"
           maxLength={SAVE_ADDRESS_AS_MAX_LENGTH}
           style={{
             borderWidth: saveAsError ? 1 : 0,
             borderColor: saveAsError ? "#DC2626" : "transparent",
-            fontStyle: saveAddressAs ? "normal" : "italic"
+            fontStyle: saveAddressAs ? "normal" : "italic",
           }}
           className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-1"
         />
@@ -602,7 +739,15 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
               onPress={() => setTitleModalVisible(true)}
               className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] flex-row items-center justify-between"
             >
-              <Text className="text-black text-[15px]">{title}</Text>
+              <Text
+  style={{
+    color: title ? "black" : "#9CA3AF",
+    fontSize: 15,
+    fontStyle: title ? "normal" : "italic",
+  }}
+>
+  {title || "Title"}
+</Text>
               <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
             </TouchableOpacity>
           </View>
@@ -611,16 +756,33 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
             <Text className="text-sm mb-2">Billing Name *</Text>
             <TextInput
               value={billingName}
-              onChangeText={(text) => { // Allow only letters and spaces
+              onChangeText={(text) => {
                 const filteredText = text.replace(/[^A-Za-z\s]/g, "");
-                setBillingName(capitalizeWords(filteredText));
+                const nextValue = capitalizeWords(filteredText);
+                handleRequiredFieldChange(
+                  nextValue,
+                  setBillingName,
+                  setBillingNameError,
+                );
               }}
+              onBlur={() =>
+                handleRequiredFieldBlur(billingName, setBillingNameError)
+              }
               placeholder="e.g. : Billing Name"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
               className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black"
-              style={[{ fontStyle: billingName ? "normal" : "italic" }]}
+              style={{
+                borderWidth: billingNameError ? 1 : 0,
+                borderColor: billingNameError ? "#DC2626" : "transparent",
+                fontStyle: billingName ? "normal" : "italic",
+              }}
             />
+            {billingNameError ? (
+              <Text className="text-red-500 text-xs pl-4 mt-1">
+                {billingNameError}
+              </Text>
+            ) : null}
           </View>
         </View>
 
@@ -628,12 +790,18 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
         <Text className="text-sm mb-2">Phone Number - 1 *</Text>
         <TextInput
           value={phoneNumber1}
-          onChangeText={(text) => {
-            setPhoneNumber1(formatPhoneNumber(text));
-            if (phoneError1) setPhoneError1("");
-          }}
+          onChangeText={(text) => handlePhoneValidationChange(text, "phone1")}
           onFocus={() => handlePhoneFocus(phoneNumber1, setPhoneNumber1)}
-          onBlur={() => handlePhoneBlur(phoneNumber1, setPhoneNumber1)}
+          onBlur={() => {
+            handlePhoneBlur(phoneNumber1, setPhoneNumber1);
+            if (!phoneNumber1.trim()) {
+              setPhoneError1("Required");
+            } else if (!validatePhoneNumber(phoneNumber1)) {
+              setPhoneError1(
+                "Please enter a valid mobile number (format: +947XXXXXXXX)",
+              );
+            }
+          }}
           onKeyPress={(e) => handlePhoneKeyPress(e, phoneNumber1)}
           placeholder="e.g. : 077 XXXX XXX"
           placeholderTextColor="#9CA3AF"
@@ -642,8 +810,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
           style={{
             borderWidth: phoneError1 ? 1 : 0,
             borderColor: phoneError1 ? "#DC2626" : "transparent",
-            fontStyle: phoneNumber1 ? "normal" : "italic"
-
+            fontStyle: phoneNumber1 ? "normal" : "italic",
           }}
           className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-1"
         />
@@ -657,12 +824,18 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
         <Text className="text-sm mb-2">Phone Number - 2</Text>
         <TextInput
           value={phoneNumber2}
-          onChangeText={(text) => {
-            setPhoneNumber2(formatPhoneNumber(text));
-            if (phoneError2) setPhoneError2("");
-          }}
+          onChangeText={(text) => handlePhoneValidationChange(text, "phone2")}
           onFocus={() => handlePhoneFocus(phoneNumber2, setPhoneNumber2)}
-          onBlur={() => handlePhoneBlur(phoneNumber2, setPhoneNumber2)}
+          onBlur={() => {
+            handlePhoneBlur(phoneNumber2, setPhoneNumber2);
+            if (phoneNumber2.trim() && !validatePhoneNumber(phoneNumber2)) {
+              setPhoneError2(
+                "Please enter a valid mobile number (format: +947XXXXXXXX)",
+              );
+            } else {
+              setPhoneError2("");
+            }
+          }}
           onKeyPress={(e) => handlePhoneKeyPress(e, phoneNumber2)}
           placeholder="e.g. : 077 XXXX XXX"
           placeholderTextColor="#9CA3AF"
@@ -671,7 +844,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
           style={{
             borderWidth: phoneError2 ? 1 : 0,
             borderColor: phoneError2 ? "#DC2626" : "transparent",
-            fontStyle: phoneNumber2 ? "normal" : "italic"
+            fontStyle: phoneNumber2 ? "normal" : "italic",
           }}
           className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-1"
         />
@@ -685,11 +858,30 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
         <Text className="text-sm mb-2">Building Type *</Text>
         <TouchableOpacity
           onPress={() => setBuildingTypeModalVisible(true)}
-          className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] flex-row items-center justify-between mb-5"
+          className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] flex-row items-center justify-between"
+          style={{
+            borderWidth: buildingTypeError ? 1 : 0,
+            borderColor: buildingTypeError ? "#DC2626" : "transparent",
+          }}
         >
-          <Text className="text-black text-[15px]">{buildingType}</Text>
+          <Text
+  style={{
+    color: buildingType ? "black" : "#9CA3AF",
+    fontSize: 15,
+    fontStyle: buildingType ? "normal" : "italic",
+  }}
+>
+  {buildingType || "Select Building Type"}
+</Text>
           <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
         </TouchableOpacity>
+        {buildingTypeError ? (
+          <Text className="text-red-500 text-xs pl-4 mt-1 mb-4">
+            {buildingTypeError}
+          </Text>
+        ) : (
+          <View className="mb-5" />
+        )}
 
         {/* ===================== APARTMENT FIELDS ===================== */}
         {buildingType === "Apartment" && (
@@ -698,109 +890,177 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
             <TextInput
               value={buildingNo}
               onChangeText={(text) => {
-                setBuildingNo(capitalizeWords(text));
+                const nextValue = capitalizeWords(text);
+                handleRequiredFieldChange(
+                  nextValue,
+                  setBuildingNo,
+                  setBuildingNoError,
+                );
                 if (addressLocationError) setAddressLocationError("");
               }}
+              onBlur={() =>
+                handleRequiredFieldBlur(buildingNo, setBuildingNoError)
+              }
               placeholder="Apartment / Building No"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
               style={{
-                borderWidth: addressLocationError ? 1 : 0,
-                borderColor: addressLocationError ? "#DC2626" : "transparent",
-                fontStyle: buildingNo ? "normal" : "italic"
+                borderWidth: buildingNoError ? 1 : 0,
+                borderColor: buildingNoError ? "#DC2626" : "transparent",
+                fontStyle: buildingNo ? "normal" : "italic",
               }}
-              className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
+              className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-1"
             />
+            {buildingNoError ? (
+              <Text className="text-red-500 text-xs pl-4 mb-4">
+                {buildingNoError}
+              </Text>
+            ) : null}
 
             <Text className="text-sm mb-2">Apartment / Building Name *</Text>
             <TextInput
               value={buildingName}
               onChangeText={(text) => {
-                setBuildingName(capitalizeWords(text));
+                const nextValue = capitalizeWords(text);
+                handleRequiredFieldChange(
+                  nextValue,
+                  setBuildingName,
+                  setBuildingNameError,
+                );
                 if (addressLocationError) setAddressLocationError("");
               }}
+              onBlur={() =>
+                handleRequiredFieldBlur(buildingName, setBuildingNameError)
+              }
               placeholder="Apartment / Building Name"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
               style={{
-                borderWidth: addressLocationError ? 1 : 0,
-                borderColor: addressLocationError ? "#DC2626" : "transparent",
-                fontStyle: buildingName ? "normal" : "italic"
+                borderWidth: buildingNameError ? 1 : 0,
+                borderColor: buildingNameError ? "#DC2626" : "transparent",
+                fontStyle: buildingName ? "normal" : "italic",
               }}
-              className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
+              className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-1"
             />
+            {buildingNameError ? (
+              <Text className="text-red-500 text-xs pl-4 mb-4">
+                {buildingNameError}
+              </Text>
+            ) : null}
 
             <Text className="text-sm mb-2">Flat / Unit Number *</Text>
             <TextInput
               value={unitNo}
               onChangeText={(text) => {
-                setUnitNo(capitalizeWords(text));
+                const nextValue = capitalizeWords(text);
+                handleRequiredFieldChange(nextValue, setUnitNo, setUnitNoError);
                 if (addressLocationError) setAddressLocationError("");
               }}
+              onBlur={() => handleRequiredFieldBlur(unitNo, setUnitNoError)}
               placeholder="e.g. : Building B"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
               style={{
-                borderWidth: addressLocationError ? 1 : 0,
-                borderColor: addressLocationError ? "#DC2626" : "transparent",
-                fontStyle: unitNo ? "normal" : "italic"
+                borderWidth: unitNoError ? 1 : 0,
+                borderColor: unitNoError ? "#DC2626" : "transparent",
+                fontStyle: unitNo ? "normal" : "italic",
               }}
-              className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
+              className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-1"
             />
+            {unitNoError ? (
+              <Text className="text-red-500 text-xs pl-4 mb-4">
+                {unitNoError}
+              </Text>
+            ) : null}
 
             <Text className="text-sm mb-2">Floor Number *</Text>
             <TextInput
               value={floorNo}
               onChangeText={(text) => {
-                setFloorNo(capitalizeWords(text));
+                const nextValue = capitalizeWords(text);
+                handleRequiredFieldChange(
+                  nextValue,
+                  setFloorNo,
+                  setFloorNoError,
+                );
                 if (addressLocationError) setAddressLocationError("");
               }}
+              onBlur={() => handleRequiredFieldBlur(floorNo, setFloorNoError)}
               placeholder="e.g. : 3rd Floor"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
               style={{
-                borderWidth: addressLocationError ? 1 : 0,
-                borderColor: addressLocationError ? "#DC2626" : "transparent",
-                fontStyle: floorNo ? "normal" : "italic"
+                borderWidth: floorNoError ? 1 : 0,
+                borderColor: floorNoError ? "#DC2626" : "transparent",
+                fontStyle: floorNo ? "normal" : "italic",
               }}
-              className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
+              className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-1"
             />
+            {floorNoError ? (
+              <Text className="text-red-500 text-xs pl-4 mb-4">
+                {floorNoError}
+              </Text>
+            ) : null}
 
             <Text className="text-sm mb-2">Building / House No *</Text>
             <TextInput
               value={houseNo}
               onChangeText={(text) => {
-                setHouseNo(capitalizeWords(text));
+                const nextValue = capitalizeWords(text);
+                handleRequiredFieldChange(
+                  nextValue,
+                  setHouseNo,
+                  setHouseNoError,
+                );
                 if (addressLocationError) setAddressLocationError("");
               }}
+              onBlur={() => handleRequiredFieldBlur(houseNo, setHouseNoError)}
               placeholder="e.g. : 14"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
               style={{
-                borderWidth: addressLocationError ? 1 : 0,
-                borderColor: addressLocationError ? "#DC2626" : "transparent",
-                fontStyle: houseNo ? "normal" : "italic"
+                borderWidth: houseNoError ? 1 : 0,
+                borderColor: houseNoError ? "#DC2626" : "transparent",
+                fontStyle: houseNo ? "normal" : "italic",
               }}
-              className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
+              className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-1"
             />
+            {houseNoError ? (
+              <Text className="text-red-500 text-xs pl-4 mb-4">
+                {houseNoError}
+              </Text>
+            ) : null}
 
             <Text className="text-sm mb-2">Street Name *</Text>
             <TextInput
               value={streetName}
               onChangeText={(text) => {
-                setStreetName(capitalizeWords(text));
+                const nextValue = capitalizeWords(text);
+                handleRequiredFieldChange(
+                  nextValue,
+                  setStreetName,
+                  setStreetNameError,
+                );
                 if (addressLocationError) setAddressLocationError("");
               }}
+              onBlur={() =>
+                handleRequiredFieldBlur(streetName, setStreetNameError)
+              }
               placeholder="Street Name"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
               style={{
-                borderWidth: addressLocationError ? 1 : 0,
-                borderColor: addressLocationError ? "#DC2626" : "transparent",
-                fontStyle: streetName ? "normal" : "italic"
+                borderWidth: streetNameError ? 1 : 0,
+                borderColor: streetNameError ? "#DC2626" : "transparent",
+                fontStyle: streetName ? "normal" : "italic",
               }}
-              className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
+              className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-1"
             />
+            {streetNameError ? (
+              <Text className="text-red-500 text-xs pl-4 mb-4">
+                {streetNameError}
+              </Text>
+            ) : null}
 
             {/* Duplicate address location error */}
             {addressLocationError ? (
@@ -820,37 +1080,57 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
             <TextInput
               value={houseNo}
               onChangeText={(text) => {
-                setHouseNo(capitalizeWords(text));
+                const nextValue = capitalizeWords(text);
+                handleRequiredFieldChange(
+                  nextValue,
+                  setHouseNo,
+                  setHouseNoError,
+                );
                 if (addressLocationError) setAddressLocationError("");
               }}
+              onBlur={() => handleRequiredFieldBlur(houseNo, setHouseNoError)}
               placeholder="e.g. : 14/B"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
               style={{
-                borderWidth: addressLocationError ? 1 : 0,
-                borderColor: addressLocationError ? "#DC2626" : "transparent",
-                fontStyle: houseNo ? "normal" : "italic"
+                borderWidth: houseNoError ? 1 : 0,
+                borderColor: houseNoError ? "#DC2626" : "transparent",
+                fontStyle: houseNo ? "normal" : "italic",
               }}
-              className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
+              className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-1"
             />
+            {houseNoError ? (
+              <Text className="text-red-500 text-xs pl-4 mb-4">
+                {houseNoError}
+              </Text>
+            ) : null}
 
             <Text className="text-sm mb-2">Street Name *</Text>
             <TextInput
               value={streetName}
               onChangeText={(text) => {
                 setStreetName(capitalizeWords(text));
+                if (streetNameError) setStreetNameError("");
                 if (addressLocationError) setAddressLocationError("");
               }}
+              onBlur={() =>
+                handleRequiredFieldBlur(streetName, setStreetNameError)
+              }
               placeholder="Street Name"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
               style={{
-                borderWidth: addressLocationError ? 1 : 0,
-                borderColor: addressLocationError ? "#DC2626" : "transparent",
-                fontStyle: streetName ? "normal" : "italic"
+                borderWidth: streetNameError ? 1 : 0,
+                borderColor: streetNameError ? "#DC2626" : "transparent",
+                fontStyle: streetName ? "normal" : "italic",
               }}
-              className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
+              className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] text-[15px] text-black mb-1"
             />
+            {streetNameError ? (
+              <Text className="text-red-500 text-xs pl-4 mb-4">
+                {streetNameError}
+              </Text>
+            ) : null}
 
             {/* Duplicate address location error */}
             {addressLocationError ? (
@@ -942,7 +1222,10 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
             disabled={saving || cityBlocksSubmit}
             activeOpacity={0.85}
             style={{
-              borderRadius: 999, overflow: "hidden", height: 50, shadowColor: "#000000",
+              borderRadius: 999,
+              overflow: "hidden",
+              height: 50,
+              shadowColor: "#000000",
               shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.2,
               shadowRadius: 4,
@@ -951,8 +1234,8 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
           >
             <LinearGradient
               colors={
-                cityBlocksSubmit
-                  ? ["#B9AEDD", "#A99BD6"]
+                saving || cityBlocksSubmit
+                  ? ["#D1D5DB", "#9CA3AF"]
                   : ["#7B3FE4", "#5B2CC9"]
               }
               start={{ x: 0, y: 0 }}
@@ -1002,7 +1285,10 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
         data={BUILDING_TYPES}
         selectedItems={buildingType ? [buildingType] : []}
         onSelect={(items) => {
-          if (items.length > 0) setBuildingType(items[0]);
+          if (items.length > 0) {
+            setBuildingType(items[0]);
+            setBuildingTypeError("");
+          }
           setBuildingTypeModalVisible(false);
         }}
         searchPlaceholder="Search building type..."

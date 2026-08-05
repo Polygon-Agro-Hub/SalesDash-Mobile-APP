@@ -361,6 +361,11 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         return;
       }
 
+      // if OTP sent successfully, store the referenceId and navigate to OTP confirmation screen
+      if (otpSendResponse.data?.referenceId) {
+         Alert.alert("Success", "OTP sent successfully.");
+      }
+
       await AsyncStorage.setItem(
         "referenceId",
         otpSendResponse.data.referenceId,
@@ -417,7 +422,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
       const address = route.params.selectedAddress;
       const formatted =
         address.type === "Apartment"
-          ? `${address.buildingNo || ""} ${address.buildingName || ""}, Flat ${address.unitNo || ""}, ${address.floorNo ? address.floorNo + " Floor, " : ""}${address.houseNo ? "House " + address.houseNo + ", " : ""}${address.streetName || ""}, ${address.city || ""}`
+          ? `${address.buildingNo || ""}, ${address.buildingName || ""}, ${address.unitNo || ""}, ${address.floorNo ? address.floorNo + ", " : ""}${address.houseNo ? "House " + address.houseNo + ", " : ""}${address.streetName || ""}, ${address.city || ""}`
           : `${address.houseNo || ""}, ${address.streetName || ""}, ${address.city || ""}`;
       const cleaned = formatted.replace(/\s+/g, " ").trim();
 

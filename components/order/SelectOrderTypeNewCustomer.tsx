@@ -47,6 +47,7 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({
       title: title,
       number: phoneNumber,
       customerscreencustomerid: customerId,
+      isNewCustomer: true,
     });
   };
 
@@ -59,6 +60,7 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({
       title: title,
       number: phoneNumber,
       customerscreencustomerid: customerId,
+      isNewCustomer: true,
     });
   };
 

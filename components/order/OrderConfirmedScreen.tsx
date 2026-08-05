@@ -20,7 +20,6 @@ import {
 } from "react-native-responsive-screen";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Print from "expo-print";
-import * as Sharing from "expo-sharing";
 import { Asset } from "expo-asset";
 import * as FileSystem from "expo-file-system/legacy";
 import axios from "axios";
@@ -279,7 +278,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
   const convertLogoToBase64 = async () => {
     try {
       const asset = Asset.fromModule(
-        require("../../assets/images/order/logo.webp"),
+        require("../../assets/images/order/logo.png"),
       );
       if (!asset.downloaded) await asset.downloadAsync();
 
@@ -293,7 +292,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
     }
   };
 
-  const handleDownloadAndShareInvoice = async () => {
+  const handleDownloadInvoice = async () => {
     if (isDownloading) return;
 
     try {
@@ -360,9 +359,8 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         const onlineRowHtml =
           moneyPaid > 0
             ? `
-          <div style="display: flex; justify-content: space-between; margin-right: 20px; margin-top: ${
-            creditPaid > 0 ? "2px" : "10px"
-          };">
+          <div style="display: flex; justify-content: space-between; margin-right: 20px; margin-top: ${creditPaid > 0 ? "2px" : "10px"
+            };">
             <p style="color: #16A34A; font-weight: 600; font-size: 14px;">Online Transferred Amount</p>
             <p style="color: #16A34A; font-weight: 600; font-size: 14px;">Rs. ${moneyPaid
               .toFixed(2)
@@ -411,13 +409,12 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
 
         paymentStatusHtml = `
           ${creditRowHtml}
-          <div style="display: flex; justify-content: space-between; margin-right: 20px; margin-top: ${
-            creditPaid > 0 ? "2px" : "10px"
+          <div style="display: flex; justify-content: space-between; margin-right: 20px; margin-top: ${creditPaid > 0 ? "2px" : "10px"
           };">
             <p style="color: #EA9A3E; font-weight: 600; font-size: 14px;">${label}</p>
             <p style="color: #EA9A3E; font-weight: 600; font-size: 14px;">Rs. ${cashPendingAmount
-              .toFixed(2)
-              .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
+            .toFixed(2)
+            .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
           </div>
           ${warningHtml}
         `;
@@ -615,8 +612,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
           <p class="headerp"> +94 ${order?.customerInfo?.phoneNumber || ""}</p>
           <p class="headerp">${customerData?.email || ""}</p>
               <div style="margin-top: 10px">
-      ${
-        order?.customerInfo?.buildingType === "Apartment"
+      ${order?.customerInfo?.buildingType === "Apartment"
           ? `
   <p class="bold">Apartment Address :</p>
   ${order?.buildingDetails?.buildingNo ? `<p class="headerp"><span class="label">No : </span><span class="value">${order.buildingDetails.buildingNo},</span></p>` : ""}
@@ -633,7 +629,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
   ${order?.buildingDetails?.streetName ? `<p class="headerp"><span class="label">Street Name : </span><span class="value">${order.buildingDetails.streetName},</span></p>` : ""}
   ${order?.buildingDetails?.city ? `<p class="headerp"><span class="label">City : </span><span class="value">${order.buildingDetails.city}</span></p>` : ""}
     `
-      }
+        }
     </div>
           
         </div>
@@ -679,8 +675,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         </div>
       </div>
 
-      ${
-        order?.isPackage === 1
+      ${order?.isPackage === 1
           ? `
       <!-- Package Section -->
       <div class="section" style="margin-top: 40px; margin-bottom: 30px">
@@ -693,7 +688,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
             padding-bottom: 10px;
           "
         >
-          <div class="bold">${order?.packageInfo?.displayName || "Package"} (${order?.packageInfo?.packageDetails?.reduce((sum, item) => sum + (item.qty || 0), 0) || 0} Items)</div>
+          <div class="bold">${order?.packageInfo?.displayName || "Package"} (${String(order?.packageInfo?.packageDetails?.reduce((sum, item) => sum + (item.qty || 0), 0) || 0).padStart(2, "0")} Items)</div>
           <div style="font-weight: 550; font-size: 16px">Rs. ${(packagePrice + packingFee + serviceFee).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</div>
         </div>
         <div style="border: 1px solid #ddd; border-radius: 10px">
@@ -710,10 +705,9 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         </div>
       </div>`
           : ""
-      }
+        }
 
-      ${
-        order?.additionalItems && order.additionalItems.length > 0
+      ${order?.additionalItems && order.additionalItems.length > 0
           ? `
       <!-- Additional Items Section -->
       <div class="section 4">
@@ -727,7 +721,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
             margin-top:10px
           "
         >
-         <div class="bold">${order?.isPackage === 1 ? "Additional Items" : "Custom Items"} (${order?.additionalItems?.length || 0} ${order?.additionalItems?.length === 1 ? "Item" : "Items"})</div>
+         <div class="bold">${order?.isPackage === 1 ? "Additional Items" : "Custom Items"} (${String(order?.additionalItems?.length || 0).padStart(2, "0")} ${order?.additionalItems?.length === 1 ? "Item" : "Items"})</div>
     <div style="font-weight: 550; font-size: 16px">Rs. ${additionalItemsTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</div>
         </div>
         <div style="border: 1px solid #ddd; border-radius: 10px">
@@ -746,40 +740,37 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         </div>
       </div>`
           : ""
-      }
+        }
 
       <!-- Grand Total Section -->
       <div class="section" style="margin-top: 30px">
         <div style="margin-bottom: 20px; border-bottom: 1px solid #ccc;padding-bottom: 10px;" >
           <div class="bold">Grand Total for all items</div>
         </div>
-        ${
-          order?.isPackage === 1
-            ? `
+        ${order?.isPackage === 1
+          ? `
         <div style="display: flex; justify-content: space-between; margin-right: 20px; " class="ptext" >
           <p>${order?.packageInfo?.displayName || "Package"}</p>
           <p>Rs. ${(packagePrice + packingFee + serviceFee).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
         </div>`
-            : ""
+          : ""
         }
-        ${
-          order?.additionalItems && order.additionalItems.length > 0
-            ? `
+        ${order?.additionalItems && order.additionalItems.length > 0
+          ? `
         <div style=" display: flex; justify-content: space-between; margin-right: 20px;" class="ptext" > 
           <p>${order?.isPackage === 1 ? "Additional Items" : "Custom Items"}</p>
           <p>Rs. ${additionalItemsTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
         </div>`
-            : ""
+          : ""
         }
-         ${
-           order?.isPackage === 0
-             ? `
+         ${order?.isPackage === 0
+          ? `
         <div style="display: flex; justify-content: space-between; margin-right: 20px; " class="ptext" >
           <p>Service Fee</p>
           <p>Rs. 180.00</p>
         </div>`
-             : ""
-         }
+          : ""
+        }
        
         <div style="display: flex; justify-content: space-between; margin-right: 20px;" class="ptext" >
           <p>Discount</p>
@@ -830,39 +821,55 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
 </html>
       `;
 
-      const { uri: pdfUri } = await Print.printToFileAsync({
+      const { base64: pdfBase64 } = await Print.printToFileAsync({
         html: htmlContent,
         width: 595,
-        base64: false,
+        base64: true,
       });
 
       const fileName = `Invoice_${invoiceNumber}.pdf`;
-      const tempFilePath = `${(FileSystem as any).cacheDirectory}${fileName}`;
+      const filePath = `${FileSystem.documentDirectory}${fileName}`;
 
-      await FileSystem.copyAsync({
-        from: pdfUri,
-        to: tempFilePath,
-      });
+      // await FileSystem.writeAsStringAsync(filePath, pdfBase64, {
+      //   encoding: FileSystem.EncodingType.Base64,
+      // });
 
-      const shareOptions = {
-        mimeType: "application/pdf",
-        dialogTitle: "Share Invoice",
-        UTI: "com.adobe.pdf",
-      };
+      // Alert.alert(
+      //   "Invoice Downloaded",
+      //   `Invoice saved to your device.`,
+      // );
 
       if (Platform.OS === "android") {
-        if (await Sharing.isAvailableAsync()) {
-          await Sharing.shareAsync(tempFilePath, shareOptions);
-        } else {
-          Alert.alert("Error", "Sharing is not available on this device");
+        const permissions =
+          await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+
+        if (!permissions.granted) {
+          Alert.alert("Permission denied", "Please allow access to save the PDF.");
+          return;
         }
+
+        const fileUri =
+          await FileSystem.StorageAccessFramework.createFileAsync(
+            permissions.directoryUri,
+            `Invoice_${invoiceNumber}.pdf`,
+            "application/pdf"
+          );
+
+        await FileSystem.writeAsStringAsync(fileUri, pdfBase64!, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+
+        Alert.alert("Success", "Invoice downloaded successfully.");
       } else {
-        if (await Sharing.isAvailableAsync()) {
-          await Sharing.shareAsync(tempFilePath, shareOptions);
-        } else {
-          Alert.alert("Error", "Sharing is not available on this device");
-        }
+        const filePath = `${FileSystem.documentDirectory}Invoice_${invoiceNumber}.pdf`;
+
+        await FileSystem.writeAsStringAsync(filePath, pdfBase64!, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+
+        Alert.alert("Success", "Invoice saved successfully.");
       }
+
     } catch (error) {
       console.error("Invoice generation error:", error);
       Alert.alert("Error", "Failed to generate invoice. Please try again.");
@@ -901,7 +908,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
                 style={{ fontSize: 20 }}
                 className="text-black text-center font-bold"
               >
-                Order is Confirmed!
+                Order is Successful!
               </Text>
               <Text
                 style={{ fontSize: 18 }}
@@ -940,7 +947,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
               }}
             >
               <TouchableOpacity
-                onPress={handleDownloadAndShareInvoice}
+                onPress={handleDownloadInvoice}
                 disabled={isDownloading}
                 activeOpacity={0.85}
               >

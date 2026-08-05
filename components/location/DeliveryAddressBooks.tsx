@@ -200,6 +200,19 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
 
   const menuButtonRefs = useRef<{ [key: string]: View | null }>({});
 
+  const sortAddresses = useCallback((items: SavedAddress[]) => {
+    return [...items].sort((a, b) => {
+      const labelA = (a.label || "").trim().toLowerCase();
+      const labelB = (b.label || "").trim().toLowerCase();
+
+      if (labelA === labelB) {
+        return (a.id || 0) - (b.id || 0);
+      }
+
+      return labelA.localeCompare(labelB, undefined, { sensitivity: "base" });
+    });
+  }, []);
+
   const fetchAddresses = useCallback(async () => {
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
@@ -209,7 +222,8 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
           ? { headers: { Authorization: `Bearer ${storedToken}` } }
           : undefined,
       );
-      setAddresses(response.data?.data || []);
+      const fetchedAddresses = response.data?.data || [];
+      setAddresses(sortAddresses(fetchedAddresses));
     } catch (error) {
       console.error("Error fetching address book:", error);
       setAddresses([]);
@@ -234,9 +248,10 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
     if (buttonRef) {
       buttonRef.measure((_fx, _fy, width, height, pageX, pageY) => {
         const screenWidth = Dimensions.get("window").width;
+        const rightOffset = Math.max(12, screenWidth - (pageX + width) - 10);
         setMenuPosition({
-          top: pageY + height + 4,
-          right: screenWidth - (pageX + width),
+          top: Math.max(8, pageY - 5),
+          right: rightOffset,
         });
         setSelectedAddress(address);
         setMenuVisible(true);
@@ -297,14 +312,9 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
     });
   };
 
-  const filteredAddresses = addresses
-    .slice()
-    .sort((a, b) =>
-      a.label.localeCompare(b.label, undefined, { sensitivity: "base" }),
-    )
-    .filter((a) =>
-      a.label.toLowerCase().includes(searchQuery.trim().toLowerCase()),
-    );
+  const filteredAddresses = sortAddresses(addresses).filter((a) =>
+    (a.label || "").toLowerCase().includes(searchQuery.trim().toLowerCase()),
+  );
 
   const handleAddNew = () => {
     navigation.navigate("AddDeliveryAddress" as any, { customerId });
@@ -444,13 +454,14 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
               right: menuPosition.right,
               backgroundColor: "white",
               borderRadius: 12,
-              minWidth: 160,
+              minWidth: 135,
               paddingVertical: 4,
               shadowColor: "#000",
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.15,
               shadowRadius: 10,
               elevation: 8,
+              
             }}
           >
             <TouchableOpacity
