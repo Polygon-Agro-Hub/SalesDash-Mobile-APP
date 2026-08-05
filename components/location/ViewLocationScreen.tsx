@@ -1,14 +1,15 @@
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { View, BackHandler } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RouteProp, useFocusEffect } from "@react-navigation/native";
-import { WebView } from "react-native-webview";
+import { WebView, WebViewMessageEvent } from "react-native-webview";
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from "react-native-responsive-screen";
 import { RootStackParamList } from "../types/types";
 import CustomHeader from "../common/CustomHeader";
+import LoadingPage from "../common/LoadingPage";
 
 type ViewLocationScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -33,6 +34,11 @@ const ViewLocationScreen: React.FC<ViewLocationScreenProps> = ({
 
   // Get location data from params
   const { latitude, longitude, locationName } = route.params;
+
+  // Loading state — stays true until Leaflet reports the tile layer
+  // has finished loading, or the safety timeout below fires.
+  const [mapLoading, setMapLoading] = useState(true);
+  const safetyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -67,6 +73,30 @@ const ViewLocationScreen: React.FC<ViewLocationScreenProps> = ({
     }
   }, []);
 
+  // Safety net — if the 'mapLoaded' message never arrives (slow/broken
+  // network for tile fetches), stop showing the loader anyway after 8s
+  // so the user isn't stuck staring at a spinner forever.
+  useEffect(() => {
+    safetyTimeoutRef.current = setTimeout(() => {
+      setMapLoading(false);
+    }, 8000);
+
+    return () => {
+      if (safetyTimeoutRef.current) {
+        clearTimeout(safetyTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleWebViewMessage = useCallback((event: WebViewMessageEvent) => {
+    if (event.nativeEvent.data === "mapLoaded") {
+      if (safetyTimeoutRef.current) {
+        clearTimeout(safetyTimeoutRef.current);
+      }
+      setMapLoading(false);
+    }
+  }, []);
+
   const leafletHTML = `
     <!DOCTYPE html>
     <html>
@@ -94,10 +124,27 @@ const ViewLocationScreen: React.FC<ViewLocationScreenProps> = ({
         var map = L.map('map').setView([${lat}, ${lng}], 13);
         
         // Add tile layer
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        var tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '© OpenStreetMap contributors',
           maxZoom: 19
         }).addTo(map);
+
+        // Tell React Native once all currently-visible tiles have
+        // finished loading — this is the point the map is actually
+        // "fully loaded" from the user's perspective.
+        tileLayer.on('load', function () {
+          if (window.ReactNativeWebView) {
+            window.ReactNativeWebView.postMessage('mapLoaded');
+          }
+        });
+
+        // Fallback in case the 'load' event doesn't fire (e.g. tiles
+        // load instantly from cache before the listener attaches)
+        setTimeout(function () {
+          if (window.ReactNativeWebView) {
+            window.ReactNativeWebView.postMessage('mapLoaded');
+          }
+        }, 3000);
         
         // Add marker
         var marker = L.marker([${lat}, ${lng}]).addTo(map);
@@ -173,8 +220,19 @@ const ViewLocationScreen: React.FC<ViewLocationScreenProps> = ({
             javaScriptEnabled={true}
             domStorageEnabled={true}
             scrollEnabled={false}
-            style={{ flex: 1 }}
+            onMessage={handleWebViewMessage}
+            style={{ flex: 1, opacity: mapLoading ? 0 : 1 }}
           />
+
+          {mapLoading && (
+            <View >
+              <LoadingPage
+                fullScreen
+                message="Loading map..."
+                containerStyle={{ backgroundColor: "#FFFFFF" }}
+              />
+            </View>
+          )}
         </View>
       </View>
     </View>

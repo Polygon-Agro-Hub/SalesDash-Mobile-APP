@@ -120,36 +120,43 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
     fetchCityCharges();
   }, []);
 
-  const fetchAddressBook = useCallback(
-    async (isRefresh = false) => {
-      try {
-        if (isRefresh) setRefreshing(true);
-        else setLoading(true);
+const fetchAddressBook = useCallback(
+  async (isRefresh = false) => {
+    try {
+      if (isRefresh) setRefreshing(true);
+      else setLoading(true);
 
-        const storedToken = await AsyncStorage.getItem("authToken");
-        const response = await axios.get<{ data: AddressBookItem[] }>(
-          `${environment.API_BASE_URL}api/customer/get-address-book/${id}`,
-          storedToken
-            ? { headers: { Authorization: `Bearer ${storedToken}` } }
-            : undefined,
-        );
+      const storedToken = await AsyncStorage.getItem("authToken");
+      const response = await axios.get<{ data: AddressBookItem[] }>(
+        `${environment.API_BASE_URL}api/customer/get-address-book/${id}`,
+        storedToken
+          ? { headers: { Authorization: `Bearer ${storedToken}` } }
+          : undefined,
+      );
 
-        const data = response.data?.data || [];
-        setAddresses(data);
+      const data = response.data?.data || [];
 
-        setSelectedId((prev) => {
-          if (prev && data.some((a) => a.id === prev)) return prev;
-          return data.length > 0 ? data[0].id : null;
-        });
-      } catch (error) {
-        console.error("Error fetching address book:", error);
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [customerId],
-  );
+      const sortedData = [...data].sort((a, b) =>
+        (a.label || "").localeCompare(b.label || "", undefined, {
+          sensitivity: "base",
+        }),
+      );
+
+      setAddresses(sortedData);
+
+      setSelectedId((prev) => {
+        if (prev && sortedData.some((a) => a.id === prev)) return prev;
+        return sortedData.length > 0 ? sortedData[0].id : null;
+      });
+    } catch (error) {
+      console.error("Error fetching address book:", error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  },
+  [customerId],
+);
 
   useFocusEffect(
     useCallback(() => {
@@ -515,10 +522,10 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
       {!onSelectAddress && !loading && (
         <View className="px-6 py-4 bg-white border-t border-gray-100 flex-row items-center justify-between pb-8 shadow-lg">
           <View>
-            <Text className="text-[12px] text-gray-500 font-medium">
+            <Text className=" text-[#5C5C5C] font-semibold">
               Delivery Fee : + Rs. {deliveryFee.toFixed(2)}
             </Text>
-            <Text className="text-[16px] font-bold text-black mt-1">
+            <Text className="text-base font-semibold text-black mt-2">
               Full Total : Rs.{" "}
               {formatCurrency((route.params?.total || 0) + deliveryFee)}
             </Text>
@@ -533,7 +540,7 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.2,
                 shadowRadius: 4,
-                elevation: 10,
+                elevation: 6,
             }}
           >
             <Text className="text-white font-bold text-lg mr-2">Confirm</Text>

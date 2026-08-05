@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { View, Text, Modal, Animated, TouchableOpacity, Alert } from "react-native";
+import { View, Text, Modal, Animated, TouchableOpacity, Alert, DimensionValue } from "react-native";
 import { FontAwesome5, Ionicons } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
 
@@ -17,6 +17,7 @@ interface AlertModalProps {
   autoClose?: boolean;
   showOkButton?: boolean;
   okButtonText?: string;
+  buttonWidth?: DimensionValue;
 }
 
 export const AlertModal: React.FC<AlertModalProps> = ({
@@ -33,6 +34,7 @@ export const AlertModal: React.FC<AlertModalProps> = ({
   autoClose = true,
   showOkButton,
   okButtonText = "OK",
+  buttonWidth,
 }) => {
   const isOkButtonVisible = showOkButton !== undefined ? showOkButton : !autoClose;
   const loadingBarWidth = new Animated.Value(1); // 1 = 100%
@@ -95,6 +97,14 @@ export const AlertModal: React.FC<AlertModalProps> = ({
     return title;
   };
 
+  const buttonShadow = {
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  };
+
   return (
     <Modal 
       visible={visible} 
@@ -126,6 +136,7 @@ export const AlertModal: React.FC<AlertModalProps> = ({
                 onPress={onRescan}
                 activeOpacity={0.8}
                 className="bg-[#6E3DD1] py-3 px-6 rounded-full flex-row items-center justify-center gap-x-2 shadow-md"
+                style={buttonShadow}
               >
                 <FontAwesome5 name="undo" size={18} color="white" />
                 <Text className="text-white font-bold text-base">Re-Scan</Text>
@@ -138,6 +149,7 @@ export const AlertModal: React.FC<AlertModalProps> = ({
                 onPress={onOpenOngoing}
                 activeOpacity={0.8}
                 className="bg-[#6E3DD1] py-3 px-6 rounded-full flex-row items-center justify-center gap-x-2 shadow-md"
+                style={buttonShadow}
               >
                 <Text className="text-white font-bold text-base">
                   Open Ongoing Activity
@@ -150,6 +162,10 @@ export const AlertModal: React.FC<AlertModalProps> = ({
                 onPress={onClose}
                 activeOpacity={0.8}
                 className="bg-[#6E3DD1] py-3 px-6 rounded-full flex-row items-center justify-center gap-x-2 shadow-md"
+                style={[
+                  buttonShadow,
+                  buttonWidth ? { width: buttonWidth, alignSelf: "center" } : {}
+                ]}
               >
                 <Text className="text-white font-bold text-base">{okButtonText}</Text>
               </TouchableOpacity>

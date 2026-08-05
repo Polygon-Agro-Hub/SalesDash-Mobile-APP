@@ -67,7 +67,6 @@ const CropRow = React.memo(
           borderBottomColor: "#F3F4F6",
         }}
       >
-        {/* Crop image + name */}
         <View className="flex-row items-center gap-4 flex-1">
           <Image
             source={{ uri: item.image }}
@@ -82,7 +81,6 @@ const CropRow = React.memo(
           </Text>
         </View>
 
-        {/* Include / Exclude toggles */}
         <View className="flex-row items-center" style={{ gap: 20 }}>
           <ToggleSwitch
             isOn={isIncluded}
@@ -119,6 +117,16 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
   const [selectedExcludeCrops, setSelectedExcludeCrops] = useState<number[]>(
     [],
   );
+
+  const [initialIncludeIds, setInitialIncludeIds] = useState<number[]>([]);
+  const [initialExcludeIds, setInitialExcludeIds] = useState<number[]>([]);
+
+  const [preferRecordMap, setPreferRecordMap] = useState<
+    Record<number, number>
+  >({});
+  const [excludeRecordMap, setExcludeRecordMap] = useState<
+    Record<number, number>
+  >({});
 
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
@@ -164,6 +172,9 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
 
     setSelectedIncludeCrops(includeIds);
     setSelectedExcludeCrops(excludeIds);
+
+    setInitialIncludeIds(includeIds);
+    setInitialExcludeIds(excludeIds);
   };
 
   useFocusEffect(
@@ -231,21 +242,43 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
             );
           }
 
-          const excludedItemIds = new Set<number>(
+          const excludeRows =
             excludeRes.status === "fulfilled"
-              ? (excludeRes.value.data?.data || [])
-                  .map((row: any) => row.marketplaceItemId)
-                  .filter((itemId: number | null) => itemId != null)
-              : [],
+              ? excludeRes.value.data?.data || []
+              : [];
+          const preferRows =
+            preferRes.status === "fulfilled"
+              ? preferRes.value.data?.data || []
+              : [];
+
+          const excludedItemIds = new Set<number>(
+            excludeRows
+              .map((row: any) => row.marketplaceItemId)
+              .filter((itemId: number | null) => itemId != null),
           );
 
           const includedItemIds = new Set<number>(
-            preferRes.status === "fulfilled"
-              ? (preferRes.value.data?.data || [])
-                  .map((row: any) => row.marketplaceItemId)
-                  .filter((itemId: number | null) => itemId != null)
-              : [],
+            preferRows
+              .map((row: any) => row.marketplaceItemId)
+              .filter((itemId: number | null) => itemId != null),
           );
+
+          const excludeMap: Record<number, number> = {};
+          excludeRows.forEach((row: any) => {
+            if (row.marketplaceItemId != null && row.excludeId != null) {
+              excludeMap[row.marketplaceItemId] = row.excludeId;
+            }
+          });
+
+          const preferMap: Record<number, number> = {};
+          preferRows.forEach((row: any) => {
+            if (row.marketplaceItemId != null && row.preId != null) {
+              preferMap[row.marketplaceItemId] = row.preId;
+            }
+          });
+
+          setExcludeRecordMap(excludeMap);
+          setPreferRecordMap(preferMap);
 
           const mergedCropList: Crop[] = cropList.map((crop) => ({
             ...crop,
@@ -271,6 +304,23 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
     }, [id, handleBackPress]),
   );
 
+  const getChanges = () => {
+    const toAddInclude = selectedIncludeCrops.filter(
+      (cId) => !initialIncludeIds.includes(cId),
+    );
+    const toRemoveInclude = initialIncludeIds.filter(
+      (cId) => !selectedIncludeCrops.includes(cId),
+    );
+    const toAddExclude = selectedExcludeCrops.filter(
+      (cId) => !initialExcludeIds.includes(cId),
+    );
+    const toRemoveExclude = initialExcludeIds.filter(
+      (cId) => !selectedExcludeCrops.includes(cId),
+    );
+
+    return { toAddInclude, toRemoveInclude, toAddExclude, toRemoveExclude };
+  };
+
   const handlesubmitexcludelist = async () => {
     setLoading(true);
 
@@ -287,32 +337,69 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
         "Content-Type": "application/json",
       };
 
+      const { toAddInclude, toRemoveInclude, toAddExclude, toRemoveExclude } =
+        getChanges();
+
       const requests: Promise<any>[] = [];
 
-      if (selectedExcludeCrops.length > 0) {
+      if (toAddExclude.length > 0) {
         requests.push(
           axios.post(
             `${environment.API_BASE_URL}api/customer/add/excludelist`,
-            { customerId: id, selectedCrops: selectedExcludeCrops },
+            { customerId: id, selectedCrops: toAddExclude },
             { headers },
           ),
         );
       }
 
-      if (selectedIncludeCrops.length > 0) {
+      if (toAddInclude.length > 0) {
         requests.push(
           axios.post(
             `${environment.API_BASE_URL}api/customer/add/preferlist`,
-            { customerId: id, selectedCrops: selectedIncludeCrops },
+            { customerId: id, selectedCrops: toAddInclude },
             { headers },
           ),
         );
+      }
+
+      toRemoveExclude.forEach((cropId) => {
+        const excludeId = excludeRecordMap[cropId];
+        if (excludeId != null) {
+          requests.push(
+            axios.delete(
+              `${environment.API_BASE_URL}api/customer/excludelist/delete`,
+              { headers, params: { excludeId } },
+            ),
+          );
+        }
+      });
+
+      toRemoveInclude.forEach((cropId) => {
+        const preferId = preferRecordMap[cropId];
+        if (preferId != null) {
+          requests.push(
+            axios.delete(
+              `${environment.API_BASE_URL}api/customer/preferlist/delete`,
+              { headers, params: { preferId } },
+            ),
+          );
+        }
+      });
+
+      if (requests.length === 0) {
+        navigation.navigate("ExcludeItemEditSummery" as any, {
+          id,
+          customerId,
+          name,
+          title,
+        });
+        return;
       }
 
       const responses = await Promise.all(requests);
       const allOk = responses.every((res) => res.status === 200);
 
-      if (allOk || requests.length === 0) {
+      if (allOk) {
         navigation.navigate("ExcludeItemEditSummery" as any, {
           id,
           customerId,
@@ -330,10 +417,16 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
   };
 
   const handleNavigateIfNoCropsSelected = () => {
-    if (
-      selectedIncludeCrops.length === 0 &&
-      selectedExcludeCrops.length === 0
-    ) {
+    const { toAddInclude, toRemoveInclude, toAddExclude, toRemoveExclude } =
+      getChanges();
+
+    const hasChanges =
+      toAddInclude.length > 0 ||
+      toRemoveInclude.length > 0 ||
+      toAddExclude.length > 0 ||
+      toRemoveExclude.length > 0;
+
+    if (!hasChanges) {
       navigation.navigate("ExcludeItemEditSummery" as any, {
         id,
         customerId,
@@ -464,7 +557,6 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
             </View>
           ) : (
             <>
-              {/* Column headers */}
               <View
                 className="flex-row justify-between items-center px-6 py-2"
                 style={{

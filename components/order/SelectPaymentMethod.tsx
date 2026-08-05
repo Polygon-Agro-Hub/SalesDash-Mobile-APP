@@ -17,6 +17,7 @@ import { RootStackParamList } from "../types/types";
 import { LinearGradient } from "expo-linear-gradient";
 import { RouteProp, useFocusEffect } from "@react-navigation/native";
 import CustomHeader from "../common/CustomHeader";
+import { AlertModal } from "../common/AlertModal";
 import { Feather, MaterialIcons } from "@expo/vector-icons";
 import axios from "axios";
 import environment from "@/environment/environment";
@@ -179,6 +180,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
   const [deliveredTotal, setDeliveredTotal] = useState<number>(0);
   const [loadingCredit, setLoadingCredit] = useState(true);
   const [isValidating, setIsValidating] = useState(false);
+  const [showCartAlert, setShowCartAlert] = useState(false);
 
   const orderTotal = fullTotal || total || 0;
   const userId = customerId || customerid || id;
@@ -291,36 +293,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
       );
 
       if (validationResponse.data?.hasDisabled) {
-        Alert.alert(
-          "Some Items No Longer Available!",
-          "Sorry, the package / a product in your cart is no longer available to order. Please go to your cart and update it before continuing.",
-          [
-            {
-              text: "Go to Cart",
-              onPress: () => {
-                if (isNewCustomer) {
-                  navigation.navigate("SelectOrderTypeNewCustomer" as any, {
-                    id: Number(id || customerId || customerid),
-                    name,
-                    title,
-                    customerId: customerId || customerid,
-                    phoneNumber: number || "",
-                  });
-                } else {
-                  navigation.navigate("SelectOrderType" as any, {
-                    id,
-                    customerId: customerId || customerid,
-                    title,
-                    name,
-                    number,
-                    customerscreencustomerid,
-                  });
-                }
-              },
-            },
-          ],
-          { cancelable: false }
-        );
+        setShowCartAlert(true);
         return;
       }
     } catch (validationErr) {
@@ -610,6 +583,38 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
           </ScrollView>
         </View>
       </View>
+
+      <AlertModal
+        visible={showCartAlert}
+        title="Some Items No Longer Available!"
+        message="Sorry, the package / a product in your cart is no longer available to order. Please go to your cart and update it before continuing."
+        type="error"
+        autoClose={false}
+        showOkButton={true}
+        okButtonText="Go to Cart"
+        buttonWidth="60%"
+        onClose={() => {
+          setShowCartAlert(false);
+          if (isNewCustomer) {
+            navigation.navigate("SelectOrderTypeNewCustomer" as any, {
+              id: Number(id || customerId || customerid),
+              name,
+              title,
+              customerId: customerId || customerid,
+              phoneNumber: number || "",
+            });
+          } else {
+            navigation.navigate("SelectOrderType" as any, {
+              id,
+              customerId: customerId || customerid,
+              title,
+              name,
+              number,
+              customerscreencustomerid,
+            });
+          }
+        }}
+      />
     </KeyboardAvoidingView>
   );
 };

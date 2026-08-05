@@ -616,7 +616,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     fetchPackages();
   }, []);
 
-  useEffect(() => {}, [route.params]);
+  useEffect(() => { }, [route.params]);
 
   const handlePackageChange = (value: string | null) => {
     if (value) {
@@ -649,6 +649,22 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
       }
     }
   }, [packages, packageValue]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        navigation.goBack();
+        return true; // Prevent default behavior
+      };
+
+      const subscription = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress,
+      );
+
+      return () => subscription.remove();
+    }, [navigation]),
+  );
 
   const fetchCrops = async () => {
     try {
@@ -858,8 +874,8 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     const discountAmount =
       Math.round(
         (editingItem.pricePerKg - editingItem.discountedPricePerKg) *
-          quantityInKg *
-          100,
+        quantityInKg *
+        100,
       ) / 100;
 
     const updatedItem: AdditionalItem = {
@@ -1073,7 +1089,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
             <Text className={packageValue ? "text-black" : "text-gray-500"}>
               {packageValue
                 ? packageItems.find((item) => item.value === packageValue)
-                    ?.label || "Select a package"
+                  ?.label || "Select a package"
                 : "Select a package"}
             </Text>
             <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
@@ -1102,11 +1118,10 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
               {items.map((item, index) => (
                 <View
                   key={index}
-                  className={`flex-row justify-between items-center py-2 px-4 ${
-                    index !== items.length - 1
+                  className={`flex-row justify-between items-center py-2 px-4 ${index !== items.length - 1
                       ? "border-b border-[#CDCDCD]"
                       : ""
-                  }`}
+                    }`}
                 >
                   <Text className="text-gray-800 font-medium flex-1">
                     {item.name}
@@ -1155,11 +1170,10 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                 <TouchableOpacity
                   key={item.id}
                   onPress={() => toggleItemSelection(item.id)}
-                  className={`flex-row items-center py-4 px-4 ${
-                    index !== additionalItems.length - 1
+                  className={`flex-row items-center py-4 px-4 ${index !== additionalItems.length - 1
                       ? "border-b border-[#CDCDCD]"
                       : ""
-                  } ${selectedItems.includes(item.id) ? "bg-white" : "bg-white"}`}
+                    } ${selectedItems.includes(item.id) ? "bg-white" : "bg-white"}`}
                 >
                   {/* Checkbox icon */}
                   <Ionicons
@@ -1306,7 +1320,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                 <Text className={productValue ? "text-black" : "text-gray-500"}>
                   {productValue
                     ? productItems.find((item) => item.value === productValue)
-                        ?.label || "Select a product..."
+                      ?.label || "Select a product..."
                     : "Select a product..."}
                 </Text>
                 <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
@@ -1387,16 +1401,16 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
 
             {/* Dynamic Discount Message */}
             {discount > 0 ? (
-            <View className="mb-4">
-              <Text className="text-purple-600 text-center text-sm font-medium">
-                You received a discount of Rs.{" "}
-                {Number(calculateDiscountForQuantity()).toLocaleString(
-                  "en-US",
-                  { minimumFractionDigits: 2, maximumFractionDigits: 2 },
-                )}{" "}
-                for this product
-              </Text>
-            </View>): null}
+              <View className="mb-4">
+                <Text className="text-purple-600 text-center text-sm font-medium">
+                  You received a discount of Rs.{" "}
+                  {Number(calculateDiscountForQuantity()).toLocaleString(
+                    "en-US",
+                    { minimumFractionDigits: 2, maximumFractionDigits: 2 },
+                  )}{" "}
+                  for this product
+                </Text>
+              </View>) : null}
 
             {/* Action Buttons */}
             <View className="gap-3">
