@@ -345,6 +345,8 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
     return <LoadingPage fullScreen={true} />;
   }
 
+  const isButtonDisabled = saving || cityBlocksUpdate;
+
   return (
     <View className="flex-1 bg-white">
       {/* Header stays fixed, OUTSIDE the KeyboardAvoidingView */}
@@ -481,7 +483,7 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
           <View className="px-4 pb-8 pt-5">
             <TouchableOpacity
               onPress={handleUpdate}
-              disabled={saving || cityBlocksUpdate}
+              disabled={isButtonDisabled}
               activeOpacity={0.85}
               style={{
                 borderRadius: 999, overflow: "hidden", height: 50,
@@ -494,8 +496,8 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
             >
               <LinearGradient
                 colors={
-                  cityBlocksUpdate
-                    ? ["#B9AEDD", "#A99BD6"]
+                 isButtonDisabled
+                    ? ["#D1D5DB", "#9CA3AF"]
                     : ["#7B3FE4", "#5B2CC9"]
                 }
                 start={{ x: 0, y: 0 }}
