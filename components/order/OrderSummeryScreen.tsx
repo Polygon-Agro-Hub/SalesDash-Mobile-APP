@@ -361,6 +361,11 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         return;
       }
 
+      // if OTP sent successfully, store the referenceId and navigate to OTP confirmation screen
+      if (otpSendResponse.data?.referenceId) {
+         Alert.alert("Success", "OTP sent successfully.");
+      }
+
       await AsyncStorage.setItem(
         "referenceId",
         otpSendResponse.data.referenceId,
