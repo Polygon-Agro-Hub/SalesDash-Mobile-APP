@@ -345,7 +345,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         source: "PolygonAgro",
         transport: "sms",
         content: {
-          sms: "Thank you for your order with GoviMart. Please use the below OTP to confirm your order. {{code}}",
+          sms: "Thank you for your order with Polygon. Please use the below OTP to confirm your order. {{code}}",
         },
         destination: cleanedPhoneNumber,
       };
@@ -361,7 +361,6 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         return;
       }
 
-      // if OTP sent successfully, store the referenceId and navigate to OTP confirmation screen
       if (otpSendResponse.data?.referenceId) {
          Alert.alert("Success", "OTP sent successfully.");
       }
@@ -688,6 +687,9 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           orderData: route.params?.orderData,
           rawPackageItems: route.params?.rawPackageItems,
           rawAdditionalItems: route.params?.rawAdditionalItems,
+          selectedAddress: route.params?.selectedAddress,
+          deliveryCharge: deliveryFee,
+          isFinalizeImdt: route.params?.isFinalizeImdt,
         });
         return true;
       };
@@ -698,7 +700,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
       );
 
       return () => backHandler.remove();
-    }, [navigation, customerData]),
+    }, [navigation, customerData, deliveryFee, route.params]),
   );
 
   useFocusEffect(
@@ -785,6 +787,8 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
             rawPackageItems: route.params?.rawPackageItems,
             rawAdditionalItems: route.params?.rawAdditionalItems,
             selectedAddress: route.params?.selectedAddress,
+            deliveryCharge: deliveryFee,
+            isFinalizeImdt: route.params?.isFinalizeImdt,
           })
         }
       />
@@ -1056,6 +1060,8 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                     rawPackageItems: route.params?.rawPackageItems,
                     rawAdditionalItems: route.params?.rawAdditionalItems,
                     selectedAddress: route.params?.selectedAddress,
+                    deliveryCharge: deliveryFee,
+                    isFinalizeImdt: route.params?.isFinalizeImdt,
                   })
                 }
                 className="border border-[#6C3CD1] px-3 rounded-full"
