@@ -44,10 +44,8 @@ const OrderConfimedOTPScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const route = useRoute();
 
-  // --- Result popup state ---
-  // "OTP Verified Successfully" is now shown via the shared AlertModal.
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
-  // The "Confirming Order..." loading state keeps using its own lightweight Modal.
+
   const [showOrderLoading, setShowOrderLoading] = useState(false);
 
   const {
@@ -101,7 +99,6 @@ const OrderConfimedOTPScreen: React.FC = () => {
   const [isOtpInvalid, setIsOtpInvalid] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // --- Layout tracking for keyboard-aware scrolling ---
   const [otpRowY, setOtpRowY] = useState(0);
   const [buttonRowY, setButtonRowY] = useState(0);
 
@@ -351,7 +348,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
         source: "PolygonAgro",
         transport: "sms",
         content: {
-          sms: "Thank you for your order with GoviMart. Please use the below OTP to confirm your order. {{code}}",
+          sms: "Thank you for your order with Polygon. Please use the below OTP to confirm your order. {{code}}",
         },
         destination: cleanedPhoneNumber,
       };
@@ -415,7 +412,6 @@ const OrderConfimedOTPScreen: React.FC = () => {
     }
   };
 
-  // --- Keyboard-aware scrolling (mirrors OtpScreen) ---
   const scrollToOtpRow = () => {
     setTimeout(
       () => {
@@ -506,7 +502,8 @@ const OrderConfimedOTPScreen: React.FC = () => {
                 Enter Verification Code.
               </Text>
               <Text className="text-[#808080] text-center mt-3 px-4">
-                We have sent a Verification Code to your Customer's mobile number
+                We have sent a Verification Code to your Customer's mobile
+                number
               </Text>
 
               {/* OTP Input Section — onLayout captures its Y position for scrolling */}

@@ -51,7 +51,6 @@ const OtpScreen: React.FC = () => {
   const [isOtpInvalid, setIsOtpInvalid] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // --- Layout tracking for keyboard-aware scrolling (mirrors OrderConfimedOTPScreen) ---
   const otpRowRef = useRef<View>(null);
   const buttonRowRef = useRef<View>(null);
   const [otpRowY, setOtpRowY] = useState(0);
@@ -255,11 +254,18 @@ const OtpScreen: React.FC = () => {
       };
 
       const cleanedPhoneNumber = phoneNumber.replace(/[^\d]/g, "");
+
+      const isUpdateFlow = route.name === "OtpScreenUp";
+
+      const smsContent = isUpdateFlow
+        ? "This is your OTP for your account details update: {{code}}"
+        : "Thank you for registering with us a Polygon customer. Please use the bellow OTP to confirm the registration process. {{code}}";
+
       const body = {
         source: "PolygonAgro",
         transport: "sms",
         content: {
-          sms: "Thank you for registering with us a GoviMart customer. Please use the bellow OTP to confirm the registration process. {{code}}",
+          sms: smsContent,
         },
         destination: cleanedPhoneNumber,
       };
@@ -323,9 +329,6 @@ const OtpScreen: React.FC = () => {
     }
   };
 
-  // --- Keyboard-aware scrolling: measures live position instead of relying on
-  // stale onLayout values, which is what made OrderConfimedOTPScreen's scroll
-  // behave smoothly compared to a plain onLayout-only approach. ---
   const scrollToOtpRow = () => {
     setTimeout(
       () => {
@@ -410,10 +413,7 @@ const OtpScreen: React.FC = () => {
             onBackPress={() => navigation.goBack()}
           />
           <View className="flex-1 bg-white items-center">
-            <View
-              className="w-full max-w-[500px]"
-              style={{ paddingTop: 24 }}
-            >
+            <View className="w-full max-w-[500px]" style={{ paddingTop: 24 }}>
               {/* Illustration - Centered */}
               <View className="items-center justify-center mb-6">
                 <Image

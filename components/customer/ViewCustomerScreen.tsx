@@ -90,8 +90,8 @@ const getDisplayStatus = (status: string) => {
   return normalizedStatus;
 };
 
-const FILTER_TO_BACKEND_STATUS: Record<string, string> = {
-  Return: "Return",
+const FILTER_TO_BACKEND_STATUS: Record<string, string | string[]> = {
+  Return: ["Return", "Return Received"],
 };
 
 const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
@@ -228,7 +228,6 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
               .filter(Boolean)
               .join(", ");
 
-            // Only append "..." for apartments, house stays clean
             setAddress(
               formattedAddress
                 ? isApartment
@@ -297,26 +296,70 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
 
       setError(null);
 
-      const response = await axios.get<OrdersResponse>(
-        `${environment.API_BASE_URL}api/orders/get-order-bycustomerId/${id}?page=${page}&limit=${ORDERS_PER_PAGE}`,
+      const rawBackendStatus =
+        statusFilter === "All"
+          ? undefined
+          : FILTER_TO_BACKEND_STATUS[statusFilter] || statusFilter;
+
+      const statusValues = Array.isArray(rawBackendStatus)
+        ? rawBackendStatus
+        : rawBackendStatus
+          ? [rawBackendStatus]
+          : [undefined];
+
+      const responses = await Promise.all(
+        statusValues.map((statusValue) =>
+          axios.get<OrdersResponse>(
+            `${environment.API_BASE_URL}api/orders/get-order-bycustomerId/${id}`,
+            {
+              params: {
+                page,
+                limit: ORDERS_PER_PAGE,
+                ...(statusValue ? { status: statusValue } : {}),
+              },
+            },
+          ),
+        ),
       );
 
-      if (response.data.success) {
-        const newOrders = response.data.data;
+      const mergedOrdersMap = new Map<string, Order>();
+      let anySuccess = false;
+      let combinedHasMore = false;
+      let firstFailureMessage: string | null = null;
 
+      for (const response of responses) {
+        if (response.data.success) {
+          anySuccess = true;
+          for (const order of response.data.data) {
+            mergedOrdersMap.set(order.orderId, order);
+          }
+          combinedHasMore = combinedHasMore || Boolean(response.data.hasMore);
+        } else if (!firstFailureMessage) {
+          firstFailureMessage =
+            response.data.message || "Failed to load orders";
+        }
+      }
+
+      const mergedOrders = Array.from(mergedOrdersMap.values()).sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+
+      if (anySuccess) {
         if (isLoadMore) {
           setOrders((prevOrders) => {
-            const combined = [...prevOrders, ...newOrders];
+            const combined = [...prevOrders, ...mergedOrders];
             return combined;
           });
         } else {
-          setOrders(newOrders);
+          setOrders(mergedOrders);
         }
-        setHasMore(response.data.hasMore || false);
+        setHasMore(combinedHasMore);
         setCurrentPage(page);
       } else {
-        setError(response.data.message || "Failed to load orders");
+        setError(firstFailureMessage || "Failed to load orders");
       }
+      return;
     } catch (err: any) {
       console.warn("⚠️ Error fetching orders (handled):", err.message || err);
 
@@ -337,7 +380,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   const loadMoreOrders = () => {
     if (!loadingMore && hasMore && !loading) {
       const nextPage = currentPage + 1;
-      loadOrders(nextPage, false, true);
+      loadOrders(nextPage, false, true, selectedFilter);
     }
   };
 
@@ -355,9 +398,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       const results = orders.filter(
         (order) =>
           order.InvNo &&
-          order.InvNo.toLowerCase().includes(searchText.toLowerCase()) &&
-          (selectedFilter === "All" ||
-            getDisplayStatus(order.status) === selectedFilter),
+          order.InvNo.toLowerCase().includes(searchText.toLowerCase()),
       );
 
       if (results.length === 0) {
@@ -366,7 +407,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
         setSearchError(null);
       }
     }
-  }, [searchText, selectedFilter, orders]);
+  }, [searchText, orders]);
 
   const handleGetACall = () => {
     const phoneNumber = `tel:${customerNumber}`;
@@ -398,15 +439,12 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   const handleSearch = () => {};
 
   const filteredOrders = orders.filter((order) => {
-    const matchesStatus =
-      selectedFilter === "All" ||
-      getDisplayStatus(order.status) === selectedFilter;
     const matchesSearch =
       !searchText ||
       (order.InvNo &&
         order.InvNo.toLowerCase().includes(searchText.toLowerCase()));
 
-    return matchesStatus && matchesSearch;
+    return matchesSearch;
   });
 
   useEffect(() => {
@@ -616,7 +654,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 borderWidth: 1,
                 borderColor: "#E5E7EB",
                 shadowColor: "#000",
-                shadowOffset: { width: 0, height: 6 }, // pushes shadow downward
+                shadowOffset: { width: 0, height: 6 },
                 shadowOpacity: 1,
                 shadowRadius: 6,
                 elevation: 2,
@@ -689,7 +727,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 borderWidth: 1,
                 borderColor: "#E5E7EB",
                 shadowColor: "#000",
-                shadowOffset: { width: 0, height: 6 }, // pushes shadow downward
+                shadowOffset: { width: 0, height: 6 },
                 shadowOpacity: 1,
                 shadowRadius: 6,
                 elevation: 2,
