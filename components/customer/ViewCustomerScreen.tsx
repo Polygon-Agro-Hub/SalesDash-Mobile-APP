@@ -557,7 +557,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 fontSize: 15,
                 color: "#393939",
                 marginTop: 6,
-                fontWeight: "500",
+                
               }}
             >
               Customer ID : {customerId}

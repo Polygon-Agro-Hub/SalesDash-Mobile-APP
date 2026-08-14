@@ -22,6 +22,7 @@ import LoadingPage from "../common/LoadingPage";
 import CustomHeader from "../common/CustomHeader";
 import GlobalSearchModal from "../common/GlobalSearchModal";
 import CityDeliveryStatus from "../common/CityDeliveryStatus";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 type ResidentialAddressNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -258,21 +259,21 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
     const payload =
       buildingType === "House"
         ? {
-          buildingType,
-          houseNo,
-          streetName,
-          ...(canEditNearestCity ? { nearestCity } : {}),
-        }
+            buildingType,
+            houseNo,
+            streetName,
+            ...(canEditNearestCity ? { nearestCity } : {}),
+          }
         : {
-          buildingType,
-          buildingNo,
-          buildingName,
-          unitNo,
-          floorNo,
-          houseNo,
-          streetName,
-          ...(canEditNearestCity ? { nearestCity } : {}),
-        };
+            buildingType,
+            buildingNo,
+            buildingName,
+            unitNo,
+            floorNo,
+            houseNo,
+            streetName,
+            ...(canEditNearestCity ? { nearestCity } : {}),
+          };
 
     try {
       setSaving(true);
@@ -358,166 +359,168 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
         onBackPress={() => navigation.goBack()}
       />
 
-      <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.select({ ios: 0, android: 0 })}
+      <KeyboardAwareScrollView
+        style={{ flex: 1 }}
+        className="px-6 pt-4"
+        contentContainerStyle={{ paddingBottom: 200 }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        enableOnAndroid={true}
+        enableAutomaticScroll={true}
+        extraScrollHeight={Platform.OS === "ios" ? 20 : 80}
+        extraHeight={120}
+        keyboardOpeningTime={0}
       >
-        <ScrollView
-          className="flex-1 px-6 pt-4"
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Building Type */}
-          <Text className="text-sm mb-2">Building Type *</Text>
-          <View className="mb-5">
-            <TouchableOpacity
-              onPress={() => setBuildingTypeModalVisible(true)}
-              className="bg-gray-100 rounded-3xl px-4 h-[50px] flex-row items-center justify-between"
-            >
-              <Text className="text-black text-[15px]">{buildingType}</Text>
-              <MaterialIcons
-                name="keyboard-arrow-down"
-                size={22}
-                color="#6B7280"
-              />
-            </TouchableOpacity>
-          </View>
+        {/* Building Type */}
+        <Text className="text-sm mb-2">Building Type *</Text>
+        <View className="mb-5">
+          <TouchableOpacity
+            onPress={() => setBuildingTypeModalVisible(true)}
+            className="bg-gray-100 rounded-3xl px-4 h-[50px] flex-row items-center justify-between"
+          >
+            <Text className="text-black text-[15px]">{buildingType}</Text>
+            <MaterialIcons
+              name="keyboard-arrow-down"
+              size={22}
+              color="#6B7280"
+            />
+          </TouchableOpacity>
+        </View>
 
-          {/* ===================== HOUSE FIELDS ===================== */}
-          {buildingType === "House" && (
-            <>
-              <Text className="text-sm mb-2">Building / House No *</Text>
-              <TextInput
-                value={houseNo}
-                onChangeText={(text) => setHouseNo(sanitizeInput(text))}
-                placeholder="e.g. 14/B"
-                placeholderTextColor="#9CA3AF"
-                autoCapitalize="words"
-                className="bg-gray-100 rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
-              />
+        {/* ===================== HOUSE FIELDS ===================== */}
+        {buildingType === "House" && (
+          <>
+            <Text className="text-sm mb-2">Building / House No *</Text>
+            <TextInput
+              value={houseNo}
+              onChangeText={(text) => setHouseNo(sanitizeInput(text))}
+              placeholder="e.g. 14/B"
+              placeholderTextColor="#9CA3AF"
+              autoCapitalize="words"
+              className="bg-gray-100 rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
+            />
 
-              <Text className="text-sm mb-2">Street Name *</Text>
-              <TextInput
-                value={streetName}
-                onChangeText={(text) => setStreetName(sanitizeInput(text))}
-                placeholder="e.g. Diyagama Road"
-                placeholderTextColor="#9CA3AF"
-                autoCapitalize="words"
-                className="bg-gray-100 rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
-              />
+            <Text className="text-sm mb-2">Street Name *</Text>
+            <TextInput
+              value={streetName}
+              onChangeText={(text) => setStreetName(sanitizeInput(text))}
+              placeholder="e.g. Diyagama Road"
+              placeholderTextColor="#9CA3AF"
+              autoCapitalize="words"
+              className="bg-gray-100 rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
+            />
 
-              {renderNearestCityField()}
-            </>
-          )}
+            {renderNearestCityField()}
+          </>
+        )}
 
-          {/* ==================== APARTMENT FIELDS ==================== */}
-          {buildingType === "Apartment" && (
-            <>
-              <Text className="text-sm mb-2">Apartment / Building No *</Text>
-              <TextInput
-                value={buildingNo}
-                onChangeText={(text) => setBuildingNo(sanitizeInput(text))}
-                placeholder="e.g. Building B"
-                placeholderTextColor="#9CA3AF"
-                autoCapitalize="words"
-                className="bg-gray-100 rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
-              />
+        {/* ==================== APARTMENT FIELDS ==================== */}
+        {buildingType === "Apartment" && (
+          <>
+            <Text className="text-sm mb-2">Apartment / Building No *</Text>
+            <TextInput
+              value={buildingNo}
+              onChangeText={(text) => setBuildingNo(sanitizeInput(text))}
+              placeholder="e.g. Building B"
+              placeholderTextColor="#9CA3AF"
+              autoCapitalize="words"
+              className="bg-gray-100 rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
+            />
 
-              <Text className="text-sm mb-2">Apartment / Building Name *</Text>
-              <TextInput
-                value={buildingName}
-                onChangeText={(text) => setBuildingName(sanitizeInput(text))}
-                placeholder="e.g. Elite Residencies"
-                placeholderTextColor="#9CA3AF"
-                autoCapitalize="words"
-                className="bg-gray-100 rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
-              />
+            <Text className="text-sm mb-2">Apartment / Building Name *</Text>
+            <TextInput
+              value={buildingName}
+              onChangeText={(text) => setBuildingName(sanitizeInput(text))}
+              placeholder="e.g. Elite Residencies"
+              placeholderTextColor="#9CA3AF"
+              autoCapitalize="words"
+              className="bg-gray-100 rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
+            />
 
-              <Text className="text-sm mb-2">Flat / Unit Number *</Text>
-              <TextInput
-                value={unitNo}
-                onChangeText={(text) => setUnitNo(sanitizeInput(text))}
-                placeholder="e.g. Unit 4B"
-                placeholderTextColor="#9CA3AF"
-                autoCapitalize="words"
-                className="bg-gray-100 rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
-              />
+            <Text className="text-sm mb-2">Flat / Unit Number *</Text>
+            <TextInput
+              value={unitNo}
+              onChangeText={(text) => setUnitNo(sanitizeInput(text))}
+              placeholder="e.g. Unit 4B"
+              placeholderTextColor="#9CA3AF"
+              autoCapitalize="words"
+              className="bg-gray-100 rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
+            />
 
-              <Text className="text-sm mb-2">Floor Number *</Text>
-              <TextInput
-                value={floorNo}
-                onChangeText={(text) => setFloorNo(sanitizeInput(text))}
-                placeholder="e.g. 3rd Floor"
-                placeholderTextColor="#9CA3AF"
-                autoCapitalize="words"
-                className="bg-gray-100 rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
-              />
+            <Text className="text-sm mb-2">Floor Number *</Text>
+            <TextInput
+              value={floorNo}
+              onChangeText={(text) => setFloorNo(sanitizeInput(text))}
+              placeholder="e.g. 3rd Floor"
+              placeholderTextColor="#9CA3AF"
+              autoCapitalize="words"
+              className="bg-gray-100 rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
+            />
 
-              <Text className="text-sm mb-2">House No *</Text>
-              <TextInput
-                value={houseNo}
-                onChangeText={(text) => setHouseNo(sanitizeInput(text))}
-                placeholder="e.g. 14"
-                placeholderTextColor="#9CA3AF"
-                autoCapitalize="words"
-                className="bg-gray-100 rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
-              />
+            <Text className="text-sm mb-2">House No *</Text>
+            <TextInput
+              value={houseNo}
+              onChangeText={(text) => setHouseNo(sanitizeInput(text))}
+              placeholder="e.g. 14"
+              placeholderTextColor="#9CA3AF"
+              autoCapitalize="words"
+              className="bg-gray-100 rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
+            />
 
-              <Text className="text-sm mb-2">Street Name *</Text>
-              <TextInput
-                value={streetName}
-                onChangeText={(text) => setStreetName(sanitizeInput(text))}
-                placeholder="e.g. Diyagama Road"
-                placeholderTextColor="#9CA3AF"
-                autoCapitalize="words"
-                className="bg-gray-100 rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
-              />
+            <Text className="text-sm mb-2">Street Name *</Text>
+            <TextInput
+              value={streetName}
+              onChangeText={(text) => setStreetName(sanitizeInput(text))}
+              placeholder="e.g. Diyagama Road"
+              placeholderTextColor="#9CA3AF"
+              autoCapitalize="words"
+              className="bg-gray-100 rounded-3xl px-4 h-[50px] text-[15px] text-black mb-5"
+            />
 
-              {renderNearestCityField()}
-            </>
-          )}
+            {renderNearestCityField()}
+          </>
+        )}
 
-          {/* Update Button */}
-          <View className="px-4 pb-8 pt-5">
-            <TouchableOpacity
-              onPress={handleUpdate}
-              disabled={isButtonDisabled}
-              activeOpacity={0.85}
+        {/* Update Button */}
+        <View className="px-4 pb-8 pt-5">
+          <TouchableOpacity
+            onPress={handleUpdate}
+            disabled={isButtonDisabled}
+            activeOpacity={0.85}
+            style={{
+              borderRadius: 999,
+              overflow: "hidden",
+              height: 50,
+              shadowColor: "#000000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.2,
+              shadowRadius: 4,
+              elevation: 10,
+            }}
+          >
+            <LinearGradient
+              colors={
+                isButtonDisabled
+                  ? ["#D1D5DB", "#9CA3AF"]
+                  : ["#7B3FE4", "#5B2CC9"]
+              }
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
               style={{
-                borderRadius: 999, overflow: "hidden", height: 50,
-                shadowColor: "#000000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.2,
-                shadowRadius: 4,
-                elevation: 10,
+                borderRadius: 999,
+                paddingVertical: 16,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
-              <LinearGradient
-                colors={
-                 isButtonDisabled
-                    ? ["#D1D5DB", "#9CA3AF"]
-                    : ["#7B3FE4", "#5B2CC9"]
-                }
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={{
-                  borderRadius: 999,
-                  paddingVertical: 16,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Text className="text-white text-base font-semibold">
-                  {saving ? "Updating..." : "Update"}
-                </Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+              <Text className="text-white text-base font-semibold">
+                {saving ? "Updating..." : "Update"}
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAwareScrollView>
 
       {/* Modals stay outside, same as before */}
       <GlobalSearchModal

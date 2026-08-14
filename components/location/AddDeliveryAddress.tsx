@@ -54,6 +54,24 @@ const BUILDING_TYPES = [
 
 const SAVE_ADDRESS_AS_MAX_LENGTH = 30;
 
+// Central place for field labels used in "X is required" messages,
+// so the label text shown on-screen and the error text always match.
+const FIELD_LABELS = {
+  saveAddressAs: "Save Address As",
+  billingName: "Billing Name",
+  phoneNumber1: "Phone Number 1",
+  buildingType: "Building Type",
+  houseNo: "Building / House No",
+  streetName: "Street Name",
+  nearestCity: "Nearest City",
+  buildingNo: "Apartment / Building No",
+  buildingName: "Apartment / Building Name",
+  unitNo: "Flat / Unit Number",
+  floorNo: "Floor Number",
+} as const;
+
+const requiredMessage = (label: string) => `${label} is required`;
+
 const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
   navigation,
   route,
@@ -87,6 +105,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
   const [buildingType, setBuildingType] = useState<string>(addressType || "");
   const [buildingTypeModalVisible, setBuildingTypeModalVisible] =
     useState(false);
+  const [buildingTypeError, setBuildingTypeError] = useState("");
 
   const [houseNo, setHouseNo] = useState("");
   const [streetName, setStreetName] = useState("");
@@ -108,7 +127,6 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
   const [buildingName, setBuildingName] = useState("");
   const [unitNo, setUnitNo] = useState("");
   const [floorNo, setFloorNo] = useState("");
-  const [buildingTypeError, setBuildingTypeError] = useState("");
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [locationName, setLocationName] = useState("");
@@ -138,12 +156,14 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
     return phoneRegex.test(phone);
   };
 
+  // fieldLabel is used to build the "[Field Name] is required" message.
   const handleRequiredFieldBlur = (
     value: string,
     setError: (value: string) => void,
+    fieldLabel: string,
   ) => {
     if (!value.trim()) {
-      setError("Required");
+      setError(requiredMessage(fieldLabel));
     }
   };
 
@@ -151,9 +171,10 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
     value: string,
     setter: (value: string) => void,
     setError: (value: string) => void,
+    fieldLabel: string,
   ) => {
     setter(value);
-    setError(value.trim() ? "" : "Required");
+    setError(value.trim() ? "" : requiredMessage(fieldLabel));
   };
 
   const formatPhoneNumber = (text: string) => {
@@ -183,7 +204,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
       setPhoneNumber1(nextValue);
 
       if (!nextValue.trim()) {
-        setPhoneError1("Required");
+        setPhoneError1(requiredMessage(FIELD_LABELS.phoneNumber1));
         return;
       }
 
@@ -390,27 +411,27 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
     setPhoneError2("");
 
     if (!saveAddressAs.trim()) {
-      setSaveAsError("Required");
+      setSaveAsError(requiredMessage(FIELD_LABELS.saveAddressAs));
       hasError = true;
       alertTitle = "Required";
       alertMessage = "Please enter a save address name.";
     }
     if (!buildingType.trim()) {
-      setBuildingTypeError("Required");
+      setBuildingTypeError(requiredMessage(FIELD_LABELS.buildingType));
       hasError = true;
       alertTitle = "Required";
       alertMessage = "Please select a building type.";
     }
 
     if (!billingName.trim()) {
-      setBillingNameError("Required");
+      setBillingNameError(requiredMessage(FIELD_LABELS.billingName));
       hasError = true;
       alertTitle = "Required";
       alertMessage = "Please enter the billing name.";
     }
 
     if (!phoneNumber1.trim()) {
-      setPhoneError1("Required");
+      setPhoneError1(requiredMessage(FIELD_LABELS.phoneNumber1));
       hasError = true;
       alertTitle = "Required";
       alertMessage = "Phone Number 1 is required.";
@@ -425,21 +446,21 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
     }
 
     if (!houseNo.trim()) {
-      setHouseNoError("Required");
+      setHouseNoError(requiredMessage(FIELD_LABELS.houseNo));
       hasError = true;
       alertTitle = "Required";
       alertMessage = "Please enter the house or building number.";
     }
 
     if (!streetName.trim()) {
-      setStreetNameError("Required");
+      setStreetNameError(requiredMessage(FIELD_LABELS.streetName));
       hasError = true;
       alertTitle = "Required";
       alertMessage = "Please enter the street name.";
     }
 
     if (!nearestCity.trim()) {
-      setNearestCityError("Required");
+      setNearestCityError(requiredMessage(FIELD_LABELS.nearestCity));
       hasError = true;
       alertTitle = "Required";
       alertMessage = "Please select the nearest city.";
@@ -447,25 +468,25 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
 
     if (buildingType === "Apartment") {
       if (!buildingNo.trim()) {
-        setBuildingNoError("Required");
+        setBuildingNoError(requiredMessage(FIELD_LABELS.buildingNo));
         hasError = true;
         alertTitle = "Required";
         alertMessage = "Please enter the apartment or building number.";
       }
       if (!buildingName.trim()) {
-        setBuildingNameError("Required");
+        setBuildingNameError(requiredMessage(FIELD_LABELS.buildingName));
         hasError = true;
         alertTitle = "Required";
         alertMessage = "Please enter the apartment or building name.";
       }
       if (!unitNo.trim()) {
-        setUnitNoError("Required");
+        setUnitNoError(requiredMessage(FIELD_LABELS.unitNo));
         hasError = true;
         alertTitle = "Required";
         alertMessage = "Please enter the flat or unit number.";
       }
       if (!floorNo.trim()) {
-        setFloorNoError("Required");
+        setFloorNoError(requiredMessage(FIELD_LABELS.floorNo));
         hasError = true;
         alertTitle = "Required";
         alertMessage = "Please enter the floor number.";
@@ -630,7 +651,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
             onPress={() => {
               Keyboard.dismiss();
               if (!nearestCity.trim()) {
-                setNearestCityError("Required");
+                setNearestCityError(requiredMessage(FIELD_LABELS.nearestCity));
               }
               setCityModalVisible(true);
             }}
@@ -712,9 +733,16 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
               nextValue,
               setSaveAddressAs,
               setSaveAsError,
+              FIELD_LABELS.saveAddressAs,
             );
           }}
-          onBlur={() => handleRequiredFieldBlur(saveAddressAs, setSaveAsError)}
+          onBlur={() =>
+            handleRequiredFieldBlur(
+              saveAddressAs,
+              setSaveAsError,
+              FIELD_LABELS.saveAddressAs,
+            )
+          }
           placeholder="e.g. : Home"
           placeholderTextColor="#9CA3AF"
           maxLength={SAVE_ADDRESS_AS_MAX_LENGTH}
@@ -763,10 +791,15 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
                   nextValue,
                   setBillingName,
                   setBillingNameError,
+                  FIELD_LABELS.billingName,
                 );
               }}
               onBlur={() =>
-                handleRequiredFieldBlur(billingName, setBillingNameError)
+                handleRequiredFieldBlur(
+                  billingName,
+                  setBillingNameError,
+                  FIELD_LABELS.billingName,
+                )
               }
               placeholder="e.g. : Billing Name"
               placeholderTextColor="#9CA3AF"
@@ -795,7 +828,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
           onBlur={() => {
             handlePhoneBlur(phoneNumber1, setPhoneNumber1);
             if (!phoneNumber1.trim()) {
-              setPhoneError1("Required");
+              setPhoneError1(requiredMessage(FIELD_LABELS.phoneNumber1));
             } else if (!validatePhoneNumber(phoneNumber1)) {
               setPhoneError1(
                 "Please enter a valid mobile number (format: +947XXXXXXXX)",
@@ -895,11 +928,16 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
                   nextValue,
                   setBuildingNo,
                   setBuildingNoError,
+                  FIELD_LABELS.buildingNo,
                 );
                 if (addressLocationError) setAddressLocationError("");
               }}
               onBlur={() =>
-                handleRequiredFieldBlur(buildingNo, setBuildingNoError)
+                handleRequiredFieldBlur(
+                  buildingNo,
+                  setBuildingNoError,
+                  FIELD_LABELS.buildingNo,
+                )
               }
               placeholder="Apartment / Building No"
               placeholderTextColor="#9CA3AF"
@@ -926,11 +964,16 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
                   nextValue,
                   setBuildingName,
                   setBuildingNameError,
+                  FIELD_LABELS.buildingName,
                 );
                 if (addressLocationError) setAddressLocationError("");
               }}
               onBlur={() =>
-                handleRequiredFieldBlur(buildingName, setBuildingNameError)
+                handleRequiredFieldBlur(
+                  buildingName,
+                  setBuildingNameError,
+                  FIELD_LABELS.buildingName,
+                )
               }
               placeholder="Apartment / Building Name"
               placeholderTextColor="#9CA3AF"
@@ -953,10 +996,21 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
               value={unitNo}
               onChangeText={(text) => {
                 const nextValue = capitalizeWords(text);
-                handleRequiredFieldChange(nextValue, setUnitNo, setUnitNoError);
+                handleRequiredFieldChange(
+                  nextValue,
+                  setUnitNo,
+                  setUnitNoError,
+                  FIELD_LABELS.unitNo,
+                );
                 if (addressLocationError) setAddressLocationError("");
               }}
-              onBlur={() => handleRequiredFieldBlur(unitNo, setUnitNoError)}
+              onBlur={() =>
+                handleRequiredFieldBlur(
+                  unitNo,
+                  setUnitNoError,
+                  FIELD_LABELS.unitNo,
+                )
+              }
               placeholder="e.g. : Building B"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
@@ -982,10 +1036,17 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
                   nextValue,
                   setFloorNo,
                   setFloorNoError,
+                  FIELD_LABELS.floorNo,
                 );
                 if (addressLocationError) setAddressLocationError("");
               }}
-              onBlur={() => handleRequiredFieldBlur(floorNo, setFloorNoError)}
+              onBlur={() =>
+                handleRequiredFieldBlur(
+                  floorNo,
+                  setFloorNoError,
+                  FIELD_LABELS.floorNo,
+                )
+              }
               placeholder="e.g. : 3rd Floor"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
@@ -1011,10 +1072,17 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
                   nextValue,
                   setHouseNo,
                   setHouseNoError,
+                  FIELD_LABELS.houseNo,
                 );
                 if (addressLocationError) setAddressLocationError("");
               }}
-              onBlur={() => handleRequiredFieldBlur(houseNo, setHouseNoError)}
+              onBlur={() =>
+                handleRequiredFieldBlur(
+                  houseNo,
+                  setHouseNoError,
+                  FIELD_LABELS.houseNo,
+                )
+              }
               placeholder="e.g. : 14"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
@@ -1040,11 +1108,16 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
                   nextValue,
                   setStreetName,
                   setStreetNameError,
+                  FIELD_LABELS.streetName,
                 );
                 if (addressLocationError) setAddressLocationError("");
               }}
               onBlur={() =>
-                handleRequiredFieldBlur(streetName, setStreetNameError)
+                handleRequiredFieldBlur(
+                  streetName,
+                  setStreetNameError,
+                  FIELD_LABELS.streetName,
+                )
               }
               placeholder="Street Name"
               placeholderTextColor="#9CA3AF"
@@ -1085,10 +1158,17 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
                   nextValue,
                   setHouseNo,
                   setHouseNoError,
+                  FIELD_LABELS.houseNo,
                 );
                 if (addressLocationError) setAddressLocationError("");
               }}
-              onBlur={() => handleRequiredFieldBlur(houseNo, setHouseNoError)}
+              onBlur={() =>
+                handleRequiredFieldBlur(
+                  houseNo,
+                  setHouseNoError,
+                  FIELD_LABELS.houseNo,
+                )
+              }
               placeholder="e.g. : 14/B"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
@@ -1109,12 +1189,21 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
             <TextInput
               value={streetName}
               onChangeText={(text) => {
-                setStreetName(capitalizeWords(text));
-                if (streetNameError) setStreetNameError("");
+                const nextValue = capitalizeWords(text);
+                handleRequiredFieldChange(
+                  nextValue,
+                  setStreetName,
+                  setStreetNameError,
+                  FIELD_LABELS.streetName,
+                );
                 if (addressLocationError) setAddressLocationError("");
               }}
               onBlur={() =>
-                handleRequiredFieldBlur(streetName, setStreetNameError)
+                handleRequiredFieldBlur(
+                  streetName,
+                  setStreetNameError,
+                  FIELD_LABELS.streetName,
+                )
               }
               placeholder="Street Name"
               placeholderTextColor="#9CA3AF"
@@ -1152,11 +1241,11 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
           activeOpacity={0.8}
           className="self-center flex-row items-center border rounded-full px-8 py-3 mb-1"
           style={{
-            borderColor: geoLocationError ? "#DC2626" : "#6C3CD1",
+            borderColor: "#6C3CD1",
             borderWidth: 1,
             backgroundColor: "#FFF",
             // Border glow (iOS)
-            shadowColor: geoLocationError ? "#DC2626" : "#6C3CD1",
+            shadowColor: "#6C3CD1",
             shadowOffset: { width: 0, height: 0 },
             shadowOpacity: 0.3,
             shadowRadius: 4,
@@ -1168,13 +1257,13 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
           <FontAwesome6
             name={"location-crosshairs"}
             size={16}
-            color={geoLocationError ? "#DC2626" : "#7B3FE4"}
+            color={"#7B3FE4"}
           />
           <Text
             className="ml-2 text-[13px] font-medium"
             numberOfLines={1}
             style={{
-              color: geoLocationError ? "#DC2626" : "#7B3FE4",
+              color:  "#7B3FE4",
               maxWidth: 220,
             }}
           >
