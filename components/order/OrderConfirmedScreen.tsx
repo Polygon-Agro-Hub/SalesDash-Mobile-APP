@@ -20,7 +20,6 @@ import {
 } from "react-native-responsive-screen";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Print from "expo-print";
-import * as Sharing from "expo-sharing";
 import { Asset } from "expo-asset";
 import * as FileSystem from "expo-file-system/legacy";
 import axios from "axios";
@@ -74,6 +73,7 @@ interface AdditionalItem {
 }
 interface CustomerInfo {
   buildingType: string;
+  fullName: string;
   firstName: string;
   lastName: string;
   phoneNumber: string;
@@ -279,7 +279,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
   const convertLogoToBase64 = async () => {
     try {
       const asset = Asset.fromModule(
-        require("../../assets/images/order/logo.webp"),
+        require("../../assets/images/order/logo.png"),
       );
       if (!asset.downloaded) await asset.downloadAsync();
 
@@ -293,7 +293,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
     }
   };
 
-  const handleDownloadAndShareInvoice = async () => {
+  const handleDownloadInvoice = async () => {
     if (isDownloading) return;
 
     try {
@@ -611,7 +611,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
       >
         <div>
           <p class="bold">Bill To :</p>
-          <p class="headerp">${order?.customerInfo?.title || ""}. ${order?.customerInfo?.firstName || ""} ${order?.customerInfo?.lastName || ""}</p>
+         <p class="headerp">${order?.customerInfo?.title || ""} ${order?.customerInfo?.fullName || ""}</p>
           <p class="headerp"> +94 ${order?.customerInfo?.phoneNumber || ""}</p>
           <p class="headerp">${customerData?.email || ""}</p>
               <div style="margin-top: 10px">
@@ -693,7 +693,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
             padding-bottom: 10px;
           "
         >
-          <div class="bold">${order?.packageInfo?.displayName || "Package"} (${order?.packageInfo?.packageDetails?.reduce((sum, item) => sum + (item.qty || 0), 0) || 0} Items)</div>
+          <div class="bold">${order?.packageInfo?.displayName || "Package"} (${String(order?.packageInfo?.packageDetails?.reduce((sum, item) => sum + (item.qty || 0), 0) || 0).padStart(2, "0")} Items)</div>
           <div style="font-weight: 550; font-size: 16px">Rs. ${(packagePrice + packingFee + serviceFee).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</div>
         </div>
         <div style="border: 1px solid #ddd; border-radius: 10px">
@@ -727,7 +727,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
             margin-top:10px
           "
         >
-         <div class="bold">${order?.isPackage === 1 ? "Additional Items" : "Custom Items"} (${order?.additionalItems?.length || 0} ${order?.additionalItems?.length === 1 ? "Item" : "Items"})</div>
+         <div class="bold">${order?.isPackage === 1 ? "Additional Items" : "Custom Items"} (${String(order?.additionalItems?.length || 0).padStart(2, "0")} ${order?.additionalItems?.length === 1 ? "Item" : "Items"})</div>
     <div style="font-weight: 550; font-size: 16px">Rs. ${additionalItemsTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</div>
         </div>
         <div style="border: 1px solid #ddd; border-radius: 10px">
@@ -830,38 +830,46 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
 </html>
       `;
 
-      const { uri: pdfUri } = await Print.printToFileAsync({
+      const { base64: pdfBase64 } = await Print.printToFileAsync({
         html: htmlContent,
         width: 595,
-        base64: false,
+        base64: true,
       });
 
       const fileName = `Invoice_${invoiceNumber}.pdf`;
-      const tempFilePath = `${(FileSystem as any).cacheDirectory}${fileName}`;
-
-      await FileSystem.copyAsync({
-        from: pdfUri,
-        to: tempFilePath,
-      });
-
-      const shareOptions = {
-        mimeType: "application/pdf",
-        dialogTitle: "Share Invoice",
-        UTI: "com.adobe.pdf",
-      };
+      const filePath = `${FileSystem.documentDirectory}${fileName}`;
 
       if (Platform.OS === "android") {
-        if (await Sharing.isAvailableAsync()) {
-          await Sharing.shareAsync(tempFilePath, shareOptions);
-        } else {
-          Alert.alert("Error", "Sharing is not available on this device");
+        const permissions =
+          await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+
+        if (!permissions.granted) {
+          Alert.alert(
+            "Permission denied",
+            "Please allow access to save the PDF.",
+          );
+          return;
         }
+
+        const fileUri = await FileSystem.StorageAccessFramework.createFileAsync(
+          permissions.directoryUri,
+          `Invoice_${invoiceNumber}.pdf`,
+          "application/pdf",
+        );
+
+        await FileSystem.writeAsStringAsync(fileUri, pdfBase64!, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+
+        Alert.alert("Success", "Invoice downloaded successfully.");
       } else {
-        if (await Sharing.isAvailableAsync()) {
-          await Sharing.shareAsync(tempFilePath, shareOptions);
-        } else {
-          Alert.alert("Error", "Sharing is not available on this device");
-        }
+        const filePath = `${FileSystem.documentDirectory}Invoice_${invoiceNumber}.pdf`;
+
+        await FileSystem.writeAsStringAsync(filePath, pdfBase64!, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+
+        Alert.alert("Success", "Invoice saved successfully.");
       }
     } catch (error) {
       console.error("Invoice generation error:", error);
@@ -901,7 +909,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
                 style={{ fontSize: 20 }}
                 className="text-black text-center font-bold"
               >
-                Order is Confirmed!
+                Order is Successful!
               </Text>
               <Text
                 style={{ fontSize: 18 }}
@@ -913,8 +921,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
                 style={{ fontSize: 16 }}
                 className="text-[#747474] text-center mt-5"
               >
-                Order Confirmation message has been
-                sent to your Customer.
+                Order Confirmation message has been sent to your Customer.
               </Text>
             </View>
 
@@ -940,7 +947,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
               }}
             >
               <TouchableOpacity
-                onPress={handleDownloadAndShareInvoice}
+                onPress={handleDownloadInvoice}
                 disabled={isDownloading}
                 activeOpacity={0.85}
               >

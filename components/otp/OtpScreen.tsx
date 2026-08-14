@@ -51,8 +51,9 @@ const OtpScreen: React.FC = () => {
   const [isOtpInvalid, setIsOtpInvalid] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
+  const otpRowRef = useRef<View>(null);
+  const buttonRowRef = useRef<View>(null);
   const [otpRowY, setOtpRowY] = useState(0);
-
   const [buttonRowY, setButtonRowY] = useState(0);
 
   const isOtpComplete = otp.every((digit) => digit.length === 1);
@@ -253,11 +254,18 @@ const OtpScreen: React.FC = () => {
       };
 
       const cleanedPhoneNumber = phoneNumber.replace(/[^\d]/g, "");
+
+      const isUpdateFlow = route.name === "OtpScreenUp";
+
+      const smsContent = isUpdateFlow
+        ? "This is your OTP for your account details update: {{code}}"
+        : "Thank you for registering with us a Polygon customer. Please use the bellow OTP to confirm the registration process. {{code}}";
+
       const body = {
         source: "PolygonAgro",
         transport: "sms",
         content: {
-          sms: "Thank you for registering with us a GoviMart customer. Please use the bellow OTP to confirm the registration process. {{code}}",
+          sms: smsContent,
         },
         destination: cleanedPhoneNumber,
       };
@@ -324,11 +332,21 @@ const OtpScreen: React.FC = () => {
   const scrollToOtpRow = () => {
     setTimeout(
       () => {
-        const targetY = buttonRowY > 0 ? buttonRowY : otpRowY;
-        scrollViewRef.current?.scrollTo({
-          y: Math.max(targetY - 260, 0),
-          animated: true,
-        });
+        const targetRef = buttonRowRef.current || otpRowRef.current;
+        if (targetRef && scrollViewRef.current) {
+          targetRef.measureInWindow((x, y, width, height) => {
+            scrollViewRef.current?.scrollTo({
+              y: Math.max(y - 260, 0),
+              animated: true,
+            });
+          });
+        } else {
+          const targetY = buttonRowY > 0 ? buttonRowY : otpRowY;
+          scrollViewRef.current?.scrollTo({
+            y: Math.max(targetY - 260, 0),
+            animated: true,
+          });
+        }
       },
       Platform.OS === "ios" ? 50 : 150,
     );
@@ -381,7 +399,7 @@ const OtpScreen: React.FC = () => {
       >
         <ScrollView
           ref={scrollViewRef}
-          contentContainerStyle={{ flexGrow: 1 }}
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           overScrollMode="never"
@@ -394,8 +412,8 @@ const OtpScreen: React.FC = () => {
             navigation={navigation}
             onBackPress={() => navigation.goBack()}
           />
-          <View className="flex-1 bg-white items-center justify-center">
-            <View className="flex-1 justify-center w-full max-w-[500px]">
+          <View className="flex-1 bg-white items-center">
+            <View className="w-full max-w-[500px]" style={{ paddingTop: 24 }}>
               {/* Illustration - Centered */}
               <View className="items-center justify-center mb-6">
                 <Image
@@ -416,8 +434,9 @@ const OtpScreen: React.FC = () => {
                 number
               </Text>
 
-              {/* OTP Input Section — onLayout captures its Y position for scrolling */}
+              {/* OTP Input Section */}
               <View
+                ref={otpRowRef}
                 onLayout={(e) => setOtpRowY(e.nativeEvent.layout.y)}
                 className="flex-row justify-center items-center gap-3 mt-8 mb-4"
               >
@@ -481,6 +500,7 @@ const OtpScreen: React.FC = () => {
                 </View>
 
                 <View
+                  ref={buttonRowRef}
                   onLayout={(e) => setButtonRowY(e.nativeEvent.layout.y)}
                   style={{
                     width: "100%",

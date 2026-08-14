@@ -345,7 +345,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         source: "PolygonAgro",
         transport: "sms",
         content: {
-          sms: "Thank you for your order with GoviMart. Please use the below OTP to confirm your order. {{code}}",
+          sms: "Thank you for your order with Polygon. Please use the below OTP to confirm your order. {{code}}",
         },
         destination: cleanedPhoneNumber,
       };
@@ -359,6 +359,10 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         setIsSubmitting(false);
         Alert.alert("Error", "Failed to send OTP. Please try again.");
         return;
+      }
+
+      if (otpSendResponse.data?.referenceId) {
+         Alert.alert("Success", "OTP sent successfully.");
       }
 
       await AsyncStorage.setItem(
@@ -417,7 +421,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
       const address = route.params.selectedAddress;
       const formatted =
         address.type === "Apartment"
-          ? `${address.buildingNo || ""} ${address.buildingName || ""}, Flat ${address.unitNo || ""}, ${address.floorNo ? address.floorNo + " Floor, " : ""}${address.houseNo ? "House " + address.houseNo + ", " : ""}${address.streetName || ""}, ${address.city || ""}`
+          ? `${address.buildingNo || ""}, ${address.buildingName || ""}, ${address.unitNo || ""}, ${address.floorNo ? address.floorNo + ", " : ""}${address.houseNo ? "House " + address.houseNo + ", " : ""}${address.streetName || ""}, ${address.city || ""}`
           : `${address.houseNo || ""}, ${address.streetName || ""}, ${address.city || ""}`;
       const cleaned = formatted.replace(/\s+/g, " ").trim();
 
@@ -683,6 +687,9 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           orderData: route.params?.orderData,
           rawPackageItems: route.params?.rawPackageItems,
           rawAdditionalItems: route.params?.rawAdditionalItems,
+          selectedAddress: route.params?.selectedAddress,
+          deliveryCharge: deliveryFee,
+          isFinalizeImdt: route.params?.isFinalizeImdt,
         });
         return true;
       };
@@ -693,7 +700,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
       );
 
       return () => backHandler.remove();
-    }, [navigation, customerData]),
+    }, [navigation, customerData, deliveryFee, route.params]),
   );
 
   useFocusEffect(
@@ -780,6 +787,8 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
             rawPackageItems: route.params?.rawPackageItems,
             rawAdditionalItems: route.params?.rawAdditionalItems,
             selectedAddress: route.params?.selectedAddress,
+            deliveryCharge: deliveryFee,
+            isFinalizeImdt: route.params?.isFinalizeImdt,
           })
         }
       />
@@ -1051,6 +1060,8 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                     rawPackageItems: route.params?.rawPackageItems,
                     rawAdditionalItems: route.params?.rawAdditionalItems,
                     selectedAddress: route.params?.selectedAddress,
+                    deliveryCharge: deliveryFee,
+                    isFinalizeImdt: route.params?.isFinalizeImdt,
                   })
                 }
                 className="border border-[#6C3CD1] px-3 rounded-full"

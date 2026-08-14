@@ -189,15 +189,12 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
   const handleBackPress = useCallback(() => {
     const currentData = getCurrentCustomerData();
 
-    navigation.navigate("Main", {
-      screen: "ViewCustomerScreen",
-      params: {
-        number: currentData.number,
-        name: currentData.name,
-        customerId: currentData.customerId,
-        id: currentData.id,
-        title: currentData.title,
-      },
+    navigation.navigate("ViewCustomerScreen" as any, {
+      number: currentData.number,
+      name: currentData.name,
+      customerId: currentData.customerId,
+      id: currentData.id,
+      title: currentData.title,
     });
 
     return true;

@@ -147,6 +147,7 @@ interface ScheduleScreenProps {
       deliveryCharge?: number;
       fullTotal?: number;
       isFinalizeImdt?: number;
+      isNewCustomer?: boolean;
     };
   };
 }
@@ -581,13 +582,18 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
 
     const scheduleTime = convertTimeSlotTo24Hour(selectedTimeSlot);
 
+    const isPackageNum =
+      Number(route.params?.isPackage) === 1 ? 1 : 0;
+
     const packageId =
-      route.params?.packageId ||
-      (orderItems && orderItems.length > 0
-        ? orderItems[0].packageId
-        : orderData
-          ? orderData.packageId
-          : undefined);
+      isPackageNum === 1
+        ? route.params?.packageId ||
+          (orderItems && orderItems.length > 0
+            ? orderItems[0].packageId
+            : orderData
+              ? orderData.packageId
+              : undefined)
+        : null;
 
     const navigationParams = {
       items: items,
@@ -598,7 +604,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       selectedDate: selectedDate,
       selectedTimeSlot: selectedTimeSlot,
       customerId: customerId,
-      isPackage: isPackage,
+      isPackage: isPackageNum,
       packageId: packageId,
       customerid: customerid,
       orderItems: orderItems,
@@ -614,6 +620,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       rawAdditionalItems: route.params?.rawAdditionalItems,
       selectedAddress: selectedAddress,
       deliveryCharge: deliveryFee,
+      isNewCustomer: route.params?.isNewCustomer,
       ...(orderData && { orderData: orderData }),
     };
 
