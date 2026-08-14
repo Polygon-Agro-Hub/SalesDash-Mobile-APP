@@ -444,7 +444,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
       <View className="mx-auto w-full max-w-[500px]">
         <Text
           style={{ fontSize: 16, marginTop: -3 }}
-          className="text-center text-black"
+          className="text-center text-[#393939]"
         >
           {customerName.firstName && customerName.lastName
             ? `Customer ID : ${customerName.cusId}`
