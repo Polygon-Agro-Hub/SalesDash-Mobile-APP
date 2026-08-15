@@ -305,20 +305,19 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
   );
 
   const getChanges = () => {
-    const toAddInclude = selectedIncludeCrops.filter(
-      (cId) => !initialIncludeIds.includes(cId),
-    );
-    const toRemoveInclude = initialIncludeIds.filter(
-      (cId) => !selectedIncludeCrops.includes(cId),
-    );
-    const toAddExclude = selectedExcludeCrops.filter(
-      (cId) => !initialExcludeIds.includes(cId),
-    );
-    const toRemoveExclude = initialExcludeIds.filter(
-      (cId) => !selectedExcludeCrops.includes(cId),
-    );
+    const isExcludeChanged =
+      selectedExcludeCrops.length !== initialExcludeIds.length ||
+      selectedExcludeCrops.some((cId) => !initialExcludeIds.includes(cId));
 
-    return { toAddInclude, toRemoveInclude, toAddExclude, toRemoveExclude };
+    const isIncludeChanged =
+      selectedIncludeCrops.length !== initialIncludeIds.length ||
+      selectedIncludeCrops.some((cId) => !initialIncludeIds.includes(cId));
+
+    return {
+      isExcludeChanged,
+      isIncludeChanged,
+      hasChanges: isExcludeChanged || isIncludeChanged,
+    };
   };
 
   const handlesubmitexcludelist = async () => {
@@ -337,56 +336,9 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
         "Content-Type": "application/json",
       };
 
-      const { toAddInclude, toRemoveInclude, toAddExclude, toRemoveExclude } =
-        getChanges();
+      const { isExcludeChanged, isIncludeChanged, hasChanges } = getChanges();
 
-      const requests: Promise<any>[] = [];
-
-      if (toAddExclude.length > 0) {
-        requests.push(
-          axios.post(
-            `${environment.API_BASE_URL}api/customer/add/excludelist`,
-            { customerId: id, selectedCrops: toAddExclude },
-            { headers },
-          ),
-        );
-      }
-
-      if (toAddInclude.length > 0) {
-        requests.push(
-          axios.post(
-            `${environment.API_BASE_URL}api/customer/add/preferlist`,
-            { customerId: id, selectedCrops: toAddInclude },
-            { headers },
-          ),
-        );
-      }
-
-      toRemoveExclude.forEach((cropId) => {
-        const excludeId = excludeRecordMap[cropId];
-        if (excludeId != null) {
-          requests.push(
-            axios.delete(
-              `${environment.API_BASE_URL}api/customer/excludelist/delete`,
-              { headers, params: { excludeId } },
-            ),
-          );
-        }
-      });
-
-      toRemoveInclude.forEach((cropId) => {
-        const preferId = preferRecordMap[cropId];
-        if (preferId != null) {
-          requests.push(
-            axios.delete(
-              `${environment.API_BASE_URL}api/customer/preferlist/delete`,
-              { headers, params: { preferId } },
-            ),
-          );
-        }
-      });
-
-      if (requests.length === 0) {
+      if (!hasChanges) {
         navigation.navigate("ExcludeItemEditSummery" as any, {
           id,
           customerId,
@@ -394,6 +346,28 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
           title,
         });
         return;
+      }
+
+      const requests: Promise<any>[] = [];
+
+      if (isExcludeChanged) {
+        requests.push(
+          axios.post(
+            `${environment.API_BASE_URL}api/customer/add/excludelist`,
+            { customerId: id, selectedCrops: selectedExcludeCrops },
+            { headers },
+          ),
+        );
+      }
+
+      if (isIncludeChanged) {
+        requests.push(
+          axios.post(
+            `${environment.API_BASE_URL}api/customer/add/preferlist`,
+            { customerId: id, selectedCrops: selectedIncludeCrops },
+            { headers },
+          ),
+        );
       }
 
       const responses = await Promise.all(requests);
@@ -417,14 +391,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
   };
 
   const handleNavigateIfNoCropsSelected = () => {
-    const { toAddInclude, toRemoveInclude, toAddExclude, toRemoveExclude } =
-      getChanges();
-
-    const hasChanges =
-      toAddInclude.length > 0 ||
-      toRemoveInclude.length > 0 ||
-      toAddExclude.length > 0 ||
-      toRemoveExclude.length > 0;
+    const { hasChanges } = getChanges();
 
     if (!hasChanges) {
       navigation.navigate("ExcludeItemEditSummery" as any, {

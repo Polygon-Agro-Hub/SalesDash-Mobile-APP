@@ -22,6 +22,7 @@ import { Platform } from "react-native";
 import CustomHeader from "../common/CustomHeader";
 import LoadingPage from "../common/LoadingPage";
 import GlobalSearchModal from "../common/GlobalSearchModal";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 type EditCustomerScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -1162,15 +1163,20 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
           });
         }}
       />
-      <ScrollView
-        className="flex-1"
-        showsVerticalScrollIndicator={false}
+      <KeyboardAwareScrollView
+        style={{ flex: 1 }}
         contentContainerStyle={{ flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        enableOnAndroid={true}
+        enableAutomaticScroll={true}
+        extraScrollHeight={Platform.OS === "ios" ? 20 : 40}
+        keyboardOpeningTime={0}
       >
         <View className="px-6 mx-auto w-full max-w-[500px]">
           {renderBasicDetailsForm()}
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       {/* Title Selection Modal */}
       <GlobalSearchModal

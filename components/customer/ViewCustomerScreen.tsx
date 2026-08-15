@@ -309,16 +309,30 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
 
       const responses = await Promise.all(
         statusValues.map((statusValue) =>
-          axios.get<OrdersResponse>(
-            `${environment.API_BASE_URL}api/orders/get-order-bycustomerId/${id}`,
-            {
-              params: {
-                page,
-                limit: ORDERS_PER_PAGE,
-                ...(statusValue ? { status: statusValue } : {}),
+          axios
+            .get<OrdersResponse>(
+              `${environment.API_BASE_URL}api/orders/get-order-bycustomerId/${id}`,
+              {
+                params: {
+                  page,
+                  limit: ORDERS_PER_PAGE,
+                  ...(statusValue ? { status: statusValue } : {}),
+                },
               },
-            },
-          ),
+            )
+            .catch((err) => {
+              if (err.response && err.response.status === 404) {
+                return {
+                  data: {
+                    success: true,
+                    data: [] as Order[],
+                    totalCount: 0,
+                    hasMore: false,
+                  } as OrdersResponse,
+                };
+              }
+              throw err;
+            }),
         ),
       );
 

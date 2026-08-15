@@ -259,7 +259,7 @@ const OtpScreen: React.FC = () => {
 
       const smsContent = isUpdateFlow
         ? "This is your OTP for your account details update: {{code}}"
-        : "Thank you for registering with us a Polygon customer. Please use the bellow OTP to confirm the registration process. {{code}}";
+        : "Thank you for registering with us as a Polygon customer. Please use the bellow OTP to confirm the registration process. {{code}}";
 
       const body = {
         source: "PolygonAgro",
