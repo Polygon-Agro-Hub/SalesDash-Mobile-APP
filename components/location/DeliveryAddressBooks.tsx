@@ -82,9 +82,12 @@ const getBillingInfoRows = (address: SavedAddress | null): BillingInfoRow[] => {
   const purpleIcon = { iconColor: "#7B3FE4", iconBg: "#F3EEFC" };
   const greenIcon = { iconColor: "#16A34A", iconBg: "#EAFBF1" };
 
-  const billingTo = [address.billingTitle, address.billingName]
-    .filter(Boolean)
-    .join(" ");
+ const billingTo = [
+  address.billingTitle ? `${address.billingTitle}.` : "",
+  address.billingName,
+]
+  .filter(Boolean)
+  .join(" ");
 
   rows.push({
     label: "Billing To",
@@ -587,15 +590,7 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
                       style={{ marginHorizontal: -15 }}
                     />
                   )}
-                  <View
-                    className="flex-row items-center py-2.5"
-                    style={{
-                      borderBottomWidth:
-                        idx < getBillingInfoRows(selectedAddress).length - 1
-                          ? 0
-                          : 0,
-                    }}
-                  >
+                  <View className="flex-row items-start py-2.5">
                     <View
                       className="items-center justify-center rounded-full mr-3"
                       style={{
@@ -604,21 +599,40 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
                         backgroundColor: row.iconBg,
                       }}
                     >
-                      <FontAwesome6
-                        name={row.icon}
-                        size={14}
-                        color={row.iconColor}
-                      />
+                      <FontAwesome6 name={row.icon} size={14} color={row.iconColor} />
                     </View>
-                    <Text
-                      className="text-gray-400 text-[12.5px]"
-                      style={{ width: 92 }}
+                    <View
+                      style={{
+                        width: 92,
+                        height: 28,
+                        justifyContent: "center",
+                      }}
                     >
-                      {row.label}
-                    </Text>
-                    <Text className="text-gray-800 text-[13px] flex-1">
-                      : {row.value}
-                    </Text>
+                      <Text
+                        className="text-gray-400 text-[12.5px]"
+                        style={{ includeFontPadding: false }}
+                      >
+                        {row.label}
+                      </Text>
+                    </View>
+
+                    <View
+                      className="flex-row flex-1 items-start"
+                      style={{ minHeight: 28, paddingTop: 4 }}
+                    >
+                      <Text
+                        className="text-gray-800 text-[13px]"
+                        style={{ width: 12, lineHeight: 20, includeFontPadding: false }}
+                      >
+                        :
+                      </Text>
+                      <Text
+                        className="text-gray-800 text-[13px] flex-1"
+                        style={{ lineHeight: 20, includeFontPadding: false }}
+                      >
+                        {row.value}
+                      </Text>
+                    </View>
                   </View>
                 </React.Fragment>
               ))}

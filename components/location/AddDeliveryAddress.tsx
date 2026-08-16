@@ -58,6 +58,7 @@ const SAVE_ADDRESS_AS_MAX_LENGTH = 30;
 // so the label text shown on-screen and the error text always match.
 const FIELD_LABELS = {
   saveAddressAs: "Save Address As",
+  title: "Title",
   billingName: "Billing Name",
   phoneNumber1: "Phone Number 1",
   buildingType: "Building Type",
@@ -89,8 +90,11 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
   const [addressLocationError, setAddressLocationError] = useState("");
   const [phoneError1, setPhoneError1] = useState("");
   const [phoneError2, setPhoneError2] = useState("");
+
   const [title, setTitle] = useState("");
+  const [titleError, setTitleError] = useState("");
   const [titleModalVisible, setTitleModalVisible] = useState(false);
+
   const [billingName, setBillingName] = useState("");
   const [phoneNumber1, setPhoneNumber1] = useState("");
   const [phoneNumber2, setPhoneNumber2] = useState("");
@@ -396,6 +400,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
     let alertMessage = "Please fill in all required fields.";
 
     setSaveAsError("");
+    setTitleError("");
     setBillingNameError("");
     setPhoneError1("");
     setBuildingTypeError("");
@@ -415,6 +420,12 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
       hasError = true;
       alertTitle = "Required";
       alertMessage = "Please enter a save address name.";
+    }
+    if (!title.trim()) {
+      setTitleError(requiredMessage(FIELD_LABELS.title));
+      hasError = true;
+      alertTitle = "Required";
+      alertMessage = "Please select a title.";
     }
     if (!buildingType.trim()) {
       setBuildingTypeError(requiredMessage(FIELD_LABELS.buildingType));
@@ -532,6 +543,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
     if (hasError) {
       const hasSpecificRequiredFieldError =
         !saveAddressAs.trim() ||
+        !title.trim() ||
         !billingName.trim() ||
         !phoneNumber1.trim() ||
         !buildingType.trim() ||
@@ -764,20 +776,34 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
           <View style={{ width: 90 }}>
             <Text className="text-sm mb-2">Title *</Text>
             <TouchableOpacity
-              onPress={() => setTitleModalVisible(true)}
+              onPress={() => {
+                if (!title.trim()) {
+                  setTitleError(requiredMessage(FIELD_LABELS.title));
+                }
+                setTitleModalVisible(true);
+              }}
               className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] flex-row items-center justify-between"
+              style={{
+                borderWidth: titleError ? 1 : 0,
+                borderColor: titleError ? "#DC2626" : "transparent",
+              }}
             >
               <Text
-  style={{
-    color: title ? "black" : "#9CA3AF",
-    fontSize: 15,
-    fontStyle: title ? "normal" : "italic",
-  }}
->
-  {title || "Title"}
-</Text>
+                style={{
+                  color: title ? "black" : "#9CA3AF",
+                  fontSize: 15,
+                  fontStyle: title ? "normal" : "italic",
+                }}
+              >
+                {title || "Title"}
+              </Text>
               <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
             </TouchableOpacity>
+            {titleError ? (
+              <Text className="text-red-500 text-xs pl-4 mt-1">
+                {titleError}
+              </Text>
+            ) : null}
           </View>
 
           <View className="flex-1">
@@ -898,14 +924,14 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
           }}
         >
           <Text
-  style={{
-    color: buildingType ? "black" : "#9CA3AF",
-    fontSize: 15,
-    fontStyle: buildingType ? "normal" : "italic",
-  }}
->
-  {buildingType || "Select Building Type"}
-</Text>
+            style={{
+              color: buildingType ? "black" : "#9CA3AF",
+              fontSize: 15,
+              fontStyle: buildingType ? "normal" : "italic",
+            }}
+          >
+            {buildingType || "Select Building Type"}
+          </Text>
           <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
         </TouchableOpacity>
         {buildingTypeError ? (
@@ -1263,7 +1289,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
             className="ml-2 text-[13px] font-medium"
             numberOfLines={1}
             style={{
-              color:  "#7B3FE4",
+              color: "#7B3FE4",
               maxWidth: 220,
             }}
           >
@@ -1359,7 +1385,10 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
         data={TITLE_OPTIONS}
         selectedItems={title ? [title] : []}
         onSelect={(items) => {
-          if (items.length > 0) setTitle(items[0]);
+          if (items.length > 0) {
+            setTitle(items[0]);
+            setTitleError("");
+          }
           setTitleModalVisible(false);
         }}
         searchPlaceholder="Search title..."

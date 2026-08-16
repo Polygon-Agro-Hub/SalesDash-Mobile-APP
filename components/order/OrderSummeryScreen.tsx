@@ -362,7 +362,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
       }
 
       if (otpSendResponse.data?.referenceId) {
-         Alert.alert("Success", "OTP sent successfully.");
+        Alert.alert("Success", "OTP sent successfully.");
       }
 
       await AsyncStorage.setItem(
@@ -847,6 +847,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                       selectedAddress: route.params?.selectedAddress,
                       deliveryCharge: deliveryFee,
                       fullTotal,
+                      isFinalizeImdt: route.params?.isFinalizeImdt,
                     });
                   }}
                   disabled={isSubmitting || isSubmitted}
@@ -1072,9 +1073,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
               </TouchableOpacity>
             </View>
             <Text className="text-[#8492A3] mt-1">
-              {paymentMethod === "Card"
-                ? "Online Payment"
-                : "Cash On Delivery"}
+              {paymentMethod === "Card" ? "Online Payment" : "Cash On Delivery"}
             </Text>
           </View>
         </View>

@@ -611,7 +611,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
       >
         <div>
           <p class="bold">Bill To :</p>
-         <p class="headerp">${order?.customerInfo?.title || ""} ${order?.customerInfo?.fullName || ""}</p>
+         <p class="headerp">${order?.customerInfo?.title || ""}. ${order?.customerInfo?.fullName || ""}</p>
           <p class="headerp"> +94 ${order?.customerInfo?.phoneNumber || ""}</p>
           <p class="headerp">${customerData?.email || ""}</p>
               <div style="margin-top: 10px">

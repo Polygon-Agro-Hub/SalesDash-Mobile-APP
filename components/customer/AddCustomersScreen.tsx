@@ -24,6 +24,7 @@ import { Platform } from "react-native";
 import CustomHeader from "../common/CustomHeader";
 import GlobalSearchModal from "../common/GlobalSearchModal";
 import CityDeliveryStatus from "../common/CityDeliveryStatus";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 type AddCustomersScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -201,7 +202,6 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     });
   };
 
-
   useFocusEffect(
     React.useCallback(() => {
       fetchCity();
@@ -297,17 +297,15 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
 
   const formatNicInput = (text: string) => {
     if (!text) return text;
-    
+
     const cleaned = text.replace(/[^0-9vV]/g, "");
     const digitsOnly = cleaned.replace(/[vV]/g, "");
     const hasLetter = /[vVxX]$/.test(cleaned);
 
     if (hasLetter) {
-      
       return digitsOnly.slice(0, 9) + cleaned.slice(-1).toUpperCase();
     }
 
-    
     return digitsOnly.slice(0, 12);
   };
 
@@ -522,9 +520,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       if (!nic) {
         setNicError("NIC number is required");
       } else if (!validateNIC(nic)) {
-        setNicError(
-          "Please enter a valid NIC (9 digits + V, or 12 digits)",
-        );
+        setNicError("Please enter a valid NIC (9 digits + V, or 12 digits)");
       } else {
         setNicError("");
       }
@@ -733,9 +729,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
 
       if (!nic) setNicError("NIC number is required");
       else if (!validateNIC(nic))
-        setNicError(
-          "Please enter a valid NIC (9 digits + V/X, or 12 digits)",
-        );
+        setNicError("Please enter a valid NIC (9 digits + V/X, or 12 digits)");
 
       showAlert("Error", getFieldValidationMessage(invalidFields));
       return;
@@ -1712,18 +1706,22 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         }}
       />
       <View className="flex-1 bg-white">
-        <ScrollView
-          keyboardShouldPersistTaps="handled"
-          className="bg-white"
+        <KeyboardAwareScrollView
+          style={{ flex: 1, backgroundColor: "white" }}
           contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          enableOnAndroid={true}
+          enableAutomaticScroll={true}
+          extraScrollHeight={Platform.OS === "ios" ? 20 : 40}
+          keyboardOpeningTime={0}
         >
           <View className="mx-auto w-full max-w-[500px] py-2 px-6">
             {step === 1
               ? renderBasicDetailsForm()
               : renderResidentialAddressForm()}
           </View>
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </View>
 
       {/* Title Selection Modal */}
