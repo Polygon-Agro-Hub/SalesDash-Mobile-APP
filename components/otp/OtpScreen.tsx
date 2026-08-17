@@ -56,6 +56,8 @@ const OtpScreen: React.FC = () => {
   const [otpRowY, setOtpRowY] = useState(0);
   const [buttonRowY, setButtonRowY] = useState(0);
 
+  const isVerifyingRef = useRef(false);
+
   const isOtpComplete = otp.every((digit) => digit.length === 1);
 
   const getUserProfile = async () => {
@@ -77,6 +79,10 @@ const OtpScreen: React.FC = () => {
   };
 
   const verifyOTP = async () => {
+    if (isVerifyingRef.current || loading) {
+      return;
+    }
+
     const otpCode = otp.join("");
 
     if (otpCode.length !== 5) {
@@ -88,6 +94,8 @@ const OtpScreen: React.FC = () => {
       Alert.alert("Error", "OTP has expired. Please request a new one.");
       return;
     }
+
+    isVerifyingRef.current = true;
 
     try {
       setLoading(true);
@@ -138,6 +146,8 @@ const OtpScreen: React.FC = () => {
           Alert.alert("Error", "No customer data found.");
           return;
         }
+
+        await AsyncStorage.removeItem("pendingCustomerData");
 
         let parsedData;
         try {
@@ -238,6 +248,7 @@ const OtpScreen: React.FC = () => {
       Alert.alert("Error", errorMessage);
     } finally {
       setLoading(false);
+      isVerifyingRef.current = false;
     }
   };
 
@@ -271,7 +282,6 @@ const OtpScreen: React.FC = () => {
       };
 
       const response = await axios.post(apiUrl, body, { headers });
-      console.log("[OTP RESEND] Response Data:", response.data);
 
       if (response.data.referenceId) {
         await AsyncStorage.setItem("referenceId", response.data.referenceId);
@@ -446,6 +456,7 @@ const OtpScreen: React.FC = () => {
                     ref={(el: TextInput | null) => {
                       inputRefs.current[index] = el;
                     }}
+                    editable={!loading}
                     className={`w-12 h-12 rounded-lg border-2 ${
                       digit
                         ? "bg-[#874DDB] border-[#874DDB]"
@@ -461,6 +472,7 @@ const OtpScreen: React.FC = () => {
                       padding: 0,
                       paddingTop: 0,
                       paddingBottom: 0,
+                      opacity: loading ? 0.6 : 1,
                     }}
                     keyboardType="numeric"
                     maxLength={1}
