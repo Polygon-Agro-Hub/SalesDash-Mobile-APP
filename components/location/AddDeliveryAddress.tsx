@@ -2,10 +2,8 @@ import React, { useState, useCallback, useRef, useEffect } from "react";
 import {
   View,
   Text,
-  ScrollView,
   TextInput,
   TouchableOpacity,
-  KeyboardAvoidingView,
   Platform,
   Alert,
   Keyboard,
@@ -54,8 +52,6 @@ const BUILDING_TYPES = [
 
 const SAVE_ADDRESS_AS_MAX_LENGTH = 30;
 
-// Central place for field labels used in "X is required" messages,
-// so the label text shown on-screen and the error text always match.
 const FIELD_LABELS = {
   saveAddressAs: "Save Address As",
   title: "Title",
@@ -87,7 +83,6 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
   const [saveAddressAs, setSaveAddressAs] = useState("");
   const [saveAsError, setSaveAsError] = useState("");
   const [geoLocationError, setGeoLocationError] = useState("");
-  const [addressLocationError, setAddressLocationError] = useState("");
   const [phoneError1, setPhoneError1] = useState("");
   const [phoneError2, setPhoneError2] = useState("");
 
@@ -161,7 +156,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
   };
 
   // fieldLabel is used to build the "[Field Name] is required" message.
-  const handleRequiredFieldBlur = (
+ const handleRequiredFieldBlur = (
     value: string,
     setError: (value: string) => void,
     fieldLabel: string,
@@ -412,7 +407,6 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
     setFloorNoError("");
     setNearestCityError("");
     setGeoLocationError("");
-    setAddressLocationError("");
     setPhoneError2("");
 
     if (!saveAddressAs.trim()) {
@@ -606,26 +600,13 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
         console.error("Error saving address details:", error.response.data);
 
         if (error.response.status === 409) {
-          const { errorCode, error: errMsg } = error.response.data || {};
-          if (errorCode === "DUPLICATE_ADDRESS") {
-            setAddressLocationError(
-              errMsg ||
-                "This address location already exists. Please use a different address.",
-            );
-            Alert.alert(
-              "Duplicate Address",
-              errMsg ||
-                "This address already exists for this customer. Please enter a different address.",
-            );
-          } else {
-            setSaveAsError(
-              "This name is already used. Please choose a different name.",
-            );
-            Alert.alert(
-              "Duplicate Name",
-              "An address with this name already exists. Please use a different name.",
-            );
-          }
+          setSaveAsError(
+            "This name is already used. Please choose a different name.",
+          );
+          Alert.alert(
+            "Duplicate Name",
+            "An address with this name already exists. Please use a different name.",
+          );
           return;
         }
       } else {
@@ -956,7 +937,6 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
                   setBuildingNoError,
                   FIELD_LABELS.buildingNo,
                 );
-                if (addressLocationError) setAddressLocationError("");
               }}
               onBlur={() =>
                 handleRequiredFieldBlur(
@@ -992,7 +972,6 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
                   setBuildingNameError,
                   FIELD_LABELS.buildingName,
                 );
-                if (addressLocationError) setAddressLocationError("");
               }}
               onBlur={() =>
                 handleRequiredFieldBlur(
@@ -1028,7 +1007,6 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
                   setUnitNoError,
                   FIELD_LABELS.unitNo,
                 );
-                if (addressLocationError) setAddressLocationError("");
               }}
               onBlur={() =>
                 handleRequiredFieldBlur(
@@ -1064,7 +1042,6 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
                   setFloorNoError,
                   FIELD_LABELS.floorNo,
                 );
-                if (addressLocationError) setAddressLocationError("");
               }}
               onBlur={() =>
                 handleRequiredFieldBlur(
@@ -1100,7 +1077,6 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
                   setHouseNoError,
                   FIELD_LABELS.houseNo,
                 );
-                if (addressLocationError) setAddressLocationError("");
               }}
               onBlur={() =>
                 handleRequiredFieldBlur(
@@ -1136,7 +1112,6 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
                   setStreetNameError,
                   FIELD_LABELS.streetName,
                 );
-                if (addressLocationError) setAddressLocationError("");
               }}
               onBlur={() =>
                 handleRequiredFieldBlur(
@@ -1161,13 +1136,6 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
               </Text>
             ) : null}
 
-            {/* Duplicate address location error */}
-            {addressLocationError ? (
-              <Text className="text-red-500 text-xs pl-1 -mt-3 mb-4">
-                {addressLocationError}
-              </Text>
-            ) : null}
-
             {renderNearestCityField()}
           </>
         )}
@@ -1186,7 +1154,6 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
                   setHouseNoError,
                   FIELD_LABELS.houseNo,
                 );
-                if (addressLocationError) setAddressLocationError("");
               }}
               onBlur={() =>
                 handleRequiredFieldBlur(
@@ -1222,7 +1189,6 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
                   setStreetNameError,
                   FIELD_LABELS.streetName,
                 );
-                if (addressLocationError) setAddressLocationError("");
               }}
               onBlur={() =>
                 handleRequiredFieldBlur(
@@ -1244,13 +1210,6 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
             {streetNameError ? (
               <Text className="text-red-500 text-xs pl-4 mb-4">
                 {streetNameError}
-              </Text>
-            ) : null}
-
-            {/* Duplicate address location error */}
-            {addressLocationError ? (
-              <Text className="text-red-500 text-xs pl-1 -mt-3 mb-4">
-                {addressLocationError}
               </Text>
             ) : null}
 
