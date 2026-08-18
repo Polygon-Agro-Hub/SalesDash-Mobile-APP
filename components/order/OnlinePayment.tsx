@@ -262,7 +262,7 @@ const OnlinePayment: React.FC<OnlinePaymentProps> = ({ navigation, route }) => {
               }}
             >
               <Image
-                source={require("@/assets/images/order/online-payment.webp")}
+                source={require("@/assets/images/order/online-payments.webp")}
                 style={{ width: 300, height: 300 }}
                 resizeMode="contain"
               />
@@ -279,7 +279,7 @@ const OnlinePayment: React.FC<OnlinePaymentProps> = ({ navigation, route }) => {
               }}
             >
               Does your customer have the{"\n"}
-              <Text style={{ color: "#7B2FF7" }}>GoViMart Mobile App</Text>?
+              <Text style={{ color: "#7B2FF7" }}>Polygon Mobile App</Text>?
             </Text>
 
             {/* Option: App */}
@@ -319,7 +319,7 @@ const OnlinePayment: React.FC<OnlinePaymentProps> = ({ navigation, route }) => {
                 <Text
                   style={{ fontSize: 14, fontWeight: "600", color: "#1F2937" }}
                 >
-                  Yes, They have the GoViMart{"\n"}Mobile App
+                  Yes, They have the Polygon{"\n"}Mobile App
                 </Text>
                 <Text style={{ fontSize: 12, color: "#6B7280", marginTop: 4 }}>
                   We'll send a payment request as a notification in the app.
