@@ -377,7 +377,14 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
             opacity: currentPage === 1 ? 0.5 : 1,
           }}
         >
-          <Text style={{ color: "white", fontWeight: "bold" }}>Previous</Text>
+          <Text
+            style={{
+              color: currentPage === 1 ? "black" : "white",
+              fontWeight: "bold",
+            }}
+          >
+            Previous
+          </Text>
         </TouchableOpacity>
 
         <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -441,7 +448,14 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
             opacity: currentPage === totalPages ? 0.5 : 1,
           }}
         >
-          <Text style={{ color: "white", fontWeight: "bold" }}>Next</Text>
+          <Text
+            style={{
+              color: currentPage === totalPages ? "black" : "white",
+              fontWeight: "bold",
+            }}
+          >
+            Next
+          </Text>
         </TouchableOpacity>
       </View>
     );
