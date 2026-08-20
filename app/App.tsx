@@ -63,6 +63,7 @@ import OnlinePaymentStatus from "@/components/order/OnlinePaymentStatus";
 import { io } from "socket.io-client";
 import { updateGlobalUnreadCount } from "@/components/reminder/ReminderScreen";
 import environment from "@/environment/environment";
+import { requestTrackingIfNeeded } from "@/utils/ios/trackingPermissions";
 
 // Disable console logs in production mode to improve React Native thread performance
 if (!__DEV__) {
@@ -142,6 +143,10 @@ function AppContent() {
     showOkButton: undefined as boolean | undefined,
     okButtonText: undefined as string | undefined,
   });
+
+  useEffect(() => {
+    requestTrackingIfNeeded();
+  }, []);
 
   useEffect(() => {
     setGlobalAlertListener((title, message, type, onClose, autoClose, showOkButton, okButtonText) => {
