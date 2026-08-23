@@ -13,7 +13,7 @@
     },
     "android": {
       "package": "com.polygonagro.SalesDash",
-      "versionCode": 10,
+      "versionCode": 12,
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/public/favicon.png",
@@ -96,7 +96,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "c7c3f275-b733-45a5-b9b4-65ebac76e1cd"
+        "projectId": "ff902695-8dba-4a18-98a5-ea9c9bd8b691"
       }
     }
   }
