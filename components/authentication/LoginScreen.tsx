@@ -169,11 +169,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       style={{ flex: 1, backgroundColor: "white" }}
     >
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
+        ref={scrollViewRef}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         bounces={false}
-        style={{ backgroundColor: 'white' }}
+        style={{ backgroundColor: "white" }}
       >
         <LinearGradient
           colors={["#9B60E8", "#6E3DD1"]}
@@ -199,7 +200,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             marginTop: -28,
             paddingHorizontal: 24,
             paddingVertical: 32,
-            
           }}
         >
           {/* Center Container */}
@@ -319,7 +319,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 onSubmitEditing={handleSignIn}
                 ref={passwordRef}
                 onFocus={() =>
-                  scrollViewRef.current?.scrollToEnd({ animated: true })
+                  setTimeout(
+                    () =>
+                      scrollViewRef.current?.scrollToEnd({ animated: true }),
+                    100,
+                  )
                 }
               />
 

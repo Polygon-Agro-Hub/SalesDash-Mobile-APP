@@ -2,15 +2,15 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
-  ScrollView,
   TextInput,
   TouchableOpacity,
-  KeyboardAvoidingView,
+  ScrollView,
   ActivityIndicator,
   BackHandler,
   Dimensions,
   Alert,
   Keyboard,
+  Platform,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -20,11 +20,9 @@ import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { Platform } from "react-native";
 import CustomHeader from "../common/CustomHeader";
 import GlobalSearchModal from "../common/GlobalSearchModal";
 import CityDeliveryStatus from "../common/CityDeliveryStatus";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 type AddCustomersScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -111,6 +109,28 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
   const [buildingTypeModalVisible, setBuildingTypeModalVisible] =
     useState(false);
   const [cityModalVisible, setCityModalVisible] = useState(false);
+
+  // Keyboard height tracking — replaces KeyboardAvoidingView / KeyboardAwareScrollView
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showEvent =
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent =
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const [titleItems, setTitleItems] = useState([
     { label: "Rev", value: "Rev" },
@@ -1259,7 +1279,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
           style={{
             marginTop: 24,
             marginHorizontal: "20%",
-            marginBottom: "40%",
+            marginBottom: 24,
             borderRadius: 30,
             shadowColor: "#000",
             shadowOffset: { width: 0, height: 6 },
@@ -1277,9 +1297,10 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
             <LinearGradient
               colors={["#854BDA", "#6E3DD1"]}
               style={{
-                paddingVertical: 14,
                 alignItems: "center",
                 borderRadius: 30,
+                height: 50,
+                justifyContent: "center",
               }}
             >
               {loading ? (
@@ -1640,7 +1661,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
           style={{
             marginTop: 24,
             marginHorizontal: "20%",
-            marginBottom: "40%",
+            marginBottom: 24,
             borderRadius: 30,
             shadowColor: "#000",
             shadowOffset: { width: 0, height: 6 },
@@ -1664,7 +1685,9 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
               style={{
                 paddingVertical: 14,
                 alignItems: "center",
+                justifyContent: "center",
                 borderRadius: 30,
+                height: 50,
               }}
             >
               {isSubmitting || loading ? (
@@ -1688,10 +1711,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      style={{ flex: 1, backgroundColor: "white" }}
-    >
+    <View style={{ flex: 1, backgroundColor: "white" }}>
       <CustomHeader
         title={step === 1 ? "Basic Details" : "Residential Address"}
         titleColor="#6C3CD1"
@@ -1705,24 +1725,19 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
           }
         }}
       />
-      <View className="flex-1 bg-white">
-        <KeyboardAwareScrollView
-          style={{ flex: 1, backgroundColor: "white" }}
-          contentContainerStyle={{ flexGrow: 1 }}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-          enableOnAndroid={true}
-          enableAutomaticScroll={true}
-          extraScrollHeight={Platform.OS === "ios" ? 20 : 40}
-          keyboardOpeningTime={0}
-        >
-          <View className="mx-auto w-full max-w-[500px] py-2 px-6">
-            {step === 1
-              ? renderBasicDetailsForm()
-              : renderResidentialAddressForm()}
-          </View>
-        </KeyboardAwareScrollView>
-      </View>
+
+      <ScrollView
+        style={{ flex: 1, backgroundColor: "white", marginBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: keyboardHeight + 20 }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View className="mx-auto w-full max-w-[500px] py-2 px-6">
+          {step === 1
+            ? renderBasicDetailsForm()
+            : renderResidentialAddressForm()}
+        </View>
+      </ScrollView>
 
       {/* Title Selection Modal */}
       <GlobalSearchModal
@@ -1779,7 +1794,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         showSearch={true}
         noResultsText="No City Found"
       />
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 
