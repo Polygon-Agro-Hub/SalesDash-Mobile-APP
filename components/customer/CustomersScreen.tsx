@@ -52,7 +52,7 @@ const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   const CUSTOMERS_PER_PAGE = 10;
   const insets = useSafeAreaInsets();
-  
+
   const topInset = Platform.OS === "ios" ? insets.top : 0;
 
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
@@ -284,6 +284,11 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
       : phoneNumber;
   };
 
+  const formatCustomerCount = (count: number): string => {
+    if (count === 0) return "0";
+    return String(count).padStart(2, "0");
+  };
+
   const isEmpty = filteredCustomers.length === 0;
 
   const renderFooter = () => {
@@ -307,8 +312,9 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
           colors={["#854BDA", "#6E3DD1"]}
           className="shadow-md px-4 items-center justify-center"
           style={{
-            height: hp(12) + topInset,
-            paddingTop: Platform.OS === "ios" ? topInset + 8 : 16,
+            height:
+              Platform.OS === "ios" ? hp(9) + topInset : hp(12) + topInset,
+            paddingTop: Platform.OS === "ios" ? topInset : 16,
             paddingBottom: 24,
           }}
         >
@@ -319,9 +325,9 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
             >
               Total Customers:{" "}
               <Text className="font-bold">
-                {String(
+                {formatCustomerCount(
                   searchQuery ? filteredCustomers.length : totalCount,
-                ).padStart(2, "0")}
+                )}
               </Text>
             </Text>
           </View>
@@ -340,7 +346,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                 backgroundColor: "#F5F1FC",
                 ...Platform.select({
                   ios: {
-                    shadowColor: "#7E7E7E",
+                    shadowColor: "#000000",
                     shadowOffset: { width: 0, height: 2 },
                     shadowOpacity: 0.15,
                     shadowRadius: 6,
@@ -466,7 +472,6 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                         })
                       }
                     >
-                     
                       <View
                         style={{
                           marginBottom: 12,
@@ -514,13 +519,17 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                               className="text-gray-700 font-semibold"
                               numberOfLines={2}
                               ellipsizeMode="tail"
-                              style={{ fontSize: SCREEN_HEIGHT > 900 ? 20 : 14 }}
+                              style={{
+                                fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
+                              }}
                             >
                               {item.title}. {item.firstName} {item.lastName}
                             </Text>
                             <Text
                               className="text-gray-500"
-                              style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+                              style={{
+                                fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
+                              }}
                             >
                               {formatPhoneNumber(item.phoneNumber)}
                             </Text>
@@ -531,7 +540,9 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                           >
                             <Text
                               className="text-gray-700 font-semibold"
-                              style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 16 }}
+                              style={{
+                                fontSize: SCREEN_HEIGHT > 900 ? 18 : 16,
+                              }}
                             >
                               #
                               {item.orderCount < 10

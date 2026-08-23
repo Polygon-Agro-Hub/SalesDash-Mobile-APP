@@ -571,7 +571,6 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 fontSize: 15,
                 color: "#393939",
                 marginTop: 6,
-                
               }}
             >
               Customer ID : {customerId}
@@ -668,9 +667,9 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 borderWidth: 1,
                 borderColor: "#E5E7EB",
                 shadowColor: "#000",
-                shadowOffset: { width: 0, height: 6 },
-                shadowOpacity: 1,
-                shadowRadius: 6,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.12,
+                shadowRadius: 8,
                 elevation: 2,
                 height: 140,
                 justifyContent: "space-between",
@@ -741,9 +740,9 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 borderWidth: 1,
                 borderColor: "#E5E7EB",
                 shadowColor: "#000",
-                shadowOffset: { width: 0, height: 6 },
-                shadowOpacity: 1,
-                shadowRadius: 6,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.12,
+                shadowRadius: 8,
                 elevation: 2,
                 height: 140,
                 justifyContent: "space-between",

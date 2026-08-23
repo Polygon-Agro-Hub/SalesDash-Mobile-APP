@@ -520,7 +520,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
                       <Text
                         style={{
                           color: "#FF000D",
-                          fontSize: 12,
+                          fontSize: 14,
                           fontWeight: "600",
                           textDecorationLine: "underline",
                         }}
@@ -662,7 +662,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
                       <Text
                         style={{
                           color: "#FF000D",
-                          fontSize: 12,
+                          fontSize: 14,
                           fontWeight: "600",
                           textDecorationLine: "underline",
                         }}

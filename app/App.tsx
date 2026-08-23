@@ -359,7 +359,7 @@ function AppContent() {
       >
         <StatusBar barStyle="dark-content" backgroundColor="#fff" />
         <NavigationContainer ref={navigationRef}>
-          <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Navigator screenOptions={{ headerShown: false, gestureEnabled: false }}>
             <Stack.Screen name="Splash" component={Splash} />
             <Stack.Screen name="LoginScreen" component={LoginScreen} />
             <Stack.Screen name="SidebarScreen" component={SidebarScreen} />
