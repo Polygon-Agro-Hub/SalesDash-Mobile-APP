@@ -297,13 +297,12 @@ const OnlinePaymentStatus: React.FC<OnlinePaymentStatusProps> = ({
           style={{
             alignItems: "center",
             justifyContent: "center",
-            marginTop: 16,
-            marginBottom: 24,
+            
           }}
         >
           <Image
             source={require("@/assets/images/order/online-payment-status.webp")}
-            style={{ width: 300, height: 300 }}
+            style={{ width: 400, height: 400 }}
             resizeMode="contain"
           />
         </View>

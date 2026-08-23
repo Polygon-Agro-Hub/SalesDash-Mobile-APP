@@ -82,9 +82,12 @@ const getBillingInfoRows = (address: SavedAddress | null): BillingInfoRow[] => {
   const purpleIcon = { iconColor: "#7B3FE4", iconBg: "#F3EEFC" };
   const greenIcon = { iconColor: "#16A34A", iconBg: "#EAFBF1" };
 
-  const billingTo = [address.billingTitle, address.billingName]
-    .filter(Boolean)
-    .join(" ");
+ const billingTo = [
+  address.billingTitle ? `${address.billingTitle}.` : "",
+  address.billingName,
+]
+  .filter(Boolean)
+  .join(" ");
 
   rows.push({
     label: "Billing To",
@@ -200,6 +203,19 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
 
   const menuButtonRefs = useRef<{ [key: string]: View | null }>({});
 
+  const sortAddresses = useCallback((items: SavedAddress[]) => {
+    return [...items].sort((a, b) => {
+      const labelA = (a.label || "").trim().toLowerCase();
+      const labelB = (b.label || "").trim().toLowerCase();
+
+      if (labelA === labelB) {
+        return (a.id || 0) - (b.id || 0);
+      }
+
+      return labelA.localeCompare(labelB, undefined, { sensitivity: "base" });
+    });
+  }, []);
+
   const fetchAddresses = useCallback(async () => {
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
@@ -209,7 +225,8 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
           ? { headers: { Authorization: `Bearer ${storedToken}` } }
           : undefined,
       );
-      setAddresses(response.data?.data || []);
+      const fetchedAddresses = response.data?.data || [];
+      setAddresses(sortAddresses(fetchedAddresses));
     } catch (error) {
       console.error("Error fetching address book:", error);
       setAddresses([]);
@@ -234,9 +251,12 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
     if (buttonRef) {
       buttonRef.measure((_fx, _fy, width, height, pageX, pageY) => {
         const screenWidth = Dimensions.get("window").width;
+        const rightOffset = Math.max(12, screenWidth - (pageX + width) - 10);
+        const menuGap = 6;
+
         setMenuPosition({
-          top: pageY + height + 4,
-          right: screenWidth - (pageX + width),
+          top: pageY + height + menuGap,
+          right: rightOffset,
         });
         setSelectedAddress(address);
         setMenuVisible(true);
@@ -297,14 +317,9 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
     });
   };
 
-  const filteredAddresses = addresses
-    .slice()
-    .sort((a, b) =>
-      a.label.localeCompare(b.label, undefined, { sensitivity: "base" }),
-    )
-    .filter((a) =>
-      a.label.toLowerCase().includes(searchQuery.trim().toLowerCase()),
-    );
+  const filteredAddresses = sortAddresses(addresses).filter((a) =>
+    (a.label || "").toLowerCase().includes(searchQuery.trim().toLowerCase()),
+  );
 
   const handleAddNew = () => {
     navigation.navigate("AddDeliveryAddress" as any, { customerId });
@@ -444,7 +459,7 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
               right: menuPosition.right,
               backgroundColor: "white",
               borderRadius: 12,
-              minWidth: 160,
+              minWidth: 135,
               paddingVertical: 4,
               shadowColor: "#000",
               shadowOffset: { width: 0, height: 4 },
@@ -575,15 +590,7 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
                       style={{ marginHorizontal: -15 }}
                     />
                   )}
-                  <View
-                    className="flex-row items-center py-2.5"
-                    style={{
-                      borderBottomWidth:
-                        idx < getBillingInfoRows(selectedAddress).length - 1
-                          ? 0
-                          : 0,
-                    }}
-                  >
+                  <View className="flex-row items-start py-2.5">
                     <View
                       className="items-center justify-center rounded-full mr-3"
                       style={{
@@ -592,21 +599,40 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
                         backgroundColor: row.iconBg,
                       }}
                     >
-                      <FontAwesome6
-                        name={row.icon}
-                        size={14}
-                        color={row.iconColor}
-                      />
+                      <FontAwesome6 name={row.icon} size={14} color={row.iconColor} />
                     </View>
-                    <Text
-                      className="text-gray-400 text-[12.5px]"
-                      style={{ width: 92 }}
+                    <View
+                      style={{
+                        width: 92,
+                        height: 28,
+                        justifyContent: "center",
+                      }}
                     >
-                      {row.label}
-                    </Text>
-                    <Text className="text-gray-800 text-[13px] flex-1">
-                      : {row.value}
-                    </Text>
+                      <Text
+                        className="text-gray-400 text-[12.5px]"
+                        style={{ includeFontPadding: false }}
+                      >
+                        {row.label}
+                      </Text>
+                    </View>
+
+                    <View
+                      className="flex-row flex-1 items-start"
+                      style={{ minHeight: 28, paddingTop: 4 }}
+                    >
+                      <Text
+                        className="text-gray-800 text-[13px]"
+                        style={{ width: 12, lineHeight: 20, includeFontPadding: false }}
+                      >
+                        :
+                      </Text>
+                      <Text
+                        className="text-gray-800 text-[13px] flex-1"
+                        style={{ lineHeight: 20, includeFontPadding: false }}
+                      >
+                        {row.value}
+                      </Text>
+                    </View>
                   </View>
                 </React.Fragment>
               ))}

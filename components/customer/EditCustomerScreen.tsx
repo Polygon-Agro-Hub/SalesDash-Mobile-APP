@@ -22,6 +22,7 @@ import { Platform } from "react-native";
 import CustomHeader from "../common/CustomHeader";
 import LoadingPage from "../common/LoadingPage";
 import GlobalSearchModal from "../common/GlobalSearchModal";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 type EditCustomerScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -53,11 +54,13 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
 
   const [firstName, setFirstName] = useState<string>("");
   const [lastName, setLastName] = useState<string>("");
-  // phoneNumber is always kept in full API format: +947XXXXXXXX
+
   const [phoneNumber, setPhoneNumber] = useState<string>("");
   const [email, setEmail] = useState<string>("");
+  const [nic, setNic] = useState<string>("");
   const [originalPhoneNumber, setOriginalPhoneNumber] = useState<string>("");
   const [originalEmail, setOriginalEmail] = useState("");
+  const [originalNic, setOriginalNic] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(false);
   const [token, setToken] = useState<string>("");
@@ -67,6 +70,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     lastName: false,
     phoneNumber: false,
     email: false,
+    nic: false,
     title: false,
   });
 
@@ -74,6 +78,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
   const [lastNameError, setLastNameError] = useState<string>("");
   const [phoneError, setPhoneError] = useState<string>("");
   const [emailError, setEmailError] = useState<string>("");
+  const [nicError, setNicError] = useState<string>("");
   const [titleError, setTitleError] = useState<string>("");
 
   const [titleModalVisible, setTitleModalVisible] = useState(false);
@@ -92,19 +97,32 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     Alert.alert(title, message, [{ text: "OK", onPress: onClose }]);
   };
 
-  // Matches AddCustomersScreen: full +94 format, locked prefix
   const phoneRegex = /^\+947\d{8}$/;
   const nameRegex = /^[A-Z][a-z]*$/;
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+  const nicRegex = /^([0-9]{9}[vV]|[0-9]{12})$/;
 
   const validatePhoneNumber = (phone: string) => {
     if (phone.length > 12) return false;
     return phoneRegex.test(phone);
   };
   const validateName = (name: string) => nameRegex.test(name);
+  const validateNIC = (value: string) => nicRegex.test(value.trim());
 
-  // Normalizes whatever format the backend stores (0XXXXXXXXX, 94XXXXXXXXX,
-  // or +94XXXXXXXXX) into the single +94XXXXXXXXX format used in this screen.
+  const formatNicInput = (text: string) => {
+    if (!text) return text;
+    const cleaned = text.replace(/[^0-9vV]/g, "");
+    const digitsOnly = cleaned.replace(/[vV]/g, "");
+    const hasLetter = /[vV]$/.test(cleaned);
+
+    if (hasLetter) {
+      return digitsOnly.slice(0, 9) + cleaned.slice(-1).toUpperCase();
+    }
+
+    return digitsOnly.slice(0, 12);
+  };
+
   const normalizeToApiFormat = (phone: string) => {
     if (!phone) return "+94";
     if (phone.startsWith("+94")) return phone;
@@ -172,7 +190,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     </Text>
   );
 
-    const validateEmailAddress = (email: string): boolean => {
+  const validateEmailAddress = (email: string): boolean => {
     const generalEmailRegex =
       /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
@@ -269,7 +287,6 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     return true;
   };
 
-  // Validation effects
   useEffect(() => {
     if (touchedFields.firstName) {
       if (!firstName) {
@@ -393,6 +410,17 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     }
   }, [phoneNumber, touchedFields.phoneNumber]);
 
+  useEffect(() => {
+    if (touchedFields.nic) {
+      if (!nic) {
+        setNicError("NIC number is required");
+      } else if (!validateNIC(nic)) {
+        setNicError("Please enter a valid NIC (9 digits + V, or 12 digits)");
+      } else {
+        setNicError("");
+      }
+    }
+  }, [nic, touchedFields.nic]);
 
   useEffect(() => {
     if (touchedFields.title) {
@@ -418,18 +446,22 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     setLastName("");
     setPhoneNumber("");
     setEmail("");
+    setNic("");
     setOriginalPhoneNumber("");
     setOriginalEmail("");
+    setOriginalNic("");
     setFirstNameError("");
     setLastNameError("");
     setPhoneError("");
     setEmailError("");
+    setNicError("");
     setTitleError("");
     setTouchedFields({
       firstName: false,
       lastName: false,
       phoneNumber: false,
       email: false,
+      nic: false,
       title: false,
     });
   };
@@ -452,6 +484,8 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
         setOriginalPhoneNumber(apiPhone);
         setEmail(customerData.email || "");
         setOriginalEmail(customerData.email || "");
+        setNic(customerData.nic || "");
+        setOriginalNic(customerData.nic || "");
       }
     } catch (error) {
       console.error(error);
@@ -531,24 +565,37 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
       lastName: true,
       phoneNumber: true,
       email: true,
+      nic: true,
       title: true,
     });
 
-    if (!selectedCategory || !firstName || !lastName || !phoneNumber) {
-      showAlert("Error", "Please fill in all required fields.");
-      return;
-    }
+    const missingRequiredFields: string[] = [];
+    if (!selectedCategory) missingRequiredFields.push("Title");
+    if (!firstName) missingRequiredFields.push("First Name");
+    if (!lastName) missingRequiredFields.push("Last Name");
+    if (!phoneNumber) missingRequiredFields.push("Mobile Number");
+    if (!nic) missingRequiredFields.push("NIC Number");
 
-    if (!validatePhoneNumber(phoneNumber)) {
+    if (missingRequiredFields.length > 0) {
       showAlert(
         "Error",
-        "Please enter a valid mobile number (format: +947XXXXXXXX).",
+        `Please fill in the following required fields: ${missingRequiredFields.join(", ")}.`,
       );
       return;
     }
 
+    if (!validatePhoneNumber(phoneNumber)) {
+      showAlert("Error", "Please enter a valid Mobile Number.");
+      return;
+    }
+
     if (!validateEmailAddress(email)) {
-      showAlert("Error", "Please enter a valid email address.");
+      showAlert("Error", "Please enter a valid Email Address.");
+      return;
+    }
+
+    if (!validateNIC(nic)) {
+      showAlert("Error", "Please enter a valid NIC Number.");
       return;
     }
 
@@ -557,15 +604,18 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     try {
       const phoneNumberChanged = phoneNumber !== originalPhoneNumber;
       const emailChanged = email !== originalEmail;
+      const nicChanged =
+        nic.trim().toUpperCase() !== (originalNic || "").trim().toUpperCase();
       const apiPhoneNumber = phoneNumber;
 
-      if (phoneNumberChanged || emailChanged) {
+      if (phoneNumberChanged || emailChanged || nicChanged) {
         try {
           await axios.post(
             `${environment.API_BASE_URL}api/customer/check-customer`,
             {
               phoneNumber: apiPhoneNumber,
               email: email || null,
+              nic: nic || null,
               excludeId: id,
             },
             {
@@ -591,7 +641,55 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
             if (status === 400) {
               const errorMessage = errorData.message || "Validation failed";
 
-              if (errorMessage.includes("Mobile Number already exists")) {
+              if (
+                errorMessage.includes("Mobile Number") &&
+                errorMessage.includes("Email") &&
+                errorMessage.includes("NIC")
+              ) {
+                setPhoneError("This mobile number is already registered.");
+                setEmailError("This email address is already registered.");
+                setNicError("This NIC is already registered.");
+                showAlert(
+                  "Account Already Exists",
+                  "Mobile number, email and NIC are all already registered. Please use different details.",
+                );
+                return;
+              } else if (
+                errorMessage.includes("Mobile Number") &&
+                errorMessage.includes("Email")
+              ) {
+                setPhoneError("This mobile number is already registered.");
+                setEmailError("This email address is already registered.");
+                showAlert(
+                  "Account Already Exists",
+                  "Both mobile number and email are already registered. Please use different credentials.",
+                );
+                return;
+              } else if (
+                errorMessage.includes("Mobile Number") &&
+                errorMessage.includes("NIC")
+              ) {
+                setPhoneError("This mobile number is already registered.");
+                setNicError("This NIC is already registered.");
+                showAlert(
+                  "Account Already Exists",
+                  "Both mobile number and NIC are already registered. Please use different details.",
+                );
+                return;
+              } else if (
+                errorMessage.includes("Email") &&
+                errorMessage.includes("NIC")
+              ) {
+                setEmailError("This email address is already registered.");
+                setNicError("This NIC is already registered.");
+                showAlert(
+                  "Account Already Exists",
+                  "Both email and NIC are already registered. Please use different details.",
+                );
+                return;
+              } else if (
+                errorMessage.includes("Mobile Number already exists")
+              ) {
                 setPhoneError("This mobile number is already registered.");
                 showAlert(
                   "Mobile Number Already Exists",
@@ -605,14 +703,11 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                   "This email address is already registered. Please use a different email address.",
                 );
                 return;
-              } else if (
-                errorMessage.includes("Mobile Number and Email already exist")
-              ) {
-                setPhoneError("This mobile number is already registered.");
-                setEmailError("This email address is already registered.");
+              } else if (errorMessage.includes("NIC already exists")) {
+                setNicError("This NIC is already registered.");
                 showAlert(
-                  "Account Already Exists",
-                  "Both mobile number and email are already registered. Please use different credentials.",
+                  "NIC Already Exists",
+                  "This NIC is already registered. Please use a different NIC.",
                 );
                 return;
               } else {
@@ -671,6 +766,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
         lastName,
         phoneNumber: apiPhoneNumber,
         email,
+        nic,
       };
 
       if (phoneNumberChanged) {
@@ -697,15 +793,19 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
           );
 
           if (response.status === 200) {
-            showAlert("Success", "Customer's Basic Details updated successfully.", () => {
-              navigation.navigate("ViewCustomerScreen" as any, {
-                id,
-                customerId,
-                name: `${firstName} ${lastName}`,
-                title: selectedCategory,
-                number: phoneNumber,
-              });
-            });
+            showAlert(
+              "Success",
+              "Customer's Basic Details updated successfully.",
+              () => {
+                navigation.navigate("ViewCustomerScreen" as any, {
+                  id,
+                  customerId,
+                  name: `${firstName} ${lastName}`,
+                  title: selectedCategory,
+                  number: phoneNumber,
+                });
+              },
+            );
           }
         } catch (updateError: any) {
           console.error("Update error:", updateError);
@@ -726,6 +826,12 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                 "Mobile Number Already Exists",
                 "This mobile number is already registered. Please use a different mobile number.",
               );
+            } else if (errorMessage.includes("NIC already exists")) {
+              setNicError("This NIC is already registered.");
+              showAlert(
+                "NIC Already Exists",
+                "This NIC is already registered. Please use a different NIC.",
+              );
             } else {
               showAlert("Update Error", errorMessage);
             }
@@ -742,9 +848,6 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     }
   };
 
-  // Mirrors AddCustomersScreen: the "+94" prefix is always enforced and
-  // cannot be deleted — if the text no longer starts with +94, it's
-  // reconstructed from whatever digits remain.
   const handlePhoneNumberChange = (text: string) => {
     if (text.startsWith(" ")) return;
 
@@ -767,20 +870,23 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
   };
 
   const handlePhoneNumberChangeWithErrorClear = (text: string) => {
-    if (!touchedFields.phoneNumber) {
-      handleFieldTouch("phoneNumber");
-    }
+    handleFieldTouch("phoneNumber");
 
     handlePhoneNumberChange(text);
   };
 
   const handleEmailChangeWithErrorClear = (text: string) => {
-    if (!touchedFields.email) {
-      handleFieldTouch("email");
-    }
+    handleFieldTouch("email");
 
     if (text.startsWith(" ")) return;
     setEmail(text.toLowerCase());
+  };
+
+  const handleNicChangeWithErrorClear = (text: string) => {
+    handleFieldTouch("nic");
+
+    if (text.startsWith(" ")) return;
+    setNic(formatNicInput(text));
   };
 
   const handlePhoneNumberFocus = () => {
@@ -833,8 +939,9 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                   setTitleModalVisible(true);
                   handleFieldTouch("title");
                 }}
-                className={`bg-[#F6F6F6] border flex-row h-[50px] justify-between items-center ${titleError ? "border-red-500" : "border-[#F6F6F6]"
-                  } rounded-full px-4 h-10`}
+                className={`bg-[#F6F6F6] border flex-row h-[50px] justify-between items-center ${
+                  titleError ? "border-red-500" : "border-[#F6F6F6]"
+                } rounded-full px-4 h-10`}
               >
                 <Text
                   className={selectedCategory ? "text-black" : "text-gray-400"}
@@ -858,8 +965,9 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
           <View className="flex-[2] ml-2">
             <RequiredField>First Name</RequiredField>
             <TextInput
-              className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${firstNameError ? "border-red-500" : "border-[#F6F6F6]"
-                }`}
+              className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${
+                firstNameError ? "border-red-500" : "border-[#F6F6F6]"
+              }`}
               style={{
                 fontSize: INPUT_FONT_SIZE,
                 fontStyle: firstName ? "normal" : "italic",
@@ -868,9 +976,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
               placeholderTextColor="#7F7F7F"
               value={firstName}
               onChangeText={(text) => {
-                if (!touchedFields.firstName) {
-                  handleFieldTouch("firstName");
-                }
+                handleFieldTouch("firstName");
 
                 if (text.startsWith(" ")) return;
                 setFirstName(formatNameInput(text));
@@ -889,8 +995,9 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
         <View className="mb-4">
           <RequiredField>Last Name</RequiredField>
           <TextInput
-            className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${lastNameError ? "border-red-500" : "border-[#F6F6F6]"
-              }`}
+            className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${
+              lastNameError ? "border-red-500" : "border-[#F6F6F6]"
+            }`}
             style={{
               fontSize: INPUT_FONT_SIZE,
               fontStyle: lastName ? "normal" : "italic",
@@ -899,9 +1006,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
             placeholderTextColor="#7F7F7F"
             value={lastName}
             onChangeText={(text) => {
-              if (!touchedFields.lastName) {
-                handleFieldTouch("lastName");
-              }
+              handleFieldTouch("lastName");
 
               if (text.startsWith(" ")) return;
               setLastName(formatNameInput(text));
@@ -919,8 +1024,9 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
         <View className="mb-4">
           <RequiredField>Mobile Number</RequiredField>
           <TextInput
-            className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${phoneError ? "border-red-500" : "border-[#F6F6F6]"
-              }`}
+            className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${
+              phoneError ? "border-red-500" : "border-[#F6F6F6]"
+            }`}
             style={{
               fontSize: INPUT_FONT_SIZE,
               fontStyle: phoneNumber ? "normal" : "italic",
@@ -942,8 +1048,9 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
         <View className="mb-4">
           <RequiredField>Email Address</RequiredField>
           <TextInput
-            className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${emailError ? "border-red-500" : "border-[#F6F6F6]"
-              }`}
+            className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${
+              emailError ? "border-red-500" : "border-[#F6F6F6]"
+            }`}
             style={{
               fontSize: INPUT_FONT_SIZE,
               fontStyle: email ? "normal" : "italic",
@@ -959,6 +1066,30 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
           />
           {emailError ? (
             <Text className="text-red-500 text-xs mt-1 ml-2">{emailError}</Text>
+          ) : null}
+        </View>
+
+        <View className="mb-4">
+          <RequiredField>NIC Number</RequiredField>
+          <TextInput
+            className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${
+              nicError ? "border-red-500" : "border-[#F6F6F6]"
+            }`}
+            style={{
+              fontSize: INPUT_FONT_SIZE,
+              fontStyle: nic ? "normal" : "italic",
+            }}
+            placeholderTextColor="#7F7F7F"
+            placeholder="NIC Number"
+            autoCapitalize="characters"
+            autoCorrect={false}
+            value={nic}
+            onChangeText={handleNicChangeWithErrorClear}
+            onBlur={() => handleFieldTouch("nic")}
+            maxLength={12}
+          />
+          {nicError ? (
+            <Text className="text-red-500 text-xs mt-1 ml-2">{nicError}</Text>
           ) : null}
         </View>
 
@@ -1018,7 +1149,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
       style={{ flex: 1, backgroundColor: "white" }}
     >
       <CustomHeader
-        title="Edit Basic Details"
+        title="Edit Customer Details"
         titleColor="#6C3CD1"
         showBackButton={true}
         navigation={navigation}
@@ -1032,11 +1163,20 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
           });
         }}
       />
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        enableOnAndroid={true}
+        enableAutomaticScroll={true}
+        extraScrollHeight={Platform.OS === "ios" ? 20 : 40}
+        keyboardOpeningTime={0}
+      >
         <View className="px-6 mx-auto w-full max-w-[500px]">
           {renderBasicDetailsForm()}
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       {/* Title Selection Modal */}
       <GlobalSearchModal
