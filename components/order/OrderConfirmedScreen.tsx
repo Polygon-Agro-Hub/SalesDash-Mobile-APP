@@ -286,7 +286,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
       const base64 = await FileSystem.readAsStringAsync(asset.localUri!, {
         encoding: "base64",
       });
-      return `data:image/webp;base64,${base64}`;
+      return `data:image/png;base64,${base64}`;
     } catch (error) {
       console.error("Error converting logo to base64, using fallback:", error);
       return logoBase64Fallback;
