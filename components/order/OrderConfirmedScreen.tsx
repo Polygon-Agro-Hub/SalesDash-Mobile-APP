@@ -20,6 +20,7 @@ import {
 } from "react-native-responsive-screen";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Print from "expo-print";
+import * as Sharing from "expo-sharing";
 import { Asset } from "expo-asset";
 import * as FileSystem from "expo-file-system/legacy";
 import axios from "axios";
@@ -278,15 +279,27 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
 
   const convertLogoToBase64 = async () => {
     try {
-      const asset = Asset.fromModule(
+      const assets = await Asset.loadAsync(
         require("../../assets/images/order/logo.png"),
       );
-      if (!asset.downloaded) await asset.downloadAsync();
+      const asset = assets && assets[0];
+      if (asset) {
+        let uri = asset.localUri || asset.uri;
 
-      const base64 = await FileSystem.readAsStringAsync(asset.localUri!, {
-        encoding: "base64",
-      });
-      return `data:image/png;base64,${base64}`;
+        if (uri && !uri.startsWith("file://") && !uri.startsWith("/")) {
+          const targetPath = `${FileSystem.cacheDirectory}temp_logo.png`;
+          const downloaded = await FileSystem.downloadAsync(uri, targetPath);
+          uri = downloaded.uri;
+        }
+
+        if (uri) {
+          const base64 = await FileSystem.readAsStringAsync(uri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          return `data:image/png;base64,${base64}`;
+        }
+      }
+      return logoBase64Fallback;
     } catch (error) {
       console.error("Error converting logo to base64, using fallback:", error);
       return logoBase64Fallback;
@@ -869,7 +882,15 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
           encoding: FileSystem.EncodingType.Base64,
         });
 
-        Alert.alert("Success", "Invoice saved successfully.");
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(filePath, {
+            UTI: "com.adobe.pdf",
+            mimeType: "application/pdf",
+            dialogTitle: "Save Invoice PDF",
+          });
+        } else {
+          Alert.alert("Success", "Invoice saved successfully.");
+        }
       }
     } catch (error) {
       console.error("Invoice generation error:", error);

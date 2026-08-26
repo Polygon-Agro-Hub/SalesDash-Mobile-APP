@@ -198,8 +198,8 @@ function AppContent() {
     let currentUserId: number | null = null;
 
     const initSocket = async () => {
-      const token = await AsyncStorage.getItem("authToken");
-      if (!token) {
+      const rawToken = await AsyncStorage.getItem("authToken");
+      if (!rawToken) {
         if (socket) {
           socket.disconnect();
           socket = null;
@@ -208,11 +208,19 @@ function AppContent() {
         return;
       }
 
+      const token = rawToken.replace(/^["']|["']$/g, "").trim();
+
       if (!currentUserId) {
         try {
           const response = await axios.get(
             `${environment.API_BASE_URL}api/auth/user/profile`,
-            { headers: { Authorization: `Bearer ${token}` } }
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+                Accept: "application/json",
+              },
+            }
           );
           if (response.data?.data?.id) {
             currentUserId = response.data.data.id;
@@ -238,7 +246,13 @@ function AppContent() {
 
         socket = io(socketUrl, {
           path: socketPath,
-          transports: ["websocket"],
+          transports: ["websocket", "polling"],
+          extraHeaders: {
+            Authorization: `Bearer ${token}`,
+          },
+          auth: {
+            token: token,
+          },
         });
 
         socket.on("connect", () => {
@@ -263,7 +277,13 @@ function AppContent() {
         try {
           const response = await axios.get(
             `${environment.API_BASE_URL}api/notifications/`,
-            { headers: { Authorization: `Bearer ${token}` } }
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+                Accept: "application/json",
+              },
+            }
           );
           if (typeof response.data?.unreadCount === "number") {
             updateGlobalUnreadCount(response.data.unreadCount);
