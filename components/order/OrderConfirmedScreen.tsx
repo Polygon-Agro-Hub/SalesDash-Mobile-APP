@@ -20,6 +20,7 @@ import {
 } from "react-native-responsive-screen";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Print from "expo-print";
+import * as Sharing from "expo-sharing";
 import { Asset } from "expo-asset";
 import * as FileSystem from "expo-file-system/legacy";
 import axios from "axios";
@@ -278,15 +279,27 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
 
   const convertLogoToBase64 = async () => {
     try {
-      const asset = Asset.fromModule(
+      const assets = await Asset.loadAsync(
         require("../../assets/images/order/logo.png"),
       );
-      if (!asset.downloaded) await asset.downloadAsync();
+      const asset = assets && assets[0];
+      if (asset) {
+        let uri = asset.localUri || asset.uri;
 
-      const base64 = await FileSystem.readAsStringAsync(asset.localUri!, {
-        encoding: "base64",
-      });
-      return `data:image/webp;base64,${base64}`;
+        if (uri && !uri.startsWith("file://") && !uri.startsWith("/")) {
+          const targetPath = `${FileSystem.cacheDirectory}temp_logo.png`;
+          const downloaded = await FileSystem.downloadAsync(uri, targetPath);
+          uri = downloaded.uri;
+        }
+
+        if (uri) {
+          const base64 = await FileSystem.readAsStringAsync(uri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          return `data:image/png;base64,${base64}`;
+        }
+      }
+      return logoBase64Fallback;
     } catch (error) {
       console.error("Error converting logo to base64, using fallback:", error);
       return logoBase64Fallback;
@@ -830,14 +843,13 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
 </html>
       `;
 
-      const { base64: pdfBase64 } = await Print.printToFileAsync({
+      const { uri: pdfUri, base64: pdfBase64 } = await Print.printToFileAsync({
         html: htmlContent,
         width: 595,
         base64: true,
       });
 
       const fileName = `Invoice_${invoiceNumber}.pdf`;
-      const filePath = `${FileSystem.documentDirectory}${fileName}`;
 
       if (Platform.OS === "android") {
         const permissions =
@@ -853,7 +865,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
 
         const fileUri = await FileSystem.StorageAccessFramework.createFileAsync(
           permissions.directoryUri,
-          `Invoice_${invoiceNumber}.pdf`,
+          fileName,
           "application/pdf",
         );
 
@@ -863,13 +875,29 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
 
         Alert.alert("Success", "Invoice downloaded successfully.");
       } else {
-        const filePath = `${FileSystem.documentDirectory}Invoice_${invoiceNumber}.pdf`;
+        const fileUri = `${FileSystem.documentDirectory}${fileName}`;
 
-        await FileSystem.writeAsStringAsync(filePath, pdfBase64!, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
+        try {
+          await FileSystem.copyAsync({
+            from: pdfUri,
+            to: fileUri,
+          });
+        } catch (copyErr) {
+          console.log("Copy file error, using base64 write fallback:", copyErr);
+          await FileSystem.writeAsStringAsync(fileUri, pdfBase64!, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+        }
 
-        Alert.alert("Success", "Invoice saved successfully.");
+        const isSharingAvailable = await Sharing.isAvailableAsync();
+        if (isSharingAvailable) {
+          await Sharing.shareAsync(fileUri, {
+            mimeType: "application/pdf",
+            dialogTitle: "Save Invoice PDF",
+          });
+        } else {
+          Alert.alert("Success", "Invoice saved to documents.");
+        }
       }
     } catch (error) {
       console.error("Invoice generation error:", error);
