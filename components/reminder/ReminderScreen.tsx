@@ -115,7 +115,7 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
       const cleanToken = storedToken.replace(/^["']|["']$/g, "").trim();
 
       const response = await axios.get(
-        `${environment.API_BASE_URL}api/notifications/`,
+        `${environment.API_BASE_URL}api/notifications`,
         {
           headers: {
             Authorization: `Bearer ${cleanToken}`,
