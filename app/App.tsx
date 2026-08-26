@@ -276,7 +276,7 @@ function AppContent() {
       if (token && (!socket || !socket.connected)) {
         try {
           const response = await axios.get(
-            `${environment.API_BASE_URL}api/notifications/`,
+            `${environment.API_BASE_URL}api/notifications`,
             {
               headers: {
                 Authorization: `Bearer ${token}`,
