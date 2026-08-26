@@ -843,14 +843,13 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
 </html>
       `;
 
-      const { base64: pdfBase64 } = await Print.printToFileAsync({
+      const { uri: pdfUri, base64: pdfBase64 } = await Print.printToFileAsync({
         html: htmlContent,
         width: 595,
         base64: true,
       });
 
       const fileName = `Invoice_${invoiceNumber}.pdf`;
-      const filePath = `${FileSystem.documentDirectory}${fileName}`;
 
       if (Platform.OS === "android") {
         const permissions =
@@ -866,7 +865,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
 
         const fileUri = await FileSystem.StorageAccessFramework.createFileAsync(
           permissions.directoryUri,
-          `Invoice_${invoiceNumber}.pdf`,
+          fileName,
           "application/pdf",
         );
 
@@ -876,20 +875,28 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
 
         Alert.alert("Success", "Invoice downloaded successfully.");
       } else {
-        const filePath = `${FileSystem.documentDirectory}Invoice_${invoiceNumber}.pdf`;
+        const fileUri = `${FileSystem.documentDirectory}${fileName}`;
 
-        await FileSystem.writeAsStringAsync(filePath, pdfBase64!, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
+        try {
+          await FileSystem.copyAsync({
+            from: pdfUri,
+            to: fileUri,
+          });
+        } catch (copyErr) {
+          console.log("Copy file error, using base64 write fallback:", copyErr);
+          await FileSystem.writeAsStringAsync(fileUri, pdfBase64!, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+        }
 
-        if (await Sharing.isAvailableAsync()) {
-          await Sharing.shareAsync(filePath, {
-            UTI: "com.adobe.pdf",
+        const isSharingAvailable = await Sharing.isAvailableAsync();
+        if (isSharingAvailable) {
+          await Sharing.shareAsync(fileUri, {
             mimeType: "application/pdf",
             dialogTitle: "Save Invoice PDF",
           });
         } else {
-          Alert.alert("Success", "Invoice saved successfully.");
+          Alert.alert("Success", "Invoice saved to documents.");
         }
       }
     } catch (error) {
