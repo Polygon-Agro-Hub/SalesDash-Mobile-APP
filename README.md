@@ -129,7 +129,7 @@ eas build --platform android --profile preview
 #### 🍎 Build iOS (IPA for Apple App Store / TestFlight)
 Generates an `.ipa` build for iOS distribution:
 ```bash
-eas build --platform ios --profile production
+eas build --platform ios --profile production 
 ```
 
 ---
