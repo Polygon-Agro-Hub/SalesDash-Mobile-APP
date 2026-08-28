@@ -1142,61 +1142,56 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     return <LoadingPage message="Loading Customer Data..." fullScreen={true} />;
   }
 
-  return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })}
-      style={{ flex: 1, backgroundColor: "white" }}
+return (
+  <View style={{ flex: 1, backgroundColor: "white" }}>
+    <CustomHeader
+      title="Edit Customer Details"
+      titleColor="#6C3CD1"
+      showBackButton={true}
+      navigation={navigation}
+      onBackPress={() => {
+        navigation.navigate("ViewCustomerScreen" as any, {
+          id,
+          customerId,
+          name: `${firstName} ${lastName}`,
+          title: selectedCategory,
+          number: phoneNumber,
+        });
+      }}
+    />
+    <KeyboardAwareScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={{ flexGrow: 1 }}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+      enableOnAndroid={true}
+      enableAutomaticScroll={true}
+      extraScrollHeight={Platform.OS === "ios" ? 20 : 20}
+      keyboardOpeningTime={0}
     >
-      <CustomHeader
-        title="Edit Customer Details"
-        titleColor="#6C3CD1"
-        showBackButton={true}
-        navigation={navigation}
-        onBackPress={() => {
-          navigation.navigate("ViewCustomerScreen" as any, {
-            id,
-            customerId,
-            name: `${firstName} ${lastName}`,
-            title: selectedCategory,
-            number: phoneNumber,
-          });
-        }}
-      />
-      <KeyboardAwareScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ flexGrow: 1 }}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        enableOnAndroid={true}
-        enableAutomaticScroll={true}
-        extraScrollHeight={Platform.OS === "ios" ? 20 : 40}
-        keyboardOpeningTime={0}
-      >
-        <View className="px-6 mx-auto w-full max-w-[500px]">
-          {renderBasicDetailsForm()}
-        </View>
-      </KeyboardAwareScrollView>
+      <View className="px-6 mx-auto w-full max-w-[500px]">
+        {renderBasicDetailsForm()}
+      </View>
+    </KeyboardAwareScrollView>
 
-      {/* Title Selection Modal */}
-      <GlobalSearchModal
-        visible={titleModalVisible}
-        onClose={() => setTitleModalVisible(false)}
-        title="Select Title"
-        data={items}
-        selectedItems={selectedCategory ? [selectedCategory] : []}
-        onSelect={(items) => {
-          if (items.length > 0) {
-            setSelectedCategory(items[0]);
-          }
-          handleFieldTouch("title");
-        }}
-        searchPlaceholder="Search title..."
-        multiSelect={false}
-        showSearch={false}
-      />
-    </KeyboardAvoidingView>
-  );
+    <GlobalSearchModal
+      visible={titleModalVisible}
+      onClose={() => setTitleModalVisible(false)}
+      title="Select Title"
+      data={items}
+      selectedItems={selectedCategory ? [selectedCategory] : []}
+      onSelect={(items) => {
+        if (items.length > 0) {
+          setSelectedCategory(items[0]);
+        }
+        handleFieldTouch("title");
+      }}
+      searchPlaceholder="Search title..."
+      multiSelect={false}
+      showSearch={false}
+    />
+  </View>
+);
 };
 
 export default EditCustomerScreen;

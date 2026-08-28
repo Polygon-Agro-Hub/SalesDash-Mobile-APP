@@ -16,6 +16,7 @@
       "package": "com.polygonagro.SalesDash",
       "versionCode": 15,
       "edgeToEdgeEnabled": true,
+      "softwareKeyboardLayoutMode": "resize",
       "predictiveBackGestureEnabled": false,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/public/favicon.png",

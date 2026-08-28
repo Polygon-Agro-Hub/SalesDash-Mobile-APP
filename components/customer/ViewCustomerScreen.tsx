@@ -127,6 +127,12 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   const [customerNumber, setCustomerNumber] = useState(initialNumber);
   const isFirstRender = useRef(true);
 
+
+  const selectedFilterRef = useRef(selectedFilter);
+  useEffect(() => {
+    selectedFilterRef.current = selectedFilter;
+  }, [selectedFilter]);
+
   const fullName = `${customerTitle ? customerTitle + ". " : ""}${customerName}`;
 
   useEffect(() => {
@@ -151,7 +157,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       };
 
       resetStates();
-      loadOrders(1, true, false, selectedFilter);
+
+      loadOrders(1, true, false, selectedFilterRef.current);
       getUserProfile();
 
       return () => {};
@@ -501,7 +508,6 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       enabled
       style={{ flex: 1 }}
     >
-      {/* Full-screen linear gradient background: #FBFAFE -> #FFFFFF, top to bottom, 30px corner radius */}
       <LinearGradient
         colors={["#FBFAFE", "#FFFFFF"]}
         start={{ x: 0, y: 0 }}
@@ -1024,10 +1030,11 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                           borderWidth: 1.5,
                           borderColor: isPaymentPending ? "#EF4444" : "#F3F4F6",
                           shadowColor: "#000",
-                          shadowOffset: { width: 0, height: 4 },
-                          shadowOpacity: 0.04,
-                          shadowRadius: 8,
-                          elevation: 2,
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.25,
+                          shadowRadius: 3.84,
+                          elevation: 4,
+                          maxWidth: 500,
                         }}
                       >
                         <View

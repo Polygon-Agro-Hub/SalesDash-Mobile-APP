@@ -472,7 +472,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
       >
         <ScrollView
           ref={scrollViewRef}
-          contentContainerStyle={{ flexGrow: 1 }}
+          contentContainerStyle={{ flexGrow: 1,paddingBottom:40 }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           overScrollMode="never"
