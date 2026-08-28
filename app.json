@@ -6,6 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/public/favicon.png",
     "userInterfaceStyle": "light",
+    "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/public/dashicon.png",
       "resizeMode": "contain",
@@ -14,7 +15,8 @@
     "android": {
       "package": "com.polygonagro.SalesDash",
       "versionCode": 14,
-      "softwareKeyboardLayoutMode": "resize",
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/public/favicon.png",
         "backgroundColor": "#ffffff"
