@@ -89,7 +89,8 @@
         }
       ],
       "expo-web-browser",
-      "expo-location"
+      "expo-location",
+      "./plugins/withOptionalHardwareFeatures"
     ],
     "extra": {
       "router": {
