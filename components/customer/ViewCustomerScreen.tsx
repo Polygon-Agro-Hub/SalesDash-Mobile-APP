@@ -50,6 +50,7 @@ type ViewCustomerScreenRouteProp = RouteProp<
 
 interface Order {
   orderId: string;
+  processId?: string;
   customerId: string;
   deliveryType: string;
   sheduleDate: string;
@@ -126,7 +127,6 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   const [customerTitle, setCustomerTitle] = useState(initialTitle);
   const [customerNumber, setCustomerNumber] = useState(initialNumber);
   const isFirstRender = useRef(true);
-
 
   const selectedFilterRef = useRef(selectedFilter);
   useEffect(() => {
@@ -352,7 +352,9 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
         if (response.data.success) {
           anySuccess = true;
           for (const order of response.data.data) {
-            mergedOrdersMap.set(order.orderId, order);
+            const uniqueKey =
+              order.processId?.toString() || `${order.orderId}-${order.InvNo}`;
+            mergedOrdersMap.set(uniqueKey, order);
           }
           combinedHasMore = combinedHasMore || Boolean(response.data.hasMore);
         } else if (!firstFailureMessage) {
@@ -997,10 +999,10 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
               <FlatList
                 data={filteredOrders}
                 keyExtractor={(item, index) => {
+                  const safeProcessId = item.processId || "";
                   const safeOrderId = item.orderId || "unknown";
                   const safeInvNo = item.InvNo || "";
-                  const safeCreatedAt = item.createdAt || "";
-                  return `${safeOrderId}-${safeInvNo}-${safeCreatedAt}-${index}`;
+                  return `${safeOrderId}-${safeProcessId}-${safeInvNo}-${index}`;
                 }}
                 renderItem={({ item }) => {
                   const isPaymentPending =

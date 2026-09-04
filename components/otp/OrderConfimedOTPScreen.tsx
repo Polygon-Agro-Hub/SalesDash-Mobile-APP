@@ -167,6 +167,13 @@ const OrderConfimedOTPScreen: React.FC = () => {
           userId: id,
           selectedDate: selectedDate,
           selectedTimeSlot: selectedTimeSlot,
+          scheduleType: (route.params as any)?.scheduleType,
+          sheduleType: (route.params as any)?.sheduleType,
+          selectedDays: (route.params as any)?.selectedDays,
+          recurringDays: (route.params as any)?.recurringDays,
+          validityWeeks: (route.params as any)?.validityWeeks,
+          validityPeriod: (route.params as any)?.validityPeriod,
+          calculatedOrders: (route.params as any)?.calculatedOrders,
         };
       } else {
         Alert.alert(
@@ -246,6 +253,13 @@ const OrderConfimedOTPScreen: React.FC = () => {
       customerscreencustomerid,
       isFinalizeImdt,
       deliveryCharge,
+      scheduleType: (route.params as any)?.scheduleType,
+      sheduleType: (route.params as any)?.sheduleType,
+      selectedDays: (route.params as any)?.selectedDays,
+      recurringDays: (route.params as any)?.recurringDays,
+      validityWeeks: (route.params as any)?.validityWeeks,
+      validityPeriod: (route.params as any)?.validityPeriod,
+      calculatedOrders: (route.params as any)?.calculatedOrders,
     });
   };
 
