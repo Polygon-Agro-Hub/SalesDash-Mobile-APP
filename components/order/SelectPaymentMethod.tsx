@@ -168,7 +168,6 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
 
   const isPackageNum = isPackage === 1 || isPackage === "1" ? 1 : 0;
 
-  // Normalize to a strict boolean so both `1` and `true` work
   const isImmediateFinalize = !!isFinalizeImdt;
 
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
@@ -215,8 +214,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
     fetchCreditBalance();
   }, [userId]);
 
-  // Cash is disabled either when the order needs immediate finalization
-  // (online payment only), or when the order total exceeds the credit balance.
+
   const isCashDisabled = isImmediateFinalize || orderTotal >= creditBalance;
 
   useEffect(() => {
@@ -261,7 +259,6 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
     try {
       setIsValidating(true);
 
-      // Collect all item IDs from items, rawAdditionalItems, and orderData.additionalItems
       const itemIds: number[] = [];
       if (items && items.length > 0) {
         items.forEach((item) => {
@@ -351,6 +348,13 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
           selectedAddress: route.params?.selectedAddress,
           deliveryCharge: route.params?.deliveryCharge,
           isFinalizeImdt: route.params?.isFinalizeImdt,
+          scheduleType: (route.params as any)?.scheduleType,
+          sheduleType: (route.params as any)?.sheduleType,
+          selectedDays: (route.params as any)?.selectedDays,
+          recurringDays: (route.params as any)?.recurringDays,
+          validityWeeks: (route.params as any)?.validityWeeks,
+          validityPeriod: (route.params as any)?.validityPeriod,
+          calculatedOrders: (route.params as any)?.calculatedOrders,
         });
         return true;
       };
@@ -401,6 +405,13 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
             selectedAddress: route.params?.selectedAddress,
             deliveryCharge: route.params?.deliveryCharge,
             isFinalizeImdt: route.params?.isFinalizeImdt,
+            scheduleType: (route.params as any)?.scheduleType,
+            sheduleType: (route.params as any)?.sheduleType,
+            selectedDays: (route.params as any)?.selectedDays,
+            recurringDays: (route.params as any)?.recurringDays,
+            validityWeeks: (route.params as any)?.validityWeeks,
+            validityPeriod: (route.params as any)?.validityPeriod,
+            calculatedOrders: (route.params as any)?.calculatedOrders,
           })
         }
       />
