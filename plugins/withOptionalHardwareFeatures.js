@@ -1,26 +1,24 @@
-const { withAndroidManifest } = require("expo/config-plugins");
+﻿const { withAndroidManifest } = require("expo/config-plugins");
 
 /**
  * Custom Expo config plugin — withOptionalHardwareFeatures
  *
  * Problem:
- *   When Android sees permissions like CAMERA or RECORD_AUDIO declared in the
- *   merged AndroidManifest, it may implicitly mark the corresponding hardware
- *   features (android.hardware.camera, android.hardware.microphone) as required.
- *   This causes the Play Store to filter out devices that report those features
- *   differently — such as rugged enterprise scanners (e.g. Chainway C66).
+ *   When Android sees permissions declared in the merged AndroidManifest, it may
+ *   implicitly mark corresponding hardware features as required. This causes the
+ *   Play Store to filter out devices that do not report those features.
  *
  * Fix:
  *   Explicitly add <uses-feature android:required="false"> entries so the Play
  *   Store knows these hardware features are optional, keeping the app available
  *   on all compatible devices regardless of how they report their hardware.
+ *
+ * Note:
+ *   Camera, microphone, and audio permissions are now blocked in app.json so
+ *   only audio output is listed here as a safeguard for notification sounds.
  */
 
 const OPTIONAL_FEATURES = [
-  "android.hardware.camera",
-  "android.hardware.camera.autofocus",
-  "android.hardware.camera.front",
-  "android.hardware.microphone",
   "android.hardware.audio.output",
 ];
 

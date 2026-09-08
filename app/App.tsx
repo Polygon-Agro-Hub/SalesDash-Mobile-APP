@@ -85,10 +85,12 @@ LogBox.ignoreLogs([
 // MainTabNavigator component handles the bottom tab navigation and sets up the Android navigation bar appearance.
 function MainTabNavigator() {
   useEffect(() => {
-    if (Platform.OS === "android") {
-      ExpoNavigationBar.setBackgroundColorAsync("#D1D5DB");
-      ExpoNavigationBar.setButtonStyleAsync("dark");
+    async function setupNavBar() {
+      if (Platform.OS === "android") {
+        await ExpoNavigationBar.setStyle("dark");
+      }
     }
+    setupNavBar();
   }, []);
   return (
     <Tab.Navigator
