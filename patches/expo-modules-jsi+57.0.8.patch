@@ -1,22 +1,48 @@
-diff --git a/node_modules/expo-modules-jsi/apple/Sources/ExpoModulesJSI-Cxx/include/RuntimeScheduler.h b/node_modules/expo-modules-jsi/apple/Sources/ExpoModulesJSI-Cxx/include/RuntimeScheduler.h
+﻿diff --git a/node_modules/expo-modules-jsi/apple/Sources/ExpoModulesJSI-Cxx/include/RuntimeScheduler.h b/node_modules/expo-modules-jsi/apple/Sources/ExpoModulesJSI-Cxx/include/RuntimeScheduler.h
 index 6115e87..957527c 100644
 --- a/node_modules/expo-modules-jsi/apple/Sources/ExpoModulesJSI-Cxx/include/RuntimeScheduler.h
 +++ b/node_modules/expo-modules-jsi/apple/Sources/ExpoModulesJSI-Cxx/include/RuntimeScheduler.h
 @@ -50,7 +50,7 @@ public:
-    `scheduleTask` dispatches through `fn`, which the host implements against
-    the real react::RuntimeScheduler.
-    */
+     `scheduleTask` dispatches through `fn`, which the host implements against
+     the real react::RuntimeScheduler.
+     */
 -  SWIFT_RETURNS_RETAINED RuntimeScheduler(void *scheduler, ScheduleFn fn) noexcept
 +  RuntimeScheduler(void *scheduler, ScheduleFn fn) noexcept
        : nativeScheduler(scheduler), scheduleFn(fn) {}
  
    /**
 @@ -58,7 +58,7 @@ public:
-    caller's thread — intended for standalone runtimes (e.g. tests) that have
-    no React scheduler.
-    */
+     caller's thread — intended for standalone runtimes (e.g. tests) that have
+     no React scheduler.
+     */
 -  SWIFT_RETURNS_RETAINED RuntimeScheduler() {}
 +  RuntimeScheduler() {}
  
    RuntimeScheduler(const RuntimeScheduler &) = delete;
  
+diff --git a/node_modules/expo-modules-jsi/apple/Sources/ExpoModulesJSI/Runtime/JavaScriptRuntime.swift b/node_modules/expo-modules-jsi/apple/Sources/ExpoModulesJSI/Runtime/JavaScriptRuntime.swift
+index aaaaaaa..bbbbbbb 100644
+--- a/node_modules/expo-modules-jsi/apple/Sources/ExpoModulesJSI/Runtime/JavaScriptRuntime.swift
++++ b/node_modules/expo-modules-jsi/apple/Sources/ExpoModulesJSI/Runtime/JavaScriptRuntime.swift
+@@ -759,6 +759,10 @@ private func createFunctionClosure(
+     // synchronous call, so the `nonisolated(unsafe)` capture is sound. This removes a per-call class
+     // allocation + retain/release + dealloc that profiling showed dominating the no-op `@JS` host-call
+     // floor.
++    nonisolated(unsafe) let thisPtr = thisPtr
++    nonisolated(unsafe) let argumentsPtr = argumentsPtr
++    nonisolated(unsafe) let resultPtr = resultPtr
++
+     // See `withGuaranteedContext` for why neither the context nor the runtime is retained here, and
+     // why the result is written to the caller's slot instead of being returned.
+     withGuaranteedContext(context) { (context: HostFunctionContext, runtime) in
+@@ -806,6 +810,10 @@ private func createFunctionClosure(
+     // handed in as a borrowed `JavaScriptUnownedValue` pointing straight at the C++-owned `this` slot:
+     // it is not moved out and no owning `JavaScriptValue` is allocated, so the closure avoids the
+     // per-call `weak`-runtime form/destroy and heap object that the owning `this` pays.
++    nonisolated(unsafe) let thisPtr = thisPtr
++    nonisolated(unsafe) let argumentsPtr = argumentsPtr
++    nonisolated(unsafe) let resultPtr = resultPtr
++
+     // See `withGuaranteedContext` for why neither the context nor the runtime is retained here, and
+     // why the result is written to the caller's slot instead of being returned.
+     withGuaranteedContext(context) { (context: UnownedThisHostFunctionContext, runtime) in
