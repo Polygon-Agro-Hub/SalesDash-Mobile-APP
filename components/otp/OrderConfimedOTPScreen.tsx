@@ -183,11 +183,14 @@ const OrderConfimedOTPScreen: React.FC = () => {
         return null;
       }
     } catch (e: any) {
-      console.error("Error creating order after OTP verification:", e);
+      console.error(
+        "Error creating order after OTP verification:",
+        e.response?.data || e,
+      );
       let errorMessage = "Error creating order after OTP verification";
       if (axios.isAxiosError(e) && e.response) {
         errorMessage =
-          e.response.data?.message || e.response.data?.error || errorMessage;
+          e.response.data?.error || e.response.data?.message || errorMessage;
       }
       Alert.alert("Error", errorMessage);
       return null;
