@@ -83,7 +83,8 @@ const Tab = createBottomTabNavigator();
 
 LogBox.ignoreLogs([
   "InteractionManager has been deprecated",
-  "setBackgroundColorAsync is not supported with edge-to-edge enabled"
+  "setBackgroundColorAsync is not supported with edge-to-edge enabled",
+  "`expo-notifications` functionality is not fully supported in Expo Go",
 ]);
 
 // MainTabNavigator component handles the bottom tab navigation and sets up the Android navigation bar appearance.

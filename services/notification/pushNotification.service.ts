@@ -17,7 +17,6 @@ const isExpoGo =
 try {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
-      shouldShowAlert: true,
       shouldPlaySound: true,
       shouldSetBadge: true,
       shouldShowBanner: true,
@@ -173,19 +172,23 @@ class PushNotificationService {
     if (!item || !item.title) return;
 
     try {
-      // Ensure Android channel is ready with Sound & High Priority
+      // Ensure Android channel is ready with Sound & High Priority (safe check)
       if (Platform.OS === "android") {
-        await Notifications.setNotificationChannelAsync("default", {
-          name: "Order & Reminder Notifications",
-          importance: Notifications.AndroidImportance.MAX,
-          lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
-          vibrationPattern: [0, 250, 250, 250],
-          enableLights: true,
-          lightColor: "#6638CE",
-          sound: "default",
-          enableVibrate: true,
-          showBadge: true,
-        });
+        try {
+          await Notifications.setNotificationChannelAsync("default", {
+            name: "Order & Reminder Notifications",
+            importance: Notifications.AndroidImportance.MAX,
+            lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+            vibrationPattern: [0, 250, 250, 250],
+            enableLights: true,
+            lightColor: "#6638CE",
+            sound: "default",
+            enableVibrate: true,
+            showBadge: true,
+          });
+        } catch (_) {
+          // Channel creation not supported in this runtime, proceed with scheduling
+        }
       }
 
       const bodyText =
@@ -194,22 +197,40 @@ class PushNotificationService {
           ? `Order #${item.invNo} for ${item.customerName || item.customerId || "Customer"}`
           : item.title);
 
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: item.title,
-          body: bodyText,
-          data: {
-            orderId: item.orderId || item.processOrderId || item.orderid,
-            invNo: item.invNo || item.invoiceNo,
-            ...item,
+      try {
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: item.title,
+            body: bodyText,
+            data: {
+              orderId: item.orderId || item.processOrderId || item.orderid,
+              invNo: item.invNo || item.invoiceNo,
+              ...item,
+            },
+            sound: "default",
+            priority: Notifications.AndroidNotificationPriority.MAX,
+            color: "#6638CE",
+            vibrate: [0, 250, 250, 250],
           },
-          sound: "default",
-          priority: Notifications.AndroidNotificationPriority.MAX,
-          color: "#6638CE",
-          vibrate: [0, 250, 250, 250],
-        },
-        trigger: (Platform.OS === "android" ? { channelId: "default" } : null) as any,
-      });
+          trigger: (Platform.OS === "android" ? { channelId: "default" } : null) as any,
+        });
+      } catch (_) {
+        // Fallback without channelId trigger
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: item.title,
+            body: bodyText,
+            data: {
+              orderId: item.orderId || item.processOrderId || item.orderid,
+              invNo: item.invNo || item.invoiceNo,
+              ...item,
+            },
+            sound: "default",
+            color: "#6638CE",
+          },
+          trigger: null,
+        });
+      }
     } catch (error) {
       console.warn("[PushNotificationService] Failed to display system notification:", error);
     }

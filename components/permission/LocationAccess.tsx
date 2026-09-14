@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   Platform,
   StatusBar,
   LayoutChangeEvent,
+  PermissionsAndroid,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
@@ -120,9 +121,24 @@ const LocationAccess: React.FC<LocationAccessProps> = ({
   const requestLocationPermission = async () => {
     setIsLoading(true);
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
+      let isGranted = false;
 
-      if (status === "granted") {
+      if (Platform.OS === "android") {
+        const results = await PermissionsAndroid.requestMultiple([
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
+        ]);
+        isGranted =
+          results[PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION] ===
+            PermissionsAndroid.RESULTS.GRANTED ||
+          results[PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION] ===
+            PermissionsAndroid.RESULTS.GRANTED;
+      } else {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        isGranted = status === "granted";
+      }
+
+      if (isGranted) {
         if (onPermissionGranted) {
           onPermissionGranted();
         } else if (navigation) {
@@ -133,35 +149,11 @@ const LocationAccess: React.FC<LocationAccessProps> = ({
           }
         }
       } else {
-        Alert.alert(
-          "Permission Denied",
-          "Location access is required for this feature. Please enable it in settings.",
-          [
-            {
-              text: "Not Now",
-              style: "cancel",
-              onPress: handleNotNowPress,
-            },
-            {
-              text: "Open Settings",
-              onPress: () => Linking.openSettings(),
-            },
-          ]
-        );
+        handleDenyOrClose();
       }
     } catch (error) {
       console.error("Error requesting location permission:", error);
-      Alert.alert(
-        "Error",
-        "Unable to request location permission. Please try again.",
-        [
-          {
-            text: "Not Now",
-            onPress: handleNotNowPress,
-          },
-          { text: "OK" },
-        ]
-      );
+      handleDenyOrClose();
     } finally {
       setIsLoading(false);
     }
