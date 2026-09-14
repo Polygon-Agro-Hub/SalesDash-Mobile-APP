@@ -110,6 +110,21 @@ export type RootStackParamList = {
   };
   PrivacyPolicy: undefined;
   TermsConditions: undefined;
+  CameraAccess?: {
+    returnScreen?: keyof RootStackParamList;
+    returnParams?: any;
+    blockBackNavigation?: boolean;
+  };
+  LocationAccess?: {
+    returnScreen?: keyof RootStackParamList;
+    returnParams?: any;
+    blockBackNavigation?: boolean;
+  };
+  NotificationAccess?: {
+    returnScreen?: keyof RootStackParamList;
+    returnParams?: any;
+    blockBackNavigation?: boolean;
+  };
   SelectOrderTypeNewCustomer: {
     id: number;
     name: string;

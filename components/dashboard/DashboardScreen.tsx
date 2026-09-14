@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState, useRef } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -18,6 +18,8 @@ import DashboardSkeleton from "./DashboardSkeleton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import environment from "@/environment/environment";
+import socketService from "@/services/socket/socket.service";
+import pushNotificationService from "@/services/notification/pushNotification.service";
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
@@ -70,9 +72,6 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
   const [token, setToken] = useState<string | null>(null);
   const [formData, setFormData] = useState({ firstName: "", image: "" });
   const [packages, setPackages] = useState<Package[]>([]);
-  const [displayedPackages, setDisplayedPackages] = useState<Package[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [agentStats, setAgentStats] = useState<AgentStats>({
     daily: {
       target: 10,
@@ -84,9 +83,6 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       totalStars: 0,
     },
   });
-
-  const flatListRef = useRef<FlatList>(null);
-  const ITEMS_PER_PAGE = 6;
 
   const refreshData = async () => {
     setIsLoading(true);
@@ -101,39 +97,6 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
 
     return unsubscribe;
   }, [navigation]);
-
-  // Update displayed packages when packages array changes
-  useEffect(() => {
-    if (packages.length > 0) {
-      goToPage(1);
-    }
-  }, [packages]);
-
-  const goToPage = (page: number) => {
-    const startIndex = (page - 1) * ITEMS_PER_PAGE;
-    const endIndex = startIndex + ITEMS_PER_PAGE;
-    const newDisplayedPackages = packages.slice(startIndex, endIndex);
-    setDisplayedPackages(newDisplayedPackages);
-    setCurrentPage(page);
-    setTotalPages(Math.ceil(packages.length / ITEMS_PER_PAGE));
-
-    // Scroll to top when changing pages
-    if (flatListRef.current) {
-      flatListRef.current.scrollToOffset({ offset: 0, animated: true });
-    }
-  };
-
-  const nextPage = () => {
-    if (currentPage < totalPages) {
-      goToPage(currentPage + 1);
-    }
-  };
-
-  const prevPage = () => {
-    if (currentPage > 1) {
-      goToPage(currentPage - 1);
-    }
-  };
 
   const getUserProfile = async () => {
     try {
@@ -256,6 +219,10 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
 
   useFocusEffect(
     useCallback(() => {
+      socketService.connect().catch(() => {});
+      socketService.checkNewNotifications().catch(() => {});
+      pushNotificationService.registerPushTokenAsync().catch(() => {});
+
       const onBackPress = () => true;
       const subscription = BackHandler.addEventListener(
         "hardwareBackPress",
@@ -349,117 +316,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     );
   };
 
-  const renderPagination = () => {
-    if (totalPages <= 1) return null;
 
-    return (
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "center",
-          alignItems: "center",
-          paddingVertical: 20,
-          paddingHorizontal: 16,
-          marginTop: 10,
-          marginBottom: 30,
-        }}
-      >
-        <TouchableOpacity
-          onPress={prevPage}
-          disabled={currentPage === 1}
-          activeOpacity={0.7}
-          style={{
-            backgroundColor: currentPage === 1 ? "#E0E0E0" : "#9B60E8",
-            borderRadius: 8,
-            paddingVertical: 8,
-            paddingHorizontal: 16,
-            marginHorizontal: 8,
-            opacity: currentPage === 1 ? 0.5 : 1,
-          }}
-        >
-          <Text
-            style={{
-              color: currentPage === 1 ? "black" : "white",
-              fontWeight: "bold",
-            }}
-          >
-            Previous
-          </Text>
-        </TouchableOpacity>
-
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          {[...Array(Math.min(5, totalPages))].map((_, index) => {
-            let pageNum;
-            if (totalPages <= 5) {
-              pageNum = index + 1;
-            } else if (currentPage <= 3) {
-              pageNum = index + 1;
-              if (index === 4) pageNum = totalPages;
-            } else if (currentPage >= totalPages - 2) {
-              pageNum = totalPages - 4 + index;
-            } else {
-              pageNum = currentPage - 2 + index;
-            }
-
-            if (index === 4 && totalPages > 5 && currentPage < totalPages - 2) {
-              return (
-                <Text key={index} style={{ marginHorizontal: 4, fontSize: 16 }}>
-                  ...
-                </Text>
-              );
-            }
-
-            return (
-              <TouchableOpacity
-                key={index}
-                onPress={() => goToPage(pageNum)}
-                style={{
-                  backgroundColor:
-                    currentPage === pageNum ? "#9B60E8" : "#F0F0F0",
-                  borderRadius: 8,
-                  paddingVertical: 8,
-                  paddingHorizontal: 12,
-                  marginHorizontal: 4,
-                }}
-              >
-                <Text
-                  style={{
-                    color: currentPage === pageNum ? "white" : "#333",
-                    fontWeight: currentPage === pageNum ? "bold" : "normal",
-                  }}
-                >
-                  {pageNum}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        <TouchableOpacity
-          onPress={nextPage}
-          disabled={currentPage === totalPages}
-          activeOpacity={0.7}
-          style={{
-            backgroundColor: currentPage === totalPages ? "#E0E0E0" : "#9B60E8",
-            borderRadius: 8,
-            paddingVertical: 8,
-            paddingHorizontal: 16,
-            marginHorizontal: 8,
-            opacity: currentPage === totalPages ? 0.5 : 1,
-          }}
-        >
-          <Text
-            style={{
-              color: currentPage === totalPages ? "black" : "white",
-              fontWeight: "bold",
-            }}
-          >
-            Next
-          </Text>
-        </TouchableOpacity>
-      </View>
-    );
-  };
 
   return (
     <View className="flex-1 bg-white">
@@ -580,17 +437,11 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
           }}
         >
           <Text className="text-lg text-[#874CDB]">Packages</Text>
-          {totalPages > 1 && (
-            <Text className="text-sm text-gray-500">
-              Page {currentPage} of {totalPages}
-            </Text>
-          )}
         </View>
 
         <View style={{ paddingHorizontal: 4 }}>
           <FlatList
-            ref={flatListRef}
-            data={displayedPackages}
+            data={packages}
             renderItem={renderPackage}
             keyExtractor={(item) => item.id.toString()}
             numColumns={2}
@@ -609,8 +460,6 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
             }
           />
         </View>
-
-        {renderPagination()}
       </ScrollView>
     </View>
   );

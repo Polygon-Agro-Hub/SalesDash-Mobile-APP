@@ -1,4 +1,4 @@
-﻿{
+{
   "expo": {
     "name": "SalesDash",
     "slug": "SalesDash",
@@ -14,13 +14,12 @@
     },
     "android": {
       "package": "com.polygonagro.SalesDash",
-      "versionCode": 15,
-      "edgeToEdgeEnabled": true,
+      "versionCode": 17,
       "softwareKeyboardLayoutMode": "resize",
       "predictiveBackGestureEnabled": false,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/public/favicon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#6638CE"
       },
       "navigationBar": {
         "backgroundColor": "#4F4F4F",
@@ -28,10 +27,12 @@
       },
       "permissions": [
         "android.permission.INTERNET",
+        "android.permission.CAMERA",
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_WIFI_STATE",
         "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.POST_NOTIFICATIONS",
         "android.permission.VIBRATE",
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.FOREGROUND_SERVICE"
@@ -52,7 +53,6 @@
         "android.permission.CHANGE_WIFI_STATE",
         "android.permission.CHANGE_NETWORK_STATE",
         "android.permission.CALL_PHONE",
-        "android.permission.CAMERA",
         "android.permission.ACCESS_BACKGROUND_LOCATION",
         "android.permission.BLUETOOTH",
         "android.permission.BLUETOOTH_SCAN",
@@ -67,6 +67,9 @@
       "supportsTablet": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera to take profile photos, scan QR codes, and capture document photos.",
+        "NSPhotoLibraryUsageDescription": "Photo library access is required to upload profile and complaint images.",
+        "NSPhotoLibraryAddUsageDescription": "Photo library access is required to save related images.",
         "NSLocationWhenInUseUsageDescription": "Allow $(PRODUCT_NAME) to access your location to attach geo location to records.",
         "NSUserTrackingUsageDescription": "Tracking is used to improve app experience.",
         "NSUserNotificationUsageDescription": "Notifications are used to send important updates."
@@ -98,20 +101,37 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/public/favicon.png",
-          "color": "#ffffff",
+          "icon": "./assets/images/public/dashicon.png",
+          "color": "#6638CE",
           "defaultChannel": "default",
-          "enableBackgroundRemoteNotifications": false
+          "enableBackgroundRemoteNotifications": true
         }
       ],
       "expo-font",
       "expo-web-browser",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
       "expo-location",
-      "./plugins/withOptionalHardwareFeatures"
+      "./plugins/withCustomAndroidPermissions",
+      "./plugins/withOptionalHardwareFeatures",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/public/dashicon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#6638CE"
+        }
+      ]
     ],
     "extra": {
       "eas": {
-        "projectId": "e3fdbd8d-4bab-4a65-8941-e509ee5f0cf9"
+        "projectId": "0e30b782-30a6-4fca-8efd-dc328f231b09"
       }
     }
   }
