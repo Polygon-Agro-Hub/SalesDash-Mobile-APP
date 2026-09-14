@@ -7,7 +7,7 @@ import axios from "axios";
 import { ServerNotificationItem } from "./notification.service";
 import socketService from "../socket/socket.service";
 import environment from "@/environment/environment";
-import { navigationRef } from "@/services/navigation/navigationService";
+import { navigationRef, navigate } from "@/services/navigation/navigationService";
 
 const isExpoGo =
   Constants.appOwnership === "expo" ||
@@ -47,8 +47,6 @@ class PushNotificationService {
             importance: Notifications.AndroidImportance.MAX,
             lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
             vibrationPattern: [0, 250, 250, 250],
-            enableLights: true,
-            lightColor: "#6638CE",
             sound: "default",
             enableVibrate: true,
             showBadge: true,
@@ -66,16 +64,18 @@ class PushNotificationService {
         this.responseSubscription =
           Notifications.addNotificationResponseReceivedListener((response) => {
             const data = response?.notification?.request?.content?.data;
+            const title = response?.notification?.request?.content?.title || "";
             console.log("📱 User interacted with system notification:", data);
 
-            if (navigationRef.isReady()) {
-              if (data?.orderId || data?.processOrderId || data?.orderid) {
-                (navigationRef as any)?.navigate("ViewOrdersScreen", {
-                  orderId: data.orderId || data.processOrderId || data.orderid,
-                });
-              } else {
-                (navigationRef as any)?.navigate("ReminderScreen");
-              }
+            const titleLower = (title || "").toLowerCase();
+            if (titleLower.includes("complain")) {
+              navigate("ViewComplainScreen");
+            } else if (data?.orderId || data?.processOrderId || data?.orderid) {
+              navigate("ViewOrdersScreen", {
+                orderId: data.orderId || data.processOrderId || data.orderid,
+              });
+            } else {
+              navigate("ReminderScreen");
             }
           });
       } catch (listenerErr) {
@@ -180,8 +180,6 @@ class PushNotificationService {
             importance: Notifications.AndroidImportance.MAX,
             lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
             vibrationPattern: [0, 250, 250, 250],
-            enableLights: true,
-            lightColor: "#6638CE",
             sound: "default",
             enableVibrate: true,
             showBadge: true,
@@ -209,7 +207,6 @@ class PushNotificationService {
             },
             sound: "default",
             priority: Notifications.AndroidNotificationPriority.MAX,
-            color: "#6638CE",
             vibrate: [0, 250, 250, 250],
           },
           trigger: (Platform.OS === "android" ? { channelId: "default" } : null) as any,
@@ -226,7 +223,6 @@ class PushNotificationService {
               ...item,
             },
             sound: "default",
-            color: "#6638CE",
           },
           trigger: null,
         });

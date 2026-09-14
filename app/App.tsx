@@ -66,7 +66,8 @@ import { requestTrackingIfNeeded } from "@/utils/ios/trackingPermissions";
 import CameraAccess from "@/components/permission/CameraAccess";
 import LocationAccess from "@/components/permission/LocationAccess";
 import NotificationAccess from "@/components/permission/NotificationAccess";
-import InAppNotificationBanner from "@/components/common/InAppNotificationBanner";
+import socketService from "@/services/socket/socket.service";
+import pushNotificationService from "@/services/notification/pushNotification.service";
 import { navigationRef } from "@/services/navigation/navigationService";
 export { navigationRef };
 
@@ -153,6 +154,24 @@ function AppContent() {
 
   useEffect(() => {
     requestTrackingIfNeeded();
+  }, []);
+
+  useEffect(() => {
+    socketService.connect();
+    pushNotificationService.init();
+
+    const unsubscribe = socketService.onNewNotification((item) => {
+      if (typeof item.unreadCount === "number") {
+        updateGlobalUnreadCount(item.unreadCount);
+      }
+
+      // Display native system default notification
+      pushNotificationService.displayLocalNotification(item);
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -402,7 +421,6 @@ function AppContent() {
           </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaView>
-      <InAppNotificationBanner />
       <AlertModal
         visible={alertState.visible}
         title={alertState.title}
