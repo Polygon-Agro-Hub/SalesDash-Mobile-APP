@@ -4,6 +4,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { AppState, AppStateStatus } from "react-native";
 import { ServerNotificationItem } from "../notification/notification.service";
+import { updateGlobalUnreadCount } from "@/components/reminder/ReminderScreen";
+
+const LAST_NOTIFIED_ID_KEY = "@salesdash_last_notified_notification_id";
 
 type NotificationCallback = (notification: ServerNotificationItem) => void;
 
@@ -123,14 +126,23 @@ class SocketService {
       });
 
       const handleSocketNotification = (data: ServerNotificationItem) => {
-        console.log("📢 [SocketService] Socket event:", data?.title);
+        console.log("📢 [SocketService] Real-time socket event received:", data?.title);
         const formatted: ServerNotificationItem = {
           ...data,
           message: formatNotificationMessage(data),
         };
         if (data?.id && data.id > this.shownBannerUpToId) {
           this.shownBannerUpToId = data.id;
+          AsyncStorage.setItem(LAST_NOTIFIED_ID_KEY, String(this.shownBannerUpToId)).catch(() => {});
         }
+        if (typeof data?.unreadCount === "number") {
+          this.lastKnownUnreadCount = data.unreadCount;
+          updateGlobalUnreadCount(data.unreadCount);
+        } else if (this.lastKnownUnreadCount >= 0) {
+          this.lastKnownUnreadCount += 1;
+          updateGlobalUnreadCount(this.lastKnownUnreadCount);
+        }
+        // Event-Driven Alert: notify listeners
         this.dispatchToListeners(formatted);
       };
 
@@ -219,54 +231,55 @@ class SocketService {
           ? Math.max(...unreadItems.map((n) => n.id || 0))
           : 0;
 
-      // ── FIRST CHECK this app session ──────────────────────────────────────
+      // ── 1. STATE-DRIVEN INBOX SYNC (Silent) ──────────────────────────────
+      // Always update global unread count badge silently for the inbox
+      updateGlobalUnreadCount(unreadCount);
+
+      // Load persistent high-water mark from storage if not in memory
+      if (this.shownBannerUpToId === 0) {
+        try {
+          const stored = await AsyncStorage.getItem(LAST_NOTIFIED_ID_KEY);
+          if (stored) {
+            this.shownBannerUpToId = parseInt(stored, 10) || 0;
+          }
+        } catch (_) {}
+      }
+
+      // ── 2. BASELINE INITIALIZATION (First check of session) ───────────────
+      // SILENT SYNC: When app opens or reconnects, establish the baseline high-water mark.
+      // Pre-existing notifications belong to the inbox state — DO NOT alert the user.
       if (this.lastKnownUnreadCount === -1) {
-        if (unreadItems.length > 0) {
-          // Show banner for the most recent unread notification
-          const latestUnread = unreadItems[0]; // API sorts DESC
-          const formatted = {
-            ...latestUnread,
-            message: formatNotificationMessage(latestUnread),
-            unreadCount,
-          };
-          console.log("🔔 [SocketService] First check - unread notification:", latestUnread.title);
-          this.shownBannerUpToId = latestUnreadId;
-          this.dispatchToListeners(formatted);
-        }
+        this.shownBannerUpToId = Math.max(this.shownBannerUpToId, latestUnreadId);
         this.lastKnownUnreadCount = unreadCount;
+        AsyncStorage.setItem(LAST_NOTIFIED_ID_KEY, String(this.shownBannerUpToId)).catch(() => {});
+        console.log(
+          "ℹ️ [SocketService] Baseline inbox state synced silently. Unread count:",
+          unreadCount,
+          "High-water mark ID:",
+          this.shownBannerUpToId
+        );
         return;
       }
 
-      // ── SUBSEQUENT CHECKS - show banner if unread count increased or new items ──
-      const unreadCountIncreased = unreadCount > this.lastKnownUnreadCount;
-      const hasNewUnreadItems = latestUnreadId > this.shownBannerUpToId;
+      // ── 3. EVENT-DRIVEN ALERTS (Only genuinely new real-time arrivals) ────
+      // Only alert if new items arrived whose ID is strictly higher than the high-water mark
+      if (latestUnreadId > this.shownBannerUpToId) {
+        const newItems = unreadItems.filter(
+          (n) => (n.id || 0) > this.shownBannerUpToId
+        );
 
-      if (unreadCountIncreased || hasNewUnreadItems) {
-        const newItems =
-          this.shownBannerUpToId > 0
-            ? unreadItems.filter((n) => (n.id || 0) > this.shownBannerUpToId)
-            : unreadItems.slice(0, 1);
-
-        const itemsToShow =
-          newItems.length > 0
-            ? newItems
-            : unreadItems.length > 0
-            ? [unreadItems[0]]
-            : [];
-
-        itemsToShow.forEach((item) => {
+        newItems.forEach((item) => {
           const formatted = {
             ...item,
             message: formatNotificationMessage(item),
             unreadCount,
           };
-          console.log("🔔 [SocketService] New notification detected:", item.title);
+          console.log("🔔 [SocketService] Genuinely new event detected via poll:", item.title);
           this.dispatchToListeners(formatted);
         });
 
-        if (latestUnreadId > this.shownBannerUpToId) {
-          this.shownBannerUpToId = latestUnreadId;
-        }
+        this.shownBannerUpToId = latestUnreadId;
+        AsyncStorage.setItem(LAST_NOTIFIED_ID_KEY, String(this.shownBannerUpToId)).catch(() => {});
       }
 
       this.lastKnownUnreadCount = unreadCount;
@@ -315,6 +328,7 @@ class SocketService {
     this.lastKnownUnreadCount = -1;
     this.shownBannerUpToId = 0;
     this.isPollingActive = false;
+    AsyncStorage.removeItem(LAST_NOTIFIED_ID_KEY).catch(() => {});
   }
 }
 
