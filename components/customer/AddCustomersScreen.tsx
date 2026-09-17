@@ -166,7 +166,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       return `Please enter a valid ${fields[0]}.`;
     }
 
-    return `Please correct the following fields: ${fields.join(", ")}.`;
+    return `Please fill the following fields: ${fields.join(", ")}.`;
   };
 
   const isNavigatingToOtpScreen = useRef(false);
@@ -605,9 +605,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     if (touchedFields.city) {
       if (!city) {
         setCityError("City is required");
-      } else if (cityBlocksRegistration) {
-        setCityError("Please select a valid city we deliver to");
-      } else {
+      }  else {
         setCityError("");
       }
     }
@@ -745,7 +743,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
 
       if (!email) setEmailError("Email is required");
       else if (!validateEmail(email))
-        setEmailError("Please enter a valid email address");
+        setEmailError("Please enter a valid email");
 
       if (!nic) setNicError("NIC number is required");
       else if (!validateNIC(nic))
@@ -799,10 +797,10 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
               "This NIC is already registered. Please use a different NIC.",
             );
           } else {
-            showAlert(
-              "Registration Error",
-              message || "Please check your details and try again.",
-            );
+            const formattedMessage = (
+              message || "Please check your details and try again."
+            ).replace(/"email"/g, '"Email"');
+            showAlert("Registration Error", formattedMessage);
           }
         } else if (status && status >= 500) {
           showAlert(
@@ -902,7 +900,6 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     }
 
     if (cityBlocksRegistration) {
-      setCityError("Please select a valid city we deliver to");
       showAlert("Error", "This city is not currently in our delivery area.");
       setIsSubmitting(false);
       return;
@@ -915,7 +912,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     }
 
     if (email && !validateEmail(email)) {
-      showAlert("Error", "Please enter a valid Email Address.");
+      showAlert("Error", "Please enter a valid Email.");
       setIsSubmitting(false);
       return;
     }
@@ -994,11 +991,11 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
               "This NIC is already registered. Please use a different NIC.",
             );
           } else {
-            showAlert(
-              "Registration Error",
+            const formattedMessage = (
               message ||
-                "Registration failed. Please check your details and try again.",
-            );
+              "Registration failed. Please check your details and try again."
+            ).replace(/"email"/g, '"Email"');
+            showAlert("Registration Error", formattedMessage);
           }
         } else if (status === 409) {
           showAlert(
@@ -1218,11 +1215,11 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
             className="text-[#000000] mb-1"
             style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
           >
-            Email Address *
+            Email *
           </Text>
           <TextInput
             className={`bg-[#F6F6F6] h-[50px] border ${emailError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
-            placeholder="Email Address"
+            placeholder="Email"
             placeholderTextColor="#7F7F7F"
             keyboardType="email-address"
             autoCapitalize="none"
