@@ -675,7 +675,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
               alignItems: "center",
             }}
           >
-            <LoadingPage message="Confiming Order..." />
+            <LoadingPage message="Confirming Order…" />
           </View>
         </View>
       </Modal>

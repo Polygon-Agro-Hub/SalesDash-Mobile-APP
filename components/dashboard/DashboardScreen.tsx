@@ -199,6 +199,17 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     }
   };
 
+  useEffect(() => {
+    const unsubscribe = socketService.onPackageOrProductUpdate(() => {
+      console.log("🔄 [DashboardScreen] Auto-refreshing packages from socket update event");
+      fetchPackages();
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
   const fetchAgentStats = async () => {
     try {
       const storedToken = await AsyncStorage.getItem("authToken");

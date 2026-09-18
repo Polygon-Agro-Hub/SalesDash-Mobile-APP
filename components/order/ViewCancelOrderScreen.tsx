@@ -654,7 +654,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                         </Text>
                       </View>
                       {label ? (
-                        <View className="pb-2">
+                        <View className="mb-10">
                           <Text className="font-semibold text-[#5E5E5E]">
                             Reason:{" "}
                             <Text className="text-black font-medium">
@@ -663,10 +663,10 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                           </Text>
                         </View>
                       ) : (
-                        <View className="mb-6" />
+                        <View className="mb-10" />
                       )}
                       {showRestartAfterThisHold && (
-                        <View className="flex-row items-center mt-3 mb-10">
+                        <View className="flex-row items-center mb-10">
                           <View className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]" />
                           <Text className="text-[#5E5E5E] font-medium">
                             Order is On the way
@@ -705,7 +705,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
 
                 {status === "Hold" && (
                   <>
-                    <View className="flex-row items-center mt-3 mb-10">
+                    <View className="flex-row items-center mb-10">
                       <View className="p-1.5 rounded-full absolute -left-8 bg-[#D9D9D9] border-4 border-[#EDEDED]" />
                       <Text className="text-[#5E5E5E] font-medium">
                         Order is On the way

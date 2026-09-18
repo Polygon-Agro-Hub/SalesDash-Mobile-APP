@@ -35,6 +35,7 @@ export const formatNotificationMessage = (item: ServerNotificationItem): string 
 class SocketService {
   private socket: Socket | null = null;
   private notificationListeners: Set<NotificationCallback> = new Set();
+  private packageUpdateListeners: Set<() => void> = new Set();
   private isConnecting: boolean = false;
   private currentUserId: number | null = null;
 
@@ -149,6 +150,19 @@ class SocketService {
       this.socket.on("newNotification", handleSocketNotification);
       this.socket.on("new_notification", handleSocketNotification);
 
+      // Listen for package / product updates from Admin Panel
+      const handlePackageOrProductUpdate = (data: any) => {
+        console.log("📦 [SocketService] Real-time package/product update event received:", data);
+        this.dispatchPackageUpdate();
+      };
+
+      this.socket.on("packageUpdated", handlePackageOrProductUpdate);
+      this.socket.on("package_updated", handlePackageOrProductUpdate);
+      this.socket.on("packagesUpdated", handlePackageOrProductUpdate);
+      this.socket.on("productUpdated", handlePackageOrProductUpdate);
+      this.socket.on("product_updated", handlePackageOrProductUpdate);
+      this.socket.on("productsUpdated", handlePackageOrProductUpdate);
+
       this.socket.on("connect_error", () => {
         this.isConnecting = false;
         if (!this.hasLoggedConnectionNotice) {
@@ -180,6 +194,16 @@ class SocketService {
         listener(item);
       } catch (e) {
         console.error("[SocketService] Listener error:", e);
+      }
+    });
+  }
+
+  private dispatchPackageUpdate() {
+    this.packageUpdateListeners.forEach((listener) => {
+      try {
+        listener();
+      } catch (e) {
+        console.error("[SocketService] Package listener error:", e);
       }
     });
   }
@@ -312,6 +336,13 @@ class SocketService {
     this.notificationListeners.add(callback);
     return () => {
       this.notificationListeners.delete(callback);
+    };
+  }
+
+  onPackageOrProductUpdate(callback: () => void): () => void {
+    this.packageUpdateListeners.add(callback);
+    return () => {
+      this.packageUpdateListeners.delete(callback);
     };
   }
 
