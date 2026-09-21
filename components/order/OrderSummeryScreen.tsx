@@ -144,6 +144,26 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
     id,
   } = route.params || {};
 
+  const scheduleType: "One Time" | "Once a Week" | "Twice a Week" =
+    (route.params as any)?.scheduleType ||
+    (route.params as any)?.sheduleType ||
+    "One Time";
+  const selectedDays: string[] =
+    (route.params as any)?.selectedDays ||
+    (route.params as any)?.recurringDays ||
+    [];
+  const validityWeeks: string =
+    (route.params as any)?.validityWeeks ||
+    (route.params as any)?.validityPeriod?.toString() ||
+    "04";
+  const validityPeriod: number | null =
+    scheduleType === "One Time" ? null : parseInt(validityWeeks, 10) || 4;
+  const calculatedOrders: Array<{
+    index: number;
+    label: string;
+    date: string;
+  }> = (route.params as any)?.calculatedOrders || [];
+
   const isPackage =
     typeof isPackageRaw === "string"
       ? parseInt(isPackageRaw) || 0
@@ -265,7 +285,14 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           fullTotal: Number(fullTotal),
           discount: Number(discount),
           deliveryCharge: Number(deliveryFee),
-          sheduleDate: selectedDate,
+          sheduleType: scheduleType,
+          scheduleType: scheduleType,
+          validityPeriod: validityPeriod,
+          validityWeeks: validityWeeks,
+          selectedDays: selectedDays,
+          recurringDays: selectedDays,
+          calculatedOrders: calculatedOrders,
+          sheduleDate: scheduleType === "One Time" ? selectedDate : null,
           sheduleTime: selectedTimeSlot,
           paymentMethod: paymentMethod,
           isPaid: isCardPayment ? 0 : 1,
@@ -305,7 +332,14 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           fullTotal: Number(fullTotal),
           discount: Number(discount),
           deliveryCharge: Number(deliveryFee),
-          sheduleDate: selectedDate,
+          sheduleType: scheduleType,
+          scheduleType: scheduleType,
+          validityPeriod: validityPeriod,
+          validityWeeks: validityWeeks,
+          selectedDays: selectedDays,
+          recurringDays: selectedDays,
+          calculatedOrders: calculatedOrders,
+          sheduleDate: scheduleType === "One Time" ? selectedDate : null,
           sheduleTime: selectedTimeSlot,
           transactionId: null,
           paymentMethod: paymentMethod,
@@ -395,6 +429,13 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         customerscreencustomerid,
         isFinalizeImdt: route.params?.isFinalizeImdt,
         deliveryCharge: deliveryFee,
+        scheduleType,
+        sheduleType: scheduleType,
+        selectedDays,
+        recurringDays: selectedDays,
+        validityWeeks,
+        validityPeriod,
+        calculatedOrders,
       });
 
       setIsSubmitting(false);
@@ -690,6 +731,13 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           selectedAddress: route.params?.selectedAddress,
           deliveryCharge: deliveryFee,
           isFinalizeImdt: route.params?.isFinalizeImdt,
+          scheduleType,
+          sheduleType: scheduleType,
+          selectedDays,
+          recurringDays: selectedDays,
+          validityWeeks,
+          validityPeriod,
+          calculatedOrders,
         });
         return true;
       };
@@ -789,6 +837,13 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
             selectedAddress: route.params?.selectedAddress,
             deliveryCharge: deliveryFee,
             isFinalizeImdt: route.params?.isFinalizeImdt,
+            scheduleType,
+            sheduleType: scheduleType,
+            selectedDays,
+            recurringDays: selectedDays,
+            validityWeeks,
+            validityPeriod,
+            calculatedOrders,
           })
         }
       />
@@ -812,12 +867,14 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                 <View>
                   <View className="flex-row justify-between">
                     <Text className="text-base font-semibold">
-                      Delivery - One Time
+                      Delivery - {scheduleType}
                     </Text>
                   </View>
-                  <Text className="text-[#808FA2] text-sm font-medium">
+
+                  <Text className="text-[#808FA2] text-sm ">
                     Scheduled to {formatDate(selectedDate)}
                   </Text>
+
                   <Text className="text-[#808FA2] text-sm">{timeDisplay}</Text>
                 </View>
 
@@ -848,6 +905,13 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                       deliveryCharge: deliveryFee,
                       fullTotal,
                       isFinalizeImdt: route.params?.isFinalizeImdt,
+                      scheduleType,
+                      sheduleType: scheduleType,
+                      selectedDays,
+                      recurringDays: selectedDays,
+                      validityWeeks,
+                      validityPeriod,
+                      calculatedOrders,
                     });
                   }}
                   disabled={isSubmitting || isSubmitted}

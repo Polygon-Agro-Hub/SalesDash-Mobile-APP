@@ -167,6 +167,13 @@ const OrderConfimedOTPScreen: React.FC = () => {
           userId: id,
           selectedDate: selectedDate,
           selectedTimeSlot: selectedTimeSlot,
+          scheduleType: (route.params as any)?.scheduleType,
+          sheduleType: (route.params as any)?.sheduleType,
+          selectedDays: (route.params as any)?.selectedDays,
+          recurringDays: (route.params as any)?.recurringDays,
+          validityWeeks: (route.params as any)?.validityWeeks,
+          validityPeriod: (route.params as any)?.validityPeriod,
+          calculatedOrders: (route.params as any)?.calculatedOrders,
         };
       } else {
         Alert.alert(
@@ -176,11 +183,14 @@ const OrderConfimedOTPScreen: React.FC = () => {
         return null;
       }
     } catch (e: any) {
-      console.error("Error creating order after OTP verification:", e);
+      console.error(
+        "Error creating order after OTP verification:",
+        e.response?.data || e,
+      );
       let errorMessage = "Error creating order after OTP verification";
       if (axios.isAxiosError(e) && e.response) {
         errorMessage =
-          e.response.data?.message || e.response.data?.error || errorMessage;
+          e.response.data?.error || e.response.data?.message || errorMessage;
       }
       Alert.alert("Error", errorMessage);
       return null;
@@ -246,6 +256,13 @@ const OrderConfimedOTPScreen: React.FC = () => {
       customerscreencustomerid,
       isFinalizeImdt,
       deliveryCharge,
+      scheduleType: (route.params as any)?.scheduleType,
+      sheduleType: (route.params as any)?.sheduleType,
+      selectedDays: (route.params as any)?.selectedDays,
+      recurringDays: (route.params as any)?.recurringDays,
+      validityWeeks: (route.params as any)?.validityWeeks,
+      validityPeriod: (route.params as any)?.validityPeriod,
+      calculatedOrders: (route.params as any)?.calculatedOrders,
     });
   };
 
@@ -472,7 +489,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
       >
         <ScrollView
           ref={scrollViewRef}
-          contentContainerStyle={{ flexGrow: 1 }}
+          contentContainerStyle={{ flexGrow: 1,paddingBottom:40 }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           overScrollMode="never"
@@ -658,7 +675,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
               alignItems: "center",
             }}
           >
-            <LoadingPage message="Confiming Order..." />
+            <LoadingPage message="Confirming Order…" />
           </View>
         </View>
       </Modal>

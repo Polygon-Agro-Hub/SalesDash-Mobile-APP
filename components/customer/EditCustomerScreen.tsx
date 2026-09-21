@@ -310,7 +310,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
         const generalEmailRegex =
           /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         if (!generalEmailRegex.test(email)) {
-          setEmailError("Please enter a valid email address");
+          setEmailError("Please enter a valid email");
           return;
         }
         if (domain && domain.includes("..")) {
@@ -590,7 +590,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     }
 
     if (!validateEmailAddress(email)) {
-      showAlert("Error", "Please enter a valid Email Address.");
+      showAlert("Error", "Please enter a valid Email.");
       return;
     }
 
@@ -711,7 +711,8 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                 );
                 return;
               } else {
-                showAlert("Validation Error", errorMessage);
+                const formattedMessage = errorMessage.replace(/"email"/g, '"Email"');
+                showAlert("Validation Error", formattedMessage);
                 return;
               }
             } else if (status === 500) {
@@ -1046,7 +1047,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
         </View>
 
         <View className="mb-4">
-          <RequiredField>Email Address</RequiredField>
+          <RequiredField>Email</RequiredField>
           <TextInput
             className={`bg-[#F6F6F6] border rounded-full px-6 h-[50px] ${
               emailError ? "border-red-500" : "border-[#F6F6F6]"
@@ -1056,7 +1057,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
               fontStyle: email ? "normal" : "italic",
             }}
             placeholderTextColor="#7F7F7F"
-            placeholder="Email Address"
+            placeholder="Email"
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
@@ -1142,61 +1143,56 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     return <LoadingPage message="Loading Customer Data..." fullScreen={true} />;
   }
 
-  return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })}
-      style={{ flex: 1, backgroundColor: "white" }}
+return (
+  <View style={{ flex: 1, backgroundColor: "white" }}>
+    <CustomHeader
+      title="Edit Customer Details"
+      titleColor="#6C3CD1"
+      showBackButton={true}
+      navigation={navigation}
+      onBackPress={() => {
+        navigation.navigate("ViewCustomerScreen" as any, {
+          id,
+          customerId,
+          name: `${firstName} ${lastName}`,
+          title: selectedCategory,
+          number: phoneNumber,
+        });
+      }}
+    />
+    <KeyboardAwareScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={{ flexGrow: 1 }}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+      enableOnAndroid={true}
+      enableAutomaticScroll={true}
+      extraScrollHeight={Platform.OS === "ios" ? 20 : 20}
+      keyboardOpeningTime={0}
     >
-      <CustomHeader
-        title="Edit Customer Details"
-        titleColor="#6C3CD1"
-        showBackButton={true}
-        navigation={navigation}
-        onBackPress={() => {
-          navigation.navigate("ViewCustomerScreen" as any, {
-            id,
-            customerId,
-            name: `${firstName} ${lastName}`,
-            title: selectedCategory,
-            number: phoneNumber,
-          });
-        }}
-      />
-      <KeyboardAwareScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ flexGrow: 1 }}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        enableOnAndroid={true}
-        enableAutomaticScroll={true}
-        extraScrollHeight={Platform.OS === "ios" ? 20 : 40}
-        keyboardOpeningTime={0}
-      >
-        <View className="px-6 mx-auto w-full max-w-[500px]">
-          {renderBasicDetailsForm()}
-        </View>
-      </KeyboardAwareScrollView>
+      <View className="px-6 mx-auto w-full max-w-[500px]">
+        {renderBasicDetailsForm()}
+      </View>
+    </KeyboardAwareScrollView>
 
-      {/* Title Selection Modal */}
-      <GlobalSearchModal
-        visible={titleModalVisible}
-        onClose={() => setTitleModalVisible(false)}
-        title="Select Title"
-        data={items}
-        selectedItems={selectedCategory ? [selectedCategory] : []}
-        onSelect={(items) => {
-          if (items.length > 0) {
-            setSelectedCategory(items[0]);
-          }
-          handleFieldTouch("title");
-        }}
-        searchPlaceholder="Search title..."
-        multiSelect={false}
-        showSearch={false}
-      />
-    </KeyboardAvoidingView>
-  );
+    <GlobalSearchModal
+      visible={titleModalVisible}
+      onClose={() => setTitleModalVisible(false)}
+      title="Select Title"
+      data={items}
+      selectedItems={selectedCategory ? [selectedCategory] : []}
+      onSelect={(items) => {
+        if (items.length > 0) {
+          setSelectedCategory(items[0]);
+        }
+        handleFieldTouch("title");
+      }}
+      searchPlaceholder="Search title..."
+      multiSelect={false}
+      showSearch={false}
+    />
+  </View>
+);
 };
 
 export default EditCustomerScreen;

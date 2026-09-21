@@ -6,6 +6,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import environment from "@/environment/environment";
+import pushNotificationService from "@/services/notification/pushNotification.service";
+import socketService from "@/services/socket/socket.service";
 import {
   Keyboard,
   Platform,
@@ -113,9 +115,27 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             ["tokenStoredTime", timestamp.toISOString()],
             ["tokenExpirationTime", expirationTime.toISOString()],
           ]);
+          socketService.connect().catch(() => {});
+          socketService.checkNewNotifications().catch(() => {});
+          pushNotificationService.registerPushTokenAsync().catch(() => {});
           if (passwordUpdate === 0) {
             navigation.navigate("ChangePasswordScreen");
           } else {
+            try {
+              const hasAsked = await AsyncStorage.getItem(
+                "hasAskedNotificationPermission"
+              );
+              if (hasAsked !== "true") {
+                navigation.navigate("NotificationAccess", {
+                  returnScreen: "Main",
+                  returnParams: { screen: "DashboardScreen" },
+                  blockBackNavigation: true,
+                });
+                return;
+              }
+            } catch (err) {
+              console.warn("Error reading notification permission flag:", err);
+            }
             navigation.navigate("Main", { screen: "DashboardScreen" });
           }
         } else {
