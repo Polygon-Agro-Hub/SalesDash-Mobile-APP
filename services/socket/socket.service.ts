@@ -35,7 +35,7 @@ export const formatNotificationMessage = (item: ServerNotificationItem): string 
 class SocketService {
   private socket: Socket | null = null;
   private notificationListeners: Set<NotificationCallback> = new Set();
-  private packageUpdateListeners: Set<() => void> = new Set();
+  private packageUpdateListeners: Set<(data?: any) => void> = new Set();
   private isConnecting: boolean = false;
   private currentUserId: number | null = null;
 
@@ -153,7 +153,7 @@ class SocketService {
       // Listen for package / product updates from Admin Panel
       const handlePackageOrProductUpdate = (data: any) => {
         console.log("📦 [SocketService] Real-time package/product update event received:", data);
-        this.dispatchPackageUpdate();
+        this.dispatchPackageUpdate(data);
       };
 
       this.socket.on("packageUpdated", handlePackageOrProductUpdate);
@@ -198,10 +198,10 @@ class SocketService {
     });
   }
 
-  private dispatchPackageUpdate() {
+  private dispatchPackageUpdate(data?: any) {
     this.packageUpdateListeners.forEach((listener) => {
       try {
-        listener();
+        listener(data);
       } catch (e) {
         console.error("[SocketService] Package listener error:", e);
       }
@@ -339,7 +339,7 @@ class SocketService {
     };
   }
 
-  onPackageOrProductUpdate(callback: () => void): () => void {
+  onPackageOrProductUpdate(callback: (data?: any) => void): () => void {
     this.packageUpdateListeners.add(callback);
     return () => {
       this.packageUpdateListeners.delete(callback);
