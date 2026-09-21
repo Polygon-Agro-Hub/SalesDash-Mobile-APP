@@ -35,12 +35,6 @@ interface AddDeliveryAddressProps {
       customerId: string;
       addressId?: number;
       addressType?: "House" | "Apartment";
-      // These three arrive back from AttachGeoLocationScreen via
-      // navigation.navigate({ name: "AddDeliveryAddress", params: {...}, merge: true }).
-      // They replace the old (broken) approach of passing an
-      // `onLocationSelect` callback function through route params —
-      // functions aren't serializable navigation params and were
-      // silently failing to fire.
       selectedLatitude?: number;
       selectedLongitude?: number;
       selectedLocationName?: string;
@@ -165,7 +159,6 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
     return phoneRegex.test(phone);
   };
 
-  // fieldLabel is used to build the "[Field Name] is required" message.
   const handleRequiredFieldBlur = (
     value: string,
     setError: (value: string) => void,
@@ -359,20 +352,15 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
       fetchCity();
       checkDeliveredOrder();
       if (isEditMode) {
-        // Only trigger the loading screen / fetch on the FIRST focus.
-        // On later focuses (e.g. returning from AttachGeoLocationScreen),
-        // dataLoaded.current is already true, so fetchExistingAddress()
-        // would bail out on its early `if (dataLoaded.current) return;`
-        // line — before ever reaching the `finally { setLoading(false) }`.
-        // That previously left `loading` stuck at true forever, so the
-        // screen just showed <LoadingPage /> permanently after coming
-        // back from the map picker.
         if (!dataLoaded.current) {
           setLoading(true);
           fetchExistingAddress();
         }
       } else {
-        fetchProfileNearestCity();
+        if (!dataLoaded.current) {
+          dataLoaded.current = true;
+          fetchProfileNearestCity();
+        }
       }
     }, [
       fetchCity,
@@ -383,19 +371,9 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
     ]),
   );
 
-  // Pick up the coordinates handed back from AttachGeoLocationScreen.
-  // This REPLACES the old approach of passing an `onLocationSelect`
-  // callback function as a navigation param — functions are not
-  // serializable route params, so that callback was unreliable (it could
-  // silently fail to fire, especially after the screen re-focused or React
-  // Navigation's state was restored). Instead, AttachGeoLocationScreen
-  // navigates back with plain data params, and we consume them here.
   useEffect(() => {
-    const {
-      selectedLatitude,
-      selectedLongitude,
-      selectedLocationName,
-    } = route.params || {};
+    const { selectedLatitude, selectedLongitude, selectedLocationName } =
+      route.params || {};
 
     if (selectedLatitude != null && selectedLongitude != null) {
       setLatitude(selectedLatitude);
@@ -403,8 +381,6 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
       setLocationName(selectedLocationName || "");
       setGeoLocationError("");
 
-      // Clear the params so this effect doesn't re-fire the same values
-      // again on the next focus/re-render.
       navigation.setParams({
         selectedLatitude: undefined,
         selectedLongitude: undefined,
@@ -417,21 +393,22 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
     route.params?.selectedLocationName,
   ]);
 
-  // Where AttachGeoLocationScreen should send the user once a location is
-  // picked (or should be sent to ask for permission first).
   const buildAttachScreenParams = () => ({
     currentLatitude: latitude || undefined,
     currentLongitude: longitude || undefined,
     returnScreen: "AddDeliveryAddress",
+    onLocationSelect: (
+      selectedLatitude: number,
+      selectedLongitude: number,
+      selectedLocationName: string,
+    ) => {
+      setLatitude(selectedLatitude);
+      setLongitude(selectedLongitude);
+      setLocationName(selectedLocationName || "");
+      setGeoLocationError("");
+    },
   });
 
-  // Previously this jumped straight to AttachGeoLocationScreen, which only
-  // asked for location permission *after* it had already mounted the map —
-  // and if the user denied it there, they just got a bare `Alert`, never
-  // the branded LocationAccess explainer screen. Now we check permission
-  // status up front: if it isn't granted yet, we route through
-  // LocationAccess first (which will forward on to AttachGeoLocationScreen
-  // itself once permission is granted, or just return here if declined).
   const handlePickLocation = async () => {
     const attachScreenParams = buildAttachScreenParams();
 
@@ -449,9 +426,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
       navigation.navigate("AttachGeoLocationScreen" as any, attachScreenParams);
     } catch (error) {
       console.error("Error checking location permission:", error);
-      // If the permission check itself fails for some reason, fall back to
-      // routing through LocationAccess so the user still gets a proper
-      // prompt instead of a silently broken map screen.
+
       navigation.navigate("LocationAccess" as any, {
         returnScreen: "AttachGeoLocationScreen",
         returnParams: attachScreenParams,
