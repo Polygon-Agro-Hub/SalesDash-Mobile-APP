@@ -16,6 +16,7 @@ import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { FontAwesome6, MaterialIcons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
+import * as Location from "expo-location";
 import CustomHeader from "../common/CustomHeader";
 import LoadingPage from "../common/LoadingPage";
 import GlobalSearchModal from "../common/GlobalSearchModal";
@@ -34,6 +35,15 @@ interface AddDeliveryAddressProps {
       customerId: string;
       addressId?: number;
       addressType?: "House" | "Apartment";
+      // These three arrive back from AttachGeoLocationScreen via
+      // navigation.navigate({ name: "AddDeliveryAddress", params: {...}, merge: true }).
+      // They replace the old (broken) approach of passing an
+      // `onLocationSelect` callback function through route params —
+      // functions aren't serializable navigation params and were
+      // silently failing to fire.
+      selectedLatitude?: number;
+      selectedLongitude?: number;
+      selectedLocationName?: string;
     };
   };
 }
@@ -156,7 +166,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
   };
 
   // fieldLabel is used to build the "[Field Name] is required" message.
- const handleRequiredFieldBlur = (
+  const handleRequiredFieldBlur = (
     value: string,
     setError: (value: string) => void,
     fieldLabel: string,
@@ -350,7 +360,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
       checkDeliveredOrder();
       if (isEditMode) {
         // Only trigger the loading screen / fetch on the FIRST focus.
-        // On later focuses (e.g. returning from ViewLocationScreen),
+        // On later focuses (e.g. returning from AttachGeoLocationScreen),
         // dataLoaded.current is already true, so fetchExistingAddress()
         // would bail out on its early `if (dataLoaded.current) return;`
         // line — before ever reaching the `finally { setLoading(false) }`.
@@ -373,20 +383,80 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
     ]),
   );
 
-  const handlePickLocation = () => {
-    navigation.navigate("AttachGeoLocationScreen" as any, {
-      currentLatitude: latitude || undefined,
-      currentLongitude: longitude || undefined,
-      onLocationSelect: (
-        selectedLatitude: number,
-        selectedLongitude: number,
-        selectedLocationName: string,
-      ) => {
-        setLatitude(selectedLatitude);
-        setLongitude(selectedLongitude);
-        setLocationName(selectedLocationName);
-      },
-    });
+  // Pick up the coordinates handed back from AttachGeoLocationScreen.
+  // This REPLACES the old approach of passing an `onLocationSelect`
+  // callback function as a navigation param — functions are not
+  // serializable route params, so that callback was unreliable (it could
+  // silently fail to fire, especially after the screen re-focused or React
+  // Navigation's state was restored). Instead, AttachGeoLocationScreen
+  // navigates back with plain data params, and we consume them here.
+  useEffect(() => {
+    const {
+      selectedLatitude,
+      selectedLongitude,
+      selectedLocationName,
+    } = route.params || {};
+
+    if (selectedLatitude != null && selectedLongitude != null) {
+      setLatitude(selectedLatitude);
+      setLongitude(selectedLongitude);
+      setLocationName(selectedLocationName || "");
+      setGeoLocationError("");
+
+      // Clear the params so this effect doesn't re-fire the same values
+      // again on the next focus/re-render.
+      navigation.setParams({
+        selectedLatitude: undefined,
+        selectedLongitude: undefined,
+        selectedLocationName: undefined,
+      } as any);
+    }
+  }, [
+    route.params?.selectedLatitude,
+    route.params?.selectedLongitude,
+    route.params?.selectedLocationName,
+  ]);
+
+  // Where AttachGeoLocationScreen should send the user once a location is
+  // picked (or should be sent to ask for permission first).
+  const buildAttachScreenParams = () => ({
+    currentLatitude: latitude || undefined,
+    currentLongitude: longitude || undefined,
+    returnScreen: "AddDeliveryAddress",
+  });
+
+  // Previously this jumped straight to AttachGeoLocationScreen, which only
+  // asked for location permission *after* it had already mounted the map —
+  // and if the user denied it there, they just got a bare `Alert`, never
+  // the branded LocationAccess explainer screen. Now we check permission
+  // status up front: if it isn't granted yet, we route through
+  // LocationAccess first (which will forward on to AttachGeoLocationScreen
+  // itself once permission is granted, or just return here if declined).
+  const handlePickLocation = async () => {
+    const attachScreenParams = buildAttachScreenParams();
+
+    try {
+      const { status } = await Location.getForegroundPermissionsAsync();
+
+      if (status !== "granted") {
+        navigation.navigate("LocationAccess" as any, {
+          returnScreen: "AttachGeoLocationScreen",
+          returnParams: attachScreenParams,
+        });
+        return;
+      }
+
+      navigation.navigate("AttachGeoLocationScreen" as any, attachScreenParams);
+    } catch (error) {
+      console.error("Error checking location permission:", error);
+      // If the permission check itself fails for some reason, fall back to
+      // routing through LocationAccess so the user still gets a proper
+      // prompt instead of a silently broken map screen.
+      navigation.navigate("LocationAccess" as any, {
+        returnScreen: "AttachGeoLocationScreen",
+        returnParams: attachScreenParams,
+      });
+    }
   };
 
   const handleSubmit = async () => {
@@ -1229,13 +1299,10 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
             borderColor: "#6C3CD1",
             borderWidth: 1,
             backgroundColor: "#FFF",
-            // Border glow (iOS)
             shadowColor: "#6C3CD1",
             shadowOffset: { width: 0, height: 0 },
             shadowOpacity: 0.3,
             shadowRadius: 4,
-
-            // Android
             elevation: 5,
           }}
         >
@@ -1258,7 +1325,6 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
           </Text>
         </TouchableOpacity>
 
-        {/* Geo location error message */}
         {geoLocationError ? (
           <Text className="text-red-500 text-xs text-center mb-2">
             {geoLocationError}

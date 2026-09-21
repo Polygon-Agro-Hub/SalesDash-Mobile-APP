@@ -199,6 +199,21 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     }
   };
 
+  useEffect(() => {
+    const unsubscribe = socketService.onPackageOrProductUpdate((data?: any) => {
+      console.log("🔄 [DashboardScreen] Auto-refreshing packages from socket update event");
+      if (Array.isArray(data) && data.length > 0) {
+        setPackages(data);
+      } else {
+        fetchPackages();
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
   const fetchAgentStats = async () => {
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
@@ -223,12 +238,20 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       socketService.checkNewNotifications().catch(() => {});
       pushNotificationService.registerPushTokenAsync().catch(() => {});
 
+      // Periodically refresh packages while actively viewing Home screen (ensures screen updates even if socket is disconnected/reconnecting)
+      const packageInterval = setInterval(() => {
+        fetchPackages();
+      }, 5000);
+
       const onBackPress = () => true;
       const subscription = BackHandler.addEventListener(
         "hardwareBackPress",
         onBackPress,
       );
-      return () => subscription.remove();
+      return () => {
+        clearInterval(packageInterval);
+        subscription.remove();
+      };
     }, []),
   );
 
