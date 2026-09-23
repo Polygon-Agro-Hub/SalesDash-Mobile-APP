@@ -11,6 +11,7 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { LanguageProvider } from "@/context/LanguageContext";
+import { AppUpdateProvider } from "@/features/app-update";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import NavigationBar from "@/components/navigation/Navbar";
 import Splash from "@/components/authentication/Splash";
@@ -439,7 +440,9 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <LanguageProvider>
-        <AppContent />
+        <AppUpdateProvider>
+          <AppContent />
+        </AppUpdateProvider>
       </LanguageProvider>
     </SafeAreaProvider>
   );
