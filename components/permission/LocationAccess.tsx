@@ -73,10 +73,19 @@ const LocationAccess: React.FC<LocationAccessProps> = ({
 
   const navigateForward = () => {
     if (navigation) {
-      if (targetReturnParams) {
-        navigation.navigate(targetReturnScreen as any, targetReturnParams);
+      const destination = targetReturnScreen || "Main";
+      if ((navigation as any).replace && destination !== "Main") {
+        if (targetReturnParams) {
+          (navigation as any).replace(destination as any, targetReturnParams);
+        } else {
+          (navigation as any).replace(destination as any);
+        }
       } else {
-        navigation.navigate(targetReturnScreen as any);
+        if (targetReturnParams) {
+          navigation.navigate(destination as any, targetReturnParams);
+        } else {
+          navigation.navigate(destination as any);
+        }
       }
     }
   };
@@ -142,7 +151,9 @@ const LocationAccess: React.FC<LocationAccessProps> = ({
         if (onPermissionGranted) {
           onPermissionGranted();
         } else if (navigation) {
-          if (navigation.canGoBack()) {
+          if (route?.params?.returnScreen || (returnScreen && returnScreen !== "Main")) {
+            navigateForward();
+          } else if (navigation.canGoBack()) {
             navigation.goBack();
           } else {
             navigateForward();

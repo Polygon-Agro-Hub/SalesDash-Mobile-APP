@@ -8,6 +8,7 @@ import {
   Image,
   BackHandler,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -16,7 +17,6 @@ import { Ionicons, Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import CustomHeader from "../common/CustomHeader";
 import axios from "axios";
 import environment from "@/environment/environment";
-import { io } from "socket.io-client";
 
 type OnlinePaymentStatusNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -61,6 +61,7 @@ const OnlinePaymentStatus: React.FC<OnlinePaymentStatusProps> = ({
   } = route.params || {};
 
   const [checking, setChecking] = useState<boolean>(false);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
 
   const isMountedRef = useRef<boolean>(true);
   const hasNavigatedRef = useRef<boolean>(false);
@@ -122,11 +123,16 @@ const OnlinePaymentStatus: React.FC<OnlinePaymentStatusProps> = ({
     navigation,
   ]);
 
-  const checkPaymentStatus = useCallback(async () => {
+  const checkPaymentStatus = useCallback(async (isManualRefresh = false) => {
     if (!orderId || hasNavigatedRef.current) return;
 
     try {
-      setChecking(true);
+      if (isManualRefresh) {
+        setRefreshing(true);
+      } else {
+        setChecking(true);
+      }
+
       const response = await axios.get(
         `${environment.API_BASE_URL}api/orders/check-payment-status/${orderId}`,
       );
@@ -143,9 +149,14 @@ const OnlinePaymentStatus: React.FC<OnlinePaymentStatusProps> = ({
     } finally {
       if (isMountedRef.current) {
         setChecking(false);
+        setRefreshing(false);
       }
     }
   }, [orderId, navigateToConfirmed]);
+
+  const onRefresh = useCallback(() => {
+    checkPaymentStatus(true);
+  }, [checkPaymentStatus]);
 
   useEffect(() => {
     if (!orderId) return;
@@ -153,76 +164,13 @@ const OnlinePaymentStatus: React.FC<OnlinePaymentStatusProps> = ({
     isMountedRef.current = true;
     hasNavigatedRef.current = false;
 
-    let socket: any = null;
-    let fallbackInterval: any = null;
-
-    // Parse URL manually to ensure compatibility with all JS engines
-    let socketUrl = environment.API_BASE_URL;
-    let socketPath = "/socket.io";
-    const urlMatch = environment.API_BASE_URL.match(
-      /^(https?:\/\/[^\/]+)(.*)$/,
-    );
-    if (urlMatch) {
-      socketUrl = urlMatch[1];
-      let pathname = urlMatch[2];
-      if (pathname.endsWith("/")) {
-        pathname = pathname.slice(0, -1);
-      }
-      socketPath = `${pathname}/socket.io`;
-    }
-
-    const socketOptions = {
-      path: socketPath,
-      transports: ["websocket"],
-      timeout: 5000,
-    };
-
-    socket = io(socketUrl, socketOptions);
-
-    socket.on("connect", () => {
-      console.log("🔌 Connected to socket server");
-      socket.emit("joinOrder", orderId);
-      if (fallbackInterval) {
-        clearInterval(fallbackInterval);
-        fallbackInterval = null;
-      }
-    });
-
-    socket.on("connect_error", () => {
-      console.log("🔌 Socket connection error. Using REST polling fallback.");
-      if (!fallbackInterval) {
-        fallbackInterval = setInterval(checkPaymentStatus, 5000);
-      }
-    });
-
-  
-    socket.on("paymentStatusChanged", (data: { isPaid: number | string }) => {
-      console.log("💲 Payment status changed via socket:", data);
-      if (Number(data.isPaid) === 1) {
-        navigateToConfirmed();
-      }
-    });
-
-    socket.on("disconnect", () => {
-      console.log("🔌 Disconnected from socket server");
-    });
-
-    // Initial check
+    // Initial check on mount only (manual refresh via pull-to-refresh)
     checkPaymentStatus();
-
-    // Start fallback polling immediately just in case serverless doesn't support websockets
-    fallbackInterval = setInterval(checkPaymentStatus, 5000);
 
     return () => {
       isMountedRef.current = false;
-      if (socket) {
-        socket.disconnect();
-      }
-      if (fallbackInterval) {
-        clearInterval(fallbackInterval);
-      }
     };
-  }, [orderId, checkPaymentStatus, navigateToConfirmed]);
+  }, [orderId, checkPaymentStatus]);
 
   const handleBackToViewCustomer = useCallback(() => {
     navigation.navigate("ViewCustomerScreen" as any, {
@@ -277,6 +225,14 @@ const OnlinePaymentStatus: React.FC<OnlinePaymentStatusProps> = ({
         style={{ flex: 1, paddingHorizontal: 20 }}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 32 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#6C3CD1", "#844BD9"]}
+            tintColor="#6C3CD1"
+          />
+        }
       >
         {/* Subtitle */}
         <Text
