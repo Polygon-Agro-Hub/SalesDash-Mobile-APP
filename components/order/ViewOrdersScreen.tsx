@@ -46,6 +46,7 @@ interface ViewOrdersScreenProps {
 
 interface Order {
   orderId: number;
+  processId?: number;
   customerId: number;
   deliveryType: string;
   sheduleDate: string;
@@ -144,7 +145,6 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
           headers: { Authorization: `Bearer ${token}` },
         },
       );
-
 
       if (response.data.success && response.data.data) {
         if (isLoadMore) {
@@ -481,14 +481,17 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                     className="text-black italic text-center mt-4"
                     style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 14 }}
                   >
-                  {" "} No orders found {" "}
+                    {" "}
+                    No orders found{" "}
                   </Text>
                 </View>
               ) : (
                 <FlatList
                   data={filteredOrders}
                   className="flex-1"
-                  keyExtractor={(item) => item.orderId.toString()}
+                  keyExtractor={(item, index) =>
+                    `${item.orderId}-${item.processId ?? item.InvNo ?? index}`
+                  }
                   refreshControl={
                     <RefreshControl
                       refreshing={refreshing}
@@ -681,7 +684,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                               color: "#808FA2",
                             }}
                           >
-                          {item.sheduleTime}
+                            {item.sheduleTime}
                           </Text>
                           <Text
                             style={{

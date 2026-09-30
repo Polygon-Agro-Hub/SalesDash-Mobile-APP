@@ -1,15 +1,14 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback } from "react";
 import { View, BackHandler } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RouteProp, useFocusEffect } from "@react-navigation/native";
-import { WebView, WebViewMessageEvent } from "react-native-webview";
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from "react-native-responsive-screen";
 import { RootStackParamList } from "../types/types";
 import CustomHeader from "../common/CustomHeader";
-import LoadingPage from "../common/LoadingPage";
+import OpenStreetMap from "../common/OpenStreetMap"; // adjust import path if OpenStreetMap.tsx lives elsewhere
 
 type ViewLocationScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -30,15 +29,10 @@ const ViewLocationScreen: React.FC<ViewLocationScreenProps> = ({
   navigation,
   route,
 }) => {
-  const webViewRef = useRef<WebView>(null);
-
-  // Get location data from params
   const { latitude, longitude, locationName } = route.params;
 
-  // Loading state — stays true until Leaflet reports the tile layer
-  // has finished loading, or the safety timeout below fires.
-  const [mapLoading, setMapLoading] = useState(true);
-  const safetyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lat = latitude || 7.2008;
+  const lng = longitude || 79.8358;
 
   useFocusEffect(
     useCallback(() => {
@@ -56,147 +50,8 @@ const ViewLocationScreen: React.FC<ViewLocationScreenProps> = ({
     }, [navigation]),
   );
 
-  const lat = latitude || 7.2008;
-  const lng = longitude || 79.8358;
-
-  useEffect(() => {
-    // Animate to the location when component mounts
-    if (webViewRef.current && latitude && longitude) {
-      setTimeout(() => {
-        webViewRef.current?.injectJavaScript(`
-          if (typeof map !== 'undefined') {
-            map.setView([${lat}, ${lng}], 13);
-          }
-          true;
-        `);
-      }, 500);
-    }
-  }, []);
-
-  // Safety net — if the 'mapLoaded' message never arrives (slow/broken
-  // network for tile fetches), stop showing the loader anyway after 8s
-  // so the user isn't stuck staring at a spinner forever.
-  useEffect(() => {
-    safetyTimeoutRef.current = setTimeout(() => {
-      setMapLoading(false);
-    }, 8000);
-
-    return () => {
-      if (safetyTimeoutRef.current) {
-        clearTimeout(safetyTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  const handleWebViewMessage = useCallback((event: WebViewMessageEvent) => {
-    if (event.nativeEvent.data === "mapLoaded") {
-      if (safetyTimeoutRef.current) {
-        clearTimeout(safetyTimeoutRef.current);
-      }
-      setMapLoading(false);
-    }
-  }, []);
-
-  const leafletHTML = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-      <style>
-        body, html {
-          margin: 0;
-          padding: 0;
-          height: 100%;
-          width: 100%;
-        }
-        #map {
-          height: 100%;
-          width: 100%;
-        }
-      </style>
-    </head>
-    <body>
-      <div id="map"></div>
-      <script>
-        // Initialize map
-        var map = L.map('map').setView([${lat}, ${lng}], 13);
-        
-        // Add tile layer
-        var tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap contributors',
-          maxZoom: 19
-        }).addTo(map);
-
-        // Tell React Native once all currently-visible tiles have
-        // finished loading — this is the point the map is actually
-        // "fully loaded" from the user's perspective.
-        tileLayer.on('load', function () {
-          if (window.ReactNativeWebView) {
-            window.ReactNativeWebView.postMessage('mapLoaded');
-          }
-        });
-
-        // Fallback in case the 'load' event doesn't fire (e.g. tiles
-        // load instantly from cache before the listener attaches)
-        setTimeout(function () {
-          if (window.ReactNativeWebView) {
-            window.ReactNativeWebView.postMessage('mapLoaded');
-          }
-        }, 3000);
-        
-        // Add marker
-        var marker = L.marker([${lat}, ${lng}]).addTo(map);
-        
-        // Add popup to marker
-        ${
-          locationName
-            ? `
-          marker.bindPopup(\`
-            <div style="font-family: Arial, sans-serif;">
-              <strong style="font-size: 14px; color: #7C3AED;">${locationName.replace(/`/g, "\\`")}</strong><br/>
-              <span style="font-size: 12px; color: #666;">
-                Lat: ${lat.toFixed(6)}<br/>
-                Lng: ${lng.toFixed(6)}
-              </span>
-            </div>
-          \`).openPopup();
-        `
-            : `
-          marker.bindPopup(\`
-            <div style="font-family: Arial, sans-serif;">
-              <strong style="font-size: 14px; color: #7C3AED;">Selected Location</strong><br/>
-              <span style="font-size: 12px; color: #666;">
-                Lat: ${lat.toFixed(6)}<br/>
-                Lng: ${lng.toFixed(6)}
-              </span>
-            </div>
-          \`).openPopup();
-        `
-        }
-        
-        // Disable scroll zoom on mobile for better UX
-        if (window.innerWidth < 768) {
-          map.scrollWheelZoom.disable();
-        }
-        
-        // Disable interactions (read-only map)
-        map.dragging.disable();
-        map.touchZoom.disable();
-        map.doubleClickZoom.disable();
-        map.scrollWheelZoom.disable();
-        map.boxZoom.disable();
-        map.keyboard.disable();
-        if (map.tap) map.tap.disable();
-      </script>
-    </body>
-    </html>
-  `;
-
   return (
     <View className="flex-1 bg-white">
-      {/* Status Bar */}
       <CustomHeader
         title="Attach Geo Location"
         titleColor="#6C3CD1"
@@ -213,26 +68,24 @@ const ViewLocationScreen: React.FC<ViewLocationScreenProps> = ({
         }}
       >
         <View style={{ flex: 1, borderRadius: 12, overflow: "hidden" }}>
-          <WebView
-            ref={webViewRef}
-            originWhitelist={["*"]}
-            source={{ html: leafletHTML }}
-            javaScriptEnabled={true}
-            domStorageEnabled={true}
+          <OpenStreetMap
+            latitude={lat}
+            longitude={lng}
+            zoom={13}
+            interactive={false}
             scrollEnabled={false}
-            onMessage={handleWebViewMessage}
-            style={{ flex: 1, opacity: mapLoading ? 0 : 1 }}
+            zoomEnabled={false}
+            pinColor="#7C3AED"
+            markers={[
+              {
+                latitude: lat,
+                longitude: lng,
+                title: locationName || "Selected Location",
+                description: `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`,
+                color: "#7C3AED",
+              },
+            ]}
           />
-
-          {mapLoading && (
-            <View >
-              <LoadingPage
-                fullScreen
-                message="Loading map..."
-                containerStyle={{ backgroundColor: "#FFFFFF" }}
-              />
-            </View>
-          )}
         </View>
       </View>
     </View>

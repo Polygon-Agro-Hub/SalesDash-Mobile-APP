@@ -50,6 +50,7 @@ type ViewCustomerScreenRouteProp = RouteProp<
 
 interface Order {
   orderId: string;
+  processId?: string;
   customerId: string;
   deliveryType: string;
   sheduleDate: string;
@@ -127,6 +128,11 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   const [customerNumber, setCustomerNumber] = useState(initialNumber);
   const isFirstRender = useRef(true);
 
+  const selectedFilterRef = useRef(selectedFilter);
+  useEffect(() => {
+    selectedFilterRef.current = selectedFilter;
+  }, [selectedFilter]);
+
   const fullName = `${customerTitle ? customerTitle + ". " : ""}${customerName}`;
 
   useEffect(() => {
@@ -151,7 +157,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       };
 
       resetStates();
-      loadOrders(1, true, false, selectedFilter);
+
+      loadOrders(1, true, false, selectedFilterRef.current);
       getUserProfile();
 
       return () => {};
@@ -345,7 +352,9 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
         if (response.data.success) {
           anySuccess = true;
           for (const order of response.data.data) {
-            mergedOrdersMap.set(order.orderId, order);
+            const uniqueKey =
+              order.processId?.toString() || `${order.orderId}-${order.InvNo}`;
+            mergedOrdersMap.set(uniqueKey, order);
           }
           combinedHasMore = combinedHasMore || Boolean(response.data.hasMore);
         } else if (!firstFailureMessage) {
@@ -501,7 +510,6 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       enabled
       style={{ flex: 1 }}
     >
-      {/* Full-screen linear gradient background: #FBFAFE -> #FFFFFF, top to bottom, 30px corner radius */}
       <LinearGradient
         colors={["#FBFAFE", "#FFFFFF"]}
         start={{ x: 0, y: 0 }}
@@ -991,10 +999,10 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
               <FlatList
                 data={filteredOrders}
                 keyExtractor={(item, index) => {
+                  const safeProcessId = item.processId || "";
                   const safeOrderId = item.orderId || "unknown";
                   const safeInvNo = item.InvNo || "";
-                  const safeCreatedAt = item.createdAt || "";
-                  return `${safeOrderId}-${safeInvNo}-${safeCreatedAt}-${index}`;
+                  return `${safeOrderId}-${safeProcessId}-${safeInvNo}-${index}`;
                 }}
                 renderItem={({ item }) => {
                   const isPaymentPending =
@@ -1024,10 +1032,11 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                           borderWidth: 1.5,
                           borderColor: isPaymentPending ? "#EF4444" : "#F3F4F6",
                           shadowColor: "#000",
-                          shadowOffset: { width: 0, height: 4 },
-                          shadowOpacity: 0.04,
-                          shadowRadius: 8,
-                          elevation: 2,
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.25,
+                          shadowRadius: 3.84,
+                          elevation: 4,
+                          maxWidth: 500,
                         }}
                       >
                         <View

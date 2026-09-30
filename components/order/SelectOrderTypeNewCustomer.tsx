@@ -124,10 +124,16 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({
             <TouchableOpacity
               className="w-[70%] bg-white border border-[#F2F4F7] py-5 rounded-xl mb-4"
               style={{
+                backgroundColor: "white",
+                borderRadius: 16,
+                padding: 32,
+                alignItems: "center",
+                width: "80%",
+                maxWidth: 500,
                 shadowColor: "#000",
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.1,
-                shadowRadius: 40,
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.25,
+                shadowRadius: 3.84,
                 elevation: 5,
               }}
               onPress={handleCreateCustomPackage}
@@ -147,10 +153,16 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({
             <TouchableOpacity
               className="w-[70%] bg-white border border-[#F2F4F7] py-5 rounded-xl"
               style={{
+                backgroundColor: "white",
+                borderRadius: 16,
+                padding: 32,
+                alignItems: "center",
+                width: "80%",
+                maxWidth: 500,
                 shadowColor: "#000",
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.1,
-                shadowRadius: 40,
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.25,
+                shadowRadius: 3.84,
                 elevation: 5,
               }}
               onPress={handleSelectPackage}

@@ -16,6 +16,7 @@ import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { FontAwesome6, MaterialIcons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
+import * as Location from "expo-location";
 import CustomHeader from "../common/CustomHeader";
 import LoadingPage from "../common/LoadingPage";
 import GlobalSearchModal from "../common/GlobalSearchModal";
@@ -34,6 +35,9 @@ interface AddDeliveryAddressProps {
       customerId: string;
       addressId?: number;
       addressType?: "House" | "Apartment";
+      selectedLatitude?: number;
+      selectedLongitude?: number;
+      selectedLocationName?: string;
     };
   };
 }
@@ -155,8 +159,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
     return phoneRegex.test(phone);
   };
 
-  // fieldLabel is used to build the "[Field Name] is required" message.
- const handleRequiredFieldBlur = (
+  const handleRequiredFieldBlur = (
     value: string,
     setError: (value: string) => void,
     fieldLabel: string,
@@ -349,20 +352,15 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
       fetchCity();
       checkDeliveredOrder();
       if (isEditMode) {
-        // Only trigger the loading screen / fetch on the FIRST focus.
-        // On later focuses (e.g. returning from ViewLocationScreen),
-        // dataLoaded.current is already true, so fetchExistingAddress()
-        // would bail out on its early `if (dataLoaded.current) return;`
-        // line — before ever reaching the `finally { setLoading(false) }`.
-        // That previously left `loading` stuck at true forever, so the
-        // screen just showed <LoadingPage /> permanently after coming
-        // back from the map picker.
         if (!dataLoaded.current) {
           setLoading(true);
           fetchExistingAddress();
         }
       } else {
-        fetchProfileNearestCity();
+        if (!dataLoaded.current) {
+          dataLoaded.current = true;
+          fetchProfileNearestCity();
+        }
       }
     }, [
       fetchCity,
@@ -373,20 +371,67 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
     ]),
   );
 
-  const handlePickLocation = () => {
-    navigation.navigate("AttachGeoLocationScreen" as any, {
-      currentLatitude: latitude || undefined,
-      currentLongitude: longitude || undefined,
-      onLocationSelect: (
-        selectedLatitude: number,
-        selectedLongitude: number,
-        selectedLocationName: string,
-      ) => {
-        setLatitude(selectedLatitude);
-        setLongitude(selectedLongitude);
-        setLocationName(selectedLocationName);
-      },
-    });
+  useEffect(() => {
+    const { selectedLatitude, selectedLongitude, selectedLocationName } =
+      route.params || {};
+
+    if (selectedLatitude != null && selectedLongitude != null) {
+      setLatitude(selectedLatitude);
+      setLongitude(selectedLongitude);
+      setLocationName(selectedLocationName || "");
+      setGeoLocationError("");
+
+      navigation.setParams({
+        selectedLatitude: undefined,
+        selectedLongitude: undefined,
+        selectedLocationName: undefined,
+      } as any);
+    }
+  }, [
+    route.params?.selectedLatitude,
+    route.params?.selectedLongitude,
+    route.params?.selectedLocationName,
+  ]);
+
+  const buildAttachScreenParams = () => ({
+    currentLatitude: latitude || undefined,
+    currentLongitude: longitude || undefined,
+    returnScreen: "AddDeliveryAddress",
+    onLocationSelect: (
+      selectedLatitude: number,
+      selectedLongitude: number,
+      selectedLocationName: string,
+    ) => {
+      setLatitude(selectedLatitude);
+      setLongitude(selectedLongitude);
+      setLocationName(selectedLocationName || "");
+      setGeoLocationError("");
+    },
+  });
+
+  const handlePickLocation = async () => {
+    const attachScreenParams = buildAttachScreenParams();
+
+    try {
+      const { status } = await Location.getForegroundPermissionsAsync();
+
+      if (status !== "granted") {
+        navigation.navigate("LocationAccess" as any, {
+          returnScreen: "AttachGeoLocationScreen",
+          returnParams: attachScreenParams,
+        });
+        return;
+      }
+
+      navigation.navigate("AttachGeoLocationScreen" as any, attachScreenParams);
+    } catch (error) {
+      console.error("Error checking location permission:", error);
+
+      navigation.navigate("LocationAccess" as any, {
+        returnScreen: "AttachGeoLocationScreen",
+        returnParams: attachScreenParams,
+      });
+    }
   };
 
   const handleSubmit = async () => {
@@ -1229,13 +1274,10 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
             borderColor: "#6C3CD1",
             borderWidth: 1,
             backgroundColor: "#FFF",
-            // Border glow (iOS)
             shadowColor: "#6C3CD1",
             shadowOffset: { width: 0, height: 0 },
             shadowOpacity: 0.3,
             shadowRadius: 4,
-
-            // Android
             elevation: 5,
           }}
         >
@@ -1258,7 +1300,6 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
           </Text>
         </TouchableOpacity>
 
-        {/* Geo location error message */}
         {geoLocationError ? (
           <Text className="text-red-500 text-xs text-center mb-2">
             {geoLocationError}

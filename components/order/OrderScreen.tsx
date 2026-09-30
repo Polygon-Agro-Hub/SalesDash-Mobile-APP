@@ -23,6 +23,7 @@ import { RootStackParamList } from "../types/types";
 import { useFocusEffect } from "@react-navigation/native";
 import CustomHeader from "../common/CustomHeader";
 import GlobalSearchModal from "../common/GlobalSearchModal";
+import socketService from "@/services/socket/socket.service";
 
 type OrderScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -614,6 +615,15 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
 
   useEffect(() => {
     fetchPackages();
+
+    const unsubscribe = socketService.onPackageUpdate(() => {
+      console.log("🔄 [OrderScreen] Refreshing packages from socket update event");
+      fetchPackages();
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => { }, [route.params]);

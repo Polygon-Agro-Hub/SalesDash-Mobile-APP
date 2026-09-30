@@ -1,0 +1,89 @@
+diff --git a/node_modules/expo-modules-jsi/apple/Sources/ExpoModulesJSI-Cxx/include/RuntimeScheduler.h b/node_modules/expo-modules-jsi/apple/Sources/ExpoModulesJSI-Cxx/include/RuntimeScheduler.h
+index 6115e87..957527c 100644
+--- a/node_modules/expo-modules-jsi/apple/Sources/ExpoModulesJSI-Cxx/include/RuntimeScheduler.h
++++ b/node_modules/expo-modules-jsi/apple/Sources/ExpoModulesJSI-Cxx/include/RuntimeScheduler.h
+@@ -50,7 +50,7 @@ public:
+    `scheduleTask` dispatches through `fn`, which the host implements against
+    the real react::RuntimeScheduler.
+    */
+-  SWIFT_RETURNS_RETAINED RuntimeScheduler(void *scheduler, ScheduleFn fn) noexcept
++  RuntimeScheduler(void *scheduler, ScheduleFn fn) noexcept
+       : nativeScheduler(scheduler), scheduleFn(fn) {}
+ 
+   /**
+@@ -58,7 +58,7 @@ public:
+    caller's thread — intended for standalone runtimes (e.g. tests) that have
+    no React scheduler.
+    */
+-  SWIFT_RETURNS_RETAINED RuntimeScheduler() {}
++  RuntimeScheduler() {}
+ 
+   RuntimeScheduler(const RuntimeScheduler &) = delete;
+ 
+diff --git a/node_modules/expo-modules-jsi/apple/Sources/ExpoModulesJSI/Runtime/JavaScriptRuntime.swift b/node_modules/expo-modules-jsi/apple/Sources/ExpoModulesJSI/Runtime/JavaScriptRuntime.swift
+index 00f7329..ba34eb2 100644
+--- a/node_modules/expo-modules-jsi/apple/Sources/ExpoModulesJSI/Runtime/JavaScriptRuntime.swift
++++ b/node_modules/expo-modules-jsi/apple/Sources/ExpoModulesJSI/Runtime/JavaScriptRuntime.swift
+@@ -739,6 +739,10 @@ open class JavaScriptRuntime: Equatable, Identifiable, @unchecked Sendable {
+   }
+ }
+ 
++private struct SendableBox<T>: @unchecked Sendable {
++  let value: T
++}
++
+ private func createFunctionClosure(
+   runtime: JavaScriptRuntime, name: String? = nil, _ closure: @escaping JavaScriptRuntime.SyncFunctionClosure
+ ) -> expo.HostFunctionClosure {
+@@ -757,20 +761,18 @@ private func createFunctionClosure(
+     // heap-allocated `JavaScriptRef` (Swift 6.2 rejects capturing/consuming a `~Copyable` value in the
+     // escaping closure that `withoutActuallyEscaping` synthesizes), the closure constructs the buffer
+     // locally from the raw pointer + count. Those are read-only call-scoped inputs that never outlive the
+-    // synchronous call, so the `nonisolated(unsafe)` capture is sound. This removes a per-call class
+-    // allocation + retain/release + dealloc that profiling showed dominating the no-op `@JS` host-call
+-    // floor.
+-    nonisolated(unsafe) let thisPtr = thisPtr
+-    nonisolated(unsafe) let argumentsPtr = argumentsPtr
+-    nonisolated(unsafe) let resultPtr = resultPtr
++    // synchronous call. SendableBox satisfies Swift 6 strict concurrency checks without heap allocation.
++    let thisBox = SendableBox(value: thisPtr)
++    let argumentsBox = SendableBox(value: argumentsPtr)
++    let resultBox = SendableBox(value: resultPtr)
+ 
+     // See `withGuaranteedContext` for why neither the context nor the runtime is retained here, and
+     // why the result is written to the caller's slot instead of being returned.
+     withGuaranteedContext(context) { (context: HostFunctionContext, runtime) in
+-      resultPtr.pointee = JavaScriptActor.assumeIsolated {
++      resultBox.value.pointee = JavaScriptActor.assumeIsolated {
+         return forwardingSwiftErrorsToJS(runtime: runtime) {
+-          let this = UnsafeMutablePointer(mutating: thisPtr).move()
+-          let arguments = JavaScriptValuesBuffer(runtime, start: argumentsPtr, count: argumentsCount)
++          let this = UnsafeMutablePointer(mutating: thisBox.value).move()
++          let arguments = JavaScriptValuesBuffer(runtime, start: argumentsBox.value, count: argumentsCount)
+           let thisValue = JavaScriptValue(runtime, this)
+           return try context.call(thisValue, consume arguments).asJSIValue()
+         }
+@@ -803,17 +805,17 @@ private func createFunctionClosure(
+     // handed in as a borrowed `JavaScriptUnownedValue` pointing straight at the C++-owned `this` slot:
+     // it is not moved out and no owning `JavaScriptValue` is allocated, so the closure avoids the
+     // per-call `weak`-runtime form/destroy and heap object that the owning `this` pays.
+-    nonisolated(unsafe) let thisPtr = thisPtr
+-    nonisolated(unsafe) let argumentsPtr = argumentsPtr
+-    nonisolated(unsafe) let resultPtr = resultPtr
++    let thisBox = SendableBox(value: thisPtr)
++    let argumentsBox = SendableBox(value: argumentsPtr)
++    let resultBox = SendableBox(value: resultPtr)
+ 
+     // See `withGuaranteedContext` for why neither the context nor the runtime is retained here, and
+     // why the result is written to the caller's slot instead of being returned.
+     withGuaranteedContext(context) { (context: UnownedThisHostFunctionContext, runtime) in
+-      resultPtr.pointee = JavaScriptActor.assumeIsolated {
++      resultBox.value.pointee = JavaScriptActor.assumeIsolated {
+         return forwardingSwiftErrorsToJS(runtime: runtime) {
+-          let arguments = JavaScriptValuesBuffer(runtime, start: argumentsPtr, count: argumentsCount)
+-          let thisValue = JavaScriptUnownedValue(runtime.pointee, thisPtr)
++          let arguments = JavaScriptValuesBuffer(runtime, start: argumentsBox.value, count: argumentsCount)
++          let thisValue = JavaScriptUnownedValue(runtime.pointee, thisBox.value)
+           return try context.call(thisValue, consume arguments).asJSIValue()
+         }
+       }

@@ -23,6 +23,7 @@ import environment from "@/environment/environment";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback } from "react";
+import socketService from "@/services/socket/socket.service";
 
 let globalUnreadCount = 0;
 let unreadCountListeners: ((count: number) => void)[] = [];
@@ -162,12 +163,14 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
   useEffect(() => {
     fetchNotifications();
 
-    const intervalId = setInterval(() => {
+    // Subscribe to real-time socket events from /api/notifications/trigger (0 polling)
+    const unsubscribe = socketService.onNewNotification(() => {
+      console.log("🔔 [ReminderScreen] Real-time notification received via socket - updating list");
       fetchNotifications();
-    }, 12000);
+    });
 
     return () => {
-      clearInterval(intervalId);
+      unsubscribe();
     };
   }, []);
 
@@ -280,7 +283,8 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
             className="text-white font-bold"
             style={{ fontSize: SCREEN_HEIGHT > 900 ? 20 : 18 }}
           >
-            {unreadCount} Unread Notifications
+            {unreadCount} Unread{" "}
+            {unreadCount === 1 ? "Notification" : "Notifications"}
           </Text>
         </View>
       </LinearGradient>

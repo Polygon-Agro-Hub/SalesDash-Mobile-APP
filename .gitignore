@@ -20,3 +20,6 @@ web-build/
 
 expo-env.d.ts
 # @end expo-cli
+
+# Credentials
+service-account*.json

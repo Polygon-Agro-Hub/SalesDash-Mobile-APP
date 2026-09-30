@@ -110,6 +110,21 @@ export type RootStackParamList = {
   };
   PrivacyPolicy: undefined;
   TermsConditions: undefined;
+  CameraAccess?: {
+    returnScreen?: keyof RootStackParamList;
+    returnParams?: any;
+    blockBackNavigation?: boolean;
+  };
+  LocationAccess?: {
+    returnScreen?: keyof RootStackParamList;
+    returnParams?: any;
+    blockBackNavigation?: boolean;
+  };
+  NotificationAccess?: {
+    returnScreen?: keyof RootStackParamList;
+    returnParams?: any;
+    blockBackNavigation?: boolean;
+  };
   SelectOrderTypeNewCustomer: {
     id: number;
     name: string;
@@ -362,6 +377,7 @@ export type RootStackParamList = {
   AttachGeoLocationScreen: {
     currentLatitude?: number;
     currentLongitude?: number;
+    returnScreen?: keyof RootStackParamList;
     onLocationSelect?: (
       latitude: number,
       longitude: number,
@@ -439,6 +455,11 @@ export type RootStackParamList = {
   };
   AddDeliveryAddress: {
     customerId: string;
+    addressId?: number;
+    addressType?: "House" | "Apartment";
+    selectedLatitude?: number;
+    selectedLongitude?: number;
+    selectedLocationName?: string;
   };
   DeliveryAddress: {
     customerId: string;

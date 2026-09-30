@@ -56,6 +56,13 @@ const OnlinePayment: React.FC<OnlinePaymentProps> = ({ navigation, route }) => {
     customerscreencustomerid,
     isFinalizeImdt,
     deliveryCharge,
+    scheduleType,
+    sheduleType,
+    selectedDays,
+    recurringDays,
+    validityWeeks,
+    validityPeriod,
+    calculatedOrders,
   } = route.params || {};
 
   const [selectedMethod, setSelectedMethod] = useState<DeliveryMethod>("app");
@@ -177,6 +184,13 @@ const OnlinePayment: React.FC<OnlinePaymentProps> = ({ navigation, route }) => {
           deliveryCharge,
           isFinalizeImdt,
           paymentMethod: "Card",
+          scheduleType,
+          sheduleType,
+          selectedDays,
+          recurringDays,
+          validityWeeks,
+          validityPeriod,
+          calculatedOrders,
         });
         return true;
       };
@@ -226,6 +240,13 @@ const OnlinePayment: React.FC<OnlinePaymentProps> = ({ navigation, route }) => {
             isFinalizeImdt,
 
             paymentMethod: "Card",
+            scheduleType,
+            sheduleType,
+            selectedDays,
+            recurringDays,
+            validityWeeks,
+            validityPeriod,
+            calculatedOrders,
           })
         }
       />

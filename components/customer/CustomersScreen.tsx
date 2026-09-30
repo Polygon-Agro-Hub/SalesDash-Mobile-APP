@@ -312,10 +312,9 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
           colors={["#854BDA", "#6E3DD1"]}
           className="shadow-md px-4 items-center justify-center"
           style={{
-            height:
-              Platform.OS === "ios" ? hp(9) + topInset : hp(12) + topInset,
-            paddingTop: Platform.OS === "ios" ? topInset : 16,
             paddingBottom: 24,
+            height:80,
+            justifyContent:'center'
           }}
         >
           <View className="w-full max-w-[500px] items-center">
