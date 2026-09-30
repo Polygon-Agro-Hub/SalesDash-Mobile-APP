@@ -9,9 +9,7 @@ import socketService from "../socket/socket.service";
 import environment from "@/environment/environment";
 import { navigationRef, navigate } from "@/services/navigation/navigationService";
 
-const isExpoGo =
-  Constants.appOwnership === "expo" ||
-  (Constants as any).executionEnvironment === "storeClient";
+const CHANNEL_ID = "default";
 
 // Configure how notifications appear when app is in foreground / background / locked
 try {
@@ -30,6 +28,8 @@ try {
 class PushNotificationService {
   private isInitialized = false;
   private responseSubscription: any = null;
+  private registeredTokens = new Set<string>();
+  private isRegisteringToken = false;
 
   async init() {
     if (this.isInitialized) return;
@@ -42,11 +42,13 @@ class PushNotificationService {
       // Ensure notification channel is configured
       if (Platform.OS === "android") {
         try {
-          await Notifications.setNotificationChannelAsync("default", {
+          await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
             name: "Order & Reminder Notifications",
+            description: "Live notifications for orders, packages, and deliveries.",
             importance: Notifications.AndroidImportance.MAX,
             lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
             vibrationPattern: [0, 250, 250, 250],
+            lightColor: "#6638CE",
             sound: "default",
             enableVibrate: true,
             showBadge: true,
@@ -57,7 +59,9 @@ class PushNotificationService {
       }
 
       // Automatically register device push token if user is logged in
-      await this.registerPushTokenAsync();
+      this.registerPushTokenAsync().catch((e) =>
+        console.warn("[PushNotificationService] Initial token registration deferred:", e?.message)
+      );
 
       // Handle user tapping on a native system tray / lock screen notification
       try {
@@ -81,86 +85,158 @@ class PushNotificationService {
       } catch (listenerErr) {
         // Listener not available in this environment
       }
+
+      console.log("[PushNotificationService] Initialized successfully");
     } catch (error) {
       console.warn("[PushNotificationService] Init error:", error);
     }
   }
 
   /**
-   * Registers Expo / FCM Push Token on the backend for 24/7 background & lockscreen delivery
+   * Check if OS Notification Permission is currently granted
    */
-  async registerPushTokenAsync() {
+  async hasPermission(): Promise<boolean> {
+    try {
+      const { status } = await Notifications.getPermissionsAsync();
+      return status === "granted";
+    } catch (error) {
+      console.warn("[PushNotificationService] hasPermission check error:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Request OS System Notification Permissions
+   */
+  async requestPermissions(): Promise<boolean> {
+    try {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+
+      if (existingStatus !== "granted") {
+        const { status } = await Notifications.requestPermissionsAsync({
+          ios: {
+            allowAlert: true,
+            allowBadge: true,
+            allowSound: true,
+          },
+        });
+        finalStatus = status;
+      }
+
+      return finalStatus === "granted";
+    } catch (error) {
+      console.warn("[PushNotificationService] requestPermissions error:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Registers native FCM / Expo Push Tokens with the backend database (notificationpushtoken)
+   * Ensures 24/7 background & lockscreen delivery via Firebase Cloud Messaging
+   */
+  async registerPushTokenAsync(): Promise<void> {
+    if (this.isRegisteringToken) return;
+    this.isRegisteringToken = true;
+
     try {
       const rawToken = await AsyncStorage.getItem("authToken");
-      if (!rawToken) return;
-      const token = rawToken.replace(/^["']|["']$/g, "").trim();
-
-      // Request / verify notification permission
-      try {
-        const { status: existingStatus } = await Notifications.getPermissionsAsync();
-        let finalStatus = existingStatus;
-        if (existingStatus !== "granted") {
-          const { status } = await Notifications.requestPermissionsAsync();
-          finalStatus = status;
-        }
-        if (finalStatus !== "granted") {
-          console.log("ℹ️ [PushNotificationService] Notification permission not granted");
-          return;
-        }
-      } catch (permErr) {
-        console.warn("[PushNotificationService] Permission check error:", permErr);
-      }
-
-      // Skip in Expo Go client because Expo SDK 53+ removed remote push tokens from Expo Go
-      const isExpoGo =
-        Constants.appOwnership === "expo" ||
-        (Constants as any).executionEnvironment === "storeClient";
-
-      if (isExpoGo) {
+      if (!rawToken) {
+        console.log("ℹ️ [PushNotificationService] User not logged in, skipping push token registration.");
         return;
       }
+      const authToken = rawToken.replace(/^["']|["']$/g, "").trim();
 
       if (!Device.isDevice) {
-        console.log("ℹ️ [PushNotificationService] Push tokens require physical device testing.");
+        console.log("ℹ️ [PushNotificationService] Push notifications require a physical device.");
         return;
       }
 
-      const projectId =
-        Constants?.expoConfig?.extra?.eas?.projectId ??
-        Constants?.easConfig?.projectId;
+      // Check / request permission
+      const hasPerm = await this.requestPermissions();
+      if (!hasPerm) {
+        console.warn("⚠️ [PushNotificationService] Notification permission not granted.");
+        return;
+      }
 
-      let pushToken = "";
+      // 1. Native Device Push Token (FCM on Android, APNs on iOS)
       try {
-        const tokenData = await Notifications.getExpoPushTokenAsync(
+        const devTokenObj = await Notifications.getDevicePushTokenAsync();
+        if (devTokenObj?.data) {
+          console.log(
+            `📱 [PushNotificationService] Obtained native device token (${devTokenObj.type}):`,
+            devTokenObj.data.slice(0, 20) + "..."
+          );
+          await this.sendTokenToBackend(
+            authToken,
+            devTokenObj.data,
+            devTokenObj.type || (Platform.OS === "android" ? "fcm" : "apns")
+          );
+        }
+      } catch (devErr: any) {
+        console.warn("⚠️ [PushNotificationService] Native device token not available:", devErr?.message);
+      }
+
+      // 2. Expo Push Token (secondary fallback)
+      try {
+        const projectId =
+          Constants?.expoConfig?.extra?.eas?.projectId ??
+          Constants?.easConfig?.projectId ??
+          "f0851a8a-d2d7-42c2-8f98-a5b1b0099907";
+        const expoTokenObj = await Notifications.getExpoPushTokenAsync(
           projectId ? { projectId } : undefined
         );
-        pushToken = tokenData?.data || "";
-      } catch (tokenErr) {
-        console.warn("[PushNotificationService] Could not retrieve push token:", tokenErr);
-        return;
+        if (expoTokenObj?.data) {
+          console.log(
+            "📱 [PushNotificationService] Obtained Expo push token:",
+            expoTokenObj.data.slice(0, 25) + "..."
+          );
+          await this.sendTokenToBackend(authToken, expoTokenObj.data, "expo");
+        }
+      } catch (expoErr: any) {
+        console.log("ℹ️ [PushNotificationService] Expo push token not obtained:", expoErr?.message);
       }
+    } catch (err: any) {
+      console.warn("❌ [PushNotificationService] registerPushToken error:", err?.message || err);
+    } finally {
+      this.isRegisteringToken = false;
+    }
+  }
 
-      if (!pushToken) return;
+  private async sendTokenToBackend(authToken: string, pushToken: string, tokenType: string): Promise<void> {
+    const cacheKey = `${pushToken}_${tokenType}`;
+    if (this.registeredTokens.has(cacheKey)) return;
 
-      await axios.post(
-        `${environment.API_BASE_URL}api/notifications/register-push-token`,
+    try {
+      const baseUrl = environment.API_BASE_URL.replace(/\/+$/, "");
+      const url = `${baseUrl}/api/notifications/save-push-token`;
+      const response = await axios.post(
+        url,
         {
           pushToken,
+          tokenType: tokenType.toLowerCase() === "expo" ? "expo" : "fcm",
+          deviceType: Platform.OS,
           platform: Platform.OS,
         },
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${authToken}`,
             "Content-Type": "application/json",
             Accept: "application/json",
           },
+          timeout: 10000,
         }
       );
 
-      await AsyncStorage.setItem("lastSavedPushToken", pushToken);
-      console.log("✅ [PushNotificationService] Registered push token on server:", pushToken);
-    } catch (err: any) {
-      console.warn("[PushNotificationService] Error registering push token:", err?.message || err);
+      if (response.data?.success || response.data?.status) {
+        console.log(`✅ [PushNotificationService] Push token registered on backend (${tokenType})`);
+        this.registeredTokens.add(cacheKey);
+      }
+    } catch (apiErr: any) {
+      console.error(
+        "❌ [PushNotificationService] Failed to send push token to backend:",
+        apiErr?.response?.data || apiErr?.message
+      );
     }
   }
 
@@ -172,10 +248,9 @@ class PushNotificationService {
     if (!item || !item.title) return;
 
     try {
-      // Ensure Android channel is ready with Sound & High Priority (safe check)
       if (Platform.OS === "android") {
         try {
-          await Notifications.setNotificationChannelAsync("default", {
+          await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
             name: "Order & Reminder Notifications",
             importance: Notifications.AndroidImportance.MAX,
             lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
@@ -184,9 +259,7 @@ class PushNotificationService {
             enableVibrate: true,
             showBadge: true,
           });
-        } catch (_) {
-          // Channel creation not supported in this runtime, proceed with scheduling
-        }
+        } catch (_) {}
       }
 
       const bodyText =
@@ -208,8 +281,9 @@ class PushNotificationService {
             sound: "default",
             priority: Notifications.AndroidNotificationPriority.MAX,
             vibrate: [0, 250, 250, 250],
+            color: "#6638CE",
           },
-          trigger: (Platform.OS === "android" ? { channelId: "default" } : null) as any,
+          trigger: (Platform.OS === "android" ? { channelId: CHANNEL_ID } : null) as any,
         });
       } catch (_) {
         // Fallback without channelId trigger

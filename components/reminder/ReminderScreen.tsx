@@ -280,7 +280,8 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
             className="text-white font-bold"
             style={{ fontSize: SCREEN_HEIGHT > 900 ? 20 : 18 }}
           >
-            {unreadCount} Unread Notifications
+            {unreadCount} Unread{" "}
+            {unreadCount === 1 ? "Notification" : "Notifications"}
           </Text>
         </View>
       </LinearGradient>

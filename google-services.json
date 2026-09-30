@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "795027860527",
+    "project_id": "polygon-19a3a",
+    "storage_bucket": "polygon-19a3a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:795027860527:android:c8b8893dcecca37da36ada",
+        "android_client_info": {
+          "package_name": "com.polygonagro.Polygon"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDKiQLITyE6GkRXaD9bjfuk4jcsNtOkuno"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:795027860527:android:aa28d77cfaf8afa6a36ada",
+        "android_client_info": {
+          "package_name": "com.polygonagro.SalesDash"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDKiQLITyE6GkRXaD9bjfuk4jcsNtOkuno"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
