@@ -164,17 +164,11 @@ const OnlinePaymentStatus: React.FC<OnlinePaymentStatusProps> = ({
     isMountedRef.current = true;
     hasNavigatedRef.current = false;
 
-    // Initial check on mount
+    // Initial check on mount only (manual refresh via pull-to-refresh)
     checkPaymentStatus();
-
-    // Periodic check every 5 seconds
-    const interval = setInterval(() => {
-      checkPaymentStatus();
-    }, 5000);
 
     return () => {
       isMountedRef.current = false;
-      clearInterval(interval);
     };
   }, [orderId, checkPaymentStatus]);
 

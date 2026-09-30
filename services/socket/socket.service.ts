@@ -115,12 +115,13 @@ class SocketService {
       this.socket.on("connect", () => {
         this.isConnecting = false;
         this.hasLoggedConnectionNotice = false;
-        this.stopFallbackPolling();
         console.log(`🔌 [SocketService] Connected: ${this.socket?.id}`);
         if (this.currentUserId) {
           this.socket?.emit("registerSalesAgent", this.currentUserId);
           this.socket?.emit("register_user", this.currentUserId);
         }
+        // One-time baseline unread count check on connect (0 polling)
+        this.checkNewNotifications();
       });
 
       const handleSocketNotification = (data: ServerNotificationItem) => {
@@ -161,21 +162,14 @@ class SocketService {
         this.isConnecting = false;
         if (!this.hasLoggedConnectionNotice) {
           this.hasLoggedConnectionNotice = true;
-          console.log("ℹ️ [SocketService] Socket not reachable, using REST polling.");
+          console.log("ℹ️ [SocketService] Socket connecting / retrying...");
         }
-        this.startFallbackPolling(token);
       });
 
       this.socket.on("disconnect", (reason) => {
         this.isConnecting = false;
-        if (reason !== "io client disconnect") {
-          this.startFallbackPolling(token);
-        }
+        console.log(`🔌 [SocketService] Disconnected: ${reason}`);
       });
-
-      // Always start polling as a safety net even when socket connects
-      // (socket only delivers real-time events; polling catches existing unread ones)
-      this.startFallbackPolling(token);
 
     } catch (e) {
       this.isConnecting = false;
@@ -310,13 +304,7 @@ class SocketService {
   }
 
   private startFallbackPolling(token: string) {
-    if (this.fallbackPollingTimer) return;
-    // First poll immediately
-    this.pollNotifications(token);
-    // Then every 8 seconds
-    this.fallbackPollingTimer = setInterval(() => {
-      this.pollNotifications(token);
-    }, 8000);
+    // Zero-polling architecture: real-time events delivered directly via /api/notifications/trigger
   }
 
   private stopFallbackPolling() {
