@@ -78,6 +78,9 @@ interface CustomerInfo {
   firstName: string;
   lastName: string;
   phoneNumber: string;
+  phoneCode?: string;
+  phoneNumber2?: string;
+  phoneCode2?: string;
   title: string;
 }
 
@@ -623,10 +626,15 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         style="display: flex; justify-content: space-between"
       >
         <div>
-          <p class="bold">Bill To :</p>
-         <p class="headerp">${order?.customerInfo?.title || ""}. ${order?.customerInfo?.fullName || ""}</p>
-          <p class="headerp"> +94 ${order?.customerInfo?.phoneNumber || ""}</p>
-          <p class="headerp">${customerData?.email || ""}</p>
+<p class="bold">Bill To :</p>
+<p class="headerp">${order?.customerInfo?.title ? `${order.customerInfo.title}. ` : ""}${order?.customerInfo?.fullName || ""}</p>
+<p class="headerp">${order?.customerInfo?.phoneCode || "+94"} ${order?.customerInfo?.phoneNumber || ""}</p>
+${
+  order?.customerInfo?.phoneNumber2
+    ? `<p class="headerp">${order?.customerInfo?.phoneCode2 || "+94"} ${order.customerInfo.phoneNumber2}</p>`
+    : ""
+}
+<p class="headerp">${customerData?.email || ""}</p>
               <div style="margin-top: 10px">
       ${
         order?.customerInfo?.buildingType === "Apartment"

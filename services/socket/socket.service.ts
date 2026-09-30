@@ -39,11 +39,8 @@ class SocketService {
   private isConnecting: boolean = false;
   private currentUserId: number | null = null;
 
-  // Session-only tracking (NOT persisted - resets every app launch).
-  // KEY FIX: Previously we persisted the last shown ID to AsyncStorage which
-  // caused the banner to NEVER fire on reinstall/reopen because the persisted
-  // ID matched existing notification IDs in the DB.
-  private shownBannerUpToId: number = 0;
+  // High-water mark notification ID tracking (resets each session, backed by AsyncStorage)
+  private lastNotifiedId: number = 0;
   private lastKnownUnreadCount: number = -1; // -1 means first check this session
 
   private fallbackPollingTimer: any = null;
@@ -118,12 +115,13 @@ class SocketService {
       this.socket.on("connect", () => {
         this.isConnecting = false;
         this.hasLoggedConnectionNotice = false;
-        this.stopFallbackPolling();
         console.log(`🔌 [SocketService] Connected: ${this.socket?.id}`);
         if (this.currentUserId) {
           this.socket?.emit("registerSalesAgent", this.currentUserId);
           this.socket?.emit("register_user", this.currentUserId);
         }
+        // One-time baseline unread count check on connect (0 polling)
+        this.checkNewNotifications();
       });
 
       const handleSocketNotification = (data: ServerNotificationItem) => {
@@ -132,9 +130,9 @@ class SocketService {
           ...data,
           message: formatNotificationMessage(data),
         };
-        if (data?.id && data.id > this.shownBannerUpToId) {
-          this.shownBannerUpToId = data.id;
-          AsyncStorage.setItem(LAST_NOTIFIED_ID_KEY, String(this.shownBannerUpToId)).catch(() => {});
+        if (data?.id && data.id > this.lastNotifiedId) {
+          this.lastNotifiedId = data.id;
+          AsyncStorage.setItem(LAST_NOTIFIED_ID_KEY, String(this.lastNotifiedId)).catch(() => {});
         }
         if (typeof data?.unreadCount === "number") {
           this.lastKnownUnreadCount = data.unreadCount;
@@ -150,38 +148,28 @@ class SocketService {
       this.socket.on("newNotification", handleSocketNotification);
       this.socket.on("new_notification", handleSocketNotification);
 
-      // Listen for package / product updates from Admin Panel
-      const handlePackageOrProductUpdate = (data: any) => {
-        console.log("📦 [SocketService] Real-time package/product update event received:", data);
+      // Listen for package updates in real-time
+      const handlePackageUpdate = (data: any) => {
+        console.log("📦 [SocketService] Real-time package update event received:", data);
         this.dispatchPackageUpdate(data);
       };
 
-      this.socket.on("packageUpdated", handlePackageOrProductUpdate);
-      this.socket.on("package_updated", handlePackageOrProductUpdate);
-      this.socket.on("packagesUpdated", handlePackageOrProductUpdate);
-      this.socket.on("productUpdated", handlePackageOrProductUpdate);
-      this.socket.on("product_updated", handlePackageOrProductUpdate);
-      this.socket.on("productsUpdated", handlePackageOrProductUpdate);
+      this.socket.on("packageUpdated", handlePackageUpdate);
+      this.socket.on("package_updated", handlePackageUpdate);
+      this.socket.on("packagesUpdated", handlePackageUpdate);
 
       this.socket.on("connect_error", () => {
         this.isConnecting = false;
         if (!this.hasLoggedConnectionNotice) {
           this.hasLoggedConnectionNotice = true;
-          console.log("ℹ️ [SocketService] Socket not reachable, using REST polling.");
+          console.log("ℹ️ [SocketService] Socket connecting / retrying...");
         }
-        this.startFallbackPolling(token);
       });
 
       this.socket.on("disconnect", (reason) => {
         this.isConnecting = false;
-        if (reason !== "io client disconnect") {
-          this.startFallbackPolling(token);
-        }
+        console.log(`🔌 [SocketService] Disconnected: ${reason}`);
       });
-
-      // Always start polling as a safety net even when socket connects
-      // (socket only delivers real-time events; polling catches existing unread ones)
-      this.startFallbackPolling(token);
 
     } catch (e) {
       this.isConnecting = false;
@@ -260,11 +248,11 @@ class SocketService {
       updateGlobalUnreadCount(unreadCount);
 
       // Load persistent high-water mark from storage if not in memory
-      if (this.shownBannerUpToId === 0) {
+      if (this.lastNotifiedId === 0) {
         try {
           const stored = await AsyncStorage.getItem(LAST_NOTIFIED_ID_KEY);
           if (stored) {
-            this.shownBannerUpToId = parseInt(stored, 10) || 0;
+            this.lastNotifiedId = parseInt(stored, 10) || 0;
           }
         } catch (_) {}
       }
@@ -273,23 +261,23 @@ class SocketService {
       // SILENT SYNC: When app opens or reconnects, establish the baseline high-water mark.
       // Pre-existing notifications belong to the inbox state — DO NOT alert the user.
       if (this.lastKnownUnreadCount === -1) {
-        this.shownBannerUpToId = Math.max(this.shownBannerUpToId, latestUnreadId);
+        this.lastNotifiedId = Math.max(this.lastNotifiedId, latestUnreadId);
         this.lastKnownUnreadCount = unreadCount;
-        AsyncStorage.setItem(LAST_NOTIFIED_ID_KEY, String(this.shownBannerUpToId)).catch(() => {});
+        AsyncStorage.setItem(LAST_NOTIFIED_ID_KEY, String(this.lastNotifiedId)).catch(() => {});
         console.log(
           "ℹ️ [SocketService] Baseline inbox state synced silently. Unread count:",
           unreadCount,
           "High-water mark ID:",
-          this.shownBannerUpToId
+          this.lastNotifiedId
         );
         return;
       }
 
       // ── 3. EVENT-DRIVEN ALERTS (Only genuinely new real-time arrivals) ────
       // Only alert if new items arrived whose ID is strictly higher than the high-water mark
-      if (latestUnreadId > this.shownBannerUpToId) {
+      if (latestUnreadId > this.lastNotifiedId) {
         const newItems = unreadItems.filter(
-          (n) => (n.id || 0) > this.shownBannerUpToId
+          (n) => (n.id || 0) > this.lastNotifiedId
         );
 
         newItems.forEach((item) => {
@@ -302,8 +290,8 @@ class SocketService {
           this.dispatchToListeners(formatted);
         });
 
-        this.shownBannerUpToId = latestUnreadId;
-        AsyncStorage.setItem(LAST_NOTIFIED_ID_KEY, String(this.shownBannerUpToId)).catch(() => {});
+        this.lastNotifiedId = latestUnreadId;
+        AsyncStorage.setItem(LAST_NOTIFIED_ID_KEY, String(this.lastNotifiedId)).catch(() => {});
       }
 
       this.lastKnownUnreadCount = unreadCount;
@@ -316,13 +304,7 @@ class SocketService {
   }
 
   private startFallbackPolling(token: string) {
-    if (this.fallbackPollingTimer) return;
-    // First poll immediately
-    this.pollNotifications(token);
-    // Then every 8 seconds
-    this.fallbackPollingTimer = setInterval(() => {
-      this.pollNotifications(token);
-    }, 8000);
+    // Zero-polling architecture: real-time events delivered directly via /api/notifications/trigger
   }
 
   private stopFallbackPolling() {
@@ -339,7 +321,7 @@ class SocketService {
     };
   }
 
-  onPackageOrProductUpdate(callback: (data?: any) => void): () => void {
+  onPackageUpdate(callback: (data?: any) => void): () => void {
     this.packageUpdateListeners.add(callback);
     return () => {
       this.packageUpdateListeners.delete(callback);
@@ -357,7 +339,7 @@ class SocketService {
     this.hasLoggedConnectionNotice = false;
     // Reset session tracking on logout/disconnect
     this.lastKnownUnreadCount = -1;
-    this.shownBannerUpToId = 0;
+    this.lastNotifiedId = 0;
     this.isPollingActive = false;
     AsyncStorage.removeItem(LAST_NOTIFIED_ID_KEY).catch(() => {});
   }
