@@ -201,9 +201,13 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
 
   useEffect(() => {
     const unsubscribe = socketService.onPackageUpdate((data?: any) => {
-      console.log("🔄 [DashboardScreen] Auto-refreshing packages from real-time socket update event");
+      console.log("🔄 [DashboardScreen] Auto-refreshing packages from real-time socket update event:", data);
       if (Array.isArray(data) && data.length > 0) {
         setPackages(data);
+      } else if (Array.isArray(data?.data) && data.data.length > 0) {
+        setPackages(data.data);
+      } else if (Array.isArray(data?.packages) && data.packages.length > 0) {
+        setPackages(data.packages);
       } else {
         fetchPackages();
       }
