@@ -681,7 +681,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
 
   const renderNearestCityField = () => (
     <>
-      <Text className="text-sm mb-2">Nearest City *</Text>
+      <Text className="text-sm mb-4 mt-2">Nearest City *</Text>
 
       {canEditNearestCity ? (
         <View className="mb-5">
@@ -760,7 +760,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
         keyboardOpeningTime={0}
       >
         {/* Save Address As */}
-        <Text className="text-sm mb-2">Save Address As *</Text>
+        <Text className="text-sm mb-4">Save Address As *</Text>
         <TextInput
           value={saveAddressAs}
           onChangeText={(text) => {
@@ -800,7 +800,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
         {/* Title + Billing Name */}
         <View className="flex-row mb-5" style={{ gap: 12 }}>
           <View style={{ width: 90 }}>
-            <Text className="text-sm mb-2">Title *</Text>
+            <Text className="text-sm mb-4">Title *</Text>
             <TouchableOpacity
               onPress={() => {
                 if (!title.trim()) {
@@ -833,7 +833,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
           </View>
 
           <View className="flex-1">
-            <Text className="text-sm mb-2">Billing Name *</Text>
+            <Text className="text-sm mb-4">Billing Name *</Text>
             <TextInput
               value={billingName}
               onChangeText={(text) => {
@@ -872,7 +872,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
         </View>
 
         {/* Phone Number 1 */}
-        <Text className="text-sm mb-2">Phone Number - 1 *</Text>
+        <Text className="text-sm mb-4">Phone Number - 1 *</Text>
         <TextInput
           value={phoneNumber1}
           onChangeText={(text) => handlePhoneValidationChange(text, "phone1")}
@@ -906,7 +906,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
         )}
 
         {/* Phone Number 2 */}
-        <Text className="text-sm mb-2">Phone Number - 2</Text>
+        <Text className="text-sm mb-4">Phone Number - 2</Text>
         <TextInput
           value={phoneNumber2}
           onChangeText={(text) => handlePhoneValidationChange(text, "phone2")}
@@ -940,7 +940,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
         )}
 
         {/* Building Type */}
-        <Text className="text-sm mb-2">Building Type *</Text>
+        <Text className="text-sm mb-4">Building Type *</Text>
         <TouchableOpacity
           onPress={() => setBuildingTypeModalVisible(true)}
           className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] flex-row items-center justify-between"
@@ -971,7 +971,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
         {/* ===================== APARTMENT FIELDS ===================== */}
         {buildingType === "Apartment" && (
           <>
-            <Text className="text-sm mb-2">Apartment / Building No *</Text>
+            <Text className="text-sm mb-4 ">Apartment / Building No *</Text>
             <TextInput
               value={buildingNo}
               onChangeText={(text) => {
@@ -1006,7 +1006,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
               </Text>
             ) : null}
 
-            <Text className="text-sm mb-2">Apartment / Building Name *</Text>
+            <Text className="text-sm mt-2 mb-4">Apartment / Building Name *</Text>
             <TextInput
               value={buildingName}
               onChangeText={(text) => {
@@ -1041,7 +1041,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
               </Text>
             ) : null}
 
-            <Text className="text-sm mb-2">Flat / Unit Number *</Text>
+            <Text className="text-sm mt-2 mb-4">Flat / Unit Number *</Text>
             <TextInput
               value={unitNo}
               onChangeText={(text) => {
@@ -1076,7 +1076,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
               </Text>
             ) : null}
 
-            <Text className="text-sm mb-2">Floor Number *</Text>
+            <Text className="text-sm mt-2 mb-4">Floor Number *</Text>
             <TextInput
               value={floorNo}
               onChangeText={(text) => {
@@ -1111,7 +1111,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
               </Text>
             ) : null}
 
-            <Text className="text-sm mb-2">Building / House No *</Text>
+            <Text className="text-sm mt-2 mb-4">Building / House No *</Text>
             <TextInput
               value={houseNo}
               onChangeText={(text) => {
@@ -1146,7 +1146,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
               </Text>
             ) : null}
 
-            <Text className="text-sm mb-2">Street Name *</Text>
+            <Text className="text-sm mt-2 mb-4">Street Name *</Text>
             <TextInput
               value={streetName}
               onChangeText={(text) => {
@@ -1188,7 +1188,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
         {/* ===================== HOUSE FIELDS ===================== */}
         {buildingType === "House" && (
           <>
-            <Text className="text-sm mb-2">Building / House No *</Text>
+            <Text className="text-sm mb-4">Building / House No *</Text>
             <TextInput
               value={houseNo}
               onChangeText={(text) => {
@@ -1223,7 +1223,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
               </Text>
             ) : null}
 
-            <Text className="text-sm mb-2">Street Name *</Text>
+            <Text className="text-sm mb-4 mt-2">Street Name *</Text>
             <TextInput
               value={streetName}
               onChangeText={(text) => {
