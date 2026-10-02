@@ -9,6 +9,7 @@ import {
   Platform,
   Alert,
   Keyboard,
+  BackHandler,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -208,6 +209,21 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
       fetchCity,
       resetFormState,
     ]),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        navigation.goBack();
+        return true;
+      };
+
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress,
+      );
+      return () => backHandler.remove();
+    }, [navigation]),
   );
 
   const handleUpdate = async () => {

@@ -301,7 +301,16 @@ const CameraAccess: React.FC<CameraAccessProps> = ({
                     color="#FFFFFF"
                     style={{ marginRight: 8 }}
                   />
-                  <Text className="text-white font-extrabold text-base tracking-wide">
+                 
+                     <Text
+                    style={{
+                      color: "#FFFFFF",
+                      fontWeight: "800",
+                      fontSize: 14,
+                      lineHeight: 24,
+                      letterSpacing: 0.4,
+                    }}
+                  >
                     {isLoading ? "Requesting..." : "Agree & Continue"}
                   </Text>
                 </View>

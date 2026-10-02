@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   BackHandler,
   Keyboard,
   Dimensions,
+  ScrollView,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -19,7 +20,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import environment from "@/environment/environment";
 import { useFocusEffect } from "@react-navigation/native";
 import CustomHeader from "../common/CustomHeader";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 type ChangePasswordScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -29,6 +29,16 @@ type ChangePasswordScreenNavigationProp = StackNavigationProp<
 interface ChangePasswordScreenProps {
   navigation: ChangePasswordScreenNavigationProp;
 }
+
+type FieldName = "current" | "new" | "confirm";
+
+// Space (px) kept between the focused field and the keyboard,
+// so the fields / Update button below it stay visible.
+const EXTRA_SPACE: Record<FieldName, number> = {
+  current: 30,
+  new: 60,
+  confirm: 100,
+};
 
 const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
   navigation,
@@ -41,8 +51,70 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [passwordUpdate, setPasswordUpdate] = useState<number | null>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const { height: SCREEN_HEIGHT } = Dimensions.get("window");
   const HALF = SCREEN_HEIGHT / 2;
+
+  // Keyboard / scroll refs
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollYRef = useRef(0);
+  const keyboardTopRef = useRef(0);
+  const keyboardOpenRef = useRef(false);
+  const focusedFieldRef = useRef<FieldName>("current");
+  const currentWrapRef = useRef<View>(null);
+  const newWrapRef = useRef<View>(null);
+  const confirmWrapRef = useRef<View>(null);
+
+  // Scroll only as much as needed so the focused field sits just above
+  // the keyboard (not at the top of the screen).
+  const ensureVisible = useCallback(() => {
+    const field = focusedFieldRef.current;
+    const target =
+      field === "current"
+        ? currentWrapRef
+        : field === "new"
+          ? newWrapRef
+          : confirmWrapRef;
+
+    target.current?.measureInWindow((_x, y, _w, h) => {
+      const limit = keyboardTopRef.current - EXTRA_SPACE[field];
+      const overflow = y + h - limit;
+      if (overflow > 0) {
+        scrollRef.current?.scrollTo({
+          y: scrollYRef.current + overflow,
+          animated: true,
+        });
+      }
+    });
+  }, []);
+
+  const handleFocus = (field: FieldName) => {
+    focusedFieldRef.current = field;
+    // if keyboard is already open (switching fields), adjust now
+    if (keyboardOpenRef.current) {
+      setTimeout(ensureVisible, 150);
+    }
+  };
+
+  // Track keyboard height
+  useEffect(() => {
+    const showListener = Keyboard.addListener("keyboardDidShow", (e) => {
+      keyboardOpenRef.current = true;
+      keyboardTopRef.current = e.endCoordinates.screenY;
+      setKeyboardHeight(e.endCoordinates.height);
+      // wait for bottom padding to render, then scroll
+      setTimeout(ensureVisible, 150);
+    });
+    const hideListener = Keyboard.addListener("keyboardDidHide", () => {
+      keyboardOpenRef.current = false;
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showListener.remove();
+      hideListener.remove();
+    };
+  }, [ensureVisible]);
 
   const validatePassword = () => {
     if (!currentPassword || !newPassword || !confirmNewPassword) {
@@ -193,13 +265,22 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
 
   return (
     <View style={{ flex: 1, backgroundColor: "#6E3DD1" }}>
-      <KeyboardAwareScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
-        enableOnAndroid={true}
-        extraScrollHeight={20}
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={{
+          flexGrow: 1,
+          // Manually lift content above the keyboard (works in production
+          // builds even with edge-to-edge enabled).
+          paddingBottom: keyboardHeight,
+        }}
         keyboardShouldPersistTaps="handled"
         style={{ backgroundColor: "#6E3DD1" }}
         bounces={false}
+        showsVerticalScrollIndicator={false}
+        onScroll={(e) => {
+          scrollYRef.current = e.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
       >
         {/* TOP HALF — Image Section exactly 50% */}
         <View style={{ height: HALF }}>
@@ -267,6 +348,8 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
 
               {/* Current Password */}
               <View
+                ref={currentWrapRef}
+                collapsable={false}
                 style={{
                   backgroundColor: "rgba(255,255,255,0.4)",
                   borderRadius: 999,
@@ -284,6 +367,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
                   secureTextEntry={!showCurrentPassword}
                   value={currentPassword}
                   onChangeText={(text) => blockSpaces(text, setCurrentPassword)}
+                  onFocus={() => handleFocus("current")}
                 />
 
                 <TouchableOpacity
@@ -299,6 +383,8 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
 
               {/* New Password */}
               <View
+                ref={newWrapRef}
+                collapsable={false}
                 style={{
                   backgroundColor: "rgba(255,255,255,0.4)",
                   borderRadius: 999,
@@ -316,6 +402,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
                   secureTextEntry={!showNewPassword}
                   value={newPassword}
                   onChangeText={(text) => blockSpaces(text, setNewPassword)}
+                  onFocus={() => handleFocus("new")}
                 />
 
                 <TouchableOpacity
@@ -331,6 +418,8 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
 
               {/* Confirm Password */}
               <View
+                ref={confirmWrapRef}
+                collapsable={false}
                 style={{
                   backgroundColor: "rgba(255,255,255,0.4)",
                   borderRadius: 999,
@@ -350,6 +439,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
                   onChangeText={(text) =>
                     blockSpaces(text, setConfirmNewPassword)
                   }
+                  onFocus={() => handleFocus("confirm")}
                 />
 
                 <TouchableOpacity
@@ -402,7 +492,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
             </View>
           </LinearGradient>
         </View>
-      </KeyboardAwareScrollView>
+      </ScrollView>
     </View>
   );
 };

@@ -330,16 +330,16 @@ const TermsConditions: React.FC<TermsConditionsProps> = ({ navigation }) => {
                 Polygon Holdings Private Limited
               </Text>
               <Text className="text-base text-gray-700 italic leading-6">
-                Forbes & Walkers Building 2,
+                Level 2,
               </Text>
               <Text className="text-base text-gray-700 italic leading-6">
-                No.46/42,
+                Building 2 No. 46/42,
               </Text>
               <Text className="text-base text-gray-700 italic leading-6">
-                Colombo 02,
+                Nawam Mawatha, Colombo 02
               </Text>
               <Text className="text-base text-gray-700 leading-6 mt-2">
-                <Text className="font-semibold">Email:</Text> info@polygon.lk
+                <Text className="font-semibold">Email:</Text> polygon.admin@gmail.com
               </Text>
             </View>
           </View>

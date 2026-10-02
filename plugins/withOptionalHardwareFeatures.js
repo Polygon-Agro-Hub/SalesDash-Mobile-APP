@@ -1,4 +1,4 @@
-﻿const { withAndroidManifest } = require("expo/config-plugins");
+const { withAndroidManifest } = require("expo/config-plugins");
 
 /**
  * Custom Expo config plugin — withOptionalHardwareFeatures
@@ -19,12 +19,40 @@
  */
 
 const OPTIONAL_FEATURES = [
+  // Camera features — adding CAMERA permission implicitly requires these,
+  // which filters out tablets and devices without autofocus or back cameras.
+  "android.hardware.camera",
+  "android.hardware.camera.autofocus",
+  "android.hardware.camera.front",
+  "android.hardware.camera.any",
+  "android.hardware.camera.flash",
+
+  // Location features — prevents excluding Wi-Fi only devices lacking hardware GPS
+  "android.hardware.location",
+  "android.hardware.location.gps",
+  "android.hardware.location.network",
+
+  // Connectivity — prevents excluding Wi-Fi only tablets
+  "android.hardware.telephony",
+  "android.hardware.wifi",
+
+  // Audio output & input
+  "android.hardware.microphone",
   "android.hardware.audio.output",
+
+  // Screen & Input
+  "android.hardware.touchscreen",
+  "android.hardware.faketouch",
+  "android.hardware.bluetooth",
 ];
 
 const withOptionalHardwareFeatures = (config) => {
   return withAndroidManifest(config, (config) => {
     const manifest = config.modResults;
+
+    if (!manifest.manifest) {
+      manifest.manifest = {};
+    }
 
     if (!Array.isArray(manifest.manifest["uses-feature"])) {
       manifest.manifest["uses-feature"] = [];
@@ -33,11 +61,14 @@ const withOptionalHardwareFeatures = (config) => {
     const existingFeatures = manifest.manifest["uses-feature"];
 
     OPTIONAL_FEATURES.forEach((featureName) => {
-      const alreadyDeclared = existingFeatures.some(
+      const existing = existingFeatures.find(
         (f) => f.$?.["android:name"] === featureName
       );
 
-      if (!alreadyDeclared) {
+      if (existing) {
+        if (!existing.$) existing.$ = {};
+        existing.$["android:required"] = "false";
+      } else {
         existingFeatures.push({
           $: {
             "android:name": featureName,
