@@ -44,6 +44,9 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({
   const [selectedCategoryLabel, setSelectedCategoryLabel] = useState("");
   const [loading, setLoading] = useState(false);
   const isSubmittingRef = useRef(false);
+  const generateIdempotencyKey = () =>
+    `complain_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  const idempotencyKeyRef = useRef(generateIdempotencyKey());
 
   useEffect(() => {
     let appName = "SalesDash";
@@ -111,9 +114,13 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({
         {
           headers: {
             Authorization: `Bearer ${storedToken}`,
+            "x-idempotency-key": idempotencyKeyRef.current,
           },
         },
       );
+
+      // Generate a new idempotency key for future submissions
+      idempotencyKeyRef.current = generateIdempotencyKey();
 
       Alert.alert("Success", "Complaint submitted successfully!", [
         {
