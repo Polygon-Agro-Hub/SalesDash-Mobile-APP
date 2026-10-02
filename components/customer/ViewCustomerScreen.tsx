@@ -1029,6 +1029,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                           padding: 16,
                           marginBottom: 12,
                           marginHorizontal: 16,
+                          marginTop:4,
                           borderWidth: 1.5,
                           borderColor: isPaymentPending ? "#EF4444" : "#F3F4F6",
                           shadowColor: "#000",
