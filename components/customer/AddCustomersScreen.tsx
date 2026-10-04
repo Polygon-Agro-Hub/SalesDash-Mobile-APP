@@ -260,7 +260,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       };
 
       const body = {
-        source: "PolygonAgro",
+        source: "Polygon",
         transport: "sms",
         content: {
           sms: "Thank you for registering with us as a Polygon customer. Please use the below OTP to confirm the registration process. {{code}}",

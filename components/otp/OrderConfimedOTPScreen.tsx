@@ -362,7 +362,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
 
       const cleanedPhoneNumber = phoneNumber.replace(/[^\d]/g, "");
       const body = {
-        source: "PolygonAgro",
+        source: "Polygon",
         transport: "sms",
         content: {
           sms: "Thank you for your order with Polygon. Please use the below OTP to confirm your order. {{code}}",
