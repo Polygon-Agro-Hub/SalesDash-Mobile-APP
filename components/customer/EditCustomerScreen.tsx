@@ -532,7 +532,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
       const response = await axios.post(
         "https://api.getshoutout.com/otpservice/send",
         {
-          source: "PolygonAgro",
+          source: "Polygon",
           transport: "sms",
           content: {
             sms: "This is your OTP for your account details update: {{code}}",

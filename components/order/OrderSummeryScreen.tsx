@@ -376,7 +376,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
       };
       const cleanedPhoneNumber = phoneNumberForOtp.replace(/[^\d]/g, "");
       const otpBody = {
-        source: "PolygonAgro",
+        source: "Polygon",
         transport: "sms",
         content: {
           sms: "Thank you for your order with Polygon. Please use the below OTP to confirm your order. {{code}}",

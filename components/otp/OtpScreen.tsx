@@ -273,7 +273,7 @@ const OtpScreen: React.FC = () => {
         : "Thank you for registering with us as a Polygon customer. Please use the below OTP to confirm the registration process. {{code}}";
 
       const body = {
-        source: "PolygonAgro",
+        source: "Polygon",
         transport: "sms",
         content: {
           sms: smsContent,
