@@ -530,17 +530,14 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
       const cleanedPhoneNumber = phoneNumber.replace(/[^\d]/g, "");
 
       const response = await axios.post(
-        "https://api.getshoutout.com/otpservice/send",
+        `${environment.API_BASE_URL}api/otp/send`,
         {
-          source: "PolygonAgro",
+          source: "Polygon",
           transport: "sms",
           content: {
             sms: "This is your OTP for your account details update: {{code}}",
           },
           destination: cleanedPhoneNumber,
-        },
-        {
-          headers: { Authorization: `Apikey ${environment.SHOUTOUT_API_KEY}` },
         },
       );
 

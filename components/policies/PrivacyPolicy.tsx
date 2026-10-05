@@ -170,11 +170,15 @@ const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ navigation }) => {
             Polygon Holdings Private Limited
           </Text>
           <Text className="text-base  text-gray-900 mb-2">
-            Forbes & Walkers Building 2,
+            Level 2,
           </Text>
-          <Text className="text-base  text-gray-900 mb-2">No.46/42</Text>
-          <Text className="text-base  text-gray-900 mb-6">
-            Colombo 02. Email: Info@polygon.lk
+          <Text className="text-base  text-gray-900 mb-2">Building 2 No. 46/42,</Text>
+          <Text className="text-base  text-gray-900 mb-2">
+            Nawam Mawatha, Colombo 02.
+              </Text> 
+            <Text className="text-base  text-gray-900 mb-6">
+            Email: polygon.admin@gmail.com
+          
           </Text>
 
           {/* Section 8 */}

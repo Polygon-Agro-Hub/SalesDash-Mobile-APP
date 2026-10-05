@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Text,
   View,
@@ -11,6 +11,7 @@ import {
   Keyboard,
   BackHandler,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -41,6 +42,8 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({
   const [category, setCategory] = useState<any[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedCategoryLabel, setSelectedCategoryLabel] = useState("");
+  const [loading, setLoading] = useState(false);
+  const isSubmittingRef = useRef(false);
 
   useEffect(() => {
     let appName = "SalesDash";
@@ -69,6 +72,10 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({
   }, []);
 
   const handleSubmit = async () => {
+    if (isSubmittingRef.current) {
+      return;
+    }
+
     if (!selectedCategory) {
       Alert.alert("Error", "Please select a category.");
       return;
@@ -81,6 +88,9 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({
       );
       return;
     }
+
+    isSubmittingRef.current = true;
+    setLoading(true);
 
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
@@ -124,6 +134,9 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({
         console.error("An unknown error occurred.");
         Alert.alert("Error", "An unknown error occurred.");
       }
+    } finally {
+      isSubmittingRef.current = false;
+      setLoading(false);
     }
   };
 
@@ -267,30 +280,48 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({
               alignSelf: "center",
               marginBottom: 16,
               borderRadius: 50,
-              backgroundColor: "#6839CF",
-              shadowColor: "#6839CF",
+              backgroundColor: loading ? "#A0A0A0" : "#6839CF",
+              shadowColor: loading ? "#A0A0A0" : "#6839CF",
               shadowOffset: { width: 0, height: 8 },
               shadowOpacity: 0.5,
               shadowRadius: 12,
               elevation: 12,
             }}
           >
-            <TouchableOpacity onPress={handleSubmit} style={{ width: 160 }}>
+            <TouchableOpacity
+              onPress={handleSubmit}
+              disabled={loading}
+              activeOpacity={0.8}
+              style={{ width: 160 }}
+            >
               <LinearGradient
-                colors={["#6839CF", "#874DDB"]}
+                colors={
+                  loading ? ["#9E9E9E", "#757575"] : ["#6839CF", "#874DDB"]
+                }
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={{
                   paddingVertical: 12,
                   borderRadius: 50,
                   alignItems: "center",
+                  justifyContent: "center",
+                  flexDirection: "row",
+                  minHeight: 48,
                 }}
               >
-                <Text
-                  style={{ color: "white", fontSize: 18, fontWeight: "bold" }}
-                >
-                  Submit
-                </Text>
+                {loading ? (
+                  <ActivityIndicator color="#ffffff" size="small" />
+                ) : (
+                  <Text
+                    style={{
+                      color: "white",
+                      fontSize: 18,
+                      fontWeight: "bold",
+                    }}
+                  >
+                    Submit
+                  </Text>
+                )}
               </LinearGradient>
             </TouchableOpacity>
           </View>

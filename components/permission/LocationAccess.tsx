@@ -121,10 +121,10 @@ const LocationAccess: React.FC<LocationAccessProps> = ({
       };
       const subscription = BackHandler.addEventListener(
         "hardwareBackPress",
-        handleHardwareBackPress
+        handleHardwareBackPress,
       );
       return () => subscription.remove();
-    }, [isBackBlocked, navigation, onClose, onBackPress, targetReturnScreen])
+    }, [isBackBlocked, navigation, onClose, onBackPress, targetReturnScreen]),
   );
 
   const requestLocationPermission = async () => {
@@ -151,7 +151,10 @@ const LocationAccess: React.FC<LocationAccessProps> = ({
         if (onPermissionGranted) {
           onPermissionGranted();
         } else if (navigation) {
-          if (route?.params?.returnScreen || (returnScreen && returnScreen !== "Main")) {
+          if (
+            route?.params?.returnScreen ||
+            (returnScreen && returnScreen !== "Main")
+          ) {
             navigateForward();
           } else if (navigation.canGoBack()) {
             navigation.goBack();
@@ -213,7 +216,8 @@ const LocationAccess: React.FC<LocationAccessProps> = ({
 
           {/* Intro */}
           <Text className="text-gray-300 text-sm text-center mb-5 leading-5">
-            SalesDash requires location access to enable the following operational features:
+            SalesDash requires location access to enable the following
+            operational features:
           </Text>
 
           {/* Feature 1: Customer Geo-Tagging & Pinpoint */}
@@ -230,7 +234,8 @@ const LocationAccess: React.FC<LocationAccessProps> = ({
                 Customer Geo-Tagging & Pinpoint
               </Text>
               <Text className="text-gray-400 text-xs leading-4">
-                Attach precise GPS coordinates to customer shops, delivery locations, and address books to ensure seamless order drop-offs.
+                Attach precise GPS coordinates to customer shops, delivery
+                locations, and address books to ensure seamless order drop-offs.
               </Text>
             </View>
           </View>
@@ -249,7 +254,8 @@ const LocationAccess: React.FC<LocationAccessProps> = ({
                 Sales Routes & Delivery Coverage
               </Text>
               <Text className="text-gray-400 text-xs leading-4">
-                Verify customer delivery zones, regional service coverage, and nearby delivery address books during on-field sales visits.
+                Verify customer delivery zones, regional service coverage, and
+                nearby delivery address books during on-field sales visits.
               </Text>
             </View>
           </View>
@@ -263,7 +269,9 @@ const LocationAccess: React.FC<LocationAccessProps> = ({
               style={{ marginTop: 2, marginRight: 8 }}
             />
             <Text className="text-gray-300 text-xs flex-1 leading-4">
-              Location access is only requested in the foreground while attaching customer locations or navigating addresses. Background location is never tracked.
+              Location access is only requested in the foreground while
+              attaching customer locations or navigating addresses. Background
+              location is never tracked.
             </Text>
           </View>
 
@@ -299,7 +307,15 @@ const LocationAccess: React.FC<LocationAccessProps> = ({
                     color="#FFFFFF"
                     style={{ marginRight: 8 }}
                   />
-                  <Text className="text-white font-extrabold text-base tracking-wide">
+                  <Text
+                    style={{
+                      color: "#FFFFFF",
+                      fontWeight: "800",
+                      fontSize: 14,
+                      lineHeight: 24,
+                      letterSpacing: 0.4,
+                    }}
+                  >
                     {isLoading ? "Requesting..." : "Agree & Continue"}
                   </Text>
                 </View>

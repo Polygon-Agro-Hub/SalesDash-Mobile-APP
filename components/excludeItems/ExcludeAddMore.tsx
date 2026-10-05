@@ -582,7 +582,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
       </View>
 
       {!isKeyboardVisible && (
-        <View className="absolute bottom-0 left-0 right-0 bg-white pt-4 pb-4 px-6 items-center">
+        <View className="absolute bottom-0 left-0 right-0 bg-white pt-4 pb-4  items-center">
           <TouchableOpacity
             onPress={handleNavigateIfNoCropsSelected}
             className="w-full max-w-[500px] items-center"
@@ -611,7 +611,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
                 <Text
                   style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}
                 >
-                  Continue
+                  Submit & Go to Summery
                 </Text>
               )}
             </LinearGradient>
