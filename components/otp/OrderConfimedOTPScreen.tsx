@@ -294,11 +294,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
       }
 
       const otpVerificationUrl =
-        "https://api.getshoutout.com/otpservice/verify";
-      const otpHeaders = {
-        Authorization: `Apikey ${environment.SHOUTOUT_API_KEY}`,
-        "Content-Type": "application/json",
-      };
+        `${environment.API_BASE_URL}api/otp/verify`;
 
       const otpBody = {
         code: otpCode,
@@ -313,9 +309,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
       ) {
         statusCode = "1000";
       } else {
-        const otpResponse = await axios.post(otpVerificationUrl, otpBody, {
-          headers: otpHeaders,
-        });
+        const otpResponse = await axios.post(otpVerificationUrl, otpBody);
         statusCode = otpResponse.data.statusCode;
       }
 
@@ -354,11 +348,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
       setResendDisabled(true);
       setTimer(60);
 
-      const apiUrl = "https://api.getshoutout.com/otpservice/send";
-      const headers = {
-        Authorization: `Apikey ${environment.SHOUTOUT_API_KEY}`,
-        "Content-Type": "application/json",
-      };
+      const apiUrl = `${environment.API_BASE_URL}api/otp/send`;
 
       const cleanedPhoneNumber = phoneNumber.replace(/[^\d]/g, "");
       const body = {
@@ -370,7 +360,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
         destination: cleanedPhoneNumber,
       };
 
-      const response = await axios.post(apiUrl, body, { headers });
+      const response = await axios.post(apiUrl, body);
       console.log("📲 [OTP ORDER RESEND] Response Data:", response.data);
 
       if (response.data.referenceId) {

@@ -253,11 +253,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     try {
       setLoading(true);
       const cleanedPhoneNumber = phoneNumber.replace(/[^\d]/g, "");
-      const apiUrl = "https://api.getshoutout.com/otpservice/send";
-      const headers = {
-        Authorization: `Apikey ${environment.SHOUTOUT_API_KEY}`,
-        "Content-Type": "application/json",
-      };
+      const apiUrl = `${environment.API_BASE_URL}api/otp/send`;
 
       const body = {
         source: "Polygon",
@@ -268,7 +264,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         destination: cleanedPhoneNumber,
       };
 
-      const response = await axios.post(apiUrl, body, { headers });
+      const response = await axios.post(apiUrl, body);
       console.log("📲 [OTP SEND] Response Data:", response.data);
       await AsyncStorage.setItem("referenceId", response.data.referenceId);
 

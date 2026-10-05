@@ -369,11 +369,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         JSON.stringify(orderPayload),
       );
 
-      const otpApiUrl = "https://api.getshoutout.com/otpservice/send";
-      const otpHeaders = {
-        Authorization: `Apikey ${environment.SHOUTOUT_API_KEY}`,
-        "Content-Type": "application/json",
-      };
+      const otpApiUrl = `${environment.API_BASE_URL}api/otp/send`;
       const cleanedPhoneNumber = phoneNumberForOtp.replace(/[^\d]/g, "");
       const otpBody = {
         source: "Polygon",
@@ -384,9 +380,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         destination: cleanedPhoneNumber,
       };
 
-      const otpSendResponse = await axios.post(otpApiUrl, otpBody, {
-        headers: otpHeaders,
-      });
+      const otpSendResponse = await axios.post(otpApiUrl, otpBody);
       console.log("📲 [OTP ORDER SEND] Response Data:", otpSendResponse.data);
 
       if (!otpSendResponse.data?.referenceId) {
