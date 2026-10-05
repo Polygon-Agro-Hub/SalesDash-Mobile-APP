@@ -372,16 +372,16 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
     >
       <View className="flex-1 bg-white">
         {/* Header */}
-        <LinearGradient
-          colors={["#854BDA", "#6E3DD1"]}
-          className="shadow-md px-4 items-center justify-center"
-          style={{
-            height: hp(10) + topInset,
-            paddingTop: Platform.OS === "ios" ? topInset + 8 : 8,
-            paddingBottom: 24,
-          }}
-        >
-          <View className="w-full max-w-[500px] items-center">
+          <LinearGradient
+                 colors={["#854BDA", "#6E3DD1"]}
+                 className="shadow-md px-4 items-center justify-center"
+                 style={{
+                   paddingBottom: 24,
+                   height:80,
+                   justifyContent:'center'
+                 }}
+               >
+                 <View className="w-full max-w-[500px] items-center">
             <Text
               className="text-white font-semibold"
               style={{ fontSize: SCREEN_HEIGHT > 900 ? 20 : 18 }}

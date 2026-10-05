@@ -11,6 +11,7 @@ import {
   Pressable,
   Alert,
   Dimensions,
+  BackHandler,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -82,12 +83,12 @@ const getBillingInfoRows = (address: SavedAddress | null): BillingInfoRow[] => {
   const purpleIcon = { iconColor: "#7B3FE4", iconBg: "#F3EEFC" };
   const greenIcon = { iconColor: "#16A34A", iconBg: "#EAFBF1" };
 
- const billingTo = [
-  address.billingTitle ? `${address.billingTitle}.` : "",
-  address.billingName,
-]
-  .filter(Boolean)
-  .join(" ");
+  const billingTo = [
+    address.billingTitle ? `${address.billingTitle}.` : "",
+    address.billingName,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   rows.push({
     label: "Billing To",
@@ -242,6 +243,21 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
         fetchAddresses();
       }
     }, [customerId, fetchAddresses]),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        navigation.goBack();
+        return true;
+      };
+
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress,
+      );
+      return () => backHandler.remove();
+    }, [navigation]),
   );
 
   const openMenu = (address: SavedAddress) => {
@@ -599,7 +615,11 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
                         backgroundColor: row.iconBg,
                       }}
                     >
-                      <FontAwesome6 name={row.icon} size={14} color={row.iconColor} />
+                      <FontAwesome6
+                        name={row.icon}
+                        size={14}
+                        color={row.iconColor}
+                      />
                     </View>
                     <View
                       style={{
@@ -622,7 +642,11 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
                     >
                       <Text
                         className="text-gray-800 text-[13px]"
-                        style={{ width: 12, lineHeight: 20, includeFontPadding: false }}
+                        style={{
+                          width: 12,
+                          lineHeight: 20,
+                          includeFontPadding: false,
+                        }}
                       >
                         :
                       </Text>

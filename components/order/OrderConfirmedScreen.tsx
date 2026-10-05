@@ -607,9 +607,9 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
               >Polygon Holdings (Private) Limited</span
             >
           </p>
-          <p class="headerp">No. 42/46, Nawam Mawatha, Colombo 02.</p>
-          <p class="headerp">Contact No : +94 770 111 999</p>
-          <p class="headerp">Email Address : info@polygon.lk</p>
+          <p class="headerp">Level 2, Building 2 No. 46/42, Nawam Mawatha, Colombo 02</p>
+          <p class="headerp">Contact No : 011 431 3433</p>
+          <p class="headerp">Email Address : polygon.admin@gmail.com</p>
         </div>
         <div>
           <img
