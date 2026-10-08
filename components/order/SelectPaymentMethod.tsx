@@ -82,6 +82,8 @@ interface SelectPaymentMethodProps {
       selectedMethod?: "Card" | "Cash" | null;
       selectedDate?: string;
       selectedTimeSlot?: string;
+      selectedAddress?: any;
+      deliveryCharge?: number;
       isFinalizeImdt?: number | boolean;
       orderData?: {
         userId: number;
@@ -175,8 +177,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
     isImmediateFinalize ? "Card" : previousSelectedMethod || "Cash",
   );
 
-  const [creditBalance, setCreditBalance] = useState<number>(2000);
-  const [deliveredTotal, setDeliveredTotal] = useState<number>(0);
+  const [creditLimit, setCreditLimit] = useState<number | null>(null);
   const [loadingCredit, setLoadingCredit] = useState(true);
   const [isValidating, setIsValidating] = useState(false);
   const [showCartAlert, setShowCartAlert] = useState(false);
@@ -185,7 +186,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
   const userId = customerId || customerid || id;
 
   useEffect(() => {
-    const fetchCreditBalance = async () => {
+    const fetchCreditLimit = async () => {
       if (!userId) {
         setLoadingCredit(false);
         return;
@@ -200,22 +201,19 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
         );
 
         if (response.data?.success) {
-          setCreditBalance(response.data.data.creditBalance);
-          setDeliveredTotal(response.data.data.deliveredTotal);
+          setCreditLimit(Number(response.data.data.creditLimit) || 0);
         }
       } catch (error) {
-        console.error("❌ Error fetching credit balance:", error);
-
-        setCreditBalance(2000);
+        console.error("❌ Error fetching credit limit:", error);
       } finally {
         setLoadingCredit(false);
       }
     };
-    fetchCreditBalance();
+    fetchCreditLimit();
   }, [userId]);
 
-
-  const isCashDisabled = isImmediateFinalize || orderTotal >= creditBalance;
+  const isCashDisabled =
+    isImmediateFinalize || creditLimit === null || orderTotal >= creditLimit;
 
   useEffect(() => {
     if (!loadingCredit && selectedMethod === "Cash" && isCashDisabled) {
@@ -256,6 +254,17 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
       return;
     }
 
+    if (selectedMethod === "Cash" && isCashDisabled) {
+      setSelectedMethod("Card");
+      Alert.alert(
+        "Cash not available",
+        creditLimit !== null
+          ? `Cash payment is not available for orders equal to or greater than Rs. ${formatPrice(creditLimit)}. Please use Online Payment.`
+          : "Cash payment is not available right now. Please use Online Payment.",
+      );
+      return;
+    }
+
     try {
       setIsValidating(true);
 
@@ -286,7 +295,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
         },
         storedToken
           ? { headers: { Authorization: `Bearer ${storedToken}` } }
-          : undefined
+          : undefined,
       );
 
       if (validationResponse.data?.hasDisabled) {
@@ -295,7 +304,10 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
       }
     } catch (validationErr) {
       console.error("❌ Error running item validation:", validationErr);
-      Alert.alert("Error", "Failed to validate item availability. Please try again.");
+      Alert.alert(
+        "Error",
+        "Failed to validate item availability. Please try again.",
+      );
       return;
     } finally {
       setIsValidating(false);
@@ -320,42 +332,44 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
     navigation.navigate("OrderSummeryScreen" as any, navigationData);
   };
 
+  const buildScheduleParams = () => ({
+    items,
+    subtotal,
+    discount,
+    number,
+    id,
+    title,
+    name,
+    customerscreencustomerid,
+    total,
+    fullTotal,
+    selectedDate,
+    timeDisplay: selectedTimeSlot,
+    isPackage,
+    packageId: route.params?.packageId,
+    selectedTimeSlot,
+    customerId,
+    customerid: customerid?.toString() || customerId?.toString(),
+    orderData,
+    rawPackageItems,
+    rawAdditionalItems,
+    orderItems,
+    selectedAddress: route.params?.selectedAddress,
+    deliveryCharge: route.params?.deliveryCharge,
+    isFinalizeImdt: route.params?.isFinalizeImdt,
+    scheduleType: (route.params as any)?.scheduleType,
+    sheduleType: (route.params as any)?.sheduleType,
+    selectedDays: (route.params as any)?.selectedDays,
+    recurringDays: (route.params as any)?.recurringDays,
+    validityWeeks: (route.params as any)?.validityWeeks,
+    validityPeriod: (route.params as any)?.validityPeriod,
+    calculatedOrders: (route.params as any)?.calculatedOrders,
+  });
+
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        navigation.navigate("ScheduleScreen" as any, {
-          items,
-          subtotal,
-          discount,
-          number,
-          id,
-          title,
-          name,
-          customerscreencustomerid,
-          total,
-          fullTotal,
-          selectedDate,
-          timeDisplay: selectedTimeSlot,
-          isPackage,
-          packageId: route.params?.packageId,
-          selectedTimeSlot,
-          customerId,
-          customerid: customerid?.toString() || customerId?.toString(),
-          orderData,
-          rawPackageItems,
-          rawAdditionalItems,
-          orderItems,
-          selectedAddress: route.params?.selectedAddress,
-          deliveryCharge: route.params?.deliveryCharge,
-          isFinalizeImdt: route.params?.isFinalizeImdt,
-          scheduleType: (route.params as any)?.scheduleType,
-          sheduleType: (route.params as any)?.sheduleType,
-          selectedDays: (route.params as any)?.selectedDays,
-          recurringDays: (route.params as any)?.recurringDays,
-          validityWeeks: (route.params as any)?.validityWeeks,
-          validityPeriod: (route.params as any)?.validityPeriod,
-          calculatedOrders: (route.params as any)?.calculatedOrders,
-        });
+        navigation.navigate("ScheduleScreen" as any, buildScheduleParams());
         return true;
       };
 
@@ -380,39 +394,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
         showBackButton={true}
         navigation={navigation}
         onBackPress={() =>
-          navigation.navigate("ScheduleScreen" as any, {
-            items,
-            subtotal,
-            id,
-            title,
-            name,
-            number,
-            customerscreencustomerid,
-            discount,
-            total,
-            fullTotal,
-            selectedDate,
-            timeDisplay: selectedTimeSlot,
-            isPackage,
-            packageId: route.params?.packageId,
-            selectedTimeSlot,
-            customerId,
-            customerid: customerid?.toString() || customerId?.toString(),
-            orderItems,
-            orderData,
-            rawPackageItems,
-            rawAdditionalItems,
-            selectedAddress: route.params?.selectedAddress,
-            deliveryCharge: route.params?.deliveryCharge,
-            isFinalizeImdt: route.params?.isFinalizeImdt,
-            scheduleType: (route.params as any)?.scheduleType,
-            sheduleType: (route.params as any)?.sheduleType,
-            selectedDays: (route.params as any)?.selectedDays,
-            recurringDays: (route.params as any)?.recurringDays,
-            validityWeeks: (route.params as any)?.validityWeeks,
-            validityPeriod: (route.params as any)?.validityPeriod,
-            calculatedOrders: (route.params as any)?.calculatedOrders,
-          })
+          navigation.navigate("ScheduleScreen" as any, buildScheduleParams())
         }
       />
       <View className="flex-1 bg-white items-center">
@@ -466,7 +448,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
                     )}
                   </TouchableOpacity>
 
-                  {/* ── Cash option (only shown when eligible and not an immediate-finalization order) ── */}
+                  {/* ── Cash option (only when order total is below creditLimit) ── */}
                   {!isCashDisabled && (
                     <TouchableOpacity
                       onPress={handleSelectCash}
@@ -529,6 +511,17 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
                         >
                           Immediate finalization requires online payment.
                         </Text>
+                      ) : creditLimit === null ? (
+                        <Text
+                          style={{
+                            color: "#7F1D1D",
+                            fontSize: 13,
+                            flexShrink: 1,
+                          }}
+                        >
+                          Cash payment is not available right now. Please use
+                          Online Payment.
+                        </Text>
                       ) : (
                         <Text
                           style={{
@@ -540,7 +533,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
                           Cash payment is not available for orders equal to or
                           greater than{" "}
                           <Text style={{ color: "#DC2626", fontWeight: "700" }}>
-                            Rs. {formatPrice(creditBalance)}
+                            Rs. {formatPrice(creditLimit)}
                           </Text>
                         </Text>
                       )}
@@ -565,7 +558,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
                   <TouchableOpacity
                     onPress={handleProceed}
                     activeOpacity={0.8}
-                    disabled={isValidating}
+                    disabled={isValidating || loadingCredit}
                     style={{ borderRadius: 24 }}
                   >
                     <LinearGradient
