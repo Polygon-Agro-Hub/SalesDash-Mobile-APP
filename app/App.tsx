@@ -58,9 +58,7 @@ import DeliveryAddressBooks from "@/components/location/DeliveryAddressBooks";
 import AddDeliveryAddress from "@/components/location/AddDeliveryAddress";
 import DeliveryAddress from "@/components/order/DeliveryAddress";
 import PackageConfirmation from "@/components/order/PackageConfirmation";
-import OnlinePayment from "@/components/order/OnlinePayment";
 import OrderConfimedOTPScreen from "@/components/otp/OrderConfimedOTPScreen";
-import OnlinePaymentStatus from "@/components/order/OnlinePaymentStatus";
 import { updateGlobalUnreadCount } from "@/components/reminder/ReminderScreen";
 import environment from "@/environment/environment";
 import { requestTrackingIfNeeded } from "@/utils/ios/trackingPermissions";
@@ -395,16 +393,8 @@ function AppContent() {
               component={PackageConfirmation as any}
             />
             <Stack.Screen
-              name="OnlinePayment"
-              component={OnlinePayment as any}
-            />
-            <Stack.Screen
               name="OrderConfimedOTPScreen"
               component={OrderConfimedOTPScreen as any}
-            />
-             <Stack.Screen
-              name="OnlinePaymentStatus"
-              component={OnlinePaymentStatus as any}
             />
             <Stack.Screen
               name="CameraAccess"

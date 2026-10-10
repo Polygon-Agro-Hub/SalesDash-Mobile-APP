@@ -364,6 +364,8 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
     validityWeeks: (route.params as any)?.validityWeeks,
     validityPeriod: (route.params as any)?.validityPeriod,
     calculatedOrders: (route.params as any)?.calculatedOrders,
+    packageType: (route.params as any)?.packageType,
+    endDate: (route.params as any)?.endDate,
   });
 
   useFocusEffect(

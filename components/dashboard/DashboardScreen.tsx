@@ -49,6 +49,9 @@ interface Package {
   packingFee: string;
   productPrice: string;
   serviceFee: string;
+  packageType?: string;
+  endDate?: string | null;
+  startDate?: string | null;
   status: string;
   createdAt?: string;
 }
@@ -187,9 +190,13 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       setToken(storedToken);
 
       const response = await axios.get<{ data: Package[] }>(
-        `${environment.API_BASE_URL}api/packages/get-packages`,
+        `${environment.API_BASE_URL}api/packages/get-packages?_t=${Date.now()}`,
         {
-          headers: { Authorization: `Bearer ${storedToken}` },
+          headers: {
+            Authorization: `Bearer ${storedToken}`,
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+          },
         },
       );
 
@@ -311,6 +318,8 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
                 selectedPackagePackingFee: item.packingFee,
                 selectedPackageProductPrice: item.productPrice,
                 selectedPackageServiceFee: item.serviceFee,
+                packageType: item.packageType,
+                endDate: item.endDate,
               })
             }
             activeOpacity={0.8}
