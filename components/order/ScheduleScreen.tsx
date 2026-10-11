@@ -27,6 +27,7 @@ import CustomCalendarModal, {
   getMinDeliveryDate,
 } from "../common/CustomCalendarModal";
 import { useFocusEffect } from "@react-navigation/native";
+import { AlertModal } from "../common/AlertModal";
 
 type ScheduleScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -152,6 +153,9 @@ interface ScheduleScreenProps {
       fullTotal?: number;
       isFinalizeImdt?: number;
       isNewCustomer?: boolean;
+      packageType?: string;
+      startDate?: string;
+      endDate?: string;
       scheduleType?: "One Time" | "Once a Week" | "Twice a Week";
       recurringDays?: string[];
       validityWeeks?: string;
@@ -186,14 +190,6 @@ const WEEK_OPTIONS = [
   { label: "02 Weeks", value: "02" },
   { label: "03 Weeks", value: "03" },
   { label: "04 Weeks", value: "04" },
-  { label: "05 Weeks", value: "05" },
-  { label: "06 Weeks", value: "06" },
-  { label: "07 Weeks", value: "07" },
-  { label: "08 Weeks", value: "08" },
-  { label: "09 Weeks", value: "09" },
-  { label: "10 Weeks", value: "10" },
-  { label: "11 Weeks", value: "11" },
-  { label: "12 Weeks", value: "12" },
 ];
 
 const DAYS_OF_WEEK = [
@@ -293,6 +289,60 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
   const [selectedDate, setSelectedDate] = useState<string | null>(
     previousSelectedDate || null,
   );
+
+  const [currentPackageType, setCurrentPackageType] = useState<string>(
+    route.params?.packageId ? "" : (route.params?.packageType || ""),
+  );
+  const [currentStartDate, setCurrentStartDate] = useState<string | undefined>(
+    route.params?.packageId ? undefined : route.params?.startDate,
+  );
+  const [currentEndDate, setCurrentEndDate] = useState<string | undefined>(
+    route.params?.packageId ? undefined : route.params?.endDate,
+  );
+
+  const fetchLivePackageDetails = useCallback(async () => {
+    const pkgId = route.params?.packageId || (orderData as any)?.packageId;
+    if (!pkgId) return;
+    try {
+      const storedToken = await AsyncStorage.getItem("authToken");
+      if (!storedToken) return;
+      const res = await axios.get<{
+        data: { packageType?: string; endDate?: string; startDate?: string };
+      }>(
+        `${environment.API_BASE_URL}api/packages/marketplace-package/${pkgId}?_t=${Date.now()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${storedToken}`,
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+          },
+        },
+      );
+      if (res.data?.data) {
+        if (res.data.data.packageType !== undefined) {
+          setCurrentPackageType(res.data.data.packageType);
+        }
+        if (res.data.data.endDate !== undefined) {
+          setCurrentEndDate(res.data.data.endDate);
+        }
+        if (res.data.data.startDate !== undefined) {
+          setCurrentStartDate(res.data.data.startDate);
+        }
+      }
+    } catch (e) {
+      console.warn("Could not fetch live package details in ScheduleScreen:", e);
+    }
+  }, [route.params?.packageId, (orderData as any)?.packageId]);
+
+  useEffect(() => {
+    fetchLivePackageDetails();
+  }, [fetchLivePackageDetails]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchLivePackageDetails();
+    }, [fetchLivePackageDetails]),
+  );
   const [isDateSelected, setIsDateSelected] = useState(!!previousSelectedDate);
   const [showDateModal, setShowDateModal] = useState(false);
 
@@ -302,13 +352,16 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       : ["Tu"],
   );
 
-  const [selectedWeeks, setSelectedWeeks] = useState<string>(
-    route.params?.validityWeeks || "",
-  );
+  const [selectedWeeks, setSelectedWeeks] = useState<string>(() => {
+    const passed = route.params?.validityWeeks;
+    if (passed === "01") return "02";
+    return passed || "";
+  });
 
   const [typeModalVisible, setTypeModalVisible] = useState(false);
   const [weeksModalVisible, setWeeksModalVisible] = useState(false);
   const [viewOrdersModalVisible, setViewOrdersModalVisible] = useState(false);
+  const [zeroOrdersAlertVisible, setZeroOrdersAlertVisible] = useState(false);
 
   const [deliveryFee, setDeliveryFee] = useState<number>(
     incomingDeliveryCharge || 0,
@@ -462,9 +515,162 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     }
   };
 
-  const calculatedOrders = useMemo(() => {
-    if (scheduleType === "One Time") return [];
-    if (!selectedWeeks) return [];
+  // ─── SEASONAL PACKAGE CUTOFF & BANNER LOGIC ─────────────────────────────
+  const seasonalInfo = useMemo(() => {
+    const rawType =
+      currentPackageType ||
+      (!route.params?.packageId ? route.params?.packageType || "" : "");
+    const rawEndDate =
+      currentEndDate !== undefined
+        ? currentEndDate
+        : (!route.params?.packageId ? route.params?.endDate : undefined);
+    const rawStartDate =
+      currentStartDate !== undefined
+        ? currentStartDate
+        : (!route.params?.packageId ? route.params?.startDate : undefined);
+
+    if (!rawEndDate) return null;
+
+    const isOneTime =
+      rawType.trim().toLowerCase() === "one time" ||
+      rawType.toLowerCase().includes("one") ||
+      !rawType;
+
+    if (!isOneTime) return null;
+
+    const parseDateStr = (dateStr: any) => {
+      if (!dateStr) return null;
+      if (dateStr instanceof Date) return dateStr;
+      const str = String(dateStr).trim();
+      if (str.includes("T") || str.includes("Z")) {
+        const parsed = new Date(str);
+        if (!isNaN(parsed.getTime())) {
+          return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+        }
+      }
+      if (str.includes("-")) {
+        const parts = str.split("T")[0].split("-");
+        const y = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10) - 1;
+        const d = parseInt(parts[2], 10);
+        if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+          return new Date(y, m, d);
+        }
+      }
+      const parsed = new Date(str);
+      return isNaN(parsed.getTime()) ? null : parsed;
+    };
+
+    const earliestExpiryDate = parseDateStr(rawEndDate);
+    if (!earliestExpiryDate) return null;
+
+    const earliestStartDate = parseDateStr(rawStartDate);
+
+    const expiryDay = earliestExpiryDate.getDate();
+
+    // Cutoff date is [Expire Date] - 2 days
+    const cutoffDate = new Date(earliestExpiryDate.getTime());
+    cutoffDate.setDate(cutoffDate.getDate() - 2);
+    cutoffDate.setHours(23, 59, 59, 999);
+
+    // Current hour gap check (6:00 PM cutoff)
+    const now = new Date();
+    const isAfter6PM = now.getHours() >= 18;
+    const gapDays = isAfter6PM ? 3 : 2;
+
+    const minAvailDate = getMinDeliveryDate(); // today + (>=18 ? 4 : 3) days
+    minAvailDate.setHours(0, 0, 0, 0);
+
+    const effectiveStartDate =
+      earliestStartDate && earliestStartDate > minAvailDate
+        ? earliestStartDate
+        : minAvailDate;
+
+    const MONTH_SHORT = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+
+    const MONTH_LONG = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+
+    const expiryDayOrdinal = getOrdinal(expiryDay);
+    const expiryMonthFull = MONTH_LONG[earliestExpiryDate.getMonth()];
+
+    const startMonth = MONTH_SHORT[effectiveStartDate.getMonth()];
+    const startDay = effectiveStartDate.getDate();
+    const startDayOrdinal = getOrdinal(startDay);
+
+    const endMonth = MONTH_SHORT[cutoffDate.getMonth()];
+    const endDay = cutoffDate.getDate();
+    const endDayOrdinal = getOrdinal(endDay);
+
+    const rangeTextLong = `${startMonth} ${startDayOrdinal} - ${endMonth} ${endDayOrdinal}`;
+    const rangeTextShort = `${startMonth} ${startDay} – ${endMonth} ${endDay}`;
+
+    const isAvailableNow = effectiveStartDate <= cutoffDate;
+
+    return {
+      gapDays,
+      expiryDay,
+      expiryDayOrdinal,
+      expiryMonthFull,
+      cutoffDate,
+      minAvailDate,
+      earliestStartDate,
+      effectiveStartDate,
+      rangeTextLong,
+      rangeTextShort,
+      startDateFormatted: `${startMonth} ${startDay}`,
+      isAvailableNow,
+    };
+  }, [
+    currentPackageType,
+    currentEndDate,
+    currentStartDate,
+    route.params?.packageId,
+    route.params?.packageType,
+    route.params?.endDate,
+    route.params?.startDate,
+  ]);
+
+  const { calculatedOrders, unfilteredFirstScheduledDate } = useMemo<{
+    calculatedOrders: Array<{
+      index: number;
+      label: string;
+      dateStr: string;
+      dateObj: Date;
+    }>;
+    unfilteredFirstScheduledDate: Date | null;
+  }>(() => {
+    if (scheduleType === "One Time") {
+      return { calculatedOrders: [], unfilteredFirstScheduledDate: null };
+    }
+    if (!selectedWeeks) {
+      return { calculatedOrders: [], unfilteredFirstScheduledDate: null };
+    }
 
     const numWeeks = parseInt(selectedWeeks, 10) || 4;
     const minDate = getMinDeliveryDate();
@@ -474,12 +680,16 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       return found !== undefined ? found.dayIndex : 1;
     });
 
-    const allDates: Date[] = [];
+    let rawFirstDate: Date | null = null;
+    let allDates: Date[] = [];
 
     dayIndices.forEach((targetDayIndex) => {
       const firstDate = new Date(minDate);
       while (firstDate.getDay() !== targetDayIndex) {
         firstDate.setDate(firstDate.getDate() + 1);
+      }
+      if (!rawFirstDate || firstDate < rawFirstDate) {
+        rawFirstDate = firstDate;
       }
 
       for (let w = 0; w < numWeeks; w++) {
@@ -491,7 +701,16 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
 
     allDates.sort((a, b) => a.getTime() - b.getTime());
 
-    return allDates.map((date, idx) => {
+    if (seasonalInfo) {
+      if (seasonalInfo.earliestStartDate) {
+        allDates = allDates.filter((d) => d >= seasonalInfo.earliestStartDate!);
+      }
+      if (seasonalInfo.cutoffDate) {
+        allDates = allDates.filter((d) => d <= seasonalInfo.cutoffDate);
+      }
+    }
+
+    const formattedOrders = allDates.map((date, idx) => {
       const month = ALL_MONTHS[date.getMonth()];
       const day = String(date.getDate()).padStart(2, "0");
       const year = date.getFullYear();
@@ -504,7 +723,57 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
         dateObj: date,
       };
     });
-  }, [scheduleType, selectedDays, selectedWeeks]);
+
+    return {
+      calculatedOrders: formattedOrders,
+      unfilteredFirstScheduledDate: rawFirstDate,
+    };
+  }, [scheduleType, selectedDays, selectedWeeks, seasonalInfo]);
+
+  const isFirstDateAvailable = useMemo(() => {
+    if (!seasonalInfo) return true;
+    if (!seasonalInfo.isAvailableNow) return false;
+    if (scheduleType === "One Time") {
+      if (!selectedDate) return true;
+      const parsedSel = new Date(selectedDate);
+      parsedSel.setHours(0, 0, 0, 0);
+      if (
+        seasonalInfo.earliestStartDate &&
+        parsedSel < seasonalInfo.earliestStartDate
+      ) {
+        return false;
+      }
+      if (
+        seasonalInfo.cutoffDate &&
+        parsedSel > seasonalInfo.cutoffDate
+      ) {
+        return false;
+      }
+      return true;
+    }
+    if (calculatedOrders.length === 0) return false;
+    if (unfilteredFirstScheduledDate) {
+      if (
+        seasonalInfo.earliestStartDate &&
+        unfilteredFirstScheduledDate < seasonalInfo.earliestStartDate
+      ) {
+        return false;
+      }
+      if (
+        seasonalInfo.cutoffDate &&
+        unfilteredFirstScheduledDate > seasonalInfo.cutoffDate
+      ) {
+        return false;
+      }
+    }
+    return true;
+  }, [
+    seasonalInfo,
+    scheduleType,
+    selectedDate,
+    calculatedOrders.length,
+    unfilteredFirstScheduledDate,
+  ]);
 
   const isScheduleReady = useMemo(() => {
     if (scheduleType === "One Time") {
@@ -532,6 +801,14 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     if (scheduleType === "Twice a Week") return selectedDays.length === 2;
     return false;
   }, [scheduleType, selectedWeeks, selectedTimeSlot, selectedDays]);
+
+  const handleOpenViewOrders = () => {
+    if (calculatedOrders.length === 0) {
+      setZeroOrdersAlertVisible(true);
+    } else {
+      setViewOrdersModalVisible(true);
+    }
+  };
 
   const handleTimeSlotSelection = (selectedValues: string[]) => {
     if (selectedValues.length > 0) {
@@ -613,6 +890,17 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
         return;
       }
 
+      if (seasonalInfo && seasonalInfo.cutoffDate) {
+        const chosen = new Date(selectedDate.replace(/\//g, "-"));
+        if (chosen > seasonalInfo.cutoffDate) {
+          Alert.alert(
+            "Package Expired",
+            `This package is only available for delivery until ${seasonalInfo.rangeTextShort}. Please select an earlier date.`
+          );
+          return;
+        }
+      }
+
       if (!selectedTimeSlot) {
         Alert.alert("Required", "Please select a time slot");
         return;
@@ -626,6 +914,10 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
         Alert.alert("Required", "Please select 1 delivery day for the week.");
         return;
       }
+      if (calculatedOrders.length === 0) {
+        setZeroOrdersAlertVisible(true);
+        return;
+      }
       if (!selectedTimeSlot) {
         Alert.alert("Required", "Please select a time slot.");
         return;
@@ -637,6 +929,10 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       }
       if (selectedDays.length !== 2) {
         Alert.alert("Required", "Please select 2 delivery days for the week.");
+        return;
+      }
+      if (calculatedOrders.length === 0) {
+        setZeroOrdersAlertVisible(true);
         return;
       }
       if (!selectedTimeSlot) {
@@ -815,6 +1111,94 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                 className="px-6 mt-[-5]"
                 keyboardShouldPersistTaps="handled"
               >
+                {/* ─── SEASONAL PACKAGE BANNER ───────────────────────────── */}
+                {seasonalInfo && (
+                  <View
+                    style={{
+                      backgroundColor: "#F4EDFF",
+                      borderWidth: 1,
+                      borderColor: "#D8C5F8",
+                      borderRadius: 16,
+                      padding: 14,
+                      marginTop: 10,
+                      marginBottom: 10,
+                    }}
+                  >
+                    {isFirstDateAvailable ? (
+                      <>
+                        <Text
+                          style={{
+                            fontSize: 13,
+                            color: "#1E293B",
+                            lineHeight: 19,
+                          }}
+                        >
+                          <Text style={{ fontWeight: "700" }}>Note : </Text>
+                          A {seasonalInfo.gapDays}-day gap is required. Packages
+                          expiring on the {seasonalInfo.expiryDayOrdinal} can be ordered
+                          between the {seasonalInfo.rangeTextLong}.
+                        </Text>
+
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            marginTop: 10,
+                          }}
+                        >
+                          <View
+                            style={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: 4,
+                              backgroundColor: "#6B3BCF",
+                              marginRight: 8,
+                            }}
+                          />
+                          <Text
+                            style={{
+                              fontSize: 13,
+                              color: "#1E293B",
+                            }}
+                          >
+                            Available schedule dates:{" "}
+                            <Text style={{ fontWeight: "700" }}>
+                              {seasonalInfo.rangeTextShort}
+                            </Text>
+                          </Text>
+                        </View>
+                      </>
+                    ) : (
+                      <>
+                        <Text
+                          style={{
+                            fontSize: 13,
+                            color: "#1E293B",
+                            lineHeight: 19,
+                          }}
+                        >
+                          <Text style={{ fontWeight: "700" }}>Note : </Text>
+                          A {seasonalInfo.gapDays}-day gap is required.
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: 13,
+                            color: "#1E293B",
+                            lineHeight: 19,
+                            marginTop: 4,
+                          }}
+                        >
+                          Scheduling available from{" "}
+                          <Text style={{ fontWeight: "700" }}>
+                            {seasonalInfo.startDateFormatted}
+                          </Text>{" "}
+                          onward.
+                        </Text>
+                      </>
+                    )}
+                  </View>
+                )}
+
                 {/* ─── ONE TIME FLOW ─────────────────────────────── */}
                 {scheduleType === "One Time" && (
                   <>
@@ -920,7 +1304,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                     {isViewOrdersReady && (
                       <TouchableOpacity
                         activeOpacity={0.85}
-                        onPress={() => setViewOrdersModalVisible(true)}
+                        onPress={handleOpenViewOrders}
                         style={{
                           width: 170,
                           height: 44,
@@ -957,6 +1341,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                 visible={showDateModal}
                 onClose={() => setShowDateModal(false)}
                 selectedDate={selectedDate}
+                minDate={seasonalInfo?.effectiveStartDate ? seasonalInfo.effectiveStartDate : undefined}
+                maxDate={seasonalInfo?.cutoffDate ? seasonalInfo.cutoffDate : undefined}
                 onSelectDate={(newDate) => {
                   setSelectedDate(newDate);
                   setIsDateSelected(true);
@@ -1053,7 +1439,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                 <View
                   style={{
                     width: "92%",
-                    maxHeight: Dimensions.get("window").height * 0.65,
+                    maxHeight: Dimensions.get("window").height * 0.72,
                     backgroundColor: "#FFFFFF",
                     borderRadius: 20,
                     overflow: "hidden",
@@ -1064,6 +1450,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                     elevation: 8,
                   }}
                 >
+                  {/* Header matching Global popup modal style */}
                   <View
                     style={{
                       flexDirection: "row",
@@ -1072,7 +1459,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                       paddingHorizontal: 20,
                       paddingVertical: 16,
                       borderBottomWidth: 1,
-                      borderBottomColor: "#000000",
+                      borderBottomColor: "#E5E7EB",
                     }}
                   >
                     <Text
@@ -1089,24 +1476,17 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                     <TouchableOpacity
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                       onPress={() => setViewOrdersModalVisible(false)}
-                      style={{
-                        width: 25,
-                        height: 25,
-                        backgroundColor: "black",
-                        justifyContent: "center",
-                        borderRadius: 25,
-                        alignItems: "center",
-                      }}
                     >
-                      <MaterialIcons name="close" size={20} color="#ffffff" />
+                      <MaterialIcons name="close" size={24} color="#666666" />
                     </TouchableOpacity>
                   </View>
 
+                  {/* Order Dates List */}
                   <ScrollView
                     showsVerticalScrollIndicator={true}
                     nestedScrollEnabled={true}
                     style={{
-                      maxHeight: Dimensions.get("window").height * 0.52,
+                      maxHeight: Dimensions.get("window").height * 0.58,
                     }}
                     contentContainerStyle={{
                       paddingHorizontal: 20,
@@ -1114,8 +1494,96 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                       paddingBottom: 20,
                     }}
                   >
+                    {/* Seasonal Package Info Banner in Recurring Modal */}
+                    {seasonalInfo && (
+                      <View
+                        style={{
+                          backgroundColor: "#F4EDFF",
+                          borderWidth: 1,
+                          borderColor: "#D8C5F8",
+                          borderRadius: 16,
+                          padding: 14,
+                          marginBottom: 16,
+                        }}
+                      >
+                        {isFirstDateAvailable ? (
+                          <>
+                            <Text
+                              style={{
+                                fontSize: 13,
+                                color: "#1E293B",
+                                lineHeight: 19,
+                              }}
+                            >
+                              <Text style={{ fontWeight: "700" }}>Note : </Text>
+                              A {seasonalInfo.gapDays}-day gap is required. Packages
+                              expiring on the {seasonalInfo.expiryDayOrdinal} can be ordered
+                              between the {seasonalInfo.rangeTextLong}.
+                            </Text>
+
+                            <View
+                              style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                marginTop: 10,
+                              }}
+                            >
+                              <View
+                                style={{
+                                  width: 8,
+                                  height: 8,
+                                  borderRadius: 4,
+                                  backgroundColor: "#6B3BCF",
+                                  marginRight: 8,
+                                }}
+                              />
+                              <Text
+                                style={{
+                                  fontSize: 13,
+                                  color: "#1E293B",
+                                }}
+                              >
+                                Available schedule dates:{" "}
+                                <Text style={{ fontWeight: "700" }}>
+                                  {seasonalInfo.rangeTextShort}
+                                </Text>
+                              </Text>
+                            </View>
+                          </>
+                        ) : (
+                          <>
+                            <Text
+                              style={{
+                                fontSize: 13,
+                                color: "#1E293B",
+                                lineHeight: 19,
+                              }}
+                            >
+                              <Text style={{ fontWeight: "700" }}>Note : </Text>
+                              A {seasonalInfo.gapDays}-day gap is required.
+                            </Text>
+                            <Text
+                              style={{
+                                fontSize: 13,
+                                color: "#1E293B",
+                                lineHeight: 19,
+                                marginTop: 4,
+                              }}
+                            >
+                              Scheduling available from{" "}
+                              <Text style={{ fontWeight: "700" }}>
+                                {seasonalInfo.startDateFormatted}
+                              </Text>{" "}
+                              onward.
+                            </Text>
+                          </>
+                        )}
+                      </View>
+                    )}
+
                     {calculatedOrders.map((order) => (
                       <View key={order.index} style={{ marginBottom: 12 }}>
+                        {/* Order row with increased font size and px */}
                         <View
                           style={{
                             flexDirection: "row",
@@ -1128,7 +1596,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                             style={{
                               fontSize: 15,
                               fontWeight: "500",
-                              color: "#626269",
+                              color: "#64748B",
                               width: 95,
                             }}
                           >
@@ -1147,6 +1615,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                           </Text>
                         </View>
 
+                        {/* Badge for 1st order - full width box */}
                         {order.index === 1 && (
                           <View
                             style={{
@@ -1156,7 +1625,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                               paddingVertical: 10,
                               borderRadius: 14,
                               borderWidth: 1,
-                              borderColor: "#6156FF",
+                              borderColor: "#818CF8",
+                              backgroundColor: "#F5F6FF",
                               alignItems: "center",
                               justifyContent: "center",
                               marginVertical: 10,
@@ -1164,9 +1634,9 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                           >
                             <Text
                               style={{
-                                color: "#6156FF",
+                                color: "#4F46E5",
                                 fontSize: 13,
-                                fontWeight: "400",
+                                fontWeight: "600",
                                 textAlign: "center",
                               }}
                             >
@@ -1265,6 +1735,17 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
           </View>
         </View>
       </View>
+
+      {/* ─── ALERT MODAL FOR 0 AVAILABLE DATES ───────────────────────── */}
+      <AlertModal
+        visible={zeroOrdersAlertVisible}
+        type="error"
+        title="We’re Sorry"
+        message={`We’re sorry, but we’re unable to fulfill your request at this time. Unfortunately, there are no available dates within the next two weeks, and your package expires on ${seasonalInfo ? `${seasonalInfo.expiryMonthFull} ${seasonalInfo.expiryDay}` : "this date"}.\n\nWe apologize for the inconvenience and appreciate your understanding.`}
+        onClose={() => setZeroOrdersAlertVisible(false)}
+        showOkButton={true}
+        okButtonText="OK"
+      />
     </KeyboardAvoidingView>
   );
 };

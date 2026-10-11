@@ -4,6 +4,7 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
+  RefreshControl,
   ActivityIndicator,
   Modal,
   TextInput,
@@ -67,6 +68,9 @@ interface Package {
   packingFee: string;
   productPrice: string;
   serviceFee: string;
+  packageType?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 interface Crop {
@@ -147,9 +151,62 @@ interface OrderScreenProps {
       number: string;
       customerscreencustomerid: string;
       isNewCustomer?: boolean;
+      packageType?: string;
+      endDate?: string;
     };
   };
 }
+
+const getDeliveryCutoffDate = (endDateStr?: string | null): string | null => {
+  if (!endDateStr) return null;
+  try {
+    let year: number;
+    let month: number;
+    let day: number;
+
+    if (typeof endDateStr === "string" && endDateStr.includes("-")) {
+      const parts = endDateStr.split("T")[0].split("-");
+      year = parseInt(parts[0], 10);
+      month = parseInt(parts[1], 10) - 1;
+      day = parseInt(parts[2], 10);
+    } else {
+      const d = new Date(endDateStr);
+      year = d.getFullYear();
+      month = d.getMonth();
+      day = d.getDate();
+    }
+
+    if (isNaN(year) || isNaN(month) || isNaN(day)) return null;
+
+    // Delivery cutoff is [Expire Date] - 2 days
+    const cutoffDate = new Date(year, month, day);
+    cutoffDate.setDate(cutoffDate.getDate() - 2);
+
+    const monthNames = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+
+    const displayDay = cutoffDate.getDate();
+    const displayMonth = monthNames[cutoffDate.getMonth()];
+    const displayYear = cutoffDate.getFullYear();
+
+    return `${displayDay} ${displayMonth} ${displayYear}`;
+  } catch (err) {
+    console.error("Error calculating delivery cutoff date:", err);
+    return null;
+  }
+};
 
 const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
   const {
@@ -201,6 +258,13 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     useState(productItems);
   const [packages, setPackages] = useState<Package[]>([]);
   const [packageValue, setPackageValue] = useState<string>("");
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+
+  const isOneTimePackage =
+    (selectedPackage?.packageType || "").trim().toLowerCase() === "one time" ||
+    (selectedPackage?.packageType || "").trim().toLowerCase().includes("one");
+  const deliveryCutoffDate = getDeliveryCutoffDate(selectedPackage?.endDate);
+  const showSeasonalSection = isOneTimePackage && !!deliveryCutoffDate;
 
   useFocusEffect(
     useCallback(() => {
@@ -416,8 +480,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     if (
       !route.params?.isEdit &&
       route.params?.packageId &&
-      packages.length > 0 &&
-      !selectedPackage
+      packages.length > 0
     ) {
       const pkg = packages.find((p) => p.id === route.params?.packageId);
       if (pkg) {
@@ -428,7 +491,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     packages,
     route.params?.packageId,
     route.params?.isEdit,
-    selectedPackage,
   ]);
 
   const handleConfirm = useCallback(async () => {
@@ -475,6 +537,9 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         number,
         customerscreencustomerid,
         packageId: packageValue ? parseInt(packageValue) : null,
+        packageType: selectedPackage?.packageType,
+        startDate: selectedPackage?.startDate,
+        endDate: selectedPackage?.endDate,
         rawPackageItems: items,
         rawAdditionalItems: additionalItems,
         isNewCustomer: route.params?.isNewCustomer,
@@ -582,7 +647,54 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     }
   };
 
-  const fetchPackages = async () => {
+  const fetchPackageDetails = useCallback(async (packageId: number) => {
+    try {
+      const storedToken = await AsyncStorage.getItem("authToken");
+      if (!storedToken) return;
+
+      const response = await axios.get<{
+        data: {
+          id: number;
+          displayName: string;
+          description: string;
+          packageType?: string;
+          startDate?: string;
+          endDate?: string;
+        };
+      }>(
+        `${environment.API_BASE_URL}api/packages/marketplace-package/${packageId}?_t=${Date.now()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${storedToken}`,
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+          },
+        },
+      );
+
+      if (response.data && response.data.data) {
+        const data = response.data.data;
+        setSelectedPackage((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            startDate:
+              data.startDate !== undefined ? data.startDate : prev.startDate,
+            endDate:
+              data.endDate !== undefined ? data.endDate : prev.endDate,
+            packageType:
+              data.packageType !== undefined
+                ? data.packageType
+                : prev.packageType,
+          };
+        });
+      }
+    } catch (err) {
+      console.warn("Could not fetch extra package details in OrderScreen:", err);
+    }
+  }, []);
+
+  const fetchPackages = useCallback(async () => {
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
       if (!storedToken) {
@@ -593,25 +705,42 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
       setToken(storedToken);
 
       const response = await axios.get<{ data: Package[] }>(
-        `${environment.API_BASE_URL}api/packages/get-packages`,
+        `${environment.API_BASE_URL}api/packages/get-packages?_t=${Date.now()}`,
         {
-          headers: { Authorization: `Bearer ${storedToken}` },
+          headers: {
+            Authorization: `Bearer ${storedToken}`,
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+          },
         },
       );
-      setPackages(response.data.data);
+      const freshPackages = response.data?.data || [];
+      setPackages(freshPackages);
 
-      const dropdownItems = response.data.data.map((pkg) => ({
+      const dropdownItems = freshPackages.map((pkg) => ({
         label: pkg.displayName,
         value: pkg.id.toString(),
       }));
 
       setPackageItems(dropdownItems);
       setFilteredPackageItems(dropdownItems);
+
+      const currentPkgId = packageValue
+        ? parseInt(packageValue, 10)
+        : selectedPackage?.id ||
+          (route.params?.packageId ? Number(route.params.packageId) : null);
+
+      if (currentPkgId) {
+        const freshPkg = freshPackages.find((p) => p.id === currentPkgId);
+        if (freshPkg) {
+          setSelectedPackage(freshPkg);
+        }
+      }
     } catch (error) {
       Alert.alert("Error", "Failed to fetch packages");
       console.error(error);
     }
-  };
+  }, [packageValue, selectedPackage?.id, route.params?.packageId]);
 
   useEffect(() => {
     fetchPackages();
@@ -624,7 +753,13 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     return () => {
       unsubscribe();
     };
-  }, []);
+  }, [fetchPackages]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchPackages();
+    }, [fetchPackages]),
+  );
 
   useEffect(() => { }, [route.params]);
 
@@ -634,7 +769,12 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
       const packageId = parseInt(value, 10);
       if (!isNaN(packageId)) {
         if (packages.length > 0) {
+          const selectedPkg = packages.find((pkg) => pkg.id === packageId);
+          if (selectedPkg) {
+            setSelectedPackage(selectedPkg);
+          }
           fetchItemsForPackage(packageId);
+          fetchPackageDetails(packageId);
         } else {
           setItems([]);
           setSelectedPackage(null);
@@ -654,8 +794,11 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
   useEffect(() => {
     if (packageValue && packages.length > 0) {
       const packageId = parseInt(packageValue, 10);
-      if (!isNaN(packageId) && !selectedPackage) {
-        fetchItemsForPackage(packageId);
+      if (!isNaN(packageId)) {
+        const freshPkg = packages.find((pkg) => pkg.id === packageId);
+        if (freshPkg) {
+          setSelectedPackage(freshPkg);
+        }
       }
     }
   }, [packages, packageValue]);
@@ -676,13 +819,14 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     }, [navigation]),
   );
 
-  const fetchCrops = async () => {
+  const fetchCrops = useCallback(async () => {
     try {
       setProductDropdownLoading(true);
+      const storedToken = token || (await AsyncStorage.getItem("authToken"));
       const response = await axios.get(
         `${environment.API_BASE_URL}api/packages/crops/all`,
         {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${storedToken}` },
           params: { id },
         },
       );
@@ -710,7 +854,37 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     } finally {
       setProductDropdownLoading(false);
     }
-  };
+  }, [id, token]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await fetchPackages();
+      const currentPkgId = packageValue
+        ? parseInt(packageValue, 10)
+        : selectedPackage?.id ||
+          (route.params?.packageId ? Number(route.params.packageId) : null);
+      if (currentPkgId) {
+        await Promise.all([
+          fetchItemsForPackage(currentPkgId),
+          fetchPackageDetails(currentPkgId),
+        ]);
+      }
+      await fetchCrops();
+    } catch (error) {
+      console.error("Refresh error in OrderScreen:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [
+    packageValue,
+    selectedPackage?.id,
+    route.params?.packageId,
+    fetchPackages,
+    fetchItemsForPackage,
+    fetchPackageDetails,
+    fetchCrops,
+  ]);
 
   const handleAddMore = () => {
     setShowAddModal(true);
@@ -1085,7 +1259,18 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
           });
         }}
       />
-      <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
+      <ScrollView
+        className="flex-1 px-6"
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#6839CF"]}
+            tintColor="#6839CF"
+          />
+        }
+      >
         {/* Package Selection */}
         <View className="mb-6">
           <Text className="font-medium text-gray-700 mb-2 rounded-full">
@@ -1144,6 +1329,55 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                 </View>
               ))}
             </View>
+          </View>
+        )}
+
+        
+        {/* Seasonal Package Section (Only for One Time packages) */}
+        {showSeasonalSection && (
+          <View
+            style={{
+              backgroundColor: "#E3FFEA",
+              borderRadius: 18,
+              padding: 16,
+              marginBottom: 20,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: 6,
+              }}
+            >
+              <Ionicons
+                name="time"
+                size={20}
+                color="#000000"
+                style={{ marginRight: 8 }}
+              />
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: "700",
+                  color: "#000000",
+                }}
+              >
+                Seasonal Package
+              </Text>
+            </View>
+
+            <Text
+              style={{
+                fontSize: 13,
+                color: "#000000",
+                lineHeight: 19,
+              }}
+            >
+              This package will no longer be available{"\n"}
+              for delivery after this date : {deliveryCutoffDate}.{"\n"}
+              We appreciate your understanding and support.
+            </Text>
           </View>
         )}
 
