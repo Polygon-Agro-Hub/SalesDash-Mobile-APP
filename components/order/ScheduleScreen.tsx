@@ -709,6 +709,44 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     orderData,
   ]);
 
+  // Expiry cutoff date formatted as "Month Day" (strictly End Date - 2 days)
+  const cutoffExpiryFormatted = useMemo(() => {
+    const rawEnd =
+      currentEndDate !== undefined
+        ? currentEndDate
+        : (!route.params?.packageId ? route.params?.endDate : undefined);
+    if (!rawEnd) return null;
+
+    let d: Date | null = null;
+    const str = String(rawEnd).trim();
+    if (str.includes("-")) {
+      const parts = str.split("T")[0].split("-");
+      const y = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      if (!isNaN(y) && !isNaN(m) && !isNaN(day)) {
+        d = new Date(y, m, day);
+      }
+    }
+    if (!d) {
+      const parsed = new Date(str);
+      if (!isNaN(parsed.getTime())) {
+        d = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+      }
+    }
+    if (!d) return null;
+
+    // Cutoff date is strictly End Date - 2 days
+    const cutoff = new Date(d.getTime());
+    cutoff.setDate(cutoff.getDate() - 2);
+
+    return {
+      day: cutoff.getDate(),
+      monthFull: ALL_MONTHS[cutoff.getMonth()],
+      formatted: `${ALL_MONTHS[cutoff.getMonth()]} ${cutoff.getDate()}`,
+    };
+  }, [currentEndDate, route.params?.endDate, route.params?.packageId]);
+
   const { calculatedOrders, unfilteredFirstScheduledDate } = useMemo<{
     calculatedOrders: Array<{
       index: number;
@@ -1163,7 +1201,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                           }}
                         >
                           <Text style={{ fontWeight: "700" }}>Note : </Text>
-                          A {seasonalInfo.gapDays}-day gap is required. Packages
+                          A {seasonalInfo.gapDays}-day gap is required. The Packages
                           expiring on the {seasonalInfo.expiryDayOrdinal} {seasonalInfo.expiryMonthFull} can be ordered
                           between the {seasonalInfo.rangeTextLong}.
                         </Text>
@@ -1545,7 +1583,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                               }}
                             >
                               <Text style={{ fontWeight: "700" }}>Note : </Text>
-                              A {seasonalInfo.gapDays}-day gap is required. Packages
+                              A {seasonalInfo.gapDays}-day gap is required. The Packages
                               expiring on the {seasonalInfo.expiryDayOrdinal} {seasonalInfo.expiryMonthFull} can be ordered
                               between the {seasonalInfo.rangeTextLong}.
                             </Text>
@@ -1771,8 +1809,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
         type="error"
         title="We're Sorry"
         message={
-          seasonalInfo?.isOneTime && seasonalInfo?.expiryDay
-            ? `We're sorry, but we're unable to fulfill your request at this time. Unfortunately, there are no available dates within the next two weeks, and your package expires on ${seasonalInfo.expiryMonthFull} ${seasonalInfo.expiryDay}.\n\nWe apologize for the inconvenience and appreciate your understanding.`
+          cutoffExpiryFormatted
+            ? `We're sorry, but we're unable to fulfill your request at this time. Unfortunately, there are no available dates within the next two weeks, and your package expires on ${cutoffExpiryFormatted.formatted}.\n\nWe apologize for the inconvenience and appreciate your understanding.`
             : `We're sorry, but we're unable to fulfill your request at this time. Unfortunately, there are no available delivery dates for the selected schedule.\n\nWe apologize for the inconvenience and appreciate your understanding.`
         }
         onClose={() => setZeroOrdersAlertVisible(false)}

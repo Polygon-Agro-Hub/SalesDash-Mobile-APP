@@ -327,8 +327,14 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
       const totalAmount = totalBeforeDiscount - discountAmount;
       const deliveryChargeAmount = parseFloat(order?.deliveryCharge || "0");
 
+      // Ensure additional items are unique by productId
+      const uniqueAdditionalItems = (order?.additionalItems || []).filter(
+        (item, index, self) =>
+          index === self.findIndex((t) => t.productId === item.productId),
+      );
+
       const additionalItemsTotal =
-        order?.additionalItems?.reduce((sum, item) => {
+        uniqueAdditionalItems.reduce((sum, item) => {
           const price = parseFloat(item.price?.toString() || "0");
           const discount = parseFloat(item.discount?.toString() || "0");
           const actualAmount = price + discount;
@@ -336,7 +342,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         }, 0) || 0;
 
       const totaldiscount =
-        order?.additionalItems?.reduce((sum, item) => {
+        uniqueAdditionalItems.reduce((sum, item) => {
           const discount =
             typeof item.discount === "number"
               ? item.discount.toString()
@@ -454,8 +460,8 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
       }
 
       let additionalItemsRows = "";
-      if (order?.additionalItems && order.additionalItems.length > 0) {
-        order.additionalItems.forEach((item, index) => {
+      if (uniqueAdditionalItems && uniqueAdditionalItems.length > 0) {
+        uniqueAdditionalItems.forEach((item, index) => {
           const price = parseFloat(item.price?.toString() || "0");
           const discount = parseFloat(item.discount?.toString() || "0");
           const quantity = parseFloat(item.qty?.toString() || "0");
@@ -734,7 +740,7 @@ ${
       }
 
       ${
-        order?.additionalItems && order.additionalItems.length > 0
+        uniqueAdditionalItems && uniqueAdditionalItems.length > 0
           ? `
       <!-- Additional Items Section -->
       <div class="section 4">
@@ -748,7 +754,7 @@ ${
             margin-top:10px
           "
         >
-         <div class="bold">${order?.isPackage === 1 ? "Additional Items" : "Custom Items"} (${String(order?.additionalItems?.length || 0).padStart(2, "0")} ${order?.additionalItems?.length === 1 ? "Item" : "Items"})</div>
+         <div class="bold">${order?.isPackage === 1 ? "Additional Items" : "Custom Items"} (${String(uniqueAdditionalItems.length).padStart(2, "0")} ${uniqueAdditionalItems.length === 1 ? "Item" : "Items"})</div>
     <div style="font-weight: 550; font-size: 16px">Rs. ${additionalItemsTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</div>
         </div>
         <div style="border: 1px solid #ddd; border-radius: 10px">
@@ -784,7 +790,7 @@ ${
             : ""
         }
         ${
-          order?.additionalItems && order.additionalItems.length > 0
+          uniqueAdditionalItems && uniqueAdditionalItems.length > 0
             ? `
         <div style=" display: flex; justify-content: space-between; margin-right: 20px;" class="ptext" > 
           <p>${order?.isPackage === 1 ? "Additional Items" : "Custom Items"}</p>

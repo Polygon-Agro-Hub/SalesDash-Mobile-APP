@@ -190,7 +190,12 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
     }
   };
 
+  const onEndReachedCalledDuringMomentum = useRef(true);
+
   const loadMoreOrders = () => {
+    if (searchText.trim().length > 0 || selectedFilter !== "All") {
+      return;
+    }
     if (!loadingMore && hasMore) {
       loadOrders(currentPage + 1, false, true);
     }
@@ -336,6 +341,10 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
   );
 
   const renderFooter = () => {
+    if (searchText.trim().length > 0 || selectedFilter !== "All") {
+      return null;
+    }
+
     if (!hasMore && orders.length > 0) {
       return (
         <View className="py-4 items-center">
@@ -433,7 +442,8 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={{
                   paddingHorizontal: 16,
-                  height: 40,
+                  height: 44,
+                  alignItems: "center",
                   marginBottom: 5,
                   marginTop: 14,
                 }}
@@ -443,7 +453,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                   <TouchableOpacity
                     key={filter}
                     style={{
-                      paddingHorizontal: 12,
+                      paddingHorizontal: 14,
                       paddingVertical: 6,
                       borderRadius: 20,
                       borderWidth: 1,
@@ -453,7 +463,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                       marginHorizontal: 6,
                       justifyContent: "center",
                       alignItems: "center",
-                      height: 32,
+                      minHeight: 36,
                       minWidth: 80,
                     }}
                     onPress={() => setSelectedFilter(filter)}
@@ -464,6 +474,9 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                         fontWeight:
                           selectedFilter === filter ? "bold" : "normal",
                         color: selectedFilter === filter ? "white" : "#6B3BCF",
+                        textAlign: "center",
+                        includeFontPadding: false,
+                        lineHeight: 20,
                       }}
                     >
                       {filter}
@@ -508,7 +521,15 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                     />
                   }
                   ListFooterComponent={renderFooter}
-                  onEndReached={loadMoreOrders}
+                  onMomentumScrollBegin={() => {
+                    onEndReachedCalledDuringMomentum.current = false;
+                  }}
+                  onEndReached={() => {
+                    if (!onEndReachedCalledDuringMomentum.current) {
+                      loadMoreOrders();
+                      onEndReachedCalledDuringMomentum.current = true;
+                    }
+                  }}
                   onEndReachedThreshold={0.1}
                   renderItem={({ item }) => (
                     <TouchableOpacity
