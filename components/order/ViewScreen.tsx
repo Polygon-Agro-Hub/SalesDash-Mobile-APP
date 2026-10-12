@@ -17,6 +17,7 @@ import { RouteProp } from "@react-navigation/native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import CustomHeader from "../common/CustomHeader";
+import SeasonalPackageBanner from "./SeasonalPackageBanner";
 
 const getDeliveryCutoffDate = (endDateStr?: string | null): string | null => {
   if (!endDateStr) return null;
@@ -327,53 +328,10 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
             </View>
 
             {/* Seasonal Package Section (Only for One Time packages) */}
-            {showSeasonalSection && (
-              <View
-                style={{
-                  backgroundColor: "#E3FFEA",
-                  borderRadius: 18,
-                  padding: 16,
-                  marginBottom: 20,
-                  marginHorizontal: 24,
-                }}
-              >
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    marginBottom: 6,
-                  }}
-                >
-                  <Ionicons
-                    name="time"
-                    size={20}
-                    color="#000000"
-                    style={{ marginRight: 8 }}
-                  />
-                  <Text
-                    style={{
-                      fontSize: 16,
-                      fontWeight: "700",
-                      color: "#000000",
-                    }}
-                  >
-                    Seasonal Package
-                  </Text>
-                </View>
-
-                <Text
-                  style={{
-                    fontSize: 13,
-                    color: "#000000",
-                    lineHeight: 19,
-                  }}
-                >
-                  This package will no longer be available{"\n"}
-                  for delivery after this date : {deliveryCutoffDate}.{"\n"}
-                  We appreciate your understanding and support.
-                </Text>
-              </View>
-            )}
+            <SeasonalPackageBanner
+              packageId={selectedPackageId}
+              containerStyle={{ marginHorizontal: 24 }}
+            />
 
             {/* Items List */}
             <Text className="text-gray-800 text-lg font-bold mx-6">

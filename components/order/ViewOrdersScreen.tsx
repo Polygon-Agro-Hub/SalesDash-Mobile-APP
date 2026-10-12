@@ -291,6 +291,13 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
         console.error("Error filtering order:", error);
         return false;
       }
+    }).sort((a, b) => {
+      const dateA = new Date(a.sheduleDate || a.createdAt).getTime();
+      const dateB = new Date(b.sheduleDate || b.createdAt).getTime();
+      if (!isNaN(dateA) && !isNaN(dateB) && dateB !== dateA) {
+        return dateB - dateA;
+      }
+      return (b.processId || b.orderId) - (a.processId || a.orderId);
     });
   }, [orders, selectedFilter, searchText]);
 

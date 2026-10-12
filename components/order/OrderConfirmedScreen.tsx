@@ -945,7 +945,7 @@ ${
                 style={{ fontSize: 20 }}
                 className="text-black text-center font-bold"
               >
-                Order is Successful!
+                Order Placed Successful!
               </Text>
               <Text
                 style={{ fontSize: 18 }}
@@ -957,7 +957,7 @@ ${
                 style={{ fontSize: 16 }}
                 className="text-[#747474] text-center mt-5"
               >
-                Order Confirmation message has been sent to your Customer.
+                Order placement message has been sent to your Customer.
               </Text>
             </View>
 
