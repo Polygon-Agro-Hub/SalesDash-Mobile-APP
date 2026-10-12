@@ -397,6 +397,43 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
           ${creditRowHtml}
           ${onlineRowHtml}
         `;
+      } else if (paymentMethodLower === "card" && orderIsPaid === 0) {
+        // Card order that has not been paid yet -> show "Online Transferred Amount (Pending)"
+        const creditPaid = parseFloat(
+          order?.orderStatus?.creditPaid?.toString() || "0",
+        );
+        const moneyPaid = parseFloat(
+          order?.orderStatus?.moneyPaid?.toString() || "0",
+        );
+        const fullTotalAmount = parseFloat(order?.fullTotal?.toString() || "0");
+
+        // Prefer the amount stored for the online payment; otherwise derive it
+        const onlinePendingAmount =
+          moneyPaid > 0 ? moneyPaid : fullTotalAmount - creditPaid;
+
+        const creditRowHtml =
+          creditPaid > 0
+            ? `
+          <div style="display: flex; justify-content: space-between; margin-right: 20px; margin-top: 10px;">
+            <p style="color: #16A34A; font-weight: 600; font-size: 14px;">Credit Balance Used</p>
+            <p style="color: #16A34A; font-weight: 600; font-size: 14px;">Rs. ${creditPaid
+              .toFixed(2)
+              .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
+          </div>
+        `
+            : "";
+
+        paymentStatusHtml = `
+          ${creditRowHtml}
+          <div style="display: flex; justify-content: space-between; margin-right: 20px; margin-top: ${
+            creditPaid > 0 ? "2px" : "10px"
+          };">
+            <p style="color: #EA9A3E; font-weight: 600; font-size: 14px;">Online Transferred Amount (Pending)</p>
+            <p style="color: #EA9A3E; font-weight: 600; font-size: 14px;">Rs. ${onlinePendingAmount
+              .toFixed(2)
+              .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
+          </div>
+        `;
       } else if (paymentMethodLower === "cash" && orderIsPaid === 0) {
         const creditPaid = parseFloat(
           order?.orderStatus?.creditPaid?.toString() || "0",
@@ -826,7 +863,7 @@ ${
         <p>Rs. ${totalAmount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
       </div>
 
-      <!-- Payment Status Section (dynamic: Online Transferred / Credit Balance Used / Cash On Delivery / Cash On Pickup) -->
+      <!-- Payment Status Section (dynamic: Online Transferred / Online Transferred (Pending) / Credit Balance Used / Cash On Delivery / Cash On Pickup) -->
       ${paymentStatusHtml}
 
       <!-- Remarks Section -->
