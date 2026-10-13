@@ -30,6 +30,7 @@ class PushNotificationService {
   private responseSubscription: any = null;
   private registeredTokens = new Set<string>();
   private isRegisteringToken = false;
+  private recentlyDisplayedKeys = new Map<string, number>();
 
   async init() {
     if (this.isInitialized) return;
@@ -159,25 +160,9 @@ class PushNotificationService {
         return;
       }
 
-      // 1. Native Device Push Token (FCM on Android, APNs on iOS)
-      try {
-        const devTokenObj = await Notifications.getDevicePushTokenAsync();
-        if (devTokenObj?.data) {
-          console.log(
-            `📱 [PushNotificationService] Obtained native device token (${devTokenObj.type}):`,
-            devTokenObj.data.slice(0, 20) + "..."
-          );
-          await this.sendTokenToBackend(
-            authToken,
-            devTokenObj.data,
-            devTokenObj.type || (Platform.OS === "android" ? "fcm" : "apns")
-          );
-        }
-      } catch (devErr: any) {
-        console.warn("⚠️ [PushNotificationService] Native device token not available:", devErr?.message);
-      }
+      let tokenRegistered = false;
 
-      // 2. Expo Push Token (secondary fallback)
+      // 1. Prefer Expo Push Token (handles cross-platform APNs/FCM delivery cleanly via Expo push service)
       try {
         const projectId =
           Constants?.expoConfig?.extra?.eas?.projectId ??
@@ -192,9 +177,30 @@ class PushNotificationService {
             expoTokenObj.data.slice(0, 25) + "..."
           );
           await this.sendTokenToBackend(authToken, expoTokenObj.data, "expo");
+          tokenRegistered = true;
         }
       } catch (expoErr: any) {
         console.log("ℹ️ [PushNotificationService] Expo push token not obtained:", expoErr?.message);
+      }
+
+      // 2. Native Device Push Token (FCM on Android, APNs on iOS) as fallback only
+      if (!tokenRegistered) {
+        try {
+          const devTokenObj = await Notifications.getDevicePushTokenAsync();
+          if (devTokenObj?.data) {
+            console.log(
+              `📱 [PushNotificationService] Obtained native device token (${devTokenObj.type}):`,
+              devTokenObj.data.slice(0, 20) + "..."
+            );
+            await this.sendTokenToBackend(
+              authToken,
+              devTokenObj.data,
+              devTokenObj.type || (Platform.OS === "android" ? "fcm" : "apns")
+            );
+          }
+        } catch (devErr: any) {
+          console.warn("⚠️ [PushNotificationService] Native device token not available:", devErr?.message);
+        }
       }
     } catch (err: any) {
       console.warn("❌ [PushNotificationService] registerPushToken error:", err?.message || err);
@@ -246,6 +252,25 @@ class PushNotificationService {
    */
   async displayLocalNotification(item: ServerNotificationItem) {
     if (!item || !item.title) return;
+
+    // Deduplicate against duplicate local notifications within 10 seconds
+    const displayKey = `${item.id || item.orderId || ""}_${item.title}_${item.invNo || ""}`;
+    const now = Date.now();
+    const lastDisplayTime = this.recentlyDisplayedKeys.get(displayKey);
+    if (lastDisplayTime && now - lastDisplayTime < 10000) {
+      console.log("ℹ️ [PushNotificationService] Suppressing duplicate system notification:", displayKey);
+      return;
+    }
+    this.recentlyDisplayedKeys.set(displayKey, now);
+
+    // Prune stale keys if map exceeds 100 items
+    if (this.recentlyDisplayedKeys.size > 100) {
+      for (const [key, timestamp] of this.recentlyDisplayedKeys.entries()) {
+        if (now - timestamp > 60000) {
+          this.recentlyDisplayedKeys.delete(key);
+        }
+      }
+    }
 
     try {
       if (Platform.OS === "android") {

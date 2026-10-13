@@ -42,6 +42,7 @@ class SocketService {
   // High-water mark notification ID tracking (resets each session, backed by AsyncStorage)
   private lastNotifiedId: number = 0;
   private lastKnownUnreadCount: number = -1; // -1 means first check this session
+  private processedNotificationKeys: Set<string> = new Set();
 
   private fallbackPollingTimer: any = null;
   private hasLoggedConnectionNotice: boolean = false;
@@ -125,6 +126,23 @@ class SocketService {
       });
 
       const handleSocketNotification = (data: ServerNotificationItem) => {
+        if (!data) return;
+
+        const notifKey = String(
+          data.id || `${data.orderId || ""}_${data.title || ""}_${data.invNo || ""}`
+        );
+
+        if (this.processedNotificationKeys.has(notifKey)) {
+          console.log("ℹ️ [SocketService] Duplicate notification received via socket - skipping:", notifKey);
+          return;
+        }
+
+        this.processedNotificationKeys.add(notifKey);
+        if (this.processedNotificationKeys.size > 200) {
+          const firstKey = this.processedNotificationKeys.values().next().value;
+          if (firstKey) this.processedNotificationKeys.delete(firstKey);
+        }
+
         console.log("📢 [SocketService] Real-time socket event received:", data?.title);
         const formatted: ServerNotificationItem = {
           ...data,

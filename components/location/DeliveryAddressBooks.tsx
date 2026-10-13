@@ -535,7 +535,7 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
               backgroundColor: "white",
               borderRadius: 22,
               width: "100%",
-              maxWidth: 340,
+              maxWidth: 350,
               paddingBottom: 18,
               shadowColor: "#000",
               shadowOffset: { width: 0, height: 8 },
@@ -597,7 +597,12 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
             <View className="h-[1px] bg-gray-100 mx-5 mb-1" />
 
             {/* Fields */}
-            <View className="px-5 pt-2">
+            <ScrollView
+              style={{ maxHeight: 480 }}
+              contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8 }}
+              showsVerticalScrollIndicator={false}
+              bounces={false}
+            >
               {getBillingInfoRows(selectedAddress).map((row, idx) => (
                 <React.Fragment key={row.label}>
                   {row.label === "Phone Num 1" && (
@@ -623,14 +628,15 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
                     </View>
                     <View
                       style={{
-                        width: 92,
-                        height: 28,
+                        width: 104,
+                        minHeight: 28,
                         justifyContent: "center",
                       }}
                     >
                       <Text
                         className="text-gray-400 text-[12.5px]"
                         style={{ includeFontPadding: false }}
+                        numberOfLines={1}
                       >
                         {row.label}
                       </Text>
@@ -660,7 +666,7 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
                   </View>
                 </React.Fragment>
               ))}
-            </View>
+            </ScrollView>
           </Pressable>
         </Pressable>
       </Modal>

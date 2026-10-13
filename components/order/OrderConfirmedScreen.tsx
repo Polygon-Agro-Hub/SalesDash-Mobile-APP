@@ -327,8 +327,14 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
       const totalAmount = totalBeforeDiscount - discountAmount;
       const deliveryChargeAmount = parseFloat(order?.deliveryCharge || "0");
 
+      // Ensure additional items are unique by productId
+      const uniqueAdditionalItems = (order?.additionalItems || []).filter(
+        (item, index, self) =>
+          index === self.findIndex((t) => t.productId === item.productId),
+      );
+
       const additionalItemsTotal =
-        order?.additionalItems?.reduce((sum, item) => {
+        uniqueAdditionalItems.reduce((sum, item) => {
           const price = parseFloat(item.price?.toString() || "0");
           const discount = parseFloat(item.discount?.toString() || "0");
           const actualAmount = price + discount;
@@ -336,7 +342,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         }, 0) || 0;
 
       const totaldiscount =
-        order?.additionalItems?.reduce((sum, item) => {
+        uniqueAdditionalItems.reduce((sum, item) => {
           const discount =
             typeof item.discount === "number"
               ? item.discount.toString()
@@ -390,6 +396,43 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         paymentStatusHtml = `
           ${creditRowHtml}
           ${onlineRowHtml}
+        `;
+      } else if (paymentMethodLower === "card" && orderIsPaid === 0) {
+        // Card order that has not been paid yet -> show "Online Transferred Amount (Pending)"
+        const creditPaid = parseFloat(
+          order?.orderStatus?.creditPaid?.toString() || "0",
+        );
+        const moneyPaid = parseFloat(
+          order?.orderStatus?.moneyPaid?.toString() || "0",
+        );
+        const fullTotalAmount = parseFloat(order?.fullTotal?.toString() || "0");
+
+        // Prefer the amount stored for the online payment; otherwise derive it
+        const onlinePendingAmount =
+          moneyPaid > 0 ? moneyPaid : fullTotalAmount - creditPaid;
+
+        const creditRowHtml =
+          creditPaid > 0
+            ? `
+          <div style="display: flex; justify-content: space-between; margin-right: 20px; margin-top: 10px;">
+            <p style="color: #16A34A; font-weight: 600; font-size: 14px;">Credit Balance Used</p>
+            <p style="color: #16A34A; font-weight: 600; font-size: 14px;">Rs. ${creditPaid
+              .toFixed(2)
+              .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
+          </div>
+        `
+            : "";
+
+        paymentStatusHtml = `
+          ${creditRowHtml}
+          <div style="display: flex; justify-content: space-between; margin-right: 20px; margin-top: ${
+            creditPaid > 0 ? "2px" : "10px"
+          };">
+            <p style="color: #EA9A3E; font-weight: 600; font-size: 14px;">Online Transferred Amount (Pending)</p>
+            <p style="color: #EA9A3E; font-weight: 600; font-size: 14px;">Rs. ${onlinePendingAmount
+              .toFixed(2)
+              .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
+          </div>
         `;
       } else if (paymentMethodLower === "cash" && orderIsPaid === 0) {
         const creditPaid = parseFloat(
@@ -454,8 +497,8 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
       }
 
       let additionalItemsRows = "";
-      if (order?.additionalItems && order.additionalItems.length > 0) {
-        order.additionalItems.forEach((item, index) => {
+      if (uniqueAdditionalItems && uniqueAdditionalItems.length > 0) {
+        uniqueAdditionalItems.forEach((item, index) => {
           const price = parseFloat(item.price?.toString() || "0");
           const discount = parseFloat(item.discount?.toString() || "0");
           const quantity = parseFloat(item.qty?.toString() || "0");
@@ -734,7 +777,7 @@ ${
       }
 
       ${
-        order?.additionalItems && order.additionalItems.length > 0
+        uniqueAdditionalItems && uniqueAdditionalItems.length > 0
           ? `
       <!-- Additional Items Section -->
       <div class="section 4">
@@ -748,7 +791,7 @@ ${
             margin-top:10px
           "
         >
-         <div class="bold">${order?.isPackage === 1 ? "Additional Items" : "Custom Items"} (${String(order?.additionalItems?.length || 0).padStart(2, "0")} ${order?.additionalItems?.length === 1 ? "Item" : "Items"})</div>
+         <div class="bold">${order?.isPackage === 1 ? "Additional Items" : "Custom Items"} (${String(uniqueAdditionalItems.length).padStart(2, "0")} ${uniqueAdditionalItems.length === 1 ? "Item" : "Items"})</div>
     <div style="font-weight: 550; font-size: 16px">Rs. ${additionalItemsTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</div>
         </div>
         <div style="border: 1px solid #ddd; border-radius: 10px">
@@ -784,7 +827,7 @@ ${
             : ""
         }
         ${
-          order?.additionalItems && order.additionalItems.length > 0
+          uniqueAdditionalItems && uniqueAdditionalItems.length > 0
             ? `
         <div style=" display: flex; justify-content: space-between; margin-right: 20px;" class="ptext" > 
           <p>${order?.isPackage === 1 ? "Additional Items" : "Custom Items"}</p>
@@ -820,7 +863,7 @@ ${
         <p>Rs. ${totalAmount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
       </div>
 
-      <!-- Payment Status Section (dynamic: Online Transferred / Credit Balance Used / Cash On Delivery / Cash On Pickup) -->
+      <!-- Payment Status Section (dynamic: Online Transferred / Online Transferred (Pending) / Credit Balance Used / Cash On Delivery / Cash On Pickup) -->
       ${paymentStatusHtml}
 
       <!-- Remarks Section -->
@@ -945,7 +988,7 @@ ${
                 style={{ fontSize: 20 }}
                 className="text-black text-center font-bold"
               >
-                Order is Successful!
+                Order Placed Successful!
               </Text>
               <Text
                 style={{ fontSize: 18 }}
@@ -957,7 +1000,7 @@ ${
                 style={{ fontSize: 16 }}
                 className="text-[#747474] text-center mt-5"
               >
-                Order Confirmation message has been sent to your Customer.
+                Order placement message has been sent to your Customer.
               </Text>
             </View>
 

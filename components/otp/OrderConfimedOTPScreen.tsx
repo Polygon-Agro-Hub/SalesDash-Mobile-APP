@@ -141,6 +141,10 @@ const OrderConfimedOTPScreen: React.FC = () => {
       return null;
     }
 
+    if (pendingOrderPayload && pendingOrderPayload.orderData) {
+      delete pendingOrderPayload.orderData.isPaySMS;
+    }
+
     try {
       const orderResponse = await axios.post(
         `${environment.API_BASE_URL}api/orders/create-order`,
@@ -150,6 +154,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
+          timeout: 120000, // 2-minute waiting timeout
         },
       );
 
@@ -187,17 +192,29 @@ const OrderConfimedOTPScreen: React.FC = () => {
         "Error creating order after OTP verification:",
         e.response?.data || e,
       );
-      let errorMessage = "Error creating order after OTP verification";
-      if (axios.isAxiosError(e) && e.response) {
-        errorMessage =
-          e.response.data?.error || e.response.data?.message || errorMessage;
+      const isTimeout =
+        e.code === "ECONNABORTED" ||
+        e.message?.toLowerCase().includes("timeout") ||
+        e.response?.status === 504;
+
+      if (isTimeout) {
+        Alert.alert(
+          "Order Processing Delay",
+          "Your order is taking longer than usual to process. It may still complete shortly. Please check your order history or contact support before attempting to create the order again.",
+        );
+      } else {
+        let errorMessage = "Error creating order after OTP verification";
+        if (axios.isAxiosError(e) && e.response) {
+          errorMessage =
+            e.response.data?.error || e.response.data?.message || errorMessage;
+        }
+        Alert.alert("Error", errorMessage);
       }
-      Alert.alert("Error", errorMessage);
       return null;
     }
   };
 
-  const handleCashSuccess = async (token: string) => {
+  const handleOrderSuccess = async (token: string) => {
     setShowSuccessAlert(true);
 
     const minDelay = new Promise<void>((resolve) =>
@@ -224,46 +241,6 @@ const OrderConfimedOTPScreen: React.FC = () => {
         params: navParams,
       });
     }
-  };
-
-  const handleCardSuccess = async () => {
-    setShowSuccessAlert(true);
-
-    await new Promise<void>((resolve) =>
-      setTimeout(resolve, SUCCESS_POPUP_MIN_MS),
-    );
-
-    setShowSuccessAlert(false);
-
-    navigation.navigate("OnlinePayment" as any, {
-      id: null,
-      customerId: id,
-      name: customerName,
-      title: customerTitle,
-      isPackage,
-      total,
-      fullTotal,
-      subtotal,
-      discount,
-      selectedDate,
-      selectedTimeSlot,
-      items,
-      orderItems,
-      rawPackageItems,
-      rawAdditionalItems,
-      selectedAddress,
-      customerid: customerid || id,
-      customerscreencustomerid,
-      isFinalizeImdt,
-      deliveryCharge,
-      scheduleType: (route.params as any)?.scheduleType,
-      sheduleType: (route.params as any)?.sheduleType,
-      selectedDays: (route.params as any)?.selectedDays,
-      recurringDays: (route.params as any)?.recurringDays,
-      validityWeeks: (route.params as any)?.validityWeeks,
-      validityPeriod: (route.params as any)?.validityPeriod,
-      calculatedOrders: (route.params as any)?.calculatedOrders,
-    });
   };
 
   const verifyOTP = async () => {
@@ -315,12 +292,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
 
       if (statusCode === "1000") {
         await AsyncStorage.removeItem("referenceId");
-
-        if (paymentMethod === "Card") {
-          await handleCardSuccess();
-        } else {
-          await handleCashSuccess(token);
-        }
+        await handleOrderSuccess(token);
       } else {
         setIsOtpInvalid(true);
         Alert.alert("Error", "Invalid OTP. Please try again.");
