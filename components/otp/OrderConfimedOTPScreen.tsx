@@ -47,6 +47,8 @@ const OrderConfimedOTPScreen: React.FC = () => {
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
 
   const [showOrderLoading, setShowOrderLoading] = useState(false);
+  const [orderLoadingMessage, setOrderLoadingMessage] =
+    useState("Confirming Order…");
 
   const {
     phoneNumber,
@@ -154,6 +156,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
+          timeout: 120000, // 2-minute waiting timeout
         },
       );
 
@@ -191,18 +194,55 @@ const OrderConfimedOTPScreen: React.FC = () => {
         "Error creating order after OTP verification:",
         e.response?.data || e,
       );
-      let errorMessage = "Error creating order after OTP verification";
-      if (axios.isAxiosError(e) && e.response) {
-        errorMessage =
-          e.response.data?.error || e.response.data?.message || errorMessage;
+      const isTimeout =
+        e.code === "ECONNABORTED" ||
+        e.message?.toLowerCase().includes("timeout") ||
+        e.response?.status === 504;
+
+      if (isTimeout) {
+        Alert.alert(
+          "Order Processing Delay",
+          "Your order is taking longer than usual to process. It may still complete shortly. Please check your order history or contact support before attempting to create the order again.",
+        );
+      } else {
+        let errorMessage = "Error creating order after OTP verification";
+        if (axios.isAxiosError(e) && e.response) {
+          errorMessage =
+            e.response.data?.error || e.response.data?.message || errorMessage;
+        }
+        Alert.alert("Error", errorMessage);
       }
-      Alert.alert("Error", errorMessage);
       return null;
     }
   };
 
   const handleOrderSuccess = async (token: string) => {
     setShowSuccessAlert(true);
+    setOrderLoadingMessage("Confirming Order…");
+
+    const messageTimers: NodeJS.Timeout[] = [];
+    messageTimers.push(
+      setTimeout(() => {
+        setOrderLoadingMessage(
+          "Confirming order details and generating invoice…",
+        );
+      }, 5000),
+      setTimeout(() => {
+        setOrderLoadingMessage(
+          "Finalizing with the server. Please wait, do not close the app…",
+        );
+      }, 25000),
+      setTimeout(() => {
+        setOrderLoadingMessage(
+          "Taking longer than usual due to high volume. Still processing (up to 2 min)…",
+        );
+      }, 60000),
+      setTimeout(() => {
+        setOrderLoadingMessage(
+          "Almost there! Completing final verification…",
+        );
+      }, 90000),
+    );
 
     const minDelay = new Promise<void>((resolve) =>
       setTimeout(resolve, SUCCESS_POPUP_MIN_MS),
@@ -218,6 +258,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
       createOrderAndNavigate(token),
     ]);
 
+    messageTimers.forEach(clearTimeout);
     clearTimeout(switchToLoadingTimer);
     setShowSuccessAlert(false);
     setShowOrderLoading(false);
@@ -624,7 +665,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
               alignItems: "center",
             }}
           >
-            <LoadingPage message="Confirming Order…" />
+            <LoadingPage message={orderLoadingMessage} />
           </View>
         </View>
       </Modal>
