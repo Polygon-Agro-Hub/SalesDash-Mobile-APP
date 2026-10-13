@@ -154,6 +154,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
+          timeout: 120000, // 2-minute waiting timeout
         },
       );
 
@@ -191,12 +192,24 @@ const OrderConfimedOTPScreen: React.FC = () => {
         "Error creating order after OTP verification:",
         e.response?.data || e,
       );
-      let errorMessage = "Error creating order after OTP verification";
-      if (axios.isAxiosError(e) && e.response) {
-        errorMessage =
-          e.response.data?.error || e.response.data?.message || errorMessage;
+      const isTimeout =
+        e.code === "ECONNABORTED" ||
+        e.message?.toLowerCase().includes("timeout") ||
+        e.response?.status === 504;
+
+      if (isTimeout) {
+        Alert.alert(
+          "Order Processing Delay",
+          "Your order is taking longer than usual to process. It may still complete shortly. Please check your order history or contact support before attempting to create the order again.",
+        );
+      } else {
+        let errorMessage = "Error creating order after OTP verification";
+        if (axios.isAxiosError(e) && e.response) {
+          errorMessage =
+            e.response.data?.error || e.response.data?.message || errorMessage;
+        }
+        Alert.alert("Error", errorMessage);
       }
-      Alert.alert("Error", errorMessage);
       return null;
     }
   };
