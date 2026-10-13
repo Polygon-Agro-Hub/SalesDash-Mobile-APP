@@ -146,6 +146,8 @@ export type RootStackParamList = {
     selectedPackageDescription: string;
     selectedPackageportion: number;
     selectedPackageperiod: number;
+    packageType?: string;
+    endDate?: string | null;
   };
   ViewCustomerScreen: {
     number: string;
@@ -503,26 +505,5 @@ export type RootStackParamList = {
     rawAdditionalItems?: any[];
     number?: string;
     customerscreencustomerid?: string;
-  };
-  OnlinePayment:{
-    
-  };
-  OnlinePaymentStatus: {
-    orderId?: number | string;
-    customerId?: string | number;
-    name?: string;
-    title?: string;
-    number?: string;
-    isPackage?: any;
-    total?: number;
-    subtotal?: number;
-    discount?: number;
-    selectedDate?: string;
-    selectedTimeSlot?: string;
-    paymentMethod?: string;
-    currentStep?: number;
-    id?: string | number;
-    customerid?: string | number;
-    customerscreencustomerid?: string | number;
   };
 };

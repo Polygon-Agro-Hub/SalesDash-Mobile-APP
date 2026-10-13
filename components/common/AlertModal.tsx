@@ -84,7 +84,19 @@ export const AlertModal: React.FC<AlertModalProps> = ({
   const renderMessage = () => {
     if (typeof message === "string") {
       return (
-        <Text className="text-center text-[#4E4E4E] mb-5 mt-2">{message}</Text>
+        <Text
+          style={{
+            textAlign: "center",
+            color: "#4E4E4E",
+            fontSize: 14,
+            lineHeight: 20,
+            marginBottom: 20,
+            marginTop: 8,
+            width: "100%",
+          }}
+        >
+          {message}
+        </Text>
       );
     }
     return message;
@@ -112,17 +124,61 @@ export const AlertModal: React.FC<AlertModalProps> = ({
       animationType="fade"
       supportedOrientations={['portrait', 'portrait-upside-down', 'landscape', 'landscape-left', 'landscape-right']}
     >
-      <View className="flex-1 bg-black/50 justify-center items-center p-4">
-        <View className="bg-white p-6 rounded-2xl items-center shadow-lg w-full max-w-md relative">
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: "rgba(0, 0, 0, 0.5)",
+          justifyContent: "center",
+          alignItems: "center",
+          padding: 16,
+        }}
+      >
+        <View
+          style={{
+            backgroundColor: "#FFFFFF",
+            padding: 24,
+            borderRadius: 16,
+            alignItems: "center",
+            width: "100%",
+            maxWidth: 400,
+            position: "relative",
+            shadowColor: "#000000",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.15,
+            shadowRadius: 12,
+            elevation: 8,
+          }}
+        >
           <TouchableOpacity
-            className="absolute top-5 right-5 z-10 w-8 h-8 rounded-full bg-[#F7FAFF] items-center justify-center"
+            style={{
+              position: "absolute",
+              top: 16,
+              right: 16,
+              zIndex: 10,
+              width: 32,
+              height: 32,
+              borderRadius: 16,
+              backgroundColor: "#F7FAFF",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
             onPress={onClose}
           >
             <Ionicons name="close" size={20} color="#000000" />
           </TouchableOpacity>
 
           {/* Title */}
-          <Text className="font-bold text-lg mb-4 text-center">
+          <Text
+            style={{
+              fontWeight: "bold",
+              fontSize: 18,
+              lineHeight: 24,
+              marginBottom: 16,
+              textAlign: "center",
+              color: "#111827",
+              width: "100%",
+            }}
+          >
             {getModalTitle()}
           </Text>
 
@@ -130,16 +186,27 @@ export const AlertModal: React.FC<AlertModalProps> = ({
 
           {renderMessage()}
 
-          <View className="w-full gap-y-3">
+          <View style={{ width: "100%", gap: 12 }}>
             {showRescanButton && onRescan && (
               <TouchableOpacity
                 onPress={onRescan}
                 activeOpacity={0.8}
-                className="bg-[#6E3DD1] py-3 px-6 rounded-full flex-row items-center justify-center gap-x-2 shadow-md"
-                style={buttonShadow}
+                style={[
+                  {
+                    backgroundColor: "#6E3DD1",
+                    paddingVertical: 12,
+                    paddingHorizontal: 24,
+                    borderRadius: 9999,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                  },
+                  buttonShadow,
+                ]}
               >
                 <FontAwesome5 name="undo" size={18} color="white" />
-                <Text className="text-white font-bold text-base">Re-Scan</Text>
+                <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>Re-Scan</Text>
               </TouchableOpacity>
             )}
 
@@ -148,10 +215,21 @@ export const AlertModal: React.FC<AlertModalProps> = ({
               <TouchableOpacity
                 onPress={onOpenOngoing}
                 activeOpacity={0.8}
-                className="bg-[#6E3DD1] py-3 px-6 rounded-full flex-row items-center justify-center gap-x-2 shadow-md"
-                style={buttonShadow}
+                style={[
+                  {
+                    backgroundColor: "#6E3DD1",
+                    paddingVertical: 12,
+                    paddingHorizontal: 24,
+                    borderRadius: 9999,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                  },
+                  buttonShadow,
+                ]}
               >
-                <Text className="text-white font-bold text-base">
+                <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
                   Open Ongoing Activity
                 </Text>
               </TouchableOpacity>
@@ -161,13 +239,22 @@ export const AlertModal: React.FC<AlertModalProps> = ({
               <TouchableOpacity
                 onPress={onClose}
                 activeOpacity={0.8}
-                className="bg-[#6E3DD1] py-3 px-6 rounded-full flex-row items-center justify-center gap-x-2 shadow-md"
                 style={[
+                  {
+                    backgroundColor: "#6E3DD1",
+                    paddingVertical: 12,
+                    paddingHorizontal: 24,
+                    borderRadius: 9999,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                  },
                   buttonShadow,
-                  buttonWidth ? { width: buttonWidth, alignSelf: "center" } : {}
+                  buttonWidth ? { width: buttonWidth, alignSelf: "center" } : { width: "100%" }
                 ]}
               >
-                <Text className="text-white font-bold text-base">{okButtonText}</Text>
+                <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>{okButtonText}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -175,16 +262,22 @@ export const AlertModal: React.FC<AlertModalProps> = ({
           {/* Loading Bar - only show if autoClose is true */}
           {autoClose && (
             <View
-              className="absolute bottom-0 left-0 right-0 h-3"
               style={{
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: 12,
                 overflow: "hidden",
                 borderBottomLeftRadius: 16,
                 borderBottomRightRadius: 16,
               }}
             >
               <Animated.View
-                className="h-full rounded-b-3xl"
                 style={{
+                  height: "100%",
+                  borderBottomLeftRadius: 16,
+                  borderBottomRightRadius: 16,
                   width: loadingBarWidth.interpolate({
                     inputRange: [0, 1],
                     outputRange: ["0%", "100%"],
