@@ -47,8 +47,6 @@ const OrderConfimedOTPScreen: React.FC = () => {
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
 
   const [showOrderLoading, setShowOrderLoading] = useState(false);
-  const [orderLoadingMessage, setOrderLoadingMessage] =
-    useState("Confirming Order…");
 
   const {
     phoneNumber,
@@ -218,31 +216,6 @@ const OrderConfimedOTPScreen: React.FC = () => {
 
   const handleOrderSuccess = async (token: string) => {
     setShowSuccessAlert(true);
-    setOrderLoadingMessage("Confirming Order…");
-
-    const messageTimers: NodeJS.Timeout[] = [];
-    messageTimers.push(
-      setTimeout(() => {
-        setOrderLoadingMessage(
-          "Confirming order details and generating invoice…",
-        );
-      }, 5000),
-      setTimeout(() => {
-        setOrderLoadingMessage(
-          "Finalizing with the server. Please wait, do not close the app…",
-        );
-      }, 25000),
-      setTimeout(() => {
-        setOrderLoadingMessage(
-          "Taking longer than usual due to high volume. Still processing (up to 2 min)…",
-        );
-      }, 60000),
-      setTimeout(() => {
-        setOrderLoadingMessage(
-          "Almost there! Completing final verification…",
-        );
-      }, 90000),
-    );
 
     const minDelay = new Promise<void>((resolve) =>
       setTimeout(resolve, SUCCESS_POPUP_MIN_MS),
@@ -258,7 +231,6 @@ const OrderConfimedOTPScreen: React.FC = () => {
       createOrderAndNavigate(token),
     ]);
 
-    messageTimers.forEach(clearTimeout);
     clearTimeout(switchToLoadingTimer);
     setShowSuccessAlert(false);
     setShowOrderLoading(false);
@@ -665,7 +637,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
               alignItems: "center",
             }}
           >
-            <LoadingPage message={orderLoadingMessage} />
+            <LoadingPage message="Confirming Order…" />
           </View>
         </View>
       </Modal>
