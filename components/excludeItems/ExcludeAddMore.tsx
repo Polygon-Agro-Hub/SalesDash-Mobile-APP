@@ -582,39 +582,54 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
       </View>
 
       {!isKeyboardVisible && (
-        <View className="absolute bottom-0 left-0 right-0 bg-white pt-4 pb-4  items-center">
+        <View className="absolute bottom-0 left-0 right-0 bg-white pt-4 pb-4 items-center">
           <TouchableOpacity
             onPress={handleNavigateIfNoCropsSelected}
+            activeOpacity={0.8}
             className="w-full max-w-[500px] items-center"
             disabled={loading}
           >
-            <LinearGradient
-              colors={["#6839CF", "#874DDB"]}
-              start={[0, 0]}
-              end={[1, 1]}
+            <View
               style={{
                 width: "70%",
-                paddingVertical: 12,
                 borderRadius: 25,
-                alignItems: "center",
-                justifyContent: "center",
-                shadowColor: "#000000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.2,
-                shadowRadius: 10,
-                elevation: 8,
+                backgroundColor: "#6839CF",
+                shadowColor: "#6839CF",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 8,
+                elevation: 6,
               }}
             >
-              {loading ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <Text
-                  style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}
-                >
-                  Submit & Go to Summery
-                </Text>
-              )}
-            </LinearGradient>
+              <LinearGradient
+                colors={["#6839CF", "#874DDB"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={{
+                  paddingVertical: 12,
+                  borderRadius: 25,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  overflow: "hidden",
+                }}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text
+                    style={{
+                      color: "#fff",
+                      fontSize: 18,
+                      fontWeight: "bold",
+                      includeFontPadding: false,
+                      textAlignVertical: "center",
+                    }}
+                  >
+                    Submit & Go to Summary
+                  </Text>
+                )}
+              </LinearGradient>
+            </View>
           </TouchableOpacity>
         </View>
       )}

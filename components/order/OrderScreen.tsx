@@ -25,6 +25,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import CustomHeader from "../common/CustomHeader";
 import GlobalSearchModal from "../common/GlobalSearchModal";
 import socketService from "@/services/socket/socket.service";
+import SeasonalPackageBanner from "./SeasonalPackageBanner";
 
 type OrderScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -260,12 +261,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
   const [packageValue, setPackageValue] = useState<string>("");
   const [refreshing, setRefreshing] = useState<boolean>(false);
 
-  const isOneTimePackage =
-    (selectedPackage?.packageType || "").trim().toLowerCase() === "one time" ||
-    (selectedPackage?.packageType || "").trim().toLowerCase().includes("one");
-  const deliveryCutoffDate = getDeliveryCutoffDate(selectedPackage?.endDate);
-  const showSeasonalSection = isOneTimePackage && !!deliveryCutoffDate;
-
   useFocusEffect(
     useCallback(() => {
       setSelectedItems([]);
@@ -439,7 +434,15 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
           (pkg) => pkg.id === route.params.packageId,
         );
         if (selectedPkg) {
-          setSelectedPackage(selectedPkg);
+          setSelectedPackage((prev) => {
+            if (!prev) return selectedPkg;
+            return {
+              ...selectedPkg,
+              startDate: prev.startDate !== undefined ? prev.startDate : selectedPkg.startDate,
+              endDate: prev.endDate !== undefined ? prev.endDate : selectedPkg.endDate,
+              packageType: prev.packageType !== undefined ? prev.packageType : selectedPkg.packageType,
+            };
+          });
         }
       }
     }
@@ -484,7 +487,15 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     ) {
       const pkg = packages.find((p) => p.id === route.params?.packageId);
       if (pkg) {
-        setSelectedPackage(pkg);
+        setSelectedPackage((prev) => {
+          if (!prev) return pkg;
+          return {
+            ...pkg,
+            startDate: prev.startDate !== undefined ? prev.startDate : pkg.startDate,
+            endDate: prev.endDate !== undefined ? prev.endDate : pkg.endDate,
+            packageType: prev.packageType !== undefined ? prev.packageType : pkg.packageType,
+          };
+        });
       }
     }
   }, [
@@ -635,11 +646,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
 
       if (response.data && Array.isArray(response.data.data)) {
         setItems(response.data.data);
-
-        const selectedPkg = packages.find((pkg) => pkg.id === packageId);
-        if (selectedPkg) {
-          setSelectedPackage(selectedPkg);
-        }
       }
     } catch (error) {
       console.error("Error fetching items:", error);
@@ -668,6 +674,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
             Authorization: `Bearer ${storedToken}`,
             "Cache-Control": "no-cache, no-store, must-revalidate",
             Pragma: "no-cache",
+            Expires: "0",
           },
         },
       );
@@ -675,17 +682,12 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
       if (response.data && response.data.data) {
         const data = response.data.data;
         setSelectedPackage((prev) => {
-          if (!prev) return prev;
+          if (!prev || prev.id !== packageId) return prev;
           return {
             ...prev,
-            startDate:
-              data.startDate !== undefined ? data.startDate : prev.startDate,
-            endDate:
-              data.endDate !== undefined ? data.endDate : prev.endDate,
-            packageType:
-              data.packageType !== undefined
-                ? data.packageType
-                : prev.packageType,
+            startDate: data.startDate !== undefined ? data.startDate : undefined,
+            endDate: data.endDate !== undefined ? data.endDate : undefined,
+            packageType: data.packageType !== undefined ? data.packageType : prev.packageType,
           };
         });
       }
@@ -727,20 +729,30 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
 
       const currentPkgId = packageValue
         ? parseInt(packageValue, 10)
-        : selectedPackage?.id ||
-          (route.params?.packageId ? Number(route.params.packageId) : null);
+        : (route.params?.packageId ? Number(route.params.packageId) : null);
 
       if (currentPkgId) {
         const freshPkg = freshPackages.find((p) => p.id === currentPkgId);
         if (freshPkg) {
-          setSelectedPackage(freshPkg);
+          setSelectedPackage((prev) => {
+            if (!prev || prev.id !== currentPkgId) {
+              return freshPkg;
+            }
+            return {
+              ...freshPkg,
+              startDate: prev.startDate !== undefined ? prev.startDate : freshPkg.startDate,
+              endDate: prev.endDate !== undefined ? prev.endDate : freshPkg.endDate,
+              packageType: prev.packageType !== undefined ? prev.packageType : freshPkg.packageType,
+            };
+          });
+          fetchPackageDetails(currentPkgId);
         }
       }
     } catch (error) {
       Alert.alert("Error", "Failed to fetch packages");
       console.error(error);
     }
-  }, [packageValue, selectedPackage?.id, route.params?.packageId]);
+  }, [packageValue, route.params?.packageId, fetchPackageDetails]);
 
   useEffect(() => {
     fetchPackages();
@@ -768,17 +780,17 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
       setPackageValue(value);
       const packageId = parseInt(value, 10);
       if (!isNaN(packageId)) {
-        if (packages.length > 0) {
-          const selectedPkg = packages.find((pkg) => pkg.id === packageId);
-          if (selectedPkg) {
-            setSelectedPackage(selectedPkg);
-          }
-          fetchItemsForPackage(packageId);
-          fetchPackageDetails(packageId);
-        } else {
-          setItems([]);
-          setSelectedPackage(null);
+        const foundPkg = packages.find((pkg) => pkg.id === packageId);
+        if (foundPkg) {
+          setSelectedPackage({
+            ...foundPkg,
+            packageType: foundPkg.packageType,
+            startDate: foundPkg.startDate,
+            endDate: foundPkg.endDate,
+          });
         }
+        fetchItemsForPackage(packageId);
+        fetchPackageDetails(packageId);
       } else {
         console.error("Invalid package ID:", value);
         setItems([]);
@@ -790,18 +802,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
       setSelectedPackage(null);
     }
   };
-
-  useEffect(() => {
-    if (packageValue && packages.length > 0) {
-      const packageId = parseInt(packageValue, 10);
-      if (!isNaN(packageId)) {
-        const freshPkg = packages.find((pkg) => pkg.id === packageId);
-        if (freshPkg) {
-          setSelectedPackage(freshPkg);
-        }
-      }
-    }
-  }, [packages, packageValue]);
 
   useFocusEffect(
     useCallback(() => {
@@ -1334,52 +1334,9 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
 
         
         {/* Seasonal Package Section (Only for One Time packages) */}
-        {showSeasonalSection && (
-          <View
-            style={{
-              backgroundColor: "#E3FFEA",
-              borderRadius: 18,
-              padding: 16,
-              marginBottom: 20,
-            }}
-          >
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginBottom: 6,
-              }}
-            >
-              <Ionicons
-                name="time"
-                size={20}
-                color="#000000"
-                style={{ marginRight: 8 }}
-              />
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: "700",
-                  color: "#000000",
-                }}
-              >
-                Seasonal Package
-              </Text>
-            </View>
-
-            <Text
-              style={{
-                fontSize: 13,
-                color: "#000000",
-                lineHeight: 19,
-              }}
-            >
-              This package will no longer be available{"\n"}
-              for delivery after this date : {deliveryCutoffDate}.{"\n"}
-              We appreciate your understanding and support.
-            </Text>
-          </View>
-        )}
+        <SeasonalPackageBanner
+          packageId={packageValue || selectedPackage?.id}
+        />
 
         {/* Show message when no package is selected */}
         {items.length === 0 && packageValue === "" && (

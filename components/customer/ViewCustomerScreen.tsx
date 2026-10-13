@@ -173,96 +173,104 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       setLoadingCustomerData(true);
       const storedToken = await AsyncStorage.getItem("authToken");
       if (!storedToken) {
-        Alert.alert("Error", "No authentication token found");
         return null;
       }
 
-      const response = await axios.get(
-        `${environment.API_BASE_URL}api/customer/customerData/${customerId}`,
-        { headers: { Authorization: `Bearer ${storedToken}` } },
-      );
+      const targetCustomerId = customerId || id;
+      if (targetCustomerId) {
+        try {
+          const response = await axios.get(
+            `${environment.API_BASE_URL}api/customer/customerData/${targetCustomerId}`,
+            { headers: { Authorization: `Bearer ${storedToken}` } },
+          );
 
-      if (response.data) {
-        const lat = Number(response.data.latitude);
-        const lng = Number(response.data.longitude);
+          if (response.data) {
+            const lat = Number(response.data.latitude);
+            const lng = Number(response.data.longitude);
 
-        if (!isNaN(lat) && !isNaN(lng)) {
-          setLatitude(lat);
-          setLongitude(lng);
-        } else {
-          setLatitude(null);
-          setLongitude(null);
+            if (!isNaN(lat) && !isNaN(lng)) {
+              setLatitude(lat);
+              setLongitude(lng);
+            } else {
+              setLatitude(null);
+              setLongitude(null);
+            }
+
+            const balance = Number(response.data.creditBalance) || 0;
+            setCreditBalance(balance);
+
+            const freshFirstName = response.data.firstName || "";
+            const freshLastName = response.data.lastName || "";
+            const freshTitle = response.data.title || "";
+            const freshPhone = response.data.phoneNumber || initialNumber;
+
+            setCustomerName(
+              `${freshFirstName} ${freshLastName}`.trim() || initialName,
+            );
+            setCustomerTitle(freshTitle || initialTitle);
+            setCustomerNumber(freshPhone);
+
+            const locationName =
+              `${freshTitle} ${freshFirstName} ${freshLastName}`.trim();
+            setSelectedLocationName(locationName || "Customer Location");
+          }
+        } catch (locError) {
+          console.warn("Could not fetch customer location/profile data:", locError);
         }
-
-        const balance = Number(response.data.creditBalance) || 0;
-        setCreditBalance(balance);
-
-        const freshFirstName = response.data.firstName || "";
-        const freshLastName = response.data.lastName || "";
-        const freshTitle = response.data.title || "";
-        const freshPhone = response.data.phoneNumber || initialNumber;
-
-        setCustomerName(
-          `${freshFirstName} ${freshLastName}`.trim() || initialName,
-        );
-        setCustomerTitle(freshTitle || initialTitle);
-        setCustomerNumber(freshPhone);
-
-        const locationName =
-          `${freshTitle} ${freshFirstName} ${freshLastName}`.trim();
-        setSelectedLocationName(locationName || "Customer Location");
       }
 
-      try {
-        const detailResponse = await axios.get(
-          `${environment.API_BASE_URL}api/customer/get-customer-data/${id}`,
-        );
+      const targetId = id || customerId;
+      if (targetId) {
+        try {
+          const detailResponse = await axios.get(
+            `${environment.API_BASE_URL}api/customer/get-customer-data/${targetId}`,
+          );
 
-        if (detailResponse.status === 200) {
-          const building = detailResponse.data.building;
-          const customer = detailResponse.data.customer;
-          const nearestCity = customer?.nearesCity || "";
-          const isApartment = customer?.buildingType === "Apartment";
+          if (detailResponse.status === 200) {
+            const building = detailResponse.data.building;
+            const customer = detailResponse.data.customer;
+            const nearestCity = customer?.nearesCity || "";
+            const isApartment = customer?.buildingType === "Apartment";
 
-          if (building) {
-            const houseOrBuildingNo = building.houseNo || building.buildingNo;
+            if (building) {
+              const houseOrBuildingNo = building.houseNo || building.buildingNo;
 
-            const formattedAddress = [
-              houseOrBuildingNo ? `No.${houseOrBuildingNo}` : null,
-              building.streetName,
-              nearestCity,
-            ]
-              .filter(Boolean)
-              .join(", ");
+              const formattedAddress = [
+                houseOrBuildingNo ? `No.${houseOrBuildingNo}` : null,
+                building.streetName,
+                nearestCity,
+              ]
+                .filter(Boolean)
+                .join(", ");
 
-            setAddress(
-              formattedAddress
-                ? isApartment
-                  ? `${formattedAddress}...`
-                  : formattedAddress
-                : "No Address Found",
-            );
+              setAddress(
+                formattedAddress
+                  ? isApartment
+                    ? `${formattedAddress}...`
+                    : formattedAddress
+                  : "No Address Found",
+              );
+            } else {
+              setAddress("No Address Found");
+            }
+
+            setSavedCount(Number(detailResponse.data.savedAddressCount) || 0);
           } else {
             setAddress("No Address Found");
+            setSavedCount(0);
           }
-
-          setSavedCount(Number(detailResponse.data.savedAddressCount) || 0);
-        } else {
+        } catch (detailError) {
+          console.warn(
+            "Could not fetch detailed customer building address:",
+            detailError,
+          );
           setAddress("No Address Found");
           setSavedCount(0);
         }
-      } catch (detailError) {
-        console.error(
-          "Error fetching detailed customer building address:",
-          detailError,
-        );
-        setAddress("No Address Found");
-        setSavedCount(0);
       }
 
       return storedToken;
     } catch (error) {
-      Alert.alert("Error", "Failed to fetch customer location data");
       console.error("Error fetching customer data:", error);
       return null;
     } finally {
@@ -681,18 +689,20 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 elevation: 2,
                 height: 140,
                 justifyContent: "space-between",
+                overflow: "hidden",
+                position: "relative",
               }}
             >
-              <View>
+              <View style={{ paddingRight: 16 }}>
                 <View
                   style={{
-                    width: 34,
-                    height: 34,
+                    width: 32,
+                    height: 32,
                     borderRadius: 10,
                     backgroundColor: "#F5F1FD",
                     alignItems: "center",
                     justifyContent: "center",
-                    marginBottom: 10,
+                    marginBottom: 8,
                   }}
                 >
                   <Entypo name="location-pin" size={18} color="#6B3BCF" />
@@ -715,7 +725,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                   {address}
                 </Text>
               </View>
-              <View style={{ alignSelf: "flex-end" }}>
+              <View style={{ position: "absolute", bottom: 12, right: 12 }}>
                 <Entypo name="chevron-right" size={16} color="#6B3BCF" />
               </View>
             </TouchableOpacity>
@@ -754,18 +764,20 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 elevation: 2,
                 height: 140,
                 justifyContent: "space-between",
+                overflow: "hidden",
+                position: "relative",
               }}
             >
-              <View>
+              <View style={{ paddingRight: 16 }}>
                 <View
                   style={{
-                    width: 34,
-                    height: 34,
+                    width: 32,
+                    height: 32,
                     borderRadius: 10,
                     backgroundColor: "#F5F1FD",
                     alignItems: "center",
                     justifyContent: "center",
-                    marginBottom: 10,
+                    marginBottom: 8,
                   }}
                 >
                   <FontAwesome name="folder-open" size={18} color="#6B3BCF" />
@@ -788,7 +800,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                   {savedCount} Saved
                 </Text>
               </View>
-              <View style={{ alignSelf: "flex-end" }}>
+              <View style={{ position: "absolute", bottom: 12, right: 12 }}>
                 <Entypo name="chevron-right" size={16} color="#6B3BCF" />
               </View>
             </TouchableOpacity>

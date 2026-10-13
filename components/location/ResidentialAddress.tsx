@@ -524,13 +524,20 @@ const ResidentialAddress: React.FC<ResidentialAddressProps> = ({
               end={{ x: 1, y: 0 }}
               style={{
                 borderRadius: 999,
-                paddingVertical: 16,
+                height: 50,
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <Text className="text-white text-base font-semibold">
+              <Text
+                className="text-white text-base font-semibold"
+                style={{
+                  textAlignVertical: "center",
+                  paddingVertical: 0,
+                  includeFontPadding: false,
+                }}
+              >
                 {saving ? "Updating..." : "Update"}
               </Text>
             </LinearGradient>

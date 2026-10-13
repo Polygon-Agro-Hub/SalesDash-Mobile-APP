@@ -291,13 +291,13 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
   );
 
   const [currentPackageType, setCurrentPackageType] = useState<string>(
-    route.params?.packageId ? "" : (route.params?.packageType || ""),
+    route.params?.packageType || "",
   );
   const [currentStartDate, setCurrentStartDate] = useState<string | undefined>(
-    route.params?.packageId ? undefined : route.params?.startDate,
+    route.params?.startDate,
   );
   const [currentEndDate, setCurrentEndDate] = useState<string | undefined>(
-    route.params?.packageId ? undefined : route.params?.endDate,
+    route.params?.endDate,
   );
 
   const fetchLivePackageDetails = useCallback(async () => {
@@ -355,7 +355,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
   const [selectedWeeks, setSelectedWeeks] = useState<string>(() => {
     const passed = route.params?.validityWeeks;
     if (passed === "01") return "02";
-    return passed || "";
+    return passed || "02";
   });
 
   const [typeModalVisible, setTypeModalVisible] = useState(false);
@@ -529,14 +529,42 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
         ? currentStartDate
         : (!route.params?.packageId ? route.params?.startDate : undefined);
 
-    if (!rawEndDate) return null;
+    const anyOneTimeInItems = (items || []).some((it: any) =>
+      String(it.packageType || "").toLowerCase().includes("one")
+    );
+    const anyRecurringInItems = (items || []).some((it: any) =>
+      String(it.packageType || "").toLowerCase().includes("recur")
+    );
 
-    const isOneTime =
+    const isExplicitOneTime =
       rawType.trim().toLowerCase() === "one time" ||
       rawType.toLowerCase().includes("one") ||
-      !rawType;
+      anyOneTimeInItems;
 
-    if (!isOneTime) return null;
+    const isExplicitRecurring =
+      rawType.trim().toLowerCase() === "recurring" ||
+      rawType.toLowerCase().includes("recur") ||
+      anyRecurringInItems;
+
+    const hasPackage =
+      !!route.params?.packageId ||
+      !!(orderData as any)?.packageId ||
+      String(route.params?.isPackage) === "1" ||
+      String(isPackage) === "1" ||
+      isExplicitOneTime ||
+      isExplicitRecurring;
+
+    if (!hasPackage && !rawType && !rawEndDate && !rawStartDate) {
+      return null;
+    }
+
+    // Priority: If both exist (or One Time exists), prioritize One Time
+    const isOneTime = isExplicitOneTime || (!!rawEndDate && !isExplicitRecurring);
+    const isRecurring = !isOneTime && (isExplicitRecurring || hasPackage);
+
+    if (!isOneTime && !isRecurring) {
+      return null;
+    }
 
     const parseDateStr = (dateStr: any) => {
       if (!dateStr) return null;
@@ -561,18 +589,6 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       return isNaN(parsed.getTime()) ? null : parsed;
     };
 
-    const earliestExpiryDate = parseDateStr(rawEndDate);
-    if (!earliestExpiryDate) return null;
-
-    const earliestStartDate = parseDateStr(rawStartDate);
-
-    const expiryDay = earliestExpiryDate.getDate();
-
-    // Cutoff date is [Expire Date] - 2 days
-    const cutoffDate = new Date(earliestExpiryDate.getTime());
-    cutoffDate.setDate(cutoffDate.getDate() - 2);
-    cutoffDate.setHours(23, 59, 59, 999);
-
     // Current hour gap check (6:00 PM cutoff)
     const now = new Date();
     const isAfter6PM = now.getHours() >= 18;
@@ -581,6 +597,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     const minAvailDate = getMinDeliveryDate(); // today + (>=18 ? 4 : 3) days
     minAvailDate.setHours(0, 0, 0, 0);
 
+    const earliestStartDate = parseDateStr(rawStartDate);
     const effectiveStartDate =
       earliestStartDate && earliestStartDate > minAvailDate
         ? earliestStartDate
@@ -616,35 +633,67 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       "December",
     ];
 
-    const expiryDayOrdinal = getOrdinal(expiryDay);
-    const expiryMonthFull = MONTH_LONG[earliestExpiryDate.getMonth()];
-
     const startMonth = MONTH_SHORT[effectiveStartDate.getMonth()];
     const startDay = effectiveStartDate.getDate();
     const startDayOrdinal = getOrdinal(startDay);
 
-    const endMonth = MONTH_SHORT[cutoffDate.getMonth()];
-    const endDay = cutoffDate.getDate();
-    const endDayOrdinal = getOrdinal(endDay);
+    if (isOneTime && rawEndDate) {
+      const earliestExpiryDate = parseDateStr(rawEndDate);
+      if (earliestExpiryDate) {
+        const cutoffDate = new Date(earliestExpiryDate.getTime());
+        cutoffDate.setDate(cutoffDate.getDate() - 2);
+        cutoffDate.setHours(23, 59, 59, 999);
 
-    const rangeTextLong = `${startMonth} ${startDayOrdinal} - ${endMonth} ${endDayOrdinal}`;
-    const rangeTextShort = `${startMonth} ${startDay} – ${endMonth} ${endDay}`;
+        const expiryDay = cutoffDate.getDate();
+        const expiryDayOrdinal = getOrdinal(expiryDay);
+        const expiryMonthFull = MONTH_LONG[cutoffDate.getMonth()];
+        const expiryText = `${expiryDayOrdinal} ${expiryMonthFull}`;
 
-    const isAvailableNow = effectiveStartDate <= cutoffDate;
+        const endMonth = MONTH_SHORT[cutoffDate.getMonth()];
+        const endDay = cutoffDate.getDate();
+        const endDayOrdinal = getOrdinal(endDay);
 
+        const rangeTextLong = `${startMonth} ${startDayOrdinal} - ${endMonth} ${endDayOrdinal}`;
+        const rangeTextShort = `${startMonth} ${startDay} – ${endMonth} ${endDay}`;
+        const isAvailableNow = effectiveStartDate <= cutoffDate;
+
+        return {
+          isOneTime: true,
+          isRecurring: false,
+          gapDays,
+          expiryDay,
+          expiryDayOrdinal,
+          expiryMonthFull,
+          expiryText,
+          cutoffDate,
+          minAvailDate,
+          earliestStartDate,
+          effectiveStartDate,
+          rangeTextLong,
+          rangeTextShort,
+          startDateFormatted: `${startMonth} ${startDay}`,
+          isAvailableNow,
+        };
+      }
+    }
+
+    // Recurring package
     return {
+      isOneTime: false,
+      isRecurring: true,
       gapDays,
-      expiryDay,
-      expiryDayOrdinal,
-      expiryMonthFull,
-      cutoffDate,
+      expiryDay: null,
+      expiryDayOrdinal: "",
+      expiryMonthFull: "",
+      expiryText: "",
+      cutoffDate: null,
       minAvailDate,
       earliestStartDate,
       effectiveStartDate,
-      rangeTextLong,
-      rangeTextShort,
+      rangeTextLong: "",
+      rangeTextShort: "",
       startDateFormatted: `${startMonth} ${startDay}`,
-      isAvailableNow,
+      isAvailableNow: true,
     };
   }, [
     currentPackageType,
@@ -654,7 +703,49 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     route.params?.packageType,
     route.params?.endDate,
     route.params?.startDate,
+    route.params?.isPackage,
+    isPackage,
+    items,
+    orderData,
   ]);
+
+  // Expiry cutoff date formatted as "Month Day" (strictly End Date - 2 days)
+  const cutoffExpiryFormatted = useMemo(() => {
+    const rawEnd =
+      currentEndDate !== undefined
+        ? currentEndDate
+        : (!route.params?.packageId ? route.params?.endDate : undefined);
+    if (!rawEnd) return null;
+
+    let d: Date | null = null;
+    const str = String(rawEnd).trim();
+    if (str.includes("-")) {
+      const parts = str.split("T")[0].split("-");
+      const y = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      if (!isNaN(y) && !isNaN(m) && !isNaN(day)) {
+        d = new Date(y, m, day);
+      }
+    }
+    if (!d) {
+      const parsed = new Date(str);
+      if (!isNaN(parsed.getTime())) {
+        d = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+      }
+    }
+    if (!d) return null;
+
+    // Cutoff date is strictly End Date - 2 days
+    const cutoff = new Date(d.getTime());
+    cutoff.setDate(cutoff.getDate() - 2);
+
+    return {
+      day: cutoff.getDate(),
+      monthFull: ALL_MONTHS[cutoff.getMonth()],
+      formatted: `${ALL_MONTHS[cutoff.getMonth()]} ${cutoff.getDate()}`,
+    };
+  }, [currentEndDate, route.params?.endDate, route.params?.packageId]);
 
   const { calculatedOrders, unfilteredFirstScheduledDate } = useMemo<{
     calculatedOrders: Array<{
@@ -730,50 +821,26 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     };
   }, [scheduleType, selectedDays, selectedWeeks, seasonalInfo]);
 
-  const isFirstDateAvailable = useMemo(() => {
-    if (!seasonalInfo) return true;
-    if (!seasonalInfo.isAvailableNow) return false;
-    if (scheduleType === "One Time") {
-      if (!selectedDate) return true;
-      const parsedSel = new Date(selectedDate);
-      parsedSel.setHours(0, 0, 0, 0);
-      if (
-        seasonalInfo.earliestStartDate &&
-        parsedSel < seasonalInfo.earliestStartDate
-      ) {
-        return false;
-      }
-      if (
-        seasonalInfo.cutoffDate &&
-        parsedSel > seasonalInfo.cutoffDate
-      ) {
-        return false;
-      }
-      return true;
-    }
+  const isFirstOrderPayToday = useMemo(() => {
     if (calculatedOrders.length === 0) return false;
-    if (unfilteredFirstScheduledDate) {
-      if (
-        seasonalInfo.earliestStartDate &&
-        unfilteredFirstScheduledDate < seasonalInfo.earliestStartDate
-      ) {
-        return false;
-      }
-      if (
-        seasonalInfo.cutoffDate &&
-        unfilteredFirstScheduledDate > seasonalInfo.cutoffDate
-      ) {
+    if (seasonalInfo && !seasonalInfo.isAvailableNow) return false;
+
+    const minDeliveryDate = getMinDeliveryDate();
+    minDeliveryDate.setHours(0, 0, 0, 0);
+
+    if (seasonalInfo?.earliestStartDate) {
+      const pkgStart = new Date(seasonalInfo.earliestStartDate);
+      pkgStart.setHours(0, 0, 0, 0);
+      if (pkgStart > minDeliveryDate) {
         return false;
       }
     }
-    return true;
-  }, [
-    seasonalInfo,
-    scheduleType,
-    selectedDate,
-    calculatedOrders.length,
-    unfilteredFirstScheduledDate,
-  ]);
+
+    const firstOrderDate = new Date(calculatedOrders[0].dateObj);
+    firstOrderDate.setHours(0, 0, 0, 0);
+
+    return firstOrderDate.getTime() === minDeliveryDate.getTime();
+  }, [calculatedOrders, seasonalInfo]);
 
   const isScheduleReady = useMemo(() => {
     if (scheduleType === "One Time") {
@@ -1124,7 +1191,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                       marginBottom: 10,
                     }}
                   >
-                    {isFirstDateAvailable ? (
+                    {seasonalInfo.isOneTime ? (
                       <>
                         <Text
                           style={{
@@ -1134,8 +1201,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                           }}
                         >
                           <Text style={{ fontWeight: "700" }}>Note : </Text>
-                          A {seasonalInfo.gapDays}-day gap is required. Packages
-                          expiring on the {seasonalInfo.expiryDayOrdinal} can be ordered
+                          A {seasonalInfo.gapDays}-day gap is required. The Packages
+                          expiring on the {seasonalInfo.expiryDayOrdinal} {seasonalInfo.expiryMonthFull} can be ordered
                           between the {seasonalInfo.rangeTextLong}.
                         </Text>
 
@@ -1506,7 +1573,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                           marginBottom: 16,
                         }}
                       >
-                        {isFirstDateAvailable ? (
+                        {seasonalInfo.isOneTime ? (
                           <>
                             <Text
                               style={{
@@ -1516,8 +1583,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                               }}
                             >
                               <Text style={{ fontWeight: "700" }}>Note : </Text>
-                              A {seasonalInfo.gapDays}-day gap is required. Packages
-                              expiring on the {seasonalInfo.expiryDayOrdinal} can be ordered
+                              A {seasonalInfo.gapDays}-day gap is required. The Packages
+                              expiring on the {seasonalInfo.expiryDayOrdinal} {seasonalInfo.expiryMonthFull} can be ordered
                               between the {seasonalInfo.rangeTextLong}.
                             </Text>
 
@@ -1615,8 +1682,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                           </Text>
                         </View>
 
-                        {/* Badge for 1st order - full width box */}
-                        {order.index === 1 && (
+                        {/* Badge for 1st order - only shown when today is the earliest possible schedule date */}
+                        {order.index === 1 && isFirstOrderPayToday && (
                           <View
                             style={{
                               width: "100%",
@@ -1740,9 +1807,14 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       <AlertModal
         visible={zeroOrdersAlertVisible}
         type="error"
-        title="We’re Sorry"
-        message={`We’re sorry, but we’re unable to fulfill your request at this time. Unfortunately, there are no available dates within the next two weeks, and your package expires on ${seasonalInfo ? `${seasonalInfo.expiryMonthFull} ${seasonalInfo.expiryDay}` : "this date"}.\n\nWe apologize for the inconvenience and appreciate your understanding.`}
+        title="We're Sorry"
+        message={
+          cutoffExpiryFormatted
+            ? `We're sorry, but we're unable to fulfill your request at this time. Unfortunately, there are no available dates within the next two weeks, and your package expires on ${cutoffExpiryFormatted.formatted}.\n\nWe apologize for the inconvenience and appreciate your understanding.`
+            : `We're sorry, but we're unable to fulfill your request at this time. Unfortunately, there are no available delivery dates for the selected schedule.\n\nWe apologize for the inconvenience and appreciate your understanding.`
+        }
         onClose={() => setZeroOrdersAlertVisible(false)}
+        autoClose={false}
         showOkButton={true}
         okButtonText="OK"
       />
