@@ -402,7 +402,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
         activeOpacity={1}
         onPress={() =>
           navigation.navigate("View_CancelOrderScreen" as any, {
-            orderId: item.orderId,
+            orderId: item.processId || item.orderId,
             status: item.status,
             reportStatus: item.reportStatus,
           })
@@ -677,7 +677,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
                   onEndReachedThreshold={0.3}
                   renderItem={renderOrder}
                   contentContainerStyle={{
-                    paddingBottom: hp(5),
+                    paddingBottom: hp(10),
                     paddingTop: 4,
                     paddingHorizontal: 2,
                   }}

@@ -136,10 +136,15 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   const fullName = `${customerTitle ? customerTitle + ". " : ""}${customerName}`;
 
   useEffect(() => {
-    setCustomerName(initialName || "");
-    setCustomerTitle(initialTitle || "");
-    setCustomerNumber(initialNumber || "");
-  }, [initialName, initialTitle, initialNumber]);
+    if (route.params?.name) setCustomerName(route.params.name);
+    else if (initialName) setCustomerName(initialName);
+
+    if (route.params?.title) setCustomerTitle(route.params.title);
+    else if (initialTitle) setCustomerTitle(initialTitle);
+
+    if (route.params?.number) setCustomerNumber(route.params.number);
+    else if (initialNumber) setCustomerNumber(initialNumber);
+  }, [route.params?.name, route.params?.title, route.params?.number, initialName, initialTitle, initialNumber]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -162,7 +167,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       getUserProfile();
 
       return () => {};
-    }, [id, customerId]),
+    }, [id, customerId, route.params?.name, route.params?.title, route.params?.number]),
   );
 
   const [address, setAddress] = useState<string>("Loading...");
@@ -202,13 +207,24 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
             const freshFirstName = response.data.firstName || "";
             const freshLastName = response.data.lastName || "";
             const freshTitle = response.data.title || "";
-            const freshPhone = response.data.phoneNumber || initialNumber;
+            const freshCode = response.data.phoneCode || "";
+            const rawPhone = response.data.phoneNumber || "";
+            const freshPhone =
+              freshCode && rawPhone && !rawPhone.startsWith("+")
+                ? `${freshCode}${rawPhone}`
+                : rawPhone || route.params?.number || initialNumber;
 
-            setCustomerName(
-              `${freshFirstName} ${freshLastName}`.trim() || initialName,
-            );
-            setCustomerTitle(freshTitle || initialTitle);
-            setCustomerNumber(freshPhone);
+            const combinedFreshName =
+              `${freshFirstName} ${freshLastName}`.trim();
+            if (combinedFreshName) {
+              setCustomerName(combinedFreshName);
+            }
+            if (freshTitle) {
+              setCustomerTitle(freshTitle);
+            }
+            if (freshPhone) {
+              setCustomerNumber(freshPhone);
+            }
 
             const locationName =
               `${freshTitle} ${freshFirstName} ${freshLastName}`.trim();
@@ -231,6 +247,17 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
             const customer = detailResponse.data.customer;
             const nearestCity = customer?.nearesCity || "";
             const isApartment = customer?.buildingType === "Apartment";
+
+            if (customer) {
+              const freshFirst = customer.firstName || "";
+              const freshLast = customer.lastName || "";
+              const freshT = customer.title || "";
+              const freshP = customer.phoneNumber || "";
+              const combined = `${freshFirst} ${freshLast}`.trim();
+              if (combined) setCustomerName(combined);
+              if (freshT) setCustomerTitle(freshT);
+              if (freshP) setCustomerNumber(freshP);
+            }
 
             if (building) {
               const houseOrBuildingNo = building.houseNo || building.buildingNo;
@@ -1028,7 +1055,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                       activeOpacity={1}
                       onPress={() =>
                         navigation.navigate("View_CancelOrderScreen" as any, {
-                          orderId: item.orderId,
+                          orderId: item.processId || item.orderId,
                           status: item.status,
                           reportStatus: item.reportStatus,
                         })

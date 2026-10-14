@@ -330,7 +330,10 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
         }
       }
     } catch (e) {
-      console.warn("Could not fetch live package details in ScheduleScreen:", e);
+      console.warn(
+        "Could not fetch live package details in ScheduleScreen:",
+        e,
+      );
     }
   }, [route.params?.packageId, (orderData as any)?.packageId]);
 
@@ -523,17 +526,25 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     const rawEndDate =
       currentEndDate !== undefined
         ? currentEndDate
-        : (!route.params?.packageId ? route.params?.endDate : undefined);
+        : !route.params?.packageId
+          ? route.params?.endDate
+          : undefined;
     const rawStartDate =
       currentStartDate !== undefined
         ? currentStartDate
-        : (!route.params?.packageId ? route.params?.startDate : undefined);
+        : !route.params?.packageId
+          ? route.params?.startDate
+          : undefined;
 
     const anyOneTimeInItems = (items || []).some((it: any) =>
-      String(it.packageType || "").toLowerCase().includes("one")
+      String(it.packageType || "")
+        .toLowerCase()
+        .includes("one"),
     );
     const anyRecurringInItems = (items || []).some((it: any) =>
-      String(it.packageType || "").toLowerCase().includes("recur")
+      String(it.packageType || "")
+        .toLowerCase()
+        .includes("recur"),
     );
 
     const isExplicitOneTime =
@@ -559,7 +570,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     }
 
     // Priority: If both exist (or One Time exists), prioritize One Time
-    const isOneTime = isExplicitOneTime || (!!rawEndDate && !isExplicitRecurring);
+    const isOneTime =
+      isExplicitOneTime || (!!rawEndDate && !isExplicitRecurring);
     const isRecurring = !isOneTime && (isExplicitRecurring || hasPackage);
 
     if (!isOneTime && !isRecurring) {
@@ -573,7 +585,11 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       if (str.includes("T") || str.includes("Z")) {
         const parsed = new Date(str);
         if (!isNaN(parsed.getTime())) {
-          return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+          return new Date(
+            parsed.getFullYear(),
+            parsed.getMonth(),
+            parsed.getDate(),
+          );
         }
       }
       if (str.includes("-")) {
@@ -714,7 +730,9 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     const rawEnd =
       currentEndDate !== undefined
         ? currentEndDate
-        : (!route.params?.packageId ? route.params?.endDate : undefined);
+        : !route.params?.packageId
+          ? route.params?.endDate
+          : undefined;
     if (!rawEnd) return null;
 
     let d: Date | null = null;
@@ -962,7 +980,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
         if (chosen > seasonalInfo.cutoffDate) {
           Alert.alert(
             "Package Expired",
-            `This package is only available for delivery until ${seasonalInfo.rangeTextShort}. Please select an earlier date.`
+            `This package is only available for delivery until ${seasonalInfo.rangeTextShort}. Please select an earlier date.`,
           );
           return;
         }
@@ -1200,10 +1218,12 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                             lineHeight: 19,
                           }}
                         >
-                          <Text style={{ fontWeight: "700" }}>Note : </Text>
-                          A {seasonalInfo.gapDays}-day gap is required. The Packages
-                          expiring on the {seasonalInfo.expiryDayOrdinal} {seasonalInfo.expiryMonthFull} can be ordered
-                          between the {seasonalInfo.rangeTextLong}.
+                          <Text style={{ fontWeight: "700" }}>Note : </Text>A{" "}
+                          {seasonalInfo.gapDays}-day gap is required. The
+                          Packages expiring on the{" "}
+                          {seasonalInfo.expiryDayOrdinal}{" "}
+                          {seasonalInfo.expiryMonthFull} can be ordered between
+                          the {seasonalInfo.rangeTextLong}.
                         </Text>
 
                         <View
@@ -1244,8 +1264,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                             lineHeight: 19,
                           }}
                         >
-                          <Text style={{ fontWeight: "700" }}>Note : </Text>
-                          A {seasonalInfo.gapDays}-day gap is required.
+                          <Text style={{ fontWeight: "700" }}>Note : </Text>A{" "}
+                          {seasonalInfo.gapDays}-day gap is required.
                         </Text>
                         <Text
                           style={{
@@ -1408,8 +1428,14 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                 visible={showDateModal}
                 onClose={() => setShowDateModal(false)}
                 selectedDate={selectedDate}
-                minDate={seasonalInfo?.effectiveStartDate ? seasonalInfo.effectiveStartDate : undefined}
-                maxDate={seasonalInfo?.cutoffDate ? seasonalInfo.cutoffDate : undefined}
+                minDate={
+                  seasonalInfo?.effectiveStartDate
+                    ? seasonalInfo.effectiveStartDate
+                    : undefined
+                }
+                maxDate={
+                  seasonalInfo?.cutoffDate ? seasonalInfo.cutoffDate : undefined
+                }
                 onSelectDate={(newDate) => {
                   setSelectedDate(newDate);
                   setIsDateSelected(true);
@@ -1583,16 +1609,20 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                               }}
                             >
                               <Text style={{ fontWeight: "700" }}>Note : </Text>
-                              A {seasonalInfo.gapDays}-day gap is required. The Packages
-                              expiring on the {seasonalInfo.expiryDayOrdinal} {seasonalInfo.expiryMonthFull} can be ordered
+                              A {seasonalInfo.gapDays}-day gap is required. The
+                              Packages expiring on the{" "}
+                              {seasonalInfo.expiryDayOrdinal}{" "}
+                              {seasonalInfo.expiryMonthFull} can be ordered
                               between the {seasonalInfo.rangeTextLong}.
                             </Text>
 
                             <View
                               style={{
                                 flexDirection: "row",
-                                alignItems: "center",
+                                alignItems: "flex-start",
                                 marginTop: 10,
+                                paddingHorizontal: 4,
+                                width: "100%",
                               }}
                             >
                               <View
@@ -1602,12 +1632,16 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                                   borderRadius: 4,
                                   backgroundColor: "#6B3BCF",
                                   marginRight: 8,
+                                  marginTop: 5,
+                                  flexShrink: 0,
                                 }}
                               />
                               <Text
                                 style={{
+                                  flex: 1,
                                   fontSize: 13,
                                   color: "#1E293B",
+                                  lineHeight: 19,
                                 }}
                               >
                                 Available schedule dates:{" "}
