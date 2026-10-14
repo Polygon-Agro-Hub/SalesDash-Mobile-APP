@@ -294,7 +294,7 @@ const NotificationAccess: React.FC<NotificationAccessProps> = ({
               onPress={requestNotificationAccess}
               activeOpacity={0.8}
               disabled={isLoading}
-              className="w-full mb-3"
+              className="w-full"
               style={{ borderRadius: 999, overflow: "hidden" }}
             >
               <LinearGradient
@@ -317,20 +317,10 @@ const NotificationAccess: React.FC<NotificationAccessProps> = ({
                     style={{ marginRight: 8 }}
                   />
                   <Text className="text-white font-extrabold text-base tracking-wide">
-                    {isLoading ? "Enabling..." : "Allow Notifications"}
+                    {isLoading ? "Enabling..." : "Continue"}
                   </Text>
                 </View>
               </LinearGradient>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={handleNotNowPress}
-              activeOpacity={0.7}
-              className="py-3 px-6 items-center justify-center"
-            >
-              <Text className="text-gray-400 font-semibold text-sm">
-                Maybe Later
-              </Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -145,6 +145,8 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
 
   const {
     orderId = "N/A",
+    processOrderId,
+    invoiceNumber: passedInvoiceNumber,
     total = 0,
     subtotal = 0,
     discount = 0,
@@ -154,7 +156,9 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
     selectedTimeSlot = "N/A",
     items = [],
     isPackage = "",
-  } = route.params || {};
+  } = (route.params as any) || {};
+
+  const effectiveOrderId = processOrderId || orderId;
 
   useEffect(() => {
     const handleBackPress = () => {
@@ -177,7 +181,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
     const fetchOrderDetails = async () => {
       try {
         const response = await axios.get(
-          `${environment.API_BASE_URL}api/orders/get-order/${orderId}`,
+          `${environment.API_BASE_URL}api/orders/get-order/${effectiveOrderId}`,
           { timeout: 30000 },
         );
 
@@ -213,7 +217,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         clearTimeout(timeoutId);
       }
     };
-  }, [orderId]);
+  }, [effectiveOrderId]);
 
   useEffect(() => {
     const fetchCustomerData = async () => {
@@ -317,7 +321,9 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
 
       const logoBase64 = await convertLogoToBase64();
       const invoiceNumber =
-        order?.orderStatus?.invoiceNumber || `INV-${Date.now()}`;
+        order?.orderStatus?.invoiceNumber ||
+        passedInvoiceNumber ||
+        `INV-${Date.now()}`;
 
       const packagePrice = parseFloat(order?.packageInfo?.productPrice || "0");
       const packingFee = parseFloat(order?.packageInfo?.packingFee || "0");
@@ -994,7 +1000,7 @@ ${
                 style={{ fontSize: 18 }}
                 className="text-[#3F3F3F] text-center mt-2"
               >
-                Order No: #{order?.orderStatus?.invoiceNumber}
+                Order No: #{order?.orderStatus?.invoiceNumber || passedInvoiceNumber || ""}
               </Text>
               <Text
                 style={{ fontSize: 16 }}

@@ -10,6 +10,7 @@ import {
   TextInput,
   Image,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   FlatList,
   Keyboard,
   KeyboardAvoidingView,
@@ -402,7 +403,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
         activeOpacity={1}
         onPress={() =>
           navigation.navigate("View_CancelOrderScreen" as any, {
-            orderId: item.orderId,
+            orderId: item.processId || item.orderId,
             status: item.status,
             reportStatus: item.reportStatus,
           })
@@ -532,161 +533,170 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
       enabled
       style={{ flex: 1 }}
     >
-      <View className="flex-1 bg-white">
-        {/* Header */}
-        <LinearGradient
-          colors={["#854BDA", "#6E3DD1"]}
-          className="shadow-md px-4 items-center justify-center"
-          style={{
-            paddingBottom: 24,
-            height: 80,
-            justifyContent: "center",
-          }}
-        >
-          <View className="w-full max-w-[500px] items-center">
-            <Text
-              className="text-white font-semibold"
-              style={{ fontSize: SCREEN_HEIGHT > 900 ? 20 : 18 }}
-            >
-              Total Orders:{" "}
-              <Text className="font-bold">
-                {String(totalCount).padStart(2, "0")}
-              </Text>
-            </Text>
-          </View>
-        </LinearGradient>
-
-        {/* Loading Animation (first load / screen focus only) */}
-        {loading ? (
-          <OrderScreenSkeleton />
-        ) : (
-          <View className="flex-1 mx-auto w-full max-w-[500px]">
-            {/* Search Bar */}
-            <View className="flex-row items-center bg-[#F5F1FC] px-4 h-[50px] border border-[#6B3BCF] rounded-full mt-[-6%] shadow-sm mx-6">
-              <TextInput
-                placeholder="Search By Order Number"
-                placeholderTextColor="#6839CF"
-                className="flex-1 text-gray-700 h-11 py-0"
-                style={{
-                  fontStyle: "italic",
-                  fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
-                }}
-                onChangeText={(text) => {
-                  const numericOnly = text.replace(/[^0-9]/g, "");
-                  setSearchText(numericOnly);
-                }}
-                value={searchText}
-                keyboardType="numeric"
-              />
-              <FontAwesome name="search" size={22} color="#884EDC" />
-            </View>
-
-            {/* Horizontal Scrollable Filters */}
-            <View>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-                contentContainerStyle={{
-                  paddingHorizontal: 16,
-                  height: 44,
-                  alignItems: "center",
-                  marginBottom: 5,
-                  marginTop: 14,
-                }}
-                className="my-2"
+      {/* Tap anywhere on the background to dismiss the keyboard */}
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <View className="flex-1 bg-white">
+          {/* Header */}
+          <LinearGradient
+            colors={["#854BDA", "#6E3DD1"]}
+            className="shadow-md px-4 items-center justify-center"
+            style={{
+              paddingBottom: 24,
+              height: 80,
+              justifyContent: "center",
+            }}
+          >
+            <View className="w-full max-w-[500px] items-center">
+              <Text
+                className="text-white font-semibold"
+                style={{ fontSize: SCREEN_HEIGHT > 900 ? 20 : 18 }}
               >
-                {FILTERS.map((filter) => (
-                  <TouchableOpacity
-                    key={filter}
-                    style={{
-                      paddingHorizontal: 14,
-                      paddingVertical: 6,
-                      borderRadius: 20,
-                      borderWidth: 1,
-                      borderColor: "#6B3BCF",
-                      backgroundColor:
-                        selectedFilter === filter ? "#6B3BCF" : "transparent",
-                      marginHorizontal: 6,
-                      justifyContent: "center",
-                      alignItems: "center",
-                      minHeight: 36,
-                      minWidth: 80,
-                    }}
-                    onPress={() => setSelectedFilter(filter)}
-                  >
-                    <Text
-                      style={{
-                        fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
-                        fontWeight:
-                          selectedFilter === filter ? "bold" : "normal",
-                        color: selectedFilter === filter ? "white" : "#6B3BCF",
-                        textAlign: "center",
-                        includeFontPadding: false,
-                        lineHeight: 20,
-                      }}
-                    >
-                      {filter}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
+                Total Orders:{" "}
+                <Text className="font-bold">
+                  {String(totalCount).padStart(2, "0")}
+                </Text>
+              </Text>
             </View>
+          </LinearGradient>
 
-            <View className="flex-1 mb-[5%]">
-              {searching ? (
-                <View className="items-center mt-20">
-                  <ActivityIndicator size="large" color="#884EDC" />
-                </View>
-              ) : isEmpty ? (
-                <View className="flex justify-center items-center mt-20">
-                  <Image
-                    source={require("@/assets/images/public/no-data.webp")}
+          {/* Loading Animation (first load / screen focus only) */}
+          {loading ? (
+            <OrderScreenSkeleton />
+          ) : (
+            <View className="flex-1 mx-auto w-full max-w-[500px]">
+              {/* Search Bar (own touchable so taps on its padding don't dismiss the keyboard) */}
+              <TouchableWithoutFeedback onPress={() => {}} accessible={false}>
+                <View className="flex-row items-center bg-[#F5F1FC] px-4 h-[50px] border border-[#6B3BCF] rounded-full mt-[-6%] shadow-sm mx-6">
+                  <TextInput
+                    placeholder="Search By Order Number"
+                    placeholderTextColor="#6839CF"
+                    className="flex-1 text-gray-700 h-11 py-0"
                     style={{
-                      width: wp("60%"),
-                      height: hp("30%"),
-                      resizeMode: "contain",
+                      fontStyle: "italic",
+                      fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
+                    }}
+                    onChangeText={(text) => {
+                      const numericOnly = text.replace(/[^0-9]/g, "");
+                      setSearchText(numericOnly);
+                    }}
+                    value={searchText}
+                    keyboardType="numeric"
+                  />
+                  <FontAwesome name="search" size={22} color="#884EDC" />
+                </View>
+              </TouchableWithoutFeedback>
+
+              {/* Horizontal Scrollable Filters */}
+              <View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  keyboardShouldPersistTaps="handled"
+                  contentContainerStyle={{
+                    paddingHorizontal: 16,
+                    height: 44,
+                    alignItems: "center",
+                    marginBottom: 5,
+                    marginTop: 14,
+                  }}
+                  className="my-2"
+                >
+                  {FILTERS.map((filter) => (
+                    <TouchableOpacity
+                      key={filter}
+                      style={{
+                        paddingHorizontal: 14,
+                        paddingVertical: 6,
+                        borderRadius: 20,
+                        borderWidth: 1,
+                        borderColor: "#6B3BCF",
+                        backgroundColor:
+                          selectedFilter === filter ? "#6B3BCF" : "transparent",
+                        marginHorizontal: 6,
+                        justifyContent: "center",
+                        alignItems: "center",
+                        minHeight: 36,
+                        minWidth: 80,
+                      }}
+                      onPress={() => setSelectedFilter(filter)}
+                    >
+                      <Text
+                        style={{
+                          fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
+                          fontWeight:
+                            selectedFilter === filter ? "bold" : "normal",
+                          color:
+                            selectedFilter === filter ? "white" : "#6B3BCF",
+                          textAlign: "center",
+                          includeFontPadding: false,
+                          lineHeight: 20,
+                        }}
+                      >
+                        {filter}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+
+              <View className="flex-1 mb-[5%]">
+                {searching ? (
+                  <View className="items-center mt-20">
+                    <ActivityIndicator size="large" color="#884EDC" />
+                  </View>
+                ) : isEmpty ? (
+                  <View className="flex justify-center items-center mt-20">
+                    <Image
+                      source={require("@/assets/images/public/no-data.webp")}
+                      style={{
+                        width: wp("60%"),
+                        height: hp("30%"),
+                        resizeMode: "contain",
+                      }}
+                    />
+                    <Text
+                      className="text-black italic text-center mt-4"
+                      style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 14 }}
+                    >
+                      {" "}
+                      No orders found{" "}
+                    </Text>
+                  </View>
+                ) : (
+                  <FlatList
+                    data={orders}
+                    className="flex-1"
+                    keyboardShouldPersistTaps="handled"
+                    keyboardDismissMode={
+                      Platform.OS === "ios" ? "on-drag" : "none"
+                    }
+                    keyExtractor={(item, index) =>
+                      `${item.orderId}-${item.processId ?? item.InvNo ?? index}`
+                    }
+                    refreshControl={
+                      <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        colors={["#884EDC"]}
+                        tintColor="#884EDC"
+                      />
+                    }
+                    ListFooterComponent={renderFooter}
+                    onEndReached={loadMoreOrders}
+                    onEndReachedThreshold={0.3}
+                    renderItem={renderOrder}
+                    contentContainerStyle={{
+                      paddingBottom: hp(10),
+                      paddingTop: 4,
+                      paddingHorizontal: 2,
                     }}
                   />
-                  <Text
-                    className="text-black italic text-center mt-4"
-                    style={{ fontSize: SCREEN_HEIGHT > 900 ? 18 : 14 }}
-                  >
-                    {" "}
-                    No orders found{" "}
-                  </Text>
-                </View>
-              ) : (
-                <FlatList
-                  data={orders}
-                  className="flex-1"
-                  keyboardShouldPersistTaps="handled"
-                  keyExtractor={(item, index) =>
-                    `${item.orderId}-${item.processId ?? item.InvNo ?? index}`
-                  }
-                  refreshControl={
-                    <RefreshControl
-                      refreshing={refreshing}
-                      onRefresh={onRefresh}
-                      colors={["#884EDC"]}
-                      tintColor="#884EDC"
-                    />
-                  }
-                  ListFooterComponent={renderFooter}
-                  onEndReached={loadMoreOrders}
-                  onEndReachedThreshold={0.3}
-                  renderItem={renderOrder}
-                  contentContainerStyle={{
-                    paddingBottom: hp(5),
-                    paddingTop: 4,
-                    paddingHorizontal: 2,
-                  }}
-                />
-              )}
+                )}
+              </View>
             </View>
-          </View>
-        )}
-      </View>
+          )}
+        </View>
+      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 };
