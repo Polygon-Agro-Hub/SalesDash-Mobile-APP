@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -149,7 +149,7 @@ const CameraAccess: React.FC<CameraAccessProps> = ({
           "Camera access is required. Please enable it in settings.",
           [
             {
-              text: "Not Now",
+              text: "Cancel",
               style: "cancel",
               onPress: handleDenyOrClose,
             },
@@ -279,7 +279,7 @@ const CameraAccess: React.FC<CameraAccessProps> = ({
               onPress={requestCameraPermission}
               activeOpacity={0.8}
               disabled={isLoading}
-              className="w-full mb-3"
+              className="w-full"
               style={{ borderRadius: 999, overflow: "hidden" }}
             >
               <LinearGradient
@@ -301,8 +301,7 @@ const CameraAccess: React.FC<CameraAccessProps> = ({
                     color="#FFFFFF"
                     style={{ marginRight: 8 }}
                   />
-                 
-                     <Text
+                  <Text
                     style={{
                       color: "#FFFFFF",
                       fontWeight: "800",
@@ -311,20 +310,10 @@ const CameraAccess: React.FC<CameraAccessProps> = ({
                       letterSpacing: 0.4,
                     }}
                   >
-                    {isLoading ? "Requesting..." : "Agree & Continue"}
+                    {isLoading ? "Requesting..." : "Continue"}
                   </Text>
                 </View>
               </LinearGradient>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={handleDenyOrClose}
-              activeOpacity={0.7}
-              className="py-3 px-6 items-center justify-center"
-            >
-              <Text className="text-gray-400 font-semibold text-sm">
-                Not Now
-              </Text>
             </TouchableOpacity>
           </View>
         </View>

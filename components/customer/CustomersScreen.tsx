@@ -5,6 +5,7 @@ import {
   TextInput,
   Image,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -92,15 +93,6 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
       setRefreshing(isRefreshing);
     }
   };
-
-  useEffect(() => {
-    const unsubscribe = navigation.addListener("focus", () => {
-      setSearchQuery("");
-      setFilteredCustomers(customers);
-    });
-
-    return unsubscribe;
-  }, [navigation, customers]);
 
   const sortCustomersByName = (customerList: Customer[]): Customer[] => {
     return [...customerList].sort((a, b) => {
@@ -191,9 +183,11 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
     }
   };
 
+  // Single focus listener: reset search + state, then reload
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
       if (isMounted.current) {
+        setSearchQuery("");
         setCurrentPage(1);
         setHasMore(true);
         setError(null);
@@ -306,259 +300,275 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
       enabled
       style={{ flex: 1 }}
     >
-      <View className="flex-1 bg-white">
-        {/* Header */}
-        <LinearGradient
-          colors={["#854BDA", "#6E3DD1"]}
-          className="shadow-md px-4 items-center justify-center"
-          style={{
-            paddingBottom: 24,
-            height:80,
-            justifyContent:'center'
-          }}
-        >
-          <View className="w-full max-w-[500px] items-center">
-            <Text
-              className="text-white font-semibold"
-              style={{ fontSize: SCREEN_HEIGHT > 900 ? 20 : 18 }}
-            >
-              Total Customers:{" "}
-              <Text className="font-bold">
-                {formatCustomerCount(
-                  searchQuery ? filteredCustomers.length : totalCount,
-                )}
-              </Text>
-            </Text>
-          </View>
-        </LinearGradient>
-
-        {/* Show Skeleton while loading */}
-        {loading ? (
-          <CustomersScreenSkeleton />
-        ) : (
-          <View className="flex-1 mx-auto w-full max-w-[500px]">
-            {/* Search Bar */}
-            <View
-              className="flex-row items-center bg-[#F5F1FC] h-[50px] px-6 py-0 mb-5 rounded-full mt-[-6%] mx-6"
-              style={{
-                borderRadius: 999,
-                backgroundColor: "#F5F1FC",
-                ...Platform.select({
-                  ios: {
-                    shadowColor: "#000000",
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.15,
-                    shadowRadius: 6,
-                  },
-                  android: {
-                    elevation: 4,
-                  },
-                }),
-              }}
-            >
-              <TextInput
-                value={searchQuery}
-                onChangeText={handleSearch}
-                placeholder="Search By Name, Phone Number"
-                placeholderTextColor="#6839CF"
-                className="flex-1 text-sm text-gray-700 bg-[#F5F1FC] h-11 py-0"
-                style={{
-                  fontStyle: "italic",
-                  includeFontPadding: false,
-                  fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
-                }}
-              />
-              <FontAwesome name="search" size={22} color="#884EDC" />
-            </View>
-
-            {/* Floating Button */}
-            {!isKeyboardVisible && (
-              <TouchableOpacity
-                className="absolute bottom-28 right-6 w-14 h-14 rounded-full items-center justify-center"
-                onPress={() => navigation.navigate("AddCustomersScreen" as any)}
-                style={{
-                  backgroundColor: "#7743D4",
-                  shadowColor: "#8149D8",
-                  shadowOffset: { width: 1, height: 2 },
-                  shadowOpacity: 0.4,
-                  shadowRadius: 4,
-                  elevation: 6,
-                  zIndex: 1000,
-                }}
+      {/* Tap anywhere on the background to dismiss the keyboard */}
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <View className="flex-1 bg-white">
+          {/* Header */}
+          <LinearGradient
+            colors={["#854BDA", "#6E3DD1"]}
+            className="shadow-md px-4 items-center justify-center"
+            style={{
+              paddingBottom: 24,
+              height: 80,
+              justifyContent: "center",
+            }}
+          >
+            <View className="w-full max-w-[500px] items-center">
+              <Text
+                className="text-white font-semibold"
+                style={{ fontSize: SCREEN_HEIGHT > 900 ? 20 : 18 }}
               >
-                <Ionicons name="add" size={45} color="#fff" />
-              </TouchableOpacity>
-            )}
+                Total Customers:{" "}
+                <Text className="font-bold">
+                  {formatCustomerCount(
+                    searchQuery ? filteredCustomers.length : totalCount,
+                  )}
+                </Text>
+              </Text>
+            </View>
+          </LinearGradient>
 
-            <View style={{ paddingVertical: 10 }} className="flex-1 px-4">
-              {error ? (
-                <View className="flex-1 justify-center items-center px-4">
-                  <Text className="text-red-500 text-center mt-4">{error}</Text>
-                  <TouchableOpacity
-                    onPress={() => loadCustomers(1, true, false)}
-                    className="mt-4 bg-[#7743D4] px-6 py-2 rounded-lg"
-                  >
-                    <Text className="text-white font-semibold">Retry</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : isEmpty ? (
+          {/* Show Skeleton while loading */}
+          {loading ? (
+            <CustomersScreenSkeleton />
+          ) : (
+            <View className="flex-1 mx-auto w-full max-w-[500px]">
+              {/* Search Bar (own touchable so taps on its padding don't dismiss the keyboard) */}
+              <TouchableWithoutFeedback onPress={() => {}} accessible={false}>
                 <View
+                  className="flex-row items-center bg-[#F5F1FC] h-[50px] px-6 py-0 mb-5 rounded-full mt-[-6%] mx-6"
                   style={{
-                    flex: 1,
-                    justifyContent: "center",
-                    alignItems: "center",
-                    paddingBottom: 110,
+                    borderRadius: 999,
+                    backgroundColor: "#F5F1FC",
+                    ...Platform.select({
+                      ios: {
+                        shadowColor: "#000000",
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.15,
+                        shadowRadius: 6,
+                      },
+                      android: {
+                        elevation: 4,
+                      },
+                    }),
                   }}
                 >
-                  <Image
-                    source={require("@/assets/images/public/no-data.webp")}
+                  <TextInput
+                    value={searchQuery}
+                    onChangeText={handleSearch}
+                    placeholder="Search By Name, Phone Number"
+                    placeholderTextColor="#6839CF"
+                    returnKeyType="search"
+                    className="flex-1 text-sm text-gray-700 bg-[#F5F1FC] h-11 py-0"
                     style={{
-                      width: wp("50%"),
-                      height: wp("50%"),
-                      maxWidth: 200,
-                      maxHeight: 200,
-                      resizeMode: "contain",
+                      fontStyle: "italic",
+                      includeFontPadding: false,
+                      fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
                     }}
                   />
-                  {searchQuery ? (
-                    <Text
-                      style={{
-                        color: "black",
-                        fontStyle: "italic",
-                        textAlign: "center",
-                        marginTop: 16,
-                        fontSize: SCREEN_HEIGHT > 900 ? 18 : 14,
-                      }}
-                    >
-                      No customers found for "{searchQuery}"
-                    </Text>
-                  ) : (
-                    <Text
-                      style={{
-                        color: "black",
-                        fontStyle: "italic",
-                        textAlign: "center",
-                        marginTop: 16,
-                        fontSize: SCREEN_HEIGHT > 900 ? 18 : 14,
-                      }}
-                    >
-                      No registered customers yet
-                    </Text>
-                  )}
+                  <FontAwesome name="search" size={22} color="#884EDC" />
                 </View>
-              ) : (
-                <FlatList
-                  data={filteredCustomers}
-                  keyExtractor={(item) => item.id.toString()}
-                  showsVerticalScrollIndicator={false}
-                  contentContainerStyle={{ paddingBottom: 120 }}
-                  refreshing={refreshing}
-                  onRefresh={handleRefresh}
-                  onEndReached={searchQuery === "" ? loadMoreCustomers : null}
-                  onEndReachedThreshold={0.1}
-                  ListFooterComponent={renderFooter}
-                  scrollEventThrottle={16}
-                  renderItem={({ item }: { item: Customer }) => (
+              </TouchableWithoutFeedback>
+
+              {/* Floating Button */}
+              {!isKeyboardVisible && (
+                <TouchableOpacity
+                  className="absolute bottom-28 right-6 w-14 h-14 rounded-full items-center justify-center"
+                  onPress={() =>
+                    navigation.navigate("AddCustomersScreen" as any)
+                  }
+                  style={{
+                    backgroundColor: "#7743D4",
+                    shadowColor: "#8149D8",
+                    shadowOffset: { width: 1, height: 2 },
+                    shadowOpacity: 0.4,
+                    shadowRadius: 4,
+                    elevation: 6,
+                    zIndex: 1000,
+                  }}
+                >
+                  <Ionicons name="add" size={45} color="#fff" />
+                </TouchableOpacity>
+              )}
+
+              <View style={{ paddingVertical: 10 }} className="flex-1 px-4">
+                {error ? (
+                  <View className="flex-1 justify-center items-center px-4">
+                    <Text className="text-red-500 text-center mt-4">
+                      {error}
+                    </Text>
                     <TouchableOpacity
-                      activeOpacity={1}
-                      onPress={() =>
-                        navigation.navigate("ViewCustomerScreen", {
-                          name: `${item.firstName} ${item.lastName}`,
-                          title: item.title,
-                          number: item.phoneNumber,
-                          customerId: item.cusId,
-                          id: item.id,
-                        })
-                      }
+                      onPress={() => loadCustomers(1, true, false)}
+                      className="mt-4 bg-[#7743D4] px-6 py-2 rounded-lg"
                     >
-                      <View
+                      <Text className="text-white font-semibold">Retry</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : isEmpty ? (
+                  <View
+                    style={{
+                      flex: 1,
+                      justifyContent: "center",
+                      alignItems: "center",
+                      paddingBottom: 110,
+                    }}
+                  >
+                    <Image
+                      source={require("@/assets/images/public/no-data.webp")}
+                      style={{
+                        width: wp("50%"),
+                        height: wp("50%"),
+                        maxWidth: 200,
+                        maxHeight: 200,
+                        resizeMode: "contain",
+                      }}
+                    />
+                    {searchQuery ? (
+                      <Text
                         style={{
-                          marginBottom: 12,
-                          marginHorizontal: 4,
-                          borderRadius: 20,
-                          ...Platform.select({
-                            ios: {
-                              backgroundColor: "white",
-                              shadowColor: "#7E7E7E",
-                              shadowOffset: { width: 0, height: 2 },
-                              shadowOpacity: 0.15,
-                              shadowRadius: 6,
-                            },
-                            android: {
-                              backgroundColor: "white",
-                              borderWidth: 1,
-                              borderColor: "#E0E0E0",
-                              elevation: 3,
-                            },
-                          }),
+                          color: "black",
+                          fontStyle: "italic",
+                          textAlign: "center",
+                          marginTop: 16,
+                          fontSize: SCREEN_HEIGHT > 900 ? 18 : 14,
                         }}
+                      >
+                        No customers found for "{searchQuery}"
+                      </Text>
+                    ) : (
+                      <Text
+                        style={{
+                          color: "black",
+                          fontStyle: "italic",
+                          textAlign: "center",
+                          marginTop: 16,
+                          fontSize: SCREEN_HEIGHT > 900 ? 18 : 14,
+                        }}
+                      >
+                        No registered customers yet
+                      </Text>
+                    )}
+                  </View>
+                ) : (
+                  <FlatList
+                    data={filteredCustomers}
+                    keyExtractor={(item) => item.id.toString()}
+                    keyboardShouldPersistTaps="handled"
+                    keyboardDismissMode={
+                      Platform.OS === "ios" ? "on-drag" : "none"
+                    }
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={{ paddingBottom: 120 }}
+                    refreshing={refreshing}
+                    onRefresh={handleRefresh}
+                    onEndReached={
+                      searchQuery === "" ? loadMoreCustomers : null
+                    }
+                    onEndReachedThreshold={0.1}
+                    ListFooterComponent={renderFooter}
+                    scrollEventThrottle={16}
+                    renderItem={({ item }: { item: Customer }) => (
+                      <TouchableOpacity
+                        activeOpacity={1}
+                        onPress={() =>
+                          navigation.navigate("ViewCustomerScreen", {
+                            name: `${item.firstName} ${item.lastName}`,
+                            title: item.title,
+                            number: item.phoneNumber,
+                            customerId: item.cusId,
+                            id: item.id,
+                          })
+                        }
                       >
                         <View
                           style={{
+                            marginBottom: 12,
+                            marginHorizontal: 4,
                             borderRadius: 20,
                             ...Platform.select({
                               ios: {
-                                overflow: "hidden",
-                                borderWidth: 1,
-                                borderColor: "#E0E0E0",
                                 backgroundColor: "white",
+                                shadowColor: "#7E7E7E",
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: 0.15,
+                                shadowRadius: 6,
                               },
                               android: {
-                                backgroundColor: "transparent",
+                                backgroundColor: "white",
+                                borderWidth: 1,
+                                borderColor: "#E0E0E0",
+                                elevation: 3,
                               },
                             }),
-                            padding: 16,
-                            flexDirection: "row",
-                            justifyContent: "space-between",
-                            alignItems: "center",
                           }}
                         >
-                          <View className="flex-1 mr-3">
-                            <Text
-                              className="text-gray-700 font-semibold"
-                              numberOfLines={2}
-                              ellipsizeMode="tail"
-                              style={{
-                                fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
-                              }}
-                            >
-                              {item.title}. {item.firstName} {item.lastName}
-                            </Text>
-                            <Text
-                              className="text-gray-500"
-                              style={{
-                                fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
-                              }}
-                            >
-                              {formatPhoneNumber(item.phoneNumber)}
-                            </Text>
-                          </View>
                           <View
-                            className="items-end justify-center"
-                            style={{ minWidth: 45 }}
+                            style={{
+                              borderRadius: 20,
+                              ...Platform.select({
+                                ios: {
+                                  overflow: "hidden",
+                                  borderWidth: 1,
+                                  borderColor: "#E0E0E0",
+                                  backgroundColor: "white",
+                                },
+                                android: {
+                                  backgroundColor: "transparent",
+                                },
+                              }),
+                              padding: 16,
+                              flexDirection: "row",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                            }}
                           >
-                            <Text
-                              className="text-gray-700 font-semibold"
-                              style={{
-                                fontSize: SCREEN_HEIGHT > 900 ? 18 : 16,
-                              }}
+                            <View className="flex-1 mr-3">
+                              <Text
+                                className="text-gray-700 font-semibold"
+                                numberOfLines={2}
+                                ellipsizeMode="tail"
+                                style={{
+                                  fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
+                                }}
+                              >
+                                {item.title}. {item.firstName} {item.lastName}
+                              </Text>
+                              <Text
+                                className="text-gray-500"
+                                style={{
+                                  fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
+                                }}
+                              >
+                                {formatPhoneNumber(item.phoneNumber)}
+                              </Text>
+                            </View>
+                            <View
+                              className="items-end justify-center"
+                              style={{ minWidth: 45 }}
                             >
-                              #
-                              {item.orderCount < 10
-                                ? `0${item.orderCount}`
-                                : item.orderCount}
-                            </Text>
+                              <Text
+                                className="text-gray-700 font-semibold"
+                                style={{
+                                  fontSize: SCREEN_HEIGHT > 900 ? 18 : 16,
+                                }}
+                              >
+                                #
+                                {item.orderCount < 10
+                                  ? `0${item.orderCount}`
+                                  : item.orderCount}
+                              </Text>
+                            </View>
                           </View>
                         </View>
-                      </View>
-                    </TouchableOpacity>
-                  )}
-                />
-              )}
+                      </TouchableOpacity>
+                    )}
+                  />
+                )}
+              </View>
             </View>
-          </View>
-        )}
-      </View>
+          )}
+        </View>
+      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 };

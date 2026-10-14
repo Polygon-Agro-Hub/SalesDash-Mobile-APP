@@ -160,10 +160,16 @@ const OrderConfimedOTPScreen: React.FC = () => {
 
       if (orderResponse.data.success) {
         await AsyncStorage.removeItem("pendingOrderData");
-        const orderId = orderResponse.data.data.orderId;
+        const processOrderId = orderResponse.data.data.processOrderId;
+        const parentOrderId = orderResponse.data.data.orderId;
+        const invoiceNumber = orderResponse.data.data.invoiceNumber;
+        const effectiveOrderId = processOrderId || parentOrderId;
 
         return {
-          orderId,
+          orderId: effectiveOrderId,
+          processOrderId: processOrderId,
+          parentOrderId: parentOrderId,
+          invoiceNumber: invoiceNumber,
           isPackage: isPackage,
           total: total,
           subtotal: subtotal,

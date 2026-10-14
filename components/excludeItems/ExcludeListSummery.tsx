@@ -548,7 +548,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
                     </Text>
                   </View>
                   <Text
-                    className="flex-1 text-center"
+                    className="flex-1 text-left"
                     style={{ fontSize: 13, color: "#9CA3AF" }}
                   >
                     Name
@@ -578,7 +578,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
                       />
                     </View>
                     <Text
-                      className="text-sm text-black flex-1 text-center"
+                      className="text-sm text-black flex-1 text-left"
                       numberOfLines={2}
                     >
                       {crop.displayName}
@@ -690,7 +690,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
                     </Text>
                   </View>
                   <Text
-                    className="flex-1 text-center"
+                    className="flex-1 text-left"
                     style={{ fontSize: 13, color: "#9CA3AF" }}
                   >
                     Name
@@ -720,7 +720,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
                       />
                     </View>
                     <Text
-                      className="text-sm text-black flex-1 text-center"
+                      className="text-sm text-black flex-1 text-left"
                       numberOfLines={2}
                     >
                       {crop.displayName}
