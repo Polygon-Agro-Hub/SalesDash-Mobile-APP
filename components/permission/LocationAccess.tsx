@@ -285,7 +285,7 @@ const LocationAccess: React.FC<LocationAccessProps> = ({
               onPress={requestLocationPermission}
               activeOpacity={0.8}
               disabled={isLoading}
-              className="w-full mb-3"
+              className="w-full"
               style={{ borderRadius: 999, overflow: "hidden" }}
             >
               <LinearGradient
@@ -316,20 +316,10 @@ const LocationAccess: React.FC<LocationAccessProps> = ({
                       letterSpacing: 0.4,
                     }}
                   >
-                    {isLoading ? "Requesting..." : "Agree & Continue"}
+                    {isLoading ? "Requesting..." : "Continue"}
                   </Text>
                 </View>
               </LinearGradient>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={handleNotNowPress}
-              activeOpacity={0.7}
-              className="py-3 px-6 items-center justify-center"
-            >
-              <Text className="text-gray-400 font-semibold text-sm">
-                Not Now
-              </Text>
             </TouchableOpacity>
           </View>
         </View>
