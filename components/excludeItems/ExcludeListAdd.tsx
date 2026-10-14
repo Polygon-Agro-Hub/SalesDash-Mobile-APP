@@ -715,29 +715,30 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
             >
               <LinearGradient
                 colors={["#6839CF", "#874DDB"]}
-                start={[0, 0]}
-                end={[1, 1]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
                 style={{
                   paddingVertical: 12,
                   borderRadius: 25,
                   alignItems: "center",
                   justifyContent: "center",
+                  overflow: "hidden",
                 }}
               >
                 {loading ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <View>
-                    <Text
-                      style={{
-                        color: "#fff",
-                        fontSize: 18,
-                        fontWeight: "bold",
-                      }}
-                    >
-                      Continue
-                    </Text>
-                  </View>
+                  <Text
+                    style={{
+                      color: "#fff",
+                      fontSize: 18,
+                      fontWeight: "bold",
+                      includeFontPadding: false,
+                      textAlignVertical: "center",
+                    }}
+                  >
+                    Continue
+                  </Text>
                 )}
               </LinearGradient>
             </View>

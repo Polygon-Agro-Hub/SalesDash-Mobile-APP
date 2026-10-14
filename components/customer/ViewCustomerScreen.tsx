@@ -95,6 +95,28 @@ const FILTER_TO_BACKEND_STATUS: Record<string, string | string[]> = {
   Return: ["Return", "Return Received"],
 };
 
+// ---------- Sorting helpers (scheduled date: latest first) ----------
+const getScheduleTimestamp = (order: Order) => {
+  const t = new Date(order.sheduleDate).getTime();
+  return isNaN(t) ? 0 : t;
+};
+
+const getCreatedTimestamp = (order: Order) => {
+  const t = new Date(order.createdAt).getTime();
+  return isNaN(t) ? 0 : t;
+};
+
+const sortOrdersByScheduleDesc = (list: Order[]) =>
+  [...list].sort((a, b) => {
+    const diff = getScheduleTimestamp(b) - getScheduleTimestamp(a);
+    if (diff !== 0) return diff;
+    // tie-breaker: newest created first
+    return getCreatedTimestamp(b) - getCreatedTimestamp(a);
+  });
+
+const getOrderKey = (order: Order) =>
+  order.processId?.toString() || `${order.orderId}-${order.InvNo}`;
+
 const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   route,
   navigation,
@@ -136,10 +158,22 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   const fullName = `${customerTitle ? customerTitle + ". " : ""}${customerName}`;
 
   useEffect(() => {
-    setCustomerName(initialName || "");
-    setCustomerTitle(initialTitle || "");
-    setCustomerNumber(initialNumber || "");
-  }, [initialName, initialTitle, initialNumber]);
+    if (route.params?.name) setCustomerName(route.params.name);
+    else if (initialName) setCustomerName(initialName);
+
+    if (route.params?.title) setCustomerTitle(route.params.title);
+    else if (initialTitle) setCustomerTitle(initialTitle);
+
+    if (route.params?.number) setCustomerNumber(route.params.number);
+    else if (initialNumber) setCustomerNumber(initialNumber);
+  }, [
+    route.params?.name,
+    route.params?.title,
+    route.params?.number,
+    initialName,
+    initialTitle,
+    initialNumber,
+  ]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -162,7 +196,13 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       getUserProfile();
 
       return () => {};
-    }, [id, customerId]),
+    }, [
+      id,
+      customerId,
+      route.params?.name,
+      route.params?.title,
+      route.params?.number,
+    ]),
   );
 
   const [address, setAddress] = useState<string>("Loading...");
@@ -202,20 +242,34 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
             const freshFirstName = response.data.firstName || "";
             const freshLastName = response.data.lastName || "";
             const freshTitle = response.data.title || "";
-            const freshPhone = response.data.phoneNumber || initialNumber;
+            const freshCode = response.data.phoneCode || "";
+            const rawPhone = response.data.phoneNumber || "";
+            const freshPhone =
+              freshCode && rawPhone && !rawPhone.startsWith("+")
+                ? `${freshCode}${rawPhone}`
+                : rawPhone || route.params?.number || initialNumber;
 
-            setCustomerName(
-              `${freshFirstName} ${freshLastName}`.trim() || initialName,
-            );
-            setCustomerTitle(freshTitle || initialTitle);
-            setCustomerNumber(freshPhone);
+            const combinedFreshName =
+              `${freshFirstName} ${freshLastName}`.trim();
+            if (combinedFreshName) {
+              setCustomerName(combinedFreshName);
+            }
+            if (freshTitle) {
+              setCustomerTitle(freshTitle);
+            }
+            if (freshPhone) {
+              setCustomerNumber(freshPhone);
+            }
 
             const locationName =
               `${freshTitle} ${freshFirstName} ${freshLastName}`.trim();
             setSelectedLocationName(locationName || "Customer Location");
           }
         } catch (locError) {
-          console.warn("Could not fetch customer location/profile data:", locError);
+          console.warn(
+            "Could not fetch customer location/profile data:",
+            locError,
+          );
         }
       }
 
@@ -231,6 +285,17 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
             const customer = detailResponse.data.customer;
             const nearestCity = customer?.nearesCity || "";
             const isApartment = customer?.buildingType === "Apartment";
+
+            if (customer) {
+              const freshFirst = customer.firstName || "";
+              const freshLast = customer.lastName || "";
+              const freshT = customer.title || "";
+              const freshP = customer.phoneNumber || "";
+              const combined = `${freshFirst} ${freshLast}`.trim();
+              if (combined) setCustomerName(combined);
+              if (freshT) setCustomerTitle(freshT);
+              if (freshP) setCustomerNumber(freshP);
+            }
 
             if (building) {
               const houseOrBuildingNo = building.houseNo || building.buildingNo;
@@ -360,9 +425,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
         if (response.data.success) {
           anySuccess = true;
           for (const order of response.data.data) {
-            const uniqueKey =
-              order.processId?.toString() || `${order.orderId}-${order.InvNo}`;
-            mergedOrdersMap.set(uniqueKey, order);
+            mergedOrdersMap.set(getOrderKey(order), order);
           }
           combinedHasMore = combinedHasMore || Boolean(response.data.hasMore);
         } else if (!firstFailureMessage) {
@@ -371,16 +434,20 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
         }
       }
 
-      const mergedOrders = Array.from(mergedOrdersMap.values()).sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      // Scheduled date: latest date at the top
+      const mergedOrders = sortOrdersByScheduleDesc(
+        Array.from(mergedOrdersMap.values()),
       );
 
       if (anySuccess) {
         if (isLoadMore) {
           setOrders((prevOrders) => {
-            const combined = [...prevOrders, ...mergedOrders];
-            return combined;
+            // merge, de-duplicate, then re-sort the whole list
+            const map = new Map<string, Order>();
+            [...prevOrders, ...mergedOrders].forEach((order) => {
+              map.set(getOrderKey(order), order);
+            });
+            return sortOrdersByScheduleDesc(Array.from(map.values()));
           });
         } else {
           setOrders(mergedOrders);
@@ -1028,7 +1095,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                       activeOpacity={1}
                       onPress={() =>
                         navigation.navigate("View_CancelOrderScreen" as any, {
-                          orderId: item.orderId,
+                          orderId: item.processId || item.orderId,
                           status: item.status,
                           reportStatus: item.reportStatus,
                         })
@@ -1041,7 +1108,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                           padding: 16,
                           marginBottom: 12,
                           marginHorizontal: 16,
-                          marginTop:4,
+                          marginTop: 4,
                           borderWidth: 1.5,
                           borderColor: isPaymentPending ? "#EF4444" : "#F3F4F6",
                           shadowColor: "#000",
