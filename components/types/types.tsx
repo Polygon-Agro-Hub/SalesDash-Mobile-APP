@@ -358,6 +358,9 @@ export type RootStackParamList = {
   };
   OrderConfirmedScreen: {
     orderId: number;
+    processOrderId?: number;
+    parentOrderId?: number;
+    invoiceNumber?: string;
     total: number;
     subtotal: number;
     discount: number;
