@@ -339,7 +339,7 @@ const TermsConditions: React.FC<TermsConditionsProps> = ({ navigation }) => {
                 Nawam Mawatha, Colombo 02
               </Text>
               <Text className="text-base text-gray-700 leading-6 mt-2">
-                <Text className="font-semibold">Email:</Text> polygon.admin@gmail.com
+                <Text className="font-semibold">Email:</Text> info@polygon.lk
               </Text>
             </View>
           </View>
