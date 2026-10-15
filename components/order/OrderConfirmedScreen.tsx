@@ -658,7 +658,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
           </p>
           <p class="headerp">Level 2, Building 2 No. 46/42, Nawam Mawatha, Colombo 02</p>
           <p class="headerp">Contact No : 011 431 3433</p>
-          <p class="headerp">Email Address : polygon.admin@gmail.com</p>
+          <p class="headerp">Email Address : info@polygon.lk</p>
         </div>
         <div>
           <img
