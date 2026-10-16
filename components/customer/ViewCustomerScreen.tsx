@@ -4,6 +4,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   FlatList,
   Linking,
   Keyboard,
@@ -137,6 +138,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   const [longitude, setLongitude] = useState<number | null>(null);
   const [selectedLocationName, setSelectedLocationName] = useState<string>("");
   const [loadingCustomerData, setLoadingCustomerData] = useState(false);
+  const searchInputRef = useRef<TextInput>(null);
   const isMounted = useRef(true);
   const {
     name: initialName,
@@ -178,6 +180,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   useFocusEffect(
     React.useCallback(() => {
       isFirstRender.current = true;
+      Keyboard.dismiss();
+      searchInputRef.current?.blur();
 
       const resetStates = () => {
         setSearchText("");
@@ -195,7 +199,10 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       loadOrders(1, true, false, selectedFilterRef.current);
       getUserProfile();
 
-      return () => {};
+      return () => {
+        Keyboard.dismiss();
+        searchInputRef.current?.blur();
+      };
     }, [
       id,
       customerId,
@@ -585,12 +592,13 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       enabled
       style={{ flex: 1 }}
     >
-      <LinearGradient
-        colors={["#FBFAFE", "#FFFFFF"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
-        style={{ flex: 1, overflow: "hidden" }}
-      >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <LinearGradient
+          colors={["#FBFAFE", "#FFFFFF"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={{ flex: 1, overflow: "hidden" }}
+        >
         {/* Top Header Row */}
         <View
           style={{
@@ -922,39 +930,44 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
         <View style={{ flex: 1, marginTop: 15 }}>
           {/* Search Bar */}
           <View style={{ paddingHorizontal: 16 }}>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                backgroundColor: "#FAF9FE",
-                paddingHorizontal: 16,
-                borderWidth: 1.5,
-                borderColor: "#E8E2F7",
-                borderRadius: 25,
-                height: 48,
-              }}
-            >
-              <TextInput
-                placeholder="Search By Order No"
-                placeholderTextColor="#A389D4"
+            <TouchableWithoutFeedback onPress={() => {}} accessible={false}>
+              <View
                 style={{
-                  flex: 1,
-                  fontSize: 14,
-                  color: "#1F2937",
-                  height: "100%",
-                  fontStyle: "italic",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  backgroundColor: "#FAF9FE",
+                  paddingHorizontal: 16,
+                  borderWidth: 1.5,
+                  borderColor: "#E8E2F7",
+                  borderRadius: 25,
+                  height: 48,
                 }}
-                onChangeText={(text) => {
-                  const numericOnly = text.replace(/[^0-9]/g, "");
-                  setSearchText(numericOnly);
-                }}
-                value={searchText}
-                keyboardType="numeric"
-              />
-              <TouchableOpacity onPress={handleSearch}>
-                <AntIcons name="search" size={20} color="#6B3BCF" />
-              </TouchableOpacity>
-            </View>
+              >
+                <TextInput
+                  ref={searchInputRef}
+                  autoFocus={false}
+                  blurOnSubmit={true}
+                  placeholder="Search By Order No"
+                  placeholderTextColor="#A389D4"
+                  style={{
+                    flex: 1,
+                    fontSize: 14,
+                    color: "#1F2937",
+                    height: "100%",
+                    fontStyle: "italic",
+                  }}
+                  onChangeText={(text) => {
+                    const numericOnly = text.replace(/[^0-9]/g, "");
+                    setSearchText(numericOnly);
+                  }}
+                  value={searchText}
+                  keyboardType="numeric"
+                />
+                <TouchableOpacity onPress={handleSearch}>
+                  <AntIcons name="search" size={20} color="#6B3BCF" />
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
           </View>
 
           {/* Filters List */}
@@ -963,6 +976,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
                 contentContainerStyle={{ paddingHorizontal: 16 }}
               >
                 {filters.map((filter) => (
@@ -1041,6 +1055,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
               </View>
             ) : searchError ? (
               <ScrollView
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="on-drag"
                 contentContainerStyle={{
                   justifyContent: "center",
                   alignItems: "center",
@@ -1077,6 +1093,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
             ) : filteredOrders.length > 0 ? (
               <FlatList
                 data={filteredOrders}
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="on-drag"
                 keyExtractor={(item, index) => {
                   const safeProcessId = item.processId || "";
                   const safeOrderId = item.orderId || "unknown";
@@ -1093,13 +1111,15 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                   return (
                     <TouchableOpacity
                       activeOpacity={1}
-                      onPress={() =>
+                      onPress={() => {
+                        Keyboard.dismiss();
+                        searchInputRef.current?.blur();
                         navigation.navigate("View_CancelOrderScreen" as any, {
                           orderId: item.processId || item.orderId,
                           status: item.status,
                           reportStatus: item.reportStatus,
-                        })
-                      }
+                        });
+                      }}
                     >
                       <View
                         style={{
@@ -1397,7 +1417,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
             </TouchableOpacity>
           </View>
         )}
-      </LinearGradient>
+        </LinearGradient>
+      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 };
