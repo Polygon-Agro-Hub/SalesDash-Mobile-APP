@@ -54,13 +54,17 @@ interface ReminderScreenProps {
 interface Notification {
   id: number;
   orderId: number;
+  processOrderId?: number;
+  processId?: number;
+  parentOrderId?: number;
   title: string;
   readStatus: boolean;
   createdAt: string;
   invNo: string;
   orderStatus: string;
   reportStatus: string;
-  cusId: string;
+  userId?: number;
+  cusId: string | number;
   customerId: string;
   customerName: string;
   phoneNumber: string;
@@ -203,9 +207,19 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
       }
 
       if (notificationToUpdate) {
+        // ALWAYS pass processOrderId (processorders.id), matching ViewOrdersScreen and ViewCustomerScreen
+        const targetOrderId =
+          notificationToUpdate.processOrderId ||
+          notificationToUpdate.processId ||
+          notificationToUpdate.orderId;
+
+        const targetUserId =
+          notificationToUpdate.userId ||
+          notificationToUpdate.cusId;
+
         navigation.navigate("View_CancelOrderScreen" as any, {
-          orderId: notificationToUpdate.orderid,
-          userId: notificationToUpdate.cusId || notificationToUpdate.customerId,
+          orderId: targetOrderId,
+          userId: targetUserId,
           status: notificationToUpdate.status,
           reportStatus: notificationToUpdate.reportStatus,
         });

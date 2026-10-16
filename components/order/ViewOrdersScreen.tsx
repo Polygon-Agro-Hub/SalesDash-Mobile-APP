@@ -183,6 +183,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
 
+  const searchInputRef = useRef<TextInput>(null);
   const isMounted = useRef(true);
   const requestIdRef = useRef(0); // ignore responses from outdated requests
   const lastFetchKeyRef = useRef<string | null>(null); // "search|filter" of last page-1 fetch
@@ -287,6 +288,8 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
           setSearching(false);
           setLoadingMore(false);
           setRefreshing(false);
+          Keyboard.dismiss();
+          searchInputRef.current?.blur();
         }
       }
     },
@@ -330,15 +333,20 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
     };
   }, []);
 
-  // Every time the screen gains focus: reset search/filter and reload page 1
+  // Every time the screen gains focus: reset search/filter, dismiss keyboard and reload page 1
   useFocusEffect(
     useCallback(() => {
+      Keyboard.dismiss();
+      searchInputRef.current?.blur();
       setSearchText("");
       setSelectedFilter("All");
       setCurrentPage(1);
       setHasMore(true);
       loadOrders({ page: 1, showFullLoading: true, search: "", filter: "All" });
-      return () => {};
+      return () => {
+        Keyboard.dismiss();
+        searchInputRef.current?.blur();
+      };
     }, [loadOrders]),
   );
 
@@ -401,13 +409,15 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
     return (
       <TouchableOpacity
         activeOpacity={1}
-        onPress={() =>
+        onPress={() => {
+          Keyboard.dismiss();
+          searchInputRef.current?.blur();
           navigation.navigate("View_CancelOrderScreen" as any, {
             orderId: item.processId || item.orderId,
             status: item.status,
             reportStatus: item.reportStatus,
-          })
-        }
+          });
+        }}
       >
         <View
           style={{
@@ -568,6 +578,9 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
               <TouchableWithoutFeedback onPress={() => {}} accessible={false}>
                 <View className="flex-row items-center bg-[#F5F1FC] px-4 h-[50px] border border-[#6B3BCF] rounded-full mt-[-6%] shadow-sm mx-6">
                   <TextInput
+                    ref={searchInputRef}
+                    autoFocus={false}
+                    blurOnSubmit={true}
                     placeholder="Search By Order Number"
                     placeholderTextColor="#6839CF"
                     className="flex-1 text-gray-700 h-11 py-0"

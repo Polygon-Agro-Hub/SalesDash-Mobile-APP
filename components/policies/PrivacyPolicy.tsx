@@ -177,7 +177,7 @@ const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ navigation }) => {
             Nawam Mawatha, Colombo 02.
               </Text> 
             <Text className="text-base  text-gray-900 mb-6">
-            Email: polygon.admin@gmail.com
+            Email: info@polygon.lk
           
           </Text>
 

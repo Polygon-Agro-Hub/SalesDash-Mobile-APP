@@ -10,6 +10,7 @@ import {
   Modal,
   Linking,
   BackHandler,
+  Keyboard,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -475,11 +476,21 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
       );
       if (response.data.success) {
         setCancelModalVisible(false);
+        Keyboard.dismiss();
         Alert.alert(
           "Order Cancelled",
           "Your order has been successfully cancelled.",
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                Keyboard.dismiss();
+                navigation.goBack();
+              },
+            },
+          ],
+          { cancelable: false },
         );
-        navigation.goBack();
       } else
         Alert.alert(
           "Error",
