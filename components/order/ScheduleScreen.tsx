@@ -550,6 +550,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     const isExplicitOneTime =
       rawType.trim().toLowerCase() === "one time" ||
       rawType.toLowerCase().includes("one") ||
+      scheduleType === "One Time" ||
       anyOneTimeInItems;
 
     const isExplicitRecurring =
@@ -613,7 +614,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     const minAvailDate = getMinDeliveryDate(); // today + (>=18 ? 4 : 3) days
     minAvailDate.setHours(0, 0, 0, 0);
 
-    const earliestStartDate = parseDateStr(rawStartDate);
+    // For One Time package: DO NOT COUNT start date! Always allow starting from earliest possible date (minAvailDate)
+    const earliestStartDate = !isOneTime ? parseDateStr(rawStartDate) : null;
     const effectiveStartDate =
       earliestStartDate && earliestStartDate > minAvailDate
         ? earliestStartDate
@@ -683,7 +685,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
           expiryText,
           cutoffDate,
           minAvailDate,
-          earliestStartDate,
+          earliestStartDate: null,
           effectiveStartDate,
           rangeTextLong,
           rangeTextShort,
@@ -691,6 +693,26 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
           isAvailableNow,
         };
       }
+    }
+
+    if (isOneTime) {
+      return {
+        isOneTime: true,
+        isRecurring: false,
+        gapDays,
+        expiryDay: null,
+        expiryDayOrdinal: "",
+        expiryMonthFull: "",
+        expiryText: "",
+        cutoffDate: null,
+        minAvailDate,
+        earliestStartDate: null,
+        effectiveStartDate,
+        rangeTextLong: "",
+        rangeTextShort: "",
+        startDateFormatted: `${startMonth} ${startDay}`,
+        isAvailableNow: true,
+      };
     }
 
     // Recurring package
@@ -715,6 +737,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     currentPackageType,
     currentEndDate,
     currentStartDate,
+    scheduleType,
     route.params?.packageId,
     route.params?.packageType,
     route.params?.endDate,
