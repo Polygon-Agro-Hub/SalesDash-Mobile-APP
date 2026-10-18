@@ -566,18 +566,10 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       isExplicitOneTime ||
       isExplicitRecurring;
 
-    if (!hasPackage && !rawType && !rawEndDate && !rawStartDate) {
-      return null;
-    }
-
     // Priority: If both exist (or One Time exists), prioritize One Time
     const isOneTime =
-      isExplicitOneTime || (!!rawEndDate && !isExplicitRecurring);
-    const isRecurring = !isOneTime && (isExplicitRecurring || hasPackage);
-
-    if (!isOneTime && !isRecurring) {
-      return null;
-    }
+      isExplicitOneTime || (!!rawEndDate && !isExplicitRecurring) || !isExplicitRecurring;
+    const isRecurring = !isOneTime;
 
     const parseDateStr = (dateStr: any) => {
       if (!dateStr) return null;
@@ -678,6 +670,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
         return {
           isOneTime: true,
           isRecurring: false,
+          isSeasonalExpiry: true,
           gapDays,
           expiryDay,
           expiryDayOrdinal,
@@ -699,6 +692,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       return {
         isOneTime: true,
         isRecurring: false,
+        isSeasonalExpiry: false,
         gapDays,
         expiryDay: null,
         expiryDayOrdinal: "",
@@ -719,6 +713,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     return {
       isOneTime: false,
       isRecurring: true,
+      isSeasonalExpiry: false,
       gapDays,
       expiryDay: null,
       expiryDayOrdinal: "",
@@ -1232,7 +1227,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                       marginBottom: 10,
                     }}
                   >
-                    {seasonalInfo.isOneTime ? (
+                    {seasonalInfo.isSeasonalExpiry ? (
                       <>
                         <Text
                           style={{
@@ -1622,7 +1617,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                           marginBottom: 16,
                         }}
                       >
-                        {seasonalInfo.isOneTime ? (
+                        {seasonalInfo.isSeasonalExpiry ? (
                           <>
                             <Text
                               style={{

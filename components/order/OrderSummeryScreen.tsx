@@ -19,6 +19,7 @@ import environment from "@/environment/environment";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import CustomHeader from "../common/CustomHeader";
+import { getMinDeliveryDate } from "../common/CustomCalendarModal";
 
 type OrderSummeryScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -276,8 +277,31 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
 
       let orderPayload;
 
+      // ── Determine EPSD and auto-confirm status ──────────────────────────
+      const isEpsdDate = (dateStr?: string | null) => {
+        if (!dateStr) return false;
+        const normalized = dateStr.replace(/\//g, "-");
+        const target = new Date(normalized);
+        if (isNaN(target.getTime())) return false;
+        const epsd = getMinDeliveryDate();
+        return (
+          target.getFullYear() === epsd.getFullYear() &&
+          target.getMonth() === epsd.getMonth() &&
+          target.getDate() === epsd.getDate()
+        );
+      };
+
+      const targetDateForCheck =
+        scheduleType === "One Time"
+          ? selectedDate
+          : calculatedOrders?.[0]?.date ||
+            (calculatedOrders?.[0] as any)?.dateStr;
+
+      const isEpsdSelected = isEpsdDate(targetDateForCheck);
+
       if (isPackage === 0) {
         const isCardPayment = paymentMethod === "Card";
+        const isConfirmed = isEpsdSelected ? 1 : 0;
         const orderData = {
           userId: Number(id || customerId || customerid),
           isPackage: 0,
@@ -298,6 +322,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           isPaid: isCardPayment ? 0 : 1,
           status: "confirmed",
           isFinalizeImdt: Number(route.params?.isFinalizeImdt ?? 1),
+          isConfirmed: isConfirmed,
           deliveryAddress: route.params?.selectedAddress,
           items: safeItems.map((item) => ({
             productId: Number(item.id),
@@ -323,6 +348,10 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         }));
 
         const isCardPaymentPkg = paymentMethod === "Card";
+        const isFinalizeImmediate =
+          Number(route.params?.isFinalizeImdt ?? 1) === 1;
+        const isConfirmed = isFinalizeImmediate && isEpsdSelected ? 1 : 0;
+
         const packageOrderData = {
           userId: Number(id || customerId || customerid),
           isPackage: 1,
@@ -347,6 +376,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           isPaid: isCardPaymentPkg ? 0 : 1,
           status: "confirmed",
           isFinalizeImdt: Number(route.params?.isFinalizeImdt ?? 1),
+          isConfirmed: isConfirmed,
           deliveryAddress: route.params?.selectedAddress,
           items: packageItems,
         };
