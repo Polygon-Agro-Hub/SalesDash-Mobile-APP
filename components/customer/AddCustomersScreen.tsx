@@ -777,13 +777,13 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
           } else if (message.includes("Mobile Number")) {
             setPhoneError("This mobile number is already registered");
             showAlert(
-              "Mobile Number Already Exists",
+              "Already registered",
               "This mobile number is already registered. Please use a different mobile number.",
             );
           } else if (message.includes("Email")) {
             setEmailError("This email is already registered");
             showAlert(
-              "Email Already Exists",
+              "Already registered",
               "This email is already registered. Please use a different email.",
             );
           } else if (message.includes("NIC")) {
@@ -973,12 +973,12 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
             );
           } else if (message.includes("Mobile Number")) {
             showAlert(
-              "Mobile Number Already Exists",
+              "Already registered",
               "This mobile number is already registered. Please use a different mobile number.",
             );
           } else if (message.includes("Email")) {
             showAlert(
-              "Email Already Exists",
+              "Already registered",
               "This email is already registered. Please use a different email.",
             );
           } else if (message.includes("NIC")) {

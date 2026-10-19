@@ -689,14 +689,14 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
               ) {
                 setPhoneError("This mobile number is already registered.");
                 showAlert(
-                  "Mobile Number Already Exists",
+                  "Already registered",
                   "This mobile number is already registered. Please use a different mobile number.",
                 );
                 return;
               } else if (errorMessage.includes("Email already exists")) {
                 setEmailError("This email address is already registered.");
                 showAlert(
-                  "Email Already Exists",
+                  "Already registered",
                   "This email address is already registered. Please use a different email address.",
                 );
                 return;
@@ -815,13 +815,13 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
             if (errorMessage.includes("Email already exists")) {
               setEmailError("This email address is already registered.");
               showAlert(
-                "Email Already Exists",
+                "Already registered",
                 "This email address is already registered. Please use a different email address.",
               );
             } else if (errorMessage.includes("Mobile Number already exists")) {
               setPhoneError("This mobile number is already registered.");
               showAlert(
-                "Mobile Number Already Exists",
+                "Already registered",
                 "This mobile number is already registered. Please use a different mobile number.",
               );
             } else if (errorMessage.includes("NIC already exists")) {

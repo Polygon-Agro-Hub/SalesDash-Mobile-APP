@@ -169,7 +169,9 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
 
     // Subscribe to real-time socket events from /api/notifications/trigger (0 polling)
     const unsubscribe = socketService.onNewNotification(() => {
-      console.log("🔔 [ReminderScreen] Real-time notification received via socket - updating list");
+      console.log(
+        "🔔 [ReminderScreen] Real-time notification received via socket - updating list",
+      );
       fetchNotifications();
     });
 
@@ -214,13 +216,14 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
           notificationToUpdate.orderId;
 
         const targetUserId =
-          notificationToUpdate.userId ||
-          notificationToUpdate.cusId;
+          notificationToUpdate.userId || notificationToUpdate.cusId;
 
+        // NOTE: Do NOT pass `status` here. The notification only holds a stale
+        // snapshot of the status from when it was created (e.g. "On the way").
+        // View_CancelOrderScreen loads the real, current status from the API.
         navigation.navigate("View_CancelOrderScreen" as any, {
           orderId: targetOrderId,
           userId: targetUserId,
-          status: notificationToUpdate.status,
           reportStatus: notificationToUpdate.reportStatus,
         });
       }
