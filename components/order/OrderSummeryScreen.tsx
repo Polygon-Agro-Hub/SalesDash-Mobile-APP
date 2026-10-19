@@ -348,7 +348,8 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         }));
 
         const isCardPaymentPkg = paymentMethod === "Card";
-        const isFinalizeImmediate = Number(route.params?.isFinalizeImdt ?? 0) === 1;
+        const isFinalizeImmediate =
+          Number(route.params?.isFinalizeImdt ?? 0) === 1;
         const isConfirmed = isFinalizeImmediate && isEpsdSelected ? 1 : 0;
 
         const packageOrderData = {
