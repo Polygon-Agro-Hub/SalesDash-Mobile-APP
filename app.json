@@ -2,7 +2,7 @@
   "expo": {
     "name": "SalesDash",
     "slug": "SalesDash",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/public/favicon.png",
     "userInterfaceStyle": "light",
@@ -64,7 +64,7 @@
     "ios": {
       "icon": "./assets/images/public/app-icon-ios.png",
       "bundleIdentifier": "com.polygonagro.SalesDash",
-      "buildNumber": "1.0.1",
+      "buildNumber": "1.0.2",
       "supportsTablet": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -132,7 +132,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": ""
+        "projectId": "41936b91-5b0f-48a2-9a4b-fa374458bdf7"
       }
     }
   }
