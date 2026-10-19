@@ -519,6 +519,9 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
   };
 
   // ─── SEASONAL PACKAGE CUTOFF & BANNER LOGIC ─────────────────────────────
+  // NOTE: The package type is decided ONLY from package data, never from the
+  // "Delivery Type" dropdown (scheduleType). This keeps the banner stable when
+  // switching between One Time / Once a Week / Twice a Week.
   const seasonalInfo = useMemo(() => {
     const rawType =
       currentPackageType ||
@@ -548,36 +551,14 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     );
 
     const isExplicitOneTime =
-      rawType.trim().toLowerCase() === "one time" ||
-      rawType.toLowerCase().includes("one") ||
-      scheduleType === "One Time" ||
-      anyOneTimeInItems;
+      rawType.toLowerCase().includes("one") || anyOneTimeInItems;
 
     const isExplicitRecurring =
-      rawType.trim().toLowerCase() === "recurring" ||
-      rawType.toLowerCase().includes("recur") ||
-      anyRecurringInItems;
+      rawType.toLowerCase().includes("recur") || anyRecurringInItems;
 
-    const hasPackage =
-      !!route.params?.packageId ||
-      !!(orderData as any)?.packageId ||
-      String(route.params?.isPackage) === "1" ||
-      String(isPackage) === "1" ||
-      isExplicitOneTime ||
-      isExplicitRecurring;
-
-    if (!hasPackage && !rawType && !rawEndDate && !rawStartDate) {
-      return null;
-    }
-
-    // Priority: If both exist (or One Time exists), prioritize One Time
-    const isOneTime =
-      isExplicitOneTime || (!!rawEndDate && !isExplicitRecurring);
-    const isRecurring = !isOneTime && (isExplicitRecurring || hasPackage);
-
-    if (!isOneTime && !isRecurring) {
-      return null;
-    }
+    // One Time if the package says so, or if nothing says "recurring"
+    const isOneTime = isExplicitOneTime || !isExplicitRecurring;
+    const isRecurring = !isOneTime;
 
     const parseDateStr = (dateStr: any) => {
       if (!dateStr) return null;
@@ -611,11 +592,12 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     const isAfter6PM = now.getHours() >= 18;
     const gapDays = isAfter6PM ? 3 : 2;
 
-    const minAvailDate = getMinDeliveryDate(); // today + (>=18 ? 4 : 3) days
+    const minAvailDate = getMinDeliveryDate(); // earliest possible date (today + gap)
     minAvailDate.setHours(0, 0, 0, 0);
 
-    // For One Time package: DO NOT COUNT start date! Always allow starting from earliest possible date (minAvailDate)
-    const earliestStartDate = !isOneTime ? parseDateStr(rawStartDate) : null;
+    // Recurring package: package start date can push the real start later
+    // (used for calendar limits and order filtering).
+    const earliestStartDate = isRecurring ? parseDateStr(rawStartDate) : null;
     const effectiveStartDate =
       earliestStartDate && earliestStartDate > minAvailDate
         ? earliestStartDate
@@ -651,8 +633,11 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       "December",
     ];
 
-    const startMonth = MONTH_SHORT[effectiveStartDate.getMonth()];
-    const startDay = effectiveStartDate.getDate();
+    // Banner ALWAYS shows the earliest possible date (e.g. 22),
+    // never the package start date, and never changes with the dropdown.
+    const displayStartDate = minAvailDate;
+    const startMonth = MONTH_SHORT[displayStartDate.getMonth()];
+    const startDay = displayStartDate.getDate();
     const startDayOrdinal = getOrdinal(startDay);
 
     if (isOneTime && rawEndDate) {
@@ -678,6 +663,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
         return {
           isOneTime: true,
           isRecurring: false,
+          isSeasonalExpiry: true,
           gapDays,
           expiryDay,
           expiryDayOrdinal,
@@ -699,6 +685,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       return {
         isOneTime: true,
         isRecurring: false,
+        isSeasonalExpiry: false,
         gapDays,
         expiryDay: null,
         expiryDayOrdinal: "",
@@ -719,6 +706,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     return {
       isOneTime: false,
       isRecurring: true,
+      isSeasonalExpiry: false,
       gapDays,
       expiryDay: null,
       expiryDayOrdinal: "",
@@ -737,7 +725,6 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     currentPackageType,
     currentEndDate,
     currentStartDate,
-    scheduleType,
     route.params?.packageId,
     route.params?.packageType,
     route.params?.endDate,
@@ -1232,7 +1219,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                       marginBottom: 10,
                     }}
                   >
-                    {seasonalInfo.isOneTime ? (
+                    {seasonalInfo.isSeasonalExpiry ? (
                       <>
                         <Text
                           style={{
@@ -1622,7 +1609,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                           marginBottom: 16,
                         }}
                       >
-                        {seasonalInfo.isOneTime ? (
+                        {seasonalInfo.isSeasonalExpiry ? (
                           <>
                             <Text
                               style={{
