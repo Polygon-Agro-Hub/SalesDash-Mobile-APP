@@ -321,7 +321,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           paymentMethod: paymentMethod,
           isPaid: isCardPayment ? 0 : 1,
           status: "confirmed",
-          isFinalizeImdt: 1,
+          isFinalizeImdt: 0,
           isConfirmed: isConfirmed,
           deliveryAddress: route.params?.selectedAddress,
           items: safeItems.map((item) => ({
