@@ -321,7 +321,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           paymentMethod: paymentMethod,
           isPaid: isCardPayment ? 0 : 1,
           status: "confirmed",
-          isFinalizeImdt: 0,
+          isFinalizeImdt: 1,
           isConfirmed: isConfirmed,
           deliveryAddress: route.params?.selectedAddress,
           items: safeItems.map((item) => ({
@@ -348,7 +348,8 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         }));
 
         const isCardPaymentPkg = paymentMethod === "Card";
-        const isFinalizeImmediate = Number(route.params?.isFinalizeImdt ?? 0) === 1;
+        const isFinalizeImmediate =
+          Number(route.params?.isFinalizeImdt ?? 1) === 1;
         const isConfirmed = isFinalizeImmediate && isEpsdSelected ? 1 : 0;
 
         const packageOrderData = {
