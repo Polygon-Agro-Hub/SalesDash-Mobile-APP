@@ -22,10 +22,6 @@
         "foregroundImage": "./assets/images/public/favicon.png",
         "backgroundColor": "#6638CE"
       },
-      "navigationBar": {
-        "backgroundColor": "#4F4F4F",
-        "barStyle": "dark-content"
-      },
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.CAMERA",
@@ -86,12 +82,11 @@
         {
           "android": {
             "compileSdkVersion": 37,
-            "targetSdkVersion": 36,
+            "targetSdkVersion": 35,
             "minSdkVersion": 24,
-            "enableProguardInReleaseBuilds": true,
-            "enableShrinkResourcesInReleaseBuilds": true,
-            "enableMinifyInReleaseBuilds": true,
-            "extraProguardRules": "-keep class expo.modules.** { *; }\n-keep class expo.** { *; }"
+            "enableProguardInReleaseBuilds": false,
+            "enableShrinkResourcesInReleaseBuilds": false,
+            "enableMinifyInReleaseBuilds": false
           },
           "ios": {
             "deploymentTarget": "16.4"
