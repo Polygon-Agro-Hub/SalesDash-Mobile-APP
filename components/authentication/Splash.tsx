@@ -5,6 +5,8 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { RootStackParamList } from "../types/types";
 import environment from "@/environment/environment";
+import socketService from "@/services/socket/socket.service";
+import pushNotificationService from "@/services/notification/pushNotification.service";
 
 type SplashNavigationProp = StackNavigationProp<RootStackParamList, "Splash">;
 
@@ -40,6 +42,24 @@ const Splash: React.FC<SplashProps> = ({ navigation }) => {
 
       if (response.ok && data.success) {
         if (data.data.passwordUpdate === 1) {
+          try {
+            const hasAsked = await AsyncStorage.getItem(
+              "hasAskedNotificationPermission"
+            );
+            if (hasAsked !== "true") {
+              navigation.navigate("NotificationAccess", {
+                returnScreen: "Main",
+                returnParams: { screen: "DashboardScreen" },
+                blockBackNavigation: true,
+              });
+              return;
+            }
+          } catch (err) {
+            console.warn("Error reading notification permission flag:", err);
+          }
+          socketService.connect().catch(() => {});
+          socketService.checkNewNotifications().catch(() => {});
+          pushNotificationService.registerPushTokenAsync().catch(() => {});
           navigation.navigate("Main", { screen: "DashboardScreen" });
         } else {
           await AsyncStorage.multiRemove([

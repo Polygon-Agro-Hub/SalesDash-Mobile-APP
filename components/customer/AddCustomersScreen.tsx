@@ -2,15 +2,15 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
-  ScrollView,
   TextInput,
   TouchableOpacity,
-  KeyboardAvoidingView,
+  ScrollView,
   ActivityIndicator,
   BackHandler,
   Dimensions,
   Alert,
   Keyboard,
+  Platform,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -20,7 +20,6 @@ import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { Platform } from "react-native";
 import CustomHeader from "../common/CustomHeader";
 import GlobalSearchModal from "../common/GlobalSearchModal";
 import CityDeliveryStatus from "../common/CityDeliveryStatus";
@@ -55,6 +54,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
   const [lastName, setLastName] = useState<string>("");
   const [phoneNumber, setPhoneNumber] = useState<string>("");
   const [email, setEmail] = useState<string>("");
+  const [nic, setNic] = useState<string>("");
   const [houseNo, setHouseNo] = useState<string>("");
   const [streetName, setStreetName] = useState<string>("");
   const [city, setCity] = useState<string>("");
@@ -77,6 +77,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
   const [loading, setLoading] = useState(false);
   const [emailError, setEmailError] = useState<string>("");
   const [phoneError, setPhoneError] = useState<string>("");
+  const [nicError, setNicError] = useState<string>("");
   const [touchedFields, setTouchedFields] = useState<{
     [key: string]: boolean;
   }>({
@@ -85,6 +86,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     firstName: false,
     lastName: false,
     title: false,
+    nic: false,
     buildingType: false,
     houseNo: false,
     streetName: false,
@@ -107,6 +109,28 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
   const [buildingTypeModalVisible, setBuildingTypeModalVisible] =
     useState(false);
   const [cityModalVisible, setCityModalVisible] = useState(false);
+
+  // Keyboard height tracking — replaces KeyboardAvoidingView / KeyboardAwareScrollView
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showEvent =
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent =
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const [titleItems, setTitleItems] = useState([
     { label: "Rev", value: "Rev" },
@@ -142,7 +166,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       return `Please enter a valid ${fields[0]}.`;
     }
 
-    return `Please correct the following fields: ${fields.join(", ")}.`;
+    return `Please fill the following fields: ${fields.join(", ")}.`;
   };
 
   const isNavigatingToOtpScreen = useRef(false);
@@ -154,6 +178,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     setPhoneNumber("");
     setSelectedCategory("");
     setEmail("");
+    setNic("");
     setHouseNo("");
     setStreetName("");
     setCity("");
@@ -166,6 +191,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     setLoading(false);
     setEmailError("");
     setPhoneError("");
+    setNicError("");
     setFirstNameError("");
     setLastNameError("");
     setBuildingTypeError("");
@@ -184,6 +210,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       firstName: false,
       lastName: false,
       title: false,
+      nic: false,
       buildingType: false,
       houseNo: false,
       streetName: false,
@@ -194,7 +221,6 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       floorNo: false,
     });
   };
-
 
   useFocusEffect(
     React.useCallback(() => {
@@ -227,22 +253,18 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     try {
       setLoading(true);
       const cleanedPhoneNumber = phoneNumber.replace(/[^\d]/g, "");
-      const apiUrl = "https://api.getshoutout.com/otpservice/send";
-      const headers = {
-        Authorization: `Apikey ${environment.SHOUTOUT_API_KEY}`,
-        "Content-Type": "application/json",
-      };
+      const apiUrl = `${environment.API_BASE_URL}api/otp/send`;
 
       const body = {
-        source: "PolygonAgro",
+        source: "Polygon",
         transport: "sms",
         content: {
-          sms: "Thank you for registering with us as a GoviMart customer. Please use the bellow OTP to confirm the registration process. {{code}}",
+          sms: "Thank you for registering with us as a Polygon customer. Please use the below OTP to confirm the registration process. {{code}}",
         },
         destination: cleanedPhoneNumber,
       };
 
-      const response = await axios.post(apiUrl, body, { headers });
+      const response = await axios.post(apiUrl, body);
       console.log("📲 [OTP SEND] Response Data:", response.data);
       await AsyncStorage.setItem("referenceId", response.data.referenceId);
 
@@ -281,6 +303,26 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
 
   const validateName = (name: string) => {
     return /^[A-Z][a-z]*$/.test(name);
+  };
+
+  const nicRegex = /^([0-9]{9}[vV]|[0-9]{12})$/;
+
+  const validateNIC = (value: string) => {
+    return nicRegex.test(value.trim());
+  };
+
+  const formatNicInput = (text: string) => {
+    if (!text) return text;
+
+    const cleaned = text.replace(/[^0-9vV]/g, "");
+    const digitsOnly = cleaned.replace(/[vV]/g, "");
+    const hasLetter = /[vVxX]$/.test(cleaned);
+
+    if (hasLetter) {
+      return digitsOnly.slice(0, 9) + cleaned.slice(-1).toUpperCase();
+    }
+
+    return digitsOnly.slice(0, 12);
   };
 
   const validateEmail = (email: string): boolean => {
@@ -490,6 +532,18 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
   }, [phoneNumber, touchedFields.phoneNumber]);
 
   useEffect(() => {
+    if (touchedFields.nic) {
+      if (!nic) {
+        setNicError("NIC number is required");
+      } else if (!validateNIC(nic)) {
+        setNicError("Please enter a valid NIC (9 digits + V, or 12 digits)");
+      } else {
+        setNicError("");
+      }
+    }
+  }, [nic, touchedFields.nic]);
+
+  useEffect(() => {
     if (touchedFields.firstName) {
       if (!firstName) {
         setFirstNameError("First name is required");
@@ -547,9 +601,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     if (touchedFields.city) {
       if (!city) {
         setCityError("City is required");
-      } else if (cityBlocksRegistration) {
-        setCityError("Please select a valid city we deliver to");
-      } else {
+      }  else {
         setCityError("");
       }
     }
@@ -649,6 +701,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     const isLastNameValid = lastName && validateName(lastName);
     const isPhoneValid = phoneNumber && validatePhoneNumber(phoneNumber);
     const isEmailValid = email && validateEmail(email);
+    const isNicValid = nic && validateNIC(nic);
     const invalidFields: string[] = [];
 
     if (!isTitleValid) invalidFields.push("Title");
@@ -656,6 +709,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     if (!lastName || !isLastNameValid) invalidFields.push("Last Name");
     if (!phoneNumber || !isPhoneValid) invalidFields.push("Mobile Number");
     if (!email || !isEmailValid) invalidFields.push("Email");
+    if (!nic || !isNicValid) invalidFields.push("NIC Number");
 
     if (invalidFields.length > 0) {
       setTouchedFields((prev) => ({
@@ -665,6 +719,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         lastName: true,
         phoneNumber: true,
         email: true,
+        nic: true,
       }));
 
       if (!selectedCategory) setTitleError("Title is required");
@@ -684,7 +739,11 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
 
       if (!email) setEmailError("Email is required");
       else if (!validateEmail(email))
-        setEmailError("Please enter a valid email address");
+        setEmailError("Please enter a valid email");
+
+      if (!nic) setNicError("NIC number is required");
+      else if (!validateNIC(nic))
+        setNicError("Please enter a valid NIC (9 digits + V/X, or 12 digits)");
 
       showAlert("Error", getFieldValidationMessage(invalidFields));
       return;
@@ -697,6 +756,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         {
           phoneNumber,
           email: email,
+          nic: nic,
         },
       );
 
@@ -717,20 +777,26 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
           } else if (message.includes("Mobile Number")) {
             setPhoneError("This mobile number is already registered");
             showAlert(
-              "Mobile Number Already Exists",
+              "Already registered",
               "This mobile number is already registered. Please use a different mobile number.",
             );
           } else if (message.includes("Email")) {
             setEmailError("This email is already registered");
             showAlert(
-              "Email Already Exists",
+              "Already registered",
               "This email is already registered. Please use a different email.",
             );
-          } else {
+          } else if (message.includes("NIC")) {
+            setNicError("This NIC is already registered");
             showAlert(
-              "Registration Error",
-              message || "Please check your details and try again.",
+              "NIC Already Exists",
+              "This NIC is already registered. Please use a different NIC.",
             );
+          } else {
+            const formattedMessage = (
+              message || "Please check your details and try again."
+            ).replace(/"email"/g, '"Email"');
+            showAlert("Registration Error", formattedMessage);
           }
         } else if (status && status >= 500) {
           showAlert(
@@ -765,6 +831,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       firstName: true,
       lastName: true,
       title: true,
+      nic: true,
       buildingType: true,
       houseNo: true,
       streetName: true,
@@ -782,6 +849,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     if (!lastName) missingRequiredFields.push("Last Name");
     if (!phoneNumber) missingRequiredFields.push("Mobile Number");
     if (!email) missingRequiredFields.push("Email");
+    if (!nic) missingRequiredFields.push("NIC Number");
     if (!buildingType) missingRequiredFields.push("Building Type");
 
     if (missingRequiredFields.length > 0) {
@@ -828,7 +896,6 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     }
 
     if (cityBlocksRegistration) {
-      setCityError("Please select a valid city we deliver to");
       showAlert("Error", "This city is not currently in our delivery area.");
       setIsSubmitting(false);
       return;
@@ -841,7 +908,13 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     }
 
     if (email && !validateEmail(email)) {
-      showAlert("Error", "Please enter a valid Email Address.");
+      showAlert("Error", "Please enter a valid Email.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!validateNIC(nic)) {
+      showAlert("Error", "Please enter a valid NIC Number.");
       setIsSubmitting(false);
       return;
     }
@@ -852,6 +925,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         {
           phoneNumber,
           email: email,
+          nic: nic,
         },
       );
 
@@ -861,6 +935,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         lastName,
         phoneNumber,
         email: email,
+        nic,
         buildingType,
         houseNo,
         streetName,
@@ -898,25 +973,30 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
             );
           } else if (message.includes("Mobile Number")) {
             showAlert(
-              "Mobile Number Already Exists",
+              "Already registered",
               "This mobile number is already registered. Please use a different mobile number.",
             );
           } else if (message.includes("Email")) {
             showAlert(
-              "Email Already Exists",
+              "Already registered",
               "This email is already registered. Please use a different email.",
             );
-          } else {
+          } else if (message.includes("NIC")) {
             showAlert(
-              "Registration Error",
-              message ||
-                "Registration failed. Please check your details and try again.",
+              "NIC Already Exists",
+              "This NIC is already registered. Please use a different NIC.",
             );
+          } else {
+            const formattedMessage = (
+              message ||
+              "Registration failed. Please check your details and try again."
+            ).replace(/"email"/g, '"Email"');
+            showAlert("Registration Error", formattedMessage);
           }
         } else if (status === 409) {
           showAlert(
             "Account Already Exists",
-            "An account with this mobile number or email already exists. Please sign in instead.",
+            "An account with this mobile number, email or NIC already exists. Please sign in instead.",
           );
         } else if (status && status >= 500) {
           showAlert(
@@ -1131,11 +1211,11 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
             className="text-[#000000] mb-1"
             style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
           >
-            Email Address *
+            Email *
           </Text>
           <TextInput
             className={`bg-[#F6F6F6] h-[50px] border ${emailError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
-            placeholder="Email Address"
+            placeholder="Email"
             placeholderTextColor="#7F7F7F"
             keyboardType="email-address"
             autoCapitalize="none"
@@ -1156,12 +1236,43 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
           ) : null}
         </View>
 
+        {/* NIC */}
+        <View className="mb-4">
+          <Text
+            className="text-[#000000] mb-1"
+            style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
+          >
+            NIC Number *
+          </Text>
+          <TextInput
+            className={`bg-[#F6F6F6] h-[50px] border ${nicError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
+            placeholder="NIC Number"
+            placeholderTextColor="#7F7F7F"
+            autoCapitalize="characters"
+            autoCorrect={false}
+            value={nic}
+            onChangeText={(text) => {
+              handleFieldTouch("nic");
+              if (text.startsWith(" ")) return;
+              setNic(formatNicInput(text));
+            }}
+            onBlur={() => {
+              handleFieldTouch("nic");
+            }}
+            maxLength={12}
+            style={[{ fontStyle: nic ? "normal" : "italic" }]}
+          />
+          {nicError ? (
+            <Text className="text-red-500 text-xs pl-4 pt-1">{nicError}</Text>
+          ) : null}
+        </View>
+
         {/* Continue Button */}
         <View
           style={{
             marginTop: 24,
             marginHorizontal: "20%",
-            marginBottom: "40%",
+            marginBottom: 24,
             borderRadius: 30,
             shadowColor: "#000",
             shadowOffset: { width: 0, height: 6 },
@@ -1179,9 +1290,10 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
             <LinearGradient
               colors={["#854BDA", "#6E3DD1"]}
               style={{
-                paddingVertical: 14,
                 alignItems: "center",
                 borderRadius: 30,
+                height: 50,
+                justifyContent: "center",
               }}
             >
               {loading ? (
@@ -1542,7 +1654,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
           style={{
             marginTop: 24,
             marginHorizontal: "20%",
-            marginBottom: "40%",
+            marginBottom: 24,
             borderRadius: 30,
             shadowColor: "#000",
             shadowOffset: { width: 0, height: 6 },
@@ -1566,7 +1678,9 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
               style={{
                 paddingVertical: 14,
                 alignItems: "center",
+                justifyContent: "center",
                 borderRadius: 30,
+                height: 50,
               }}
             >
               {isSubmitting || loading ? (
@@ -1590,10 +1704,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      style={{ flex: 1, backgroundColor: "white" }}
-    >
+    <View style={{ flex: 1, backgroundColor: "white" }}>
       <CustomHeader
         title={step === 1 ? "Basic Details" : "Residential Address"}
         titleColor="#6C3CD1"
@@ -1607,15 +1718,19 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
           }
         }}
       />
-      <View className="flex-1 bg-white">
-        <ScrollView keyboardShouldPersistTaps="handled" className="bg-white">
-          <View className="flex-1 mx-auto w-full max-w-[500px] py-2 px-6">
-            {step === 1
-              ? renderBasicDetailsForm()
-              : renderResidentialAddressForm()}
-          </View>
-        </ScrollView>
-      </View>
+
+      <ScrollView
+        style={{ flex: 1, backgroundColor: "white", marginBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: keyboardHeight + 20 }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View className="mx-auto w-full max-w-[500px] py-2 px-6">
+          {step === 1
+            ? renderBasicDetailsForm()
+            : renderResidentialAddressForm()}
+        </View>
+      </ScrollView>
 
       {/* Title Selection Modal */}
       <GlobalSearchModal
@@ -1672,7 +1787,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         showSearch={true}
         noResultsText="No City Found"
       />
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 

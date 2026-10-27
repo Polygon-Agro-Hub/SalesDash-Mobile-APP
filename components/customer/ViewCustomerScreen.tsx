@@ -4,6 +4,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   FlatList,
   Linking,
   Keyboard,
@@ -50,6 +51,7 @@ type ViewCustomerScreenRouteProp = RouteProp<
 
 interface Order {
   orderId: string;
+  processId?: string;
   customerId: string;
   deliveryType: string;
   sheduleDate: string;
@@ -90,9 +92,31 @@ const getDisplayStatus = (status: string) => {
   return normalizedStatus;
 };
 
-const FILTER_TO_BACKEND_STATUS: Record<string, string> = {
-  Return: "Return",
+const FILTER_TO_BACKEND_STATUS: Record<string, string | string[]> = {
+  Return: ["Return", "Return Received"],
 };
+
+// ---------- Sorting helpers (scheduled date: latest first) ----------
+const getScheduleTimestamp = (order: Order) => {
+  const t = new Date(order.sheduleDate).getTime();
+  return isNaN(t) ? 0 : t;
+};
+
+const getCreatedTimestamp = (order: Order) => {
+  const t = new Date(order.createdAt).getTime();
+  return isNaN(t) ? 0 : t;
+};
+
+const sortOrdersByScheduleDesc = (list: Order[]) =>
+  [...list].sort((a, b) => {
+    const diff = getScheduleTimestamp(b) - getScheduleTimestamp(a);
+    if (diff !== 0) return diff;
+    // tie-breaker: newest created first
+    return getCreatedTimestamp(b) - getCreatedTimestamp(a);
+  });
+
+const getOrderKey = (order: Order) =>
+  order.processId?.toString() || `${order.orderId}-${order.InvNo}`;
 
 const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   route,
@@ -114,6 +138,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   const [longitude, setLongitude] = useState<number | null>(null);
   const [selectedLocationName, setSelectedLocationName] = useState<string>("");
   const [loadingCustomerData, setLoadingCustomerData] = useState(false);
+  const searchInputRef = useRef<TextInput>(null);
   const isMounted = useRef(true);
   const {
     name: initialName,
@@ -127,17 +152,36 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   const [customerNumber, setCustomerNumber] = useState(initialNumber);
   const isFirstRender = useRef(true);
 
+  const selectedFilterRef = useRef(selectedFilter);
+  useEffect(() => {
+    selectedFilterRef.current = selectedFilter;
+  }, [selectedFilter]);
+
   const fullName = `${customerTitle ? customerTitle + ". " : ""}${customerName}`;
 
   useEffect(() => {
-    setCustomerName(initialName || "");
-    setCustomerTitle(initialTitle || "");
-    setCustomerNumber(initialNumber || "");
-  }, [initialName, initialTitle, initialNumber]);
+    if (route.params?.name) setCustomerName(route.params.name);
+    else if (initialName) setCustomerName(initialName);
+
+    if (route.params?.title) setCustomerTitle(route.params.title);
+    else if (initialTitle) setCustomerTitle(initialTitle);
+
+    if (route.params?.number) setCustomerNumber(route.params.number);
+    else if (initialNumber) setCustomerNumber(initialNumber);
+  }, [
+    route.params?.name,
+    route.params?.title,
+    route.params?.number,
+    initialName,
+    initialTitle,
+    initialNumber,
+  ]);
 
   useFocusEffect(
     React.useCallback(() => {
       isFirstRender.current = true;
+      Keyboard.dismiss();
+      searchInputRef.current?.blur();
 
       const resetStates = () => {
         setSearchText("");
@@ -151,11 +195,21 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       };
 
       resetStates();
-      loadOrders(1, true, false, selectedFilter);
+
+      loadOrders(1, true, false, selectedFilterRef.current);
       getUserProfile();
 
-      return () => {};
-    }, [id, customerId]),
+      return () => {
+        Keyboard.dismiss();
+        searchInputRef.current?.blur();
+      };
+    }, [
+      id,
+      customerId,
+      route.params?.name,
+      route.params?.title,
+      route.params?.number,
+    ]),
   );
 
   const [address, setAddress] = useState<string>("Loading...");
@@ -166,97 +220,129 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       setLoadingCustomerData(true);
       const storedToken = await AsyncStorage.getItem("authToken");
       if (!storedToken) {
-        Alert.alert("Error", "No authentication token found");
         return null;
       }
 
-      const response = await axios.get(
-        `${environment.API_BASE_URL}api/customer/customerData/${customerId}`,
-        { headers: { Authorization: `Bearer ${storedToken}` } },
-      );
+      const targetCustomerId = customerId || id;
+      if (targetCustomerId) {
+        try {
+          const response = await axios.get(
+            `${environment.API_BASE_URL}api/customer/customerData/${targetCustomerId}`,
+            { headers: { Authorization: `Bearer ${storedToken}` } },
+          );
 
-      if (response.data) {
-        const lat = Number(response.data.latitude);
-        const lng = Number(response.data.longitude);
+          if (response.data) {
+            const lat = Number(response.data.latitude);
+            const lng = Number(response.data.longitude);
 
-        if (!isNaN(lat) && !isNaN(lng)) {
-          setLatitude(lat);
-          setLongitude(lng);
-        } else {
-          setLatitude(null);
-          setLongitude(null);
+            if (!isNaN(lat) && !isNaN(lng)) {
+              setLatitude(lat);
+              setLongitude(lng);
+            } else {
+              setLatitude(null);
+              setLongitude(null);
+            }
+
+            const balance = Number(response.data.creditBalance) || 0;
+            setCreditBalance(balance);
+
+            const freshFirstName = response.data.firstName || "";
+            const freshLastName = response.data.lastName || "";
+            const freshTitle = response.data.title || "";
+            const freshCode = response.data.phoneCode || "";
+            const rawPhone = response.data.phoneNumber || "";
+            const freshPhone =
+              freshCode && rawPhone && !rawPhone.startsWith("+")
+                ? `${freshCode}${rawPhone}`
+                : rawPhone || route.params?.number || initialNumber;
+
+            const combinedFreshName =
+              `${freshFirstName} ${freshLastName}`.trim();
+            if (combinedFreshName) {
+              setCustomerName(combinedFreshName);
+            }
+            if (freshTitle) {
+              setCustomerTitle(freshTitle);
+            }
+            if (freshPhone) {
+              setCustomerNumber(freshPhone);
+            }
+
+            const locationName =
+              `${freshTitle} ${freshFirstName} ${freshLastName}`.trim();
+            setSelectedLocationName(locationName || "Customer Location");
+          }
+        } catch (locError) {
+          console.warn(
+            "Could not fetch customer location/profile data:",
+            locError,
+          );
         }
-
-        const balance = Number(response.data.creditBalance) || 0;
-        setCreditBalance(balance);
-
-        const freshFirstName = response.data.firstName || "";
-        const freshLastName = response.data.lastName || "";
-        const freshTitle = response.data.title || "";
-        const freshPhone = response.data.phoneNumber || initialNumber;
-
-        setCustomerName(
-          `${freshFirstName} ${freshLastName}`.trim() || initialName,
-        );
-        setCustomerTitle(freshTitle || initialTitle);
-        setCustomerNumber(freshPhone);
-
-        const locationName =
-          `${freshTitle} ${freshFirstName} ${freshLastName}`.trim();
-        setSelectedLocationName(locationName || "Customer Location");
       }
 
-      try {
-        const detailResponse = await axios.get(
-          `${environment.API_BASE_URL}api/customer/get-customer-data/${id}`,
-        );
+      const targetId = id || customerId;
+      if (targetId) {
+        try {
+          const detailResponse = await axios.get(
+            `${environment.API_BASE_URL}api/customer/get-customer-data/${targetId}`,
+          );
 
-        if (detailResponse.status === 200) {
-          const building = detailResponse.data.building;
-          const customer = detailResponse.data.customer;
-          const nearestCity = customer?.nearesCity || "";
-          const isApartment = customer?.buildingType === "Apartment";
+          if (detailResponse.status === 200) {
+            const building = detailResponse.data.building;
+            const customer = detailResponse.data.customer;
+            const nearestCity = customer?.nearesCity || "";
+            const isApartment = customer?.buildingType === "Apartment";
 
-          if (building) {
-            const houseOrBuildingNo = building.houseNo || building.buildingNo;
+            if (customer) {
+              const freshFirst = customer.firstName || "";
+              const freshLast = customer.lastName || "";
+              const freshT = customer.title || "";
+              const freshP = customer.phoneNumber || "";
+              const combined = `${freshFirst} ${freshLast}`.trim();
+              if (combined) setCustomerName(combined);
+              if (freshT) setCustomerTitle(freshT);
+              if (freshP) setCustomerNumber(freshP);
+            }
 
-            const formattedAddress = [
-              houseOrBuildingNo ? `No.${houseOrBuildingNo}` : null,
-              building.streetName,
-              nearestCity,
-            ]
-              .filter(Boolean)
-              .join(", ");
+            if (building) {
+              const houseOrBuildingNo = building.houseNo || building.buildingNo;
 
-            // Only append "..." for apartments, house stays clean
-            setAddress(
-              formattedAddress
-                ? isApartment
-                  ? `${formattedAddress}...`
-                  : formattedAddress
-                : "No Address Found",
-            );
+              const formattedAddress = [
+                houseOrBuildingNo ? `No.${houseOrBuildingNo}` : null,
+                building.streetName,
+                nearestCity,
+              ]
+                .filter(Boolean)
+                .join(", ");
+
+              setAddress(
+                formattedAddress
+                  ? isApartment
+                    ? `${formattedAddress}...`
+                    : formattedAddress
+                  : "No Address Found",
+              );
+            } else {
+              setAddress("No Address Found");
+            }
+
+            setSavedCount(Number(detailResponse.data.savedAddressCount) || 0);
           } else {
             setAddress("No Address Found");
+            setSavedCount(0);
           }
-
-          setSavedCount(Number(detailResponse.data.savedAddressCount) || 0);
-        } else {
+        } catch (detailError) {
+          console.warn(
+            "Could not fetch detailed customer building address:",
+            detailError,
+          );
           setAddress("No Address Found");
           setSavedCount(0);
         }
-      } catch (detailError) {
-        console.error(
-          "Error fetching detailed customer building address:",
-          detailError,
-        );
-        setAddress("No Address Found");
-        setSavedCount(0);
       }
 
       return storedToken;
     } catch (error) {
-      Alert.alert("Error", "Failed to fetch customer location data");
       console.error("Error fetching customer data:", error);
       return null;
     } finally {
@@ -297,26 +383,88 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
 
       setError(null);
 
-      const response = await axios.get<OrdersResponse>(
-        `${environment.API_BASE_URL}api/orders/get-order-bycustomerId/${id}?page=${page}&limit=${ORDERS_PER_PAGE}`,
+      const rawBackendStatus =
+        statusFilter === "All"
+          ? undefined
+          : FILTER_TO_BACKEND_STATUS[statusFilter] || statusFilter;
+
+      const statusValues = Array.isArray(rawBackendStatus)
+        ? rawBackendStatus
+        : rawBackendStatus
+          ? [rawBackendStatus]
+          : [undefined];
+
+      const responses = await Promise.all(
+        statusValues.map((statusValue) =>
+          axios
+            .get<OrdersResponse>(
+              `${environment.API_BASE_URL}api/orders/get-order-bycustomerId/${id}`,
+              {
+                params: {
+                  page,
+                  limit: ORDERS_PER_PAGE,
+                  ...(statusValue ? { status: statusValue } : {}),
+                },
+              },
+            )
+            .catch((err) => {
+              if (err.response && err.response.status === 404) {
+                return {
+                  data: {
+                    success: true,
+                    data: [] as Order[],
+                    totalCount: 0,
+                    hasMore: false,
+                  } as OrdersResponse,
+                };
+              }
+              throw err;
+            }),
+        ),
       );
 
-      if (response.data.success) {
-        const newOrders = response.data.data;
+      const mergedOrdersMap = new Map<string, Order>();
+      let anySuccess = false;
+      let combinedHasMore = false;
+      let firstFailureMessage: string | null = null;
 
+      for (const response of responses) {
+        if (response.data.success) {
+          anySuccess = true;
+          for (const order of response.data.data) {
+            mergedOrdersMap.set(getOrderKey(order), order);
+          }
+          combinedHasMore = combinedHasMore || Boolean(response.data.hasMore);
+        } else if (!firstFailureMessage) {
+          firstFailureMessage =
+            response.data.message || "Failed to load orders";
+        }
+      }
+
+      // Scheduled date: latest date at the top
+      const mergedOrders = sortOrdersByScheduleDesc(
+        Array.from(mergedOrdersMap.values()),
+      );
+
+      if (anySuccess) {
         if (isLoadMore) {
           setOrders((prevOrders) => {
-            const combined = [...prevOrders, ...newOrders];
-            return combined;
+            // merge, de-duplicate, then re-sort the whole list
+            const map = new Map<string, Order>();
+            [...prevOrders, ...mergedOrders].forEach((order) => {
+              map.set(getOrderKey(order), order);
+            });
+            return sortOrdersByScheduleDesc(Array.from(map.values()));
           });
         } else {
-          setOrders(newOrders);
+          setOrders(mergedOrders);
         }
-        setHasMore(response.data.hasMore || false);
+        setHasMore(combinedHasMore);
         setCurrentPage(page);
       } else {
-        setError(response.data.message || "Failed to load orders");
+        setError(firstFailureMessage || "Failed to load orders");
       }
+      return;
     } catch (err: any) {
       console.warn("⚠️ Error fetching orders (handled):", err.message || err);
 
@@ -337,7 +485,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   const loadMoreOrders = () => {
     if (!loadingMore && hasMore && !loading) {
       const nextPage = currentPage + 1;
-      loadOrders(nextPage, false, true);
+      loadOrders(nextPage, false, true, selectedFilter);
     }
   };
 
@@ -355,9 +503,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       const results = orders.filter(
         (order) =>
           order.InvNo &&
-          order.InvNo.toLowerCase().includes(searchText.toLowerCase()) &&
-          (selectedFilter === "All" ||
-            getDisplayStatus(order.status) === selectedFilter),
+          order.InvNo.toLowerCase().includes(searchText.toLowerCase()),
       );
 
       if (results.length === 0) {
@@ -366,7 +512,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
         setSearchError(null);
       }
     }
-  }, [searchText, selectedFilter, orders]);
+  }, [searchText, orders]);
 
   const handleGetACall = () => {
     const phoneNumber = `tel:${customerNumber}`;
@@ -398,15 +544,12 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   const handleSearch = () => {};
 
   const filteredOrders = orders.filter((order) => {
-    const matchesStatus =
-      selectedFilter === "All" ||
-      getDisplayStatus(order.status) === selectedFilter;
     const matchesSearch =
       !searchText ||
       (order.InvNo &&
         order.InvNo.toLowerCase().includes(searchText.toLowerCase()));
 
-    return matchesStatus && matchesSearch;
+    return matchesSearch;
   });
 
   useEffect(() => {
@@ -449,13 +592,13 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       enabled
       style={{ flex: 1 }}
     >
-      {/* Full-screen linear gradient background: #FBFAFE -> #FFFFFF, top to bottom, 30px corner radius */}
-      <LinearGradient
-        colors={["#FBFAFE", "#FFFFFF"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
-        style={{ flex: 1, overflow: "hidden" }}
-      >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <LinearGradient
+          colors={["#FBFAFE", "#FFFFFF"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={{ flex: 1, overflow: "hidden" }}
+        >
         {/* Top Header Row */}
         <View
           style={{
@@ -519,7 +662,6 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 fontSize: 15,
                 color: "#393939",
                 marginTop: 6,
-                fontWeight: "500",
               }}
             >
               Customer ID : {customerId}
@@ -616,24 +758,26 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 borderWidth: 1,
                 borderColor: "#E5E7EB",
                 shadowColor: "#000",
-                shadowOffset: { width: 0, height: 6 }, // pushes shadow downward
-                shadowOpacity: 1,
-                shadowRadius: 6,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.12,
+                shadowRadius: 8,
                 elevation: 2,
                 height: 140,
                 justifyContent: "space-between",
+                overflow: "hidden",
+                position: "relative",
               }}
             >
-              <View>
+              <View style={{ paddingRight: 16 }}>
                 <View
                   style={{
-                    width: 34,
-                    height: 34,
+                    width: 32,
+                    height: 32,
                     borderRadius: 10,
                     backgroundColor: "#F5F1FD",
                     alignItems: "center",
                     justifyContent: "center",
-                    marginBottom: 10,
+                    marginBottom: 8,
                   }}
                 >
                   <Entypo name="location-pin" size={18} color="#6B3BCF" />
@@ -656,7 +800,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                   {address}
                 </Text>
               </View>
-              <View style={{ alignSelf: "flex-end" }}>
+              <View style={{ position: "absolute", bottom: 12, right: 12 }}>
                 <Entypo name="chevron-right" size={16} color="#6B3BCF" />
               </View>
             </TouchableOpacity>
@@ -689,24 +833,26 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 borderWidth: 1,
                 borderColor: "#E5E7EB",
                 shadowColor: "#000",
-                shadowOffset: { width: 0, height: 6 }, // pushes shadow downward
-                shadowOpacity: 1,
-                shadowRadius: 6,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.12,
+                shadowRadius: 8,
                 elevation: 2,
                 height: 140,
                 justifyContent: "space-between",
+                overflow: "hidden",
+                position: "relative",
               }}
             >
-              <View>
+              <View style={{ paddingRight: 16 }}>
                 <View
                   style={{
-                    width: 34,
-                    height: 34,
+                    width: 32,
+                    height: 32,
                     borderRadius: 10,
                     backgroundColor: "#F5F1FD",
                     alignItems: "center",
                     justifyContent: "center",
-                    marginBottom: 10,
+                    marginBottom: 8,
                   }}
                 >
                   <FontAwesome name="folder-open" size={18} color="#6B3BCF" />
@@ -729,7 +875,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                   {savedCount} Saved
                 </Text>
               </View>
-              <View style={{ alignSelf: "flex-end" }}>
+              <View style={{ position: "absolute", bottom: 12, right: 12 }}>
                 <Entypo name="chevron-right" size={16} color="#6B3BCF" />
               </View>
             </TouchableOpacity>
@@ -784,39 +930,44 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
         <View style={{ flex: 1, marginTop: 15 }}>
           {/* Search Bar */}
           <View style={{ paddingHorizontal: 16 }}>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                backgroundColor: "#FAF9FE",
-                paddingHorizontal: 16,
-                borderWidth: 1.5,
-                borderColor: "#E8E2F7",
-                borderRadius: 25,
-                height: 48,
-              }}
-            >
-              <TextInput
-                placeholder="Search By Order No"
-                placeholderTextColor="#A389D4"
+            <TouchableWithoutFeedback onPress={() => {}} accessible={false}>
+              <View
                 style={{
-                  flex: 1,
-                  fontSize: 14,
-                  color: "#1F2937",
-                  height: "100%",
-                  fontStyle: "italic",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  backgroundColor: "#FAF9FE",
+                  paddingHorizontal: 16,
+                  borderWidth: 1.5,
+                  borderColor: "#E8E2F7",
+                  borderRadius: 25,
+                  height: 48,
                 }}
-                onChangeText={(text) => {
-                  const numericOnly = text.replace(/[^0-9]/g, "");
-                  setSearchText(numericOnly);
-                }}
-                value={searchText}
-                keyboardType="numeric"
-              />
-              <TouchableOpacity onPress={handleSearch}>
-                <AntIcons name="search" size={20} color="#6B3BCF" />
-              </TouchableOpacity>
-            </View>
+              >
+                <TextInput
+                  ref={searchInputRef}
+                  autoFocus={false}
+                  blurOnSubmit={true}
+                  placeholder="Search By Order No"
+                  placeholderTextColor="#A389D4"
+                  style={{
+                    flex: 1,
+                    fontSize: 14,
+                    color: "#1F2937",
+                    height: "100%",
+                    fontStyle: "italic",
+                  }}
+                  onChangeText={(text) => {
+                    const numericOnly = text.replace(/[^0-9]/g, "");
+                    setSearchText(numericOnly);
+                  }}
+                  value={searchText}
+                  keyboardType="numeric"
+                />
+                <TouchableOpacity onPress={handleSearch}>
+                  <AntIcons name="search" size={20} color="#6B3BCF" />
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
           </View>
 
           {/* Filters List */}
@@ -825,6 +976,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
                 contentContainerStyle={{ paddingHorizontal: 16 }}
               >
                 {filters.map((filter) => (
@@ -903,6 +1055,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
               </View>
             ) : searchError ? (
               <ScrollView
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="on-drag"
                 contentContainerStyle={{
                   justifyContent: "center",
                   alignItems: "center",
@@ -939,11 +1093,13 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
             ) : filteredOrders.length > 0 ? (
               <FlatList
                 data={filteredOrders}
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="on-drag"
                 keyExtractor={(item, index) => {
+                  const safeProcessId = item.processId || "";
                   const safeOrderId = item.orderId || "unknown";
                   const safeInvNo = item.InvNo || "";
-                  const safeCreatedAt = item.createdAt || "";
-                  return `${safeOrderId}-${safeInvNo}-${safeCreatedAt}-${index}`;
+                  return `${safeOrderId}-${safeProcessId}-${safeInvNo}-${index}`;
                 }}
                 renderItem={({ item }) => {
                   const isPaymentPending =
@@ -955,13 +1111,15 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                   return (
                     <TouchableOpacity
                       activeOpacity={1}
-                      onPress={() =>
+                      onPress={() => {
+                        Keyboard.dismiss();
+                        searchInputRef.current?.blur();
                         navigation.navigate("View_CancelOrderScreen" as any, {
-                          orderId: item.orderId,
+                          orderId: item.processId || item.orderId,
                           status: item.status,
                           reportStatus: item.reportStatus,
-                        })
-                      }
+                        });
+                      }}
                     >
                       <View
                         style={{
@@ -970,13 +1128,15 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                           padding: 16,
                           marginBottom: 12,
                           marginHorizontal: 16,
+                          marginTop: 4,
                           borderWidth: 1.5,
                           borderColor: isPaymentPending ? "#EF4444" : "#F3F4F6",
                           shadowColor: "#000",
-                          shadowOffset: { width: 0, height: 4 },
-                          shadowOpacity: 0.04,
-                          shadowRadius: 8,
-                          elevation: 2,
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.25,
+                          shadowRadius: 3.84,
+                          elevation: 4,
+                          maxWidth: 500,
                         }}
                       >
                         <View
@@ -1257,7 +1417,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
             </TouchableOpacity>
           </View>
         )}
-      </LinearGradient>
+        </LinearGradient>
+      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 };

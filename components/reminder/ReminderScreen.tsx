@@ -23,6 +23,7 @@ import environment from "@/environment/environment";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback } from "react";
+import socketService from "@/services/socket/socket.service";
 
 let globalUnreadCount = 0;
 let unreadCountListeners: ((count: number) => void)[] = [];
@@ -53,13 +54,17 @@ interface ReminderScreenProps {
 interface Notification {
   id: number;
   orderId: number;
+  processOrderId?: number;
+  processId?: number;
+  parentOrderId?: number;
   title: string;
   readStatus: boolean;
   createdAt: string;
   invNo: string;
   orderStatus: string;
   reportStatus: string;
-  cusId: string;
+  userId?: number;
+  cusId: string | number;
   customerId: string;
   customerName: string;
   phoneNumber: string;
@@ -112,11 +117,15 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
         return;
       }
 
+      const cleanToken = storedToken.replace(/^["']|["']$/g, "").trim();
+
       const response = await axios.get(
-        `${environment.API_BASE_URL}api/notifications/`,
+        `${environment.API_BASE_URL}api/notifications`,
         {
           headers: {
-            Authorization: `Bearer ${storedToken}`,
+            Authorization: `Bearer ${cleanToken}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
           },
         },
       );
@@ -158,12 +167,16 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
   useEffect(() => {
     fetchNotifications();
 
-    const intervalId = setInterval(() => {
+    // Subscribe to real-time socket events from /api/notifications/trigger (0 polling)
+    const unsubscribe = socketService.onNewNotification(() => {
+      console.log(
+        "🔔 [ReminderScreen] Real-time notification received via socket - updating list",
+      );
       fetchNotifications();
-    }, 12000);
+    });
 
     return () => {
-      clearInterval(intervalId);
+      unsubscribe();
     };
   }, []);
 
@@ -196,10 +209,21 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
       }
 
       if (notificationToUpdate) {
+        // ALWAYS pass processOrderId (processorders.id), matching ViewOrdersScreen and ViewCustomerScreen
+        const targetOrderId =
+          notificationToUpdate.processOrderId ||
+          notificationToUpdate.processId ||
+          notificationToUpdate.orderId;
+
+        const targetUserId =
+          notificationToUpdate.userId || notificationToUpdate.cusId;
+
+        // NOTE: Do NOT pass `status` here. The notification only holds a stale
+        // snapshot of the status from when it was created (e.g. "On the way").
+        // View_CancelOrderScreen loads the real, current status from the API.
         navigation.navigate("View_CancelOrderScreen" as any, {
-          orderId: notificationToUpdate.orderid,
-          userId: notificationToUpdate.cusId || notificationToUpdate.customerId,
-          status: notificationToUpdate.status,
+          orderId: targetOrderId,
+          userId: targetUserId,
           reportStatus: notificationToUpdate.reportStatus,
         });
       }
@@ -276,7 +300,8 @@ const ReminderScreen: React.FC<ReminderScreenProps> = ({ navigation }) => {
             className="text-white font-bold"
             style={{ fontSize: SCREEN_HEIGHT > 900 ? 20 : 18 }}
           >
-            {unreadCount} Unread Notifications
+            {unreadCount} Unread{" "}
+            {unreadCount === 1 ? "Notification" : "Notifications"}
           </Text>
         </View>
       </LinearGradient>

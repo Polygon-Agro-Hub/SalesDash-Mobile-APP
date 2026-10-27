@@ -39,7 +39,7 @@ const AttachGeoLocationScreen: React.FC<AttachGeoLocationScreenProps> = ({
   navigation,
   route,
 }) => {
-  const webViewRef = useRef<WebView>(null);
+  const webViewRef = useRef<any>(null);
 
   const currentLatitude = route.params?.currentLatitude;
   const currentLongitude = route.params?.currentLongitude;
@@ -138,6 +138,25 @@ const AttachGeoLocationScreen: React.FC<AttachGeoLocationScreenProps> = ({
         markerPosition.longitude,
         locationName,
       );
+      setIsAttaching(false);
+      navigation.goBack();
+      return;
+    }
+
+    const returnScreen = route.params?.returnScreen;
+
+    if (returnScreen) {
+      setIsAttaching(false);
+      navigation.navigate({
+        name: returnScreen,
+        params: {
+          selectedLatitude: markerPosition.latitude,
+          selectedLongitude: markerPosition.longitude,
+          selectedLocationName: locationName,
+        },
+        merge: true,
+      } as any);
+      return;
     }
 
     setIsAttaching(false);

@@ -10,7 +10,7 @@ import {
   Keyboard,
   Alert,
   ScrollView,
-  TextInputKeyPressEventData,
+  TextInputKeyPressEvent,
   NativeSyntheticEvent,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -51,11 +51,12 @@ const OtpScreen: React.FC = () => {
   const [isOtpInvalid, setIsOtpInvalid] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // --- Layout tracking for keyboard-aware scrolling (mirrors OrderConfimedOTPScreen) ---
   const otpRowRef = useRef<View>(null);
   const buttonRowRef = useRef<View>(null);
   const [otpRowY, setOtpRowY] = useState(0);
   const [buttonRowY, setButtonRowY] = useState(0);
+
+  const isVerifyingRef = useRef(false);
 
   const isOtpComplete = otp.every((digit) => digit.length === 1);
 
@@ -78,6 +79,10 @@ const OtpScreen: React.FC = () => {
   };
 
   const verifyOTP = async () => {
+    if (isVerifyingRef.current || loading) {
+      return;
+    }
+
     const otpCode = otp.join("");
 
     if (otpCode.length !== 5) {
@@ -89,6 +94,8 @@ const OtpScreen: React.FC = () => {
       Alert.alert("Error", "OTP has expired. Please request a new one.");
       return;
     }
+
+    isVerifyingRef.current = true;
 
     try {
       setLoading(true);
@@ -105,11 +112,7 @@ const OtpScreen: React.FC = () => {
       }
 
       const otpVerificationUrl =
-        "https://api.getshoutout.com/otpservice/verify";
-      const otpHeaders = {
-        Authorization: `Apikey ${environment.SHOUTOUT_API_KEY}`,
-        "Content-Type": "application/json",
-      };
+        `${environment.API_BASE_URL}api/otp/verify`;
 
       const otpBody = {
         code: otpCode,
@@ -124,9 +127,7 @@ const OtpScreen: React.FC = () => {
       ) {
         statusCode = "1000";
       } else {
-        const otpResponse = await axios.post(otpVerificationUrl, otpBody, {
-          headers: otpHeaders,
-        });
+        const otpResponse = await axios.post(otpVerificationUrl, otpBody);
         statusCode = otpResponse.data.statusCode;
       }
 
@@ -139,6 +140,8 @@ const OtpScreen: React.FC = () => {
           Alert.alert("Error", "No customer data found.");
           return;
         }
+
+        await AsyncStorage.removeItem("pendingCustomerData");
 
         let parsedData;
         try {
@@ -239,6 +242,7 @@ const OtpScreen: React.FC = () => {
       Alert.alert("Error", errorMessage);
     } finally {
       setLoading(false);
+      isVerifyingRef.current = false;
     }
   };
 
@@ -248,24 +252,26 @@ const OtpScreen: React.FC = () => {
       setResendDisabled(true);
       setTimer(60);
 
-      const apiUrl = "https://api.getshoutout.com/otpservice/send";
-      const headers = {
-        Authorization: `Apikey ${environment.SHOUTOUT_API_KEY}`,
-        "Content-Type": "application/json",
-      };
+      const apiUrl = `${environment.API_BASE_URL}api/otp/send`;
 
       const cleanedPhoneNumber = phoneNumber.replace(/[^\d]/g, "");
+
+      const isUpdateFlow = route.name === "OtpScreenUp";
+
+      const smsContent = isUpdateFlow
+        ? "This is your OTP for your account details update: {{code}}"
+        : "Thank you for registering with us as a Polygon customer. Please use the below OTP to confirm the registration process. {{code}}";
+
       const body = {
-        source: "PolygonAgro",
+        source: "Polygon",
         transport: "sms",
         content: {
-          sms: "Thank you for registering with us a GoviMart customer. Please use the bellow OTP to confirm the registration process. {{code}}",
+          sms: smsContent,
         },
         destination: cleanedPhoneNumber,
       };
 
-      const response = await axios.post(apiUrl, body, { headers });
-      console.log("[OTP RESEND] Response Data:", response.data);
+      const response = await axios.post(apiUrl, body);
 
       if (response.data.referenceId) {
         await AsyncStorage.setItem("referenceId", response.data.referenceId);
@@ -315,7 +321,7 @@ const OtpScreen: React.FC = () => {
   };
 
   const handleKeyPress = (
-    { nativeEvent: { key } }: NativeSyntheticEvent<TextInputKeyPressEventData>,
+    { nativeEvent: { key } }: TextInputKeyPressEvent,
     index: number,
   ) => {
     if (key === "Backspace" && !otp[index] && index > 0) {
@@ -323,9 +329,6 @@ const OtpScreen: React.FC = () => {
     }
   };
 
-  // --- Keyboard-aware scrolling: measures live position instead of relying on
-  // stale onLayout values, which is what made OrderConfimedOTPScreen's scroll
-  // behave smoothly compared to a plain onLayout-only approach. ---
   const scrollToOtpRow = () => {
     setTimeout(
       () => {
@@ -410,10 +413,7 @@ const OtpScreen: React.FC = () => {
             onBackPress={() => navigation.goBack()}
           />
           <View className="flex-1 bg-white items-center">
-            <View
-              className="w-full max-w-[500px]"
-              style={{ paddingTop: 24 }}
-            >
+            <View className="w-full max-w-[500px]" style={{ paddingTop: 24 }}>
               {/* Illustration - Centered */}
               <View className="items-center justify-center mb-6">
                 <Image
@@ -446,6 +446,7 @@ const OtpScreen: React.FC = () => {
                     ref={(el: TextInput | null) => {
                       inputRefs.current[index] = el;
                     }}
+                    editable={!loading}
                     className={`w-12 h-12 rounded-lg border-2 ${
                       digit
                         ? "bg-[#874DDB] border-[#874DDB]"
@@ -461,6 +462,7 @@ const OtpScreen: React.FC = () => {
                       padding: 0,
                       paddingTop: 0,
                       paddingBottom: 0,
+                      opacity: loading ? 0.6 : 1,
                     }}
                     keyboardType="numeric"
                     maxLength={1}

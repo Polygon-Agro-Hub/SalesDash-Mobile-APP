@@ -110,6 +110,21 @@ export type RootStackParamList = {
   };
   PrivacyPolicy: undefined;
   TermsConditions: undefined;
+  CameraAccess?: {
+    returnScreen?: keyof RootStackParamList;
+    returnParams?: any;
+    blockBackNavigation?: boolean;
+  };
+  LocationAccess?: {
+    returnScreen?: keyof RootStackParamList;
+    returnParams?: any;
+    blockBackNavigation?: boolean;
+  };
+  NotificationAccess?: {
+    returnScreen?: keyof RootStackParamList;
+    returnParams?: any;
+    blockBackNavigation?: boolean;
+  };
   SelectOrderTypeNewCustomer: {
     id: number;
     name: string;
@@ -131,6 +146,8 @@ export type RootStackParamList = {
     selectedPackageDescription: string;
     selectedPackageportion: number;
     selectedPackageperiod: number;
+    packageType?: string;
+    endDate?: string | null;
   };
   ViewCustomerScreen: {
     number: string;
@@ -341,6 +358,9 @@ export type RootStackParamList = {
   };
   OrderConfirmedScreen: {
     orderId: number;
+    processOrderId?: number;
+    parentOrderId?: number;
+    invoiceNumber?: string;
     total: number;
     subtotal: number;
     discount: number;
@@ -362,6 +382,7 @@ export type RootStackParamList = {
   AttachGeoLocationScreen: {
     currentLatitude?: number;
     currentLongitude?: number;
+    returnScreen?: keyof RootStackParamList;
     onLocationSelect?: (
       latitude: number,
       longitude: number,
@@ -439,6 +460,11 @@ export type RootStackParamList = {
   };
   AddDeliveryAddress: {
     customerId: string;
+    addressId?: number;
+    addressType?: "House" | "Apartment";
+    selectedLatitude?: number;
+    selectedLongitude?: number;
+    selectedLocationName?: string;
   };
   DeliveryAddress: {
     customerId: string;
@@ -482,26 +508,5 @@ export type RootStackParamList = {
     rawAdditionalItems?: any[];
     number?: string;
     customerscreencustomerid?: string;
-  };
-  OnlinePayment:{
-    
-  };
-  OnlinePaymentStatus: {
-    orderId?: number | string;
-    customerId?: string | number;
-    name?: string;
-    title?: string;
-    number?: string;
-    isPackage?: any;
-    total?: number;
-    subtotal?: number;
-    discount?: number;
-    selectedDate?: string;
-    selectedTimeSlot?: string;
-    paymentMethod?: string;
-    currentStep?: number;
-    id?: string | number;
-    customerid?: string | number;
-    customerscreencustomerid?: string | number;
   };
 };

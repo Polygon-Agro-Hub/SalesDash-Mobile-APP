@@ -6,6 +6,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import environment from "@/environment/environment";
+import pushNotificationService from "@/services/notification/pushNotification.service";
+import socketService from "@/services/socket/socket.service";
 import {
   Keyboard,
   Platform,
@@ -113,9 +115,27 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             ["tokenStoredTime", timestamp.toISOString()],
             ["tokenExpirationTime", expirationTime.toISOString()],
           ]);
+          socketService.connect().catch(() => {});
+          socketService.checkNewNotifications().catch(() => {});
+          pushNotificationService.registerPushTokenAsync().catch(() => {});
           if (passwordUpdate === 0) {
             navigation.navigate("ChangePasswordScreen");
           } else {
+            try {
+              const hasAsked = await AsyncStorage.getItem(
+                "hasAskedNotificationPermission"
+              );
+              if (hasAsked !== "true") {
+                navigation.navigate("NotificationAccess", {
+                  returnScreen: "Main",
+                  returnParams: { screen: "DashboardScreen" },
+                  blockBackNavigation: true,
+                });
+                return;
+              }
+            } catch (err) {
+              console.warn("Error reading notification permission flag:", err);
+            }
             navigation.navigate("Main", { screen: "DashboardScreen" });
           }
         } else {
@@ -169,11 +189,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       style={{ flex: 1, backgroundColor: "white" }}
     >
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
+        ref={scrollViewRef}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         bounces={false}
-        style={{ backgroundColor: 'white' }}
+        style={{ backgroundColor: "white" }}
       >
         <LinearGradient
           colors={["#9B60E8", "#6E3DD1"]}
@@ -199,7 +220,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             marginTop: -28,
             paddingHorizontal: 24,
             paddingVertical: 32,
-            
           }}
         >
           {/* Center Container */}
@@ -319,7 +339,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 onSubmitEditing={handleSignIn}
                 ref={passwordRef}
                 onFocus={() =>
-                  scrollViewRef.current?.scrollToEnd({ animated: true })
+                  setTimeout(
+                    () =>
+                      scrollViewRef.current?.scrollToEnd({ animated: true }),
+                    100,
+                  )
                 }
               />
 

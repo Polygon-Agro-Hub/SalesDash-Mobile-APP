@@ -20,6 +20,7 @@ import {
 } from "react-native-responsive-screen";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Print from "expo-print";
+import * as Sharing from "expo-sharing";
 import { Asset } from "expo-asset";
 import * as FileSystem from "expo-file-system/legacy";
 import axios from "axios";
@@ -73,9 +74,13 @@ interface AdditionalItem {
 }
 interface CustomerInfo {
   buildingType: string;
+  fullName: string;
   firstName: string;
   lastName: string;
   phoneNumber: string;
+  phoneCode?: string;
+  phoneNumber2?: string;
+  phoneCode2?: string;
   title: string;
 }
 
@@ -140,6 +145,8 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
 
   const {
     orderId = "N/A",
+    processOrderId,
+    invoiceNumber: passedInvoiceNumber,
     total = 0,
     subtotal = 0,
     discount = 0,
@@ -149,7 +156,9 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
     selectedTimeSlot = "N/A",
     items = [],
     isPackage = "",
-  } = route.params || {};
+  } = (route.params as any) || {};
+
+  const effectiveOrderId = processOrderId || orderId;
 
   useEffect(() => {
     const handleBackPress = () => {
@@ -172,7 +181,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
     const fetchOrderDetails = async () => {
       try {
         const response = await axios.get(
-          `${environment.API_BASE_URL}api/orders/get-order/${orderId}`,
+          `${environment.API_BASE_URL}api/orders/get-order/${effectiveOrderId}`,
           { timeout: 30000 },
         );
 
@@ -208,7 +217,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         clearTimeout(timeoutId);
       }
     };
-  }, [orderId]);
+  }, [effectiveOrderId]);
 
   useEffect(() => {
     const fetchCustomerData = async () => {
@@ -277,15 +286,27 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
 
   const convertLogoToBase64 = async () => {
     try {
-      const asset = Asset.fromModule(
+      const assets = await Asset.loadAsync(
         require("../../assets/images/order/logo.png"),
       );
-      if (!asset.downloaded) await asset.downloadAsync();
+      const asset = assets && assets[0];
+      if (asset) {
+        let uri = asset.localUri || asset.uri;
 
-      const base64 = await FileSystem.readAsStringAsync(asset.localUri!, {
-        encoding: "base64",
-      });
-      return `data:image/webp;base64,${base64}`;
+        if (uri && !uri.startsWith("file://") && !uri.startsWith("/")) {
+          const targetPath = `${FileSystem.cacheDirectory}temp_logo.png`;
+          const downloaded = await FileSystem.downloadAsync(uri, targetPath);
+          uri = downloaded.uri;
+        }
+
+        if (uri) {
+          const base64 = await FileSystem.readAsStringAsync(uri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          return `data:image/png;base64,${base64}`;
+        }
+      }
+      return logoBase64Fallback;
     } catch (error) {
       console.error("Error converting logo to base64, using fallback:", error);
       return logoBase64Fallback;
@@ -300,7 +321,9 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
 
       const logoBase64 = await convertLogoToBase64();
       const invoiceNumber =
-        order?.orderStatus?.invoiceNumber || `INV-${Date.now()}`;
+        order?.orderStatus?.invoiceNumber ||
+        passedInvoiceNumber ||
+        `INV-${Date.now()}`;
 
       const packagePrice = parseFloat(order?.packageInfo?.productPrice || "0");
       const packingFee = parseFloat(order?.packageInfo?.packingFee || "0");
@@ -310,8 +333,14 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
       const totalAmount = totalBeforeDiscount - discountAmount;
       const deliveryChargeAmount = parseFloat(order?.deliveryCharge || "0");
 
+      // Ensure additional items are unique by productId
+      const uniqueAdditionalItems = (order?.additionalItems || []).filter(
+        (item, index, self) =>
+          index === self.findIndex((t) => t.productId === item.productId),
+      );
+
       const additionalItemsTotal =
-        order?.additionalItems?.reduce((sum, item) => {
+        uniqueAdditionalItems.reduce((sum, item) => {
           const price = parseFloat(item.price?.toString() || "0");
           const discount = parseFloat(item.discount?.toString() || "0");
           const actualAmount = price + discount;
@@ -319,7 +348,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         }, 0) || 0;
 
       const totaldiscount =
-        order?.additionalItems?.reduce((sum, item) => {
+        uniqueAdditionalItems.reduce((sum, item) => {
           const discount =
             typeof item.discount === "number"
               ? item.discount.toString()
@@ -359,8 +388,9 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         const onlineRowHtml =
           moneyPaid > 0
             ? `
-          <div style="display: flex; justify-content: space-between; margin-right: 20px; margin-top: ${creditPaid > 0 ? "2px" : "10px"
-            };">
+          <div style="display: flex; justify-content: space-between; margin-right: 20px; margin-top: ${
+            creditPaid > 0 ? "2px" : "10px"
+          };">
             <p style="color: #16A34A; font-weight: 600; font-size: 14px;">Online Transferred Amount</p>
             <p style="color: #16A34A; font-weight: 600; font-size: 14px;">Rs. ${moneyPaid
               .toFixed(2)
@@ -372,6 +402,43 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         paymentStatusHtml = `
           ${creditRowHtml}
           ${onlineRowHtml}
+        `;
+      } else if (paymentMethodLower === "card" && orderIsPaid === 0) {
+        // Card order that has not been paid yet -> show "Online Transferred Amount (Pending)"
+        const creditPaid = parseFloat(
+          order?.orderStatus?.creditPaid?.toString() || "0",
+        );
+        const moneyPaid = parseFloat(
+          order?.orderStatus?.moneyPaid?.toString() || "0",
+        );
+        const fullTotalAmount = parseFloat(order?.fullTotal?.toString() || "0");
+
+        // Prefer the amount stored for the online payment; otherwise derive it
+        const onlinePendingAmount =
+          moneyPaid > 0 ? moneyPaid : fullTotalAmount - creditPaid;
+
+        const creditRowHtml =
+          creditPaid > 0
+            ? `
+          <div style="display: flex; justify-content: space-between; margin-right: 20px; margin-top: 10px;">
+            <p style="color: #16A34A; font-weight: 600; font-size: 14px;">Credit Balance Used</p>
+            <p style="color: #16A34A; font-weight: 600; font-size: 14px;">Rs. ${creditPaid
+              .toFixed(2)
+              .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
+          </div>
+        `
+            : "";
+
+        paymentStatusHtml = `
+          ${creditRowHtml}
+          <div style="display: flex; justify-content: space-between; margin-right: 20px; margin-top: ${
+            creditPaid > 0 ? "2px" : "10px"
+          };">
+            <p style="color: #EA9A3E; font-weight: 600; font-size: 14px;">Online Transferred Amount (Pending)</p>
+            <p style="color: #EA9A3E; font-weight: 600; font-size: 14px;">Rs. ${onlinePendingAmount
+              .toFixed(2)
+              .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
+          </div>
         `;
       } else if (paymentMethodLower === "cash" && orderIsPaid === 0) {
         const creditPaid = parseFloat(
@@ -409,12 +476,13 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
 
         paymentStatusHtml = `
           ${creditRowHtml}
-          <div style="display: flex; justify-content: space-between; margin-right: 20px; margin-top: ${creditPaid > 0 ? "2px" : "10px"
+          <div style="display: flex; justify-content: space-between; margin-right: 20px; margin-top: ${
+            creditPaid > 0 ? "2px" : "10px"
           };">
             <p style="color: #EA9A3E; font-weight: 600; font-size: 14px;">${label}</p>
             <p style="color: #EA9A3E; font-weight: 600; font-size: 14px;">Rs. ${cashPendingAmount
-            .toFixed(2)
-            .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
+              .toFixed(2)
+              .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
           </div>
           ${warningHtml}
         `;
@@ -435,8 +503,8 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
       }
 
       let additionalItemsRows = "";
-      if (order?.additionalItems && order.additionalItems.length > 0) {
-        order.additionalItems.forEach((item, index) => {
+      if (uniqueAdditionalItems && uniqueAdditionalItems.length > 0) {
+        uniqueAdditionalItems.forEach((item, index) => {
           const price = parseFloat(item.price?.toString() || "0");
           const discount = parseFloat(item.discount?.toString() || "0");
           const quantity = parseFloat(item.qty?.toString() || "0");
@@ -588,8 +656,8 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
               >Polygon Holdings (Private) Limited</span
             >
           </p>
-          <p class="headerp">No. 42/46, Nawam Mawatha, Colombo 02.</p>
-          <p class="headerp">Contact No : +94 770 111 999</p>
+          <p class="headerp">Level 2, Building 2 No. 46/42, Nawam Mawatha, Colombo 02</p>
+          <p class="headerp">Contact No : 011 431 3433</p>
           <p class="headerp">Email Address : info@polygon.lk</p>
         </div>
         <div>
@@ -607,12 +675,18 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         style="display: flex; justify-content: space-between"
       >
         <div>
-          <p class="bold">Bill To :</p>
-          <p class="headerp">${order?.customerInfo?.title || ""}. ${order?.customerInfo?.firstName || ""} ${order?.customerInfo?.lastName || ""}</p>
-          <p class="headerp"> +94 ${order?.customerInfo?.phoneNumber || ""}</p>
-          <p class="headerp">${customerData?.email || ""}</p>
+<p class="bold">Bill To :</p>
+<p class="headerp">${order?.customerInfo?.title ? `${order.customerInfo.title}. ` : ""}${order?.customerInfo?.fullName || ""}</p>
+<p class="headerp">${order?.customerInfo?.phoneCode || "+94"} ${order?.customerInfo?.phoneNumber || ""}</p>
+${
+  order?.customerInfo?.phoneNumber2
+    ? `<p class="headerp">${order?.customerInfo?.phoneCode2 || "+94"} ${order.customerInfo.phoneNumber2}</p>`
+    : ""
+}
+<p class="headerp">${customerData?.email || ""}</p>
               <div style="margin-top: 10px">
-      ${order?.customerInfo?.buildingType === "Apartment"
+      ${
+        order?.customerInfo?.buildingType === "Apartment"
           ? `
   <p class="bold">Apartment Address :</p>
   ${order?.buildingDetails?.buildingNo ? `<p class="headerp"><span class="label">No : </span><span class="value">${order.buildingDetails.buildingNo},</span></p>` : ""}
@@ -629,7 +703,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
   ${order?.buildingDetails?.streetName ? `<p class="headerp"><span class="label">Street Name : </span><span class="value">${order.buildingDetails.streetName},</span></p>` : ""}
   ${order?.buildingDetails?.city ? `<p class="headerp"><span class="label">City : </span><span class="value">${order.buildingDetails.city}</span></p>` : ""}
     `
-        }
+      }
     </div>
           
         </div>
@@ -675,7 +749,8 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         </div>
       </div>
 
-      ${order?.isPackage === 1
+      ${
+        order?.isPackage === 1
           ? `
       <!-- Package Section -->
       <div class="section" style="margin-top: 40px; margin-bottom: 30px">
@@ -705,9 +780,10 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         </div>
       </div>`
           : ""
-        }
+      }
 
-      ${order?.additionalItems && order.additionalItems.length > 0
+      ${
+        uniqueAdditionalItems && uniqueAdditionalItems.length > 0
           ? `
       <!-- Additional Items Section -->
       <div class="section 4">
@@ -721,7 +797,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
             margin-top:10px
           "
         >
-         <div class="bold">${order?.isPackage === 1 ? "Additional Items" : "Custom Items"} (${String(order?.additionalItems?.length || 0).padStart(2, "0")} ${order?.additionalItems?.length === 1 ? "Item" : "Items"})</div>
+         <div class="bold">${order?.isPackage === 1 ? "Additional Items" : "Custom Items"} (${String(uniqueAdditionalItems.length).padStart(2, "0")} ${uniqueAdditionalItems.length === 1 ? "Item" : "Items"})</div>
     <div style="font-weight: 550; font-size: 16px">Rs. ${additionalItemsTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</div>
         </div>
         <div style="border: 1px solid #ddd; border-radius: 10px">
@@ -740,37 +816,40 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         </div>
       </div>`
           : ""
-        }
+      }
 
       <!-- Grand Total Section -->
       <div class="section" style="margin-top: 30px">
         <div style="margin-bottom: 20px; border-bottom: 1px solid #ccc;padding-bottom: 10px;" >
           <div class="bold">Grand Total for all items</div>
         </div>
-        ${order?.isPackage === 1
-          ? `
+        ${
+          order?.isPackage === 1
+            ? `
         <div style="display: flex; justify-content: space-between; margin-right: 20px; " class="ptext" >
           <p>${order?.packageInfo?.displayName || "Package"}</p>
           <p>Rs. ${(packagePrice + packingFee + serviceFee).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
         </div>`
-          : ""
+            : ""
         }
-        ${order?.additionalItems && order.additionalItems.length > 0
-          ? `
+        ${
+          uniqueAdditionalItems && uniqueAdditionalItems.length > 0
+            ? `
         <div style=" display: flex; justify-content: space-between; margin-right: 20px;" class="ptext" > 
           <p>${order?.isPackage === 1 ? "Additional Items" : "Custom Items"}</p>
           <p>Rs. ${additionalItemsTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
         </div>`
-          : ""
+            : ""
         }
-         ${order?.isPackage === 0
-          ? `
+         ${
+           order?.isPackage === 0
+             ? `
         <div style="display: flex; justify-content: space-between; margin-right: 20px; " class="ptext" >
           <p>Service Fee</p>
           <p>Rs. 180.00</p>
         </div>`
-          : ""
-        }
+             : ""
+         }
        
         <div style="display: flex; justify-content: space-between; margin-right: 20px;" class="ptext" >
           <p>Discount</p>
@@ -790,7 +869,7 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         <p>Rs. ${totalAmount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
       </div>
 
-      <!-- Payment Status Section (dynamic: Online Transferred / Credit Balance Used / Cash On Delivery / Cash On Pickup) -->
+      <!-- Payment Status Section (dynamic: Online Transferred / Online Transferred (Pending) / Credit Balance Used / Cash On Delivery / Cash On Pickup) -->
       ${paymentStatusHtml}
 
       <!-- Remarks Section -->
@@ -821,39 +900,31 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
 </html>
       `;
 
-      const { base64: pdfBase64 } = await Print.printToFileAsync({
+      const { uri: pdfUri, base64: pdfBase64 } = await Print.printToFileAsync({
         html: htmlContent,
         width: 595,
         base64: true,
       });
 
       const fileName = `Invoice_${invoiceNumber}.pdf`;
-      const filePath = `${FileSystem.documentDirectory}${fileName}`;
-
-      // await FileSystem.writeAsStringAsync(filePath, pdfBase64, {
-      //   encoding: FileSystem.EncodingType.Base64,
-      // });
-
-      // Alert.alert(
-      //   "Invoice Downloaded",
-      //   `Invoice saved to your device.`,
-      // );
 
       if (Platform.OS === "android") {
         const permissions =
           await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
 
         if (!permissions.granted) {
-          Alert.alert("Permission denied", "Please allow access to save the PDF.");
+          Alert.alert(
+            "Permission denied",
+            "Please allow access to save the PDF.",
+          );
           return;
         }
 
-        const fileUri =
-          await FileSystem.StorageAccessFramework.createFileAsync(
-            permissions.directoryUri,
-            `Invoice_${invoiceNumber}.pdf`,
-            "application/pdf"
-          );
+        const fileUri = await FileSystem.StorageAccessFramework.createFileAsync(
+          permissions.directoryUri,
+          fileName,
+          "application/pdf",
+        );
 
         await FileSystem.writeAsStringAsync(fileUri, pdfBase64!, {
           encoding: FileSystem.EncodingType.Base64,
@@ -861,15 +932,30 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
 
         Alert.alert("Success", "Invoice downloaded successfully.");
       } else {
-        const filePath = `${FileSystem.documentDirectory}Invoice_${invoiceNumber}.pdf`;
+        const fileUri = `${FileSystem.documentDirectory}${fileName}`;
 
-        await FileSystem.writeAsStringAsync(filePath, pdfBase64!, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
+        try {
+          await FileSystem.copyAsync({
+            from: pdfUri,
+            to: fileUri,
+          });
+        } catch (copyErr) {
+          console.log("Copy file error, using base64 write fallback:", copyErr);
+          await FileSystem.writeAsStringAsync(fileUri, pdfBase64!, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+        }
 
-        Alert.alert("Success", "Invoice saved successfully.");
+        const isSharingAvailable = await Sharing.isAvailableAsync();
+        if (isSharingAvailable) {
+          await Sharing.shareAsync(fileUri, {
+            mimeType: "application/pdf",
+            dialogTitle: "Save Invoice PDF",
+          });
+        } else {
+          Alert.alert("Success", "Invoice saved to documents.");
+        }
       }
-
     } catch (error) {
       console.error("Invoice generation error:", error);
       Alert.alert("Error", "Failed to generate invoice. Please try again.");
@@ -908,20 +994,19 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
                 style={{ fontSize: 20 }}
                 className="text-black text-center font-bold"
               >
-                Order is Successful!
+                Order Placed Successful!
               </Text>
               <Text
                 style={{ fontSize: 18 }}
                 className="text-[#3F3F3F] text-center mt-2"
               >
-                Order No: #{order?.orderStatus?.invoiceNumber}
+                Order No: #{order?.orderStatus?.invoiceNumber || passedInvoiceNumber || ""}
               </Text>
               <Text
                 style={{ fontSize: 16 }}
                 className="text-[#747474] text-center mt-5"
               >
-                Order Confirmation message has been
-                sent to your Customer.
+                Order placement message has been sent to your Customer.
               </Text>
             </View>
 

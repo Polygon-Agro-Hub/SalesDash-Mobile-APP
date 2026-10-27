@@ -10,6 +10,7 @@ import {
   Modal,
   Linking,
   BackHandler,
+  Keyboard,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -50,16 +51,16 @@ interface Order {
   paymentMethod: string;
   paymentStatus: number;
   orderStatus:
-  | string
-  | {
-    creditPaid?: string;
-    invoiceNumber?: string;
-    isPaid?: number;
-    moneyPaid?: string;
-    paymentMethod?: string;
-    reportStatus?: string | null;
-    status?: string;
-  };
+    | string
+    | {
+        creditPaid?: string;
+        invoiceNumber?: string;
+        isPaid?: number;
+        moneyPaid?: string;
+        paymentMethod?: string;
+        reportStatus?: string | null;
+        status?: string;
+      };
   createdAt: string;
   InvNo: string;
   reportStatus: string;
@@ -121,7 +122,10 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   navigation,
   route,
 }) => {
-  const { orderId, userId, status, reportStatus } = route.params;
+  // NOTE: `status` from route params is intentionally NOT used. Notifications
+  // carry a stale snapshot of the status (e.g. "On the way") from when they were
+  // created. The real current status always comes from the API (get-order).
+  const { orderId, userId, reportStatus } = route.params;
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -139,6 +143,18 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
   const [returnReason, setReturnReason] = useState<string | null>(null);
 
   const [holdEvents, setHoldEvents] = useState<HoldEvent[]>([]);
+
+  // Resolve the real status from the fetched order only.
+  // The API may return it either as `order.status` or nested in
+  // `order.orderStatus.status`. Until the order is loaded it stays "".
+  const currentStatus: string = (() => {
+    if (!order) return "";
+    const nestedStatus =
+      typeof order.orderStatus === "object" && order.orderStatus
+        ? order.orderStatus.status
+        : undefined;
+    return nestedStatus || order.status || "";
+  })();
 
   const isHoldOrder = holdEvents.some((e) => e.isHold);
   const wasOnHold = holdEvents.length > 0;
@@ -202,9 +218,8 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
             `${environment.API_BASE_URL}api/orders/get-order/${orderId}`,
           );
           if (response.data.success) {
-            setOrder(response.data.data);
             const orderData = response.data.data;
-
+            setOrder(orderData);
 
             setDeliveryFee(parseFloat(orderData.deliveryCharge) || 0);
             setIsPackage(orderData.isPackage);
@@ -255,7 +270,9 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
 
   useEffect(() => {
     const fetchReturnReason = async () => {
-      if (status === "Return") {
+      // currentStatus is "" until the order is loaded, so this never fires
+      // with a stale value.
+      if (currentStatus === "Return" || currentStatus === "Return Received") {
         try {
           const storedToken = await AsyncStorage.getItem("authToken");
           if (!storedToken) return;
@@ -275,7 +292,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
       }
     };
     fetchReturnReason();
-  }, [orderId, status]);
+  }, [orderId, currentStatus]);
 
   const formatDateShort = (dateString: string) => {
     if (!dateString) return "";
@@ -297,17 +314,12 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
     }
   };
 
-  const isAfter6PM = (dateString: string) => {
-    if (!dateString) return false;
-    return new Date(dateString).getHours() >= 18;
-  };
-
   const getActualStatus = () => {
-    if (!order) return "";
-    if (status === "Cancelled") return "Cancelled";
-    if (status === "Ordered" && isAfter6PM(order.createdAt))
-      return "Processing";
-    return status;
+    if (!currentStatus) return "";
+    if (currentStatus === "Cancelled") return "Cancelled";
+    if (currentStatus === "Return" || currentStatus === "Return Received")
+      return "Return";
+    return currentStatus;
   };
 
   const isCancelDisabled = () => {
@@ -320,6 +332,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
       "Collected",
       "Delivered",
       "Return",
+      "Return Received",
       "Cancelled",
       "Hold",
     ].includes(actualStatus);
@@ -392,13 +405,15 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
     const actualStatus = getActualStatus();
     if (actualStatus === "Cancelled")
       return itemStatus === "Ordered" || itemStatus === "Cancelled";
-    if (actualStatus === "Return")
+    if (actualStatus === "Return" || actualStatus === "Return Received")
       return itemStatus !== "Delivered" && itemStatus !== "Cancelled";
     if (itemStatus === "Hold")
       return (
         actualStatus === "Hold" ||
         (wasOnHold &&
-          ["On the way", "Delivered", "Return"].includes(actualStatus))
+          ["On the way", "Delivered", "Return", "Return Received"].includes(
+            actualStatus,
+          ))
       );
     if (
       itemStatus === "Delivered" &&
@@ -479,11 +494,21 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
       );
       if (response.data.success) {
         setCancelModalVisible(false);
+        Keyboard.dismiss();
         Alert.alert(
           "Order Cancelled",
           "Your order has been successfully cancelled.",
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                Keyboard.dismiss();
+                navigation.goBack();
+              },
+            },
+          ],
+          { cancelable: false },
         );
-        navigation.goBack();
       } else
         Alert.alert(
           "Error",
@@ -494,7 +519,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
       Alert.alert(
         "Error",
         error.response?.data?.message ||
-        "Failed to cancel the order. Please try again.",
+          "Failed to cancel the order. Please try again.",
       );
     } finally {
       setLoading(false);
@@ -641,7 +666,12 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                   const showRestartAfterThisHold =
                     event.restartedTime != null ||
                     (isLastHold &&
-                      ["On the way", "Delivered", "Return"].includes(status));
+                      [
+                        "On the way",
+                        "Delivered",
+                        "Return",
+                        "Return Received",
+                      ].includes(currentStatus));
 
                   return (
                     <View key={`hold-event-${index}`}>
@@ -652,7 +682,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                         </Text>
                       </View>
                       {label ? (
-                        <View className="pb-2">
+                        <View className="mb-10">
                           <Text className="font-semibold text-[#5E5E5E]">
                             Reason:{" "}
                             <Text className="text-black font-medium">
@@ -661,10 +691,10 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                           </Text>
                         </View>
                       ) : (
-                        <View className="mb-6" />
+                        <View className="mb-10" />
                       )}
                       {showRestartAfterThisHold && (
-                        <View className="flex-row items-center mt-3 mb-10">
+                        <View className="flex-row items-center mb-10">
                           <View className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]" />
                           <Text className="text-[#5E5E5E] font-medium">
                             Order is On the way
@@ -675,7 +705,8 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                   );
                 })}
 
-                {status === "Return" && (
+                {(currentStatus === "Return" ||
+                  currentStatus === "Return Received") && (
                   <View className="flex-row items-center">
                     <View className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]" />
                     <Text className="font-medium text-[#5E5E5E]">
@@ -684,15 +715,17 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                   </View>
                 )}
 
-                {status !== "Return" &&
-                  status !== "Cancelled" &&
-                  status !== "Hold" && (
+                {currentStatus !== "Return" &&
+                  currentStatus !== "Return Received" &&
+                  currentStatus !== "Cancelled" &&
+                  currentStatus !== "Hold" && (
                     <View className="flex-row items-center">
                       <View
-                        className={`p-1.5 rounded-full absolute -left-8 ${status === "Delivered"
-                          ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]"
-                          : "bg-[#D9D9D9] border-4 border-[#EDEDED]"
-                          }`}
+                        className={`p-1.5 rounded-full absolute -left-8 ${
+                          currentStatus === "Delivered"
+                            ? "bg-[#6C3CD1] border-4 border-[#F4EDFF]"
+                            : "bg-[#D9D9D9] border-4 border-[#EDEDED]"
+                        }`}
                       />
                       <Text className="text-[#5E5E5E] font-medium">
                         Order is Delivered
@@ -700,9 +733,9 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                     </View>
                   )}
 
-                {status === "Hold" && (
+                {currentStatus === "Hold" && (
                   <>
-                    <View className="flex-row items-center mt-3 mb-10">
+                    <View className="flex-row items-center mb-10">
                       <View className="p-1.5 rounded-full absolute -left-8 bg-[#D9D9D9] border-4 border-[#EDEDED]" />
                       <Text className="text-[#5E5E5E] font-medium">
                         Order is On the way
@@ -717,7 +750,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                   </>
                 )}
 
-                {status === "Cancelled" && (
+                {currentStatus === "Cancelled" && (
                   <View className="flex-row items-center">
                     <View className="p-1.5 rounded-full absolute -left-8 bg-[#6C3CD1] border-4 border-[#F4EDFF]" />
                     <Text className="text-red-500 font-medium">
@@ -727,16 +760,18 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                 )}
               </View>
 
-              {status === "Return" && returnReason && (
-                <View style={{ paddingLeft: 22, marginTop: 8 }}>
-                  <Text className="font-semibold text-[#5E5E5E]">
-                    Reason:{" "}
-                    <Text className="text-black font-medium">
-                      "{returnReason}"
+              {(currentStatus === "Return" ||
+                currentStatus === "Return Received") &&
+                returnReason && (
+                  <View style={{ paddingLeft: 22, marginTop: 8 }}>
+                    <Text className="font-semibold text-[#5E5E5E]">
+                      Reason:{" "}
+                      <Text className="text-black font-medium">
+                        "{returnReason}"
+                      </Text>
                     </Text>
-                  </Text>
-                </View>
-              )}
+                  </View>
+                )}
             </View>
 
             <View className="bg-white border border-gray-200 rounded-lg shadow-sm mx-4 p-4 mb-4">
@@ -746,9 +781,9 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
               <Text className="text-black font-medium mb-3">
                 {customerData
                   ? `${customerData.title || ""}. ${customerData.firstName || ""} ${customerData.lastName || ""}`.trim() ||
-                  "Not Available"
+                    "Not Available"
                   : `${order.title || ""}  ${order.firstName || ""} ${order.lastName || ""}`.trim() ||
-                  "Not Available"}
+                    "Not Available"}
               </Text>
               <Text className="text-[#808FA2] font-medium mb-1">
                 Customer's Mobile Number
@@ -773,23 +808,23 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                   ? order.fullAddress
                   : customerData?.buildingDetails
                     ? (() => {
-                      const buildingType =
-                        customerData?.buildingType ||
-                        order.customerInfo?.buildingType ||
-                        order.buildingType;
+                        const buildingType =
+                          customerData?.buildingType ||
+                          order.customerInfo?.buildingType ||
+                          order.buildingType;
 
-                      if (buildingType === "Apartment") {
-                        return formatApartmentAddress(
-                          customerData.buildingDetails,
-                        );
-                      } else if (buildingType === "House") {
-                        return formatHouseAddress(
-                          customerData.buildingDetails,
-                        );
-                      } else {
-                        return "Not Available";
-                      }
-                    })()
+                        if (buildingType === "Apartment") {
+                          return formatApartmentAddress(
+                            customerData.buildingDetails,
+                          );
+                        } else if (buildingType === "House") {
+                          return formatHouseAddress(
+                            customerData.buildingDetails,
+                          );
+                        } else {
+                          return "Not Available";
+                        }
+                      })()
                     : "Not Available"}
               </Text>
             </View>
@@ -870,7 +905,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
               {selectedReportOption}{" "}
             </Text>
             <View className="flex w-3/5 mx-auto">
-              {status !== "Cancelled" && status !== "Ordered" && (
+              {currentStatus !== "Cancelled" && currentStatus !== "Ordered" && (
                 <View
                   style={{
                     marginHorizontal: 20,

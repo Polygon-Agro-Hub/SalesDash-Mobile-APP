@@ -11,6 +11,7 @@ import {
   Pressable,
   Alert,
   Dimensions,
+  BackHandler,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -82,7 +83,10 @@ const getBillingInfoRows = (address: SavedAddress | null): BillingInfoRow[] => {
   const purpleIcon = { iconColor: "#7B3FE4", iconBg: "#F3EEFC" };
   const greenIcon = { iconColor: "#16A34A", iconBg: "#EAFBF1" };
 
-  const billingTo = [address.billingTitle, address.billingName]
+  const billingTo = [
+    address.billingTitle ? `${address.billingTitle}.` : "",
+    address.billingName,
+  ]
     .filter(Boolean)
     .join(" ");
 
@@ -241,6 +245,21 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
     }, [customerId, fetchAddresses]),
   );
 
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        navigation.goBack();
+        return true;
+      };
+
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress,
+      );
+      return () => backHandler.remove();
+    }, [navigation]),
+  );
+
   const openMenu = (address: SavedAddress) => {
     const key = `${address.type}-${address.id}`;
     const buttonRef = menuButtonRefs.current[key];
@@ -249,8 +268,10 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
       buttonRef.measure((_fx, _fy, width, height, pageX, pageY) => {
         const screenWidth = Dimensions.get("window").width;
         const rightOffset = Math.max(12, screenWidth - (pageX + width) - 10);
+        const menuGap = 6;
+
         setMenuPosition({
-          top: Math.max(8, pageY - 5),
+          top: pageY + height + menuGap,
           right: rightOffset,
         });
         setSelectedAddress(address);
@@ -461,7 +482,6 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
               shadowOpacity: 0.15,
               shadowRadius: 10,
               elevation: 8,
-              
             }}
           >
             <TouchableOpacity
@@ -515,7 +535,7 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
               backgroundColor: "white",
               borderRadius: 22,
               width: "100%",
-              maxWidth: 340,
+              maxWidth: 350,
               paddingBottom: 18,
               shadowColor: "#000",
               shadowOffset: { width: 0, height: 8 },
@@ -577,7 +597,12 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
             <View className="h-[1px] bg-gray-100 mx-5 mb-1" />
 
             {/* Fields */}
-            <View className="px-5 pt-2">
+            <ScrollView
+              style={{ maxHeight: 480 }}
+              contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8 }}
+              showsVerticalScrollIndicator={false}
+              bounces={false}
+            >
               {getBillingInfoRows(selectedAddress).map((row, idx) => (
                 <React.Fragment key={row.label}>
                   {row.label === "Phone Num 1" && (
@@ -586,15 +611,7 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
                       style={{ marginHorizontal: -15 }}
                     />
                   )}
-                  <View
-                    className="flex-row items-center py-2.5"
-                    style={{
-                      borderBottomWidth:
-                        idx < getBillingInfoRows(selectedAddress).length - 1
-                          ? 0
-                          : 0,
-                    }}
-                  >
+                  <View className="flex-row items-start py-2.5">
                     <View
                       className="items-center justify-center rounded-full mr-3"
                       style={{
@@ -609,19 +626,47 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
                         color={row.iconColor}
                       />
                     </View>
-                    <Text
-                      className="text-gray-400 text-[12.5px]"
-                      style={{ width: 92 }}
+                    <View
+                      style={{
+                        width: 104,
+                        minHeight: 28,
+                        justifyContent: "center",
+                      }}
                     >
-                      {row.label}
-                    </Text>
-                    <Text className="text-gray-800 text-[13px] flex-1">
-                      : {row.value}
-                    </Text>
+                      <Text
+                        className="text-gray-400 text-[12.5px]"
+                        style={{ includeFontPadding: false }}
+                        numberOfLines={1}
+                      >
+                        {row.label}
+                      </Text>
+                    </View>
+
+                    <View
+                      className="flex-row flex-1 items-start"
+                      style={{ minHeight: 28, paddingTop: 4 }}
+                    >
+                      <Text
+                        className="text-gray-800 text-[13px]"
+                        style={{
+                          width: 12,
+                          lineHeight: 20,
+                          includeFontPadding: false,
+                        }}
+                      >
+                        :
+                      </Text>
+                      <Text
+                        className="text-gray-800 text-[13px] flex-1"
+                        style={{ lineHeight: 20, includeFontPadding: false }}
+                      >
+                        {row.value}
+                      </Text>
+                    </View>
                   </View>
                 </React.Fragment>
               ))}
-            </View>
+            </ScrollView>
           </Pressable>
         </Pressable>
       </Modal>

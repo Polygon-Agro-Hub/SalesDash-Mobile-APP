@@ -444,7 +444,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
       <View className="mx-auto w-full max-w-[500px]">
         <Text
           style={{ fontSize: 16, marginTop: -3 }}
-          className="text-center text-black"
+          className="text-center text-[#393939]"
         >
           {customerName.firstName && customerName.lastName
             ? `Customer ID : ${customerName.cusId}`
@@ -520,7 +520,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
                       <Text
                         style={{
                           color: "#FF000D",
-                          fontSize: 12,
+                          fontSize: 14,
                           fontWeight: "600",
                           textDecorationLine: "underline",
                         }}
@@ -548,7 +548,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
                     </Text>
                   </View>
                   <Text
-                    className="flex-1 text-center"
+                    className="flex-1 text-left"
                     style={{ fontSize: 13, color: "#9CA3AF" }}
                   >
                     Name
@@ -578,7 +578,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
                       />
                     </View>
                     <Text
-                      className="text-sm text-black flex-1 text-center"
+                      className="text-sm text-black flex-1 text-left"
                       numberOfLines={2}
                     >
                       {crop.displayName}
@@ -662,7 +662,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
                       <Text
                         style={{
                           color: "#FF000D",
-                          fontSize: 12,
+                          fontSize: 14,
                           fontWeight: "600",
                           textDecorationLine: "underline",
                         }}
@@ -690,7 +690,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
                     </Text>
                   </View>
                   <Text
-                    className="flex-1 text-center"
+                    className="flex-1 text-left"
                     style={{ fontSize: 13, color: "#9CA3AF" }}
                   >
                     Name
@@ -720,7 +720,7 @@ const ExcludeListSummery: React.FC<ExcludeListAddProps> = ({
                       />
                     </View>
                     <Text
-                      className="text-sm text-black flex-1 text-center"
+                      className="text-sm text-black flex-1 text-left"
                       numberOfLines={2}
                     >
                       {crop.displayName}

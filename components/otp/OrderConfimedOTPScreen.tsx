@@ -10,7 +10,7 @@ import {
   Keyboard,
   Alert,
   ScrollView,
-  TextInputKeyPressEventData,
+  TextInputKeyPressEvent,
   NativeSyntheticEvent,
   Modal,
 } from "react-native";
@@ -44,10 +44,8 @@ const OrderConfimedOTPScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const route = useRoute();
 
-  // --- Result popup state ---
-  // "OTP Verified Successfully" is now shown via the shared AlertModal.
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
-  // The "Confirming Order..." loading state keeps using its own lightweight Modal.
+
   const [showOrderLoading, setShowOrderLoading] = useState(false);
 
   const {
@@ -101,7 +99,6 @@ const OrderConfimedOTPScreen: React.FC = () => {
   const [isOtpInvalid, setIsOtpInvalid] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // --- Layout tracking for keyboard-aware scrolling ---
   const [otpRowY, setOtpRowY] = useState(0);
   const [buttonRowY, setButtonRowY] = useState(0);
 
@@ -144,6 +141,10 @@ const OrderConfimedOTPScreen: React.FC = () => {
       return null;
     }
 
+    if (pendingOrderPayload && pendingOrderPayload.orderData) {
+      delete pendingOrderPayload.orderData.isPaySMS;
+    }
+
     try {
       const orderResponse = await axios.post(
         `${environment.API_BASE_URL}api/orders/create-order`,
@@ -153,15 +154,22 @@ const OrderConfimedOTPScreen: React.FC = () => {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
+          timeout: 120000, // 2-minute waiting timeout
         },
       );
 
       if (orderResponse.data.success) {
         await AsyncStorage.removeItem("pendingOrderData");
-        const orderId = orderResponse.data.data.orderId;
+        const processOrderId = orderResponse.data.data.processOrderId;
+        const parentOrderId = orderResponse.data.data.orderId;
+        const invoiceNumber = orderResponse.data.data.invoiceNumber;
+        const effectiveOrderId = processOrderId || parentOrderId;
 
         return {
-          orderId,
+          orderId: effectiveOrderId,
+          processOrderId: processOrderId,
+          parentOrderId: parentOrderId,
+          invoiceNumber: invoiceNumber,
           isPackage: isPackage,
           total: total,
           subtotal: subtotal,
@@ -170,6 +178,13 @@ const OrderConfimedOTPScreen: React.FC = () => {
           userId: id,
           selectedDate: selectedDate,
           selectedTimeSlot: selectedTimeSlot,
+          scheduleType: (route.params as any)?.scheduleType,
+          sheduleType: (route.params as any)?.sheduleType,
+          selectedDays: (route.params as any)?.selectedDays,
+          recurringDays: (route.params as any)?.recurringDays,
+          validityWeeks: (route.params as any)?.validityWeeks,
+          validityPeriod: (route.params as any)?.validityPeriod,
+          calculatedOrders: (route.params as any)?.calculatedOrders,
         };
       } else {
         Alert.alert(
@@ -179,18 +194,33 @@ const OrderConfimedOTPScreen: React.FC = () => {
         return null;
       }
     } catch (e: any) {
-      console.error("Error creating order after OTP verification:", e);
-      let errorMessage = "Error creating order after OTP verification";
-      if (axios.isAxiosError(e) && e.response) {
-        errorMessage =
-          e.response.data?.message || e.response.data?.error || errorMessage;
+      console.error(
+        "Error creating order after OTP verification:",
+        e.response?.data || e,
+      );
+      const isTimeout =
+        e.code === "ECONNABORTED" ||
+        e.message?.toLowerCase().includes("timeout") ||
+        e.response?.status === 504;
+
+      if (isTimeout) {
+        Alert.alert(
+          "Order Processing Delay",
+          "Your order is taking longer than usual to process. It may still complete shortly. Please check your order history or contact support before attempting to create the order again.",
+        );
+      } else {
+        let errorMessage = "Error creating order after OTP verification";
+        if (axios.isAxiosError(e) && e.response) {
+          errorMessage =
+            e.response.data?.error || e.response.data?.message || errorMessage;
+        }
+        Alert.alert("Error", errorMessage);
       }
-      Alert.alert("Error", errorMessage);
       return null;
     }
   };
 
-  const handleCashSuccess = async (token: string) => {
+  const handleOrderSuccess = async (token: string) => {
     setShowSuccessAlert(true);
 
     const minDelay = new Promise<void>((resolve) =>
@@ -217,39 +247,6 @@ const OrderConfimedOTPScreen: React.FC = () => {
         params: navParams,
       });
     }
-  };
-
-  const handleCardSuccess = async () => {
-    setShowSuccessAlert(true);
-
-    await new Promise<void>((resolve) =>
-      setTimeout(resolve, SUCCESS_POPUP_MIN_MS),
-    );
-
-    setShowSuccessAlert(false);
-
-    navigation.navigate("OnlinePayment" as any, {
-      id: null,
-      customerId: id,
-      name: customerName,
-      title: customerTitle,
-      isPackage,
-      total,
-      fullTotal,
-      subtotal,
-      discount,
-      selectedDate,
-      selectedTimeSlot,
-      items,
-      orderItems,
-      rawPackageItems,
-      rawAdditionalItems,
-      selectedAddress,
-      customerid: customerid || id,
-      customerscreencustomerid,
-      isFinalizeImdt,
-      deliveryCharge,
-    });
   };
 
   const verifyOTP = async () => {
@@ -280,11 +277,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
       }
 
       const otpVerificationUrl =
-        "https://api.getshoutout.com/otpservice/verify";
-      const otpHeaders = {
-        Authorization: `Apikey ${environment.SHOUTOUT_API_KEY}`,
-        "Content-Type": "application/json",
-      };
+        `${environment.API_BASE_URL}api/otp/verify`;
 
       const otpBody = {
         code: otpCode,
@@ -299,20 +292,13 @@ const OrderConfimedOTPScreen: React.FC = () => {
       ) {
         statusCode = "1000";
       } else {
-        const otpResponse = await axios.post(otpVerificationUrl, otpBody, {
-          headers: otpHeaders,
-        });
+        const otpResponse = await axios.post(otpVerificationUrl, otpBody);
         statusCode = otpResponse.data.statusCode;
       }
 
       if (statusCode === "1000") {
         await AsyncStorage.removeItem("referenceId");
-
-        if (paymentMethod === "Card") {
-          await handleCardSuccess();
-        } else {
-          await handleCashSuccess(token);
-        }
+        await handleOrderSuccess(token);
       } else {
         setIsOtpInvalid(true);
         Alert.alert("Error", "Invalid OTP. Please try again.");
@@ -340,23 +326,19 @@ const OrderConfimedOTPScreen: React.FC = () => {
       setResendDisabled(true);
       setTimer(60);
 
-      const apiUrl = "https://api.getshoutout.com/otpservice/send";
-      const headers = {
-        Authorization: `Apikey ${environment.SHOUTOUT_API_KEY}`,
-        "Content-Type": "application/json",
-      };
+      const apiUrl = `${environment.API_BASE_URL}api/otp/send`;
 
       const cleanedPhoneNumber = phoneNumber.replace(/[^\d]/g, "");
       const body = {
-        source: "PolygonAgro",
+        source: "Polygon",
         transport: "sms",
         content: {
-          sms: "Thank you for your order with GoviMart. Please use the below OTP to confirm your order. {{code}}",
+          sms: "Thank you for your order with Polygon. Please use the below OTP to confirm your order. {{code}}",
         },
         destination: cleanedPhoneNumber,
       };
 
-      const response = await axios.post(apiUrl, body, { headers });
+      const response = await axios.post(apiUrl, body);
       console.log("📲 [OTP ORDER RESEND] Response Data:", response.data);
 
       if (response.data.referenceId) {
@@ -407,7 +389,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
   };
 
   const handleKeyPress = (
-    { nativeEvent: { key } }: NativeSyntheticEvent<TextInputKeyPressEventData>,
+    { nativeEvent: { key } }: TextInputKeyPressEvent,
     index: number,
   ) => {
     if (key === "Backspace" && !otp[index] && index > 0) {
@@ -415,7 +397,6 @@ const OrderConfimedOTPScreen: React.FC = () => {
     }
   };
 
-  // --- Keyboard-aware scrolling (mirrors OtpScreen) ---
   const scrollToOtpRow = () => {
     setTimeout(
       () => {
@@ -476,7 +457,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
       >
         <ScrollView
           ref={scrollViewRef}
-          contentContainerStyle={{ flexGrow: 1 }}
+          contentContainerStyle={{ flexGrow: 1,paddingBottom:40 }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           overScrollMode="never"
@@ -506,7 +487,8 @@ const OrderConfimedOTPScreen: React.FC = () => {
                 Enter Verification Code.
               </Text>
               <Text className="text-[#808080] text-center mt-3 px-4">
-                We have sent a Verification Code to your Customer's mobile number
+                We have sent a Verification Code to your Customer's mobile
+                number
               </Text>
 
               {/* OTP Input Section — onLayout captures its Y position for scrolling */}
@@ -661,7 +643,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
               alignItems: "center",
             }}
           >
-            <LoadingPage message="Confiming Order..." />
+            <LoadingPage message="Confirming Order…" />
           </View>
         </View>
       </Modal>

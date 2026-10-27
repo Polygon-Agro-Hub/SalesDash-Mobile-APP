@@ -19,6 +19,7 @@ import environment from "@/environment/environment";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import CustomHeader from "../common/CustomHeader";
+import { getMinDeliveryDate } from "../common/CustomCalendarModal";
 
 type OrderSummeryScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -144,6 +145,26 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
     id,
   } = route.params || {};
 
+  const scheduleType: "One Time" | "Once a Week" | "Twice a Week" =
+    (route.params as any)?.scheduleType ||
+    (route.params as any)?.sheduleType ||
+    "One Time";
+  const selectedDays: string[] =
+    (route.params as any)?.selectedDays ||
+    (route.params as any)?.recurringDays ||
+    [];
+  const validityWeeks: string =
+    (route.params as any)?.validityWeeks ||
+    (route.params as any)?.validityPeriod?.toString() ||
+    "04";
+  const validityPeriod: number | null =
+    scheduleType === "One Time" ? null : parseInt(validityWeeks, 10) || 4;
+  const calculatedOrders: Array<{
+    index: number;
+    label: string;
+    date: string;
+  }> = (route.params as any)?.calculatedOrders || [];
+
   const isPackage =
     typeof isPackageRaw === "string"
       ? parseInt(isPackageRaw) || 0
@@ -256,8 +277,31 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
 
       let orderPayload;
 
+      // ── Determine EPSD and auto-confirm status ──────────────────────────
+      const isEpsdDate = (dateStr?: string | null) => {
+        if (!dateStr) return false;
+        const normalized = dateStr.replace(/\//g, "-");
+        const target = new Date(normalized);
+        if (isNaN(target.getTime())) return false;
+        const epsd = getMinDeliveryDate();
+        return (
+          target.getFullYear() === epsd.getFullYear() &&
+          target.getMonth() === epsd.getMonth() &&
+          target.getDate() === epsd.getDate()
+        );
+      };
+
+      const targetDateForCheck =
+        scheduleType === "One Time"
+          ? selectedDate
+          : calculatedOrders?.[0]?.date ||
+            (calculatedOrders?.[0] as any)?.dateStr;
+
+      const isEpsdSelected = isEpsdDate(targetDateForCheck);
+
       if (isPackage === 0) {
         const isCardPayment = paymentMethod === "Card";
+        const isConfirmed = isEpsdSelected ? 1 : 0;
         const orderData = {
           userId: Number(id || customerId || customerid),
           isPackage: 0,
@@ -265,11 +309,20 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           fullTotal: Number(fullTotal),
           discount: Number(discount),
           deliveryCharge: Number(deliveryFee),
-          sheduleDate: selectedDate,
+          sheduleType: scheduleType,
+          scheduleType: scheduleType,
+          validityPeriod: validityPeriod,
+          validityWeeks: validityWeeks,
+          selectedDays: selectedDays,
+          recurringDays: selectedDays,
+          calculatedOrders: calculatedOrders,
+          sheduleDate: scheduleType === "One Time" ? selectedDate : null,
           sheduleTime: selectedTimeSlot,
           paymentMethod: paymentMethod,
           isPaid: isCardPayment ? 0 : 1,
           status: "confirmed",
+          isFinalizeImdt: 0,
+          isConfirmed: isConfirmed,
           deliveryAddress: route.params?.selectedAddress,
           items: safeItems.map((item) => ({
             productId: Number(item.id),
@@ -295,6 +348,10 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         }));
 
         const isCardPaymentPkg = paymentMethod === "Card";
+        const isFinalizeImmediate =
+          Number(route.params?.isFinalizeImdt ?? 0) === 1;
+        const isConfirmed = isFinalizeImmediate && isEpsdSelected ? 1 : 0;
+
         const packageOrderData = {
           userId: Number(id || customerId || customerid),
           isPackage: 1,
@@ -305,13 +362,21 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           fullTotal: Number(fullTotal),
           discount: Number(discount),
           deliveryCharge: Number(deliveryFee),
-          sheduleDate: selectedDate,
+          sheduleType: scheduleType,
+          scheduleType: scheduleType,
+          validityPeriod: validityPeriod,
+          validityWeeks: validityWeeks,
+          selectedDays: selectedDays,
+          recurringDays: selectedDays,
+          calculatedOrders: calculatedOrders,
+          sheduleDate: scheduleType === "One Time" ? selectedDate : null,
           sheduleTime: selectedTimeSlot,
           transactionId: null,
           paymentMethod: paymentMethod,
           isPaid: isCardPaymentPkg ? 0 : 1,
           status: "confirmed",
-          isFinalizeImdt: Number(route.params?.isFinalizeImdt ?? 0),
+           isFinalizeImdt: isFinalizeImmediate ? 1 : 0,
+          isConfirmed: isConfirmed,
           deliveryAddress: route.params?.selectedAddress,
           items: packageItems,
         };
@@ -335,24 +400,18 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         JSON.stringify(orderPayload),
       );
 
-      const otpApiUrl = "https://api.getshoutout.com/otpservice/send";
-      const otpHeaders = {
-        Authorization: `Apikey ${environment.SHOUTOUT_API_KEY}`,
-        "Content-Type": "application/json",
-      };
+      const otpApiUrl = `${environment.API_BASE_URL}api/otp/send`;
       const cleanedPhoneNumber = phoneNumberForOtp.replace(/[^\d]/g, "");
       const otpBody = {
-        source: "PolygonAgro",
+        source: "Polygon",
         transport: "sms",
         content: {
-          sms: "Thank you for your order with GoviMart. Please use the below OTP to confirm your order. {{code}}",
+          sms: "Thank you for your order with Polygon. Please use the below OTP to confirm your order. {{code}}",
         },
         destination: cleanedPhoneNumber,
       };
 
-      const otpSendResponse = await axios.post(otpApiUrl, otpBody, {
-        headers: otpHeaders,
-      });
+      const otpSendResponse = await axios.post(otpApiUrl, otpBody);
       console.log("📲 [OTP ORDER SEND] Response Data:", otpSendResponse.data);
 
       if (!otpSendResponse.data?.referenceId) {
@@ -361,9 +420,8 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         return;
       }
 
-      // if OTP sent successfully, store the referenceId and navigate to OTP confirmation screen
       if (otpSendResponse.data?.referenceId) {
-         Alert.alert("Success", "OTP sent successfully.");
+        Alert.alert("Success", "OTP sent successfully.");
       }
 
       await AsyncStorage.setItem(
@@ -396,6 +454,13 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         customerscreencustomerid,
         isFinalizeImdt: route.params?.isFinalizeImdt,
         deliveryCharge: deliveryFee,
+        scheduleType,
+        sheduleType: scheduleType,
+        selectedDays,
+        recurringDays: selectedDays,
+        validityWeeks,
+        validityPeriod,
+        calculatedOrders,
       });
 
       setIsSubmitting(false);
@@ -688,6 +753,16 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           orderData: route.params?.orderData,
           rawPackageItems: route.params?.rawPackageItems,
           rawAdditionalItems: route.params?.rawAdditionalItems,
+          selectedAddress: route.params?.selectedAddress,
+          deliveryCharge: deliveryFee,
+          isFinalizeImdt: route.params?.isFinalizeImdt,
+          scheduleType,
+          sheduleType: scheduleType,
+          selectedDays,
+          recurringDays: selectedDays,
+          validityWeeks,
+          validityPeriod,
+          calculatedOrders,
         });
         return true;
       };
@@ -698,7 +773,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
       );
 
       return () => backHandler.remove();
-    }, [navigation, customerData]),
+    }, [navigation, customerData, deliveryFee, route.params]),
   );
 
   useFocusEffect(
@@ -785,6 +860,15 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
             rawPackageItems: route.params?.rawPackageItems,
             rawAdditionalItems: route.params?.rawAdditionalItems,
             selectedAddress: route.params?.selectedAddress,
+            deliveryCharge: deliveryFee,
+            isFinalizeImdt: route.params?.isFinalizeImdt,
+            scheduleType,
+            sheduleType: scheduleType,
+            selectedDays,
+            recurringDays: selectedDays,
+            validityWeeks,
+            validityPeriod,
+            calculatedOrders,
           })
         }
       />
@@ -808,12 +892,14 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                 <View>
                   <View className="flex-row justify-between">
                     <Text className="text-base font-semibold">
-                      Delivery - One Time
+                      Delivery - {scheduleType}
                     </Text>
                   </View>
-                  <Text className="text-[#808FA2] text-sm font-medium">
+
+                  <Text className="text-[#808FA2] text-sm ">
                     Scheduled to {formatDate(selectedDate)}
                   </Text>
+
                   <Text className="text-[#808FA2] text-sm">{timeDisplay}</Text>
                 </View>
 
@@ -843,6 +929,14 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                       selectedAddress: route.params?.selectedAddress,
                       deliveryCharge: deliveryFee,
                       fullTotal,
+                      isFinalizeImdt: route.params?.isFinalizeImdt,
+                      scheduleType,
+                      sheduleType: scheduleType,
+                      selectedDays,
+                      recurringDays: selectedDays,
+                      validityWeeks,
+                      validityPeriod,
+                      calculatedOrders,
                     });
                   }}
                   disabled={isSubmitting || isSubmitted}
@@ -1056,6 +1150,8 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                     rawPackageItems: route.params?.rawPackageItems,
                     rawAdditionalItems: route.params?.rawAdditionalItems,
                     selectedAddress: route.params?.selectedAddress,
+                    deliveryCharge: deliveryFee,
+                    isFinalizeImdt: route.params?.isFinalizeImdt,
                   })
                 }
                 className="border border-[#6C3CD1] px-3 rounded-full"
@@ -1066,9 +1162,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
               </TouchableOpacity>
             </View>
             <Text className="text-[#8492A3] mt-1">
-              {paymentMethod === "Card"
-                ? "Online Payment"
-                : "Cash On Delivery"}
+              {paymentMethod === "Card" ? "Online Payment" : "Cash On Delivery"}
             </Text>
           </View>
         </View>

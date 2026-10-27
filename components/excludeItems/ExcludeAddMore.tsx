@@ -305,20 +305,19 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
   );
 
   const getChanges = () => {
-    const toAddInclude = selectedIncludeCrops.filter(
-      (cId) => !initialIncludeIds.includes(cId),
-    );
-    const toRemoveInclude = initialIncludeIds.filter(
-      (cId) => !selectedIncludeCrops.includes(cId),
-    );
-    const toAddExclude = selectedExcludeCrops.filter(
-      (cId) => !initialExcludeIds.includes(cId),
-    );
-    const toRemoveExclude = initialExcludeIds.filter(
-      (cId) => !selectedExcludeCrops.includes(cId),
-    );
+    const isExcludeChanged =
+      selectedExcludeCrops.length !== initialExcludeIds.length ||
+      selectedExcludeCrops.some((cId) => !initialExcludeIds.includes(cId));
 
-    return { toAddInclude, toRemoveInclude, toAddExclude, toRemoveExclude };
+    const isIncludeChanged =
+      selectedIncludeCrops.length !== initialIncludeIds.length ||
+      selectedIncludeCrops.some((cId) => !initialIncludeIds.includes(cId));
+
+    return {
+      isExcludeChanged,
+      isIncludeChanged,
+      hasChanges: isExcludeChanged || isIncludeChanged,
+    };
   };
 
   const handlesubmitexcludelist = async () => {
@@ -337,56 +336,9 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
         "Content-Type": "application/json",
       };
 
-      const { toAddInclude, toRemoveInclude, toAddExclude, toRemoveExclude } =
-        getChanges();
+      const { isExcludeChanged, isIncludeChanged, hasChanges } = getChanges();
 
-      const requests: Promise<any>[] = [];
-
-      if (toAddExclude.length > 0) {
-        requests.push(
-          axios.post(
-            `${environment.API_BASE_URL}api/customer/add/excludelist`,
-            { customerId: id, selectedCrops: toAddExclude },
-            { headers },
-          ),
-        );
-      }
-
-      if (toAddInclude.length > 0) {
-        requests.push(
-          axios.post(
-            `${environment.API_BASE_URL}api/customer/add/preferlist`,
-            { customerId: id, selectedCrops: toAddInclude },
-            { headers },
-          ),
-        );
-      }
-
-      toRemoveExclude.forEach((cropId) => {
-        const excludeId = excludeRecordMap[cropId];
-        if (excludeId != null) {
-          requests.push(
-            axios.delete(
-              `${environment.API_BASE_URL}api/customer/excludelist/delete`,
-              { headers, params: { excludeId } },
-            ),
-          );
-        }
-      });
-
-      toRemoveInclude.forEach((cropId) => {
-        const preferId = preferRecordMap[cropId];
-        if (preferId != null) {
-          requests.push(
-            axios.delete(
-              `${environment.API_BASE_URL}api/customer/preferlist/delete`,
-              { headers, params: { preferId } },
-            ),
-          );
-        }
-      });
-
-      if (requests.length === 0) {
+      if (!hasChanges) {
         navigation.navigate("ExcludeItemEditSummery" as any, {
           id,
           customerId,
@@ -394,6 +346,28 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
           title,
         });
         return;
+      }
+
+      const requests: Promise<any>[] = [];
+
+      if (isExcludeChanged) {
+        requests.push(
+          axios.post(
+            `${environment.API_BASE_URL}api/customer/add/excludelist`,
+            { customerId: id, selectedCrops: selectedExcludeCrops },
+            { headers },
+          ),
+        );
+      }
+
+      if (isIncludeChanged) {
+        requests.push(
+          axios.post(
+            `${environment.API_BASE_URL}api/customer/add/preferlist`,
+            { customerId: id, selectedCrops: selectedIncludeCrops },
+            { headers },
+          ),
+        );
       }
 
       const responses = await Promise.all(requests);
@@ -417,14 +391,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
   };
 
   const handleNavigateIfNoCropsSelected = () => {
-    const { toAddInclude, toRemoveInclude, toAddExclude, toRemoveExclude } =
-      getChanges();
-
-    const hasChanges =
-      toAddInclude.length > 0 ||
-      toRemoveInclude.length > 0 ||
-      toAddExclude.length > 0 ||
-      toRemoveExclude.length > 0;
+    const { hasChanges } = getChanges();
 
     if (!hasChanges) {
       navigation.navigate("ExcludeItemEditSummery" as any, {
@@ -615,39 +582,54 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
       </View>
 
       {!isKeyboardVisible && (
-        <View className="absolute bottom-0 left-0 right-0 bg-white pt-4 pb-4 px-6 items-center">
+        <View className="absolute bottom-0 left-0 right-0 bg-white pt-4 pb-4 items-center">
           <TouchableOpacity
             onPress={handleNavigateIfNoCropsSelected}
+            activeOpacity={0.8}
             className="w-full max-w-[500px] items-center"
             disabled={loading}
           >
-            <LinearGradient
-              colors={["#6839CF", "#874DDB"]}
-              start={[0, 0]}
-              end={[1, 1]}
+            <View
               style={{
                 width: "70%",
-                paddingVertical: 12,
                 borderRadius: 25,
-                alignItems: "center",
-                justifyContent: "center",
-                shadowColor: "#000000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.2,
-                shadowRadius: 10,
-                elevation: 8,
+                backgroundColor: "#6839CF",
+                shadowColor: "#6839CF",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 8,
+                elevation: 6,
               }}
             >
-              {loading ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <Text
-                  style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}
-                >
-                  Continue
-                </Text>
-              )}
-            </LinearGradient>
+              <LinearGradient
+                colors={["#6839CF", "#874DDB"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={{
+                  paddingVertical: 12,
+                  borderRadius: 25,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  overflow: "hidden",
+                }}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text
+                    style={{
+                      color: "#fff",
+                      fontSize: 18,
+                      fontWeight: "bold",
+                      includeFontPadding: false,
+                      textAlignVertical: "center",
+                    }}
+                  >
+                    Submit & Go to Summary
+                  </Text>
+                )}
+              </LinearGradient>
+            </View>
           </TouchableOpacity>
         </View>
       )}
