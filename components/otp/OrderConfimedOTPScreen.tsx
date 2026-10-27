@@ -10,7 +10,7 @@ import {
   Keyboard,
   Alert,
   ScrollView,
-  TextInputKeyPressEventData,
+  TextInputKeyPressEvent,
   NativeSyntheticEvent,
   Modal,
 } from "react-native";
@@ -389,7 +389,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
   };
 
   const handleKeyPress = (
-    { nativeEvent: { key } }: NativeSyntheticEvent<TextInputKeyPressEventData>,
+    { nativeEvent: { key } }: TextInputKeyPressEvent,
     index: number,
   ) => {
     if (key === "Backspace" && !otp[index] && index > 0) {

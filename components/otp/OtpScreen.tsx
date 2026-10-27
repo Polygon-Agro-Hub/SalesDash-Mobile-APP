@@ -10,7 +10,7 @@ import {
   Keyboard,
   Alert,
   ScrollView,
-  TextInputKeyPressEventData,
+  TextInputKeyPressEvent,
   NativeSyntheticEvent,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -321,7 +321,7 @@ const OtpScreen: React.FC = () => {
   };
 
   const handleKeyPress = (
-    { nativeEvent: { key } }: NativeSyntheticEvent<TextInputKeyPressEventData>,
+    { nativeEvent: { key } }: TextInputKeyPressEvent,
     index: number,
   ) => {
     if (key === "Backspace" && !otp[index] && index > 0) {

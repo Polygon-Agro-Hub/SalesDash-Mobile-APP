@@ -462,7 +462,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                     refreshing={refreshing}
                     onRefresh={handleRefresh}
                     onEndReached={
-                      searchQuery === "" ? loadMoreCustomers : null
+                      searchQuery === "" ? loadMoreCustomers : undefined
                     }
                     onEndReachedThreshold={0.1}
                     ListFooterComponent={renderFooter}
