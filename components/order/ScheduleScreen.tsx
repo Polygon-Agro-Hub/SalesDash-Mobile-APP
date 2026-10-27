@@ -1203,8 +1203,16 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
               </View>
 
               <ScrollView
-                className="px-6 mt-[-5]"
+                style={{ flex: 1 }}
+                contentContainerStyle={{
+                  paddingHorizontal: 24,
+                  paddingBottom: 60,
+                }}
                 keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+                nestedScrollEnabled={true}
+                bounces={true}
+                overScrollMode="always"
               >
                 {/* ─── SEASONAL PACKAGE BANNER ───────────────────────────── */}
                 {seasonalInfo && (
