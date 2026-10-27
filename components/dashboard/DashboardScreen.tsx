@@ -3,7 +3,6 @@ import {
   View,
   Text,
   Image,
-  FlatList,
   TouchableOpacity,
   Alert,
   ScrollView,
@@ -14,18 +13,15 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
 import { Bar } from "react-native-progress";
 import { LinearGradient } from "expo-linear-gradient";
+import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import DashboardSkeleton from "./DashboardSkeleton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import environment from "@/environment/environment";
 import socketService from "@/services/socket/socket.service";
 import pushNotificationService from "@/services/notification/pushNotification.service";
-import {
-  widthPercentageToDP as wp,
-  heightPercentageToDP as hp,
-} from "react-native-responsive-screen";
+import { widthPercentageToDP as wp } from "react-native-responsive-screen";
 import { useFocusEffect } from "@react-navigation/native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type DashboardScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -34,26 +30,6 @@ type DashboardScreenNavigationProp = StackNavigationProp<
 
 interface DashboardScreenProps {
   navigation: DashboardScreenNavigationProp;
-}
-
-interface Package {
-  id: number;
-  displayName: string;
-  image: string;
-  name?: string;
-  price?: string;
-  total: string;
-  description: string;
-  portion?: number;
-  period?: number;
-  packingFee: string;
-  productPrice: string;
-  serviceFee: string;
-  packageType?: string;
-  endDate?: string | null;
-  startDate?: string | null;
-  status: string;
-  createdAt?: string;
 }
 
 interface AgentStats {
@@ -68,28 +44,154 @@ interface AgentStats {
   };
 }
 
-const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
-  const insets = useSafeAreaInsets();
+/* ---------- Reusable dashboard box ---------- */
+interface DashboardCardProps {
+  title: string;
+  subtitle: string;
+  badge: string;
+  icon: keyof typeof FontAwesome6.glyphMap;
+  iconColor: string;
+  iconBg: string;
+  badgeColor: string;
+  badgeBg: string;
+  onPress?: () => void;
+}
 
+const CARD_GAP = 12;
+const CARD_WIDTH = (wp("100%") - 32 - CARD_GAP) / 2;
+
+const DashboardCard: React.FC<DashboardCardProps> = ({
+  title,
+  subtitle,
+  badge,
+  icon,
+  iconColor,
+  iconBg,
+  badgeColor,
+  badgeBg,
+  onPress,
+}) => (
+  <TouchableOpacity
+    activeOpacity={0.85}
+    onPress={onPress}
+    style={{
+      width: CARD_WIDTH,
+      minHeight: 157,
+      marginBottom: CARD_GAP,
+      backgroundColor: "#FFFFFF",
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: "#F1F5F9",
+      shadowColor: "#8B5CF6",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 5,
+      elevation: 4,
+    }}
+  >
+    {/* Soft corner glow: clipped inside the card, no visible circle edge */}
+    <View
+      pointerEvents="none"
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        borderRadius: 19,
+        overflow: "hidden",
+      }}
+    >
+      <LinearGradient
+        colors={[iconBg, "rgba(255,255,255,0)"]}
+        start={{ x: 1, y: 0 }}
+        end={{ x: 0.35, y: 0.55 }}
+        style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0 }}
+      />
+    </View>
+
+    <View style={{ flex: 1, padding: 16 }}>
+      {/* Icon */}
+      <View
+        style={{
+          width: 38,
+          height: 38,
+          borderRadius: 12,
+          backgroundColor: iconBg,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <FontAwesome6 name={icon} size={22} color={iconColor} />
+      </View>
+
+      {/* Texts */}
+      <Text
+        style={{
+          marginTop: 12,
+          fontSize: 14,
+          fontWeight: "700",
+          color: "#0F172A",
+          lineHeight: 18,
+        }}
+        numberOfLines={2}
+      >
+        {title}
+      </Text>
+      <Text
+        style={{ fontSize: 10, color: "#475569", marginTop: 2 }}
+        numberOfLines={1}
+      >
+        {subtitle}
+      </Text>
+
+      {/* Badge + arrow */}
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginTop: 4,
+        }}
+      >
+        <View
+          style={{
+            backgroundColor: badgeBg,
+            borderRadius: 999,
+            paddingHorizontal: 10,
+            paddingVertical: 3,
+          }}
+        >
+          <Text style={{ color: badgeColor, fontSize: 10, fontWeight: "600" }}>
+            {badge}
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={16} color="#94A3B8" />
+      </View>
+    </View>
+  </TouchableOpacity>
+);
+
+const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(true);
-  const [token, setToken] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ firstName: "", image: "" });
-  const [packages, setPackages] = useState<Package[]>([]);
+  const [formData, setFormData] = useState({
+    firstName: "",
+    image: "",
+    empType: "",
+  });
+  const [packageCount, setPackageCount] = useState(0);
   const [agentStats, setAgentStats] = useState<AgentStats>({
-    daily: {
-      target: 10,
-      completed: 0,
-      numOfStars: 0,
-      progress: 0,
-    },
-    monthly: {
-      totalStars: 0,
-    },
+    daily: { target: 10, completed: 0, numOfStars: 0, progress: 0 },
+    monthly: { totalStars: 0 },
   });
 
   const refreshData = async () => {
     setIsLoading(true);
-    await Promise.all([getUserProfile(), fetchPackages(), fetchAgentStats()]);
+    await Promise.all([
+      getUserProfile(),
+  
+      fetchAgentStats(),
+    ]);
     setIsLoading(false);
   };
 
@@ -97,7 +199,6 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     const unsubscribe = navigation.addListener("focus", () => {
       refreshData();
     });
-
     return unsubscribe;
   }, [navigation]);
 
@@ -105,39 +206,25 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
       if (!storedToken) {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: "LoginScreen" }],
-        });
+        navigation.reset({ index: 0, routes: [{ name: "LoginScreen" }] });
         return;
       }
-      setToken(storedToken);
 
       const response = await axios.get(
         `${environment.API_BASE_URL}api/auth/user/profile`,
-        {
-          headers: { Authorization: `Bearer ${storedToken}` },
-        },
+        { headers: { Authorization: `Bearer ${storedToken}` } },
       );
-
+      console.log(response.data.data);
       setFormData(response.data.data);
     } catch (error) {
       console.error("Profile fetch error:", error);
-
       if (axios.isAxiosError(error) && error.response?.status === 401) {
         await AsyncStorage.removeItem("authToken");
-        navigation.reset({
-          index: 0,
-          routes: [{ name: "LoginScreen" }],
-        });
+        navigation.reset({ index: 0, routes: [{ name: "LoginScreen" }] });
         return;
       }
       Alert.alert("Error", "Failed to fetch user profile");
-      navigation.reset({
-        index: 0,
-        routes: [{ name: "LoginScreen" }],
-      });
-      return;
+      navigation.reset({ index: 0, routes: [{ name: "LoginScreen" }] });
     }
   };
 
@@ -150,11 +237,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
         const userToken = await AsyncStorage.getItem("authToken");
 
         if (expirationTime && userToken) {
-          const currentTime = new Date();
-          const tokenExpiry = new Date(expirationTime);
-
-          if (currentTime < tokenExpiry) {
-          } else {
+          if (new Date() >= new Date(expirationTime)) {
             await AsyncStorage.multiRemove([
               "userToken",
               "tokenStoredTime",
@@ -164,66 +247,20 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
               "Sorry",
               "No authenticated user found, please login again",
             );
-            navigation.reset({
-              index: 0,
-              routes: [{ name: "LoginScreen" }],
-            });
+            navigation.reset({ index: 0, routes: [{ name: "LoginScreen" }] });
           }
         }
       } catch (error) {
         console.error("Error checking token expiration:", error);
-        navigation.reset({
-          index: 0,
-          routes: [{ name: "LoginScreen" }],
-        });
+        navigation.reset({ index: 0, routes: [{ name: "LoginScreen" }] });
       }
     };
-
     checkTokenExpiration();
   }, [navigation]);
 
-  const fetchPackages = async () => {
-    try {
-      const storedToken = await AsyncStorage.getItem("authToken");
-      if (!storedToken) return;
 
-      setToken(storedToken);
 
-      const response = await axios.get<{ data: Package[] }>(
-        `${environment.API_BASE_URL}api/packages/get-packages?_t=${Date.now()}`,
-        {
-          headers: {
-            Authorization: `Bearer ${storedToken}`,
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            Pragma: "no-cache",
-          },
-        },
-      );
 
-      setPackages(response.data.data);
-    } catch (error) {
-      console.error("Package fetch error:", error);
-    }
-  };
-
-  useEffect(() => {
-    const unsubscribe = socketService.onPackageUpdate((data?: any) => {
-      console.log("🔄 [DashboardScreen] Auto-refreshing packages from real-time socket update event:", data);
-      if (Array.isArray(data) && data.length > 0) {
-        setPackages(data);
-      } else if (Array.isArray(data?.data) && data.data.length > 0) {
-        setPackages(data.data);
-      } else if (Array.isArray(data?.packages) && data.packages.length > 0) {
-        setPackages(data.packages);
-      } else {
-        fetchPackages();
-      }
-    });
-
-    return () => {
-      unsubscribe();
-    };
-  }, []);
 
   const fetchAgentStats = async () => {
     try {
@@ -232,11 +269,8 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
 
       const response = await axios.get<{ data: AgentStats }>(
         `${environment.API_BASE_URL}api/orders/sales-agent`,
-        {
-          headers: { Authorization: `Bearer ${storedToken}` },
-        },
+        { headers: { Authorization: `Bearer ${storedToken}` } },
       );
-
       setAgentStats(response.data.data);
     } catch (error) {
       console.error("Failed to fetch agent stats:", error);
@@ -249,14 +283,11 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       socketService.checkNewNotifications().catch(() => {});
       pushNotificationService.registerPushTokenAsync().catch(() => {});
 
-      const onBackPress = () => true;
       const subscription = BackHandler.addEventListener(
         "hardwareBackPress",
-        onBackPress,
+        () => true,
       );
-      return () => {
-        subscription.remove();
-      };
+      return () => subscription.remove();
     }, []),
   );
 
@@ -264,190 +295,13 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     return <DashboardSkeleton />;
   }
 
-  const renderPackage = ({ item }: { item: Package }) => {
-    const totalPrice =
-      parseFloat(item.packingFee) +
-      parseFloat(item.productPrice) +
-      parseFloat(item.serviceFee);
-    const formattedTotalPrice = totalPrice.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-
-    return (
-      <View
-        className="bg-white rounded-2xl shadow-xl border-[#E0E0E0] border-[1px]"
-        style={{
-          padding: 16,
-          marginBottom: 20,
-          marginHorizontal: 8,
-          width: (wp("100%") - 48) / 2,
-          minHeight: 230,
-        }}
-      >
-        <View className="flex-1">
-          <Image
-            source={{ uri: item.image }}
-            className="w-full h-24 self-center"
-            style={{ marginBottom: 12 }}
-            resizeMode="contain"
-          />
-
-          <Text className="font-bold text-[#6A3AD0] text-center">
-            {item.displayName}
-          </Text>
-
-          <Text
-            className="text-sm font-medium text-[#808FA2] text-center"
-            style={{ marginTop: 4 }}
-          >
-            Rs. {formattedTotalPrice}
-          </Text>
-        </View>
-        <View className="items-center justify-center">
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate("ViewScreen" as any, {
-                selectedPackageId: item.id,
-                selectedPackageName: item.displayName,
-                selectedPackageImage: item.image,
-                selectedPackageTotal: formattedTotalPrice,
-                selectedPackageDescription: item.description,
-                selectedPackageportion: item.portion,
-                selectedPackageperiod: item.period,
-                selectedPackagePackingFee: item.packingFee,
-                selectedPackageProductPrice: item.productPrice,
-                selectedPackageServiceFee: item.serviceFee,
-                packageType: item.packageType,
-                endDate: item.endDate,
-              })
-            }
-            activeOpacity={0.8}
-            style={{
-              borderRadius: 999,
-              overflow: "hidden",
-            }}
-          >
-            <LinearGradient
-              colors={["#9B60E8", "#6E3DD1"]}
-              style={{
-                borderRadius: 999,
-                paddingVertical: 10,
-                paddingHorizontal: 30,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Text className="text-white font-bold text-sm">View</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  };
-
-
+  const completed = agentStats?.daily?.completed ?? 0;
+  const target = agentStats?.daily?.target ?? 0;
+  const remaining = Math.max(target - completed, 0);
 
   return (
     <View className="flex-1 bg-white">
-      {/* Header Section */}
-      <View
-        className="bg-white rounded-b-3xl px-4"
-        style={{
-          paddingTop: 8,
-          paddingBottom: 20,
-        }}
-      >
-        <View className="flex-row items-center justify-between">
-          <View className="flex-row items-center">
-            <TouchableOpacity
-              onPress={() => navigation.navigate("SidebarScreen")}
-              activeOpacity={0.8}
-              style={{ marginRight: 12 }}
-            >
-              <Image
-                source={
-                  formData?.image
-                    ? { uri: formData.image }
-                    : require("@/assets/images/profile/profile1.webp")
-                }
-                className="w-14 h-14 rounded-full border-2 border-purple-200"
-                resizeMode="cover"
-              />
-            </TouchableOpacity>
-
-            <Text className="text-lg font-bold text-gray-800">
-              Hello, {formData?.firstName || "User"}
-            </Text>
-          </View>
-
-          <View className="flex-row items-center bg-[#E6DBF766] rounded-full px-5 py-3 gap-1">
-            <Image
-              source={require("@/assets/images/icons/star.webp")}
-              className="w-7 h-7"
-              resizeMode="contain"
-            />
-            <Text
-              className="font-semibold text-black mt-1 pr-2"
-              style={{
-                textDecorationLine: "none",
-                includeFontPadding: false,
-              }}
-            >
-              {agentStats?.monthly?.totalStars ?? 0}
-            </Text>
-          </View>
-        </View>
-
-        {/* Progress Bar */}
-        <View style={{ marginTop: 24 }}>
-          <Text className="text-lg text-[#874CDB]">Your Daily Target</Text>
-          <View
-            className="bg-[#824AD933] rounded-2xl relative overflow-hidden"
-            style={{
-              marginTop: 12,
-              paddingHorizontal: 20,
-              paddingVertical: 16,
-            }}
-          >
-            {/* Progress Count (Centered Top) */}
-            <Text className="absolute top-2 self-center text-sm font-bold text-[#693ACF]">
-              {agentStats?.daily?.completed ?? 0}/
-              {agentStats?.daily?.target ?? 0}
-            </Text>
-
-            {/* Progress Bar */}
-            <View style={{ marginTop: 20 }}>
-              <Bar
-                progress={agentStats?.daily?.progress ?? 0}
-                width={wp("65%")}
-                height={12}
-                color="#6D28D9"
-                unfilledColor="#FFFFFF"
-                borderWidth={0}
-              />
-            </View>
-
-            {/* Star Icon */}
-            <Image
-              source={require("@/assets/images/icons/star.webp")}
-              style={{
-                width: 40,
-                height: 40,
-                position: "absolute",
-                right: 16,
-                top: "50%",
-                marginTop: -5,
-              }}
-              resizeMode="contain"
-            />
-          </View>
-        </View>
-      </View>
-
-      {/* Packages Section with Pagination */}
       <ScrollView
-        className="flex-1 mb-10 "
         refreshControl={
           <RefreshControl
             refreshing={isLoading}
@@ -456,38 +310,209 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
             tintColor="#854BDA"
           />
         }
+        contentContainerStyle={{ paddingBottom: 80 }}
       >
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            paddingHorizontal: 16,
-            marginBottom: 8,
-          }}
-        >
-          <Text className="text-lg text-[#874CDB]">Packages</Text>
-        </View>
-
-        <View style={{ paddingHorizontal: 4 }}>
-          <FlatList
-            data={packages}
-            renderItem={renderPackage}
-            keyExtractor={(item) => item.id.toString()}
-            numColumns={2}
-            scrollEnabled={false}
-            contentContainerStyle={{
-              paddingHorizontal: 10,
-              paddingLeft: 2,
-              paddingBottom: 60,
-            }}
-            ListEmptyComponent={
-              <View style={{ padding: 40, alignItems: "center" }}>
-                <Text style={{ color: "#999", fontSize: 16 }}>
-                  No packages available
+        {/* Header */}
+        <View className="px-4" style={{ paddingTop: 8 }}>
+          <View className="flex-row items-center justify-between">
+            <View className="flex-row items-center">
+              <TouchableOpacity
+                onPress={() => navigation.navigate("SidebarScreen")}
+                activeOpacity={0.8}
+                style={{ marginRight: 12 }}
+              >
+                <Image
+                  source={
+                    formData?.image
+                      ? { uri: formData.image }
+                      : require("@/assets/images/profile/profile1.webp")
+                  }
+                  className="w-14 h-14 rounded-full border-2 border-purple-200"
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
+              <View>
+                <Text className="text-lg font-bold text-gray-800">
+                  Hello, {formData?.firstName || "User"}
+                </Text>
+                <Text className="text-xs text-[#64748B]">
+                  {formData?.empType
+                    ? `${formData.empType} Sales Agent`
+                    : "Sales Agent"}
                 </Text>
               </View>
+            </View>
+
+            <View className="flex-row items-center bg-[#E6DBF766] rounded-full px-5 py-3 gap-1">
+              <Image
+                source={require("@/assets/images/icons/star.webp")}
+                className="w-7 h-7"
+                resizeMode="contain"
+              />
+              <Text
+                className="font-semibold text-black mt-1 pr-2"
+                style={{ includeFontPadding: false }}
+              >
+                {agentStats?.monthly?.totalStars ?? 0}
+              </Text>
+            </View>
+          </View>
+
+          {/* Daily target */}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginTop: 24,
+            }}
+          >
+            <Text style={{ fontSize: 15, fontWeight: "700", color: "#6B3BCF" }}>
+              Your Daily Target
+            </Text>
+            <Text style={{ fontSize: 12, fontWeight: "700", color: "#64748B" }}>
+              {remaining} orders to go!
+            </Text>
+          </View>
+
+          <LinearGradient
+            colors={["#ECE6FD", "#F1EBFD"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{
+              marginTop: 10,
+              borderRadius: 24,
+              borderWidth: 1,
+              borderColor: "#EDE9FE",
+              padding: 20,
+              gap: 10,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <View
+                style={{
+                  backgroundColor: "rgba(255,255,255,0.7)",
+                  borderRadius: 20,
+                  paddingHorizontal: 12,
+                  paddingVertical: 4,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: "800",
+                    color: "#6B3BCF",
+                    letterSpacing: 1,
+                  }}
+                >
+                  PROGRESS
+                </Text>
+              </View>
+              <Text
+                style={{ fontSize: 12, fontWeight: "600", color: "#6B3BCF" }}
+              >
+                {completed}/{target} completed
+              </Text>
+            </View>
+
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <Bar
+                progress={agentStats?.daily?.progress ?? 0}
+                width={wp("100%") - 32 - 42 - 28 - 12}
+                height={10}
+                borderRadius={6}
+                color="#8B5CF6"
+                unfilledColor="rgba(255,255,255,0.8)"
+                borderWidth={0}
+              />
+              <Image
+                source={require("@/assets/images/icons/star.webp")}
+                style={{ width: 28, height: 28 }}
+                resizeMode="contain"
+              />
+            </View>
+          </LinearGradient>
+        </View>
+
+        {/* Boxes */}
+        <View
+          className="flex-row flex-wrap justify-between"
+          style={{ paddingHorizontal: 16, marginTop: 24 }}
+        >
+          <DashboardCard
+            title="New Customer Details"
+            subtitle="New registration & profiles"
+            badge="Total : 1"
+            icon="users"
+            iconColor="#7C3AED"
+            iconBg="#EDE9FE"
+            badgeColor="#6D28D9"
+            badgeBg="#EDE9FE"
+            onPress={() =>
+              navigation.navigate("NewCustomerDetailsScreen" as any)
             }
+          />
+
+          <DashboardCard
+            title="Existing Customer Details"
+            subtitle="Active client records"
+            badge="Total : 50"
+            icon="users"
+            iconColor="#6872FF"
+            iconBg="#EDF2FF"
+            badgeColor="#1D4ED8"
+            badgeBg="#EDF2FF"
+            onPress={() =>
+              navigation.navigate("ExistingCustomerDetailsScreen" as any)
+            }
+          />
+
+          <DashboardCard
+            title="Total Value of Existing Customers"
+            subtitle="Total Orders Amount"
+            badge="Rs. 1,000,000.00"
+            icon="coins"
+            iconColor="#EBA313"
+            iconBg="#FDFCDD"
+            badgeColor="#ECA811"
+            badgeBg="#FDFCDD"
+          />
+
+          {/* Navigates to the separate Packages screen */}
+          <DashboardCard
+            title="Polygon Standard Packages"
+            subtitle="Standard Packages"
+            badge={`Total : ${packageCount}`}
+            icon="bag-shopping"
+            iconColor="#00BCC1"
+            iconBg="#D5FEFF"
+            badgeColor="#009498"
+            badgeBg="#D6FEFF"
+            onPress={() => navigation.navigate("PackagesScreen" as any)}
+          />
+
+          <DashboardCard
+            title="Monthly Orders Targets"
+            subtitle="Total Monthly Stars"
+            badge={`Stars : ${agentStats?.monthly?.totalStars ?? 0}`}
+            icon="bullseye"
+            iconColor="#E11D48"
+            iconBg="#FFE4E6"
+            badgeColor="#BE123C"
+            badgeBg="#FFE4E6"
+            onPress={() => navigation.navigate("MonthlyOrdersTargets" as any)}
           />
         </View>
       </ScrollView>

@@ -509,4 +509,8 @@ export type RootStackParamList = {
     number?: string;
     customerscreencustomerid?: string;
   };
+  PackagesScreen:undefined;
+  ExistingCustomerDetailsScreen:undefined;
+  NewCustomerDetailsScreen:undefined;
+  MonthlyOrdersTargets:undefined;
 };
