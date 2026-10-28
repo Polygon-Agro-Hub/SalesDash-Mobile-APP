@@ -18,7 +18,7 @@ import Splash from "@/components/authentication/Splash";
 import ChangePasswordScreen from "@/components/authentication/ChangePasswordScreen";
 import LoginScreen from "@/components/authentication/LoginScreen";
 import DashboardScreen from "@/components/dashboard/DashboardScreen";
-import ViewScreen from "@/components/order/ViewScreen";
+import ViewScreen from "@/components/package/ViewScreen";
 import CustomersScreen from "@/components/customer/CustomersScreen";
 import SidebarScreen from "@/components/navigation/SidebarScreen";
 import ProfileScreen from "@/components/authentication/ProfileScreen";
@@ -68,6 +68,11 @@ import NotificationAccess from "@/components/permission/NotificationAccess";
 import socketService from "@/services/socket/socket.service";
 import pushNotificationService from "@/services/notification/pushNotification.service";
 import { navigationRef } from "@/services/navigation/navigationService";
+import PackagesScreen from "@/components/package/Packagesscreen";
+import ExistingCustomerDetailsScreen from"@/components/customer/ExistingCustomerDetailsScreen";
+import NewCustomerDetailsScreen from "@/components/customer/NewCustomerDetailsScreen";
+import MonthlyOrdersTargets from "@/components/orders_targets/MonthlyOrdersTargets";
+import TotalValueOfCustomersScreen from "@/components/customer/TotalValueOfCustomersScreen";
 export { navigationRef };
 
 // Disable console logs in production mode to improve React Native thread performance
@@ -134,6 +139,22 @@ function MainTabNavigator() {
       />
       <Tab.Screen name="ProfileScreen" component={ProfileScreen} />
       <Tab.Screen name="ViewComplainScreen" component={ViewComplainScreen} />
+       <Tab.Screen
+              name="ExistingCustomerDetailsScreen"
+              component={ExistingCustomerDetailsScreen as any}
+            />
+            <Tab.Screen
+              name="NewCustomerDetailsScreen"
+              component={NewCustomerDetailsScreen as any}
+            />
+             <Tab.Screen
+              name="MonthlyOrdersTargets"
+              component={MonthlyOrdersTargets as any}
+            />
+            <Tab.Screen
+              name="TotalValueOfCustomersScreen"
+              component={TotalValueOfCustomersScreen as any}
+            />
     </Tab.Navigator>
   );
 }
@@ -409,6 +430,15 @@ function AppContent() {
               name="NotificationAccess"
               component={NotificationAccess as any}
             />
+            <Stack.Screen
+              name="PackagesScreen"
+              component={PackagesScreen as any}
+            />
+            <Stack.Screen
+              name="TotalValueOfCustomersScreen"
+              component={TotalValueOfCustomersScreen as any}
+            />
+           
             <Stack.Screen name="Main" component={MainTabNavigator} />
           </Stack.Navigator>
         </NavigationContainer>
