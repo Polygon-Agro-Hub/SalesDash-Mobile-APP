@@ -584,7 +584,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
     return `${year}/${month}/${day}`;
   };
 
-  const handleSearch = () => {};
+  const handleSearch = () => { };
 
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
@@ -629,26 +629,61 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
     return <LoadingPage message="Loading More Orders..." fullScreen={false} />;
   };
 
+  const readFileAsBase64 = async (fileUri: string): Promise<string> => {
+    try {
+      const response = await fetch(fileUri);
+      const blob = await response.blob();
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (typeof reader.result === "string") {
+            resolve(reader.result);
+          } else {
+            reject(new Error("FileReader result is not a string"));
+          }
+        };
+        reader.onerror = (err) => reject(err);
+        reader.readAsDataURL(blob);
+      });
+      const commaIdx = dataUrl.indexOf(",");
+      const rawBase64 = commaIdx !== -1 ? dataUrl.substring(commaIdx + 1) : dataUrl;
+      if (rawBase64) return rawBase64;
+    } catch (fetchErr) {
+      console.warn("fetch/FileReader failed, falling back to FileSystem:", fetchErr);
+    }
+
+    try {
+      const fsData = await FileSystem.readAsStringAsync(fileUri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      if (fsData) return fsData;
+    } catch (fsErr) {
+      console.warn("FileSystem.readAsStringAsync failed:", fsErr);
+    }
+
+    try {
+      const ext = fileUri.split(".").pop() || "tmp";
+      const tempDest = `${FileSystem.cacheDirectory}temp_br_${Date.now()}.${ext}`;
+      await FileSystem.copyAsync({ from: fileUri, to: tempDest });
+      const copiedData = await FileSystem.readAsStringAsync(tempDest, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      FileSystem.deleteAsync(tempDest, { idempotent: true }).catch(() => { });
+      if (copiedData) return copiedData;
+    } catch (copyErr) {
+      console.error("All file reading strategies failed:", copyErr);
+    }
+
+    throw new Error("Unable to read document file for upload");
+  };
+
   const uploadReuploadToR2 = async (fileUri: string, fileName: string, mimeType: string): Promise<string | null> => {
     try {
       setIsUploadingReupload(true);
-      let base64Data = "";
-      try {
-        base64Data = await FileSystem.readAsStringAsync(fileUri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-      } catch (readErr) {
-        try {
-          const { File } = require("expo-file-system");
-          const file = new File(fileUri);
-          base64Data = await file.base64();
-        } catch (fileErr) {
-          throw readErr;
-        }
-      }
+      const base64Data = await readFileAsBase64(fileUri);
 
       const response = await axios.post(`${environment.API_BASE_URL}api/customer/upload-br`, {
-        base64: `data:${mimeType};base64,${base64Data}`,
+        base64: base64Data.startsWith("data:") ? base64Data : `data:${mimeType};base64,${base64Data}`,
         fileName: fileName,
       });
 
@@ -891,8 +926,12 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                   borderRadius: 8,
                 }}
               >
-                <Text style={{ fontSize: 13, fontWeight: "700", color: "#6D28D9" }}>
-                  #CUS-{customerId || wholesaleApplicationId || id}
+                <Text style={{ fontSize: 13, fontWeight: "700", color: "#000000" }}>
+                  #{(() => {
+                    const raw = String(customerId || wholesaleApplicationId || id || "");
+                    const clean = raw.replace(/^(#?CUS-?)+/i, "");
+                    return `CUS-${clean}`;
+                  })()}
                 </Text>
               </View>
             </View>
@@ -911,7 +950,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
               <Text style={{ fontSize: 13, color: "#64748B", fontWeight: "500" }}>
                 Submission Date
               </Text>
-              <Text style={{ fontSize: 13, fontWeight: "600", color: "#1E293B" }}>
+              <Text style={{ fontSize: 13, fontWeight: "600", color: "#000000" }}>
                 {wholesaleCreatedAt
                   ? format(new Date(wholesaleCreatedAt), "dd MMM yyyy, h:mm a")
                   : "Today"}
@@ -931,8 +970,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 Estimated Review
               </Text>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                <Ionicons name="time-outline" size={16} color="#7C3AED" />
-                <Text style={{ fontSize: 13, fontWeight: "700", color: "#7C3AED" }}>
+                <Ionicons name="time-outline" size={16} color="#6B3BCF" />
+                <Text style={{ fontSize: 13, fontWeight: "600", color: "#000000" }}>
                   24–48 Business Hours
                 </Text>
               </View>
@@ -1290,844 +1329,844 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
           end={{ x: 0, y: 1 }}
           style={{ flex: 1, overflow: "hidden" }}
         >
-        {/* Top Header Row */}
-        <View
-          style={{
-            paddingTop: 16,
-            paddingHorizontal: 16,
-            flexDirection: "row",
-            alignItems: "flex-start",
-            backgroundColor: "transparent",
-            zIndex: 10,
-          }}
-        >
-          {/* Back button */}
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate("Main" as any, {
-                screen: "CustomersScreen",
-              })
-            }
+          {/* Top Header Row */}
+          <View
             style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: "#F6F6F6",
-              alignItems: "center",
-              justifyContent: "center",
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.1,
-              shadowRadius: 2,
-              elevation: 2,
-              marginTop: 4,
+              paddingTop: 16,
+              paddingHorizontal: 16,
+              flexDirection: "row",
+              alignItems: "flex-start",
+              backgroundColor: "transparent",
+              zIndex: 10,
             }}
-            activeOpacity={0.7}
           >
-            <Entypo name="chevron-left" size={22} color={"black"} />
-          </TouchableOpacity>
+            {/* Back button */}
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate("Main" as any, {
+                  screen: "CustomersScreen",
+                })
+              }
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: "#F6F6F6",
+                alignItems: "center",
+                justifyContent: "center",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.1,
+                shadowRadius: 2,
+                elevation: 2,
+                marginTop: 4,
+              }}
+              activeOpacity={0.7}
+            >
+              <Entypo name="chevron-left" size={22} color={"black"} />
+            </TouchableOpacity>
 
-          {/* Center Title Content */}
-          <View style={{ flex: 1, alignItems: "center", marginHorizontal: 12 }}>
-            {fullName.length > 25 ? (
-              <FixedMarqueeText
-                text={fullName}
-                style={{ fontSize: 18, fontWeight: "bold", color: "#000" }}
-                speed={50}
-              />
-            ) : (
+            {/* Center Title Content */}
+            <View style={{ flex: 1, alignItems: "center", marginHorizontal: 12 }}>
+              {fullName.length > 25 ? (
+                <FixedMarqueeText
+                  text={fullName}
+                  style={{ fontSize: 18, fontWeight: "bold", color: "#000" }}
+                  speed={50}
+                />
+              ) : (
+                <Text
+                  style={{
+                    fontSize: 18,
+                    fontWeight: "bold",
+                    color: "#000",
+                    textAlign: "center",
+                  }}
+                >
+                  {fullName}
+                </Text>
+              )}
+
               <Text
                 style={{
-                  fontSize: 18,
-                  fontWeight: "bold",
-                  color: "#000",
-                  textAlign: "center",
+                  fontSize: 15,
+                  color: "#393939",
+                  marginTop: 6,
                 }}
               >
-                {fullName}
+                Customer ID : {customerId}
               </Text>
-            )}
 
-            <Text
-              style={{
-                fontSize: 15,
-                color: "#393939",
-                marginTop: 6,
-              }}
-            >
-              Customer ID : {customerId}
-            </Text>
+              {buyerType !== "Wholesale" && (
+                <TouchableOpacity
+                  onPress={() =>
+                    navigation.navigate("ExcludeItemEditSummery", {
+                      id,
+                      customerId,
+                      name: customerName,
+                      title: customerTitle,
+                      phone: customerNumber,
+                    })
+                  }
+                  style={{ marginTop: 8 }}
+                >
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <Text
+                      style={{
+                        color: "#7240D3",
+                        textDecorationLine: "underline",
+                        fontWeight: "600",
+                        fontSize: 14,
+                        marginRight: 6,
+                      }}
+                    >
+                      Package Preferences
+                    </Text>
+                    <AntIcons name="external-link" size={16} color="#7240D3" />
+                  </View>
+                </TouchableOpacity>
+              )}
+            </View>
 
-            {buyerType !== "Wholesale" && (
-              <TouchableOpacity
-                onPress={() =>
-                  navigation.navigate("ExcludeItemEditSummery", {
+            {/* Edit button */}
+            <TouchableOpacity
+              onPress={() => {
+                if (buyerType === "Wholesale") {
+                  setIsAccessDeniedVisible(true);
+                  return;
+                }
+                navigation.navigate("Main" as any, {
+                  screen: "EditCustomerScreen",
+                  params: {
                     id,
                     customerId,
                     name: customerName,
                     title: customerTitle,
-                    phone: customerNumber,
-                  })
-                }
-                style={{ marginTop: 8 }}
-              >
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <Text
-                    style={{
-                      color: "#7240D3",
-                      textDecorationLine: "underline",
-                      fontWeight: "600",
-                      fontSize: 14,
-                      marginRight: 6,
-                    }}
-                  >
-                    Package Preferences
-                  </Text>
-                  <AntIcons name="external-link" size={16} color="#7240D3" />
-                </View>
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {/* Edit button */}
-          <TouchableOpacity
-            onPress={() => {
-              if (buyerType === "Wholesale") {
-                setIsAccessDeniedVisible(true);
-                return;
-              }
-              navigation.navigate("Main" as any, {
-                screen: "EditCustomerScreen",
-                params: {
-                  id,
-                  customerId,
-                  name: customerName,
-                  title: customerTitle,
-                },
-              });
-            }}
-            style={{
-              width: 40,
-              height: 40,
-              alignItems: "center",
-              justifyContent: "center",
-              marginTop: 4,
-            }}
-            activeOpacity={0.7}
-          >
-            <MaterialIcons name="edit" size={24} color="#6839CF" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Wholesale Pending/Rejected view vs Normal view */}
-        {!isStatusChecked || loadingCustomerData ? (
-          <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#FFFFFF" }}>
-            <LoadingPage message="Loading Customer Profile..." fullScreen={true} />
-          </View>
-        ) : buyerType === "Wholesale" && wholesaleApproveStatus !== "Approve" ? (
-          renderWholesaleStatusView()
-        ) : (
-          <View style={{ flex: 1 }}>
-        {/* Address Cards Section */}
-        <View
-          style={{
-            flexDirection: "row",
-            paddingHorizontal: 16,
-            marginTop: 20,
-            justifyContent: "space-between",
-          }}
-        >
-          {/* Residential Address Card */}
-          <View style={{ flex: 1, marginRight: 8 }}>
-            {/* Purple curved underline peeking from behind */}
-            <View
-              style={{
-                position: "absolute",
-                top: 6,
-                left: 4,
-                right: 4,
-                bottom: -4,
-                backgroundColor: "#6938D3",
-                borderRadius: 20,
-              }}
-            />
-            <TouchableOpacity
-              onPress={() => {
-                navigation.navigate("ResidentialAddress", {
-                  customerId: id,
+                  },
                 });
               }}
               style={{
-                backgroundColor: "#FFFFFF",
-                borderRadius: 20,
-                padding: 14,
-                borderWidth: 1,
-                borderColor: "#E5E7EB",
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.12,
-                shadowRadius: 8,
-                elevation: 2,
-                height: 140,
-                justifyContent: "space-between",
-                overflow: "hidden",
-                position: "relative",
+                width: 40,
+                height: 40,
+                alignItems: "center",
+                justifyContent: "center",
+                marginTop: 4,
               }}
+              activeOpacity={0.7}
             >
-              <View style={{ paddingRight: 16 }}>
-                <View
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 10,
-                    backgroundColor: "#F5F1FD",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginBottom: 8,
-                  }}
-                >
-                  <Entypo name="location-pin" size={18} color="#6B3BCF" />
-                </View>
-                <Text
-                  style={{ fontSize: 13, fontWeight: "bold", color: "#1F2937" }}
-                >
-                  Residential Address
-                </Text>
-                <Text
-                  numberOfLines={2}
-                  ellipsizeMode="tail"
-                  style={{
-                    fontSize: 11,
-                    color: "#9CA3AF",
-                    marginTop: 4,
-                    lineHeight: 15,
-                  }}
-                >
-                  {address}
-                </Text>
-              </View>
-              <View style={{ position: "absolute", bottom: 12, right: 12 }}>
-                <Entypo name="chevron-right" size={16} color="#6B3BCF" />
-              </View>
+              <MaterialIcons name="edit" size={24} color="#6839CF" />
             </TouchableOpacity>
           </View>
 
-          {/* Delivery Address Book Card */}
-          <View style={{ flex: 1, marginLeft: 8 }}>
-            {/* Purple curved underline peeking from behind */}
-            <View
-              style={{
-                position: "absolute",
-                top: 6,
-                left: 4,
-                right: 4,
-                bottom: -4,
-                backgroundColor: "#6938D3",
-                borderRadius: 20,
-              }}
-            />
-            <TouchableOpacity
-              onPress={() => {
-                navigation.navigate("DeliveryAddressBooks", {
-                  customerId: id,
-                });
-              }}
-              style={{
-                backgroundColor: "#FFFFFF",
-                borderRadius: 20,
-                padding: 14,
-                borderWidth: 1,
-                borderColor: "#E5E7EB",
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.12,
-                shadowRadius: 8,
-                elevation: 2,
-                height: 140,
-                justifyContent: "space-between",
-                overflow: "hidden",
-                position: "relative",
-              }}
-            >
-              <View style={{ paddingRight: 16 }}>
-                <View
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 10,
-                    backgroundColor: "#F5F1FD",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginBottom: 8,
-                  }}
-                >
-                  <FontAwesome name="folder-open" size={18} color="#6B3BCF" />
-                </View>
-                <Text
-                  style={{ fontSize: 13, fontWeight: "bold", color: "#1F2937" }}
-                >
-                  Delivery Address Book
-                </Text>
-                <Text
-                  numberOfLines={2}
-                  ellipsizeMode="tail"
-                  style={{
-                    fontSize: 11,
-                    color: "#9CA3AF",
-                    marginTop: 4,
-                    lineHeight: 15,
-                  }}
-                >
-                  {savedCount} Saved
-                </Text>
-              </View>
-              <View style={{ position: "absolute", bottom: 12, right: 12 }}>
-                <Entypo name="chevron-right" size={16} color="#6B3BCF" />
-              </View>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Negative Credit Balance Warning */}
-        {creditBalance < 0 && (
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "flex-start",
-              backgroundColor: "#FEF6F0",
-              borderWidth: 1,
-              borderColor: "#FDE4D4",
-              borderRadius: 14,
-              marginHorizontal: 16,
-              marginTop: 14,
-              padding: 12,
-            }}
-          >
-            <MaterialIcons
-              name="warning"
-              size={18}
-              color="#F5811F"
-              style={{ marginRight: 8, marginTop: 7 }}
-            />
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{ fontSize: 13, fontWeight: "bold", color: "#000000" }}
-              >
-                Negative Credit Balance{" "}
-                <Text
-                  style={{ fontSize: 13, fontWeight: "bold", color: "#FF6400" }}
-                >
-                  ( -Rs.{" "}
-                  {Math.abs(creditBalance).toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}{" "}
-                  )
-                </Text>
-              </Text>
-              <Text style={{ fontSize: 12, color: "#5E6089", marginTop: 2 }}>
-                Ask the customer to clear the balance first.
-              </Text>
+          {/* Wholesale Pending/Rejected view vs Normal view */}
+          {!isStatusChecked || loadingCustomerData ? (
+            <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#FFFFFF" }}>
+              <LoadingPage message="Loading Customer Profile..." fullScreen={true} />
             </View>
-          </View>
-        )}
-
-        {/* Scrollable orders content area */}
-        <View style={{ flex: 1, marginTop: 15 }}>
-          {/* Search Bar */}
-          <View style={{ paddingHorizontal: 16 }}>
-            <TouchableWithoutFeedback onPress={() => {}} accessible={false}>
+          ) : buyerType === "Wholesale" && wholesaleApproveStatus !== "Approve" ? (
+            renderWholesaleStatusView()
+          ) : (
+            <View style={{ flex: 1 }}>
+              {/* Address Cards Section */}
               <View
                 style={{
                   flexDirection: "row",
-                  alignItems: "center",
-                  backgroundColor: "#FAF9FE",
                   paddingHorizontal: 16,
-                  borderWidth: 1.5,
-                  borderColor: "#E8E2F7",
-                  borderRadius: 25,
-                  height: 48,
+                  marginTop: 20,
+                  justifyContent: "space-between",
                 }}
               >
-                <TextInput
-                  ref={searchInputRef}
-                  autoFocus={false}
-                  blurOnSubmit={true}
-                  placeholder="Search By Order No"
-                  placeholderTextColor="#A389D4"
-                  style={{
-                    flex: 1,
-                    fontSize: 14,
-                    color: "#1F2937",
-                    height: "100%",
-                    fontStyle: "italic",
-                  }}
-                  onChangeText={(text) => {
-                    const numericOnly = text.replace(/[^0-9]/g, "");
-                    setSearchText(numericOnly);
-                  }}
-                  value={searchText}
-                  keyboardType="numeric"
-                />
-                <TouchableOpacity onPress={handleSearch}>
-                  <AntIcons name="search" size={20} color="#6B3BCF" />
-                </TouchableOpacity>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-
-          {/* Filters List */}
-          {!searchError && (
-            <View style={{ marginTop: 14 }}>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-                contentContainerStyle={{ paddingHorizontal: 16 }}
-              >
-                {filters.map((filter) => (
-                  <TouchableOpacity
-                    key={filter}
+                {/* Residential Address Card */}
+                <View style={{ flex: 1, marginRight: 8 }}>
+                  {/* Purple curved underline peeking from behind */}
+                  <View
                     style={{
-                      paddingHorizontal: 16,
-                      paddingVertical: 8,
+                      position: "absolute",
+                      top: 6,
+                      left: 4,
+                      right: 4,
+                      bottom: -4,
+                      backgroundColor: "#6938D3",
                       borderRadius: 20,
-                      borderWidth: 1.5,
-                      borderColor: "#6B3BCF",
-                      marginRight: 8,
-                      backgroundColor:
-                        selectedFilter === filter ? "#6B3BCF" : "transparent",
                     }}
-                    onPress={() => setSelectedFilter(filter)}
-                  >
-                    <Text
-                      style={{
-                        textAlign: "center",
-                        fontSize: 13,
-                        fontWeight: "600",
-                        color:
-                          selectedFilter === filter ? "#FFFFFF" : "#6B3BCF",
-                      }}
-                    >
-                      {filter}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-          )}
-
-          {/* Orders List */}
-          <View style={{ flex: 1, marginTop: 12 }}>
-            {loading ? (
-              <View
-                style={{
-                  flex: 1,
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <ActivityIndicator size="large" color="#6B3BCF" />
-                <Text style={{ color: "#6B3BCF", marginTop: 8 }}>
-                  Loading orders...
-                </Text>
-              </View>
-            ) : error ? (
-              <View
-                style={{
-                  flex: 1,
-                  justifyContent: "center",
-                  alignItems: "center",
-                  paddingHorizontal: 16,
-                }}
-              >
-                <Text style={{ color: "#EF4444", textAlign: "center" }}>
-                  {error}
-                </Text>
-                <TouchableOpacity
-                  style={{
-                    marginTop: 16,
-                    backgroundColor: "#6B3BCF",
-                    paddingHorizontal: 20,
-                    paddingVertical: 10,
-                    borderRadius: 25,
-                  }}
-                  onPress={handleRefresh}
-                >
-                  <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>
-                    Retry
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            ) : searchError ? (
-              <ScrollView
-                keyboardShouldPersistTaps="handled"
-                keyboardDismissMode="on-drag"
-                contentContainerStyle={{
-                  justifyContent: "center",
-                  alignItems: "center",
-                  flexGrow: 1,
-                }}
-                refreshControl={
-                  <RefreshControl
-                    refreshing={loading}
-                    onRefresh={handleRefresh}
-                    colors={["#6B3BCF"]}
                   />
-                }
-              >
-                <Image
-                  source={require("@/assets/images/public/no-data.webp")}
-                  style={{
-                    width: wp("60%"),
-                    height: hp("30%"),
-                    resizeMode: "contain",
-                  }}
-                />
-                <Text
-                  style={{
-                    color: "#000000",
-                    fontStyle: "italic",
-                    textAlign: "center",
-                    marginTop: 12,
-                  }}
-                >
-                  {" "}
-                  No orders found{" "}
-                </Text>
-              </ScrollView>
-            ) : filteredOrders.length > 0 ? (
-              <FlatList
-                data={filteredOrders}
-                keyboardShouldPersistTaps="handled"
-                keyboardDismissMode="on-drag"
-                keyExtractor={(item, index) => {
-                  const safeProcessId = item.processId || "";
-                  const safeOrderId = item.orderId || "unknown";
-                  const safeInvNo = item.InvNo || "";
-                  return `${safeOrderId}-${safeProcessId}-${safeInvNo}-${index}`;
-                }}
-                renderItem={({ item }) => {
-                  const isPaymentPending =
-                    Number(item.isPaid) === 0 &&
-                    item.paymentMethod === "Card" &&
-                    item.status !== "Cancelled";
-                  const displayStatus = getDisplayStatus(item.status);
-
-                  return (
-                    <TouchableOpacity
-                      activeOpacity={1}
-                      onPress={() => {
-                        Keyboard.dismiss();
-                        searchInputRef.current?.blur();
-                        navigation.navigate("View_CancelOrderScreen" as any, {
-                          orderId: item.processId || item.orderId,
-                          status: item.status,
-                          reportStatus: item.reportStatus,
-                        });
-                      }}
-                    >
+                  <TouchableOpacity
+                    onPress={() => {
+                      navigation.navigate("ResidentialAddress", {
+                        customerId: id,
+                      });
+                    }}
+                    style={{
+                      backgroundColor: "#FFFFFF",
+                      borderRadius: 20,
+                      padding: 14,
+                      borderWidth: 1,
+                      borderColor: "#E5E7EB",
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.12,
+                      shadowRadius: 8,
+                      elevation: 2,
+                      height: 140,
+                      justifyContent: "space-between",
+                      overflow: "hidden",
+                      position: "relative",
+                    }}
+                  >
+                    <View style={{ paddingRight: 16 }}>
                       <View
                         style={{
-                          backgroundColor: "#FFFFFF",
-                          borderRadius: 20,
-                          padding: 16,
-                          marginBottom: 12,
-                          marginHorizontal: 16,
-                          marginTop: 4,
-                          borderWidth: 1.5,
-                          borderColor: isPaymentPending ? "#EF4444" : "#F3F4F6",
-                          shadowColor: "#000",
-                          shadowOffset: { width: 0, height: 2 },
-                          shadowOpacity: 0.25,
-                          shadowRadius: 3.84,
-                          elevation: 4,
-                          maxWidth: 500,
+                          width: 32,
+                          height: 32,
+                          borderRadius: 10,
+                          backgroundColor: "#F5F1FD",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          marginBottom: 8,
                         }}
                       >
-                        <View
+                        <Entypo name="location-pin" size={18} color="#6B3BCF" />
+                      </View>
+                      <Text
+                        style={{ fontSize: 13, fontWeight: "bold", color: "#1F2937" }}
+                      >
+                        Residential Address
+                      </Text>
+                      <Text
+                        numberOfLines={2}
+                        ellipsizeMode="tail"
+                        style={{
+                          fontSize: 11,
+                          color: "#9CA3AF",
+                          marginTop: 4,
+                          lineHeight: 15,
+                        }}
+                      >
+                        {address}
+                      </Text>
+                    </View>
+                    <View style={{ position: "absolute", bottom: 12, right: 12 }}>
+                      <Entypo name="chevron-right" size={16} color="#6B3BCF" />
+                    </View>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Delivery Address Book Card */}
+                <View style={{ flex: 1, marginLeft: 8 }}>
+                  {/* Purple curved underline peeking from behind */}
+                  <View
+                    style={{
+                      position: "absolute",
+                      top: 6,
+                      left: 4,
+                      right: 4,
+                      bottom: -4,
+                      backgroundColor: "#6938D3",
+                      borderRadius: 20,
+                    }}
+                  />
+                  <TouchableOpacity
+                    onPress={() => {
+                      navigation.navigate("DeliveryAddressBooks", {
+                        customerId: id,
+                      });
+                    }}
+                    style={{
+                      backgroundColor: "#FFFFFF",
+                      borderRadius: 20,
+                      padding: 14,
+                      borderWidth: 1,
+                      borderColor: "#E5E7EB",
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.12,
+                      shadowRadius: 8,
+                      elevation: 2,
+                      height: 140,
+                      justifyContent: "space-between",
+                      overflow: "hidden",
+                      position: "relative",
+                    }}
+                  >
+                    <View style={{ paddingRight: 16 }}>
+                      <View
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: 10,
+                          backgroundColor: "#F5F1FD",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          marginBottom: 8,
+                        }}
+                      >
+                        <FontAwesome name="folder-open" size={18} color="#6B3BCF" />
+                      </View>
+                      <Text
+                        style={{ fontSize: 13, fontWeight: "bold", color: "#1F2937" }}
+                      >
+                        Delivery Address Book
+                      </Text>
+                      <Text
+                        numberOfLines={2}
+                        ellipsizeMode="tail"
+                        style={{
+                          fontSize: 11,
+                          color: "#9CA3AF",
+                          marginTop: 4,
+                          lineHeight: 15,
+                        }}
+                      >
+                        {savedCount} Saved
+                      </Text>
+                    </View>
+                    <View style={{ position: "absolute", bottom: 12, right: 12 }}>
+                      <Entypo name="chevron-right" size={16} color="#6B3BCF" />
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Negative Credit Balance Warning */}
+              {creditBalance < 0 && (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "flex-start",
+                    backgroundColor: "#FEF6F0",
+                    borderWidth: 1,
+                    borderColor: "#FDE4D4",
+                    borderRadius: 14,
+                    marginHorizontal: 16,
+                    marginTop: 14,
+                    padding: 12,
+                  }}
+                >
+                  <MaterialIcons
+                    name="warning"
+                    size={18}
+                    color="#F5811F"
+                    style={{ marginRight: 8, marginTop: 7 }}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{ fontSize: 13, fontWeight: "bold", color: "#000000" }}
+                    >
+                      Negative Credit Balance{" "}
+                      <Text
+                        style={{ fontSize: 13, fontWeight: "bold", color: "#FF6400" }}
+                      >
+                        ( -Rs.{" "}
+                        {Math.abs(creditBalance).toLocaleString("en-US", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}{" "}
+                        )
+                      </Text>
+                    </Text>
+                    <Text style={{ fontSize: 12, color: "#5E6089", marginTop: 2 }}>
+                      Ask the customer to clear the balance first.
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Scrollable orders content area */}
+              <View style={{ flex: 1, marginTop: 15 }}>
+                {/* Search Bar */}
+                <View style={{ paddingHorizontal: 16 }}>
+                  <TouchableWithoutFeedback onPress={() => { }} accessible={false}>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        backgroundColor: "#FAF9FE",
+                        paddingHorizontal: 16,
+                        borderWidth: 1.5,
+                        borderColor: "#E8E2F7",
+                        borderRadius: 25,
+                        height: 48,
+                      }}
+                    >
+                      <TextInput
+                        ref={searchInputRef}
+                        autoFocus={false}
+                        blurOnSubmit={true}
+                        placeholder="Search By Order No"
+                        placeholderTextColor="#A389D4"
+                        style={{
+                          flex: 1,
+                          fontSize: 14,
+                          color: "#1F2937",
+                          height: "100%",
+                          fontStyle: "italic",
+                        }}
+                        onChangeText={(text) => {
+                          const numericOnly = text.replace(/[^0-9]/g, "");
+                          setSearchText(numericOnly);
+                        }}
+                        value={searchText}
+                        keyboardType="numeric"
+                      />
+                      <TouchableOpacity onPress={handleSearch}>
+                        <AntIcons name="search" size={20} color="#6B3BCF" />
+                      </TouchableOpacity>
+                    </View>
+                  </TouchableWithoutFeedback>
+                </View>
+
+                {/* Filters List */}
+                {!searchError && (
+                  <View style={{ marginTop: 14 }}>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      keyboardShouldPersistTaps="handled"
+                      contentContainerStyle={{ paddingHorizontal: 16 }}
+                    >
+                      {filters.map((filter) => (
+                        <TouchableOpacity
+                          key={filter}
                           style={{
-                            flexDirection: "row",
-                            justifyContent: "space-between",
-                            alignItems: "center",
+                            paddingHorizontal: 16,
+                            paddingVertical: 8,
+                            borderRadius: 20,
+                            borderWidth: 1.5,
+                            borderColor: "#6B3BCF",
+                            marginRight: 8,
+                            backgroundColor:
+                              selectedFilter === filter ? "#6B3BCF" : "transparent",
                           }}
+                          onPress={() => setSelectedFilter(filter)}
                         >
                           <Text
                             style={{
-                              fontWeight: "bold",
-                              color: "#1F2937",
-                              fontSize: SCREEN_HEIGHT > 900 ? 18 : 15,
+                              textAlign: "center",
+                              fontSize: 13,
+                              fontWeight: "600",
+                              color:
+                                selectedFilter === filter ? "#FFFFFF" : "#6B3BCF",
                             }}
                           >
-                            Order : #{item.InvNo || "N/A"}
+                            {filter}
                           </Text>
-                          <View
-                            style={{
-                              paddingVertical: 4,
-                              paddingHorizontal: 12,
-                              borderRadius: 12,
-                              backgroundColor:
-                                displayStatus === "Ordered"
-                                  ? "#F5FF85"
-                                  : displayStatus === "Processing"
-                                    ? "#CFE1FF"
-                                    : displayStatus === "Out For Delivery" ||
-                                        displayStatus === "Out for Delivery"
-                                      ? "#FCD4FF"
-                                      : displayStatus === "Collected"
-                                        ? "#F8FEA5"
-                                        : displayStatus === "On the way"
-                                          ? "#FFEDCF"
-                                          : displayStatus === "Hold"
-                                            ? "#FFEDCF"
-                                            : displayStatus === "Delivered"
-                                              ? "#BBFFC6"
-                                              : displayStatus === "Cancelled"
-                                                ? "#DFDFDF"
-                                                : displayStatus === "Return"
-                                                  ? "#FFDCDA"
-                                                  : "#EAEAEA",
-                              alignItems: "center",
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+
+                {/* Orders List */}
+                <View style={{ flex: 1, marginTop: 12 }}>
+                  {loading ? (
+                    <View
+                      style={{
+                        flex: 1,
+                        justifyContent: "center",
+                        alignItems: "center",
+                      }}
+                    >
+                      <ActivityIndicator size="large" color="#6B3BCF" />
+                      <Text style={{ color: "#6B3BCF", marginTop: 8 }}>
+                        Loading orders...
+                      </Text>
+                    </View>
+                  ) : error ? (
+                    <View
+                      style={{
+                        flex: 1,
+                        justifyContent: "center",
+                        alignItems: "center",
+                        paddingHorizontal: 16,
+                      }}
+                    >
+                      <Text style={{ color: "#EF4444", textAlign: "center" }}>
+                        {error}
+                      </Text>
+                      <TouchableOpacity
+                        style={{
+                          marginTop: 16,
+                          backgroundColor: "#6B3BCF",
+                          paddingHorizontal: 20,
+                          paddingVertical: 10,
+                          borderRadius: 25,
+                        }}
+                        onPress={handleRefresh}
+                      >
+                        <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>
+                          Retry
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : searchError ? (
+                    <ScrollView
+                      keyboardShouldPersistTaps="handled"
+                      keyboardDismissMode="on-drag"
+                      contentContainerStyle={{
+                        justifyContent: "center",
+                        alignItems: "center",
+                        flexGrow: 1,
+                      }}
+                      refreshControl={
+                        <RefreshControl
+                          refreshing={loading}
+                          onRefresh={handleRefresh}
+                          colors={["#6B3BCF"]}
+                        />
+                      }
+                    >
+                      <Image
+                        source={require("@/assets/images/public/no-data.webp")}
+                        style={{
+                          width: wp("60%"),
+                          height: hp("30%"),
+                          resizeMode: "contain",
+                        }}
+                      />
+                      <Text
+                        style={{
+                          color: "#000000",
+                          fontStyle: "italic",
+                          textAlign: "center",
+                          marginTop: 12,
+                        }}
+                      >
+                        {" "}
+                        No orders found{" "}
+                      </Text>
+                    </ScrollView>
+                  ) : filteredOrders.length > 0 ? (
+                    <FlatList
+                      data={filteredOrders}
+                      keyboardShouldPersistTaps="handled"
+                      keyboardDismissMode="on-drag"
+                      keyExtractor={(item, index) => {
+                        const safeProcessId = item.processId || "";
+                        const safeOrderId = item.orderId || "unknown";
+                        const safeInvNo = item.InvNo || "";
+                        return `${safeOrderId}-${safeProcessId}-${safeInvNo}-${index}`;
+                      }}
+                      renderItem={({ item }) => {
+                        const isPaymentPending =
+                          Number(item.isPaid) === 0 &&
+                          item.paymentMethod === "Card" &&
+                          item.status !== "Cancelled";
+                        const displayStatus = getDisplayStatus(item.status);
+
+                        return (
+                          <TouchableOpacity
+                            activeOpacity={1}
+                            onPress={() => {
+                              Keyboard.dismiss();
+                              searchInputRef.current?.blur();
+                              navigation.navigate("View_CancelOrderScreen" as any, {
+                                orderId: item.processId || item.orderId,
+                                status: item.status,
+                                reportStatus: item.reportStatus,
+                              });
                             }}
                           >
-                            <Text
-                              numberOfLines={1}
+                            <View
                               style={{
-                                fontSize: 11,
-                                fontWeight: "bold",
-                                color:
-                                  displayStatus === "Ordered"
-                                    ? "#878216"
-                                    : displayStatus === "Processing"
-                                      ? "#3B82F6"
-                                      : displayStatus === "Out For Delivery" ||
-                                          displayStatus === "Out for Delivery"
-                                        ? "#80118A"
-                                        : displayStatus === "Collected"
-                                          ? "#7E8700"
-                                          : displayStatus === "On the way"
-                                            ? "#D17A00"
-                                            : displayStatus === "Hold"
-                                              ? "#D17A00"
-                                              : displayStatus === "Delivered"
-                                                ? "#308233"
-                                                : displayStatus === "Cancelled"
-                                                  ? "#5C5C5C"
-                                                  : displayStatus === "Return"
-                                                    ? "#FF1100"
-                                                    : "#393939",
+                                backgroundColor: "#FFFFFF",
+                                borderRadius: 20,
+                                padding: 16,
+                                marginBottom: 12,
+                                marginHorizontal: 16,
+                                marginTop: 4,
+                                borderWidth: 1.5,
+                                borderColor: isPaymentPending ? "#EF4444" : "#F3F4F6",
+                                shadowColor: "#000",
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: 0.25,
+                                shadowRadius: 3.84,
+                                elevation: 4,
+                                maxWidth: 500,
                               }}
                             >
-                              {displayStatus}
-                            </Text>
-                          </View>
-                        </View>
+                              <View
+                                style={{
+                                  flexDirection: "row",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                }}
+                              >
+                                <Text
+                                  style={{
+                                    fontWeight: "bold",
+                                    color: "#1F2937",
+                                    fontSize: SCREEN_HEIGHT > 900 ? 18 : 15,
+                                  }}
+                                >
+                                  Order : #{item.InvNo || "N/A"}
+                                </Text>
+                                <View
+                                  style={{
+                                    paddingVertical: 4,
+                                    paddingHorizontal: 12,
+                                    borderRadius: 12,
+                                    backgroundColor:
+                                      displayStatus === "Ordered"
+                                        ? "#F5FF85"
+                                        : displayStatus === "Processing"
+                                          ? "#CFE1FF"
+                                          : displayStatus === "Out For Delivery" ||
+                                            displayStatus === "Out for Delivery"
+                                            ? "#FCD4FF"
+                                            : displayStatus === "Collected"
+                                              ? "#F8FEA5"
+                                              : displayStatus === "On the way"
+                                                ? "#FFEDCF"
+                                                : displayStatus === "Hold"
+                                                  ? "#FFEDCF"
+                                                  : displayStatus === "Delivered"
+                                                    ? "#BBFFC6"
+                                                    : displayStatus === "Cancelled"
+                                                      ? "#DFDFDF"
+                                                      : displayStatus === "Return"
+                                                        ? "#FFDCDA"
+                                                        : "#EAEAEA",
+                                    alignItems: "center",
+                                  }}
+                                >
+                                  <Text
+                                    numberOfLines={1}
+                                    style={{
+                                      fontSize: 11,
+                                      fontWeight: "bold",
+                                      color:
+                                        displayStatus === "Ordered"
+                                          ? "#878216"
+                                          : displayStatus === "Processing"
+                                            ? "#3B82F6"
+                                            : displayStatus === "Out For Delivery" ||
+                                              displayStatus === "Out for Delivery"
+                                              ? "#80118A"
+                                              : displayStatus === "Collected"
+                                                ? "#7E8700"
+                                                : displayStatus === "On the way"
+                                                  ? "#D17A00"
+                                                  : displayStatus === "Hold"
+                                                    ? "#D17A00"
+                                                    : displayStatus === "Delivered"
+                                                      ? "#308233"
+                                                      : displayStatus === "Cancelled"
+                                                        ? "#5C5C5C"
+                                                        : displayStatus === "Return"
+                                                          ? "#FF1100"
+                                                          : "#393939",
+                                    }}
+                                  >
+                                    {displayStatus}
+                                  </Text>
+                                </View>
+                              </View>
 
-                        {isPaymentPending && (
-                          <View
-                            style={{
-                              flexDirection: "row",
-                              alignItems: "center",
-                              marginTop: 6,
-                            }}
-                          >
-                            <MaterialIcons
-                              name="error"
-                              size={13}
-                              color="#EF4444"
-                              style={{ marginRight: 4 }}
-                            />
-                            <Text
-                              style={{
-                                color: "#EF4444",
-                                fontWeight: "bold",
-                                fontSize: SCREEN_HEIGHT > 900 ? 13 : 11,
-                              }}
-                            >
-                              Payment Pending
-                            </Text>
-                          </View>
-                        )}
+                              {isPaymentPending && (
+                                <View
+                                  style={{
+                                    flexDirection: "row",
+                                    alignItems: "center",
+                                    marginTop: 6,
+                                  }}
+                                >
+                                  <MaterialIcons
+                                    name="error"
+                                    size={13}
+                                    color="#EF4444"
+                                    style={{ marginRight: 4 }}
+                                  />
+                                  <Text
+                                    style={{
+                                      color: "#EF4444",
+                                      fontWeight: "bold",
+                                      fontSize: SCREEN_HEIGHT > 900 ? 13 : 11,
+                                    }}
+                                  >
+                                    Payment Pending
+                                  </Text>
+                                </View>
+                              )}
 
-                        <Text
-                          style={{
-                            color: "#9CA3AF",
-                            marginTop: 6,
-                            fontSize: SCREEN_HEIGHT > 900 ? 14 : 12,
-                          }}
-                        >
-                          Scheduled to : {formatsheduleDate(item.sheduleDate)}
-                        </Text>
-                        <Text
-                          style={{
-                            color: "#9CA3AF",
-                            marginTop: 2,
-                            fontSize: SCREEN_HEIGHT > 900 ? 14 : 12,
-                          }}
-                        >
-                          {item.sheduleTime}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                }}
-                onEndReached={loadMoreOrders}
-                onEndReachedThreshold={0.1}
-                ListFooterComponent={renderFooter}
-                refreshControl={
-                  <RefreshControl
-                    refreshing={loading}
-                    onRefresh={handleRefresh}
-                    colors={["#6B3BCF"]}
-                  />
-                }
-                contentContainerStyle={{ paddingBottom: 40 }}
-              />
-            ) : (
-              <ScrollView
-                contentContainerStyle={{
-                  justifyContent: "center",
+                              <Text
+                                style={{
+                                  color: "#9CA3AF",
+                                  marginTop: 6,
+                                  fontSize: SCREEN_HEIGHT > 900 ? 14 : 12,
+                                }}
+                              >
+                                Scheduled to : {formatsheduleDate(item.sheduleDate)}
+                              </Text>
+                              <Text
+                                style={{
+                                  color: "#9CA3AF",
+                                  marginTop: 2,
+                                  fontSize: SCREEN_HEIGHT > 900 ? 14 : 12,
+                                }}
+                              >
+                                {item.sheduleTime}
+                              </Text>
+                            </View>
+                          </TouchableOpacity>
+                        );
+                      }}
+                      onEndReached={loadMoreOrders}
+                      onEndReachedThreshold={0.1}
+                      ListFooterComponent={renderFooter}
+                      refreshControl={
+                        <RefreshControl
+                          refreshing={loading}
+                          onRefresh={handleRefresh}
+                          colors={["#6B3BCF"]}
+                        />
+                      }
+                      contentContainerStyle={{ paddingBottom: 40 }}
+                    />
+                  ) : (
+                    <ScrollView
+                      contentContainerStyle={{
+                        justifyContent: "center",
+                        alignItems: "center",
+                        paddingHorizontal: 16,
+                        flexGrow: 1,
+                      }}
+                      refreshControl={
+                        <RefreshControl
+                          refreshing={loading}
+                          onRefresh={handleRefresh}
+                          colors={["#6B3BCF"]}
+                        />
+                      }
+                    >
+                      <Image
+                        source={require("@/assets/images/public/no-data.webp")}
+                        style={{
+                          width: wp("60%"),
+                          height: hp("30%"),
+                          resizeMode: "contain",
+                        }}
+                      />
+                      <Text
+                        style={{
+                          color: "#000000",
+                          fontStyle: "italic",
+                          textAlign: "center",
+                          marginTop: 1,
+                        }}
+                      >
+                        {orders.length === 0
+                          ? " No orders found "
+                          : searchText
+                            ? "No matching orders found"
+                            : `No orders found with status "${selectedFilter}"`}
+                      </Text>
+                    </ScrollView>
+                  )}
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* Sticky Bottom Action Buttons */}
+          {!isKeyboardVisible && (
+            <View
+              style={{
+                paddingHorizontal: 16,
+                paddingVertical: 14,
+                backgroundColor: "#F5F2FE",
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: -4 },
+                shadowOpacity: 0.08,
+                shadowRadius: 8,
+                elevation: 10,
+              }}
+            >
+              {/* Get a Call Button */}
+              <TouchableOpacity
+                onPress={handleGetACall}
+                style={{
+                  flex: 1,
+                  flexDirection: "row",
+                  height: 48,
+                  borderRadius: 24,
+                  borderWidth: 1.5,
+                  borderColor: "#6B3BCF",
+                  backgroundColor: "#FFFFFF",
                   alignItems: "center",
-                  paddingHorizontal: 16,
-                  flexGrow: 1,
+                  justifyContent: "center",
+                  marginRight: 8,
+
+                  shadowColor: "#000000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.2,
+                  shadowRadius: 4,
+                  elevation: 3,
                 }}
-                refreshControl={
-                  <RefreshControl
-                    refreshing={loading}
-                    onRefresh={handleRefresh}
-                    colors={["#6B3BCF"]}
-                  />
-                }
               >
-                <Image
-                  source={require("@/assets/images/public/no-data.webp")}
-                  style={{
-                    width: wp("60%"),
-                    height: hp("30%"),
-                    resizeMode: "contain",
-                  }}
+                <Ionicons
+                  name="call"
+                  size={18}
+                  color="#6B3BCF"
+                  style={{ marginRight: 6 }}
                 />
                 <Text
-                  style={{
-                    color: "#000000",
-                    fontStyle: "italic",
-                    textAlign: "center",
-                    marginTop: 1,
-                  }}
+                  style={{ color: "#6B3BCF", fontWeight: "bold", fontSize: 15 }}
                 >
-                  {orders.length === 0
-                    ? " No orders found "
-                    : searchText
-                      ? "No matching orders found"
-                      : `No orders found with status "${selectedFilter}"`}
+                  Get a Call
                 </Text>
-              </ScrollView>
-            )}
-          </View>
-        </View>
-        </View>
-        )}
+              </TouchableOpacity>
 
-        {/* Sticky Bottom Action Buttons */}
-        {!isKeyboardVisible && (
-          <View
-            style={{
-              paddingHorizontal: 16,
-              paddingVertical: 14,
-              backgroundColor: "#F5F2FE",
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: -4 },
-              shadowOpacity: 0.08,
-              shadowRadius: 8,
-              elevation: 10,
-            }}
-          >
-            {/* Get a Call Button */}
-            <TouchableOpacity
-              onPress={handleGetACall}
-              style={{
-                flex: 1,
-                flexDirection: "row",
-                height: 48,
-                borderRadius: 24,
-                borderWidth: 1.5,
-                borderColor: "#6B3BCF",
-                backgroundColor: "#FFFFFF",
-                alignItems: "center",
-                justifyContent: "center",
-                marginRight: 8,
+              {/* New Order Button */}
+              <TouchableOpacity
+                disabled={creditBalance < 0 || (buyerType === "Wholesale" && wholesaleApproveStatus !== "Approve")}
+                onPress={() =>
+                  navigation.navigate("SelectOrderType" as any, {
+                    id,
+                    customerId,
+                    name: customerName,
+                    title: customerTitle,
+                    number: customerNumber,
+                    customerscreencustomerid: customerId,
+                  })
+                }
+                style={{
+                  flex: 1,
+                  flexDirection: "row",
+                  height: 48,
+                  borderRadius: 24,
+                  backgroundColor:
+                    (buyerType === "Wholesale" && wholesaleApproveStatus !== "Approve") || creditBalance < 0
+                      ? "#B8B8B8"
+                      : "#6B3BCF",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginLeft: 8,
+                  opacity: (buyerType === "Wholesale" && wholesaleApproveStatus !== "Approve") || creditBalance < 0 ? 0.7 : 1,
 
-                shadowColor: "#000000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.2,
-                shadowRadius: 4,
-                elevation: 3,
-              }}
-            >
-              <Ionicons
-                name="call"
-                size={18}
-                color="#6B3BCF"
-                style={{ marginRight: 6 }}
-              />
-              <Text
-                style={{ color: "#6B3BCF", fontWeight: "bold", fontSize: 15 }}
+                  shadowColor: "#000000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.2,
+                  shadowRadius: 4,
+                  elevation: 3,
+                }}
               >
-                Get a Call
-              </Text>
-            </TouchableOpacity>
-
-            {/* New Order Button */}
-            <TouchableOpacity
-              disabled={creditBalance < 0 || (buyerType === "Wholesale" && wholesaleApproveStatus !== "Approve")}
-              onPress={() =>
-                navigation.navigate("SelectOrderType" as any, {
-                  id,
-                  customerId,
-                  name: customerName,
-                  title: customerTitle,
-                  number: customerNumber,
-                  customerscreencustomerid: customerId,
-                })
-              }
-              style={{
-                flex: 1,
-                flexDirection: "row",
-                height: 48,
-                borderRadius: 24,
-                backgroundColor:
-                  (buyerType === "Wholesale" && wholesaleApproveStatus !== "Approve") || creditBalance < 0
-                    ? "#B8B8B8"
-                    : "#6B3BCF",
-                alignItems: "center",
-                justifyContent: "center",
-                marginLeft: 8,
-                opacity: (buyerType === "Wholesale" && wholesaleApproveStatus !== "Approve") || creditBalance < 0 ? 0.7 : 1,
-
-                shadowColor: "#000000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.2,
-                shadowRadius: 4,
-                elevation: 3,
-              }}
-            >
-              <Ionicons
-                name="add-circle"
-                size={20}
-                color="#FFFFFF"
-                style={{ marginRight: 6 }}
-              />
-              <Text
-                style={{ color: "#FFFFFF", fontWeight: "bold", fontSize: 15 }}
-              >
-                New Order
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
+                <Ionicons
+                  name="add-circle"
+                  size={20}
+                  color="#FFFFFF"
+                  style={{ marginRight: 6 }}
+                />
+                <Text
+                  style={{ color: "#FFFFFF", fontWeight: "bold", fontSize: 15 }}
+                >
+                  New Order
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </LinearGradient>
       </TouchableWithoutFeedback>
 

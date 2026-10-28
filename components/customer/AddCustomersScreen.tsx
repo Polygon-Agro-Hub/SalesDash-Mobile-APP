@@ -377,26 +377,66 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     return digits.length >= 9 && digits.length <= 11;
   };
 
+  const readFileAsBase64 = async (fileUri: string): Promise<string> => {
+    // Strategy 1: Read via fetch + blob + FileReader
+    // React Native's native fetch reads local Android file:// and content:// URIs directly
+    // without triggering Expo's internal scoped path restrictions.
+    try {
+      const response = await fetch(fileUri);
+      const blob = await response.blob();
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (typeof reader.result === "string") {
+            resolve(reader.result);
+          } else {
+            reject(new Error("FileReader result is not a string"));
+          }
+        };
+        reader.onerror = (err) => reject(err);
+        reader.readAsDataURL(blob);
+      });
+      const commaIdx = dataUrl.indexOf(",");
+      const rawBase64 = commaIdx !== -1 ? dataUrl.substring(commaIdx + 1) : dataUrl;
+      if (rawBase64) return rawBase64;
+    } catch (fetchErr) {
+      console.warn("fetch/FileReader failed, falling back to FileSystem:", fetchErr);
+    }
+
+    // Strategy 2: FileSystem.readAsStringAsync
+    try {
+      const fsData = await FileSystem.readAsStringAsync(fileUri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      if (fsData) return fsData;
+    } catch (fsErr) {
+      console.warn("FileSystem.readAsStringAsync failed:", fsErr);
+    }
+
+    // Strategy 3: Copy to app's cacheDirectory before reading
+    try {
+      const ext = fileUri.split(".").pop() || "tmp";
+      const tempDest = `${FileSystem.cacheDirectory}temp_br_${Date.now()}.${ext}`;
+      await FileSystem.copyAsync({ from: fileUri, to: tempDest });
+      const copiedData = await FileSystem.readAsStringAsync(tempDest, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      FileSystem.deleteAsync(tempDest, { idempotent: true }).catch(() => {});
+      if (copiedData) return copiedData;
+    } catch (copyErr) {
+      console.error("All file reading strategies failed:", copyErr);
+    }
+
+    throw new Error("Unable to read document file for upload");
+  };
+
   const uploadBRToR2 = async (fileUri: string, fileName: string, mimeType: string): Promise<string | null> => {
     try {
       setIsUploadingBR(true);
-      let base64Data = "";
-      try {
-        base64Data = await FileSystem.readAsStringAsync(fileUri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-      } catch (readErr) {
-        try {
-          const { File } = require("expo-file-system");
-          const file = new File(fileUri);
-          base64Data = await file.base64();
-        } catch (fileErr) {
-          throw readErr;
-        }
-      }
+      const base64Data = await readFileAsBase64(fileUri);
 
       const response = await axios.post(`${environment.API_BASE_URL}api/customer/upload-br`, {
-        base64: `data:${mimeType};base64,${base64Data}`,
+        base64: base64Data.startsWith("data:") ? base64Data : `data:${mimeType};base64,${base64Data}`,
         fileName: fileName,
       });
 
