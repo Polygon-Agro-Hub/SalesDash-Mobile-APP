@@ -227,20 +227,23 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
   const goToCart = () => {
     const selectedProducts = products
       .filter((product) => product.selected)
-      .map((product) => ({
-        id: product.id,
-        name: product.displayName,
-        price: product.discountedPrice,
-        pricenoraml: product.normalPrice,
-        normalPrice: product.normalPrice,
-        discount: product.normalPrice - product.discountedPrice,
-        discountedPrice: product.discountedPrice,
-        changeby: product.changeby,
-        unitType: product.unitType,
-        startValue: product.startValue,
-        cutId: id,
-        isPackage: isPackage,
-      }));
+      .map((product) => {
+        const itemDiscount = Math.max(0, product.normalPrice - product.discountedPrice);
+        return {
+          id: product.id,
+          name: product.displayName,
+          price: product.discountedPrice,
+          pricenoraml: product.normalPrice,
+          normalPrice: product.normalPrice,
+          discount: itemDiscount,
+          discountedPrice: product.discountedPrice,
+          changeby: product.changeby,
+          unitType: product.unitType,
+          startValue: product.startValue,
+          cutId: id,
+          isPackage: isPackage,
+        };
+      });
 
     if (selectedProducts.length > 0) {
       navigation.navigate("CratScreen" as any, {

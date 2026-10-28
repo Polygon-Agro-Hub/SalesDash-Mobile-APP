@@ -186,7 +186,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
                 } else {
                   pricePerKg = item.discountedPrice;
                   normalPricePerKg = item.normalPrice;
-                  discountPerKg = item.discount;
+                  discountPerKg = Math.max(0, item.discount || 0);
                 }
               } else {
                 pricePerKg = item.discountedPrice;
@@ -446,7 +446,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
           id: item.id,
           name: item.name,
           price: roundToTwoDecimals(item.discountedPrice * weightInKg),
-          discount: roundToTwoDecimals(item.discount * weightInKg),
+          discount: Math.max(0, roundToTwoDecimals(item.discount * weightInKg)),
           qty: item.changeby,
           unitType: item.unitType,
           isPackage: isPackage,

@@ -11,6 +11,7 @@ import {
   Linking,
   BackHandler,
   Keyboard,
+  ActivityIndicator,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -22,6 +23,7 @@ import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import CustomHeader from "../common/CustomHeader";
 import LoadingPage from "../common/LoadingPage";
+import { AlertModal } from "../common/AlertModal";
 
 type View_CancelOrderScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -137,6 +139,10 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
     string | null
   >(null);
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [successModalVisible, setSuccessModalVisible] = useState(false);
+  const [successModalTitle, setSuccessModalTitle] = useState("Successful!");
+  const [successModalMessage, setSuccessModalMessage] = useState("");
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
   const [deliveryFee, setDeliveryFee] = useState<number>(0);
   const [isPackage, setIsPackage] = useState();
@@ -471,15 +477,15 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
     });
 
   const confirmCancelOrder = async () => {
+    if (cancelling) return;
     try {
-      setLoading(true);
+      setCancelling(true);
       const storedToken = await AsyncStorage.getItem("authToken");
       if (!storedToken) {
         Alert.alert(
           "Error",
           "Authentication token not found. Please log in again.",
         );
-        setLoading(false);
         return;
       }
       const response = await axios.post(
@@ -495,20 +501,31 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
       if (response.data.success) {
         setCancelModalVisible(false);
         Keyboard.dismiss();
-        Alert.alert(
-          "Order Cancelled",
-          "Your order has been successfully cancelled.",
-          [
-            {
-              text: "OK",
-              onPress: () => {
-                Keyboard.dismiss();
-                navigation.goBack();
-              },
-            },
-          ],
-          { cancelable: false },
-        );
+
+        const isPaidCard =
+          (typeof order?.orderStatus === "object"
+            ? order.orderStatus?.paymentMethod
+            : order?.paymentMethod) === "Card" &&
+          (typeof order?.orderStatus === "object"
+            ? Number(order.orderStatus?.isPaid) === 1
+            : Number(order?.paymentStatus) === 1 ||
+              Number((order as any)?.isPaid) === 1);
+
+        const isRefunded =
+          Boolean(response.data?.data?.refunded) || isPaidCard;
+
+        if (isRefunded) {
+          setSuccessModalTitle("Successful!");
+          setSuccessModalMessage(
+            "Your customer's order has been successfully canceled, and the amount your customer transferred has been credited back to their account.",
+          );
+        } else {
+          setSuccessModalTitle("Successful!");
+          setSuccessModalMessage(
+            "Your customer's order has been successfully canceled.",
+          );
+        }
+        setSuccessModalVisible(true);
       } else
         Alert.alert(
           "Error",
@@ -522,7 +539,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
           "Failed to cancel the order. Please try again.",
       );
     } finally {
-      setLoading(false);
+      setCancelling(false);
     }
   };
 
@@ -986,7 +1003,9 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
         animationType="slide"
         transparent={true}
         visible={cancelModalVisible}
-        onRequestClose={() => setCancelModalVisible(false)}
+        onRequestClose={() => {
+          if (!cancelling) setCancelModalVisible(false);
+        }}
       >
         <View className="flex-1 justify-center items-center bg-black/50">
           <View className="bg-white rounded-lg p-5 w-5/6 max-w-[500px]">
@@ -1010,8 +1029,9 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
             >
               <TouchableOpacity
                 onPress={confirmCancelOrder}
+                disabled={cancelling}
                 activeOpacity={0.8}
-                style={{ borderRadius: 24 }}
+                style={{ borderRadius: 24, opacity: cancelling ? 0.8 : 1 }}
               >
                 <View
                   style={{
@@ -1019,13 +1039,19 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                     paddingVertical: 14,
                     borderRadius: 24,
                     alignItems: "center",
+                    justifyContent: "center",
+                    minHeight: 48,
                   }}
                 >
-                  <Text
-                    style={{ color: "#fff", fontWeight: "600", fontSize: 15 }}
-                  >
-                    Confirm
-                  </Text>
+                  {cancelling ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text
+                      style={{ color: "#fff", fontWeight: "600", fontSize: 15 }}
+                    >
+                      Confirm
+                    </Text>
+                  )}
                 </View>
               </TouchableOpacity>
             </View>
@@ -1040,9 +1066,12 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
               }}
             >
               <TouchableOpacity
-                onPress={() => setCancelModalVisible(false)}
+                onPress={() => {
+                  if (!cancelling) setCancelModalVisible(false);
+                }}
+                disabled={cancelling}
                 activeOpacity={0.8}
-                style={{ borderRadius: 24 }}
+                style={{ borderRadius: 24, opacity: cancelling ? 0.5 : 1 }}
               >
                 <View
                   style={{
@@ -1050,6 +1079,8 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                     paddingVertical: 14,
                     borderRadius: 24,
                     alignItems: "center",
+                    justifyContent: "center",
+                    minHeight: 48,
                   }}
                 >
                   <Text
@@ -1161,6 +1192,20 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
           </View>
         </View>
       </Modal>
+
+      <AlertModal
+        visible={successModalVisible}
+        title={successModalTitle}
+        message={successModalMessage}
+        type="success"
+        autoClose={false}
+        showOkButton={true}
+        okButtonText="OK"
+        onClose={() => {
+          setSuccessModalVisible(false);
+          navigation.goBack();
+        }}
+      />
     </KeyboardAvoidingView>
   );
 };

@@ -20,8 +20,8 @@ import {
   KeyboardAvoidingView,
   Alert,
   BackHandler,
+  ScrollView,
 } from "react-native";
-import { ScrollView } from "react-native-gesture-handler";
 import { useFocusEffect } from "@react-navigation/native";
 
 type LoginScreenNavigationProp = StackNavigationProp<
@@ -192,6 +192,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         ref={scrollViewRef}
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="none"
         showsVerticalScrollIndicator={false}
         bounces={false}
         style={{ backgroundColor: "white" }}

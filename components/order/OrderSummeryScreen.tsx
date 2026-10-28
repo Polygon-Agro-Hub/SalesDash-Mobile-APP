@@ -328,8 +328,8 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
             productId: Number(item.id),
             qty: Number(item.qty === "g" ? Number(item.qty) / 1000 : item.qty),
             unit: item.unitType === "g" ? "g" : "kg",
-            price: Number(item.price || 0),
-            discount: Number(item.discount || 0),
+            price: Math.max(0, Number(item.price || 0)),
+            discount: Math.max(0, Number(item.discount || 0)),
           })),
         };
         orderPayload = { orderData };
@@ -343,8 +343,8 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           productId: Number(item.productId || item.id),
           qty: Number(item.qty || item.quantity),
           unit: item.unit || "kg",
-          price: Number(item.price || 0),
-          discount: Number(item.discount || 0),
+          price: Math.max(0, Number(item.price || 0)),
+          discount: Math.max(0, Number(item.discount || 0)),
         }));
 
         const isCardPaymentPkg = paymentMethod === "Card";
