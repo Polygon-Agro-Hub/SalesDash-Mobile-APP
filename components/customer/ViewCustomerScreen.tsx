@@ -38,6 +38,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import LoadingPage from "../common/LoadingPage";
+import NegativeCreditBalanceAlert from "../common/NegativeCreditBalanceAlert";
 import FixedMarqueeText from "../common/MarqueeText";
 import LottieView from "lottie-react-native";
 import { AlertModal } from "../common/AlertModal";
@@ -851,6 +852,12 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
             : "Thank you for submitting your Wholesale Customer application and Business Registration documents. Our compliance team is actively reviewing your submission."}
         </Text>
 
+        {/* Negative Credit Balance Alert for Wholesale */}
+        <NegativeCreditBalanceAlert
+          creditBalance={creditBalance}
+          containerStyle={{ marginTop: 16 }}
+        />
+
         {!isRejected ? (
           /* Info Card for Approval Pending */
           <View
@@ -1455,6 +1462,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
               onPress={() => {
                 navigation.navigate("ResidentialAddress", {
                   customerId: id,
+                  buyerType: buyerType || "Retail",
                 });
               }}
               style={{
@@ -1530,6 +1538,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
               onPress={() => {
                 navigation.navigate("DeliveryAddressBooks", {
                   customerId: id,
+                  buyerType: buyerType || "Retail",
                 });
               }}
               style={{
@@ -1588,49 +1597,11 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
           </View>
         </View>
 
-        {/* Negative Credit Balance Warning */}
-        {creditBalance < 0 && (
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "flex-start",
-              backgroundColor: "#FEF6F0",
-              borderWidth: 1,
-              borderColor: "#FDE4D4",
-              borderRadius: 14,
-              marginHorizontal: 16,
-              marginTop: 14,
-              padding: 12,
-            }}
-          >
-            <MaterialIcons
-              name="warning"
-              size={18}
-              color="#F5811F"
-              style={{ marginRight: 8, marginTop: 7 }}
-            />
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{ fontSize: 13, fontWeight: "bold", color: "#000000" }}
-              >
-                Negative Credit Balance{" "}
-                <Text
-                  style={{ fontSize: 13, fontWeight: "bold", color: "#FF6400" }}
-                >
-                  ( -Rs.{" "}
-                  {Math.abs(creditBalance).toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}{" "}
-                  )
-                </Text>
-              </Text>
-              <Text style={{ fontSize: 12, color: "#5E6089", marginTop: 2 }}>
-                Ask the customer to clear the balance first.
-              </Text>
-            </View>
-          </View>
-        )}
+        {/* Negative Credit Balance Alert */}
+        <NegativeCreditBalanceAlert
+          creditBalance={creditBalance}
+          containerStyle={{ marginHorizontal: 16, marginTop: 14 }}
+        />
 
         {/* Scrollable orders content area */}
         <View style={{ flex: 1, marginTop: 15 }}>
@@ -2083,16 +2054,30 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
             {/* New Order Button */}
             <TouchableOpacity
               disabled={creditBalance < 0 || (buyerType === "Wholesale" && wholesaleApproveStatus !== "Approve")}
-              onPress={() =>
-                navigation.navigate("SelectOrderType" as any, {
-                  id,
-                  customerId,
-                  name: customerName,
-                  title: customerTitle,
-                  number: customerNumber,
-                  customerscreencustomerid: customerId,
-                })
-              }
+              onPress={() => {
+                if (buyerType === "Wholesale") {
+                  navigation.navigate("CreateCustomPackage" as any, {
+                    id,
+                    isPackage: 0,
+                    customerId,
+                    name: customerName,
+                    title: customerTitle,
+                    number: customerNumber,
+                    customerscreencustomerid: customerId,
+                    buyerType: "Wholesale",
+                  });
+                } else {
+                  navigation.navigate("SelectOrderType" as any, {
+                    id,
+                    customerId,
+                    name: customerName,
+                    title: customerTitle,
+                    number: customerNumber,
+                    customerscreencustomerid: customerId,
+                    buyerType: "Retail",
+                  });
+                }
+              }}
               style={{
                 flex: 1,
                 flexDirection: "row",

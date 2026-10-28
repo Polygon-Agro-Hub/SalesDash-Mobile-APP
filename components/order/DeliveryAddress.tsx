@@ -287,7 +287,7 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
   };
 
   const handleAddNewAddress = () => {
-    navigation.navigate("AddDeliveryAddress" as any, { customerId: id });
+    navigation.navigate("AddDeliveryAddress" as any, { customerId: id, buyerType: (route.params as any)?.buyerType });
   };
 
   const handleEditAddress = (address: AddressBookItem) => {
@@ -295,6 +295,7 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
       customerId: id || customerId,
       addressId: address.id,
       addressType: address.type,
+      buyerType: (route.params as any)?.buyerType,
     });
   };
 

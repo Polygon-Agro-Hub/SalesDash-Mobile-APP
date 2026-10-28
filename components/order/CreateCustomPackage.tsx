@@ -39,6 +39,7 @@ interface CreateCustomPackageProps {
       title: string;
       number: string;
       customerscreencustomerid: string;
+      buyerType?: string;
     };
   };
 }
@@ -70,6 +71,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
     title,
     number,
     customerscreencustomerid,
+    buyerType,
   } = route.params || {};
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -106,7 +108,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
         const apiUrl = `${environment.API_BASE_URL}api/packages/crops/all`;
         const response = await axios.get(apiUrl, {
           headers: { Authorization: `Bearer ${storedToken}` },
-          params: { id },
+          params: { id, buyerType },
         });
 
         if (response.data && response.data.data) {
@@ -131,16 +133,24 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
     fetchProducts();
   }, []);
 
+  const isWholesale = buyerType && String(buyerType).toLowerCase() === "wholesale";
   const filteredProducts = products.filter(
-    (product) =>
-      product.category === "Retail" &&
-      (searchQuery
+    (product) => {
+      const prodCategory = (product.category || "").toLowerCase();
+      const matchesCategory = isWholesale
+        ? prodCategory === "wholesale" || prodCategory === "retail"
+        : prodCategory === "retail" || !product.category;
+
+      const matchesSearch = searchQuery
         ? product.displayName
-          .toLowerCase()
-          .includes(searchQuery.toLowerCase()) ||
-        (product.tags &&
-          product.tags.toLowerCase().includes(searchQuery.toLowerCase()))
-        : true),
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          (product.tags &&
+            product.tags.toLowerCase().includes(searchQuery.toLowerCase()))
+        : true;
+
+      return matchesCategory && matchesSearch;
+    }
   );
 
   const toggleProductSelection = (id: number) => {
@@ -170,14 +180,26 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        navigation.navigate("SelectOrderType" as any, {
-          id,
-          customerId,
-          title,
-          name,
-          number,
-          customerscreencustomerid,
-        });
+        if (buyerType === "Wholesale") {
+          navigation.navigate("ViewCustomerScreen" as any, {
+            id,
+            customerId: customerscreencustomerid || customerId,
+            title,
+            name,
+            number,
+            buyerType: "Wholesale",
+          });
+        } else {
+          navigation.navigate("SelectOrderType" as any, {
+            id,
+            customerId,
+            title,
+            name,
+            number,
+            customerscreencustomerid,
+            buyerType: "Retail",
+          });
+        }
         return true;
       };
 
@@ -230,6 +252,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
         name,
         number,
         customerscreencustomerid,
+        buyerType,
       });
     } else {
       alert("Please select at least one product");
@@ -283,14 +306,26 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
         showBackButton={true}
         navigation={navigation}
         onBackPress={() => {
-          navigation.navigate("SelectOrderType" as any, {
-            id,
-            customerId,
-            title,
-            name,
-            number,
-            customerscreencustomerid,
-          });
+          if (buyerType === "Wholesale") {
+            navigation.navigate("ViewCustomerScreen" as any, {
+              id,
+              customerId: customerscreencustomerid || customerId,
+              title,
+              name,
+              number,
+              buyerType: "Wholesale",
+            });
+          } else {
+            navigation.navigate("SelectOrderType" as any, {
+              id,
+              customerId,
+              title,
+              name,
+              number,
+              customerscreencustomerid,
+              buyerType: "Retail",
+            });
+          }
         }}
       />
 
