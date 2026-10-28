@@ -496,6 +496,7 @@ const TotalValueOfCustomersScreen: React.FC<
                     number: c.phoneNumber,
                     customerId: c.cusId,
                     id: String(c.id),
+                    buyerType: c.buyerType || "Retail",
                   })
                 }
                 style={{

@@ -155,6 +155,7 @@ export type RootStackParamList = {
     customerId: string;
     id: string;
     title: string;
+    buyerType?: string;
   };
   AddCustomersScreen: {
     selectedLatitude?: number;
@@ -181,6 +182,7 @@ export type RootStackParamList = {
     number?: string;
     title?: string;
     id?: string;
+    buyerType?: string;
   };
   BannedScreen: {
     statusType?: "not_approved" | "rejected" | "pending";

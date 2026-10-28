@@ -554,6 +554,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                             number: item.phoneNumber,
                             customerId: item.cusId,
                             id: item.id,
+                            buyerType: item.buyerType || "Retail",
                           })
                         }
                       />

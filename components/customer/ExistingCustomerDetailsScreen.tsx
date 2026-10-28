@@ -564,6 +564,7 @@ const ExistingCustomerDetailsScreen: React.FC<
                             number: item.phoneNumber,
                             customerId: item.cusId,
                             id: item.id,
+                            buyerType: item.buyerType || "Retail",
                           })
                         }
                       />

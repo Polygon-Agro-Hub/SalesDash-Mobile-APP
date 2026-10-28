@@ -565,6 +565,7 @@ const NewCustomerDetailsScreen: React.FC<NewCustomerDetailsScreenProps> = ({
                             number: item.phoneNumber,
                             customerId: item.cusId,
                             id: item.id,
+                            buyerType: item.buyerType || "Retail",
                           })
                         }
                       />

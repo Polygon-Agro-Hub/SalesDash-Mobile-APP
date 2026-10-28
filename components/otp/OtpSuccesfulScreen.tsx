@@ -27,7 +27,7 @@ const OtpSuccesfulScreen: React.FC<OtpSuccesfulScreenProps> = ({
   route,
   navigation,
 }) => {
-  const { customerId, name, number, title, id } = route.params || {};
+  const { customerId, name, number, title, id, buyerType } = route.params || {};
 
   useFocusEffect(
     useCallback(() => {
@@ -38,6 +38,7 @@ const OtpSuccesfulScreen: React.FC<OtpSuccesfulScreenProps> = ({
           name: name || "",
           title: title || "",
           number: number || "",
+                  buyerType: buyerType || "",
         });
         return true;
       };
@@ -94,6 +95,7 @@ const OtpSuccesfulScreen: React.FC<OtpSuccesfulScreenProps> = ({
                   name: name || "",
                   title: title || "",
                   number: number || "",
+                  buyerType: buyerType || "",
                 })
               }
               activeOpacity={0.7}

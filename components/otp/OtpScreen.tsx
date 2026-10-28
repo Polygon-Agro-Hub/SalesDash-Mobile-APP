@@ -205,6 +205,7 @@ const OtpScreen: React.FC = () => {
                     name: `${customerData.firstName || ""} ${customerData.lastName || ""}`.trim(),
                     title: customerData.title || "",
                     number: customerData.phoneNumber || phoneNumber,
+                    buyerType: customerData.buyerType || parsedData.buyerType || "Retail",
                   });
                 },
               },
@@ -216,6 +217,7 @@ const OtpScreen: React.FC = () => {
               name: `${parsedData.firstName || ""} ${parsedData.lastName || ""}`.trim(),
               title: parsedData.title || "",
               number: parsedData.phoneNumber || phoneNumber,
+              buyerType: parsedData.buyerType || "Retail",
             });
           }
         } else {
