@@ -592,7 +592,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
 
       <AlertModal
         visible={showCartAlert}
-        title="Some Items No Longer Available!"
+        title="Items No Longer Available!"
         message="Sorry, the package / a product in your cart is no longer available to order. Please go to your cart and update it before continuing."
         type="error"
         autoClose={false}

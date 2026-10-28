@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -19,7 +19,6 @@ import { RootStackParamList } from "../types/types";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   widthPercentageToDP as wp,
-  heightPercentageToDP as hp,
 } from "react-native-responsive-screen";
 import axios from "axios";
 import environment from "@/environment/environment";
@@ -37,18 +36,29 @@ interface CustomersScreenProps {
   navigation: CustomersScreenNavigationProp;
 }
 
-interface Customer {
-  id: string;
-  firstName: string;
-  lastName: string;
-  phoneNumber: string;
-  order: number;
-  cusId: string;
-  title: string;
-  orderCount: number;
-}
+import CustomerCard, { Customer } from "./CustomerCard";
+
+type BuyerTab = "Retail" | "Wholesale";
+
+const BUYER_TABS: BuyerTab[] = ["Retail", "Wholesale"];
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+
+// Defined outside the component so it can be used by useMemo safely
+const formatPhoneNumber = (phoneNumber: string) => {
+  if (!phoneNumber) return "";
+  return phoneNumber.startsWith("+94")
+    ? phoneNumber.replace("+94", "0")
+    : phoneNumber;
+};
+
+const sortCustomersByName = (customerList: Customer[]): Customer[] => {
+  return [...customerList].sort((a, b) => {
+    const nameA = `${a.firstName} ${a.lastName}`.toLowerCase();
+    const nameB = `${b.firstName} ${b.lastName}`.toLowerCase();
+    return nameA.localeCompare(nameB);
+  });
+};
 
 const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   const CUSTOMERS_PER_PAGE = 10;
@@ -63,16 +73,50 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
+  const [activeTab, setActiveTab] = useState<BuyerTab>("Retail");
   const [hasMore, setHasMore] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const isMounted = useRef(true);
+  const isLoadingRef = useRef(false);
+
+  // 1) Filter by the selected tab (NULL buyerType is treated as Retail)
+  const tabCustomers = useMemo(() => {
+    const list = customers.filter((c) => (c.buyerType ?? "Retail") === activeTab);
+    const seen = new Set();
+    return list.filter((c) => {
+      if (seen.has(c.id)) return false;
+      seen.add(c.id);
+      return true;
+    });
+  }, [customers, activeTab]);
+
+  // 2) Then filter by search text
+  const filteredCustomers = useMemo(() => {
+    if (searchQuery === "") return tabCustomers;
+
+    const searchTerm = searchQuery.toLowerCase();
+    const formattedQuery = searchQuery.startsWith("+94")
+      ? searchQuery.replace("+94", "0")
+      : searchQuery;
+
+    return sortCustomersByName(
+      tabCustomers.filter((customer) => {
+        const fullName =
+          `${customer.firstName} ${customer.lastName}`.toLowerCase();
+        return (
+          customer.firstName.toLowerCase().includes(searchTerm) ||
+          customer.lastName.toLowerCase().includes(searchTerm) ||
+          fullName.includes(searchTerm) ||
+          formatPhoneNumber(customer.phoneNumber).includes(formattedQuery)
+        );
+      }),
+    );
+  }, [tabCustomers, searchQuery]);
 
   const safeSetCustomers = (data: Customer[]) => {
     if (isMounted.current) {
       setCustomers(data);
-      setFilteredCustomers(data);
     }
   };
 
@@ -88,25 +132,31 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
     }
   };
 
+    const handleTabChange = (tab: BuyerTab) => {
+    if (tab === activeTab) return;
+    setActiveTab(tab);
+    setSearchQuery("");
+    safeSetCustomers([]);
+    setCurrentPage(1);
+    setHasMore(true);
+    setError(null);
+    loadCustomers(1, true, false, tab);
+  };
+
   const safeSetRefreshing = (isRefreshing: boolean) => {
     if (isMounted.current) {
       setRefreshing(isRefreshing);
     }
   };
 
-  const sortCustomersByName = (customerList: Customer[]): Customer[] => {
-    return [...customerList].sort((a, b) => {
-      const nameA = `${a.firstName} ${a.lastName}`.toLowerCase();
-      const nameB = `${b.firstName} ${b.lastName}`.toLowerCase();
-      return nameA.localeCompare(nameB);
-    });
-  };
-
   const loadCustomers = async (
     page = 1,
     showFullLoading = true,
     isLoadMore = false,
+    tabToFetch: BuyerTab = activeTab,
   ) => {
+    if (isLoadingRef.current) return;
+    isLoadingRef.current = true;
     if (showFullLoading) safeSetLoading(true);
     if (isLoadMore) safeSetLoadingMore(true);
 
@@ -118,7 +168,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
         return;
       }
 
-      const customersUrl = `${environment.API_BASE_URL.replace(/\/$/, "")}/api/customer/get-customers?page=${page}&limit=${CUSTOMERS_PER_PAGE}`;
+      const customersUrl = `${environment.API_BASE_URL.replace(/\/$/, "")}/api/customer/get-customers?page=${page}&limit=${CUSTOMERS_PER_PAGE}&buyerType=${tabToFetch}`;
 
       const response = await axios.get(customersUrl, {
         headers: {
@@ -127,14 +177,20 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
       });
 
       if (response.data.success && response.data.data) {
-        const sortedCustomers = sortCustomersByName(response.data.data);
+        const rawList = Array.isArray(response.data.data)
+          ? response.data.data
+          : [];
+        const validCustomers = rawList.filter(
+          (c: Customer | null | undefined) => c && c.id != null,
+        );
+        const sortedCustomers = sortCustomersByName(validCustomers);
 
         if (isLoadMore) {
           if (isMounted.current) {
-            setCustomers((prevCustomers) => {
-              const updatedCustomers = [...prevCustomers, ...sortedCustomers];
-              setFilteredCustomers(updatedCustomers);
-              return updatedCustomers;
+            setCustomers((prev) => {
+              const existingIds = new Set(prev.map((c) => c.id));
+              const uniqueNew = sortedCustomers.filter((c) => !existingIds.has(c.id));
+              return [...prev, ...uniqueNew];
             });
           }
         } else {
@@ -171,6 +227,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
         }
       }
     } finally {
+      isLoadingRef.current = false;
       if (showFullLoading) safeSetLoading(false);
       if (isLoadMore) safeSetLoadingMore(false);
       safeSetRefreshing(false);
@@ -178,21 +235,22 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   };
 
   const loadMoreCustomers = () => {
-    if (!loadingMore && hasMore && searchQuery === "") {
-      loadCustomers(currentPage + 1, false, true);
+    if (!loadingMore && !isLoadingRef.current && hasMore && searchQuery === "") {
+      loadCustomers(currentPage + 1, false, true, activeTab);
     }
   };
 
-  // Single focus listener: reset search + state, then reload
+  // Single focus listener: reset search + tab + state, then reload
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
       if (isMounted.current) {
         setSearchQuery("");
+        setActiveTab("Retail");
         setCurrentPage(1);
         setHasMore(true);
         setError(null);
       }
-      loadCustomers(1, true, false);
+      loadCustomers(1, true, false, "Retail");
     });
 
     const keyboardDidShowListener = Keyboard.addListener(
@@ -215,10 +273,11 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   }, [navigation]);
 
   const handleRefresh = async () => {
+    if (isLoadingRef.current) return;
     setRefreshing(true);
     setCurrentPage(1);
     setHasMore(true);
-    await loadCustomers(1, false, false);
+    await loadCustomers(1, false, false, activeTab);
   };
 
   const handleSearch = (query: string) => {
@@ -229,7 +288,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
 
     if (cleanedQuery.startsWith("+94")) {
       const digits = cleanedQuery.replace(/[^\d]/g, "");
-      const limitedDigits = digits.slice(0, 9);
+      const limitedDigits = digits.slice(0, 11);
       cleanedQuery = "+" + limitedDigits;
     } else if (cleanedQuery.startsWith("0")) {
       const digits = cleanedQuery.replace(/[^\d]/g, "");
@@ -245,37 +304,8 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
       cleanedQuery = limitedDigits;
     }
 
+    // filteredCustomers is derived, so only the query needs to be stored
     setSearchQuery(cleanedQuery);
-
-    const formattedQuery = cleanedQuery.startsWith("+94")
-      ? cleanedQuery.replace("+94", "0")
-      : cleanedQuery;
-
-    if (cleanedQuery === "") {
-      setFilteredCustomers(customers);
-    } else {
-      const filteredData = customers.filter((customer) => {
-        const formattedPhoneNumber = formatPhoneNumber(customer.phoneNumber);
-        const fullName =
-          `${customer.firstName} ${customer.lastName}`.toLowerCase();
-        const searchTerm = cleanedQuery.toLowerCase();
-
-        return (
-          customer.firstName.toLowerCase().includes(searchTerm) ||
-          customer.lastName.toLowerCase().includes(searchTerm) ||
-          fullName.includes(searchTerm) ||
-          formattedPhoneNumber.includes(formattedQuery)
-        );
-      });
-
-      setFilteredCustomers(sortCustomersByName(filteredData));
-    }
-  };
-
-  const formatPhoneNumber = (phoneNumber: string) => {
-    return phoneNumber.startsWith("+94")
-      ? phoneNumber.replace("+94", "0")
-      : phoneNumber;
   };
 
   const formatCustomerCount = (count: number): string => {
@@ -309,7 +339,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
             className="shadow-md px-4 items-center justify-center"
             style={{
               paddingBottom: 24,
-              height: 80,
+              height: 100,
               justifyContent: "center",
             }}
           >
@@ -321,7 +351,9 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                 Total Customers:{" "}
                 <Text className="font-bold">
                   {formatCustomerCount(
-                    searchQuery ? filteredCustomers.length : totalCount,
+                    searchQuery
+                      ? filteredCustomers.length
+                      : tabCustomers.length,
                   )}
                 </Text>
               </Text>
@@ -336,7 +368,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
               {/* Search Bar (own touchable so taps on its padding don't dismiss the keyboard) */}
               <TouchableWithoutFeedback onPress={() => {}} accessible={false}>
                 <View
-                  className="flex-row items-center bg-[#F5F1FC] h-[50px] px-6 py-0 mb-5 rounded-full mt-[-6%] mx-6"
+                  className="flex-row items-center bg-[#F5F1FC] h-[50px] px-6 py-0 mb-4 rounded-full mt-[-6%] mx-6"
                   style={{
                     borderRadius: 999,
                     backgroundColor: "#F5F1FC",
@@ -370,6 +402,50 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                 </View>
               </TouchableWithoutFeedback>
 
+              {/* Retail / Wholesale tabs */}
+              <TouchableWithoutFeedback onPress={() => {}} accessible={false}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    backgroundColor: "#F5F5F5",
+                    borderRadius: 12,
+                    padding: 4,
+                    marginHorizontal: 24,
+                    marginBottom: 8,
+                    borderWidth: 1,
+                    borderColor: "#E5E5E5",
+                  }}
+                >
+                  {BUYER_TABS.map((tab) => {
+                    const selected = activeTab === tab;
+                    return (
+                      <TouchableOpacity
+                        key={tab}
+                        activeOpacity={0.8}
+                        onPress={() => handleTabChange(tab)}
+                        style={{
+                          flex: 1,
+                          paddingVertical: 10,
+                          borderRadius: 9,
+                          alignItems: "center",
+                          backgroundColor: selected ? "#000000" : "#FFFFFF",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontWeight: "600",
+                            fontSize: SCREEN_HEIGHT > 900 ? 15 : 13,
+                            color: selected ? "#FFFFFF" : "#657489",
+                          }}
+                        >
+                          {tab} Buyers
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </TouchableWithoutFeedback>
+
               {/* Floating Button */}
               {!isKeyboardVisible && (
                 <TouchableOpacity
@@ -398,11 +474,26 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                       {error}
                     </Text>
                     <TouchableOpacity
-                      onPress={() => loadCustomers(1, true, false)}
+                      onPress={() => {
+                        setError(null);
+                        setHasMore(true);
+                        loadCustomers(1, true, false);
+                      }}
                       className="mt-4 bg-[#7743D4] px-6 py-2 rounded-lg"
                     >
                       <Text className="text-white font-semibold">Retry</Text>
                     </TouchableOpacity>
+                  </View>
+                ) : isEmpty && loadingMore ? (
+                  <View
+                    style={{
+                      flex: 1,
+                      justifyContent: "center",
+                      alignItems: "center",
+                      paddingBottom: 110,
+                    }}
+                  >
+                    <ActivityIndicator size="large" color="#7743D4" />
                   </View>
                 ) : isEmpty ? (
                   <View
@@ -423,31 +514,19 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                         resizeMode: "contain",
                       }}
                     />
-                    {searchQuery ? (
-                      <Text
-                        style={{
-                          color: "black",
-                          fontStyle: "italic",
-                          textAlign: "center",
-                          marginTop: 16,
-                          fontSize: SCREEN_HEIGHT > 900 ? 18 : 14,
-                        }}
-                      >
-                        No customers found for "{searchQuery}"
-                      </Text>
-                    ) : (
-                      <Text
-                        style={{
-                          color: "black",
-                          fontStyle: "italic",
-                          textAlign: "center",
-                          marginTop: 16,
-                          fontSize: SCREEN_HEIGHT > 900 ? 18 : 14,
-                        }}
-                      >
-                        No registered customers yet
-                      </Text>
-                    )}
+                    <Text
+                      style={{
+                        color: "black",
+                        fontStyle: "italic",
+                        textAlign: "center",
+                        marginTop: 16,
+                        fontSize: SCREEN_HEIGHT > 900 ? 18 : 14,
+                      }}
+                    >
+                      {searchQuery
+                        ? `No customers found for "${searchQuery}"`
+                        : `No ${activeTab.toLowerCase()} customers yet`}
+                    </Text>
                   </View>
                 ) : (
                   <FlatList
@@ -468,99 +547,19 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                     ListFooterComponent={renderFooter}
                     scrollEventThrottle={16}
                     renderItem={({ item }: { item: Customer }) => (
-                      <TouchableOpacity
-                        activeOpacity={1}
+                      <CustomerCard
+                        customer={item}
                         onPress={() =>
                           navigation.navigate("ViewCustomerScreen", {
-                            name: `${item.firstName} ${item.lastName}`,
+                            name: `${item.firstName} ${item.lastName}`.trim(),
                             title: item.title,
                             number: item.phoneNumber,
                             customerId: item.cusId,
                             id: item.id,
+                            buyerType: item.buyerType || "Retail",
                           })
                         }
-                      >
-                        <View
-                          style={{
-                            marginBottom: 12,
-                            marginHorizontal: 4,
-                            borderRadius: 20,
-                            ...Platform.select({
-                              ios: {
-                                backgroundColor: "white",
-                                shadowColor: "#7E7E7E",
-                                shadowOffset: { width: 0, height: 2 },
-                                shadowOpacity: 0.15,
-                                shadowRadius: 6,
-                              },
-                              android: {
-                                backgroundColor: "white",
-                                borderWidth: 1,
-                                borderColor: "#E0E0E0",
-                                elevation: 3,
-                              },
-                            }),
-                          }}
-                        >
-                          <View
-                            style={{
-                              borderRadius: 20,
-                              ...Platform.select({
-                                ios: {
-                                  overflow: "hidden",
-                                  borderWidth: 1,
-                                  borderColor: "#E0E0E0",
-                                  backgroundColor: "white",
-                                },
-                                android: {
-                                  backgroundColor: "transparent",
-                                },
-                              }),
-                              padding: 16,
-                              flexDirection: "row",
-                              justifyContent: "space-between",
-                              alignItems: "center",
-                            }}
-                          >
-                            <View className="flex-1 mr-3">
-                              <Text
-                                className="text-gray-700 font-semibold"
-                                numberOfLines={2}
-                                ellipsizeMode="tail"
-                                style={{
-                                  fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
-                                }}
-                              >
-                                {item.title}. {item.firstName} {item.lastName}
-                              </Text>
-                              <Text
-                                className="text-gray-500"
-                                style={{
-                                  fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
-                                }}
-                              >
-                                {formatPhoneNumber(item.phoneNumber)}
-                              </Text>
-                            </View>
-                            <View
-                              className="items-end justify-center"
-                              style={{ minWidth: 45 }}
-                            >
-                              <Text
-                                className="text-gray-700 font-semibold"
-                                style={{
-                                  fontSize: SCREEN_HEIGHT > 900 ? 18 : 16,
-                                }}
-                              >
-                                #
-                                {item.orderCount < 10
-                                  ? `0${item.orderCount}`
-                                  : item.orderCount}
-                              </Text>
-                            </View>
-                          </View>
-                        </View>
-                      </TouchableOpacity>
+                      />
                     )}
                   />
                 )}

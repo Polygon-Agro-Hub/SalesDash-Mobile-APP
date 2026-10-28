@@ -205,18 +205,31 @@ const OtpScreen: React.FC = () => {
                     name: `${customerData.firstName || ""} ${customerData.lastName || ""}`.trim(),
                     title: customerData.title || "",
                     number: customerData.phoneNumber || phoneNumber,
+                    buyerType: customerData.buyerType || parsedData.buyerType || "Retail",
                   });
                 },
               },
             ]);
           } else {
-            navigation.navigate("OtpSuccesfulScreen" as any, {
-              id: tableId,
-              customerId: customerId,
-              name: `${parsedData.firstName || ""} ${parsedData.lastName || ""}`.trim(),
-              title: parsedData.title || "",
-              number: parsedData.phoneNumber || phoneNumber,
-            });
+            if (parsedData.buyerType === "Wholesale") {
+              navigation.navigate("ViewCustomerScreen" as any, {
+                id: tableId,
+                customerId: customerId,
+                name: `${parsedData.firstName || ""} ${parsedData.lastName || ""}`.trim(),
+                title: parsedData.title || "",
+                number: parsedData.phoneNumber || phoneNumber,
+                buyerType: "Wholesale",
+              });
+            } else {
+              navigation.navigate("OtpSuccesfulScreen" as any, {
+                id: tableId,
+                customerId: customerId,
+                name: `${parsedData.firstName || ""} ${parsedData.lastName || ""}`.trim(),
+                title: parsedData.title || "",
+                number: parsedData.phoneNumber || phoneNumber,
+                buyerType: "Retail",
+              });
+            }
           }
         } else {
           Alert.alert(

@@ -38,7 +38,16 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import LoadingPage from "../common/LoadingPage";
+import NegativeCreditBalanceAlert from "../common/NegativeCreditBalanceAlert";
 import FixedMarqueeText from "../common/MarqueeText";
+import LottieView from "lottie-react-native";
+import { AlertModal } from "../common/AlertModal";
+import * as ImagePicker from "expo-image-picker";
+import * as DocumentPicker from "expo-document-picker";
+import * as FileSystem from "expo-file-system/legacy";
+import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Modal } from "react-native";
+import { format } from "date-fns";
 
 type ViewCustomerScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -137,7 +146,23 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [selectedLocationName, setSelectedLocationName] = useState<string>("");
-  const [loadingCustomerData, setLoadingCustomerData] = useState(false);
+  const [loadingCustomerData, setLoadingCustomerData] = useState(true);
+  const [buyerType, setBuyerType] = useState<string>(route.params?.buyerType || "");
+  const [isStatusChecked, setIsStatusChecked] = useState<boolean>(false);
+  const [wholesaleApproveStatus, setWholesaleApproveStatus] = useState<"To Review" | "Approve" | "Reject" | null>(route.params?.buyerType === "Wholesale" ? "To Review" : null);
+  const [wholesaleApplicationId, setWholesaleApplicationId] = useState<string | number>("");
+  const [wholesaleCreatedAt, setWholesaleCreatedAt] = useState<string>("");
+  const [isAccessDeniedVisible, setIsAccessDeniedVisible] = useState<boolean>(false);
+  const [reuploadDoc, setReuploadDoc] = useState<{
+    uri: string;
+    name: string;
+    sizeText: string;
+    mimeType?: string;
+    r2Url?: string | null;
+  } | null>(null);
+  const [isUploadingReupload, setIsUploadingReupload] = useState<boolean>(false);
+  const [isSubmittingReupload, setIsSubmittingReupload] = useState<boolean>(false);
+  const [previewModalVisible, setPreviewModalVisible] = useState<boolean>(false);
   const searchInputRef = useRef<TextInput>(null);
   const isMounted = useRef(true);
   const {
@@ -168,6 +193,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
 
     if (route.params?.number) setCustomerNumber(route.params.number);
     else if (initialNumber) setCustomerNumber(initialNumber);
+
+    if (route.params?.buyerType) setBuyerType(route.params.buyerType);
   }, [
     route.params?.name,
     route.params?.title,
@@ -195,6 +222,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       };
 
       resetStates();
+      setIsStatusChecked(false);
 
       loadOrders(1, true, false, selectedFilterRef.current);
       getUserProfile();
@@ -245,6 +273,21 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
 
             const balance = Number(response.data.creditBalance) || 0;
             setCreditBalance(balance);
+
+            if (response.data.buyerType) {
+              setBuyerType(response.data.buyerType);
+            }
+            if (response.data.wholesaleApproveStatus) {
+              setWholesaleApproveStatus(response.data.wholesaleApproveStatus);
+            } else if (response.data.buyerType === "Wholesale" && !wholesaleApproveStatus) {
+              setWholesaleApproveStatus("To Review");
+            }
+            if (response.data.wholesaleApplicationId) {
+              setWholesaleApplicationId(response.data.wholesaleApplicationId);
+            }
+            if (response.data.wholesaleCreatedAt) {
+              setWholesaleCreatedAt(response.data.wholesaleCreatedAt);
+            }
 
             const freshFirstName = response.data.firstName || "";
             const freshLastName = response.data.lastName || "";
@@ -347,6 +390,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       return null;
     } finally {
       setLoadingCustomerData(false);
+      setIsStatusChecked(true);
     }
   };
 
@@ -586,6 +630,660 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
     return <LoadingPage message="Loading More Orders..." fullScreen={false} />;
   };
 
+  const uploadReuploadToR2 = async (fileUri: string, fileName: string, mimeType: string): Promise<string | null> => {
+    try {
+      setIsUploadingReupload(true);
+      let base64Data = "";
+      try {
+        base64Data = await FileSystem.readAsStringAsync(fileUri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+      } catch (readErr) {
+        try {
+          const { File } = require("expo-file-system");
+          const file = new File(fileUri);
+          base64Data = await file.base64();
+        } catch (fileErr) {
+          throw readErr;
+        }
+      }
+
+      const response = await axios.post(`${environment.API_BASE_URL}api/customer/upload-br`, {
+        base64: `data:${mimeType};base64,${base64Data}`,
+        fileName: fileName,
+      });
+
+      if (response.data && response.data.url) {
+        return response.data.url;
+      }
+      return null;
+    } catch (error) {
+      console.error("Failed to upload BR to R2:", error);
+      Alert.alert("Upload Error", "Failed to upload BR document. Please try again.");
+      return null;
+    } finally {
+      setIsUploadingReupload(false);
+    }
+  };
+
+  const pickReuploadBRImage = async (mode: "camera" | "gallery" | "document") => {
+    try {
+      if (mode === "camera") {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== "granted") {
+          Alert.alert("Permission required", "Camera permission is needed to take a photo of the BR document.");
+          return;
+        }
+        const result = await ImagePicker.launchCameraAsync({
+          allowsEditing: false,
+          quality: 0.8,
+        });
+        if (!result.canceled && result.assets?.[0]) {
+          const asset = result.assets[0];
+          const fileName = asset.fileName || `BR_Photo_${Date.now()}.jpg`;
+          const fileSizeMB = asset.fileSize ? `${(asset.fileSize / (1024 * 1024)).toFixed(1)} MB` : "1.2 MB";
+          const mimeType = asset.mimeType || "image/jpeg";
+          const docObj = {
+            uri: asset.uri,
+            name: fileName,
+            sizeText: fileSizeMB,
+            mimeType,
+          };
+          setReuploadDoc(docObj);
+          const r2Url = await uploadReuploadToR2(asset.uri, fileName, mimeType);
+          if (r2Url) {
+            setReuploadDoc({ ...docObj, r2Url });
+          }
+        }
+      } else if (mode === "gallery") {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== "granted") {
+          Alert.alert("Permission required", "Gallery permission is needed to select a BR document.");
+          return;
+        }
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: false,
+          quality: 0.8,
+        });
+        if (!result.canceled && result.assets?.[0]) {
+          const asset = result.assets[0];
+          const fileName = asset.fileName || `BR_Image_${Date.now()}.png`;
+          const fileSizeMB = asset.fileSize ? `${(asset.fileSize / (1024 * 1024)).toFixed(1)} MB` : "1.2 MB";
+          const mimeType = asset.mimeType || "image/png";
+          const docObj = {
+            uri: asset.uri,
+            name: fileName,
+            sizeText: fileSizeMB,
+            mimeType,
+          };
+          setReuploadDoc(docObj);
+          const r2Url = await uploadReuploadToR2(asset.uri, fileName, mimeType);
+          if (r2Url) {
+            setReuploadDoc({ ...docObj, r2Url });
+          }
+        }
+      } else if (mode === "document") {
+        const result = await DocumentPicker.getDocumentAsync({
+          type: ["image/*", "application/pdf"],
+          copyToCacheDirectory: true,
+        });
+        if (!result.canceled && result.assets?.[0]) {
+          const asset = result.assets[0];
+          const fileSizeMB = asset.size ? `${(asset.size / (1024 * 1024)).toFixed(1)} MB` : "1.2 MB";
+          const mimeType = asset.mimeType || "application/pdf";
+          const fileName = asset.name || `BR_Doc_${Date.now()}.pdf`;
+          const docObj = {
+            uri: asset.uri,
+            name: fileName,
+            sizeText: fileSizeMB,
+            mimeType,
+          };
+          setReuploadDoc(docObj);
+          const r2Url = await uploadReuploadToR2(asset.uri, fileName, mimeType);
+          if (r2Url) {
+            setReuploadDoc({ ...docObj, r2Url });
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Error picking BR document:", err);
+      Alert.alert("Error", "Could not pick document. Please try again.");
+    }
+  };
+
+  const handleReuploadSubmit = async () => {
+    if (!reuploadDoc) {
+      Alert.alert("Upload Required", "Please select a BR document to submit.");
+      return;
+    }
+
+    try {
+      setIsSubmittingReupload(true);
+      let r2Url: string | null | undefined = reuploadDoc.r2Url;
+      if (!r2Url) {
+        r2Url = await uploadReuploadToR2(reuploadDoc.uri, reuploadDoc.name, reuploadDoc.mimeType || "image/jpeg");
+        if (!r2Url) {
+          setIsSubmittingReupload(false);
+          return;
+        }
+        setReuploadDoc(prev => prev ? { ...prev, r2Url } : null);
+      }
+
+      const storedToken = await AsyncStorage.getItem("authToken");
+      const targetCustomerId = id || customerId;
+      await axios.post(
+        `${environment.API_BASE_URL}api/customer/resubmit-wholesale-br`,
+        {
+          customerId: targetCustomerId,
+          brImg: r2Url,
+        },
+        {
+          headers: { Authorization: `Bearer ${storedToken}` },
+        }
+      );
+
+      setWholesaleApproveStatus("To Review");
+      setReuploadDoc(null);
+      Alert.alert("Submitted", "BR document has been resubmitted successfully for review.");
+      getUserProfile();
+    } catch (err) {
+      console.error("Error resubmitting BR:", err);
+      Alert.alert("Error", "Failed to resubmit BR document. Please try again.");
+    } finally {
+      setIsSubmittingReupload(false);
+    }
+  };
+
+  const renderWholesaleStatusView = () => {
+    const isRejected = wholesaleApproveStatus === "Reject";
+
+    return (
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Lottie Animation */}
+        <View style={{ alignItems: "center", justifyContent: "center", marginTop: 12 }}>
+          {isRejected ? (
+            <LottieView
+              source={require("@/assets/json/br-status/rejected.json")}
+              autoPlay
+              loop={false}
+              style={{ width: 140, height: 140 }}
+            />
+          ) : (
+            <LottieView
+              source={require("@/assets/json/br-status/pending.json")}
+              autoPlay
+              loop
+              style={{ width: 140, height: 140 }}
+            />
+          )}
+        </View>
+
+        {/* Status Title */}
+        <Text
+          style={{
+            fontSize: 22,
+            fontWeight: "700",
+            color: "#1E293B",
+            textAlign: "center",
+            marginTop: 8,
+          }}
+        >
+          {isRejected ? "Submission Rejected" : "Approval Pending"}
+        </Text>
+
+        {/* Subtitle Message */}
+        <Text
+          style={{
+            fontSize: 13,
+            color: "#64748B",
+            textAlign: "center",
+            marginTop: 8,
+            lineHeight: 18,
+            paddingHorizontal: isRejected ? 10 : 20,
+          }}
+        >
+          {isRejected
+            ? "Please inform the customer that their Wholesale Customer application has been rejected. Ask them to correct the issues in their Business Registration documents and submit a new application using the option below."
+            : "Thank you for submitting your Wholesale Customer application and Business Registration documents. Our compliance team is actively reviewing your submission."}
+        </Text>
+
+        {/* Negative Credit Balance Alert for Wholesale */}
+        <NegativeCreditBalanceAlert
+          creditBalance={creditBalance}
+          containerStyle={{ marginTop: 16 }}
+        />
+
+        {!isRejected ? (
+          /* Info Card for Approval Pending */
+          <View
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: "#E2E8F0",
+              paddingHorizontal: 16,
+              paddingVertical: 12,
+              marginTop: 24,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.05,
+              shadowRadius: 6,
+              elevation: 2,
+            }}
+          >
+            {/* Application ID */}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingVertical: 12,
+                borderBottomWidth: 1,
+                borderBottomColor: "#F1F5F9",
+              }}
+            >
+              <Text style={{ fontSize: 13, color: "#64748B", fontWeight: "500" }}>
+                Application ID
+              </Text>
+              <View
+                style={{
+                  backgroundColor: "#EDE9FE",
+                  paddingHorizontal: 10,
+                  paddingVertical: 4,
+                  borderRadius: 8,
+                }}
+              >
+                <Text style={{ fontSize: 13, fontWeight: "700", color: "#6D28D9" }}>
+                  #CUS-{customerId || wholesaleApplicationId || id}
+                </Text>
+              </View>
+            </View>
+
+            {/* Submission Date */}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingVertical: 12,
+                borderBottomWidth: 1,
+                borderBottomColor: "#F1F5F9",
+              }}
+            >
+              <Text style={{ fontSize: 13, color: "#64748B", fontWeight: "500" }}>
+                Submission Date
+              </Text>
+              <Text style={{ fontSize: 13, fontWeight: "600", color: "#1E293B" }}>
+                {wholesaleCreatedAt
+                  ? format(new Date(wholesaleCreatedAt), "dd MMM yyyy, h:mm a")
+                  : "Today"}
+              </Text>
+            </View>
+
+            {/* Estimated Review */}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingVertical: 12,
+              }}
+            >
+              <Text style={{ fontSize: 13, color: "#64748B", fontWeight: "500" }}>
+                Estimated Review
+              </Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <Ionicons name="time-outline" size={16} color="#7C3AED" />
+                <Text style={{ fontSize: 13, fontWeight: "700", color: "#7C3AED" }}>
+                  24–48 Business Hours
+                </Text>
+              </View>
+            </View>
+          </View>
+        ) : (
+          /* Re-upload BR Form for Submission Rejected */
+          <View style={{ marginTop: 20 }}>
+            {/* Legal Compliance card */}
+            <View
+              style={{
+                backgroundColor: "#FFFFFF",
+                borderRadius: 14,
+                borderWidth: 1.5,
+                borderColor: "#E0EAFF",
+                padding: 12,
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: 16,
+              }}
+            >
+              <View
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 10,
+                  backgroundColor: "#EDE9FE",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginRight: 12,
+                }}
+              >
+                <MaterialCommunityIcons
+                  name="shield-check-outline"
+                  size={22}
+                  color="#7C3AED"
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: "700",
+                    color: "#1E293B",
+                    marginBottom: 2,
+                  }}
+                >
+                  Legal Compliance
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 11,
+                    color: "#64748B",
+                    lineHeight: 15,
+                  }}
+                >
+                  Clear scan or photo of your customer's Business Registration (BR).
+                  Max file size 10MB in PDF, JPG, or PNG.
+                </Text>
+              </View>
+            </View>
+
+            {/* Upload BR Document Label */}
+            <Text
+              style={{
+                fontSize: 13,
+                fontWeight: "700",
+                color: "#1F2937",
+                marginBottom: 8,
+              }}
+            >
+              Upload BR Document *
+            </Text>
+
+            {!reuploadDoc ? (
+              /* Empty state dashed box */
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => {
+                  Alert.alert(
+                    "Upload BR Document",
+                    "Choose an option to upload the official business certificate:",
+                    [
+                      { text: "Take Photo", onPress: () => pickReuploadBRImage("camera") },
+                      { text: "Choose from Gallery", onPress: () => pickReuploadBRImage("gallery") },
+                      { text: "Browse Documents (PDF/Image)", onPress: () => pickReuploadBRImage("document") },
+                      { text: "Cancel", style: "cancel" },
+                    ]
+                  );
+                }}
+                style={{
+                  borderWidth: 1.5,
+                  borderColor: "#C7D2FE",
+                  borderStyle: "dashed",
+                  borderRadius: 16,
+                  paddingVertical: 28,
+                  paddingHorizontal: 16,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: "#FBFBFF",
+                  marginBottom: 16,
+                }}
+              >
+                <View
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 24,
+                    backgroundColor: "#EDE9FE",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginBottom: 10,
+                  }}
+                >
+                  <Feather name="upload-cloud" size={24} color="#7C3AED" />
+                </View>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: "700",
+                    color: "#6D28D9",
+                    marginBottom: 4,
+                    textAlign: "center",
+                  }}
+                >
+                  Tap to browse or take a photo
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 11,
+                    color: "#64748B",
+                    textAlign: "center",
+                  }}
+                >
+                  Supports PDF, PNG, JPG (up to 10MB)
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              /* Uploaded State Box */
+              <View
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  borderRadius: 16,
+                  borderWidth: 1.5,
+                  borderColor: "#E0EAFF",
+                  padding: 14,
+                  marginBottom: 16,
+                }}
+              >
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    marginBottom: 10,
+                    gap: 6,
+                  }}
+                >
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={18}
+                    color="#7C3AED"
+                  />
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: "700",
+                      color: "#1E293B",
+                    }}
+                  >
+                    File Uploaded
+                  </Text>
+                </View>
+
+                {/* Thumbnail */}
+                <View
+                  style={{
+                    width: "100%",
+                    height: 120,
+                    borderRadius: 10,
+                    backgroundColor: "#F1F5F9",
+                    overflow: "hidden",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginBottom: 10,
+                    borderWidth: 1,
+                    borderColor: "#E2E8F0",
+                  }}
+                >
+                  {reuploadDoc.mimeType?.includes("pdf") ? (
+                    <View style={{ alignItems: "center" }}>
+                      <MaterialCommunityIcons
+                        name="file-pdf-box"
+                        size={48}
+                        color="#EF4444"
+                      />
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          fontWeight: "600",
+                          color: "#475569",
+                          marginTop: 2,
+                        }}
+                      >
+                        PDF Document
+                      </Text>
+                    </View>
+                  ) : (
+                    <Image
+                      source={{ uri: reuploadDoc.uri }}
+                      style={{ width: "100%", height: "100%" }}
+                      resizeMode="contain"
+                    />
+                  )}
+                </View>
+
+                {/* File Info */}
+                <View
+                  style={{
+                    backgroundColor: "#F8FAFC",
+                    borderRadius: 10,
+                    borderWidth: 1,
+                    borderColor: "#E2E8F0",
+                    padding: 8,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: 10,
+                  }}
+                >
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      flex: 1,
+                      marginRight: 6,
+                    }}
+                  >
+                    <MaterialIcons
+                      name="image"
+                      size={20}
+                      color="#64748B"
+                      style={{ marginRight: 6 }}
+                    />
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        numberOfLines={1}
+                        style={{
+                          fontSize: 12,
+                          fontWeight: "600",
+                          color: "#1E293B",
+                        }}
+                      >
+                        {reuploadDoc.name}
+                      </Text>
+                      <Text style={{ fontSize: 10, color: isUploadingReupload ? "#D97706" : reuploadDoc.r2Url ? "#16A34A" : "#64748B", marginTop: 1 }}>
+                        {isUploadingReupload ? "Uploading to R2..." : reuploadDoc.r2Url ? `Uploaded • ${reuploadDoc.sizeText}` : reuploadDoc.sizeText}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <TouchableOpacity
+                    onPress={() => setReuploadDoc(null)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Ionicons name="close-circle" size={20} color="#64748B" />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Preview Full Image button */}
+                {!reuploadDoc.mimeType?.includes("pdf") && (
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => setPreviewModalVisible(true)}
+                    style={{
+                      borderWidth: 1.5,
+                      borderColor: "#7C3AED",
+                      borderRadius: 10,
+                      paddingVertical: 8,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexDirection: "row",
+                      gap: 6,
+                    }}
+                  >
+                    <Feather name="eye" size={15} color="#7C3AED" />
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontWeight: "700",
+                        color: "#7C3AED",
+                      }}
+                    >
+                      Preview Full Image
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+
+            {/* Submit Button */}
+            <TouchableOpacity
+              onPress={handleReuploadSubmit}
+              disabled={!reuploadDoc || isUploadingReupload || isSubmittingReupload}
+              activeOpacity={0.8}
+              style={{
+                borderRadius: 30,
+                overflow: "hidden",
+                marginHorizontal: "15%",
+                marginTop: 6,
+              }}
+            >
+              <LinearGradient
+                colors={
+                  reuploadDoc && !isUploadingReupload && !isSubmittingReupload
+                    ? ["#854BDA", "#6E3DD1"]
+                    : ["#CBD5E1", "#94A3B8"]
+                }
+                style={{
+                  height: 48,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: 30,
+                }}
+              >
+                {isSubmittingReupload || isUploadingReupload ? (
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                    <Text style={{ color: "#FFFFFF", fontWeight: "bold", fontSize: 15 }}>
+                      {isUploadingReupload ? "Uploading..." : "Submitting..."}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={{ color: "#FFFFFF", fontWeight: "bold", fontSize: 16 }}>
+                    Submit
+                  </Text>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        )}
+      </ScrollView>
+    );
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -594,7 +1292,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <LinearGradient
-          colors={["#FBFAFE", "#FFFFFF"]}
+          colors={["#FFFFFF", "#FFFFFF"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 0, y: 1 }}
           style={{ flex: 1, overflow: "hidden" }}
@@ -667,38 +1365,44 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
               Customer ID : {customerId}
             </Text>
 
-            <TouchableOpacity
-              onPress={() =>
-                navigation.navigate("ExcludeItemEditSummery", {
-                  id,
-                  customerId,
-                  name: customerName,
-                  title: customerTitle,
-                  phone: customerNumber,
-                })
-              }
-              style={{ marginTop: 8 }}
-            >
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <Text
-                  style={{
-                    color: "#7240D3",
-                    textDecorationLine: "underline",
-                    fontWeight: "600",
-                    fontSize: 14,
-                    marginRight: 6,
-                  }}
-                >
-                  Package Preferences
-                </Text>
-                <AntIcons name="external-link" size={16} color="#7240D3" />
-              </View>
-            </TouchableOpacity>
+            {buyerType !== "Wholesale" && (
+              <TouchableOpacity
+                onPress={() =>
+                  navigation.navigate("ExcludeItemEditSummery", {
+                    id,
+                    customerId,
+                    name: customerName,
+                    title: customerTitle,
+                    phone: customerNumber,
+                  })
+                }
+                style={{ marginTop: 8 }}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <Text
+                    style={{
+                      color: "#7240D3",
+                      textDecorationLine: "underline",
+                      fontWeight: "600",
+                      fontSize: 14,
+                      marginRight: 6,
+                    }}
+                  >
+                    Package Preferences
+                  </Text>
+                  <AntIcons name="external-link" size={16} color="#7240D3" />
+                </View>
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Edit button */}
           <TouchableOpacity
-            onPress={() =>
+            onPress={() => {
+              if (buyerType === "Wholesale") {
+                setIsAccessDeniedVisible(true);
+                return;
+              }
               navigation.navigate("Main" as any, {
                 screen: "EditCustomerScreen",
                 params: {
@@ -707,8 +1411,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                   name: customerName,
                   title: customerTitle,
                 },
-              })
-            }
+              });
+            }}
             style={{
               width: 40,
               height: 40,
@@ -722,6 +1426,15 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
           </TouchableOpacity>
         </View>
 
+        {/* Wholesale Pending/Rejected view vs Normal view */}
+        {!isStatusChecked || loadingCustomerData ? (
+          <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#FFFFFF" }}>
+            <LoadingPage message="Loading Customer Profile..." fullScreen={true} />
+          </View>
+        ) : buyerType === "Wholesale" && wholesaleApproveStatus !== "Approve" ? (
+          renderWholesaleStatusView()
+        ) : (
+          <View style={{ flex: 1 }}>
         {/* Address Cards Section */}
         <View
           style={{
@@ -749,6 +1462,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
               onPress={() => {
                 navigation.navigate("ResidentialAddress", {
                   customerId: id,
+                  buyerType: buyerType || "Retail",
                 });
               }}
               style={{
@@ -824,6 +1538,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
               onPress={() => {
                 navigation.navigate("DeliveryAddressBooks", {
                   customerId: id,
+                  buyerType: buyerType || "Retail",
                 });
               }}
               style={{
@@ -882,49 +1597,11 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
           </View>
         </View>
 
-        {/* Negative Credit Balance Warning */}
-        {creditBalance < 0 && (
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "flex-start",
-              backgroundColor: "#FEF6F0",
-              borderWidth: 1,
-              borderColor: "#FDE4D4",
-              borderRadius: 14,
-              marginHorizontal: 16,
-              marginTop: 14,
-              padding: 12,
-            }}
-          >
-            <MaterialIcons
-              name="warning"
-              size={18}
-              color="#F5811F"
-              style={{ marginRight: 8, marginTop: 7 }}
-            />
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{ fontSize: 13, fontWeight: "bold", color: "#000000" }}
-              >
-                Negative Credit Balance{" "}
-                <Text
-                  style={{ fontSize: 13, fontWeight: "bold", color: "#FF6400" }}
-                >
-                  ( -Rs.{" "}
-                  {Math.abs(creditBalance).toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}{" "}
-                  )
-                </Text>
-              </Text>
-              <Text style={{ fontSize: 12, color: "#5E6089", marginTop: 2 }}>
-                Ask the customer to clear the balance first.
-              </Text>
-            </View>
-          </View>
-        )}
+        {/* Negative Credit Balance Alert */}
+        <NegativeCreditBalanceAlert
+          creditBalance={creditBalance}
+          containerStyle={{ marginHorizontal: 16, marginTop: 14 }}
+        />
 
         {/* Scrollable orders content area */}
         <View style={{ flex: 1, marginTop: 15 }}>
@@ -1319,6 +1996,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
             )}
           </View>
         </View>
+        </View>
+        )}
 
         {/* Sticky Bottom Action Buttons */}
         {!isKeyboardVisible && (
@@ -1374,27 +2053,44 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
 
             {/* New Order Button */}
             <TouchableOpacity
-              disabled={creditBalance < 0}
-              onPress={() =>
-                navigation.navigate("SelectOrderType" as any, {
-                  id,
-                  customerId,
-                  name: customerName,
-                  title: customerTitle,
-                  number: customerNumber,
-                  customerscreencustomerid: customerId,
-                })
-              }
+              disabled={creditBalance < 0 || (buyerType === "Wholesale" && wholesaleApproveStatus !== "Approve")}
+              onPress={() => {
+                if (buyerType === "Wholesale") {
+                  navigation.navigate("CreateCustomPackage" as any, {
+                    id,
+                    isPackage: 0,
+                    customerId,
+                    name: customerName,
+                    title: customerTitle,
+                    number: customerNumber,
+                    customerscreencustomerid: customerId,
+                    buyerType: "Wholesale",
+                  });
+                } else {
+                  navigation.navigate("SelectOrderType" as any, {
+                    id,
+                    customerId,
+                    name: customerName,
+                    title: customerTitle,
+                    number: customerNumber,
+                    customerscreencustomerid: customerId,
+                    buyerType: "Retail",
+                  });
+                }
+              }}
               style={{
                 flex: 1,
                 flexDirection: "row",
                 height: 48,
                 borderRadius: 24,
-                backgroundColor: creditBalance < 0 ? "#B8B8B8" : "#6B3BCF",
+                backgroundColor:
+                  (buyerType === "Wholesale" && wholesaleApproveStatus !== "Approve") || creditBalance < 0
+                    ? "#B8B8B8"
+                    : "#6B3BCF",
                 alignItems: "center",
                 justifyContent: "center",
                 marginLeft: 8,
-                opacity: creditBalance < 0 ? 0.7 : 1,
+                opacity: (buyerType === "Wholesale" && wholesaleApproveStatus !== "Approve") || creditBalance < 0 ? 0.7 : 1,
 
                 shadowColor: "#000000",
                 shadowOffset: { width: 0, height: 2 },
@@ -1419,6 +2115,93 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
         )}
         </LinearGradient>
       </TouchableWithoutFeedback>
+
+      {/* Access Denied Modal for Wholesale Edit */}
+      <AlertModal
+        visible={isAccessDeniedVisible}
+        title="Access Denied!"
+        message="Please note that existing Wholesale Customer details cannot be edited."
+        type="error"
+        showOkButton={true}
+        autoClose={false}
+        okButtonText="OK"
+        onClose={() => setIsAccessDeniedVisible(false)}
+      />
+
+      {/* Full Image Preview Modal for BR Document */}
+      <Modal
+        visible={previewModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setPreviewModalVisible(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "#000000D0",
+            justifyContent: "center",
+            padding: 16,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderRadius: 16,
+              overflow: "hidden",
+              maxHeight: "90%",
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingHorizontal: 16,
+                paddingVertical: 14,
+                borderBottomWidth: 1,
+                borderBottomColor: "#E2E8F0",
+              }}
+            >
+              <Text
+                numberOfLines={1}
+                style={{
+                  fontSize: 14,
+                  fontWeight: "700",
+                  color: "#1E293B",
+                  flex: 1,
+                  marginRight: 12,
+                }}
+              >
+                {reuploadDoc?.name || "BR Document"}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setPreviewModalVisible(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="close" size={24} color="#000000" />
+              </TouchableOpacity>
+            </View>
+
+            <View
+              style={{
+                width: "100%",
+                height: Dimensions.get("window").height * 0.7,
+                backgroundColor: "#F8FAFC",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {reuploadDoc?.uri ? (
+                <Image
+                  source={{ uri: reuploadDoc.uri }}
+                  style={{ width: "100%", height: "100%" }}
+                  resizeMode="contain"
+                />
+              ) : null}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 };

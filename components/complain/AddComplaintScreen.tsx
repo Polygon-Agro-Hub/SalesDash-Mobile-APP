@@ -59,7 +59,12 @@ const AddComplaintScreen: React.FC<AddComplaintScreenProps> = ({
               label: item.categoryEnglish,
               value: item.id,
             }))
-            .filter((item: { value: any }) => item.value);
+            .filter((item: { value: any }) => item.value)
+            .sort((a: any, b: any) =>
+              (a.label || "").localeCompare(b.label || "", undefined, {
+                sensitivity: "base",
+              }),
+            );
 
           setCategory(mappedCategories);
         }

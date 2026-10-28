@@ -2,7 +2,7 @@
   "expo": {
     "name": "SalesDash",
     "slug": "SalesDash",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "orientation": "portrait",
     "icon": "./assets/images/public/favicon.png",
     "userInterfaceStyle": "light",
@@ -21,10 +21,6 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/public/favicon.png",
         "backgroundColor": "#6638CE"
-      },
-      "navigationBar": {
-        "backgroundColor": "#4F4F4F",
-        "barStyle": "dark-content"
       },
       "permissions": [
         "android.permission.INTERNET",
@@ -86,12 +82,11 @@
         {
           "android": {
             "compileSdkVersion": 37,
-            "targetSdkVersion": 36,
+            "targetSdkVersion": 35,
             "minSdkVersion": 24,
-            "enableProguardInReleaseBuilds": true,
-            "enableShrinkResourcesInReleaseBuilds": true,
-            "enableMinifyInReleaseBuilds": true,
-            "extraProguardRules": "-keep class expo.modules.** { *; }\n-keep class expo.** { *; }"
+            "enableProguardInReleaseBuilds": false,
+            "enableShrinkResourcesInReleaseBuilds": false,
+            "enableMinifyInReleaseBuilds": false
           },
           "ios": {
             "deploymentTarget": "16.4"
