@@ -36,17 +36,7 @@ interface CustomersScreenProps {
   navigation: CustomersScreenNavigationProp;
 }
 
-interface Customer {
-  id: string;
-  firstName: string;
-  lastName: string;
-  phoneNumber: string;
-  order: number;
-  cusId: string;
-  title: string;
-  orderCount: number;
-  buyerType: "Retail" | "Wholesale" | null;
-}
+import CustomerCard, { Customer } from "./CustomerCard";
 
 type BuyerTab = "Retail" | "Wholesale";
 
@@ -347,7 +337,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
             className="shadow-md px-4 items-center justify-center"
             style={{
               paddingBottom: 24,
-              height: 80,
+              height: 100,
               justifyContent: "center",
             }}
           >
@@ -555,99 +545,18 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                     ListFooterComponent={renderFooter}
                     scrollEventThrottle={16}
                     renderItem={({ item }: { item: Customer }) => (
-                      <TouchableOpacity
-                        activeOpacity={1}
+                      <CustomerCard
+                        customer={item}
                         onPress={() =>
                           navigation.navigate("ViewCustomerScreen", {
-                            name: `${item.firstName} ${item.lastName}`,
+                            name: `${item.firstName} ${item.lastName}`.trim(),
                             title: item.title,
                             number: item.phoneNumber,
                             customerId: item.cusId,
                             id: item.id,
                           })
                         }
-                      >
-                        <View
-                          style={{
-                            marginBottom: 12,
-                            marginHorizontal: 4,
-                            borderRadius: 20,
-                            ...Platform.select({
-                              ios: {
-                                backgroundColor: "white",
-                                shadowColor: "#7E7E7E",
-                                shadowOffset: { width: 0, height: 2 },
-                                shadowOpacity: 0.15,
-                                shadowRadius: 6,
-                              },
-                              android: {
-                                backgroundColor: "white",
-                                borderWidth: 1,
-                                borderColor: "#E0E0E0",
-                                elevation: 3,
-                              },
-                            }),
-                          }}
-                        >
-                          <View
-                            style={{
-                              borderRadius: 20,
-                              ...Platform.select({
-                                ios: {
-                                  overflow: "hidden",
-                                  borderWidth: 1,
-                                  borderColor: "#E0E0E0",
-                                  backgroundColor: "white",
-                                },
-                                android: {
-                                  backgroundColor: "transparent",
-                                },
-                              }),
-                              padding: 16,
-                              flexDirection: "row",
-                              justifyContent: "space-between",
-                              alignItems: "center",
-                            }}
-                          >
-                            <View className="flex-1 mr-3">
-                              <Text
-                                className="text-gray-700 font-semibold"
-                                numberOfLines={2}
-                                ellipsizeMode="tail"
-                                style={{
-                                  fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
-                                }}
-                              >
-                                {item.title}. {item.firstName} {item.lastName}
-                              </Text>
-                              <Text
-                                className="text-gray-500"
-                                style={{
-                                  fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
-                                }}
-                              >
-                                {formatPhoneNumber(item.phoneNumber)}
-                              </Text>
-                            </View>
-                            <View
-                              className="items-end justify-center"
-                              style={{ minWidth: 45 }}
-                            >
-                              <Text
-                                className="text-gray-700 font-semibold"
-                                style={{
-                                  fontSize: SCREEN_HEIGHT > 900 ? 18 : 16,
-                                }}
-                              >
-                                #
-                                {item.orderCount < 10
-                                  ? `0${item.orderCount}`
-                                  : item.orderCount}
-                              </Text>
-                            </View>
-                          </View>
-                        </View>
-                      </TouchableOpacity>
+                      />
                     )}
                   />
                 )}

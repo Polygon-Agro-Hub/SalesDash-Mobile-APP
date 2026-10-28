@@ -513,4 +513,5 @@ export type RootStackParamList = {
   ExistingCustomerDetailsScreen:undefined;
   NewCustomerDetailsScreen:undefined;
   MonthlyOrdersTargets:undefined;
+  TotalValueOfCustomersScreen:undefined;
 };

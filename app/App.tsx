@@ -72,6 +72,7 @@ import PackagesScreen from "@/components/package/Packagesscreen";
 import ExistingCustomerDetailsScreen from"@/components/customer/ExistingCustomerDetailsScreen";
 import NewCustomerDetailsScreen from "@/components/customer/NewCustomerDetailsScreen";
 import MonthlyOrdersTargets from "@/components/orders_targets/MonthlyOrdersTargets";
+import TotalValueOfCustomersScreen from "@/components/customer/TotalValueOfCustomersScreen";
 export { navigationRef };
 
 // Disable console logs in production mode to improve React Native thread performance
@@ -149,6 +150,10 @@ function MainTabNavigator() {
              <Tab.Screen
               name="MonthlyOrdersTargets"
               component={MonthlyOrdersTargets as any}
+            />
+            <Tab.Screen
+              name="TotalValueOfCustomersScreen"
+              component={TotalValueOfCustomersScreen as any}
             />
     </Tab.Navigator>
   );
@@ -428,6 +433,10 @@ function AppContent() {
             <Stack.Screen
               name="PackagesScreen"
               component={PackagesScreen as any}
+            />
+            <Stack.Screen
+              name="TotalValueOfCustomersScreen"
+              component={TotalValueOfCustomersScreen as any}
             />
            
             <Stack.Screen name="Main" component={MainTabNavigator} />

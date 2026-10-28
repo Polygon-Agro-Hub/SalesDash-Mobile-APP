@@ -41,7 +41,9 @@ interface AgentStats {
   };
   monthly: {
     totalStars: number;
+    targetAchievedDays?: number;
   };
+  totalDeliveredValue?: number;
 }
 
 /* ---------- Reusable dashboard box ---------- */
@@ -180,6 +182,10 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     empType: "",
   });
   const [packageCount, setPackageCount] = useState(0);
+  const [newCustomerCount, setNewCustomerCount] = useState(0);
+  const [existingCustomerCount, setExistingCustomerCount] = useState(0);
+  const [targetAchievedDays, setTargetAchievedDays] = useState(0);
+  const [existingCustomersTotalValue, setExistingCustomersTotalValue] = useState(0);
   const [agentStats, setAgentStats] = useState<AgentStats>({
     daily: { target: 10, completed: 0, numOfStars: 0, progress: 0 },
     monthly: { totalStars: 0 },
@@ -189,11 +195,96 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     setIsLoading(true);
     await Promise.all([
       getUserProfile(),
-  
       fetchAgentStats(),
+      fetchPackages(),
+      fetchCustomerCounts(),
+      fetchTargetAchievedDaysFallback(),
+      fetchDeliveredTotalFallback(),
     ]);
     setIsLoading(false);
   };
+
+  const fetchPackages = async () => {
+    try {
+      const storedToken = await AsyncStorage.getItem("authToken");
+      if (!storedToken) return;
+
+      const response = await axios.get<{ data: any[]; total?: number }>(
+        `${environment.API_BASE_URL}api/packages/get-packages?_t=${Date.now()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${storedToken}`,
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+          },
+        },
+      );
+      const list = Array.isArray(response.data?.data) ? response.data.data : [];
+      setPackageCount(response.data?.total ?? list.length);
+    } catch (error) {
+      console.error("Failed to fetch packages:", error);
+    }
+  };
+
+  const fetchCustomerCounts = async () => {
+    try {
+      const storedToken = await AsyncStorage.getItem("authToken");
+      if (!storedToken) return;
+
+      try {
+        const response = await axios.get(
+          `${environment.API_BASE_URL}api/customer/cutomer-count`,
+          { headers: { Authorization: `Bearer ${storedToken}` } },
+        );
+        if (response.data?.success && response.data?.data) {
+          const data = response.data.data;
+          if (
+            data.newCustomerCount !== undefined &&
+            data.existingCustomerCount !== undefined
+          ) {
+            setNewCustomerCount(data.newCustomerCount);
+            setExistingCustomerCount(data.existingCustomerCount);
+            return;
+          }
+        }
+      } catch (err) {
+        // fallback
+      }
+
+      const [newRes, existingRes] = await Promise.all([
+        axios
+          .get(
+            `${environment.API_BASE_URL}api/customer/get-customers?page=1&limit=1&type=new`,
+            { headers: { Authorization: `Bearer ${storedToken}` } },
+          )
+          .catch(() => null),
+        axios
+          .get(
+            `${environment.API_BASE_URL}api/customer/get-customers?page=1&limit=1&type=existing`,
+            { headers: { Authorization: `Bearer ${storedToken}` } },
+          )
+          .catch(() => null),
+      ]);
+
+      if (newRes?.data?.totalCount !== undefined) {
+        setNewCustomerCount(newRes.data.totalCount);
+      }
+      if (existingRes?.data?.totalCount !== undefined) {
+        setExistingCustomerCount(existingRes.data.totalCount);
+      }
+    } catch (error) {
+      console.error("Failed to fetch customer counts:", error);
+    }
+  };
+
+  useEffect(() => {
+    const unsubscribe = socketService.onPackageUpdate(() => {
+      fetchPackages();
+    });
+    return () => {
+      if (typeof unsubscribe === "function") unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
@@ -271,10 +362,64 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
         `${environment.API_BASE_URL}api/orders/sales-agent`,
         { headers: { Authorization: `Bearer ${storedToken}` } },
       );
-      setAgentStats(response.data.data);
+      const data = response.data.data;
+      setAgentStats(data);
+      if (data?.monthly?.targetAchievedDays !== undefined) {
+        setTargetAchievedDays(data.monthly.targetAchievedDays);
+      }
+      if (data?.totalDeliveredValue !== undefined) {
+        setExistingCustomersTotalValue(data.totalDeliveredValue);
+      }
     } catch (error) {
       console.error("Failed to fetch agent stats:", error);
     }
+  };
+
+  const fetchTargetAchievedDaysFallback = async () => {
+    try {
+      const storedToken = await AsyncStorage.getItem("authToken");
+      if (!storedToken) return;
+
+      const now = new Date();
+      const res = await axios.get(
+        `${environment.API_BASE_URL}api/orders/daily-targets?month=${
+          now.getMonth() + 1
+        }&year=${now.getFullYear()}&limit=100`,
+        { headers: { Authorization: `Bearer ${storedToken}` } },
+      );
+      const records = Array.isArray(res.data?.data) ? res.data.data : [];
+      const count = records.filter(
+        (r: any) =>
+          Number(r.completed) >= Number(r.target) && Number(r.target) > 0,
+      ).length;
+      setTargetAchievedDays(count);
+    } catch (e) {
+      // fallback
+    }
+  };
+
+  const fetchDeliveredTotalFallback = async () => {
+    try {
+      const storedToken = await AsyncStorage.getItem("authToken");
+      if (!storedToken) return;
+
+      const res = await axios.get(
+        `${environment.API_BASE_URL}api/orders/delivered-existing-total`,
+        { headers: { Authorization: `Bearer ${storedToken}` } },
+      );
+      if (res.data?.data?.totalDeliveredValue !== undefined) {
+        setExistingCustomersTotalValue(res.data.data.totalDeliveredValue);
+      }
+    } catch (e) {
+      // fallback
+    }
+  };
+
+  const formatCurrency = (amount: number): string => {
+    return `Rs. ${Number(amount || 0).toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
   };
 
   useFocusEffect(
@@ -336,9 +481,10 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
                   Hello, {formData?.firstName || "User"}
                 </Text>
                 <Text className="text-xs text-[#64748B]">
-                  {formData?.empType
-                    ? `${formData.empType} Sales Agent`
-                    : "Sales Agent"}
+                  {formData?.empType?.trim().toLowerCase() === "temporary" ||
+                  formData?.empType?.trim().toLowerCase() === "freelancer"
+                    ? "Freelancer"
+                    : "Permanent Sales Agent"}
                 </Text>
               </View>
             </View>
@@ -454,7 +600,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
           <DashboardCard
             title="New Customer Details"
             subtitle="New registration & profiles"
-            badge="Total : 1"
+            badge={`Total : ${newCustomerCount}`}
             icon="users"
             iconColor="#7C3AED"
             iconBg="#EDE9FE"
@@ -468,7 +614,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
           <DashboardCard
             title="Existing Customer Details"
             subtitle="Active client records"
-            badge="Total : 50"
+            badge={`Total : ${existingCustomerCount}`}
             icon="users"
             iconColor="#6872FF"
             iconBg="#EDF2FF"
@@ -482,12 +628,15 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
           <DashboardCard
             title="Total Value of Existing Customers"
             subtitle="Total Orders Amount"
-            badge="Rs. 1,000,000.00"
+            badge={formatCurrency(existingCustomersTotalValue)}
             icon="coins"
             iconColor="#EBA313"
             iconBg="#FDFCDD"
             badgeColor="#ECA811"
             badgeBg="#FDFCDD"
+            onPress={() =>
+              navigation.navigate("TotalValueOfCustomersScreen" as any)
+            }
           />
 
           {/* Navigates to the separate Packages screen */}
@@ -505,8 +654,8 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
 
           <DashboardCard
             title="Monthly Orders Targets"
-            subtitle="Total Monthly Stars"
-            badge={`Stars : ${agentStats?.monthly?.totalStars ?? 0}`}
+            subtitle="Monthly Target Achieved"
+            badge={`${targetAchievedDays} ${targetAchievedDays === 1 ? "Day" : "Days"}`}
             icon="bullseye"
             iconColor="#E11D48"
             iconBg="#FFE4E6"

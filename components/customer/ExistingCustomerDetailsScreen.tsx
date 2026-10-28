@@ -25,6 +25,7 @@ import environment from "@/environment/environment";
 import ExistingCustomerDetailsScreenSkeleton from "./CustomerScreenSkeleton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { FontAwesome } from "@expo/vector-icons";
+import Entypo from "@expo/vector-icons/Entypo";
 
 type ExistingCustomerDetailsScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -35,17 +36,7 @@ interface ExistingCustomerDetailsScreenProps {
   navigation: ExistingCustomerDetailsScreenNavigationProp;
 }
 
-interface Customer {
-  id: string;
-  firstName: string;
-  lastName: string;
-  phoneNumber: string;
-  order: number;
-  cusId: string;
-  title: string;
-  orderCount: number;
-  buyerType: "Retail" | "Wholesale" | null;
-}
+import CustomerCard, { Customer } from "./CustomerCard";
 
 type BuyerTab = "Retail" | "Wholesale";
 
@@ -54,6 +45,14 @@ const BUYER_TABS: BuyerTab[] = ["Retail", "Wholesale"];
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 // Defined outside the component so it can be used by useMemo safely
+const isCustomerExisting = (createdAt?: string | null): boolean => {
+  if (!createdAt) return true;
+  const createdDate = new Date(createdAt);
+  if (isNaN(createdDate.getTime())) return true;
+  const diffDays = (Date.now() - createdDate.getTime()) / (1000 * 60 * 60 * 24);
+  return diffDays > 84;
+};
+
 const formatPhoneNumber = (phoneNumber: string) => {
   if (!phoneNumber) return "";
   return phoneNumber.startsWith("+94")
@@ -156,7 +155,7 @@ const ExistingCustomerDetailsScreen: React.FC<
         return;
       }
 
-      const customersUrl = `${environment.API_BASE_URL.replace(/\/$/, "")}/api/customer/get-customers?page=${page}&limit=${CUSTOMERS_PER_PAGE}`;
+      const customersUrl = `${environment.API_BASE_URL.replace(/\/$/, "")}/api/customer/get-customers?page=${page}&limit=${CUSTOMERS_PER_PAGE}&type=existing`;
 
       const response = await axios.get(customersUrl, {
         headers: {
@@ -169,7 +168,10 @@ const ExistingCustomerDetailsScreen: React.FC<
           ? response.data.data
           : [];
         const validCustomers = rawList.filter(
-          (c: Customer | null | undefined) => c && c.id != null,
+          (c: any) =>
+            c &&
+            c.id != null &&
+            isCustomerExisting(c.createdAt || c.created_at),
         );
         const sortedCustomers = sortCustomersByName(validCustomers);
 
@@ -341,27 +343,49 @@ const ExistingCustomerDetailsScreen: React.FC<
           {/* Header */}
           <LinearGradient
             colors={["#854BDA", "#6E3DD1"]}
-            className="shadow-md px-4 items-center justify-center"
+            className="shadow-md px-6 justify-center"
             style={{
               paddingBottom: 24,
-              height: 80,
+              height: 100,
               justifyContent: "center",
             }}
           >
-            <View className="w-full max-w-[500px] items-center">
-              <Text
-                className="text-white font-semibold"
-                style={{ fontSize: SCREEN_HEIGHT > 900 ? 20 : 18 }}
-              >
-                Existing Customers :{" "}
-                <Text className="font-bold">
-                  {formatCustomerCount(
-                    searchQuery
-                      ? filteredCustomers.length
-                      : tabCustomers.length,
-                  )}
+            <View className="w-full flex-row items-center justify-between px-4">
+              <View style={{ width: 48 }}>
+                <TouchableOpacity
+                  onPress={() => navigation.goBack()}
+                  style={{ alignItems: "flex-start" }}
+                >
+                  <Entypo
+                    name="chevron-left"
+                    size={25}
+                    color={"white"}
+                    style={{
+                      borderRadius: 50,
+                      padding: 12,
+                      backgroundColor: "#F6F6F680",
+                    }}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              <View className="flex-1 items-center">
+                <Text
+                  className="text-white font-semibold"
+                  style={{ fontSize: SCREEN_HEIGHT > 900 ? 20 : 18 }}
+                >
+                  Existing Customers :{" "}
+                  <Text className="font-bold">
+                    {formatCustomerCount(
+                      searchQuery
+                        ? filteredCustomers.length
+                        : tabCustomers.length,
+                    )}
+                  </Text>
                 </Text>
-              </Text>
+              </View>
+
+              <View style={{ width: 48 }} />
             </View>
           </LinearGradient>
 
@@ -531,99 +555,18 @@ const ExistingCustomerDetailsScreen: React.FC<
                     ListFooterComponent={renderFooter}
                     scrollEventThrottle={16}
                     renderItem={({ item }: { item: Customer }) => (
-                      <TouchableOpacity
-                        activeOpacity={1}
-                        // onPress={() =>
-                        //   navigation.navigate("ViewCustomerScreen", {
-                        //     name: `${item.firstName} ${item.lastName}`,
-                        //     title: item.title,
-                        //     number: item.phoneNumber,
-                        //     customerId: item.cusId,
-                        //     id: item.id,
-                        //   })
-                        // }
-                      >
-                        <View
-                          style={{
-                            marginBottom: 12,
-                            marginHorizontal: 4,
-                            borderRadius: 20,
-                            ...Platform.select({
-                              ios: {
-                                backgroundColor: "white",
-                                shadowColor: "#7E7E7E",
-                                shadowOffset: { width: 0, height: 2 },
-                                shadowOpacity: 0.15,
-                                shadowRadius: 6,
-                              },
-                              android: {
-                                backgroundColor: "white",
-                                borderWidth: 1,
-                                borderColor: "#E0E0E0",
-                                elevation: 3,
-                              },
-                            }),
-                          }}
-                        >
-                          <View
-                            style={{
-                              borderRadius: 20,
-                              ...Platform.select({
-                                ios: {
-                                  overflow: "hidden",
-                                  borderWidth: 1,
-                                  borderColor: "#E0E0E0",
-                                  backgroundColor: "white",
-                                },
-                                android: {
-                                  backgroundColor: "transparent",
-                                },
-                              }),
-                              padding: 16,
-                              flexDirection: "row",
-                              justifyContent: "space-between",
-                              alignItems: "center",
-                            }}
-                          >
-                            <View className="flex-1 mr-3">
-                              <Text
-                                className="text-gray-700 font-semibold"
-                                numberOfLines={2}
-                                ellipsizeMode="tail"
-                                style={{
-                                  fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
-                                }}
-                              >
-                                {item.title}. {item.firstName} {item.lastName}
-                              </Text>
-                              <Text
-                                className="text-gray-500"
-                                style={{
-                                  fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
-                                }}
-                              >
-                                {formatPhoneNumber(item.phoneNumber)}
-                              </Text>
-                            </View>
-                            <View
-                              className="items-end justify-center"
-                              style={{ minWidth: 45 }}
-                            >
-                              <Text
-                                className="text-gray-700 font-semibold"
-                                style={{
-                                  fontSize: SCREEN_HEIGHT > 900 ? 18 : 16,
-                                }}
-                              >
-                                #
-                                {item.orderCount < 10
-                                  ? `0${item.orderCount}`
-                                  : item.orderCount}
-                              </Text>
-                            </View>
-                          </View>
-                        </View>
-                      </TouchableOpacity>
+                      <CustomerCard
+                        customer={item}
+                        onPress={() =>
+                          navigation.navigate("ViewCustomerScreen", {
+                            name: `${item.firstName} ${item.lastName}`.trim(),
+                            title: item.title,
+                            number: item.phoneNumber,
+                            customerId: item.cusId,
+                            id: item.id,
+                          })
+                        }
+                      />
                     )}
                   />
                 )}

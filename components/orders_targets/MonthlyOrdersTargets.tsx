@@ -15,6 +15,7 @@ import axios from "axios";
 import { RootStackParamList } from "../types/types";
 import environment from "@/environment/environment";
 import CustomHeader from "../common/CustomHeader";
+import Pagination from "../common/Pagination";
 
 type MonthlyOrdersTargetsNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -456,76 +457,7 @@ const MonthlyOrdersTargets: React.FC<MonthlyOrdersTargetsProps> = ({
           )}
         </View>
         {/* ---------- Pagination ---------- */}
-        {totalPages > 1 && (
-          <View
-            style={{
-              paddingTop: 12,
-              paddingBottom: 24,
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 14,
-              backgroundColor: "#FFFFFF",
-              borderTopWidth: 1,
-              borderTopColor: "#FFFFFF",
-            }}
-          >
-            <TouchableOpacity
-              disabled={page === 1}
-              onPress={() => setPage((p) => Math.max(p - 1, 1))}
-              hitSlop={10}
-            >
-              <Ionicons
-                name="arrow-back"
-                size={18}
-                color={page === 1 ? "#CBD5E1" : "#0F172A"}
-              />
-            </TouchableOpacity>
-
-            {getPageItems(page, totalPages).map((p, idx) =>
-              p === "..." ? (
-                <Text key={`dots-${idx}`} style={{ color: "#0F172A" }}>
-                  ...
-                </Text>
-              ) : (
-                <TouchableOpacity
-                  key={p}
-                  onPress={() => setPage(p)}
-                  style={{
-                    minWidth: 26,
-                    height: 26,
-                    borderRadius: 6,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backgroundColor: p === page ? "#1F1B3A" : "transparent",
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      fontWeight: "600",
-                      color: p === page ? "#FFFFFF" : "#0F172A",
-                    }}
-                  >
-                    {p}
-                  </Text>
-                </TouchableOpacity>
-              ),
-            )}
-
-            <TouchableOpacity
-              disabled={page === totalPages}
-              onPress={() => setPage((p) => Math.min(p + 1, totalPages))}
-              hitSlop={10}
-            >
-              <Ionicons
-                name="arrow-forward"
-                size={18}
-                color={page === totalPages ? "#CBD5E1" : "#0F172A"}
-              />
-            </TouchableOpacity>
-          </View>
-        )}
+        <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
       </ScrollView>
     </View>
   );
