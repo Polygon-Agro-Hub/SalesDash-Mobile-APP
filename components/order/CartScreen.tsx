@@ -55,6 +55,7 @@ interface CratScreenProps {
       customerscreencustomerid: string;
       deliveryCharge?: number;
       selectedAddress?: any;
+      buyerType?: string;
     };
   };
 }
@@ -68,6 +69,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     name,
     number,
     customerscreencustomerid,
+    buyerType,
   } = route.params || {};
   const fromOrderSummary = (route.params as any)?.fromOrderSummary;
 
@@ -102,6 +104,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
           name,
           number,
           customerscreencustomerid,
+          buyerType,
         });
         return true;
       };
@@ -468,6 +471,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
         name,
 
         selectedAddressId: incomingSelectedAddress?.id,
+        buyerType,
       });
     } else {
       alert("Please add at least one item to your cart");
@@ -506,6 +510,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
             name,
             number,
             customerscreencustomerid,
+            buyerType,
           });
         }}
         rightComponent={

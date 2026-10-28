@@ -403,8 +403,16 @@ export type RootStackParamList = {
   };
   CreateCustomPackage: {
     id: string;
-    isCustomPackage: string;
-    isSelectPackage: string;
+    isCustomPackage?: string;
+    isSelectPackage?: string;
+    isPackage?: number;
+    customerId?: string;
+    name?: string;
+    title?: string;
+    number?: string;
+    customerscreencustomerid?: string;
+    selectedProductIds?: number[];
+    buyerType?: string;
   };
   CratScreen: {
     selectedProducts: CartItem[];
@@ -425,6 +433,7 @@ export type RootStackParamList = {
     timeDisplay?: string;
     paymentMethod?: string;
     fromOrderSummary?: boolean;
+    buyerType?: string;
   };
   ExcludeListAdd: {
     customerId: number;
@@ -456,12 +465,15 @@ export type RootStackParamList = {
   };
   ResidentialAddress: {
     customerId: string;
+    buyerType?: string;
   };
   DeliveryAddressBooks: {
     customerId: string;
+    buyerType?: string;
   };
   AddDeliveryAddress: {
     customerId: string;
+    buyerType?: string;
     addressId?: number;
     addressType?: "House" | "Apartment";
     selectedLatitude?: number;
