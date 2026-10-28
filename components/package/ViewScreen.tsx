@@ -15,9 +15,8 @@ import axios from "axios";
 import environment from "@/environment/environment";
 import { RouteProp } from "@react-navigation/native";
 import { useFocusEffect } from "@react-navigation/native";
-import { Ionicons } from "@expo/vector-icons";
 import CustomHeader from "../common/CustomHeader";
-import SeasonalPackageBanner from "./SeasonalPackageBanner";
+import SeasonalPackageBanner from "../order/SeasonalPackageBanner";
 
 const getDeliveryCutoffDate = (endDateStr?: string | null): string | null => {
   if (!endDateStr) return null;
