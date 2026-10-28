@@ -344,7 +344,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     if (!text) return text;
 
     if (docType === "PASS") {
-      return text.replace(/[^A-Za-z0-9]/g, "").slice(0, 12).toUpperCase();
+      return text;
     }
 
     const cleaned = text.replace(/[^0-9vV]/g, "");
@@ -720,6 +720,10 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
 
   useEffect(() => {
     if (touchedFields.nic) {
+      if (docType === "PASS") {
+        setNicError("");
+        return;
+      }
       if (!nic) {
         setNicError("NIC number is required");
       } else if (!validateNIC(nic)) {
@@ -728,7 +732,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         setNicError("");
       }
     }
-  }, [nic, touchedFields.nic]);
+  }, [nic, touchedFields.nic, docType]);
 
   useEffect(() => {
     if (touchedFields.firstName) {
@@ -788,7 +792,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     if (touchedFields.city) {
       if (!city) {
         setCityError("City is required");
-      }  else {
+      } else {
         setCityError("");
       }
     }
@@ -881,7 +885,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
   useEffect(() => {
     fetchCity();
     // Clean up any oversized leftover data from previous crashes
-    AsyncStorage.removeItem("pendingCustomerData").catch(() => {});
+    AsyncStorage.removeItem("pendingCustomerData").catch(() => { });
   }, []);
 
   useEffect(() => {
@@ -899,7 +903,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     const isEmailValid = email && validateEmail(email);
     const isNicValid =
       docType === "PASS"
-        ? !!nic && nic.trim().length > 0 && nic.trim().length <= 12
+        ? true
         : !!nic && validateNIC(nic);
     const isCompanyNameValid = !!companyName && companyName.trim().length > 0;
     const isCompanyPhoneValid = !companyPhone || validateCompanyPhone(companyPhone);
@@ -910,7 +914,8 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     if (!lastName || !isLastNameValid) invalidFields.push("Last Name");
     if (!phoneNumber || !isPhoneValid) invalidFields.push("Mobile Number");
     if (!email || !isEmailValid) invalidFields.push("Email");
-    if (!nic || !isNicValid) invalidFields.push(docType === "PASS" ? "Passport ID" : "NIC Number");
+    if (docType === "NIC" && (!nic || !isNicValid)) invalidFields.push("NIC Number");
+    if (docType === "PASS" && !nic) invalidFields.push("Passport ID");
 
     if (buyerType === "Wholesale") {
       if (!isCompanyNameValid) invalidFields.push("Company Name");
@@ -948,14 +953,14 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       else if (!validateEmail(email))
         setEmailError("Please enter a valid email");
 
-      if (!nic) {
-        setNicError(docType === "PASS" ? "Passport ID is required" : "NIC number is required");
-      } else if (!isNicValid) {
-        setNicError(
-          docType === "PASS"
-            ? "Passport ID cannot exceed 12 characters"
-            : "Please enter a valid NIC (9 digits + V/X, or 12 digits)",
-        );
+      if (docType === "NIC") {
+        if (!nic) {
+          setNicError("NIC number is required");
+        } else if (!isNicValid) {
+          setNicError("Please enter a valid NIC (9 digits + V/X, or 12 digits)");
+        }
+      } else {
+        setNicError("");
       }
 
       if (buyerType === "Wholesale") {
@@ -1011,10 +1016,14 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
               "This email is already registered. Please use a different email.",
             );
           } else if (message.includes("NIC")) {
-            setNicError("This NIC is already registered");
+            if (docType === "NIC") {
+              setNicError("This NIC is already registered");
+            }
             showAlert(
-              "NIC Already Exists",
-              "This NIC is already registered. Please use a different NIC.",
+              docType === "PASS" ? "Passport ID Already Exists" : "NIC Already Exists",
+              docType === "PASS"
+                ? "This Passport ID is already registered. Please use a different Passport ID."
+                : "This NIC is already registered. Please use a different NIC.",
             );
           } else {
             const formattedMessage = (
@@ -1144,8 +1153,8 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       setIsSubmitting(false);
       return;
     }
-    if (docType === "PASS" && (!nic || nic.trim().length === 0 || nic.trim().length > 12)) {
-      showAlert("Error", "Please enter a valid Passport ID (maximum 12 characters).");
+    if (docType === "PASS" && (!nic || nic.trim().length === 0)) {
+      showAlert("Error", "Please enter a Passport ID.");
       setIsSubmitting(false);
       return;
     }
@@ -1449,9 +1458,8 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 setTitleModalVisible(true);
                 handleFieldTouch("title");
               }}
-              className={`bg-[#F6F6F6] border flex-row justify-between h-[50px] items-center ${
-                titleError ? "border-red-500" : "border-[#F6F6F6]"
-              } rounded-full px-4 h-10`}
+              className={`bg-[#F6F6F6] border flex-row justify-between h-[50px] items-center ${titleError ? "border-red-500" : "border-[#F6F6F6]"
+                } rounded-full px-4 h-10`}
             >
               <Text
                 className={selectedCategory ? "text-black" : "text-[#7F7F7F]"}
@@ -1631,7 +1639,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
               }}
             >
               <MaterialCommunityIcons
-                name="card-account-details-outline"
+                name="card-account-details"
                 size={18}
                 color={docType === "NIC" ? "#6D28D9" : "#64748B"}
               />
@@ -1696,7 +1704,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
             {docType === "NIC" ? "NIC Number *" : "Passport ID *"}
           </Text>
           <TextInput
-            className={`bg-[#F6F6F6] h-[50px] border ${nicError ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
+            className={`bg-[#F6F6F6] h-[50px] border ${nicError && docType === "NIC" ? "border-red-500" : "border-[#F6F6F6]"} rounded-full px-4 h-10`}
             placeholder={
               docType === "NIC"
                 ? "e.g. 199012345678 or 901234567V"
@@ -1707,17 +1715,21 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
             autoCorrect={false}
             value={nic}
             onChangeText={(text) => {
-              handleFieldTouch("nic");
+              if (docType === "NIC") {
+                handleFieldTouch("nic");
+              }
               if (text.startsWith(" ")) return;
               setNic(formatNicInput(text));
             }}
             onBlur={() => {
-              handleFieldTouch("nic");
+              if (docType === "NIC") {
+                handleFieldTouch("nic");
+              }
             }}
-            maxLength={12}
+            maxLength={docType === "NIC" ? 12 : undefined}
             style={[{ fontStyle: nic ? "normal" : "italic" }]}
           />
-          {nicError ? (
+          {docType === "NIC" && nicError ? (
             <Text className="text-red-500 text-xs pl-4 pt-1">{nicError}</Text>
           ) : null}
         </View>
