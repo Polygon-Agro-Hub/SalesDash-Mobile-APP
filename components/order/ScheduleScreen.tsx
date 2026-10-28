@@ -639,6 +639,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     const startMonth = MONTH_SHORT[displayStartDate.getMonth()];
     const startDay = displayStartDate.getDate();
     const startDayOrdinal = getOrdinal(startDay);
+    const startYear = displayStartDate.getFullYear();
 
     if (isOneTime && rawEndDate) {
       const earliestExpiryDate = parseDateStr(rawEndDate);
@@ -650,14 +651,22 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
         const expiryDay = cutoffDate.getDate();
         const expiryDayOrdinal = getOrdinal(expiryDay);
         const expiryMonthFull = MONTH_LONG[cutoffDate.getMonth()];
-        const expiryText = `${expiryDayOrdinal} ${expiryMonthFull}`;
+        const expiryYear = cutoffDate.getFullYear();
+        const expiryText = `${expiryDayOrdinal} ${expiryMonthFull} ${expiryYear}`;
 
         const endMonth = MONTH_SHORT[cutoffDate.getMonth()];
         const endDay = cutoffDate.getDate();
         const endDayOrdinal = getOrdinal(endDay);
+        const endYear = cutoffDate.getFullYear();
 
-        const rangeTextLong = `${startMonth} ${startDayOrdinal} - ${endMonth} ${endDayOrdinal}`;
-        const rangeTextShort = `${startMonth} ${startDay} – ${endMonth} ${endDay}`;
+        const rangeTextLong =
+          startYear === endYear
+            ? `${startMonth} ${startDayOrdinal} – ${endMonth} ${endDayOrdinal}, ${endYear}`
+            : `${startMonth} ${startDayOrdinal}, ${startYear} – ${endMonth} ${endDayOrdinal}, ${endYear}`;
+        const rangeTextShort =
+          startYear === endYear
+            ? `${startMonth} ${startDay} – ${endMonth} ${endDay}, ${endYear}`
+            : `${startMonth} ${startDay}, ${startYear} – ${endMonth} ${endDay}, ${endYear}`;
         const isAvailableNow = effectiveStartDate <= cutoffDate;
 
         return {
@@ -668,6 +677,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
           expiryDay,
           expiryDayOrdinal,
           expiryMonthFull,
+          expiryYear,
           expiryText,
           cutoffDate,
           minAvailDate,
@@ -675,7 +685,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
           effectiveStartDate,
           rangeTextLong,
           rangeTextShort,
-          startDateFormatted: `${startMonth} ${startDay}`,
+          startDateFormatted: `${startMonth} ${startDay}, ${startYear}`,
           isAvailableNow,
         };
       }
@@ -690,6 +700,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
         expiryDay: null,
         expiryDayOrdinal: "",
         expiryMonthFull: "",
+        expiryYear: null,
         expiryText: "",
         cutoffDate: null,
         minAvailDate,
@@ -697,7 +708,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
         effectiveStartDate,
         rangeTextLong: "",
         rangeTextShort: "",
-        startDateFormatted: `${startMonth} ${startDay}`,
+        startDateFormatted: `${startMonth} ${startDay}, ${startYear}`,
         isAvailableNow: true,
       };
     }
@@ -711,6 +722,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       expiryDay: null,
       expiryDayOrdinal: "",
       expiryMonthFull: "",
+      expiryYear: null,
       expiryText: "",
       cutoffDate: null,
       minAvailDate,
@@ -718,7 +730,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       effectiveStartDate,
       rangeTextLong: "",
       rangeTextShort: "",
-      startDateFormatted: `${startMonth} ${startDay}`,
+      startDateFormatted: `${startMonth} ${startDay}, ${startYear}`,
       isAvailableNow: true,
     };
   }, [
@@ -771,7 +783,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     return {
       day: cutoff.getDate(),
       monthFull: ALL_MONTHS[cutoff.getMonth()],
-      formatted: `${ALL_MONTHS[cutoff.getMonth()]} ${cutoff.getDate()}`,
+      year: cutoff.getFullYear(),
+      formatted: `${ALL_MONTHS[cutoff.getMonth()]} ${cutoff.getDate()}, ${cutoff.getFullYear()}`,
     };
   }, [currentEndDate, route.params?.endDate, route.params?.packageId]);
 
@@ -1240,7 +1253,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                           {seasonalInfo.gapDays}-day gap is required. The
                           Packages expiring on the{" "}
                           {seasonalInfo.expiryDayOrdinal}{" "}
-                          {seasonalInfo.expiryMonthFull} can be ordered between
+                          {seasonalInfo.expiryMonthFull}{" "}
+                          {seasonalInfo.expiryYear} can be ordered between
                           the {seasonalInfo.rangeTextLong}.
                         </Text>
 
@@ -1630,7 +1644,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                               A {seasonalInfo.gapDays}-day gap is required. The
                               Packages expiring on the{" "}
                               {seasonalInfo.expiryDayOrdinal}{" "}
-                              {seasonalInfo.expiryMonthFull} can be ordered
+                              {seasonalInfo.expiryMonthFull}{" "}
+                              {seasonalInfo.expiryYear} can be ordered
                               between the {seasonalInfo.rangeTextLong}.
                             </Text>
 

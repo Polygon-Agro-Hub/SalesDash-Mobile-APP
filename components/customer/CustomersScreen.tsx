@@ -62,7 +62,6 @@ const sortCustomersByName = (customerList: Customer[]): Customer[] => {
 
 const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   const CUSTOMERS_PER_PAGE = 10;
-  const MIN_VISIBLE_PER_TAB = 8;
   const insets = useSafeAreaInsets();
 
   const topInset = Platform.OS === "ios" ? insets.top : 0;
@@ -79,12 +78,18 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const isMounted = useRef(true);
+  const isLoadingRef = useRef(false);
 
   // 1) Filter by the selected tab (NULL buyerType is treated as Retail)
-  const tabCustomers = useMemo(
-    () => customers.filter((c) => (c.buyerType ?? "Retail") === activeTab),
-    [customers, activeTab],
-  );
+  const tabCustomers = useMemo(() => {
+    const list = customers.filter((c) => (c.buyerType ?? "Retail") === activeTab);
+    const seen = new Set();
+    return list.filter((c) => {
+      if (seen.has(c.id)) return false;
+      seen.add(c.id);
+      return true;
+    });
+  }, [customers, activeTab]);
 
   // 2) Then filter by search text
   const filteredCustomers = useMemo(() => {
@@ -127,6 +132,17 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
     }
   };
 
+    const handleTabChange = (tab: BuyerTab) => {
+    if (tab === activeTab) return;
+    setActiveTab(tab);
+    setSearchQuery("");
+    safeSetCustomers([]);
+    setCurrentPage(1);
+    setHasMore(true);
+    setError(null);
+    loadCustomers(1, true, false, tab);
+  };
+
   const safeSetRefreshing = (isRefreshing: boolean) => {
     if (isMounted.current) {
       setRefreshing(isRefreshing);
@@ -137,7 +153,10 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
     page = 1,
     showFullLoading = true,
     isLoadMore = false,
+    tabToFetch: BuyerTab = activeTab,
   ) => {
+    if (isLoadingRef.current) return;
+    isLoadingRef.current = true;
     if (showFullLoading) safeSetLoading(true);
     if (isLoadMore) safeSetLoadingMore(true);
 
@@ -149,7 +168,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
         return;
       }
 
-      const customersUrl = `${environment.API_BASE_URL.replace(/\/$/, "")}/api/customer/get-customers?page=${page}&limit=${CUSTOMERS_PER_PAGE}`;
+      const customersUrl = `${environment.API_BASE_URL.replace(/\/$/, "")}/api/customer/get-customers?page=${page}&limit=${CUSTOMERS_PER_PAGE}&buyerType=${tabToFetch}`;
 
       const response = await axios.get(customersUrl, {
         headers: {
@@ -168,7 +187,11 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
 
         if (isLoadMore) {
           if (isMounted.current) {
-            setCustomers((prev) => [...prev, ...sortedCustomers]);
+            setCustomers((prev) => {
+              const existingIds = new Set(prev.map((c) => c.id));
+              const uniqueNew = sortedCustomers.filter((c) => !existingIds.has(c.id));
+              return [...prev, ...uniqueNew];
+            });
           }
         } else {
           safeSetCustomers(sortedCustomers);
@@ -204,6 +227,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
         }
       }
     } finally {
+      isLoadingRef.current = false;
       if (showFullLoading) safeSetLoading(false);
       if (isLoadMore) safeSetLoadingMore(false);
       safeSetRefreshing(false);
@@ -211,8 +235,8 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   };
 
   const loadMoreCustomers = () => {
-    if (!loadingMore && hasMore && searchQuery === "") {
-      loadCustomers(currentPage + 1, false, true);
+    if (!loadingMore && !isLoadingRef.current && hasMore && searchQuery === "") {
+      loadCustomers(currentPage + 1, false, true, activeTab);
     }
   };
 
@@ -226,7 +250,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
         setHasMore(true);
         setError(null);
       }
-      loadCustomers(1, true, false);
+      loadCustomers(1, true, false, "Retail");
     });
 
     const keyboardDidShowListener = Keyboard.addListener(
@@ -248,34 +272,12 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
     };
   }, [navigation]);
 
-  // Tabs are filtered on the phone while the API pages across all buyer
-  // types, so keep fetching pages until the active tab has enough rows.
-  useEffect(() => {
-    if (
-      !loading &&
-      !loadingMore &&
-      !error &&
-      hasMore &&
-      searchQuery === "" &&
-      tabCustomers.length < MIN_VISIBLE_PER_TAB
-    ) {
-      loadMoreCustomers();
-    }
-  }, [
-    tabCustomers.length,
-    hasMore,
-    loading,
-    loadingMore,
-    error,
-    activeTab,
-    searchQuery,
-  ]);
-
   const handleRefresh = async () => {
+    if (isLoadingRef.current) return;
     setRefreshing(true);
     setCurrentPage(1);
     setHasMore(true);
-    await loadCustomers(1, false, false);
+    await loadCustomers(1, false, false, activeTab);
   };
 
   const handleSearch = (query: string) => {
@@ -420,7 +422,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                       <TouchableOpacity
                         key={tab}
                         activeOpacity={0.8}
-                        onPress={() => setActiveTab(tab)}
+                        onPress={() => handleTabChange(tab)}
                         style={{
                           flex: 1,
                           paddingVertical: 10,

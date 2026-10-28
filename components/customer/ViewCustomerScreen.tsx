@@ -149,7 +149,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   const [loadingCustomerData, setLoadingCustomerData] = useState(true);
   const [buyerType, setBuyerType] = useState<string>(route.params?.buyerType || "");
   const [isStatusChecked, setIsStatusChecked] = useState<boolean>(false);
-  const [wholesaleApproveStatus, setWholesaleApproveStatus] = useState<"To Review" | "Approve" | "Reject" | null>(null);
+  const [wholesaleApproveStatus, setWholesaleApproveStatus] = useState<"To Review" | "Approve" | "Reject" | null>(route.params?.buyerType === "Wholesale" ? "To Review" : null);
   const [wholesaleApplicationId, setWholesaleApplicationId] = useState<string | number>("");
   const [wholesaleCreatedAt, setWholesaleCreatedAt] = useState<string>("");
   const [isAccessDeniedVisible, setIsAccessDeniedVisible] = useState<boolean>(false);
