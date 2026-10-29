@@ -644,29 +644,25 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     if (isOneTime && rawEndDate) {
       const earliestExpiryDate = parseDateStr(rawEndDate);
       if (earliestExpiryDate) {
+        // Last orderable date = package end date - 2 days
         const cutoffDate = new Date(earliestExpiryDate.getTime());
         cutoffDate.setDate(cutoffDate.getDate() - 2);
         cutoffDate.setHours(23, 59, 59, 999);
 
-        const expiryDay = cutoffDate.getDate();
+        // Shared formatter: "11th October 2026"
+        const fmtLong = (d: Date) =>
+          `${getOrdinal(d.getDate())} ${MONTH_LONG[d.getMonth()]} ${d.getFullYear()}`;
+
+        // "Packages expiring on ..." must show the ACTUAL package end date
+        const expiryDay = earliestExpiryDate.getDate();
         const expiryDayOrdinal = getOrdinal(expiryDay);
-        const expiryMonthFull = MONTH_LONG[cutoffDate.getMonth()];
-        const expiryYear = cutoffDate.getFullYear();
-        const expiryText = `${expiryDayOrdinal} ${expiryMonthFull} ${expiryYear}`;
+        const expiryMonthFull = MONTH_LONG[earliestExpiryDate.getMonth()];
+        const expiryYear = earliestExpiryDate.getFullYear();
+        const expiryText = fmtLong(earliestExpiryDate);
 
-        const endMonth = MONTH_SHORT[cutoffDate.getMonth()];
-        const endDay = cutoffDate.getDate();
-        const endDayOrdinal = getOrdinal(endDay);
-        const endYear = cutoffDate.getFullYear();
+        // Same string for the note and the "Available schedule dates" line
+        const rangeText = `${fmtLong(displayStartDate)} – ${fmtLong(cutoffDate)}`;
 
-        const rangeTextLong =
-          startYear === endYear
-            ? `${startMonth} ${startDayOrdinal} – ${endMonth} ${endDayOrdinal}, ${endYear}`
-            : `${startMonth} ${startDayOrdinal}, ${startYear} – ${endMonth} ${endDayOrdinal}, ${endYear}`;
-        const rangeTextShort =
-          startYear === endYear
-            ? `${startMonth} ${startDay} – ${endMonth} ${endDay}, ${endYear}`
-            : `${startMonth} ${startDay}, ${startYear} – ${endMonth} ${endDay}, ${endYear}`;
         const isAvailableNow = effectiveStartDate <= cutoffDate;
 
         return {
@@ -683,8 +679,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
           minAvailDate,
           earliestStartDate: null,
           effectiveStartDate,
-          rangeTextLong,
-          rangeTextShort,
+          rangeTextLong: rangeText,
+          rangeTextShort: rangeText,
           startDateFormatted: `${startMonth} ${startDay}, ${startYear}`,
           isAvailableNow,
         };
@@ -1254,15 +1250,16 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                           Packages expiring on the{" "}
                           {seasonalInfo.expiryDayOrdinal}{" "}
                           {seasonalInfo.expiryMonthFull}{" "}
-                          {seasonalInfo.expiryYear} can be ordered between
-                          the {seasonalInfo.rangeTextLong}.
+                          {seasonalInfo.expiryYear} can be ordered between the{" "}
+                          {seasonalInfo.rangeTextLong}.
                         </Text>
 
                         <View
                           style={{
                             flexDirection: "row",
-                            alignItems: "center",
+                            alignItems: "flex-start",
                             marginTop: 10,
+                            width: "100%",
                           }}
                         >
                           <View
@@ -1272,19 +1269,31 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                               borderRadius: 4,
                               backgroundColor: "#6B3BCF",
                               marginRight: 8,
+                              marginTop: 5,
+                              flexShrink: 0,
                             }}
                           />
-                          <Text
-                            style={{
-                              fontSize: 13,
-                              color: "#1E293B",
-                            }}
-                          >
-                            Available schedule dates:{" "}
-                            <Text style={{ fontWeight: "700" }}>
+                          <View style={{ flex: 1 }}>
+                            <Text
+                              style={{
+                                fontSize: 13,
+                                color: "#1E293B",
+                                lineHeight: 19,
+                              }}
+                            >
+                              Available schedule dates:
+                            </Text>
+                            <Text
+                              style={{
+                                fontSize: 13,
+                                fontWeight: "700",
+                                color: "#1E293B",
+                                lineHeight: 19,
+                              }}
+                            >
                               {seasonalInfo.rangeTextShort}
                             </Text>
-                          </Text>
+                          </View>
                         </View>
                       </>
                     ) : (
@@ -1645,8 +1654,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                               Packages expiring on the{" "}
                               {seasonalInfo.expiryDayOrdinal}{" "}
                               {seasonalInfo.expiryMonthFull}{" "}
-                              {seasonalInfo.expiryYear} can be ordered
-                              between the {seasonalInfo.rangeTextLong}.
+                              {seasonalInfo.expiryYear} can be ordered between
+                              the {seasonalInfo.rangeTextLong}.
                             </Text>
 
                             <View
@@ -1654,7 +1663,6 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                                 flexDirection: "row",
                                 alignItems: "flex-start",
                                 marginTop: 10,
-                                paddingHorizontal: 4,
                                 width: "100%",
                               }}
                             >
@@ -1669,19 +1677,27 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                                   flexShrink: 0,
                                 }}
                               />
-                              <Text
-                                style={{
-                                  flex: 1,
-                                  fontSize: 13,
-                                  color: "#1E293B",
-                                  lineHeight: 19,
-                                }}
-                              >
-                                Available schedule dates:{" "}
-                                <Text style={{ fontWeight: "700" }}>
+                              <View style={{ flex: 1 }}>
+                                <Text
+                                  style={{
+                                    fontSize: 13,
+                                    color: "#1E293B",
+                                    lineHeight: 19,
+                                  }}
+                                >
+                                  Available schedule dates:
+                                </Text>
+                                <Text
+                                  style={{
+                                    fontSize: 13,
+                                    fontWeight: "700",
+                                    color: "#1E293B",
+                                    lineHeight: 19,
+                                  }}
+                                >
                                   {seasonalInfo.rangeTextShort}
                                 </Text>
-                              </Text>
+                              </View>
                             </View>
                           </>
                         ) : (
