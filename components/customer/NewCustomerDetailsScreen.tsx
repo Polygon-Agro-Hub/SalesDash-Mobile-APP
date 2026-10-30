@@ -17,16 +17,13 @@ import {
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
 import { LinearGradient } from "expo-linear-gradient";
-import {
-  widthPercentageToDP as wp,
-} from "react-native-responsive-screen";
+import { widthPercentageToDP as wp } from "react-native-responsive-screen";
 import axios from "axios";
 import environment from "@/environment/environment";
 import NewCustomerDetailsScreenSkeleton from "./CustomerScreenSkeleton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { FontAwesome } from "@expo/vector-icons";
 import Entypo from "@expo/vector-icons/Entypo";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type NewCustomerDetailsScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -89,7 +86,9 @@ const NewCustomerDetailsScreen: React.FC<NewCustomerDetailsScreenProps> = ({
 
   // 1) Filter by the selected tab (NULL buyerType is treated as Retail)
   const tabCustomers = useMemo(() => {
-    const list = customers.filter((c) => (c.buyerType ?? "Retail") === activeTab);
+    const list = customers.filter(
+      (c) => (c.buyerType ?? "Retail") === activeTab,
+    );
     const seen = new Set();
     return list.filter((c) => {
       if (seen.has(c.id)) return false;
@@ -139,7 +138,7 @@ const NewCustomerDetailsScreen: React.FC<NewCustomerDetailsScreenProps> = ({
     }
   };
 
-    const handleTabChange = (tab: BuyerTab) => {
+  const handleTabChange = (tab: BuyerTab) => {
     if (tab === activeTab) return;
     setActiveTab(tab);
     setSearchQuery("");
@@ -189,9 +188,7 @@ const NewCustomerDetailsScreen: React.FC<NewCustomerDetailsScreenProps> = ({
           : [];
         const validCustomers = rawList.filter(
           (c: any) =>
-            c &&
-            c.id != null &&
-            isCustomerNew(c.createdAt || c.created_at),
+            c && c.id != null && isCustomerNew(c.createdAt || c.created_at),
         );
         const sortedCustomers = sortCustomersByName(validCustomers);
 
@@ -199,7 +196,9 @@ const NewCustomerDetailsScreen: React.FC<NewCustomerDetailsScreenProps> = ({
           if (isMounted.current) {
             setCustomers((prev) => {
               const existingIds = new Set(prev.map((c) => c.id));
-              const uniqueNew = sortedCustomers.filter((c) => !existingIds.has(c.id));
+              const uniqueNew = sortedCustomers.filter(
+                (c) => !existingIds.has(c.id),
+              );
               return [...prev, ...uniqueNew];
             });
           }
@@ -245,7 +244,12 @@ const NewCustomerDetailsScreen: React.FC<NewCustomerDetailsScreenProps> = ({
   };
 
   const loadMoreCustomers = () => {
-    if (!loadingMore && !isLoadingRef.current && hasMore && searchQuery === "") {
+    if (
+      !loadingMore &&
+      !isLoadingRef.current &&
+      hasMore &&
+      searchQuery === ""
+    ) {
       loadCustomers(currentPage + 1, false, true, activeTab);
     }
   };
@@ -435,20 +439,29 @@ const NewCustomerDetailsScreen: React.FC<NewCustomerDetailsScreenProps> = ({
               </TouchableWithoutFeedback>
 
               {/* Retail / Wholesale tabs */}
+              {/* Retail / Wholesale tabs */}
               <TouchableWithoutFeedback onPress={() => {}} accessible={false}>
                 <View
                   style={{
                     flexDirection: "row",
-                    backgroundColor: "#F5F5F5",
-                    borderRadius: 12,
-                    padding: 4,
+                    backgroundColor: "#F3F3F3",
+                    borderRadius: 16,
+                    padding: 6,
                     marginHorizontal: 24,
+                    marginTop: 4,
                     marginBottom: 8,
-                    borderWidth: 1,
-                    borderColor: "#E5E5E5",
+                    ...Platform.select({
+                      ios: {
+                        shadowColor: "#000000",
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.08,
+                        shadowRadius: 4,
+                      },
+                      android: { elevation: 2 },
+                    }),
                   }}
                 >
-                  {BUYER_TABS.map((tab) => {
+                  {BUYER_TABS.map((tab, index) => {
                     const selected = activeTab === tab;
                     return (
                       <TouchableOpacity
@@ -457,16 +470,18 @@ const NewCustomerDetailsScreen: React.FC<NewCustomerDetailsScreenProps> = ({
                         onPress={() => handleTabChange(tab)}
                         style={{
                           flex: 1,
-                          paddingVertical: 10,
-                          borderRadius: 9,
+                          paddingVertical: 12,
+                          borderRadius: 12,
                           alignItems: "center",
+                          marginLeft: index === 0 ? 0 : 6,
                           backgroundColor: selected ? "#000000" : "#FFFFFF",
                         }}
                       >
                         <Text
                           style={{
-                            fontWeight: "600",
-                            fontSize: SCREEN_HEIGHT > 900 ? 15 : 13,
+                            fontWeight: selected ? "700" : "400",
+                            fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
+                            letterSpacing: 0.3,
                             color: selected ? "#FFFFFF" : "#657489",
                           }}
                         >
@@ -568,6 +583,7 @@ const NewCustomerDetailsScreen: React.FC<NewCustomerDetailsScreenProps> = ({
                             customerId: item.cusId,
                             id: item.id,
                             buyerType: item.buyerType || "Retail",
+                            from: "NewCustomerDetailsScreen",
                           })
                         }
                       />

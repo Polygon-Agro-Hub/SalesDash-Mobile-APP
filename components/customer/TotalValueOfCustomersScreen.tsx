@@ -7,15 +7,15 @@ import {
   ActivityIndicator,
   RefreshControl,
   Platform,
-  Dimensions,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
-import { Entypo, Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import environment from "@/environment/environment";
 import Pagination from "../common/Pagination";
+import CustomHeader from "../common/CustomHeader";
 
 type TotalValueOfCustomersScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -86,8 +86,12 @@ const sortCustomersByName = (
   list: CustomerSummaryItem[],
 ): CustomerSummaryItem[] => {
   return [...list].sort((a, b) => {
-    const nameA = `${a.firstName || ""} ${a.lastName || ""}`.trim().toLowerCase();
-    const nameB = `${b.firstName || ""} ${b.lastName || ""}`.trim().toLowerCase();
+    const nameA = `${a.firstName || ""} ${a.lastName || ""}`
+      .trim()
+      .toLowerCase();
+    const nameB = `${b.firstName || ""} ${b.lastName || ""}`
+      .trim()
+      .toLowerCase();
     return nameA.localeCompare(nameB);
   });
 };
@@ -108,9 +112,14 @@ const TotalValueOfCustomersScreen: React.FC<
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [initialLoaded, setInitialLoaded] = useState(false);
 
   const fetchData = useCallback(
-    async (currentPage: number, currentFilter: FilterTab, isRefresh = false) => {
+    async (
+      currentPage: number,
+      currentFilter: FilterTab,
+      isRefresh = false,
+    ) => {
       try {
         if (!isRefresh) setLoading(true);
         setError(null);
@@ -151,6 +160,7 @@ const TotalValueOfCustomersScreen: React.FC<
       } finally {
         setLoading(false);
         setRefreshing(false);
+        setInitialLoaded(true);
       }
     },
     [],
@@ -176,55 +186,30 @@ const TotalValueOfCustomersScreen: React.FC<
     return `${count} orders`;
   };
 
-  return (
-    <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
-      {/* Header */}
+ return (
+  <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+    {/* Header */}
+    <CustomHeader
+      title="Total Value of Customers"
+      titleColor="#6C3CD1"
+      showBackButton={true}
+      navigation={navigation}
+      onBackPress={() => navigation.goBack()}
+    />
+
+    {/* Full screen loader (first load only) */}
+    {!initialLoaded && loading ? (
       <View
         style={{
-          paddingHorizontal: 24, // px-6
-          paddingTop: Platform.OS === "ios" ? 12 : 16,
-          paddingBottom: 16,
-          flexDirection: "row",
+          flex: 1,
           alignItems: "center",
-          justifyContent: "space-between",
+          justifyContent: "center",
           backgroundColor: "#FFFFFF",
         }}
       >
-        <View style={{ width: 48 }}>
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => navigation.goBack()}
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 22,
-              backgroundColor: "#F8FAFC",
-              borderWidth: 1,
-              borderColor: "#E2E8F0",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Entypo name="chevron-left" size={22} color="#475569" />
-          </TouchableOpacity>
-        </View>
-
-        <View style={{ flex: 1, alignItems: "center" }}>
-          <Text
-            style={{
-              fontSize: 18,
-              fontWeight: "700",
-              color: "#6D28D9",
-              textAlign: "center",
-            }}
-          >
-            Total Value of Customers
-          </Text>
-        </View>
-
-        <View style={{ width: 48 }} />
+        <ActivityIndicator size="large" color="#6D28D9" />
       </View>
-
+    ) : (
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
@@ -275,11 +260,7 @@ const TotalValueOfCustomersScreen: React.FC<
               marginRight: 16,
             }}
           >
-            <MaterialCommunityIcons
-              name="bullseye"
-              size={28}
-              color="#7C3AED"
-            />
+            <MaterialCommunityIcons name="bullseye" size={28} color="#7C3AED" />
           </View>
           <View style={{ flex: 1 }}>
             <Text
@@ -306,12 +287,15 @@ const TotalValueOfCustomersScreen: React.FC<
         </View>
 
         {/* Filter Pills (All, Retail, Wholesale) */}
-        <View
-          style={{
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ marginBottom: 20, flexGrow: 0 }}
+          contentContainerStyle={{
             flexDirection: "row",
             alignItems: "center",
-            gap: 10,
-            marginBottom: 20,
+            gap: 5,
+            paddingRight: 20,
           }}
         >
           {/* All Tab */}
@@ -321,7 +305,7 @@ const TotalValueOfCustomersScreen: React.FC<
             style={{
               flexDirection: "row",
               alignItems: "center",
-              paddingHorizontal: 16,
+              paddingHorizontal: 14,
               paddingVertical: 8,
               borderRadius: 24,
               backgroundColor: activeTab === "all" ? "#630ED4" : "#EAE1FF",
@@ -364,7 +348,7 @@ const TotalValueOfCustomersScreen: React.FC<
             style={{
               flexDirection: "row",
               alignItems: "center",
-              paddingHorizontal: 16,
+              paddingHorizontal: 14,
               paddingVertical: 8,
               borderRadius: 24,
               backgroundColor: activeTab === "retail" ? "#630ED4" : "#EAE1FF",
@@ -385,8 +369,7 @@ const TotalValueOfCustomersScreen: React.FC<
                 paddingHorizontal: 8,
                 paddingVertical: 2,
                 borderRadius: 12,
-                backgroundColor:
-                  activeTab === "retail" ? "#7C3AED" : "#FFFFFF",
+                backgroundColor: activeTab === "retail" ? "#7C3AED" : "#FFFFFF",
               }}
             >
               <Text
@@ -408,7 +391,7 @@ const TotalValueOfCustomersScreen: React.FC<
             style={{
               flexDirection: "row",
               alignItems: "center",
-              paddingHorizontal: 16,
+              paddingHorizontal: 14,
               paddingVertical: 8,
               borderRadius: 24,
               backgroundColor:
@@ -445,7 +428,7 @@ const TotalValueOfCustomersScreen: React.FC<
               </Text>
             </View>
           </TouchableOpacity>
-        </View>
+        </ScrollView>
 
         {/* Customer List */}
         {loading ? (
@@ -497,6 +480,7 @@ const TotalValueOfCustomersScreen: React.FC<
                     customerId: c.cusId,
                     id: String(c.id),
                     buyerType: c.buyerType || "Retail",
+                    from: "TotalValueOfCustomersScreen",
                   })
                 }
                 style={{
@@ -664,8 +648,9 @@ const TotalValueOfCustomersScreen: React.FC<
           />
         )}
       </ScrollView>
-    </View>
-  );
+    )}
+  </View>
+);
 };
 
 export default TotalValueOfCustomersScreen;
