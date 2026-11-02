@@ -93,7 +93,7 @@ export type RootStackParamList = {
   LoginScreen: undefined;
   ChangePasswordScreen: undefined;
   DashboardScreen: undefined;
-  CustomersScreen: undefined;
+  CustomersScreen: { initialTab?: "Retail" | "Wholesale" } | undefined;
   SidebarScreen: undefined;
   ProfileScreen: undefined;
   AddComplaintScreen: undefined;

@@ -46,7 +46,7 @@ import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system/legacy";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Modal } from "react-native";
-import { format } from "date-fns";
+import { format, isToday } from "date-fns";
 
 type ViewCustomerScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -102,6 +102,21 @@ const getDisplayStatus = (status: string) => {
 
 const FILTER_TO_BACKEND_STATUS: Record<string, string | string[]> = {
   Return: ["Return", "Return Received"],
+};
+
+// ---------- Submission date formatting ----------
+// Same day  -> "Today, 2:45 PM"
+// Otherwise -> "02 Nov 2026, 11:46 AM"
+const formatSubmissionDate = (dateString?: string | null) => {
+  if (!dateString) return "Today";
+
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "Today";
+
+  if (isToday(date)) {
+    return `Today, ${format(date, "h:mm a")}`;
+  }
+  return format(date, "dd MMM yyyy, h:mm a");
 };
 
 // ---------- Sorting helpers (scheduled date: latest first) ----------
@@ -439,23 +454,29 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
     }
   };
 
-  const handleBack = useCallback(() => {
-    switch (route.params?.from) {
-      case "ExistingCustomerDetailsScreen":
-        navigation.navigate("Main" as any, { screen: "ExistingCustomerDetailsScreen" });
-        break;
-      case "NewCustomerDetailsScreen":
-        navigation.navigate("Main" as any, { screen: "NewCustomerDetailsScreen" });
-        break;
-      case "TotalValueOfCustomersScreen":
-        navigation.navigate("Main" as any, { screen: "TotalValueOfCustomersScreen" });
-        break;
-      case "CustomersScreen":
-      default:
-        navigation.navigate("Main" as any, { screen: "CustomersScreen" });
-        break;
-    }
-  }, [navigation, route.params?.from]);
+ const handleBack = useCallback(() => {
+  const tab: "Retail" | "Wholesale" =
+    buyerType === "Wholesale" ? "Wholesale" : "Retail";
+
+  switch (route.params?.from) {
+    case "ExistingCustomerDetailsScreen":
+      navigation.navigate("Main" as any, { screen: "ExistingCustomerDetailsScreen" });
+      break;
+    case "NewCustomerDetailsScreen":
+      navigation.navigate("Main" as any, { screen: "NewCustomerDetailsScreen" });
+      break;
+    case "TotalValueOfCustomersScreen":
+      navigation.navigate("Main" as any, { screen: "TotalValueOfCustomersScreen" });
+      break;
+    case "CustomersScreen":
+    default:
+      navigation.navigate("Main" as any, {
+        screen: "CustomersScreen",
+        params: { initialTab: tab },
+      });
+      break;
+  }
+}, [navigation, route.params?.from, buyerType]);
 
   useFocusEffect(
     useCallback(() => {
@@ -1045,9 +1066,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 Submission Date
               </Text>
               <Text style={{ fontSize: 13, fontWeight: "600", color: "#1E293B" }}>
-                {wholesaleCreatedAt
-                  ? format(new Date(wholesaleCreatedAt), "dd MMM yyyy, h:mm a")
-                  : "Today"}
+                {formatSubmissionDate(wholesaleCreatedAt)}
               </Text>
             </View>
 

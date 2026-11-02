@@ -22,6 +22,7 @@ import NoDataFound from "../common/NoDataFound";
 import LoadingPage from "../common/LoadingPage";
 import CustomHeader from "../common/CustomHeader";
 import { useFocusEffect } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type CreateCustomPackageNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -76,24 +77,30 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
   } = route.params || {};
 
   const isWholesale = String(buyerType || "").toLowerCase() === "wholesale";
+  const insets = useSafeAreaInsets();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
-  // Keyboard visibility (used only for the button shadow)
+  // Keyboard visibility + height (used for button spacing, shadow, and iOS padding)
   useEffect(() => {
-    const showEvt = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
-    const hideEvt = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const showEvt =
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvt =
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
 
-    const showSub = Keyboard.addListener(showEvt, () =>
-      setIsKeyboardVisible(true),
-    );
-    const hideSub = Keyboard.addListener(hideEvt, () =>
-      setIsKeyboardVisible(false),
-    );
+    const showSub = Keyboard.addListener(showEvt, (e) => {
+      setIsKeyboardVisible(true);
+      setKeyboardHeight(e.endCoordinates?.height ?? 0);
+    });
+    const hideSub = Keyboard.addListener(hideEvt, () => {
+      setIsKeyboardVisible(false);
+      setKeyboardHeight(0);
+    });
     return () => {
       showSub.remove();
       hideSub.remove();
@@ -287,6 +294,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
       .replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   };
 
+  // No elevation while the keyboard is open (avoids a shadow artifact above it)
   const getElevation = () => {
     if (isKeyboardVisible) return 0;
     return hasSelectedProducts ? 5 : 0;
@@ -312,9 +320,16 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
 
   return (
     <KeyboardAvoidingView
-      behavior="padding"
+      // Android: KeyboardAvoidingView "padding" (works).
+      // iOS: KeyboardAvoidingView is turned off and the keyboard height is applied
+      // manually below, which avoids the cut-off button.
+      behavior={Platform.OS === "android" ? "padding" : undefined}
       keyboardVerticalOffset={0}
-      style={{ flex: 1, backgroundColor: "white" }}
+      style={{
+        flex: 1,
+        backgroundColor: "white",
+        paddingBottom: Platform.OS === "ios" ? keyboardHeight : 0,
+      }}
     >
       <CustomHeader
         title="Select Custom Items"
@@ -356,6 +371,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
             className="flex-1"
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
             contentContainerStyle={
               filteredProducts.length === 0
                 ? {
@@ -363,7 +379,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
                     justifyContent: "center",
                     alignItems: "center",
                   }
-                : undefined
+                : { paddingBottom: 24 }
             }
           >
             {filteredProducts.length > 0 ? (
@@ -412,13 +428,12 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
             )}
           </ScrollView>
 
-          {/* Go to Cart Button */}
+          {/* Go to Cart Button (stays visible above the keyboard) */}
           <View
             className="items-center"
             style={{
-              paddingTop: 16,
-              paddingBottom: 16,
-              display: isKeyboardVisible ? "none" : "flex",
+              paddingTop: isKeyboardVisible ? 8 : 16,
+              paddingBottom: isKeyboardVisible ? 12 : Math.max(insets.bottom, 16) + 8,
             }}
           >
             <View
@@ -427,7 +442,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
                 borderRadius: 30,
                 shadowColor: "#000",
                 shadowOffset: { width: 0, height: 6 },
-                shadowOpacity: hasSelectedProducts ? 0.25 : 0,
+                shadowOpacity: hasSelectedProducts && !isKeyboardVisible ? 0.25 : 0,
                 shadowRadius: 8,
                 elevation: getElevation(),
               }}
