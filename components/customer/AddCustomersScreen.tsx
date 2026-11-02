@@ -397,10 +397,14 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         reader.readAsDataURL(blob);
       });
       const commaIdx = dataUrl.indexOf(",");
-      const rawBase64 = commaIdx !== -1 ? dataUrl.substring(commaIdx + 1) : dataUrl;
+      const rawBase64 =
+        commaIdx !== -1 ? dataUrl.substring(commaIdx + 1) : dataUrl;
       if (rawBase64) return rawBase64;
     } catch (fetchErr) {
-      console.warn("fetch/FileReader failed, falling back to FileSystem:", fetchErr);
+      console.warn(
+        "fetch/FileReader failed, falling back to FileSystem:",
+        fetchErr,
+      );
     }
 
     // Strategy 2: FileSystem.readAsStringAsync
@@ -430,15 +434,24 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     throw new Error("Unable to read document file for upload");
   };
 
-  const uploadBRToR2 = async (fileUri: string, fileName: string, mimeType: string): Promise<string | null> => {
+  const uploadBRToR2 = async (
+    fileUri: string,
+    fileName: string,
+    mimeType: string,
+  ): Promise<string | null> => {
     try {
       setIsUploadingBR(true);
       const base64Data = await readFileAsBase64(fileUri);
 
-      const response = await axios.post(`${environment.API_BASE_URL}api/customer/upload-br`, {
-        base64: base64Data.startsWith("data:") ? base64Data : `data:${mimeType};base64,${base64Data}`,
-        fileName: fileName,
-      });
+      const response = await axios.post(
+        `${environment.API_BASE_URL}api/customer/upload-br`,
+        {
+          base64: base64Data.startsWith("data:")
+            ? base64Data
+            : `data:${mimeType};base64,${base64Data}`,
+          fileName: fileName,
+        },
+      );
 
       if (response.data && response.data.url) {
         return response.data.url;
@@ -446,7 +459,10 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       return null;
     } catch (error) {
       console.error("Failed to upload BR to R2:", error);
-      Alert.alert("Upload Error", "Failed to upload BR document to Cloudflare R2. Please try again.");
+      Alert.alert(
+        "Upload Error",
+        "Failed to upload BR document to Cloudflare R2. Please try again.",
+      );
       return null;
     } finally {
       setIsUploadingBR(false);
@@ -458,7 +474,10 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       if (mode === "camera") {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== "granted") {
-          Alert.alert("Permission required", "Camera permission is needed to take a photo of the BR document.");
+          Alert.alert(
+            "Permission required",
+            "Camera permission is needed to take a photo of the BR document.",
+          );
           return;
         }
         const result = await ImagePicker.launchCameraAsync({
@@ -468,7 +487,9 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         if (!result.canceled && result.assets?.[0]) {
           const asset = result.assets[0];
           const fileName = asset.fileName || `BR_Photo_${Date.now()}.jpg`;
-          const fileSizeMB = asset.fileSize ? `${(asset.fileSize / (1024 * 1024)).toFixed(1)} MB` : "1.2 MB";
+          const fileSizeMB = asset.fileSize
+            ? `${(asset.fileSize / (1024 * 1024)).toFixed(1)} MB`
+            : "1.2 MB";
           const mimeType = asset.mimeType || "image/jpeg";
           const docObj = {
             uri: asset.uri,
@@ -483,9 +504,13 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
           }
         }
       } else if (mode === "gallery") {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        const { status } =
+          await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== "granted") {
-          Alert.alert("Permission required", "Gallery permission is needed to select a BR document.");
+          Alert.alert(
+            "Permission required",
+            "Gallery permission is needed to select a BR document.",
+          );
           return;
         }
         const result = await ImagePicker.launchImageLibraryAsync({
@@ -496,7 +521,9 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         if (!result.canceled && result.assets?.[0]) {
           const asset = result.assets[0];
           const fileName = asset.fileName || `BR_Image_${Date.now()}.png`;
-          const fileSizeMB = asset.fileSize ? `${(asset.fileSize / (1024 * 1024)).toFixed(1)} MB` : "1.2 MB";
+          const fileSizeMB = asset.fileSize
+            ? `${(asset.fileSize / (1024 * 1024)).toFixed(1)} MB`
+            : "1.2 MB";
           const mimeType = asset.mimeType || "image/png";
           const docObj = {
             uri: asset.uri,
@@ -517,7 +544,9 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         });
         if (!result.canceled && result.assets?.[0]) {
           const asset = result.assets[0];
-          const fileSizeMB = asset.size ? `${(asset.size / (1024 * 1024)).toFixed(1)} MB` : "1.2 MB";
+          const fileSizeMB = asset.size
+            ? `${(asset.size / (1024 * 1024)).toFixed(1)} MB`
+            : "1.2 MB";
           const mimeType = asset.mimeType || "application/pdf";
           const fileName = asset.name || `BR_Doc_${Date.now()}.pdf`;
           const docObj = {
@@ -546,9 +575,12 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       [
         { text: "Take Photo", onPress: () => pickBRImage("camera") },
         { text: "Choose from Gallery", onPress: () => pickBRImage("gallery") },
-        { text: "Browse Documents (PDF/Image)", onPress: () => pickBRImage("document") },
+        {
+          text: "Browse Documents (PDF/Image)",
+          onPress: () => pickBRImage("document"),
+        },
         { text: "Cancel", style: "cancel" },
-      ]
+      ],
     );
   };
 
@@ -761,7 +793,11 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
   useEffect(() => {
     if (touchedFields.nic) {
       if (docType === "PASS") {
-        setNicError("");
+        if (!nic || nic.trim().length === 0) {
+          setNicError("Passport ID is required");
+        } else {
+          setNicError("");
+        }
         return;
       }
       if (!nic) {
@@ -925,7 +961,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
   useEffect(() => {
     fetchCity();
     // Clean up any oversized leftover data from previous crashes
-    AsyncStorage.removeItem("pendingCustomerData").catch(() => { });
+    AsyncStorage.removeItem("pendingCustomerData").catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -941,12 +977,10 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     const isLastNameValid = lastName && validateName(lastName);
     const isPhoneValid = phoneNumber && validatePhoneNumber(phoneNumber);
     const isEmailValid = email && validateEmail(email);
-    const isNicValid =
-      docType === "PASS"
-        ? true
-        : !!nic && validateNIC(nic);
+    const isNicValid = docType === "PASS" ? true : !!nic && validateNIC(nic);
     const isCompanyNameValid = !!companyName && companyName.trim().length > 0;
-    const isCompanyPhoneValid = !companyPhone || validateCompanyPhone(companyPhone);
+    const isCompanyPhoneValid =
+      !companyPhone || validateCompanyPhone(companyPhone);
     const invalidFields: string[] = [];
 
     if (!isTitleValid) invalidFields.push("Title");
@@ -954,12 +988,14 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     if (!lastName || !isLastNameValid) invalidFields.push("Last Name");
     if (!phoneNumber || !isPhoneValid) invalidFields.push("Mobile Number");
     if (!email || !isEmailValid) invalidFields.push("Email");
-    if (docType === "NIC" && (!nic || !isNicValid)) invalidFields.push("NIC Number");
+    if (docType === "NIC" && (!nic || !isNicValid))
+      invalidFields.push("NIC Number");
     if (docType === "PASS" && !nic) invalidFields.push("Passport ID");
 
     if (buyerType === "Wholesale") {
       if (!isCompanyNameValid) invalidFields.push("Company Name");
-      if (!companyPhone || !validateCompanyPhone(companyPhone)) invalidFields.push("Company Phone Number");
+      if (!companyPhone || !validateCompanyPhone(companyPhone))
+        invalidFields.push("Company Phone Number");
     }
 
     if (invalidFields.length > 0) {
@@ -971,7 +1007,9 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         phoneNumber: true,
         email: true,
         nic: true,
-        ...(buyerType === "Wholesale" ? { companyName: true, companyPhone: true } : {}),
+        ...(buyerType === "Wholesale"
+          ? { companyName: true, companyPhone: true }
+          : {}),
       }));
 
       if (!selectedCategory) setTitleError("Title is required");
@@ -997,15 +1035,20 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         if (!nic) {
           setNicError("NIC number is required");
         } else if (!isNicValid) {
-          setNicError("Please enter a valid NIC (9 digits + V/X, or 12 digits)");
+          setNicError("Please enter a valid NIC (9 digits + V, or 12 digits)");
         }
       } else {
-        setNicError("");
+        if (!nic || nic.trim().length === 0) {
+          setNicError("Passport ID is required");
+        } else {
+          setNicError("");
+        }
       }
 
       if (buyerType === "Wholesale") {
         if (!companyName) setCompanyNameError("Company Name is required");
-        if (!companyPhone) setCompanyPhoneError("Company Phone Number is required");
+        if (!companyPhone)
+          setCompanyPhoneError("Company Phone Number is required");
         else if (!isCompanyPhoneValid)
           setCompanyPhoneError("Please enter a valid company phone number");
       }
@@ -1060,7 +1103,9 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
               setNicError("This NIC is already registered");
             }
             showAlert(
-              docType === "PASS" ? "Passport ID Already Exists" : "NIC Already Exists",
+              docType === "PASS"
+                ? "Passport ID Already Exists"
+                : "NIC Already Exists",
               docType === "PASS"
                 ? "This Passport ID is already registered. Please use a different Passport ID."
                 : "This NIC is already registered. Please use a different NIC.",
@@ -1117,14 +1162,18 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
 
     const missingRequiredFields: string[] = [];
 
-    const effectiveBuildingType = buyerType === "Wholesale" ? "House" : buildingType;
+    const effectiveBuildingType =
+      buyerType === "Wholesale" ? "House" : buildingType;
 
     if (!selectedCategory) missingRequiredFields.push("Title");
     if (!firstName) missingRequiredFields.push("First Name");
     if (!lastName) missingRequiredFields.push("Last Name");
     if (!phoneNumber) missingRequiredFields.push("Mobile Number");
     if (!email) missingRequiredFields.push("Email");
-    if (!nic) missingRequiredFields.push(docType === "PASS" ? "Passport ID" : "NIC Number");
+    if (!nic)
+      missingRequiredFields.push(
+        docType === "PASS" ? "Passport ID" : "NIC Number",
+      );
     if (!effectiveBuildingType) missingRequiredFields.push("Building Type");
 
     if (missingRequiredFields.length > 0) {
@@ -1199,7 +1248,10 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       return;
     }
 
-    if (buyerType === "Wholesale" && (!companyName || companyName.trim().length === 0)) {
+    if (
+      buyerType === "Wholesale" &&
+      (!companyName || companyName.trim().length === 0)
+    ) {
       showAlert("Error", "Company Name is required for wholesale buyer.");
       setIsSubmitting(false);
       return;
@@ -1207,9 +1259,15 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
 
     if (buyerType === "Wholesale" && (!brDocument || !brDocument.r2Url)) {
       if (brDocument && !brDocument.r2Url) {
-        showAlert("Error", "BR document is still uploading to R2. Please wait a moment.");
+        showAlert(
+          "Error",
+          "BR document is still uploading to R2. Please wait a moment.",
+        );
       } else {
-        showAlert("Error", "Please upload the customer's official Business Registration (BR) document.");
+        showAlert(
+          "Error",
+          "Please upload the customer's official Business Registration (BR) document.",
+        );
       }
       setIsSubmitting(false);
       return;
@@ -1236,7 +1294,10 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         buyerType,
         companyName: buyerType === "Wholesale" ? companyName : null,
         companyPhone: buyerType === "Wholesale" ? companyPhone : null,
-        brImg: buyerType === "Wholesale" && brDocument ? (brDocument.r2Url || null) : null,
+        brImg:
+          buyerType === "Wholesale" && brDocument
+            ? brDocument.r2Url || null
+            : null,
         buildingType: effectiveBuildingType,
         houseNo,
         streetName,
@@ -1244,7 +1305,8 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         buildingNo: effectiveBuildingType === "Apartment" ? buildingNo : null,
         floorNo: effectiveBuildingType === "Apartment" ? floorNo : null,
         unitNo: effectiveBuildingType === "Apartment" ? unitNo : null,
-        buildingName: effectiveBuildingType === "Apartment" ? buildingName : null,
+        buildingName:
+          effectiveBuildingType === "Apartment" ? buildingName : null,
       };
 
       await AsyncStorage.setItem(
@@ -1393,7 +1455,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         <View style={{ marginBottom: 16, marginTop: 4 }}>
           <Text
             className="text-[#000000] mb-2"
-            style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14, fontWeight: "500" }}
+            style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
           >
             Buyer Type *
           </Text>
@@ -1418,7 +1480,8 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 justifyContent: "center",
                 paddingVertical: 10,
                 borderRadius: 999,
-                backgroundColor: buyerType === "Retail" ? "#FFFFFF" : "transparent",
+                backgroundColor:
+                  buyerType === "Retail" ? "#FFFFFF" : "transparent",
                 gap: 8,
                 shadowColor: "#000",
                 shadowOffset: { width: 0, height: 1 },
@@ -1457,7 +1520,8 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 justifyContent: "center",
                 paddingVertical: 10,
                 borderRadius: 999,
-                backgroundColor: buyerType === "Wholesale" ? "#FFFFFF" : "transparent",
+                backgroundColor:
+                  buyerType === "Wholesale" ? "#FFFFFF" : "transparent",
                 gap: 8,
                 shadowColor: "#000",
                 shadowOffset: { width: 0, height: 1 },
@@ -1498,8 +1562,9 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 setTitleModalVisible(true);
                 handleFieldTouch("title");
               }}
-              className={`bg-[#F6F6F6] border flex-row justify-between h-[50px] items-center ${titleError ? "border-red-500" : "border-[#F6F6F6]"
-                } rounded-full px-4 h-10`}
+              className={`bg-[#F6F6F6] border flex-row justify-between h-[50px] items-center ${
+                titleError ? "border-red-500" : "border-[#F6F6F6]"
+              } rounded-full px-4 h-10`}
             >
               <Text
                 className={selectedCategory ? "text-black" : "text-[#7F7F7F]"}
@@ -1643,7 +1708,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         <View style={{ marginBottom: 16 }}>
           <Text
             className="text-[#000000] mb-2"
-            style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14, fontWeight: "500" }}
+            style={{ fontSize: SCREEN_HEIGHT > 900 ? 16 : 14 }}
           >
             Document Type *
           </Text>
@@ -1755,21 +1820,17 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
             autoCorrect={false}
             value={nic}
             onChangeText={(text) => {
-              if (docType === "NIC") {
-                handleFieldTouch("nic");
-              }
+              handleFieldTouch("nic");
               if (text.startsWith(" ")) return;
               setNic(formatNicInput(text));
             }}
             onBlur={() => {
-              if (docType === "NIC") {
-                handleFieldTouch("nic");
-              }
+              handleFieldTouch("nic");
             }}
             maxLength={docType === "NIC" ? 12 : undefined}
             style={[{ fontStyle: nic ? "normal" : "italic" }]}
           />
-          {docType === "NIC" && nicError ? (
+          {nicError ? (
             <Text className="text-red-500 text-xs pl-4 pt-1">{nicError}</Text>
           ) : null}
         </View>
@@ -1796,7 +1857,9 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 style={[{ fontStyle: companyName ? "normal" : "italic" }]}
               />
               {companyNameError ? (
-                <Text className="text-red-500 text-xs pl-4 pt-1">{companyNameError}</Text>
+                <Text className="text-red-500 text-xs pl-4 pt-1">
+                  {companyNameError}
+                </Text>
               ) : null}
             </View>
 
@@ -1818,7 +1881,9 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 style={[{ fontStyle: companyPhone ? "normal" : "italic" }]}
               />
               {companyPhoneError ? (
-                <Text className="text-red-500 text-xs pl-4 pt-1">{companyPhoneError}</Text>
+                <Text className="text-red-500 text-xs pl-4 pt-1">
+                  {companyPhoneError}
+                </Text>
               ) : null}
             </View>
           </>
@@ -2338,7 +2403,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
               }}
             >
               Clear scan or photo of your customer's Business Registration (BR).
-              Max file size 10MB in PDF, JPG, or PNG.
+              Max file size 10MB in PDF, JPG, HEIC or PNG.
             </Text>
           </View>
         </View>
@@ -2404,7 +2469,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                   textAlign: "center",
                 }}
               >
-                Supports PDF, PNG, JPG (up to 10MB)
+                Supports PDF, PNG, JPG, HEIC (up to 10MB)
               </Text>
             </TouchableOpacity>
           ) : (
@@ -2427,11 +2492,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                   gap: 6,
                 }}
               >
-                <Ionicons
-                  name="checkmark-circle"
-                  size={20}
-                  color="#7C3AED"
-                />
+                <Ionicons name="checkmark-circle" size={20} color="#7C3AED" />
                 <Text
                   style={{
                     fontSize: 14,
@@ -2524,8 +2585,22 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                     >
                       {brDocument.name}
                     </Text>
-                    <Text style={{ fontSize: 11, color: isUploadingBR ? "#D97706" : brDocument.r2Url ? "#16A34A" : "#64748B", marginTop: 2 }}>
-                      {isUploadingBR ? "Uploading to R2..." : brDocument.r2Url ? `Uploaded to R2 • ${brDocument.sizeText}` : brDocument.sizeText}
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        color: isUploadingBR
+                          ? "#D97706"
+                          : brDocument.r2Url
+                            ? "#16A34A"
+                            : "#64748B",
+                        marginTop: 2,
+                      }}
+                    >
+                      {isUploadingBR
+                        ? "Uploading to R2..."
+                        : brDocument.r2Url
+                          ? `Uploaded to R2 • ${brDocument.sizeText}`
+                          : brDocument.sizeText}
                     </Text>
                   </View>
                 </View>
@@ -2588,13 +2663,20 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
           <TouchableOpacity
             onPress={async () => {
               if (!brDocument) {
-                Alert.alert("Upload Required", "Please upload the customer's official Business Registration (BR) document.");
+                Alert.alert(
+                  "Upload Required",
+                  "Please upload the customer's official Business Registration (BR) document.",
+                );
                 return;
               }
               if (!brDocument.r2Url) {
-                const r2Url = await uploadBRToR2(brDocument.uri, brDocument.name, brDocument.mimeType || "image/jpeg");
+                const r2Url = await uploadBRToR2(
+                  brDocument.uri,
+                  brDocument.name,
+                  brDocument.mimeType || "image/jpeg",
+                );
                 if (!r2Url) return;
-                setBrDocument((prev) => prev ? { ...prev, r2Url } : null);
+                setBrDocument((prev) => (prev ? { ...prev, r2Url } : null));
               }
               setStep(2); // Proceed to Residential Address
             }}
@@ -2616,7 +2698,9 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
               }}
             >
               {isUploadingBR ? (
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <View
+                  style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+                >
                   <ActivityIndicator color="#FFFFFF" size="small" />
                   <Text
                     style={{
@@ -2687,8 +2771,6 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
           {step === 2 && renderResidentialAddressForm()}
         </View>
       </ScrollView>
-
-
 
       {/* Full Image Preview Modal */}
       <Modal

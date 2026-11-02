@@ -156,6 +156,7 @@ export type RootStackParamList = {
     id: string;
     title: string;
     buyerType?: string;
+    from?: "CustomersScreen" | "ExistingCustomerDetailsScreen" | "NewCustomerDetailsScreen" | "TotalValueOfCustomersScreen";
   };
   AddCustomersScreen: {
     selectedLatitude?: number;

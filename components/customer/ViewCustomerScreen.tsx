@@ -32,7 +32,6 @@ import environment from "@/environment/environment";
 import {
   Entypo,
   FontAwesome,
-  FontAwesome6,
   Ionicons,
 } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -127,6 +126,47 @@ const sortOrdersByScheduleDesc = (list: Order[]) =>
 const getOrderKey = (order: Order) =>
   order.processId?.toString() || `${order.orderId}-${order.InvNo}`;
 
+// ---------- BR document validation (PDF, JPG, PNG, HEIC only) ----------
+const ALLOWED_BR_MIME = [
+  "application/pdf",
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/heic",
+  "image/heif",
+];
+const ALLOWED_BR_EXT = ["pdf", "jpg", "jpeg", "png", "heic", "heif"];
+const MAX_BR_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+
+const getExt = (nameOrUri?: string | null) => {
+  if (!nameOrUri) return "";
+  const clean = nameOrUri.split("?")[0];
+  return clean.includes(".") ? clean.split(".").pop()!.toLowerCase() : "";
+};
+
+// returns an error message, or null if the file is valid
+const validateBRFile = (
+  name?: string | null,
+  uri?: string | null,
+  mimeType?: string | null,
+  size?: number | null,
+): string | null => {
+  const ext = getExt(name) || getExt(uri);
+  const mime = (mimeType || "").toLowerCase();
+
+  const extOk = ext ? ALLOWED_BR_EXT.includes(ext) : false;
+  const mimeOk = mime ? ALLOWED_BR_MIME.includes(mime) : false;
+
+  // reject if either one is present and not allowed, or neither is known
+  if ((ext && !extOk) || (mime && !mimeOk) || (!ext && !mime)) {
+    return "Unsupported file type. Please upload a PDF, JPG, PNG or HEIC file.";
+  }
+  if (size && size > MAX_BR_SIZE_BYTES) {
+    return "File is too large. Maximum allowed size is 10MB.";
+  }
+  return null;
+};
+
 const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   route,
   navigation,
@@ -163,6 +203,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   const [isUploadingReupload, setIsUploadingReupload] = useState<boolean>(false);
   const [isSubmittingReupload, setIsSubmittingReupload] = useState<boolean>(false);
   const [previewModalVisible, setPreviewModalVisible] = useState<boolean>(false);
+  const [brFileError, setBrFileError] = useState<string | null>(null);
   const searchInputRef = useRef<TextInput>(null);
   const isMounted = useRef(true);
   const {
@@ -183,6 +224,10 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   }, [selectedFilter]);
 
   const fullName = `${customerTitle ? customerTitle + ". " : ""}${customerName}`;
+
+  // true while the wholesale "Approval Pending" / "Submission Rejected" view is shown
+  const isWholesaleStatusView =
+    buyerType === "Wholesale" && wholesaleApproveStatus !== "Approve";
 
   useEffect(() => {
     if (route.params?.name) setCustomerName(route.params.name);
@@ -394,12 +439,28 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
     }
   };
 
+  const handleBack = useCallback(() => {
+    switch (route.params?.from) {
+      case "ExistingCustomerDetailsScreen":
+        navigation.navigate("Main" as any, { screen: "ExistingCustomerDetailsScreen" });
+        break;
+      case "NewCustomerDetailsScreen":
+        navigation.navigate("Main" as any, { screen: "NewCustomerDetailsScreen" });
+        break;
+      case "TotalValueOfCustomersScreen":
+        navigation.navigate("Main" as any, { screen: "TotalValueOfCustomersScreen" });
+        break;
+      case "CustomersScreen":
+      default:
+        navigation.navigate("Main" as any, { screen: "CustomersScreen" });
+        break;
+    }
+  }, [navigation, route.params?.from]);
+
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        navigation.navigate("Main" as any, {
-          screen: "CustomersScreen",
-        });
+        handleBack();
         return true;
       };
 
@@ -409,7 +470,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       );
 
       return () => backHandler.remove();
-    }, [navigation]),
+    }, [handleBack]),
   );
 
   const loadOrders = async (
@@ -630,23 +691,58 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
     return <LoadingPage message="Loading More Orders..." fullScreen={false} />;
   };
 
+  // Reads a picked file as base64. Tries several strategies because on Android
+  // a picked file (cache copy or content:// uri) is sometimes not directly readable.
+  const readFileAsBase64 = async (uri: string, name: string): Promise<string> => {
+    // 1. direct read
+    try {
+      return await FileSystem.readAsStringAsync(uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+    } catch (e) {
+      console.warn("Direct read failed, trying copy to cache:", e);
+    }
+
+    // 2. copy into the app cache (works for content:// uris), then read
+    try {
+      const ext = getExt(name) || getExt(uri) || "bin";
+      const dest = `${FileSystem.cacheDirectory}br_${Date.now()}.${ext}`;
+      await FileSystem.copyAsync({ from: uri, to: dest });
+      const data = await FileSystem.readAsStringAsync(dest, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      FileSystem.deleteAsync(dest, { idempotent: true }).catch(() => {});
+      return data;
+    } catch (e) {
+      console.warn("Copy to cache failed, trying File API:", e);
+    }
+
+    // 3. new expo-file-system File API
+    try {
+      const { File } = require("expo-file-system");
+      return await new File(uri).base64();
+    } catch (e) {
+      console.warn("File API failed, trying fetch/blob:", e);
+    }
+
+    // 4. fetch + blob + FileReader
+    const res = await fetch(uri);
+    const blob = await res.blob();
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        resolve(result.split(",")[1] || "");
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
   const uploadReuploadToR2 = async (fileUri: string, fileName: string, mimeType: string): Promise<string | null> => {
     try {
       setIsUploadingReupload(true);
-      let base64Data = "";
-      try {
-        base64Data = await FileSystem.readAsStringAsync(fileUri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-      } catch (readErr) {
-        try {
-          const { File } = require("expo-file-system");
-          const file = new File(fileUri);
-          base64Data = await file.base64();
-        } catch (fileErr) {
-          throw readErr;
-        }
-      }
+      const base64Data = await readFileAsBase64(fileUri, fileName);
 
       const response = await axios.post(`${environment.API_BASE_URL}api/customer/upload-br`, {
         base64: `data:${mimeType};base64,${base64Data}`,
@@ -657,12 +753,57 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
         return response.data.url;
       }
       return null;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to upload BR to R2:", error);
-      Alert.alert("Upload Error", "Failed to upload BR document. Please try again.");
+      // show the server's specific message (e.g. unsupported type / too large) when available
+      const serverMessage = error?.response?.data?.error;
+      Alert.alert(
+        "Upload Error",
+        serverMessage || "Failed to upload BR document. Please try again.",
+      );
       return null;
     } finally {
       setIsUploadingReupload(false);
+    }
+  };
+
+  // Validates the picked file, then uploads it. Shared by camera, gallery and document picker.
+  const handlePickedBRAsset = async (asset: {
+    uri: string;
+    name: string;
+    size?: number | null;
+    mimeType: string;
+  }) => {
+    const validationError = validateBRFile(
+      asset.name,
+      asset.uri,
+      asset.mimeType,
+      asset.size,
+    );
+    if (validationError) {
+      setReuploadDoc(null); // don't keep or upload the invalid file
+      setBrFileError(validationError); // shown under the upload box
+      return;
+    }
+
+    setBrFileError(null); // valid file, clear any previous error
+
+    const docObj = {
+      uri: asset.uri,
+      name: asset.name,
+      sizeText: asset.size
+        ? `${(asset.size / (1024 * 1024)).toFixed(1)} MB`
+        : "—",
+      mimeType: asset.mimeType,
+    };
+    setReuploadDoc(docObj);
+
+    const r2Url = await uploadReuploadToR2(asset.uri, asset.name, asset.mimeType);
+    if (r2Url) {
+      setReuploadDoc({ ...docObj, r2Url });
+    } else {
+      // don't leave a failed file showing as selected
+      setReuploadDoc(null);
     }
   };
 
@@ -679,21 +820,13 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
           quality: 0.8,
         });
         if (!result.canceled && result.assets?.[0]) {
-          const asset = result.assets[0];
-          const fileName = asset.fileName || `BR_Photo_${Date.now()}.jpg`;
-          const fileSizeMB = asset.fileSize ? `${(asset.fileSize / (1024 * 1024)).toFixed(1)} MB` : "1.2 MB";
-          const mimeType = asset.mimeType || "image/jpeg";
-          const docObj = {
-            uri: asset.uri,
-            name: fileName,
-            sizeText: fileSizeMB,
-            mimeType,
-          };
-          setReuploadDoc(docObj);
-          const r2Url = await uploadReuploadToR2(asset.uri, fileName, mimeType);
-          if (r2Url) {
-            setReuploadDoc({ ...docObj, r2Url });
-          }
+          const a = result.assets[0];
+          await handlePickedBRAsset({
+            uri: a.uri,
+            name: a.fileName || `BR_Photo_${Date.now()}.jpg`,
+            size: a.fileSize,
+            mimeType: a.mimeType || "image/jpeg",
+          });
         }
       } else if (mode === "gallery") {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -707,43 +840,32 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
           quality: 0.8,
         });
         if (!result.canceled && result.assets?.[0]) {
-          const asset = result.assets[0];
-          const fileName = asset.fileName || `BR_Image_${Date.now()}.png`;
-          const fileSizeMB = asset.fileSize ? `${(asset.fileSize / (1024 * 1024)).toFixed(1)} MB` : "1.2 MB";
-          const mimeType = asset.mimeType || "image/png";
-          const docObj = {
-            uri: asset.uri,
-            name: fileName,
-            sizeText: fileSizeMB,
-            mimeType,
-          };
-          setReuploadDoc(docObj);
-          const r2Url = await uploadReuploadToR2(asset.uri, fileName, mimeType);
-          if (r2Url) {
-            setReuploadDoc({ ...docObj, r2Url });
-          }
+          const a = result.assets[0];
+          const uriExt = getExt(a.uri);
+          await handlePickedBRAsset({
+            uri: a.uri,
+            name: a.fileName || `BR_Image_${Date.now()}.${uriExt || "jpg"}`,
+            size: a.fileSize,
+            mimeType:
+              a.mimeType || (uriExt === "png" ? "image/png" : "image/jpeg"),
+          });
         }
       } else if (mode === "document") {
         const result = await DocumentPicker.getDocumentAsync({
-          type: ["image/*", "application/pdf"],
-          copyToCacheDirectory: true,
+          // show all files; validateBRFile rejects unsupported ones after picking
+          type: "*/*",
+          // false -> keep the original content:// uri; readFileAsBase64 copies it itself.
+          // (the picker's own cache copy can be unreadable on Android)
+          copyToCacheDirectory: false,
         });
         if (!result.canceled && result.assets?.[0]) {
-          const asset = result.assets[0];
-          const fileSizeMB = asset.size ? `${(asset.size / (1024 * 1024)).toFixed(1)} MB` : "1.2 MB";
-          const mimeType = asset.mimeType || "application/pdf";
-          const fileName = asset.name || `BR_Doc_${Date.now()}.pdf`;
-          const docObj = {
-            uri: asset.uri,
-            name: fileName,
-            sizeText: fileSizeMB,
-            mimeType,
-          };
-          setReuploadDoc(docObj);
-          const r2Url = await uploadReuploadToR2(asset.uri, fileName, mimeType);
-          if (r2Url) {
-            setReuploadDoc({ ...docObj, r2Url });
-          }
+          const a = result.assets[0];
+          await handlePickedBRAsset({
+            uri: a.uri,
+            name: a.name || `BR_Doc_${Date.now()}.pdf`,
+            size: a.size,
+            mimeType: a.mimeType || "application/pdf",
+          });
         }
       }
     } catch (err) {
@@ -785,7 +907,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
 
       setWholesaleApproveStatus("To Review");
       setReuploadDoc(null);
-      Alert.alert("Submitted", "BR document has been resubmitted successfully for review.");
+      setBrFileError(null);
+      Alert.alert("Success", "BR document has been resubmitted successfully for review.");
       getUserProfile();
     } catch (err) {
       console.error("Error resubmitting BR:", err);
@@ -803,6 +926,9 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
+        bounces
       >
         {/* Lottie Animation */}
         <View style={{ alignItems: "center", justifyContent: "center", marginTop: 12 }}>
@@ -898,8 +1024,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                   borderRadius: 8,
                 }}
               >
-                <Text style={{ fontSize: 13, fontWeight: "700", color: "#6D28D9" }}>
-                  #CUS-{customerId || wholesaleApplicationId || id}
+                <Text style={{ fontSize: 13, fontWeight: "600", color: "#000000" }}>
+                  #{customerId || wholesaleApplicationId || id}
                 </Text>
               </View>
             </View>
@@ -939,7 +1065,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
               </Text>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                 <Ionicons name="time-outline" size={16} color="#7C3AED" />
-                <Text style={{ fontSize: 13, fontWeight: "700", color: "#7C3AED" }}>
+                <Text style={{ fontSize: 13, fontWeight: "600", color: "#000000" }}>
                   24–48 Business Hours
                 </Text>
               </View>
@@ -997,7 +1123,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                   }}
                 >
                   Clear scan or photo of your customer's Business Registration (BR).
-                  Max file size 10MB in PDF, JPG, or PNG.
+                  Max file size 10MB in PDF, JPG, HEIC or PNG.
                 </Text>
               </View>
             </View>
@@ -1074,7 +1200,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                     textAlign: "center",
                   }}
                 >
-                  Supports PDF, PNG, JPG (up to 10MB)
+                  Supports PDF, PNG, JPG, HEIC (up to 10MB)
                 </Text>
               </TouchableOpacity>
             ) : (
@@ -1201,7 +1327,10 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                   </View>
 
                   <TouchableOpacity
-                    onPress={() => setReuploadDoc(null)}
+                    onPress={() => {
+                      setReuploadDoc(null);
+                      setBrFileError(null);
+                    }}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
                     <Ionicons name="close-circle" size={20} color="#64748B" />
@@ -1236,6 +1365,36 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                     </Text>
                   </TouchableOpacity>
                 )}
+              </View>
+            )}
+
+            {/* Invalid file type / size error */}
+            {brFileError && (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  backgroundColor: "#FEF2F2",
+                  borderWidth: 1,
+                  borderColor: "#FECACA",
+                  borderRadius: 10,
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  marginBottom: 16,
+                  gap: 6,
+                }}
+              >
+                <MaterialIcons name="error" size={16} color="#EF4444" />
+                <Text
+                  style={{
+                    flex: 1,
+                    fontSize: 12,
+                    color: "#B91C1C",
+                    fontWeight: "600",
+                  }}
+                >
+                  {brFileError}
+                </Text>
               </View>
             )}
 
@@ -1286,11 +1445,15 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
       enabled
       style={{ flex: 1 }}
     >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <TouchableWithoutFeedback
+        onPress={Keyboard.dismiss}
+        accessible={false}
+        disabled={isWholesaleStatusView}
+      >
         <LinearGradient
           colors={["#FFFFFF", "#FFFFFF"]}
           start={{ x: 0, y: 0 }}
@@ -1310,11 +1473,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
         >
           {/* Back button */}
           <TouchableOpacity
-            onPress={() =>
-              navigation.navigate("Main" as any, {
-                screen: "CustomersScreen",
-              })
-            }
+           onPress={handleBack}
             style={{
               width: 40,
               height: 40,
@@ -1431,7 +1590,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
           <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#FFFFFF" }}>
             <LoadingPage message="Loading Customer Profile..." fullScreen={true} />
           </View>
-        ) : buyerType === "Wholesale" && wholesaleApproveStatus !== "Approve" ? (
+        ) : isWholesaleStatusView ? (
           renderWholesaleStatusView()
         ) : (
           <View style={{ flex: 1 }}>
