@@ -482,10 +482,14 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
             <View
               className="items-center"
               style={{
-                paddingTop: isKeyboardVisible ? 8 : 16,
+                paddingTop: isKeyboardVisible ? 8 : Platform.OS === "ios" ? 16 : 8,
+                // Android already sits above the system nav bar, so keep the
+                // gap small there. iOS needs the home-indicator safe area.
                 paddingBottom: isKeyboardVisible
                   ? 12
-                  : Math.max(insets.bottom, 16) + 8,
+                  : Platform.OS === "ios"
+                    ? Math.max(insets.bottom, 16) + 8
+                    : 8,
               }}
             >
               <View
