@@ -8,6 +8,7 @@ import {
   ScrollView,
   BackHandler,
   RefreshControl,
+  StatusBar,
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -363,6 +364,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
         { headers: { Authorization: `Bearer ${storedToken}` } },
       );
       const data = response.data.data;
+      console.log("star data",data)
       setAgentStats(data);
       if (data?.monthly?.targetAchievedDays !== undefined) {
         setTargetAchievedDays(data.monthly.targetAchievedDays);
@@ -446,6 +448,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
 
   return (
     <View className="flex-1 bg-white">
+      <StatusBar backgroundColor="#ffffff" barStyle="dark-content" />
       <ScrollView
         refreshControl={
           <RefreshControl
@@ -654,8 +657,8 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
 
           <DashboardCard
             title="Monthly Orders Targets"
-            subtitle="Monthly Target Achieved"
-            badge={`${targetAchievedDays} ${targetAchievedDays === 1 ? "Day" : "Days"}`}
+            subtitle="Total Monthly Stars"
+            badge={`Stars : ${targetAchievedDays} `}
             icon="bullseye"
             iconColor="#E11D48"
             iconBg="#FFE4E6"

@@ -9,8 +9,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   BackHandler,
+  Switch,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
 import {
@@ -24,6 +25,8 @@ import { useFocusEffect } from "@react-navigation/native";
 import CustomHeader from "../common/CustomHeader";
 import SidebarSkeleton from "./SidebarSkeleton";
 import LoadingPage from "../common/LoadingPage";
+import biometricService from "@/services/biometric/biometric.service";
+import * as Application from "expo-application";
 
 type SidebarScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -45,6 +48,10 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
   const [imageLoading, setImageLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [isBiometricAvailable, setIsBiometricAvailable] = useState(false);
+  const [isBiometricActive, setIsBiometricActive] = useState(false);
+  const [biometricLabel, setBiometricLabel] = useState("Biometrics");
+
 
   useFocusEffect(
     useCallback(() => {
@@ -52,8 +59,58 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
       setImageLoading(true);
       setProfileLoading(true);
       getUserProfile();
+
+      const checkBiometrics = async () => {
+        const avail = await biometricService.checkBiometricAvailability();
+        if (avail.hasHardware && avail.isEnrolled) {
+          setIsBiometricAvailable(true);
+          const label = await biometricService.getBiometricTypeLabel();
+          setBiometricLabel(label);
+          const enabled = await biometricService.isBiometricEnabled();
+          setIsBiometricActive(enabled);
+        } else {
+          setIsBiometricAvailable(false);
+          setIsBiometricActive(false);
+        }
+      };
+
+      checkBiometrics();
     }, []),
   );
+
+  const handleToggleBiometric = async (value: boolean) => {
+    if (!value) {
+      await biometricService.clearBiometricCredentials();
+      setIsBiometricActive(false);
+      return;
+    }
+
+    const avail = await biometricService.checkBiometricAvailability();
+    if (!avail.hasHardware || !avail.isEnrolled) {
+      Alert.alert(
+        "Biometrics Unavailable",
+        "Please set up a fingerprint or Face ID in your device settings first.",
+      );
+      return;
+    }
+
+    const creds = await biometricService.getBiometricCredentials();
+    if (creds?.empId && creds?.password) {
+      const verified = await biometricService.authenticateWithBiometrics(
+        `Verify ${biometricLabel} to enable Biometric Sign-In`,
+      );
+      if (verified) {
+        await AsyncStorage.setItem("isBiometricEnabled", "true");
+        setIsBiometricActive(true);
+        Alert.alert("Success", "Biometric Sign-In has been enabled.");
+      }
+    } else {
+      Alert.alert(
+        "Enable Biometric Sign-In",
+        "To securely link your biometrics, please check 'Enable Biometric Login' the next time you sign in with your Employee ID and password.",
+      );
+    }
+  };
 
   const getUserProfile = async () => {
     try {
@@ -356,6 +413,49 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
                       />
                     </TouchableOpacity>
 
+                    {isBiometricAvailable && (
+                      <View
+                        style={{ marginBottom: hp(2) }}
+                        className="flex-row items-center py-3"
+                      >
+                        <View
+                          style={{
+                            width: hp(5),
+                            height: hp(5),
+                            borderRadius: hp(2.5),
+                            backgroundColor: "#F4F9FB",
+                            justifyContent: "center",
+                            alignItems: "center",
+                          }}
+                        >
+                          <FontAwesome5
+                            name="fingerprint"
+                            size={hp(2.5)}
+                            color="#8F8F8F"
+                          />
+                        </View>
+
+                        <Text
+                          style={{
+                            flex: 1,
+                            marginLeft: wp(4),
+                            fontSize: hp(2),
+                          }}
+                          className="text-gray-800"
+                        >
+                          Use Biometrics
+                        </Text>
+
+                        <Switch
+                          value={isBiometricActive}
+                          onValueChange={handleToggleBiometric}
+                          trackColor={{ false: "#D1D5DB", true: "#6C3CD1" }}
+                          thumbColor="#FFFFFF"
+                          style={{ marginRight: wp(2) }}
+                        />
+                      </View>
+                    )}
+
                     <TouchableOpacity
                       style={{ marginBottom: hp(2) }}
                       className="flex-row items-center py-3"
@@ -431,7 +531,8 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
                       />
                     </TouchableOpacity>
 
-                    <View className="mb-8">
+
+                    <View className="mb-4">
                       <View className="border-b border-gray-200 my-5" />
                       <TouchableOpacity
                         className="flex-row items-center"
@@ -467,6 +568,13 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
                         </Text>
                       </TouchableOpacity>
                     </View>
+
+                    {/* App Version Footer */}
+                    <View style={{ alignItems: "center", paddingVertical: hp(2), marginBottom: hp(2) }}>
+                      <Text style={{ fontSize: hp(1.5), color: "#9CA3AF", fontWeight: "600" }}>
+                        Version {Application.nativeApplicationVersion || "1.0.6"}
+                      </Text>
+                    </View>
                   </View>
                 </>
               )}
@@ -474,6 +582,7 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
           </View>
         )}
       </View>
+
     </KeyboardAvoidingView>
   );
 };

@@ -43,10 +43,11 @@ import LottieView from "lottie-react-native";
 import { AlertModal } from "../common/AlertModal";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
+import * as ImageManipulator from "expo-image-manipulator";
 import * as FileSystem from "expo-file-system/legacy";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Modal } from "react-native";
-import { format } from "date-fns";
+import { format, isToday } from "date-fns";
 
 type ViewCustomerScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -104,6 +105,21 @@ const FILTER_TO_BACKEND_STATUS: Record<string, string | string[]> = {
   Return: ["Return", "Return Received"],
 };
 
+// ---------- Submission date formatting ----------
+// Same day  -> "Today, 2:45 PM"
+// Otherwise -> "02 Nov 2026, 11:46 AM"
+const formatSubmissionDate = (dateString?: string | null) => {
+  if (!dateString) return "Today";
+
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "Today";
+
+  if (isToday(date)) {
+    return `Today, ${format(date, "h:mm a")}`;
+  }
+  return format(date, "dd MMM yyyy, h:mm a");
+};
+
 // ---------- Sorting helpers (scheduled date: latest first) ----------
 const getScheduleTimestamp = (order: Order) => {
   const t = new Date(order.sheduleDate).getTime();
@@ -152,18 +168,30 @@ const validateBRFile = (
   size?: number | null,
 ): string | null => {
   const ext = getExt(name) || getExt(uri);
-  const mime = (mimeType || "").toLowerCase();
+  const mime = (mimeType || "").toLowerCase().trim();
 
   const extOk = ext ? ALLOWED_BR_EXT.includes(ext) : false;
-  const mimeOk = mime ? ALLOWED_BR_MIME.includes(mime) : false;
+  const mimeOk =
+    mime && mime !== "application/octet-stream"
+      ? ALLOWED_BR_MIME.includes(mime)
+      : false;
 
-  // reject if either one is present and not allowed, or neither is known
-  if ((ext && !extOk) || (mime && !mimeOk) || (!ext && !mime)) {
-    return "Unsupported file type. Please upload a PDF, JPG, PNG or HEIC file.";
+  if (ext && !extOk) {
+    return "Unsupported file type. Please upload a PDF, PNG, JPG, or HEIC file.";
   }
+
+  if (mime && mime !== "application/octet-stream" && !mimeOk) {
+    return "Unsupported file type. Please upload a PDF, PNG, JPG, or HEIC file.";
+  }
+
+  if (!ext && (!mime || mime === "application/octet-stream")) {
+    return "Unsupported file type. Please upload a PDF, PNG, JPG, or HEIC file.";
+  }
+
   if (size && size > MAX_BR_SIZE_BYTES) {
     return "File is too large. Maximum allowed size is 10MB.";
   }
+
   return null;
 };
 
@@ -203,6 +231,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   const [isUploadingReupload, setIsUploadingReupload] = useState<boolean>(false);
   const [isSubmittingReupload, setIsSubmittingReupload] = useState<boolean>(false);
   const [previewModalVisible, setPreviewModalVisible] = useState<boolean>(false);
+  const [uploadOptionsModalVisible, setUploadOptionsModalVisible] = useState<boolean>(false);
   const [brFileError, setBrFileError] = useState<string | null>(null);
   const searchInputRef = useRef<TextInput>(null);
   const isMounted = useRef(true);
@@ -439,23 +468,29 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
     }
   };
 
-  const handleBack = useCallback(() => {
-    switch (route.params?.from) {
-      case "ExistingCustomerDetailsScreen":
-        navigation.navigate("Main" as any, { screen: "ExistingCustomerDetailsScreen" });
-        break;
-      case "NewCustomerDetailsScreen":
-        navigation.navigate("Main" as any, { screen: "NewCustomerDetailsScreen" });
-        break;
-      case "TotalValueOfCustomersScreen":
-        navigation.navigate("Main" as any, { screen: "TotalValueOfCustomersScreen" });
-        break;
-      case "CustomersScreen":
-      default:
-        navigation.navigate("Main" as any, { screen: "CustomersScreen" });
-        break;
-    }
-  }, [navigation, route.params?.from]);
+ const handleBack = useCallback(() => {
+  const tab: "Retail" | "Wholesale" =
+    buyerType === "Wholesale" ? "Wholesale" : "Retail";
+
+  switch (route.params?.from) {
+    case "ExistingCustomerDetailsScreen":
+      navigation.navigate("Main" as any, { screen: "ExistingCustomerDetailsScreen" });
+      break;
+    case "NewCustomerDetailsScreen":
+      navigation.navigate("Main" as any, { screen: "NewCustomerDetailsScreen" });
+      break;
+    case "TotalValueOfCustomersScreen":
+      navigation.navigate("Main" as any, { screen: "TotalValueOfCustomersScreen" });
+      break;
+    case "CustomersScreen":
+    default:
+      navigation.navigate("Main" as any, {
+        screen: "CustomersScreen",
+        params: { initialTab: tab },
+      });
+      break;
+  }
+}, [navigation, route.params?.from, buyerType]);
 
   useFocusEffect(
     useCallback(() => {
@@ -739,13 +774,49 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
     });
   };
 
-  const uploadReuploadToR2 = async (fileUri: string, fileName: string, mimeType: string): Promise<string | null> => {
+    const compressImageIfNeeded = async (
+    uri: string,
+    width?: number,
+    height?: number,
+  ) => {
+    try {
+      const actions: ImageManipulator.Action[] = [];
+      const maxDim = 1600;
+      if (width && height) {
+        if (width > maxDim || height > maxDim) {
+          if (width >= height) {
+            actions.push({ resize: { width: maxDim } });
+          } else {
+            actions.push({ resize: { height: maxDim } });
+          }
+        }
+      } else {
+        actions.push({ resize: { width: maxDim } });
+      }
+
+      const manipResult = await ImageManipulator.manipulateAsync(
+        uri,
+        actions,
+        {
+          compress: 0.7,
+          format: ImageManipulator.SaveFormat.JPEG,
+          base64: true,
+        },
+      );
+      return manipResult;
+    } catch (e) {
+      console.warn("Image compression failed, using original uri:", e);
+      return null;
+    }
+  };
+
+  const uploadReuploadToR2 = async (fileUri: string, fileName: string, mimeType: string, directBase64?: string): Promise<string | null> => {
     try {
       setIsUploadingReupload(true);
-      const base64Data = await readFileAsBase64(fileUri, fileName);
+      const base64Data = directBase64 || (await readFileAsBase64(fileUri, fileName));
 
       const response = await axios.post(`${environment.API_BASE_URL}api/customer/upload-br`, {
-        base64: `data:${mimeType};base64,${base64Data}`,
+        base64: base64Data.startsWith("data:") ? base64Data : `data:${mimeType};base64,${base64Data}`,
         fileName: fileName,
       });
 
@@ -754,7 +825,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       }
       return null;
     } catch (error: any) {
-      console.error("Failed to upload BR to R2:", error);
+      console.error("Failed to upload BR document:", error);
       // show the server's specific message (e.g. unsupported type / too large) when available
       const serverMessage = error?.response?.data?.error;
       Alert.alert(
@@ -772,7 +843,9 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
     uri: string;
     name: string;
     size?: number | null;
-    mimeType: string;
+    mimeType?: string | null;
+    width?: number;
+    height?: number;
   }) => {
     const validationError = validateBRFile(
       asset.name,
@@ -781,28 +854,71 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       asset.size,
     );
     if (validationError) {
-      setReuploadDoc(null); // don't keep or upload the invalid file
-      setBrFileError(validationError); // shown under the upload box
+      setReuploadDoc(null);
+      setBrFileError(validationError);
+      Alert.alert("Unsupported File Type", validationError);
       return;
     }
 
-    setBrFileError(null); // valid file, clear any previous error
+    setBrFileError(null);
+
+    let finalUri = asset.uri;
+    let finalSize = asset.size;
+    let directBase64: string | undefined = undefined;
+
+    const isImage =
+      (asset.mimeType && asset.mimeType.startsWith("image/")) ||
+      /\.(jpe?g|png|webp|heic)$/i.test(asset.name);
+
+    if (isImage) {
+      try {
+        const manipResult = await compressImageIfNeeded(
+          asset.uri,
+          asset.width,
+          asset.height,
+        );
+        if (manipResult) {
+          finalUri = manipResult.uri;
+          directBase64 = manipResult.base64;
+          try {
+            const info = await FileSystem.getInfoAsync(manipResult.uri);
+            if (info.exists && !info.isDirectory && info.size) {
+              finalSize = info.size;
+            }
+          } catch (_) {
+            if (manipResult.base64) {
+              finalSize = Math.round(manipResult.base64.length * 0.75);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to compress reupload BR image:", err);
+      }
+    }
+
+    const fileSizeText = finalSize
+      ? finalSize >= 1024 * 1024
+        ? `${(finalSize / (1024 * 1024)).toFixed(1)} MB`
+        : `${Math.round(finalSize / 1024)} KB`
+      : "—";
 
     const docObj = {
-      uri: asset.uri,
+      uri: finalUri,
       name: asset.name,
-      sizeText: asset.size
-        ? `${(asset.size / (1024 * 1024)).toFixed(1)} MB`
-        : "—",
-      mimeType: asset.mimeType,
+      sizeText: fileSizeText,
+      mimeType: asset.mimeType || "application/pdf",
     };
     setReuploadDoc(docObj);
 
-    const r2Url = await uploadReuploadToR2(asset.uri, asset.name, asset.mimeType);
+    const r2Url = await uploadReuploadToR2(
+      finalUri,
+      asset.name,
+      asset.mimeType || "application/pdf",
+      directBase64,
+    );
     if (r2Url) {
       setReuploadDoc({ ...docObj, r2Url });
     } else {
-      // don't leave a failed file showing as selected
       setReuploadDoc(null);
     }
   };
@@ -826,6 +942,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
             name: a.fileName || `BR_Photo_${Date.now()}.jpg`,
             size: a.fileSize,
             mimeType: a.mimeType || "image/jpeg",
+            width: a.width,
+            height: a.height,
           });
         }
       } else if (mode === "gallery") {
@@ -848,12 +966,19 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
             size: a.fileSize,
             mimeType:
               a.mimeType || (uriExt === "png" ? "image/png" : "image/jpeg"),
+            width: a.width,
+            height: a.height,
           });
         }
       } else if (mode === "document") {
         const result = await DocumentPicker.getDocumentAsync({
-          // show all files; validateBRFile rejects unsupported ones after picking
-          type: "*/*",
+          type: [
+            "application/pdf",
+            "image/jpeg",
+            "image/png",
+            "image/heic",
+            "image/heif",
+          ],
           // false -> keep the original content:// uri; readFileAsBase64 copies it itself.
           // (the picker's own cache copy can be unreadable on Android)
           copyToCacheDirectory: false,
@@ -1045,9 +1170,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 Submission Date
               </Text>
               <Text style={{ fontSize: 13, fontWeight: "600", color: "#1E293B" }}>
-                {wholesaleCreatedAt
-                  ? format(new Date(wholesaleCreatedAt), "dd MMM yyyy, h:mm a")
-                  : "Today"}
+                {formatSubmissionDate(wholesaleCreatedAt)}
               </Text>
             </View>
 
@@ -1144,18 +1267,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
               /* Empty state dashed box */
               <TouchableOpacity
                 activeOpacity={0.7}
-                onPress={() => {
-                  Alert.alert(
-                    "Upload BR Document",
-                    "Choose an option to upload the official business certificate:",
-                    [
-                      { text: "Take Photo", onPress: () => pickReuploadBRImage("camera") },
-                      { text: "Choose from Gallery", onPress: () => pickReuploadBRImage("gallery") },
-                      { text: "Browse Documents (PDF/Image)", onPress: () => pickReuploadBRImage("document") },
-                      { text: "Cancel", style: "cancel" },
-                    ]
-                  );
-                }}
+                onPress={() => setUploadOptionsModalVisible(true)}
                 style={{
                   borderWidth: 1.5,
                   borderColor: "#C7D2FE",
@@ -1321,7 +1433,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                         {reuploadDoc.name}
                       </Text>
                       <Text style={{ fontSize: 10, color: isUploadingReupload ? "#D97706" : reuploadDoc.r2Url ? "#16A34A" : "#64748B", marginTop: 1 }}>
-                        {isUploadingReupload ? "Uploading to R2..." : reuploadDoc.r2Url ? `Uploaded • ${reuploadDoc.sizeText}` : reuploadDoc.sizeText}
+                        {isUploadingReupload ? "Uploading document..." : reuploadDoc.r2Url ? `Uploaded • ${reuploadDoc.sizeText}` : reuploadDoc.sizeText}
                       </Text>
                     </View>
                   </View>
@@ -1427,7 +1539,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                     <ActivityIndicator color="#FFFFFF" size="small" />
                     <Text style={{ color: "#FFFFFF", fontWeight: "bold", fontSize: 15 }}>
-                      {isUploadingReupload ? "Uploading..." : "Submitting..."}
+                      {isUploadingReupload ? "Uploading document..." : "Submitting..."}
                     </Text>
                   </View>
                 ) : (
@@ -2212,9 +2324,10 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
 
             {/* New Order Button */}
             <TouchableOpacity
-              disabled={creditBalance < 0 || (buyerType === "Wholesale" && wholesaleApproveStatus !== "Approve")}
+              disabled={creditBalance < 0 || (String(buyerType || "").toLowerCase() === "wholesale" && wholesaleApproveStatus !== "Approve")}
               onPress={() => {
-                if (buyerType === "Wholesale") {
+                const isWholesaleCustomer = String(buyerType || "").toLowerCase() === "wholesale";
+                if (isWholesaleCustomer) {
                   navigation.navigate("CreateCustomPackage" as any, {
                     id,
                     isPackage: 0,
@@ -2224,6 +2337,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                     number: customerNumber,
                     customerscreencustomerid: customerId,
                     buyerType: "Wholesale",
+                    from: "ViewCustomerScreen",
                   });
                 } else {
                   navigation.navigate("SelectOrderType" as any, {
@@ -2234,6 +2348,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                     number: customerNumber,
                     customerscreencustomerid: customerId,
                     buyerType: "Retail",
+                    from: "ViewCustomerScreen",
                   });
                 }
               }}
@@ -2286,6 +2401,237 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
         okButtonText="OK"
         onClose={() => setIsAccessDeniedVisible(false)}
       />
+
+            {/* Upload Options Picker Modal */}
+      <Modal
+        visible={uploadOptionsModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setUploadOptionsModalVisible(false)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setUploadOptionsModalVisible(false)}
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            justifyContent: "flex-end",
+          }}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              paddingHorizontal: 20,
+              paddingTop: 20,
+              paddingBottom: Platform.OS === "ios" ? 36 : 24,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: -3 },
+              shadowOpacity: 0.1,
+              shadowRadius: 10,
+              elevation: 10,
+            }}
+          >
+            {/* Header */}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 6,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 17,
+                  fontWeight: "700",
+                  color: "#1E293B",
+                }}
+              >
+                Upload BR Document
+              </Text>
+              <TouchableOpacity
+                onPress={() => setUploadOptionsModalVisible(false)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                style={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: 15,
+                  backgroundColor: "#F1F5F9",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Ionicons name="close" size={18} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <Text
+              style={{
+                fontSize: 13,
+                color: "#64748B",
+                marginBottom: 18,
+              }}
+            >
+              Choose an option to upload the official business certificate:
+            </Text>
+
+            {/* Option 1: Take Photo */}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => {
+                setUploadOptionsModalVisible(false);
+                pickReuploadBRImage("camera");
+              }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingVertical: 14,
+                paddingHorizontal: 14,
+                borderRadius: 14,
+                backgroundColor: "#F8FAFC",
+                marginBottom: 10,
+                borderWidth: 1,
+                borderColor: "#E2E8F0",
+              }}
+            >
+              <View
+                style={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 21,
+                  backgroundColor: "#F3E8FF",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginRight: 14,
+                }}
+              >
+                <Ionicons name="camera-outline" size={22} color="#6B3BCF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 15, fontWeight: "600", color: "#1E293B" }}>
+                  Take Photo
+                </Text>
+                <Text style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>
+                  Capture document using camera
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+            </TouchableOpacity>
+
+            {/* Option 2: Choose from Gallery */}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => {
+                setUploadOptionsModalVisible(false);
+                pickReuploadBRImage("gallery");
+              }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingVertical: 14,
+                paddingHorizontal: 14,
+                borderRadius: 14,
+                backgroundColor: "#F8FAFC",
+                marginBottom: 10,
+                borderWidth: 1,
+                borderColor: "#E2E8F0",
+              }}
+            >
+              <View
+                style={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 21,
+                  backgroundColor: "#F3E8FF",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginRight: 14,
+                }}
+              >
+                <Ionicons name="images-outline" size={22} color="#6B3BCF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 15, fontWeight: "600", color: "#1E293B" }}>
+                  Choose from Gallery
+                </Text>
+                <Text style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>
+                  Select an image from photo library
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+            </TouchableOpacity>
+
+            {/* Option 3: Browse Documents */}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => {
+                setUploadOptionsModalVisible(false);
+                pickReuploadBRImage("document");
+              }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingVertical: 14,
+                paddingHorizontal: 14,
+                borderRadius: 14,
+                backgroundColor: "#F8FAFC",
+                marginBottom: 14,
+                borderWidth: 1,
+                borderColor: "#E2E8F0",
+              }}
+            >
+              <View
+                style={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 21,
+                  backgroundColor: "#F3E8FF",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginRight: 14,
+                }}
+              >
+                <Ionicons name="document-text-outline" size={22} color="#6B3BCF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 15, fontWeight: "600", color: "#1E293B" }}>
+                  Browse Documents (PDF/Image)
+                </Text>
+                <Text style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>
+                  Upload PDF or image files (max 10MB)
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+            </TouchableOpacity>
+
+            {/* Cancel Button */}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => setUploadOptionsModalVisible(false)}
+              style={{
+                paddingVertical: 14,
+                borderRadius: 14,
+                backgroundColor: "#F1F5F9",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 15,
+                  fontWeight: "600",
+                  color: "#64748B",
+                }}
+              >
+                Cancel
+              </Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Full Image Preview Modal for BR Document */}
       <Modal

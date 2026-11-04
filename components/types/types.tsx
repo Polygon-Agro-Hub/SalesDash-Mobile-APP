@@ -93,7 +93,7 @@ export type RootStackParamList = {
   LoginScreen: undefined;
   ChangePasswordScreen: undefined;
   DashboardScreen: undefined;
-  CustomersScreen: undefined;
+  CustomersScreen: { initialTab?: "Retail" | "Wholesale" } | undefined;
   SidebarScreen: undefined;
   ProfileScreen: undefined;
   AddComplaintScreen: undefined;
@@ -281,6 +281,8 @@ export type RootStackParamList = {
     selectedAddress?: any;
     deliveryCharge?: number;
     isFinalizeImdt?: number;
+    buyerType?: string;
+    from?: string;
   };
   SelectPaymentMethod: {
     items?: CartItem[];
@@ -414,6 +416,7 @@ export type RootStackParamList = {
     customerscreencustomerid?: string;
     selectedProductIds?: number[];
     buyerType?: string;
+    from?: string;
   };
   CratScreen: {
     selectedProducts: CartItem[];
@@ -435,6 +438,7 @@ export type RootStackParamList = {
     paymentMethod?: string;
     fromOrderSummary?: boolean;
     buyerType?: string;
+    from?: string;
   };
   ExcludeListAdd: {
     customerId: number;

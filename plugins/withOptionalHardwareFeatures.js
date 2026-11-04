@@ -44,6 +44,10 @@ const OPTIONAL_FEATURES = [
   "android.hardware.touchscreen",
   "android.hardware.faketouch",
   "android.hardware.bluetooth",
+
+  // Biometric & Fingerprint — ensures devices without biometric hardware can still install app
+  "android.hardware.fingerprint",
+  "android.hardware.biometrics",
 ];
 
 const withOptionalHardwareFeatures = (config) => {

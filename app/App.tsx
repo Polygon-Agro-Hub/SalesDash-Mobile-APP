@@ -1,3 +1,4 @@
+import ErrorBoundary from "@/components/common/ErrorBoundary";
 import { useEffect, useState } from "react";
 import { Alert, Platform, StatusBar, LogBox } from "react-native";
 import { NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
@@ -61,7 +62,6 @@ import PackageConfirmation from "@/components/order/PackageConfirmation";
 import OrderConfimedOTPScreen from "@/components/otp/OrderConfimedOTPScreen";
 import { updateGlobalUnreadCount } from "@/components/reminder/ReminderScreen";
 import environment from "@/environment/environment";
-import { requestTrackingIfNeeded } from "@/utils/ios/trackingPermissions";
 import CameraAccess from "@/components/permission/CameraAccess";
 import LocationAccess from "@/components/permission/LocationAccess";
 import NotificationAccess from "@/components/permission/NotificationAccess";
@@ -172,10 +172,6 @@ function AppContent() {
     showOkButton: undefined as boolean | undefined,
     okButtonText: undefined as string | undefined,
   });
-
-  useEffect(() => {
-    requestTrackingIfNeeded();
-  }, []);
 
   useEffect(() => {
     socketService.connect();
@@ -459,12 +455,14 @@ function AppContent() {
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <LanguageProvider>
-        <AppUpdateProvider>
-          <AppContent />
-        </AppUpdateProvider>
-      </LanguageProvider>
-    </SafeAreaProvider>
+    <ErrorBoundary>
+      <SafeAreaProvider>
+        <LanguageProvider>
+          <AppUpdateProvider>
+            <AppContent />
+          </AppUpdateProvider>
+        </LanguageProvider>
+      </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }

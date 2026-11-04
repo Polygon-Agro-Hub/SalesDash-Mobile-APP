@@ -17,6 +17,7 @@ import {
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
+import * as ImageManipulator from "expo-image-manipulator";
 import * as FileSystem from "expo-file-system/legacy";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -71,6 +72,8 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
   } | null>(null);
   const [isUploadingBR, setIsUploadingBR] = useState<boolean>(false);
   const [previewModalVisible, setPreviewModalVisible] = useState(false);
+  const [uploadOptionsModalVisible, setUploadOptionsModalVisible] = useState(false);
+  const [brFileError, setBrFileError] = useState<string | null>(null);
   const [firstName, setFirstName] = useState<string>("");
   const [lastName, setLastName] = useState<string>("");
   const [phoneNumber, setPhoneNumber] = useState<string>("");
@@ -434,17 +437,107 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     throw new Error("Unable to read document file for upload");
   };
 
+    // ---------- BR document validation (PDF, JPG, PNG, HEIC only) ----------
+const ALLOWED_BR_MIME = [
+  "application/pdf",
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/heic",
+  "image/heif",
+];
+const ALLOWED_BR_EXT = ["pdf", "jpg", "jpeg", "png", "heic", "heif"];
+const MAX_BR_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+
+const getBRExt = (nameOrUri?: string | null) => {
+  if (!nameOrUri) return "";
+  const clean = nameOrUri.split("?")[0];
+  return clean.includes(".") ? clean.split(".").pop()!.toLowerCase() : "";
+};
+
+const validateBRFile = (
+  name?: string | null,
+  uri?: string | null,
+  mimeType?: string | null,
+  size?: number | null,
+): string | null => {
+  const ext = getBRExt(name) || getBRExt(uri);
+  const mime = (mimeType || "").toLowerCase().trim();
+
+  const extOk = ext ? ALLOWED_BR_EXT.includes(ext) : false;
+  const mimeOk =
+    mime && mime !== "application/octet-stream"
+      ? ALLOWED_BR_MIME.includes(mime)
+      : false;
+
+  if (ext && !extOk) {
+    return "Unsupported file type. Please upload a PDF, PNG, JPG, or HEIC file.";
+  }
+
+  if (mime && mime !== "application/octet-stream" && !mimeOk) {
+    return "Unsupported file type. Please upload a PDF, PNG, JPG, or HEIC file.";
+  }
+
+  if (!ext && (!mime || mime === "application/octet-stream")) {
+    return "Unsupported file type. Please upload a PDF, PNG, JPG, or HEIC file.";
+  }
+
+  if (size && size > MAX_BR_SIZE_BYTES) {
+    return "File is too large. Maximum allowed size is 10MB.";
+  }
+
+  return null;
+};
+
+  const compressImageIfNeeded = async (
+    uri: string,
+    width?: number,
+    height?: number,
+  ) => {
+    try {
+      const actions: ImageManipulator.Action[] = [];
+      const maxDim = 1600;
+      if (width && height) {
+        if (width > maxDim || height > maxDim) {
+          if (width >= height) {
+            actions.push({ resize: { width: maxDim } });
+          } else {
+            actions.push({ resize: { height: maxDim } });
+          }
+        }
+      } else {
+        actions.push({ resize: { width: maxDim } });
+      }
+
+      const manipResult = await ImageManipulator.manipulateAsync(
+        uri,
+        actions,
+        {
+          compress: 0.7,
+          format: ImageManipulator.SaveFormat.JPEG,
+          base64: true,
+        },
+      );
+      return manipResult;
+    } catch (e) {
+      console.warn("Image compression failed, using original uri:", e);
+      return null;
+    }
+  };
+
   const uploadBRToR2 = async (
     fileUri: string,
     fileName: string,
     mimeType: string,
+    precomputedBase64?: string,
   ): Promise<string | null> => {
     try {
       setIsUploadingBR(true);
-      const base64Data = await readFileAsBase64(fileUri);
+      const base64Data =
+        precomputedBase64 || (await readFileAsBase64(fileUri));
 
       const response = await axios.post(
-        `${environment.API_BASE_URL}api/customer/upload-br`,
+        		`${environment.API_BASE_URL}api/customer/upload-br`,
         {
           base64: base64Data.startsWith("data:")
             ? base64Data
@@ -458,10 +551,10 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       }
       return null;
     } catch (error) {
-      console.error("Failed to upload BR to R2:", error);
+      console.error("Failed to upload BR document:", error);
       Alert.alert(
         "Upload Error",
-        "Failed to upload BR document to Cloudflare R2. Please try again.",
+        "Failed to upload BR document. Please try again.",
       );
       return null;
     } finally {
@@ -487,20 +580,61 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         if (!result.canceled && result.assets?.[0]) {
           const asset = result.assets[0];
           const fileName = asset.fileName || `BR_Photo_${Date.now()}.jpg`;
-          const fileSizeMB = asset.fileSize
-            ? `${(asset.fileSize / (1024 * 1024)).toFixed(1)} MB`
-            : "1.2 MB";
-          const mimeType = asset.mimeType || "image/jpeg";
+          const mimeType = "image/jpeg";
+
+          setBrFileError(null);
+
+          let finalUri = asset.uri;
+          let directBase64: string | undefined = undefined;
+          let sizeInBytes = asset.fileSize;
+
+          try {
+            const manipResult = await compressImageIfNeeded(
+              asset.uri,
+              asset.width,
+              asset.height,
+            );
+            if (manipResult) {
+              finalUri = manipResult.uri;
+              directBase64 = manipResult.base64;
+              try {
+                const info = await FileSystem.getInfoAsync(manipResult.uri);
+                if (info.exists && !info.isDirectory && info.size) {
+                  sizeInBytes = info.size;
+                }
+              } catch (_) {
+                if (manipResult.base64) {
+                  sizeInBytes = Math.round(manipResult.base64.length * 0.75);
+                }
+              }
+            }
+          } catch (e) {
+            console.warn("Compression error:", e);
+          }
+
+          const fileSizeText = sizeInBytes
+            ? sizeInBytes >= 1024 * 1024
+              ? `${(sizeInBytes / (1024 * 1024)).toFixed(1)} MB`
+              : `${Math.round(sizeInBytes / 1024)} KB`
+            : "500 KB";
+
           const docObj = {
-            uri: asset.uri,
+            uri: finalUri,
             name: fileName,
-            sizeText: fileSizeMB,
+            sizeText: fileSizeText,
             mimeType: mimeType,
           };
           setBrDocument(docObj);
-          const r2Url = await uploadBRToR2(asset.uri, fileName, mimeType);
+          const r2Url = await uploadBRToR2(
+            finalUri,
+            fileName,
+            mimeType,
+            directBase64,
+          );
           if (r2Url) {
             setBrDocument({ ...docObj, r2Url });
+          } else {
+            setBrDocument(null);
           }
         }
       } else if (mode === "gallery") {
@@ -520,45 +654,168 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         });
         if (!result.canceled && result.assets?.[0]) {
           const asset = result.assets[0];
-          const fileName = asset.fileName || `BR_Image_${Date.now()}.png`;
-          const fileSizeMB = asset.fileSize
-            ? `${(asset.fileSize / (1024 * 1024)).toFixed(1)} MB`
-            : "1.2 MB";
-          const mimeType = asset.mimeType || "image/png";
+          const uriExt = getBRExt(asset.uri) || "jpg";
+          const fileName = asset.fileName || `BR_Image_${Date.now()}.${uriExt}`;
+          const mimeType = asset.mimeType || (uriExt === "png" ? "image/png" : "image/jpeg");
+
+          const validationError = validateBRFile(
+            fileName,
+            asset.uri,
+            mimeType,
+            asset.fileSize,
+          );
+          if (validationError) {
+            setBrDocument(null);
+            setBrFileError(validationError);
+            Alert.alert("Unsupported File Type", validationError);
+            return;
+          }
+          setBrFileError(null);
+
+          let finalUri = asset.uri;
+          let directBase64: string | undefined = undefined;
+          let sizeInBytes = asset.fileSize;
+
+          try {
+            const manipResult = await compressImageIfNeeded(
+              asset.uri,
+              asset.width,
+              asset.height,
+            );
+            if (manipResult) {
+              finalUri = manipResult.uri;
+              directBase64 = manipResult.base64;
+              try {
+                const info = await FileSystem.getInfoAsync(manipResult.uri);
+                if (info.exists && !info.isDirectory && info.size) {
+                  sizeInBytes = info.size;
+                }
+              } catch (_) {
+                if (manipResult.base64) {
+                  sizeInBytes = Math.round(manipResult.base64.length * 0.75);
+                }
+              }
+            }
+          } catch (e) {
+            console.warn("Compression error:", e);
+          }
+
+          const fileSizeText = sizeInBytes
+            ? sizeInBytes >= 1024 * 1024
+              ? `${(sizeInBytes / (1024 * 1024)).toFixed(1)} MB`
+              : `${Math.round(sizeInBytes / 1024)} KB`
+            : "500 KB";
+
           const docObj = {
-            uri: asset.uri,
+            uri: finalUri,
             name: fileName,
-            sizeText: fileSizeMB,
+            sizeText: fileSizeText,
             mimeType: mimeType,
           };
           setBrDocument(docObj);
-          const r2Url = await uploadBRToR2(asset.uri, fileName, mimeType);
+          const r2Url = await uploadBRToR2(
+            finalUri,
+            fileName,
+            mimeType,
+            directBase64,
+          );
           if (r2Url) {
             setBrDocument({ ...docObj, r2Url });
+          } else {
+            setBrDocument(null);
           }
         }
       } else if (mode === "document") {
         const result = await DocumentPicker.getDocumentAsync({
-          type: ["image/*", "application/pdf"],
+          type: [
+            "application/pdf",
+            "image/jpeg",
+            "image/png",
+            "image/heic",
+            "image/heif",
+          ],
           copyToCacheDirectory: true,
         });
         if (!result.canceled && result.assets?.[0]) {
           const asset = result.assets[0];
-          const fileSizeMB = asset.size
-            ? `${(asset.size / (1024 * 1024)).toFixed(1)} MB`
-            : "1.2 MB";
-          const mimeType = asset.mimeType || "application/pdf";
-          const fileName = asset.name || `BR_Doc_${Date.now()}.pdf`;
+          const fileName = asset.name || "";
+          const mimeType = asset.mimeType || "";
+
+          const validationError = validateBRFile(
+            fileName,
+            asset.uri,
+            mimeType,
+            asset.size,
+          );
+          if (validationError) {
+            setBrDocument(null);
+            setBrFileError(validationError);
+            Alert.alert("Unsupported File Type", validationError);
+            return;
+          }
+          setBrFileError(null);
+
+          const safeFileName =
+            fileName ||
+            `BR_Doc_${Date.now()}.${getBRExt(asset.uri) || "pdf"}`;
+          const safeMimeType =
+            mimeType ||
+            (safeFileName.toLowerCase().endsWith(".pdf")
+              ? "application/pdf"
+              : "image/jpeg");
+
+          let finalUri = asset.uri;
+          let directBase64: string | undefined = undefined;
+          let sizeInBytes = asset.size;
+
+          const isImage =
+            safeMimeType.startsWith("image/") ||
+            /\.(jpe?g|png|webp|heic)$/i.test(safeFileName);
+          if (isImage) {
+            try {
+              const manipResult = await compressImageIfNeeded(asset.uri);
+              if (manipResult) {
+                finalUri = manipResult.uri;
+                directBase64 = manipResult.base64;
+                try {
+                  const info = await FileSystem.getInfoAsync(manipResult.uri);
+                  if (info.exists && !info.isDirectory && info.size) {
+                    sizeInBytes = info.size;
+                  }
+                } catch (_) {
+                  if (manipResult.base64) {
+                    sizeInBytes = Math.round(manipResult.base64.length * 0.75);
+                  }
+                }
+              }
+            } catch (e) {
+              console.warn("Compression error for document image:", e);
+            }
+          }
+
+          const fileSizeText = sizeInBytes
+            ? sizeInBytes >= 1024 * 1024
+              ? `${(sizeInBytes / (1024 * 1024)).toFixed(1)} MB`
+              : `${Math.round(sizeInBytes / 1024)} KB`
+            : "500 KB";
+
           const docObj = {
-            uri: asset.uri,
-            name: fileName,
-            sizeText: fileSizeMB,
-            mimeType: mimeType,
+            uri: finalUri,
+            name: safeFileName,
+            sizeText: fileSizeText,
+            mimeType: safeMimeType,
           };
           setBrDocument(docObj);
-          const r2Url = await uploadBRToR2(asset.uri, fileName, mimeType);
+          const r2Url = await uploadBRToR2(
+            finalUri,
+            safeFileName,
+            safeMimeType,
+            directBase64,
+          );
           if (r2Url) {
             setBrDocument({ ...docObj, r2Url });
+          } else {
+            setBrDocument(null);
           }
         }
       }
@@ -568,20 +825,8 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     }
   };
 
-  const handleBRUploadPress = () => {
-    Alert.alert(
-      "Upload BR Document",
-      "Choose an option to upload the official business certificate:",
-      [
-        { text: "Take Photo", onPress: () => pickBRImage("camera") },
-        { text: "Choose from Gallery", onPress: () => pickBRImage("gallery") },
-        {
-          text: "Browse Documents (PDF/Image)",
-          onPress: () => pickBRImage("document"),
-        },
-        { text: "Cancel", style: "cancel" },
-      ],
-    );
+    const handleBRUploadPress = () => {
+    setUploadOptionsModalVisible(true);
   };
 
   const validateEmail = (email: string): boolean => {
@@ -1261,7 +1506,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       if (brDocument && !brDocument.r2Url) {
         showAlert(
           "Error",
-          "BR document is still uploading to R2. Please wait a moment.",
+          "BR document is still uploading. Please wait a moment.",
         );
       } else {
         showAlert(
@@ -2597,9 +2842,9 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                       }}
                     >
                       {isUploadingBR
-                        ? "Uploading to R2..."
+                        ? "Uploading document..."
                         : brDocument.r2Url
-                          ? `Uploaded to R2 • ${brDocument.sizeText}`
+                          ? `Uploaded • ${brDocument.sizeText}`
                           : brDocument.sizeText}
                     </Text>
                   </View>
@@ -2608,7 +2853,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                 {/* Remove button */}
                 <TouchableOpacity
                   activeOpacity={0.7}
-                  onPress={() => setBrDocument(null)}
+                  onPress={() => { setBrDocument(null); setBrFileError(null); }}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
                   <Ionicons name="close-circle" size={22} color="#64748B" />
@@ -2643,6 +2888,36 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                   </Text>
                 </TouchableOpacity>
               )}
+            </View>
+          )}
+
+          {/* Invalid file type / size error */}
+          {brFileError && (
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: "#FEF2F2",
+                borderWidth: 1,
+                borderColor: "#FECACA",
+                borderRadius: 10,
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                marginTop: 10,
+                gap: 6,
+              }}
+            >
+              <MaterialIcons name="error" size={16} color="#EF4444" />
+              <Text
+                style={{
+                  flex: 1,
+                  fontSize: 12,
+                  color: "#B91C1C",
+                  fontWeight: "600",
+                }}
+              >
+                {brFileError}
+              </Text>
             </View>
           )}
         </View>
@@ -2709,7 +2984,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                       fontSize: 15,
                     }}
                   >
-                    Uploading to R2...
+                    Uploading document...
                   </Text>
                 </View>
               ) : (
@@ -2771,6 +3046,237 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
           {step === 2 && renderResidentialAddressForm()}
         </View>
       </ScrollView>
+
+            {/* Upload Options Picker Modal */}
+      <Modal
+        visible={uploadOptionsModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setUploadOptionsModalVisible(false)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setUploadOptionsModalVisible(false)}
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            justifyContent: "flex-end",
+          }}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              paddingHorizontal: 20,
+              paddingTop: 20,
+              paddingBottom: Platform.OS === "ios" ? 36 : 24,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: -3 },
+              shadowOpacity: 0.1,
+              shadowRadius: 10,
+              elevation: 10,
+            }}
+          >
+            {/* Header */}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 6,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 17,
+                  fontWeight: "700",
+                  color: "#1E293B",
+                }}
+              >
+                Upload BR Document
+              </Text>
+              <TouchableOpacity
+                onPress={() => setUploadOptionsModalVisible(false)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                style={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: 15,
+                  backgroundColor: "#F1F5F9",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Ionicons name="close" size={18} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <Text
+              style={{
+                fontSize: 13,
+                color: "#64748B",
+                marginBottom: 18,
+              }}
+            >
+              Choose an option to upload the official business certificate:
+            </Text>
+
+            {/* Option 1: Take Photo */}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => {
+                setUploadOptionsModalVisible(false);
+                pickBRImage("camera");
+              }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingVertical: 14,
+                paddingHorizontal: 14,
+                borderRadius: 14,
+                backgroundColor: "#F8FAFC",
+                marginBottom: 10,
+                borderWidth: 1,
+                borderColor: "#E2E8F0",
+              }}
+            >
+              <View
+                style={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 21,
+                  backgroundColor: "#F3E8FF",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginRight: 14,
+                }}
+              >
+                <Ionicons name="camera-outline" size={22} color="#6B3BCF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 15, fontWeight: "600", color: "#1E293B" }}>
+                  Take Photo
+                </Text>
+                <Text style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>
+                  Capture document using camera
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+            </TouchableOpacity>
+
+            {/* Option 2: Choose from Gallery */}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => {
+                setUploadOptionsModalVisible(false);
+                pickBRImage("gallery");
+              }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingVertical: 14,
+                paddingHorizontal: 14,
+                borderRadius: 14,
+                backgroundColor: "#F8FAFC",
+                marginBottom: 10,
+                borderWidth: 1,
+                borderColor: "#E2E8F0",
+              }}
+            >
+              <View
+                style={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 21,
+                  backgroundColor: "#F3E8FF",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginRight: 14,
+                }}
+              >
+                <Ionicons name="images-outline" size={22} color="#6B3BCF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 15, fontWeight: "600", color: "#1E293B" }}>
+                  Choose from Gallery
+                </Text>
+                <Text style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>
+                  Select an image from photo library
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+            </TouchableOpacity>
+
+            {/* Option 3: Browse Documents */}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => {
+                setUploadOptionsModalVisible(false);
+                pickBRImage("document");
+              }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingVertical: 14,
+                paddingHorizontal: 14,
+                borderRadius: 14,
+                backgroundColor: "#F8FAFC",
+                marginBottom: 14,
+                borderWidth: 1,
+                borderColor: "#E2E8F0",
+              }}
+            >
+              <View
+                style={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 21,
+                  backgroundColor: "#F3E8FF",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginRight: 14,
+                }}
+              >
+                <Ionicons name="document-text-outline" size={22} color="#6B3BCF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 15, fontWeight: "600", color: "#1E293B" }}>
+                  Browse Documents (PDF/Image)
+                </Text>
+                <Text style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>
+                  Upload PDF or image files (max 10MB)
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+            </TouchableOpacity>
+
+            {/* Cancel Button */}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => setUploadOptionsModalVisible(false)}
+              style={{
+                paddingVertical: 14,
+                borderRadius: 14,
+                backgroundColor: "#F1F5F9",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 15,
+                  fontWeight: "600",
+                  color: "#64748B",
+                }}
+              >
+                Cancel
+              </Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Full Image Preview Modal */}
       <Modal

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   BackHandler,
   Keyboard,
   Alert,
+  Dimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -22,6 +23,7 @@ import NoDataFound from "../common/NoDataFound";
 import LoadingPage from "../common/LoadingPage";
 import CustomHeader from "../common/CustomHeader";
 import { useFocusEffect } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type CreateCustomPackageNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -41,6 +43,7 @@ interface CreateCustomPackageProps {
       number: string;
       customerscreencustomerid: string;
       buyerType?: string;
+      from?: string;
     };
   };
 }
@@ -73,9 +76,38 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
     number,
     customerscreencustomerid,
     buyerType,
+    from,
   } = route.params || {};
 
-  const isWholesale = String(buyerType || "").toLowerCase() === "wholesale";
+  const [fetchedBuyerType, setFetchedBuyerType] = useState<string>("");
+
+  useEffect(() => {
+    if (!buyerType && (id || customerId)) {
+      const targetId = id || customerId;
+      AsyncStorage.getItem("authToken").then((token) => {
+        if (!token) return;
+        axios
+          .get(
+            `${environment.API_BASE_URL}api/customer/get-customer-data/${targetId}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            },
+          )
+          .then((res) => {
+            if (res.data?.buyerType) {
+              setFetchedBuyerType(res.data.buyerType);
+            }
+          })
+          .catch(() => {});
+      });
+    }
+  }, [id, customerId, buyerType]);
+
+  const effectiveBuyerType = buyerType || fetchedBuyerType;
+  const isWholesale =
+    String(effectiveBuyerType || "").toLowerCase() === "wholesale" ||
+    from === "ViewCustomerScreen";
+  const insets = useSafeAreaInsets();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
@@ -83,15 +115,49 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
   const [error, setError] = useState("");
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
-  // Keyboard visibility (used only for the button shadow)
-  useEffect(() => {
-    const showEvt = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
-    const hideEvt = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+  // iOS: how many pixels of OUR container the keyboard actually covers
+  const containerRef = useRef<View>(null);
+  const [keyboardOverlap, setKeyboardOverlap] = useState(0);
 
-    const showSub = Keyboard.addListener(showEvt, () =>
+  // Keyboard visibility + measured overlap (iOS)
+  useEffect(() => {
+    if (Platform.OS === "ios") {
+      // keyboardWillChangeFrame fires for show, hide, and size changes
+      // (QuickType bar, emoji keyboard, etc.), so it is the most reliable event.
+      const frameSub = Keyboard.addListener("keyboardWillChangeFrame", (e) => {
+        const { screenY } = e.endCoordinates;
+        const windowHeight = Dimensions.get("window").height;
+        const visible = screenY < windowHeight;
+        setIsKeyboardVisible(visible);
+
+        if (!visible) {
+          setKeyboardOverlap(0);
+          return;
+        }
+
+        containerRef.current?.measureInWindow((_x, y, _w, h) => {
+          const containerBottom = y + h;
+          const overlap = Math.max(0, containerBottom - screenY);
+          setKeyboardOverlap(overlap);
+        });
+      });
+
+      const hideSub = Keyboard.addListener("keyboardWillHide", () => {
+        setIsKeyboardVisible(false);
+        setKeyboardOverlap(0);
+      });
+
+      return () => {
+        frameSub.remove();
+        hideSub.remove();
+      };
+    }
+
+    // Android
+    const showSub = Keyboard.addListener("keyboardDidShow", () =>
       setIsKeyboardVisible(true),
     );
-    const hideSub = Keyboard.addListener(hideEvt, () =>
+    const hideSub = Keyboard.addListener("keyboardDidHide", () =>
       setIsKeyboardVisible(false),
     );
     return () => {
@@ -184,7 +250,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
 
   // Shared back navigation (header button + Android hardware button)
   const handleBack = useCallback(() => {
-    if (isWholesale) {
+    if (isWholesale || from === "ViewCustomerScreen") {
       navigation.navigate("ViewCustomerScreen" as any, {
         id,
         customerId: customerscreencustomerid || customerId,
@@ -207,6 +273,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
   }, [
     navigation,
     isWholesale,
+    from,
     id,
     customerId,
     customerscreencustomerid,
@@ -267,6 +334,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
     if (selectedProducts.length > 0) {
       navigation.navigate("CratScreen" as any, {
         selectedProducts,
+        selectedProductIds: selectedProducts.map((p: any) => p.id),
         id,
         isPackage,
         customerId,
@@ -274,7 +342,8 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
         name,
         number,
         customerscreencustomerid,
-        buyerType,
+        buyerType: isWholesale ? "Wholesale" : effectiveBuyerType || "Retail",
+        from: from || (isWholesale ? "ViewCustomerScreen" : "SelectOrderType"),
       });
     } else {
       Alert.alert("Please select at least one product");
@@ -287,6 +356,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
       .replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   };
 
+  // No elevation while the keyboard is open (avoids a shadow artifact above it)
   const getElevation = () => {
     if (isKeyboardVisible) return 0;
     return hasSelectedProducts ? 5 : 0;
@@ -312,162 +382,179 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
 
   return (
     <KeyboardAvoidingView
-      behavior="padding"
+      // Android: KeyboardAvoidingView "padding".
+      // iOS: handled manually with the measured keyboard overlap below.
+      behavior={Platform.OS === "android" ? "padding" : undefined}
       keyboardVerticalOffset={0}
       style={{ flex: 1, backgroundColor: "white" }}
     >
-      <CustomHeader
-        title="Select Custom Items"
-        titleColor="#6C3CD1"
-        showBackButton={true}
-        navigation={navigation}
-        onBackPress={handleBack}
-      />
+      <View
+        ref={containerRef}
+        collapsable={false}
+        style={{
+          flex: 1,
+          paddingBottom: Platform.OS === "ios" ? keyboardOverlap : 0,
+        }}
+      >
+        <CustomHeader
+          title="Select Custom Items"
+          titleColor="#6C3CD1"
+          showBackButton={true}
+          navigation={navigation}
+          onBackPress={handleBack}
+        />
 
-      <View className="flex-1 items-center">
-        <View className="flex-1 w-full max-w-[500px] px-6">
-          {/* Search Bar */}
-          <View
-            className="mb-4 bg-[#F5F1FC] h-[50px] rounded-full flex-row items-center px-4 mt-2"
-            style={{
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <TextInput
-              className="flex-1 italic text-gray-700"
-              style={{
-                height: 48,
-                textAlignVertical: "center",
-                paddingVertical: 0,
-                includeFontPadding: false,
-                fontSize: 14,
-              }}
-              placeholder="Search By Product Name"
-              placeholderTextColor="#6839CF"
-              value={searchQuery}
-              onChangeText={handleSearch}
-            />
-            <Ionicons name="search" size={20} color="#6839CF" />
-          </View>
-
-          {/* Product List OR Empty State */}
-          <ScrollView
-            className="flex-1"
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={
-              filteredProducts.length === 0
-                ? {
-                    flexGrow: 1,
-                    justifyContent: "center",
-                    alignItems: "center",
-                  }
-                : undefined
-            }
-          >
-            {filteredProducts.length > 0 ? (
-              filteredProducts.map((product) => (
-                <TouchableOpacity
-                  key={product.id}
-                  className="flex-row py-3 border-b border-gray-100"
-                  onPress={() => toggleProductSelection(product.id)}
-                >
-                  <View className="flex-1 pr-3">
-                    <Text
-                      className="text-base font-medium text-gray-800"
-                      numberOfLines={2}
-                    >
-                      {product.displayName}
-                    </Text>
-                    <Text className="text-sm text-gray-600">
-                      Rs. {formatPrice(product.discountedPrice)} per kg
-                    </Text>
-                  </View>
-                  <View className="justify-center w-8">
-                    <View
-                      className={`w-6 h-6 rounded border ${
-                        product.selected
-                          ? "bg-black border-black"
-                          : "border-gray-400"
-                      } justify-center items-center`}
-                    >
-                      {product.selected && (
-                        <Ionicons name="checkmark" size={16} color="white" />
-                      )}
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              ))
-            ) : (
-              <View
-                style={{
-                  justifyContent: "center",
-                  alignItems: "center",
-                  paddingBottom: 50,
-                }}
-              >
-                <NoDataFound message="No products found" />
-              </View>
-            )}
-          </ScrollView>
-
-          {/* Go to Cart Button */}
-          <View
-            className="items-center"
-            style={{
-              paddingTop: 16,
-              paddingBottom: 16,
-              display: isKeyboardVisible ? "none" : "flex",
-            }}
-          >
+        <View className="flex-1 items-center">
+          <View className="flex-1 w-full max-w-[500px] px-6">
+            {/* Search Bar */}
             <View
+              className="mb-4 bg-[#F5F1FC] h-[50px] rounded-full flex-row items-center px-4 mt-2"
               style={{
-                width: "60%",
-                borderRadius: 30,
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 6 },
-                shadowOpacity: hasSelectedProducts ? 0.25 : 0,
-                shadowRadius: 8,
-                elevation: getElevation(),
+                justifyContent: "center",
+                alignItems: "center",
               }}
             >
-              <TouchableOpacity
-                onPress={goToCart}
-                disabled={!hasSelectedProducts}
-                activeOpacity={0.8}
-                style={{ borderRadius: 30 }}
+              <TextInput
+                className="flex-1 italic text-gray-700"
+                style={{
+                  height: 48,
+                  textAlignVertical: "center",
+                  paddingVertical: 0,
+                  includeFontPadding: false,
+                  fontSize: 14,
+                }}
+                placeholder="Search By Product Name"
+                placeholderTextColor="#6839CF"
+                value={searchQuery}
+                onChangeText={handleSearch}
+              />
+              <Ionicons name="search" size={20} color="#6839CF" />
+            </View>
+
+            {/* Product List OR Empty State */}
+            <ScrollView
+              className="flex-1"
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode={Platform.OS === "ios" ? "none" : "on-drag"}
+              automaticallyAdjustKeyboardInsets={false}
+              nestedScrollEnabled
+              bounces={true}
+              contentContainerStyle={
+                filteredProducts.length === 0
+                  ? {
+                      flexGrow: 1,
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }
+                  : { paddingBottom: 24 }
+              }
+            >
+              {filteredProducts.length > 0 ? (
+                filteredProducts.map((product) => (
+                  <TouchableOpacity
+                    key={product.id}
+                    className="flex-row py-3 border-b border-gray-100"
+                    onPress={() => toggleProductSelection(product.id)}
+                  >
+                    <View className="flex-1 pr-3">
+                      <Text
+                        className="text-base font-medium text-gray-800"
+                        numberOfLines={2}
+                      >
+                        {product.displayName}
+                      </Text>
+                      <Text className="text-sm text-gray-600">
+                        Rs. {formatPrice(product.discountedPrice)} per kg
+                      </Text>
+                    </View>
+                    <View className="justify-center w-8">
+                      <View
+                        className={`w-6 h-6 rounded border ${
+                          product.selected
+                            ? "bg-black border-black"
+                            : "border-gray-400"
+                        } justify-center items-center`}
+                      >
+                        {product.selected && (
+                          <Ionicons name="checkmark" size={16} color="white" />
+                        )}
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <View
+                  style={{
+                    justifyContent: "center",
+                    alignItems: "center",
+                    paddingBottom: 50,
+                  }}
+                >
+                  <NoDataFound message="No products found" />
+                </View>
+              )}
+            </ScrollView>
+
+            {/* Go to Cart Button (stays visible above the keyboard) */}
+            <View
+              className="items-center"
+              style={{
+                paddingTop: isKeyboardVisible ? 8 : 16,
+                paddingBottom: isKeyboardVisible
+                  ? 12
+                  : Math.max(insets.bottom, 16) + 8,
+              }}
+            >
+              <View
+                style={{
+                  width: "60%",
+                  borderRadius: 30,
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 6 },
+                  shadowOpacity:
+                    hasSelectedProducts && !isKeyboardVisible ? 0.25 : 0,
+                  shadowRadius: 8,
+                  elevation: getElevation(),
+                }}
               >
-                {hasSelectedProducts ? (
-                  <LinearGradient
-                    colors={["#6839CF", "#874DDB"]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={{
-                      paddingVertical: 12,
-                      borderRadius: 30,
-                      alignItems: "center",
-                    }}
-                  >
-                    <Text className="text-white font-medium text-base">
-                      Go to Cart
-                    </Text>
-                  </LinearGradient>
-                ) : (
-                  <View
-                    style={{
-                      paddingVertical: 12,
-                      borderRadius: 30,
-                      alignItems: "center",
-                      backgroundColor: "#B6B7BC",
-                    }}
-                  >
-                    <Text className="text-white font-medium text-base">
-                      Go to Cart
-                    </Text>
-                  </View>
-                )}
-              </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={goToCart}
+                  disabled={!hasSelectedProducts}
+                  activeOpacity={0.8}
+                  style={{ borderRadius: 30 }}
+                >
+                  {hasSelectedProducts ? (
+                    <LinearGradient
+                      colors={["#6839CF", "#874DDB"]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={{
+                        paddingVertical: 12,
+                        borderRadius: 30,
+                        alignItems: "center",
+                      }}
+                    >
+                      <Text className="text-white font-medium text-base">
+                        Go to Cart
+                      </Text>
+                    </LinearGradient>
+                  ) : (
+                    <View
+                      style={{
+                        paddingVertical: 12,
+                        borderRadius: 30,
+                        alignItems: "center",
+                        backgroundColor: "#B6B7BC",
+                      }}
+                    >
+                      <Text className="text-white font-medium text-base">
+                        Go to Cart
+                      </Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </View>
