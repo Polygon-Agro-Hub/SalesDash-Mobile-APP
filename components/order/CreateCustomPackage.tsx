@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  KeyboardAvoidingView,
   Platform,
   BackHandler,
   Keyboard,
@@ -115,51 +114,43 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
   const [error, setError] = useState("");
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
-  // iOS: how many pixels of OUR container the keyboard actually covers
+  // How many pixels of OUR container the keyboard actually covers.
+  // Measured on both platforms, so it works whether or not Android resizes
+  // the window (edge-to-edge builds don't resize, Expo Go does).
   const containerRef = useRef<View>(null);
   const [keyboardOverlap, setKeyboardOverlap] = useState(0);
 
-  // Keyboard visibility + measured overlap (iOS)
   useEffect(() => {
-    if (Platform.OS === "ios") {
-      // keyboardWillChangeFrame fires for show, hide, and size changes
-      // (QuickType bar, emoji keyboard, etc.), so it is the most reliable event.
-      const frameSub = Keyboard.addListener("keyboardWillChangeFrame", (e) => {
-        const { screenY } = e.endCoordinates;
-        const windowHeight = Dimensions.get("window").height;
-        const visible = screenY < windowHeight;
-        setIsKeyboardVisible(visible);
-
-        if (!visible) {
-          setKeyboardOverlap(0);
-          return;
-        }
-
-        containerRef.current?.measureInWindow((_x, y, _w, h) => {
-          const containerBottom = y + h;
-          const overlap = Math.max(0, containerBottom - screenY);
-          setKeyboardOverlap(overlap);
-        });
+    const measureOverlap = (screenY: number) => {
+      containerRef.current?.measureInWindow((_x, y, _w, h) => {
+        const containerBottom = y + h;
+        const overlap = Math.max(0, containerBottom - screenY);
+        setKeyboardOverlap(overlap);
       });
+    };
 
-      const hideSub = Keyboard.addListener("keyboardWillHide", () => {
-        setIsKeyboardVisible(false);
+    const showEvt =
+      Platform.OS === "ios" ? "keyboardWillChangeFrame" : "keyboardDidShow";
+    const hideEvt =
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+    const showSub = Keyboard.addListener(showEvt, (e) => {
+      const { screenY } = e.endCoordinates;
+      const windowHeight = Dimensions.get("window").height;
+      const visible = screenY < windowHeight;
+      setIsKeyboardVisible(visible);
+      if (!visible) {
         setKeyboardOverlap(0);
-      });
+        return;
+      }
+      measureOverlap(screenY);
+    });
 
-      return () => {
-        frameSub.remove();
-        hideSub.remove();
-      };
-    }
+    const hideSub = Keyboard.addListener(hideEvt, () => {
+      setIsKeyboardVisible(false);
+      setKeyboardOverlap(0);
+    });
 
-    // Android
-    const showSub = Keyboard.addListener("keyboardDidShow", () =>
-      setIsKeyboardVisible(true),
-    );
-    const hideSub = Keyboard.addListener("keyboardDidHide", () =>
-      setIsKeyboardVisible(false),
-    );
     return () => {
       showSub.remove();
       hideSub.remove();
@@ -381,20 +372,11 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
   }
 
   return (
-    <KeyboardAvoidingView
-      // Android: KeyboardAvoidingView "padding".
-      // iOS: handled manually with the measured keyboard overlap below.
-      behavior={Platform.OS === "android" ? "padding" : undefined}
-      keyboardVerticalOffset={0}
-      style={{ flex: 1, backgroundColor: "white" }}
-    >
+    <View style={{ flex: 1, backgroundColor: "white" }}>
       <View
         ref={containerRef}
         collapsable={false}
-        style={{
-          flex: 1,
-          paddingBottom: Platform.OS === "ios" ? keyboardOverlap : 0,
-        }}
+        style={{ flex: 1, paddingBottom: keyboardOverlap }}
       >
         <CustomHeader
           title="Select Custom Items"
@@ -559,7 +541,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
           </View>
         </View>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 
