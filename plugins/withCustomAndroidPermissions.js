@@ -31,6 +31,7 @@ function withCustomAndroidPermissions(config) {
       "android.permission.SYSTEM_ALERT_WINDOW",
       "android.permission.CALL_PHONE",
       "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+      "android.permission.FOREGROUND_SERVICE",
       "android.permission.BLUETOOTH",
       "android.permission.BLUETOOTH_ADMIN",
       "android.permission.BLUETOOTH_SCAN",

@@ -32,7 +32,6 @@
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.VIBRATE",
         "android.permission.RECEIVE_BOOT_COMPLETED",
-        "android.permission.FOREGROUND_SERVICE",
         "android.permission.USE_BIOMETRIC",
         "android.permission.USE_FINGERPRINT"
       ],
@@ -56,7 +55,8 @@
         "android.permission.BLUETOOTH",
         "android.permission.BLUETOOTH_SCAN",
         "android.permission.BLUETOOTH_CONNECT",
-        "android.permission.BLUETOOTH_ADMIN"
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.FOREGROUND_SERVICE"
       ]
     },
     "ios": {
@@ -69,7 +69,6 @@
         "NSPhotoLibraryUsageDescription": "Photo library access is required to upload profile and complaint images.",
         "NSPhotoLibraryAddUsageDescription": "Photo library access is required to save related images.",
         "NSLocationWhenInUseUsageDescription": "Allow $(PRODUCT_NAME) to access your location to attach geo location to records.",
-        "NSUserTrackingUsageDescription": "Tracking is used to improve app experience.",
         "NSUserNotificationUsageDescription": "Notifications are used to send important updates.",
         "NSFaceIDUsageDescription": "Allow SalesDash to use Face ID for fast and secure login."
       }
