@@ -17,6 +17,7 @@ import {
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
+import * as ImageManipulator from "expo-image-manipulator";
 import * as FileSystem from "expo-file-system/legacy";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
@@ -434,17 +435,55 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
     throw new Error("Unable to read document file for upload");
   };
 
+    const compressImageIfNeeded = async (
+    uri: string,
+    width?: number,
+    height?: number,
+  ) => {
+    try {
+      const actions: ImageManipulator.Action[] = [];
+      const maxDim = 1600;
+      if (width && height) {
+        if (width > maxDim || height > maxDim) {
+          if (width >= height) {
+            actions.push({ resize: { width: maxDim } });
+          } else {
+            actions.push({ resize: { height: maxDim } });
+          }
+        }
+      } else {
+        actions.push({ resize: { width: maxDim } });
+      }
+
+      const manipResult = await ImageManipulator.manipulateAsync(
+        uri,
+        actions,
+        {
+          compress: 0.7,
+          format: ImageManipulator.SaveFormat.JPEG,
+          base64: true,
+        },
+      );
+      return manipResult;
+    } catch (e) {
+      console.warn("Image compression failed, using original uri:", e);
+      return null;
+    }
+  };
+
   const uploadBRToR2 = async (
     fileUri: string,
     fileName: string,
     mimeType: string,
+    precomputedBase64?: string,
   ): Promise<string | null> => {
     try {
       setIsUploadingBR(true);
-      const base64Data = await readFileAsBase64(fileUri);
+      const base64Data =
+        precomputedBase64 || (await readFileAsBase64(fileUri));
 
       const response = await axios.post(
-        `${environment.API_BASE_URL}api/customer/upload-br`,
+        		`${environment.API_BASE_URL}api/customer/upload-br`,
         {
           base64: base64Data.startsWith("data:")
             ? base64Data
@@ -458,10 +497,10 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       }
       return null;
     } catch (error) {
-      console.error("Failed to upload BR to R2:", error);
+      console.error("Failed to upload BR document:", error);
       Alert.alert(
         "Upload Error",
-        "Failed to upload BR document to Cloudflare R2. Please try again.",
+        "Failed to upload BR document. Please try again.",
       );
       return null;
     } finally {
@@ -487,18 +526,55 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         if (!result.canceled && result.assets?.[0]) {
           const asset = result.assets[0];
           const fileName = asset.fileName || `BR_Photo_${Date.now()}.jpg`;
-          const fileSizeMB = asset.fileSize
-            ? `${(asset.fileSize / (1024 * 1024)).toFixed(1)} MB`
-            : "1.2 MB";
-          const mimeType = asset.mimeType || "image/jpeg";
+          const mimeType = "image/jpeg";
+
+          let finalUri = asset.uri;
+          let directBase64: string | undefined = undefined;
+          let sizeInBytes = asset.fileSize;
+
+          try {
+            const manipResult = await compressImageIfNeeded(
+              asset.uri,
+              asset.width,
+              asset.height,
+            );
+            if (manipResult) {
+              finalUri = manipResult.uri;
+              directBase64 = manipResult.base64;
+              try {
+                const info = await FileSystem.getInfoAsync(manipResult.uri);
+                if (info.exists && !info.isDirectory && info.size) {
+                  sizeInBytes = info.size;
+                }
+              } catch (_) {
+                if (manipResult.base64) {
+                  sizeInBytes = Math.round(manipResult.base64.length * 0.75);
+                }
+              }
+            }
+          } catch (e) {
+            console.warn("Compression error:", e);
+          }
+
+          const fileSizeText = sizeInBytes
+            ? sizeInBytes >= 1024 * 1024
+              ? `${(sizeInBytes / (1024 * 1024)).toFixed(1)} MB`
+              : `${Math.round(sizeInBytes / 1024)} KB`
+            : "500 KB";
+
           const docObj = {
-            uri: asset.uri,
+            uri: finalUri,
             name: fileName,
-            sizeText: fileSizeMB,
+            sizeText: fileSizeText,
             mimeType: mimeType,
           };
           setBrDocument(docObj);
-          const r2Url = await uploadBRToR2(asset.uri, fileName, mimeType);
+          const r2Url = await uploadBRToR2(
+            finalUri,
+            fileName,
+            mimeType,
+            directBase64,
+          );
           if (r2Url) {
             setBrDocument({ ...docObj, r2Url });
           }
@@ -520,19 +596,56 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         });
         if (!result.canceled && result.assets?.[0]) {
           const asset = result.assets[0];
-          const fileName = asset.fileName || `BR_Image_${Date.now()}.png`;
-          const fileSizeMB = asset.fileSize
-            ? `${(asset.fileSize / (1024 * 1024)).toFixed(1)} MB`
-            : "1.2 MB";
-          const mimeType = asset.mimeType || "image/png";
+          const fileName = asset.fileName || `BR_Image_${Date.now()}.jpg`;
+          const mimeType = asset.mimeType || "image/jpeg";
+
+          let finalUri = asset.uri;
+          let directBase64: string | undefined = undefined;
+          let sizeInBytes = asset.fileSize;
+
+          try {
+            const manipResult = await compressImageIfNeeded(
+              asset.uri,
+              asset.width,
+              asset.height,
+            );
+            if (manipResult) {
+              finalUri = manipResult.uri;
+              directBase64 = manipResult.base64;
+              try {
+                const info = await FileSystem.getInfoAsync(manipResult.uri);
+                if (info.exists && !info.isDirectory && info.size) {
+                  sizeInBytes = info.size;
+                }
+              } catch (_) {
+                if (manipResult.base64) {
+                  sizeInBytes = Math.round(manipResult.base64.length * 0.75);
+                }
+              }
+            }
+          } catch (e) {
+            console.warn("Compression error:", e);
+          }
+
+          const fileSizeText = sizeInBytes
+            ? sizeInBytes >= 1024 * 1024
+              ? `${(sizeInBytes / (1024 * 1024)).toFixed(1)} MB`
+              : `${Math.round(sizeInBytes / 1024)} KB`
+            : "500 KB";
+
           const docObj = {
-            uri: asset.uri,
+            uri: finalUri,
             name: fileName,
-            sizeText: fileSizeMB,
+            sizeText: fileSizeText,
             mimeType: mimeType,
           };
           setBrDocument(docObj);
-          const r2Url = await uploadBRToR2(asset.uri, fileName, mimeType);
+          const r2Url = await uploadBRToR2(
+            finalUri,
+            fileName,
+            mimeType,
+            directBase64,
+          );
           if (r2Url) {
             setBrDocument({ ...docObj, r2Url });
           }
@@ -544,19 +657,57 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
         });
         if (!result.canceled && result.assets?.[0]) {
           const asset = result.assets[0];
-          const fileSizeMB = asset.size
-            ? `${(asset.size / (1024 * 1024)).toFixed(1)} MB`
-            : "1.2 MB";
           const mimeType = asset.mimeType || "application/pdf";
           const fileName = asset.name || `BR_Doc_${Date.now()}.pdf`;
+
+          let finalUri = asset.uri;
+          let directBase64: string | undefined = undefined;
+          let sizeInBytes = asset.size;
+
+          const isImage =
+            mimeType.startsWith("image/") ||
+            /\.(jpe?g|png|webp)$/i.test(fileName);
+          if (isImage) {
+            try {
+              const manipResult = await compressImageIfNeeded(asset.uri);
+              if (manipResult) {
+                finalUri = manipResult.uri;
+                directBase64 = manipResult.base64;
+                try {
+                  const info = await FileSystem.getInfoAsync(manipResult.uri);
+                  if (info.exists && !info.isDirectory && info.size) {
+                    sizeInBytes = info.size;
+                  }
+                } catch (_) {
+                  if (manipResult.base64) {
+                    sizeInBytes = Math.round(manipResult.base64.length * 0.75);
+                  }
+                }
+              }
+            } catch (e) {
+              console.warn("Compression error for document image:", e);
+            }
+          }
+
+          const fileSizeText = sizeInBytes
+            ? sizeInBytes >= 1024 * 1024
+              ? `${(sizeInBytes / (1024 * 1024)).toFixed(1)} MB`
+              : `${Math.round(sizeInBytes / 1024)} KB`
+            : "500 KB";
+
           const docObj = {
-            uri: asset.uri,
+            uri: finalUri,
             name: fileName,
-            sizeText: fileSizeMB,
+            sizeText: fileSizeText,
             mimeType: mimeType,
           };
           setBrDocument(docObj);
-          const r2Url = await uploadBRToR2(asset.uri, fileName, mimeType);
+          const r2Url = await uploadBRToR2(
+            finalUri,
+            fileName,
+            mimeType,
+            directBase64,
+          );
           if (r2Url) {
             setBrDocument({ ...docObj, r2Url });
           }
@@ -1261,7 +1412,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       if (brDocument && !brDocument.r2Url) {
         showAlert(
           "Error",
-          "BR document is still uploading to R2. Please wait a moment.",
+          "BR document is still uploading. Please wait a moment.",
         );
       } else {
         showAlert(
@@ -2597,9 +2748,9 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                       }}
                     >
                       {isUploadingBR
-                        ? "Uploading to R2..."
+                        ? "Uploading document..."
                         : brDocument.r2Url
-                          ? `Uploaded to R2 • ${brDocument.sizeText}`
+                          ? `Uploaded • ${brDocument.sizeText}`
                           : brDocument.sizeText}
                     </Text>
                   </View>
@@ -2709,7 +2860,7 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
                       fontSize: 15,
                     }}
                   >
-                    Uploading to R2...
+                    Uploading document...
                   </Text>
                 </View>
               ) : (

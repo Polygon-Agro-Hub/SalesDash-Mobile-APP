@@ -283,6 +283,8 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
       selectedAddress: selectedAddress,
       deliveryCharge: charge,
       fullTotal: computedFullTotal,
+      buyerType: (route.params as any)?.buyerType,
+      from: (route.params as any)?.from,
     });
   };
 

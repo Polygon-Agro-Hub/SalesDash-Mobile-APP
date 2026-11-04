@@ -530,7 +530,8 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
         name,
 
         selectedAddressId: incomingSelectedAddress?.id,
-        buyerType,
+        buyerType: isWholesale ? "Wholesale" : (buyerType || "Retail"),
+        from: (route.params as any)?.from,
       });
     } else {
       Alert.alert("Please add at least one item to your cart");
@@ -563,13 +564,15 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
           navigation.navigate("CreateCustomPackage" as any, {
             id,
             isPackage,
+            selectedProducts: cartItems,
             selectedProductIds: cartItems.map((item) => item.id),
             customerId,
             title,
             name,
             number,
             customerscreencustomerid,
-            buyerType,
+            buyerType: isWholesale ? "Wholesale" : (buyerType || "Retail"),
+            from: (route.params as any)?.from,
           });
         }}
         rightComponent={

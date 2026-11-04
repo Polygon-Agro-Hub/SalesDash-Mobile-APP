@@ -327,6 +327,8 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
       number,
       customerscreencustomerid,
       isFinalizeImdt: route.params?.isFinalizeImdt,
+      buyerType: (route.params as any)?.buyerType,
+      from: (route.params as any)?.from,
     };
 
     navigation.navigate("OrderSummeryScreen" as any, navigationData);
@@ -366,6 +368,8 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
     calculatedOrders: (route.params as any)?.calculatedOrders,
     packageType: (route.params as any)?.packageType,
     endDate: (route.params as any)?.endDate,
+    buyerType: (route.params as any)?.buyerType,
+    from: (route.params as any)?.from,
   });
 
   useFocusEffect(

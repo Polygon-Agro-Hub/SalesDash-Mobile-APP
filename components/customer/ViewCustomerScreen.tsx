@@ -43,6 +43,7 @@ import LottieView from "lottie-react-native";
 import { AlertModal } from "../common/AlertModal";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
+import * as ImageManipulator from "expo-image-manipulator";
 import * as FileSystem from "expo-file-system/legacy";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Modal } from "react-native";
@@ -760,13 +761,49 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
     });
   };
 
-  const uploadReuploadToR2 = async (fileUri: string, fileName: string, mimeType: string): Promise<string | null> => {
+    const compressImageIfNeeded = async (
+    uri: string,
+    width?: number,
+    height?: number,
+  ) => {
+    try {
+      const actions: ImageManipulator.Action[] = [];
+      const maxDim = 1600;
+      if (width && height) {
+        if (width > maxDim || height > maxDim) {
+          if (width >= height) {
+            actions.push({ resize: { width: maxDim } });
+          } else {
+            actions.push({ resize: { height: maxDim } });
+          }
+        }
+      } else {
+        actions.push({ resize: { width: maxDim } });
+      }
+
+      const manipResult = await ImageManipulator.manipulateAsync(
+        uri,
+        actions,
+        {
+          compress: 0.7,
+          format: ImageManipulator.SaveFormat.JPEG,
+          base64: true,
+        },
+      );
+      return manipResult;
+    } catch (e) {
+      console.warn("Image compression failed, using original uri:", e);
+      return null;
+    }
+  };
+
+  const uploadReuploadToR2 = async (fileUri: string, fileName: string, mimeType: string, directBase64?: string): Promise<string | null> => {
     try {
       setIsUploadingReupload(true);
-      const base64Data = await readFileAsBase64(fileUri, fileName);
+      const base64Data = directBase64 || (await readFileAsBase64(fileUri, fileName));
 
       const response = await axios.post(`${environment.API_BASE_URL}api/customer/upload-br`, {
-        base64: `data:${mimeType};base64,${base64Data}`,
+        base64: base64Data.startsWith("data:") ? base64Data : `data:${mimeType};base64,${base64Data}`,
         fileName: fileName,
       });
 
@@ -775,7 +812,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       }
       return null;
     } catch (error: any) {
-      console.error("Failed to upload BR to R2:", error);
+      console.error("Failed to upload BR document:", error);
       // show the server's specific message (e.g. unsupported type / too large) when available
       const serverMessage = error?.response?.data?.error;
       Alert.alert(
@@ -794,12 +831,48 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
     name: string;
     size?: number | null;
     mimeType: string;
+    width?: number;
+    height?: number;
   }) => {
+    let finalUri = asset.uri;
+    let finalSize = asset.size;
+    let directBase64: string | undefined = undefined;
+
+    const isImage =
+      asset.mimeType.startsWith("image/") ||
+      /\.(jpe?g|png|webp|heic)$/i.test(asset.name);
+
+    if (isImage) {
+      try {
+        const manipResult = await compressImageIfNeeded(
+          asset.uri,
+          asset.width,
+          asset.height,
+        );
+        if (manipResult) {
+          finalUri = manipResult.uri;
+          directBase64 = manipResult.base64;
+          try {
+            const info = await FileSystem.getInfoAsync(manipResult.uri);
+            if (info.exists && !info.isDirectory && info.size) {
+              finalSize = info.size;
+            }
+          } catch (_) {
+            if (manipResult.base64) {
+              finalSize = Math.round(manipResult.base64.length * 0.75);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to compress reupload BR image:", err);
+      }
+    }
+
     const validationError = validateBRFile(
       asset.name,
-      asset.uri,
+      finalUri,
       asset.mimeType,
-      asset.size,
+      finalSize,
     );
     if (validationError) {
       setReuploadDoc(null); // don't keep or upload the invalid file
@@ -809,17 +882,21 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
 
     setBrFileError(null); // valid file, clear any previous error
 
+    const fileSizeText = finalSize
+      ? finalSize >= 1024 * 1024
+        ? `${(finalSize / (1024 * 1024)).toFixed(1)} MB`
+        : `${Math.round(finalSize / 1024)} KB`
+      : "—";
+
     const docObj = {
-      uri: asset.uri,
+      uri: finalUri,
       name: asset.name,
-      sizeText: asset.size
-        ? `${(asset.size / (1024 * 1024)).toFixed(1)} MB`
-        : "—",
+      sizeText: fileSizeText,
       mimeType: asset.mimeType,
     };
     setReuploadDoc(docObj);
 
-    const r2Url = await uploadReuploadToR2(asset.uri, asset.name, asset.mimeType);
+    const r2Url = await uploadReuploadToR2(finalUri, asset.name, asset.mimeType, directBase64);
     if (r2Url) {
       setReuploadDoc({ ...docObj, r2Url });
     } else {
@@ -847,6 +924,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
             name: a.fileName || `BR_Photo_${Date.now()}.jpg`,
             size: a.fileSize,
             mimeType: a.mimeType || "image/jpeg",
+            width: a.width,
+            height: a.height,
           });
         }
       } else if (mode === "gallery") {
@@ -869,6 +948,8 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
             size: a.fileSize,
             mimeType:
               a.mimeType || (uriExt === "png" ? "image/png" : "image/jpeg"),
+            width: a.width,
+            height: a.height,
           });
         }
       } else if (mode === "document") {
@@ -1340,7 +1421,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                         {reuploadDoc.name}
                       </Text>
                       <Text style={{ fontSize: 10, color: isUploadingReupload ? "#D97706" : reuploadDoc.r2Url ? "#16A34A" : "#64748B", marginTop: 1 }}>
-                        {isUploadingReupload ? "Uploading to R2..." : reuploadDoc.r2Url ? `Uploaded • ${reuploadDoc.sizeText}` : reuploadDoc.sizeText}
+                        {isUploadingReupload ? "Uploading document..." : reuploadDoc.r2Url ? `Uploaded • ${reuploadDoc.sizeText}` : reuploadDoc.sizeText}
                       </Text>
                     </View>
                   </View>
@@ -1446,7 +1527,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                     <ActivityIndicator color="#FFFFFF" size="small" />
                     <Text style={{ color: "#FFFFFF", fontWeight: "bold", fontSize: 15 }}>
-                      {isUploadingReupload ? "Uploading..." : "Submitting..."}
+                      {isUploadingReupload ? "Uploading document..." : "Submitting..."}
                     </Text>
                   </View>
                 ) : (
@@ -2231,9 +2312,10 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
 
             {/* New Order Button */}
             <TouchableOpacity
-              disabled={creditBalance < 0 || (buyerType === "Wholesale" && wholesaleApproveStatus !== "Approve")}
+              disabled={creditBalance < 0 || (String(buyerType || "").toLowerCase() === "wholesale" && wholesaleApproveStatus !== "Approve")}
               onPress={() => {
-                if (buyerType === "Wholesale") {
+                const isWholesaleCustomer = String(buyerType || "").toLowerCase() === "wholesale";
+                if (isWholesaleCustomer) {
                   navigation.navigate("CreateCustomPackage" as any, {
                     id,
                     isPackage: 0,
@@ -2243,6 +2325,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                     number: customerNumber,
                     customerscreencustomerid: customerId,
                     buyerType: "Wholesale",
+                    from: "ViewCustomerScreen",
                   });
                 } else {
                   navigation.navigate("SelectOrderType" as any, {
@@ -2253,6 +2336,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                     number: customerNumber,
                     customerscreencustomerid: customerId,
                     buyerType: "Retail",
+                    from: "ViewCustomerScreen",
                   });
                 }
               }}
