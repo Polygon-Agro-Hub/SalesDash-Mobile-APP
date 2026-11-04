@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useRef, useState, useEffect } from "react";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
 import Icon from "react-native-vector-icons/Ionicons";
@@ -21,10 +21,12 @@ import {
   Alert,
   BackHandler,
   ScrollView,
+  Animated,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import Checkbox from "expo-checkbox";
 import biometricService from "@/services/biometric/biometric.service";
+import BiometricAuthModal from "./BiometricAuthModal";
 
 type LoginScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -51,6 +53,55 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [biometricLabel, setBiometricLabel] = useState("Biometrics");
   const [hasStoredBiometrics, setHasStoredBiometrics] = useState(false);
   const [enableBiometricCheckbox, setEnableBiometricCheckbox] = useState(false);
+  const [isBiometricModalVisible, setIsBiometricModalVisible] = useState(false);
+  const [biometricModalStatus, setBiometricModalStatus] = useState<"scanning" | "success" | "error">("scanning");
+
+  const buttonPulseAnim = useRef(new Animated.Value(1)).current;
+  const buttonRippleAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (hasStoredBiometrics) {
+      const loop = Animated.loop(
+        Animated.parallel([
+          Animated.sequence([
+            Animated.timing(buttonPulseAnim, {
+              toValue: 1.08,
+              duration: 1200,
+              useNativeDriver: true,
+            }),
+            Animated.timing(buttonPulseAnim, {
+              toValue: 1,
+              duration: 1200,
+              useNativeDriver: true,
+            }),
+          ]),
+          Animated.sequence([
+            Animated.timing(buttonRippleAnim, {
+              toValue: 1,
+              duration: 2400,
+              useNativeDriver: true,
+            }),
+            Animated.timing(buttonRippleAnim, {
+              toValue: 0,
+              duration: 0,
+              useNativeDriver: true,
+            }),
+          ]),
+        ]),
+      );
+      loop.start();
+      return () => loop.stop();
+    }
+  }, [hasStoredBiometrics]);
+
+  const rippleScale = buttonRippleAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.45],
+  });
+  const rippleOpacity = buttonRippleAnim.interpolate({
+    inputRange: [0, 0.7, 1],
+    outputRange: [0.35, 0.15, 0],
+  });
 
   const validateEmployeeId = (id: string): string => {
     if (id.trim() === "") return "Employee ID is required";
@@ -211,15 +262,27 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         return;
       }
 
+      setIsBiometricModalVisible(true);
+      setBiometricModalStatus("scanning");
+
       const verified = await biometricService.authenticateWithBiometrics(
-        `Sign in with ${biometricLabel}`,
+        "Confirm your fingerprint to sign in",
       );
+
       if (verified) {
+        setBiometricModalStatus("success");
         setEmpId(creds.empId);
-        await performLogin(creds.empId, creds.password, false);
+
+        setTimeout(async () => {
+          setIsBiometricModalVisible(false);
+          await performLogin(creds.empId, creds.password, false);
+        }, 650);
+      } else {
+        setIsBiometricModalVisible(false);
       }
     } catch (error) {
       console.error("Biometric login error:", error);
+      setIsBiometricModalVisible(false);
     }
   };
 
@@ -517,42 +580,100 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 </TouchableOpacity>
               </View>
 
-              {/* Quick Biometric Sign In button for returning users */}
+              {/* Animated Fingerprint Sign In directly beneath the Sign-In button */}
               {hasStoredBiometrics && (
-                <TouchableOpacity
-                  onPress={handleBiometricLogin}
-                  disabled={loading}
-                  activeOpacity={0.7}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginTop: 20,
-                    paddingVertical: 12,
-                    paddingHorizontal: 22,
-                    borderRadius: 999,
-                    backgroundColor: "#F3EEFF",
-                    borderWidth: 1,
-                    borderColor: "#E3D5FF",
-                  }}
-                >
-                  <Icon name="finger-print-outline" size={22} color="#6C3CD1" />
-                  <Text
+                <View style={{ alignItems: "center", marginTop: 24 }}>
+                  <View
                     style={{
-                      marginLeft: 8,
-                      color: "#6C3CD1",
-                      fontSize: 15,
-                      fontWeight: "600",
+                      width: 68,
+                      height: 68,
+                      justifyContent: "center",
+                      alignItems: "center",
                     }}
                   >
-                    Sign in with {biometricLabel}
-                  </Text>
-                </TouchableOpacity>
+                    {/* Pulsing Ripple Halo */}
+                    <Animated.View
+                      style={{
+                        position: "absolute",
+                        width: 64,
+                        height: 64,
+                        borderRadius: 32,
+                        backgroundColor: "#6C3CD1",
+                        transform: [{ scale: rippleScale }],
+                        opacity: rippleOpacity,
+                      }}
+                    />
+
+                    {/* Circular Fingerprint Icon Button */}
+                    <Animated.View
+                      style={{ transform: [{ scale: buttonPulseAnim }] }}
+                    >
+                      <TouchableOpacity
+                        onPress={handleBiometricLogin}
+                        disabled={loading}
+                        activeOpacity={0.8}
+                        style={{
+                          width: 56,
+                          height: 56,
+                          borderRadius: 28,
+                          backgroundColor: "#F4EEFD",
+                          borderWidth: 1.5,
+                          borderColor: "#D8C7F8",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          shadowColor: "#6C3CD1",
+                          shadowOffset: { width: 0, height: 4 },
+                          shadowOpacity: 0.25,
+                          shadowRadius: 8,
+                          elevation: 6,
+                        }}
+                      >
+                        <LinearGradient
+                          colors={["#9B60E8", "#6E3DD1"]}
+                          style={{
+                            width: 48,
+                            height: 48,
+                            borderRadius: 24,
+                            justifyContent: "center",
+                            alignItems: "center",
+                          }}
+                        >
+                          <Icon name="finger-print" size={26} color="#FFFFFF" />
+                        </LinearGradient>
+                      </TouchableOpacity>
+                    </Animated.View>
+                  </View>
+
+                  <TouchableOpacity
+                    onPress={handleBiometricLogin}
+                    disabled={loading}
+                    activeOpacity={0.7}
+                    style={{ marginTop: 8 }}
+                  >
+                    <Text
+                      style={{
+                        color: "#6C3CD1",
+                        fontSize: 14,
+                        fontWeight: "600",
+                        letterSpacing: 0.2,
+                      }}
+                    >
+                      Sign in with Fingerprint
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               )}
             </View>
           </View>
         </View>
       </ScrollView>
+
+      <BiometricAuthModal
+        visible={isBiometricModalVisible}
+        status={biometricModalStatus}
+        biometricLabel="Fingerprint"
+        onCancel={() => setIsBiometricModalVisible(false)}
+      />
     </KeyboardAvoidingView>
   );
 };
