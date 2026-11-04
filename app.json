@@ -32,7 +32,9 @@
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.VIBRATE",
         "android.permission.RECEIVE_BOOT_COMPLETED",
-        "android.permission.FOREGROUND_SERVICE"
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
       ],
       "blockedPermissions": [
         "com.google.android.gms.permission.AD_ID",
@@ -68,7 +70,8 @@
         "NSPhotoLibraryAddUsageDescription": "Photo library access is required to save related images.",
         "NSLocationWhenInUseUsageDescription": "Allow $(PRODUCT_NAME) to access your location to attach geo location to records.",
         "NSUserTrackingUsageDescription": "Tracking is used to improve app experience.",
-        "NSUserNotificationUsageDescription": "Notifications are used to send important updates."
+        "NSUserNotificationUsageDescription": "Notifications are used to send important updates.",
+        "NSFaceIDUsageDescription": "Allow SalesDash to use Face ID for fast and secure login."
       }
     },
     "web": {
@@ -102,6 +105,12 @@
           "enableBackgroundRemoteNotifications": true
         }
       ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow $(PRODUCT_NAME) to use Face ID for fast and secure login."
+        }
+      ],
       "expo-font",
       "expo-web-browser",
       [
@@ -126,7 +135,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": ""
+        "projectId": "c92f9dd3-1594-425f-b5e2-07f9243e1ac5"
       }
     }
   }

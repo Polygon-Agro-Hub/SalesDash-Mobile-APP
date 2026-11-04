@@ -1,3 +1,4 @@
+import ErrorBoundary from "@/components/common/ErrorBoundary";
 import { useEffect, useState } from "react";
 import { Alert, Platform, StatusBar, LogBox } from "react-native";
 import { NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
@@ -459,12 +460,14 @@ function AppContent() {
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <LanguageProvider>
-        <AppUpdateProvider>
-          <AppContent />
-        </AppUpdateProvider>
-      </LanguageProvider>
-    </SafeAreaProvider>
+    <ErrorBoundary>
+      <SafeAreaProvider>
+        <LanguageProvider>
+          <AppUpdateProvider>
+            <AppContent />
+          </AppUpdateProvider>
+        </LanguageProvider>
+      </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }
