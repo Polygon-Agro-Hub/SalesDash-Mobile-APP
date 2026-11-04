@@ -1029,6 +1029,8 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                       selectedTimeSlot,
                       paymentMethod,
                       fromOrderSummary: true,
+                      buyerType: (route.params as any)?.buyerType,
+                      from: (route.params as any)?.from,
                     });
                   } else if (isPackage === 1) {
                     navigateBackToOrderScreen();
@@ -1059,6 +1061,8 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                       selectedTimeSlot,
                       paymentMethod,
                       fromOrderSummary: true,
+                      buyerType: (route.params as any)?.buyerType,
+                      from: (route.params as any)?.from,
                     });
                   }
                 }}

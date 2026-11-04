@@ -933,6 +933,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       const onBackPress = () => {
         navigation.navigate("DeliveryAddress" as any, {
           ...route.params,
+          buyerType: (route.params as any)?.buyerType,
+          from: (route.params as any)?.from,
         });
         return true;
       };
@@ -970,6 +972,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       orderData: route.params?.orderData,
       selectedAddress: selectedAddress ?? undefined,
       deliveryCharge: deliveryFee,
+      buyerType: (route.params as any)?.buyerType,
+      from: (route.params as any)?.from,
     });
   };
 
@@ -1189,6 +1193,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
             onBackPress={() => {
               navigation.navigate("DeliveryAddress" as any, {
                 ...route.params,
+                buyerType: (route.params as any)?.buyerType,
+                from: (route.params as any)?.from,
               });
             }}
           />

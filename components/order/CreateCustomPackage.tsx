@@ -42,6 +42,7 @@ interface CreateCustomPackageProps {
       number: string;
       customerscreencustomerid: string;
       buyerType?: string;
+      from?: string;
     };
   };
 }
@@ -74,9 +75,34 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
     number,
     customerscreencustomerid,
     buyerType,
+    from,
   } = route.params || {};
 
-  const isWholesale = String(buyerType || "").toLowerCase() === "wholesale";
+  const [fetchedBuyerType, setFetchedBuyerType] = useState<string>("");
+
+  useEffect(() => {
+    if (!buyerType && (id || customerId)) {
+      const targetId = id || customerId;
+      AsyncStorage.getItem("authToken").then((token) => {
+        if (!token) return;
+        axios
+          .get(`${environment.API_BASE_URL}api/customer/get-customer-data/${targetId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+          .then((res) => {
+            if (res.data?.buyerType) {
+              setFetchedBuyerType(res.data.buyerType);
+            }
+          })
+          .catch(() => {});
+      });
+    }
+  }, [id, customerId, buyerType]);
+
+  const effectiveBuyerType = buyerType || fetchedBuyerType;
+  const isWholesale =
+    String(effectiveBuyerType || "").toLowerCase() === "wholesale" ||
+    from === "ViewCustomerScreen";
   const insets = useSafeAreaInsets();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -274,6 +300,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
     if (selectedProducts.length > 0) {
       navigation.navigate("CratScreen" as any, {
         selectedProducts,
+        selectedProductIds: selectedProducts.map((p: any) => p.id),
         id,
         isPackage,
         customerId,
@@ -281,7 +308,8 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
         name,
         number,
         customerscreencustomerid,
-        buyerType,
+        buyerType: isWholesale ? "Wholesale" : (effectiveBuyerType || "Retail"),
+        from: from || (isWholesale ? "ViewCustomerScreen" : "SelectOrderType"),
       });
     } else {
       Alert.alert("Please select at least one product");
