@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -26,6 +27,10 @@ export const BiometricAuthModal: React.FC<BiometricAuthModalProps> = ({
   onCancel,
   biometricLabel = "Fingerprint",
 }) => {
+  if (Platform.OS !== "android") {
+    return null;
+  }
+
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const scaleSuccessAnim = useRef(new Animated.Value(0)).current;

@@ -110,10 +110,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
   const validateEmployeeId = (id: string): string => {
     if (id.trim() === "") return "Employee ID is required";
-    const prefix = id.substring(0, 2);
-    if (/^sa$/i.test(prefix) && prefix !== "SA") {
-      return "Please enter Employee ID in uppercase letters";
-    }
     return "";
   };
 
@@ -180,8 +176,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             ]);
           }
 
-          // Save Biometrics credentials if requested
-          if (saveBioOnSuccess) {
+          // Save Biometrics credentials if requested OR if biometrics was already active
+          if (saveBioOnSuccess || hasStoredBiometrics) {
             await biometricService.saveBiometricCredentials(
               loginEmpId.trim(),
               loginPassword,
@@ -268,7 +264,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
     if (hasError) return;
 
-    if (empId.length < 2 || empId.substring(0, 2) !== "SA") {
+    const cleanEmpId = empId.trim().toUpperCase();
+    if (cleanEmpId.length < 2 || cleanEmpId.substring(0, 2) !== "SA") {
       Alert.alert(
         "Unauthorized Access",
         "You are not authorized to access this system. Please use a valid Employee ID.",
@@ -277,7 +274,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       return;
     }
 
-    await performLogin(empId, password, false);
+    await performLogin(cleanEmpId, password, false);
   };
 
   // State 1: "Enable Biometrics" Button clicked
@@ -307,7 +304,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       return;
     }
 
-    if (empId.length < 2 || empId.substring(0, 2) !== "SA") {
+    const cleanEmpId = empId.trim().toUpperCase();
+    if (cleanEmpId.length < 2 || cleanEmpId.substring(0, 2) !== "SA") {
       Alert.alert(
         "Unauthorized Access",
         "You are not authorized to access this system. Please use a valid Employee ID.",
@@ -326,12 +324,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
     // Verify biometric hardware once to confirm user identity
     const verified = await biometricService.authenticateWithBiometrics(
-      "Confirm fingerprint to enable biometric login",
+      Platform.OS === "ios"
+        ? "Verify identity to enable biometric sign-in"
+        : "Confirm fingerprint to enable biometric login",
     );
 
     if (verified) {
       // Login with credentials and save to biometric store if password is correct
-      await performLogin(empId, password, true);
+      await performLogin(cleanEmpId, password, true);
     }
   };
 
@@ -339,36 +339,54 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const handleBiometricLogin = async () => {
     try {
       const creds = await biometricService.getBiometricCredentials();
-      if (!creds || !creds.empId || !creds.password) {
+      if (
+        !creds ||
+        !creds.empId ||
+        !creds.password ||
+        !creds.empId.toUpperCase().startsWith("SA")
+      ) {
         Alert.alert(
           "Biometric Sign-In",
-          "No saved credentials found. Please sign in with your password to enable biometric login.",
+          "No saved SalesDash credentials found. Please sign in with your password to enable biometric login.",
         );
         setHasStoredBiometrics(false);
         return;
       }
 
-      setIsBiometricModalVisible(true);
-      setBiometricModalStatus("scanning");
+      if (Platform.OS === "android") {
+        setIsBiometricModalVisible(true);
+        setBiometricModalStatus("scanning");
+      }
 
       const verified = await biometricService.authenticateWithBiometrics(
-        "Confirm your fingerprint to sign in",
+        Platform.OS === "ios"
+          ? "Sign in with Face ID / Touch ID"
+          : "Confirm your fingerprint to sign in",
       );
 
       if (verified) {
-        setBiometricModalStatus("success");
         setEmpId(creds.empId);
 
-        setTimeout(async () => {
-          setIsBiometricModalVisible(false);
+        if (Platform.OS === "android") {
+          setBiometricModalStatus("success");
+          setTimeout(async () => {
+            setIsBiometricModalVisible(false);
+            await performLogin(creds.empId, creds.password, false);
+          }, 650);
+        } else {
+          // On iOS, Face ID / Touch ID handles its own native animation and checkmark
           await performLogin(creds.empId, creds.password, false);
-        }, 650);
+        }
       } else {
-        setIsBiometricModalVisible(false);
+        if (Platform.OS === "android") {
+          setIsBiometricModalVisible(false);
+        }
       }
     } catch (error) {
       console.error("Biometric login error:", error);
-      setIsBiometricModalVisible(false);
+      if (Platform.OS === "android") {
+        setIsBiometricModalVisible(false);
+      }
     }
   };
 
@@ -520,10 +538,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 value={empId}
                 onChangeText={(text) => {
                   if (text.includes(" ")) return;
-                  setEmpId(text);
+                  const upperText = text.toUpperCase();
+                  setEmpId(upperText);
                   if (empIdError) setEmpIdError("");
                 }}
                 autoCapitalize="characters"
+                autoCorrect={false}
+                spellCheck={false}
                 returnKeyType="next"
                 onSubmitEditing={() => passwordRef.current?.focus()}
               />
@@ -748,13 +769,15 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         </View>
       </ScrollView>
 
-      {/* Verification Radar Modal */}
-      <BiometricAuthModal
-        visible={isBiometricModalVisible}
-        status={biometricModalStatus}
-        biometricLabel="Fingerprint"
-        onCancel={() => setIsBiometricModalVisible(false)}
-      />
+      {/* Verification Radar Modal (Android Only) */}
+      {Platform.OS === "android" && (
+        <BiometricAuthModal
+          visible={isBiometricModalVisible}
+          status={biometricModalStatus}
+          biometricLabel="Fingerprint"
+          onCancel={() => setIsBiometricModalVisible(false)}
+        />
+      )}
     </KeyboardAvoidingView>
   );
 };
