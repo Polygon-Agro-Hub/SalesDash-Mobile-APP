@@ -124,50 +124,52 @@ const OtpSuccesfulScreen: React.FC<OtpSuccesfulScreenProps> = ({
                 }}
               >
                 <Text className="text-center text-white font-bold text-lg">
-                  Go to Profile
+                  {buyerType === "Wholesale" ? "View Status" : "Go to Profile"}
                 </Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
 
-          <View className="items-center mt-5">
-            <TouchableOpacity
-              onPress={() =>
-                navigation.navigate("ExcludeListAdd", {
-                  customerId: Number(id),
-                })
-              }
-              activeOpacity={0.7}
-              style={{
-                width: "60%",
-                borderRadius: 30,
-                backgroundColor: "transparent",
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: 0.25,
-                shadowRadius: 10,
-                elevation: 8,
-              }}
-            >
-              <LinearGradient
-                colors={["#6839CF", "#874DDB"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                className="h-[50px] items-center justify-center rounded-full"
+          {buyerType !== "Wholesale" && (
+            <View className="items-center mt-5">
+              <TouchableOpacity
+                onPress={() =>
+                  navigation.navigate("ExcludeListAdd", {
+                    customerId: Number(id),
+                  })
+                }
+                activeOpacity={0.7}
                 style={{
-                  height: 50,
-                  alignItems: "center",
-                  justifyContent: "center",
+                  width: "60%",
                   borderRadius: 30,
-                  overflow: "hidden",
+                  backgroundColor: "transparent",
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 8 },
+                  shadowOpacity: 0.25,
+                  shadowRadius: 10,
+                  elevation: 8,
                 }}
               >
-                <Text className="text-center text-white font-bold text-lg">
-                  Order Now
-                </Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
+                <LinearGradient
+                  colors={["#6839CF", "#874DDB"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  className="h-[50px] items-center justify-center rounded-full"
+                  style={{
+                    height: 50,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: 30,
+                    overflow: "hidden",
+                  }}
+                >
+                  <Text className="text-center text-white font-bold text-lg">
+                    Order Now
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </View>
     </KeyboardAvoidingView>

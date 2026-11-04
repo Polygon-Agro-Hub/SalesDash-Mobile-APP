@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   BackHandler,
+  Switch,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -24,6 +25,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import CustomHeader from "../common/CustomHeader";
 import SidebarSkeleton from "./SidebarSkeleton";
 import LoadingPage from "../common/LoadingPage";
+import biometricService from "@/services/biometric/biometric.service";
 
 type SidebarScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -45,6 +47,9 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
   const [imageLoading, setImageLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [isBiometricAvailable, setIsBiometricAvailable] = useState(false);
+  const [isBiometricActive, setIsBiometricActive] = useState(false);
+  const [biometricLabel, setBiometricLabel] = useState("Biometrics");
 
   useFocusEffect(
     useCallback(() => {
@@ -52,8 +57,58 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
       setImageLoading(true);
       setProfileLoading(true);
       getUserProfile();
+
+      const checkBiometrics = async () => {
+        const avail = await biometricService.checkBiometricAvailability();
+        if (avail.hasHardware && avail.isEnrolled) {
+          setIsBiometricAvailable(true);
+          const label = await biometricService.getBiometricTypeLabel();
+          setBiometricLabel(label);
+          const enabled = await biometricService.isBiometricEnabled();
+          setIsBiometricActive(enabled);
+        } else {
+          setIsBiometricAvailable(false);
+          setIsBiometricActive(false);
+        }
+      };
+
+      checkBiometrics();
     }, []),
   );
+
+  const handleToggleBiometric = async (value: boolean) => {
+    if (!value) {
+      await biometricService.clearBiometricCredentials();
+      setIsBiometricActive(false);
+      return;
+    }
+
+    const avail = await biometricService.checkBiometricAvailability();
+    if (!avail.hasHardware || !avail.isEnrolled) {
+      Alert.alert(
+        "Biometrics Unavailable",
+        "Please set up a fingerprint or Face ID in your device settings first.",
+      );
+      return;
+    }
+
+    const creds = await biometricService.getBiometricCredentials();
+    if (creds?.empId && creds?.password) {
+      const verified = await biometricService.authenticateWithBiometrics(
+        `Verify ${biometricLabel} to enable Biometric Sign-In`,
+      );
+      if (verified) {
+        await AsyncStorage.setItem("isBiometricEnabled", "true");
+        setIsBiometricActive(true);
+        Alert.alert("Success", "Biometric Sign-In has been enabled.");
+      }
+    } else {
+      Alert.alert(
+        "Enable Biometric Sign-In",
+        "To securely link your biometrics, please check 'Enable Biometric Login' the next time you sign in with your Employee ID and password.",
+      );
+    }
+  };
 
   const getUserProfile = async () => {
     try {
@@ -355,6 +410,49 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
                         style={{ marginRight: wp(2) }}
                       />
                     </TouchableOpacity>
+
+                    {isBiometricAvailable && (
+                      <View
+                        style={{ marginBottom: hp(2) }}
+                        className="flex-row items-center py-3"
+                      >
+                        <View
+                          style={{
+                            width: hp(5),
+                            height: hp(5),
+                            borderRadius: hp(2.5),
+                            backgroundColor: "#F4F9FB",
+                            justifyContent: "center",
+                            alignItems: "center",
+                          }}
+                        >
+                          <Ionicons
+                            name="finger-print-outline"
+                            size={hp(3)}
+                            color="#8F8F8F"
+                          />
+                        </View>
+
+                        <Text
+                          style={{
+                            flex: 1,
+                            marginLeft: wp(4),
+                            fontSize: hp(2),
+                          }}
+                          className="text-gray-800"
+                        >
+                          Biometric Sign-In
+                        </Text>
+
+                        <Switch
+                          value={isBiometricActive}
+                          onValueChange={handleToggleBiometric}
+                          trackColor={{ false: "#D1D5DB", true: "#6C3CD1" }}
+                          thumbColor="#FFFFFF"
+                          style={{ marginRight: wp(2) }}
+                        />
+                      </View>
+                    )}
 
                     <TouchableOpacity
                       style={{ marginBottom: hp(2) }}

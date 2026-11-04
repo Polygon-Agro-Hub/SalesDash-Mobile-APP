@@ -148,8 +148,12 @@ const PackagesScreen: React.FC<PackagesScreenProps> = ({ navigation }) => {
           <Text
             className="font-bold text-[#000000] text-center"
             style={{ fontSize: 12 }}
+            numberOfLines={1}
+            ellipsizeMode="tail"
           >
-            {item.displayName}
+            {(item.displayName || "").length > 14
+              ? (item.displayName || "").slice(0, 14) + "..."
+              : item.displayName}
           </Text>
 
           <Text

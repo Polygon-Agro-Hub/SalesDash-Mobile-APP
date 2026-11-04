@@ -17,15 +17,12 @@ import {
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
 import { LinearGradient } from "expo-linear-gradient";
-import {
-  widthPercentageToDP as wp,
-} from "react-native-responsive-screen";
+import { widthPercentageToDP as wp } from "react-native-responsive-screen";
 import axios from "axios";
 import environment from "@/environment/environment";
 import CustomersScreenSkeleton from "./CustomerScreenSkeleton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { FontAwesome, Ionicons } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type CustomersScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -60,12 +57,17 @@ const sortCustomersByName = (customerList: Customer[]): Customer[] => {
   });
 };
 
+// Reads the one-shot `initialTab` param from this screen's route (if any)
+const readInitialTabParam = (navigation: any): BuyerTab | undefined => {
+  const myRoute = navigation
+    .getState()
+    ?.routes?.find((r: any) => r.name === "CustomersScreen");
+  const tab = myRoute?.params?.initialTab;
+  return tab === "Retail" || tab === "Wholesale" ? tab : undefined;
+};
+
 const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   const CUSTOMERS_PER_PAGE = 10;
-  const MIN_VISIBLE_PER_TAB = 8;
-  const insets = useSafeAreaInsets();
-
-  const topInset = Platform.OS === "ios" ? insets.top : 0;
 
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -79,12 +81,28 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const isMounted = useRef(true);
+  const isLoadingRef = useRef(false);
+  // Incremented on every fresh load so stale responses can be ignored
+  const requestIdRef = useRef(0);
+  // Remembers the last selected tab across focus events
+  const activeTabRef = useRef<BuyerTab>("Retail");
+
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
 
   // 1) Filter by the selected tab (NULL buyerType is treated as Retail)
-  const tabCustomers = useMemo(
-    () => customers.filter((c) => (c.buyerType ?? "Retail") === activeTab),
-    [customers, activeTab],
-  );
+  const tabCustomers = useMemo(() => {
+    const list = customers.filter(
+      (c) => (c.buyerType ?? "Retail") === activeTab,
+    );
+    const seen = new Set();
+    return list.filter((c) => {
+      if (seen.has(c.id)) return false;
+      seen.add(c.id);
+      return true;
+    });
+  }, [customers, activeTab]);
 
   // 2) Then filter by search text
   const filteredCustomers = useMemo(() => {
@@ -133,11 +151,31 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
     }
   };
 
+  const handleTabChange = (tab: BuyerTab) => {
+    if (tab === activeTab) return;
+    activeTabRef.current = tab; // remember the selection
+    setActiveTab(tab);
+    setSearchQuery("");
+    safeSetCustomers([]);
+    setCurrentPage(1);
+    setHasMore(true);
+    setError(null);
+    loadCustomers(1, true, false, tab);
+  };
+
   const loadCustomers = async (
     page = 1,
     showFullLoading = true,
     isLoadMore = false,
+    tabToFetch: BuyerTab = activeTabRef.current,
   ) => {
+    // Only "load more" is blocked while another request is running.
+    // A fresh load (tab change / focus / refresh) always goes through and
+    // supersedes any request still in flight.
+    if (isLoadMore && isLoadingRef.current) return;
+
+    const requestId = ++requestIdRef.current;
+    isLoadingRef.current = true;
     if (showFullLoading) safeSetLoading(true);
     if (isLoadMore) safeSetLoadingMore(true);
 
@@ -145,17 +183,19 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
       const storedToken = await AsyncStorage.getItem("authToken");
       if (!storedToken) {
         Alert.alert("Error", "No authentication token found");
-        safeSetLoading(false);
         return;
       }
 
-      const customersUrl = `${environment.API_BASE_URL.replace(/\/$/, "")}/api/customer/get-customers?page=${page}&limit=${CUSTOMERS_PER_PAGE}`;
+      const customersUrl = `${environment.API_BASE_URL.replace(/\/$/, "")}/api/customer/get-customers?page=${page}&limit=${CUSTOMERS_PER_PAGE}&buyerType=${tabToFetch}`;
 
       const response = await axios.get(customersUrl, {
         headers: {
           Authorization: `Bearer ${storedToken}`,
         },
       });
+
+      // A newer request has started, so drop this stale response
+      if (requestId !== requestIdRef.current) return;
 
       if (response.data.success && response.data.data) {
         const rawList = Array.isArray(response.data.data)
@@ -168,7 +208,13 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
 
         if (isLoadMore) {
           if (isMounted.current) {
-            setCustomers((prev) => [...prev, ...sortedCustomers]);
+            setCustomers((prev) => {
+              const existingIds = new Set(prev.map((c) => c.id));
+              const uniqueNew = sortedCustomers.filter(
+                (c) => !existingIds.has(c.id),
+              );
+              return [...prev, ...uniqueNew];
+            });
           }
         } else {
           safeSetCustomers(sortedCustomers);
@@ -188,6 +234,8 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
         }
       }
     } catch (error) {
+      if (requestId !== requestIdRef.current) return;
+
       console.error("Failed to fetch customers:", error);
       if (!isLoadMore) {
         safeSetCustomers([]);
@@ -204,29 +252,50 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
         }
       }
     } finally {
-      if (showFullLoading) safeSetLoading(false);
-      if (isLoadMore) safeSetLoadingMore(false);
-      safeSetRefreshing(false);
+      // Only the latest request is allowed to clear the loading flags
+      if (requestId === requestIdRef.current) {
+        isLoadingRef.current = false;
+        safeSetLoading(false);
+        safeSetLoadingMore(false);
+        safeSetRefreshing(false);
+      }
     }
   };
 
   const loadMoreCustomers = () => {
-    if (!loadingMore && hasMore && searchQuery === "") {
-      loadCustomers(currentPage + 1, false, true);
+    if (
+      !loadingMore &&
+      !isLoadingRef.current &&
+      hasMore &&
+      searchQuery === ""
+    ) {
+      loadCustomers(currentPage + 1, false, true, activeTabRef.current);
     }
   };
 
-  // Single focus listener: reset search + tab + state, then reload
+  // Focus listener: keep the previous tab (or use the `initialTab` param), then reload
   useEffect(() => {
+    isMounted.current = true;
+
     const unsubscribe = navigation.addListener("focus", () => {
+      const paramTab = readInitialTabParam(navigation);
+      const tabToShow: BuyerTab = paramTab ?? activeTabRef.current;
+      activeTabRef.current = tabToShow;
+
       if (isMounted.current) {
         setSearchQuery("");
-        setActiveTab("Retail");
+        setActiveTab(tabToShow);
         setCurrentPage(1);
         setHasMore(true);
         setError(null);
       }
-      loadCustomers(1, true, false);
+
+      // clear the one-shot param so later focuses use the remembered tab
+      if (paramTab) {
+        navigation.setParams({ initialTab: undefined } as any);
+      }
+
+      loadCustomers(1, true, false, tabToShow);
     });
 
     const keyboardDidShowListener = Keyboard.addListener(
@@ -238,7 +307,14 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
       () => setKeyboardVisible(false),
     );
 
-    loadCustomers(1, true, false);
+    // First mount: honour a tab passed in params, otherwise the default
+    const firstTab: BuyerTab =
+      readInitialTabParam(navigation) ?? activeTabRef.current;
+    if (firstTab !== activeTabRef.current) {
+      activeTabRef.current = firstTab;
+      setActiveTab(firstTab);
+    }
+    loadCustomers(1, true, false, firstTab);
 
     return () => {
       isMounted.current = false;
@@ -248,34 +324,12 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
     };
   }, [navigation]);
 
-  // Tabs are filtered on the phone while the API pages across all buyer
-  // types, so keep fetching pages until the active tab has enough rows.
-  useEffect(() => {
-    if (
-      !loading &&
-      !loadingMore &&
-      !error &&
-      hasMore &&
-      searchQuery === "" &&
-      tabCustomers.length < MIN_VISIBLE_PER_TAB
-    ) {
-      loadMoreCustomers();
-    }
-  }, [
-    tabCustomers.length,
-    hasMore,
-    loading,
-    loadingMore,
-    error,
-    activeTab,
-    searchQuery,
-  ]);
-
   const handleRefresh = async () => {
+    if (isLoadingRef.current) return;
     setRefreshing(true);
     setCurrentPage(1);
     setHasMore(true);
-    await loadCustomers(1, false, false);
+    await loadCustomers(1, false, false, activeTabRef.current);
   };
 
   const handleSearch = (query: string) => {
@@ -405,34 +459,44 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                 <View
                   style={{
                     flexDirection: "row",
-                    backgroundColor: "#F5F5F5",
-                    borderRadius: 12,
-                    padding: 4,
+                    backgroundColor: "#F3F3F3",
+                    borderRadius: 16,
+                    padding: 6,
                     marginHorizontal: 24,
+                    marginTop: 4,
                     marginBottom: 8,
-                    borderWidth: 1,
-                    borderColor: "#E5E5E5",
+                    ...Platform.select({
+                      ios: {
+                        shadowColor: "#000000",
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.08,
+                        shadowRadius: 4,
+                      },
+                      android: { elevation: 2 },
+                    }),
                   }}
                 >
-                  {BUYER_TABS.map((tab) => {
+                  {BUYER_TABS.map((tab, index) => {
                     const selected = activeTab === tab;
                     return (
                       <TouchableOpacity
                         key={tab}
                         activeOpacity={0.8}
-                        onPress={() => setActiveTab(tab)}
+                        onPress={() => handleTabChange(tab)}
                         style={{
                           flex: 1,
-                          paddingVertical: 10,
-                          borderRadius: 9,
+                          paddingVertical: 12,
+                          borderRadius: 12,
                           alignItems: "center",
+                          marginLeft: index === 0 ? 0 : 6,
                           backgroundColor: selected ? "#000000" : "#FFFFFF",
                         }}
                       >
                         <Text
                           style={{
-                            fontWeight: "600",
-                            fontSize: SCREEN_HEIGHT > 900 ? 15 : 13,
+                            fontWeight: selected ? "700" : "400",
+                            fontSize: SCREEN_HEIGHT > 900 ? 16 : 14,
+                            letterSpacing: 0.3,
                             color: selected ? "#FFFFFF" : "#657489",
                           }}
                         >
@@ -475,7 +539,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                       onPress={() => {
                         setError(null);
                         setHasMore(true);
-                        loadCustomers(1, true, false);
+                        loadCustomers(1, true, false, activeTabRef.current);
                       }}
                       className="mt-4 bg-[#7743D4] px-6 py-2 rounded-lg"
                     >
@@ -555,6 +619,7 @@ const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) => {
                             customerId: item.cusId,
                             id: item.id,
                             buyerType: item.buyerType || "Retail",
+                            from: "CustomersScreen",
                           })
                         }
                       />

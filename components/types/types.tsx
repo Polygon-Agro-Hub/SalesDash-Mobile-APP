@@ -93,7 +93,7 @@ export type RootStackParamList = {
   LoginScreen: undefined;
   ChangePasswordScreen: undefined;
   DashboardScreen: undefined;
-  CustomersScreen: undefined;
+  CustomersScreen: { initialTab?: "Retail" | "Wholesale" } | undefined;
   SidebarScreen: undefined;
   ProfileScreen: undefined;
   AddComplaintScreen: undefined;
@@ -156,6 +156,7 @@ export type RootStackParamList = {
     id: string;
     title: string;
     buyerType?: string;
+    from?: "CustomersScreen" | "ExistingCustomerDetailsScreen" | "NewCustomerDetailsScreen" | "TotalValueOfCustomersScreen";
   };
   AddCustomersScreen: {
     selectedLatitude?: number;

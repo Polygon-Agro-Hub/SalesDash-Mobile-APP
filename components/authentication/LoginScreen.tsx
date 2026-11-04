@@ -20,9 +20,11 @@ import {
   KeyboardAvoidingView,
   Alert,
   BackHandler,
+  ScrollView,
 } from "react-native";
-import { ScrollView } from "react-native-gesture-handler";
 import { useFocusEffect } from "@react-navigation/native";
+import Checkbox from "expo-checkbox";
+import biometricService from "@/services/biometric/biometric.service";
 
 type LoginScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -45,6 +47,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const passwordRef = useRef<TextInput>(null);
+  const [isBiometricAvailable, setIsBiometricAvailable] = useState(false);
+  const [biometricLabel, setBiometricLabel] = useState("Biometrics");
+  const [hasStoredBiometrics, setHasStoredBiometrics] = useState(false);
+  const [enableBiometricCheckbox, setEnableBiometricCheckbox] = useState(false);
 
   const validateEmployeeId = (id: string): string => {
     if (id.trim() === "") return "Employee ID is required";
@@ -60,36 +66,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     return "";
   };
 
-  const handleSignIn = async () => {
-    Keyboard.dismiss();
-    setEmpIdError("");
-    setPasswordError("");
-
-    let hasError = false;
-
-    const empIdValidationError = validateEmployeeId(empId);
-    if (empIdValidationError) {
-      setEmpIdError(empIdValidationError);
-      hasError = true;
-    }
-
-    const passwordValidationError = validatePassword(password);
-    if (passwordValidationError) {
-      setPasswordError(passwordValidationError);
-      hasError = true;
-    }
-
-    if (hasError) return;
-
-    if (empId.length < 2 || empId.substring(0, 2) !== "SA") {
-      Alert.alert(
-        "Unauthorized Access",
-        "You are not authorized to access this system. Please use a valid Employee ID.",
-        [{ text: "OK" }],
-      );
-      return;
-    }
-
+  const performLogin = async (
+    loginEmpId: string,
+    loginPassword: string,
+    saveBioOnSuccess = false,
+  ) => {
     await AsyncStorage.multiRemove([
       "authToken",
       "tokenStoredTime",
@@ -100,7 +81,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     try {
       const response = await axios.post(
         `${environment.API_BASE_URL}api/auth/login`,
-        { empId: empId.trim(), password },
+        { empId: loginEmpId.trim(), password: loginPassword },
       );
 
       if (response.data.success) {
@@ -115,6 +96,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             ["tokenStoredTime", timestamp.toISOString()],
             ["tokenExpirationTime", expirationTime.toISOString()],
           ]);
+
+          if (saveBioOnSuccess) {
+            await biometricService.saveBiometricCredentials(
+              loginEmpId.trim(),
+              loginPassword,
+            );
+          }
+
           socketService.connect().catch(() => {});
           socketService.checkNewNotifications().catch(() => {});
           pushNotificationService.registerPushTokenAsync().catch(() => {});
@@ -123,7 +112,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           } else {
             try {
               const hasAsked = await AsyncStorage.getItem(
-                "hasAskedNotificationPermission"
+                "hasAskedNotificationPermission",
               );
               if (hasAsked !== "true") {
                 navigation.navigate("NotificationAccess", {
@@ -172,14 +161,103 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     }
   };
 
+  const handleSignIn = async () => {
+    Keyboard.dismiss();
+    setEmpIdError("");
+    setPasswordError("");
+
+    let hasError = false;
+
+    const empIdValidationError = validateEmployeeId(empId);
+    if (empIdValidationError) {
+      setEmpIdError(empIdValidationError);
+      hasError = true;
+    }
+
+    const passwordValidationError = validatePassword(password);
+    if (passwordValidationError) {
+      setPasswordError(passwordValidationError);
+      hasError = true;
+    }
+
+    if (hasError) return;
+
+    if (empId.length < 2 || empId.substring(0, 2) !== "SA") {
+      Alert.alert(
+        "Unauthorized Access",
+        "You are not authorized to access this system. Please use a valid Employee ID.",
+        [{ text: "OK" }],
+      );
+      return;
+    }
+
+    if (!enableBiometricCheckbox && hasStoredBiometrics) {
+      await biometricService.clearBiometricCredentials();
+      setHasStoredBiometrics(false);
+    }
+
+    await performLogin(empId, password, enableBiometricCheckbox);
+  };
+
+  const handleBiometricLogin = async () => {
+    try {
+      const creds = await biometricService.getBiometricCredentials();
+      if (!creds || !creds.empId || !creds.password) {
+        Alert.alert(
+          "Biometric Sign-In",
+          "No saved credentials found. Please sign in with your password to enable biometric login.",
+        );
+        setHasStoredBiometrics(false);
+        return;
+      }
+
+      const verified = await biometricService.authenticateWithBiometrics(
+        `Sign in with ${biometricLabel}`,
+      );
+      if (verified) {
+        setEmpId(creds.empId);
+        await performLogin(creds.empId, creds.password, false);
+      }
+    } catch (error) {
+      console.error("Biometric login error:", error);
+    }
+  };
+
   useFocusEffect(
     useCallback(() => {
+      let isActive = true;
+
+      const checkBiometrics = async () => {
+        const avail = await biometricService.checkBiometricAvailability();
+        if (!isActive) return;
+        if (avail.hasHardware && avail.isEnrolled) {
+          setIsBiometricAvailable(true);
+          const label = await biometricService.getBiometricTypeLabel();
+          if (isActive) setBiometricLabel(label);
+
+          const enabled = await biometricService.isBiometricEnabled();
+          if (isActive) {
+            setHasStoredBiometrics(enabled);
+            setEnableBiometricCheckbox(enabled);
+          }
+        } else {
+          setIsBiometricAvailable(false);
+          setHasStoredBiometrics(false);
+          setEnableBiometricCheckbox(false);
+        }
+      };
+
+      checkBiometrics();
+
       const onBackPress = () => true;
       const subscription = BackHandler.addEventListener(
         "hardwareBackPress",
         onBackPress,
       );
-      return () => subscription.remove();
+      return () => {
+        isActive = false;
+        subscription.remove();
+      };
     }, []),
   );
 
@@ -192,6 +270,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         ref={scrollViewRef}
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="none"
         showsVerticalScrollIndicator={false}
         bounces={false}
         style={{ backgroundColor: "white" }}
@@ -356,6 +435,48 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               </TouchableOpacity>
             </View>
 
+            {/* Enable Biometric Login Checkbox */}
+            {isBiometricAvailable && (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "flex-start",
+                  marginBottom: 28,
+                  marginTop: -16,
+                  paddingHorizontal: 6,
+                }}
+              >
+                <Checkbox
+                  value={enableBiometricCheckbox}
+                  onValueChange={setEnableBiometricCheckbox}
+                  color={enableBiometricCheckbox ? "#6C3CD1" : undefined}
+                  style={{
+                    borderRadius: 4,
+                    width: 20,
+                    height: 20,
+                  }}
+                />
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() =>
+                    setEnableBiometricCheckbox(!enableBiometricCheckbox)
+                  }
+                  style={{ marginLeft: 10 }}
+                >
+                  <Text
+                    style={{
+                      color: "#4B5563",
+                      fontSize: 14,
+                      fontWeight: "500",
+                    }}
+                  >
+                    Enable Biometric Login
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
             {/* Button */}
             <View style={{ alignItems: "center" }}>
               <View
@@ -395,6 +516,39 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                   </LinearGradient>
                 </TouchableOpacity>
               </View>
+
+              {/* Quick Biometric Sign In button for returning users */}
+              {hasStoredBiometrics && (
+                <TouchableOpacity
+                  onPress={handleBiometricLogin}
+                  disabled={loading}
+                  activeOpacity={0.7}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginTop: 20,
+                    paddingVertical: 12,
+                    paddingHorizontal: 22,
+                    borderRadius: 999,
+                    backgroundColor: "#F3EEFF",
+                    borderWidth: 1,
+                    borderColor: "#E3D5FF",
+                  }}
+                >
+                  <Icon name="finger-print-outline" size={22} color="#6C3CD1" />
+                  <Text
+                    style={{
+                      marginLeft: 8,
+                      color: "#6C3CD1",
+                      fontSize: 15,
+                      fontWeight: "600",
+                    }}
+                  >
+                    Sign in with {biometricLabel}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </View>
