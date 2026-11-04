@@ -1,7 +1,7 @@
-import React, { useCallback, useRef, useState, useEffect } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
-import Icon from "react-native-vector-icons/Ionicons";
+import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -21,10 +21,10 @@ import {
   Alert,
   BackHandler,
   ScrollView,
-  Animated,
+  Switch,
+  ActivityIndicator,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
-import Checkbox from "expo-checkbox";
 import biometricService from "@/services/biometric/biometric.service";
 import BiometricAuthModal from "./BiometricAuthModal";
 
@@ -38,70 +38,75 @@ interface LoginScreenProps {
 }
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
-const HALF = SCREEN_HEIGHT * 0.5;
 
 const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [empId, setEmpId] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [empIdError, setEmpIdError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [loading, setLoading] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const passwordRef = useRef<TextInput>(null);
+
   const [isBiometricAvailable, setIsBiometricAvailable] = useState(false);
-  const [biometricLabel, setBiometricLabel] = useState("Biometrics");
   const [hasStoredBiometrics, setHasStoredBiometrics] = useState(false);
-  const [enableBiometricCheckbox, setEnableBiometricCheckbox] = useState(false);
   const [isBiometricModalVisible, setIsBiometricModalVisible] = useState(false);
-  const [biometricModalStatus, setBiometricModalStatus] = useState<"scanning" | "success" | "error">("scanning");
+  const [biometricModalStatus, setBiometricModalStatus] = useState<
+    "scanning" | "success" | "error"
+  >("scanning");
 
-  const buttonPulseAnim = useRef(new Animated.Value(1)).current;
-  const buttonRippleAnim = useRef(new Animated.Value(0)).current;
+  // Load Remembered Credentials and check Biometrics state on focus
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
 
-  useEffect(() => {
-    if (hasStoredBiometrics) {
-      const loop = Animated.loop(
-        Animated.parallel([
-          Animated.sequence([
-            Animated.timing(buttonPulseAnim, {
-              toValue: 1.08,
-              duration: 1200,
-              useNativeDriver: true,
-            }),
-            Animated.timing(buttonPulseAnim, {
-              toValue: 1,
-              duration: 1200,
-              useNativeDriver: true,
-            }),
-          ]),
-          Animated.sequence([
-            Animated.timing(buttonRippleAnim, {
-              toValue: 1,
-              duration: 2400,
-              useNativeDriver: true,
-            }),
-            Animated.timing(buttonRippleAnim, {
-              toValue: 0,
-              duration: 0,
-              useNativeDriver: true,
-            }),
-          ]),
-        ]),
+      const initScreen = async () => {
+        try {
+          // Check Remember Me
+          const savedRemember = await AsyncStorage.getItem("salesdash_remember_me");
+          if (savedRemember === "true") {
+            const savedEmp = await AsyncStorage.getItem("salesdash_saved_empid");
+            const savedPwd = await AsyncStorage.getItem("salesdash_saved_password");
+            if (isActive) {
+              setRememberMe(true);
+              if (savedEmp) setEmpId(savedEmp);
+              if (savedPwd) setPassword(savedPwd);
+            }
+          }
+
+          // Check Biometrics status
+          const avail = await biometricService.checkBiometricAvailability();
+          if (!isActive) return;
+          if (avail.hasHardware && avail.isEnrolled) {
+            setIsBiometricAvailable(true);
+            const enabled = await biometricService.isBiometricEnabled();
+            if (isActive) {
+              setHasStoredBiometrics(enabled);
+            }
+          } else {
+            setIsBiometricAvailable(false);
+            setHasStoredBiometrics(false);
+          }
+        } catch (err) {
+          console.warn("Error initializing login screen:", err);
+        }
+      };
+
+      initScreen();
+
+      const onBackPress = () => true;
+      const subscription = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress,
       );
-      loop.start();
-      return () => loop.stop();
-    }
-  }, [hasStoredBiometrics]);
-
-  const rippleScale = buttonRippleAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 1.45],
-  });
-  const rippleOpacity = buttonRippleAnim.interpolate({
-    inputRange: [0, 0.7, 1],
-    outputRange: [0.35, 0.15, 0],
-  });
+      return () => {
+        isActive = false;
+        subscription.remove();
+      };
+    }, []),
+  );
 
   const validateEmployeeId = (id: string): string => {
     if (id.trim() === "") return "Employee ID is required";
@@ -115,6 +120,18 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const validatePassword = (pwd: string): string => {
     if (pwd.trim() === "") return "Password is required";
     return "";
+  };
+
+  // Remember Me Handler
+  const handleToggleRememberMe = async (val: boolean) => {
+    setRememberMe(val);
+    if (!val) {
+      await AsyncStorage.multiRemove([
+        "salesdash_remember_me",
+        "salesdash_saved_empid",
+        "salesdash_saved_password",
+      ]);
+    }
   };
 
   const performLogin = async (
@@ -148,16 +165,34 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             ["tokenExpirationTime", expirationTime.toISOString()],
           ]);
 
+          // Save Remember Me credentials if toggle is enabled
+          if (rememberMe) {
+            await AsyncStorage.multiSet([
+              ["salesdash_remember_me", "true"],
+              ["salesdash_saved_empid", loginEmpId.trim()],
+              ["salesdash_saved_password", loginPassword],
+            ]);
+          } else {
+            await AsyncStorage.multiRemove([
+              "salesdash_remember_me",
+              "salesdash_saved_empid",
+              "salesdash_saved_password",
+            ]);
+          }
+
+          // Save Biometrics credentials if requested
           if (saveBioOnSuccess) {
             await biometricService.saveBiometricCredentials(
               loginEmpId.trim(),
               loginPassword,
             );
+            setHasStoredBiometrics(true);
           }
 
           socketService.connect().catch(() => {});
           socketService.checkNewNotifications().catch(() => {});
           pushNotificationService.registerPushTokenAsync().catch(() => {});
+
           if (passwordUpdate === 0) {
             navigation.navigate("ChangePasswordScreen");
           } else {
@@ -212,13 +247,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     }
   };
 
+  // Regular Sign In
   const handleSignIn = async () => {
     Keyboard.dismiss();
     setEmpIdError("");
     setPasswordError("");
 
     let hasError = false;
-
     const empIdValidationError = validateEmployeeId(empId);
     if (empIdValidationError) {
       setEmpIdError(empIdValidationError);
@@ -242,14 +277,65 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       return;
     }
 
-    if (!enableBiometricCheckbox && hasStoredBiometrics) {
-      await biometricService.clearBiometricCredentials();
-      setHasStoredBiometrics(false);
-    }
-
-    await performLogin(empId, password, enableBiometricCheckbox);
+    await performLogin(empId, password, false);
   };
 
+  // State 1: "Enable Biometrics" Button clicked
+  const handleEnableBiometricsAndLogin = async () => {
+    Keyboard.dismiss();
+    setEmpIdError("");
+    setPasswordError("");
+
+    let hasError = false;
+    const empIdValidationError = validateEmployeeId(empId);
+    if (empIdValidationError) {
+      setEmpIdError(empIdValidationError);
+      hasError = true;
+    }
+
+    const passwordValidationError = validatePassword(password);
+    if (passwordValidationError) {
+      setPasswordError(passwordValidationError);
+      hasError = true;
+    }
+
+    if (hasError) {
+      Alert.alert(
+        "Enable Biometrics",
+        "Please enter your Employee ID and Password to enable biometric login.",
+      );
+      return;
+    }
+
+    if (empId.length < 2 || empId.substring(0, 2) !== "SA") {
+      Alert.alert(
+        "Unauthorized Access",
+        "You are not authorized to access this system. Please use a valid Employee ID.",
+      );
+      return;
+    }
+
+    const avail = await biometricService.checkBiometricAvailability();
+    if (!avail.hasHardware || !avail.isEnrolled) {
+      Alert.alert(
+        "Biometric Setup",
+        "No biometric sensor or enrolled fingerprint found on this device. Please set up fingerprint/face unlock in your phone settings first.",
+      );
+      return;
+    }
+
+    // Verify biometric hardware once to confirm user identity
+    const verified = await biometricService.authenticateWithBiometrics(
+      "Confirm fingerprint to enable biometric login",
+    );
+
+    if (verified) {
+      // Login with credentials and save to biometric store if password is correct
+      await performLogin(empId, password, true);
+    }
+  };
+
+  // State 2: "Use Biometrics" Button clicked
   const handleBiometricLogin = async () => {
     try {
       const creds = await biometricService.getBiometricCredentials();
@@ -286,141 +372,150 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     }
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      let isActive = true;
-
-      const checkBiometrics = async () => {
-        const avail = await biometricService.checkBiometricAvailability();
-        if (!isActive) return;
-        if (avail.hasHardware && avail.isEnrolled) {
-          setIsBiometricAvailable(true);
-          const label = await biometricService.getBiometricTypeLabel();
-          if (isActive) setBiometricLabel(label);
-
-          const enabled = await biometricService.isBiometricEnabled();
-          if (isActive) {
-            setHasStoredBiometrics(enabled);
-            setEnableBiometricCheckbox(enabled);
-          }
-        } else {
-          setIsBiometricAvailable(false);
-          setHasStoredBiometrics(false);
-          setEnableBiometricCheckbox(false);
-        }
-      };
-
-      checkBiometrics();
-
-      const onBackPress = () => true;
-      const subscription = BackHandler.addEventListener(
-        "hardwareBackPress",
-        onBackPress,
-      );
-      return () => {
-        isActive = false;
-        subscription.remove();
-      };
-    }, []),
-  );
-
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={{ flex: 1, backgroundColor: "white" }}
+      style={{ flex: 1, backgroundColor: "#7342DC" }}
     >
       <ScrollView
         ref={scrollViewRef}
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
+        contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="none"
         showsVerticalScrollIndicator={false}
         bounces={false}
-        style={{ backgroundColor: "white" }}
+        style={{ flex: 1, backgroundColor: "#7342DC" }}
       >
+        {/* Top Purple Branding Banner */}
         <LinearGradient
-          colors={["#9B60E8", "#6E3DD1"]}
+          colors={["#7E46E8", "#6835CE"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
           style={{
-            height: HALF,
+            height: SCREEN_HEIGHT * 0.38,
             alignItems: "center",
             justifyContent: "center",
+            paddingTop: 10,
           }}
         >
           <Image
             source={require("@/assets/images/public/logo.webp")}
-            style={{ width: "55%", height: "55%" }}
+            style={{ width: "62%", height: "62%" }}
             resizeMode="contain"
           />
         </LinearGradient>
 
+        {/* White Rounded Form Card */}
         <View
           style={{
             flex: 1,
-            backgroundColor: "white",
-            borderTopLeftRadius: 32,
-            borderTopRightRadius: 32,
-            marginTop: -28,
+            backgroundColor: "#FFFFFF",
+            borderTopLeftRadius: 36,
+            borderTopRightRadius: 36,
+            marginTop: -32,
             paddingHorizontal: 24,
-            paddingVertical: 32,
+            paddingTop: 28,
+            paddingBottom: 40,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: -4 },
+            shadowOpacity: 0.1,
+            shadowRadius: 16,
+            elevation: 10,
           }}
         >
-          {/* Center Container */}
-          <View
-            style={{
-              flex: 1,
-              justifyContent: "center",
-              width: "100%",
-              maxWidth: 500,
-              alignSelf: "center",
-            }}
-          >
+          <View style={{ width: "100%", maxWidth: 440, alignSelf: "center" }}>
+            {/* "Welcome Back" Pill Badge */}
+            <View
+              style={{
+                alignSelf: "center",
+                backgroundColor: "#F3E8FF",
+                paddingVertical: 6,
+                paddingHorizontal: 18,
+                borderRadius: 999,
+                marginBottom: 12,
+              }}
+            >
+              <Text
+                style={{
+                  color: "#7C3AED",
+                  fontSize: 12,
+                  fontWeight: "700",
+                  letterSpacing: 0.2,
+                }}
+              >
+                Welcome Back
+              </Text>
+            </View>
+
+            {/* Title */}
             <Text
               style={{
                 textAlign: "center",
-                fontSize: SCREEN_HEIGHT > 900 ? 28 : 22,
-                fontWeight: "700",
-                color: "#6C3CD1",
-                marginBottom: 52,
+                fontSize: 24,
+                fontWeight: "800",
+                color: "#111827",
+                marginBottom: 6,
               }}
             >
-              Welcome to Sign in
+              Sign in to your account
             </Text>
 
+            {/* Subtitle */}
+            <Text
+              style={{
+                textAlign: "center",
+                fontSize: 13,
+                color: "#6B7280",
+                marginBottom: 26,
+              }}
+            >
+              Enter your enterprise credentials or use biometrics
+            </Text>
+
+            {/* Employee ID Error Banner */}
             {empIdError.length > 0 && (
               <View
                 style={{
                   flexDirection: "row",
                   alignItems: "center",
                   marginBottom: 6,
+                  paddingHorizontal: 4,
                 }}
               >
-                <Icon name="alert-circle" size={16} color="#DC2626" />
+                <Ionicons name="alert-circle" size={16} color="#DC2626" />
                 <Text style={{ color: "#DC2626", fontSize: 13, marginLeft: 6 }}>
                   {empIdError}
                 </Text>
               </View>
             )}
 
+            {/* Employee ID Input */}
             <View
               style={{
                 flexDirection: "row",
                 alignItems: "center",
-                backgroundColor: "#F3F4F6",
+                backgroundColor: "#FFFFFF",
                 borderRadius: 999,
-                borderWidth: 1,
-                borderColor: empIdError ? "#EF4444" : "#D1D5DB",
+                borderWidth: 1.5,
+                borderColor: empIdError ? "#EF4444" : "#E5E7EB",
                 paddingHorizontal: 16,
-                marginBottom: 16,
+                height: 54,
+                marginBottom: empIdError ? 8 : 16,
               }}
             >
+              <Ionicons
+                name="person-circle"
+                size={22}
+                color="#6B7280"
+                style={{ marginRight: 10 }}
+              />
               <TextInput
-                placeholder="Employee ID"
-                placeholderTextColor="#A3A3A3"
+                placeholder="Employee ID (e.g. SA00001)"
+                placeholderTextColor="#9CA3AF"
                 style={{
                   flex: 1,
-                  paddingVertical: 16,
-                  fontSize: 16,
+                  fontSize: 15,
                   color: "#1F2937",
+                  paddingVertical: 0,
                 }}
                 value={empId}
                 onChangeText={(text) => {
@@ -434,41 +529,51 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               />
             </View>
 
+            {/* Password Error Banner */}
             {passwordError.length > 0 && (
               <View
                 style={{
                   flexDirection: "row",
                   alignItems: "center",
                   marginBottom: 6,
+                  paddingHorizontal: 4,
                 }}
               >
-                <Icon name="alert-circle" size={16} color="#DC2626" />
+                <Ionicons name="alert-circle" size={16} color="#DC2626" />
                 <Text style={{ color: "#DC2626", fontSize: 13, marginLeft: 6 }}>
                   {passwordError}
                 </Text>
               </View>
             )}
 
+            {/* Password Input */}
             <View
               style={{
                 flexDirection: "row",
                 alignItems: "center",
-                backgroundColor: "#F3F4F6",
+                backgroundColor: "#FFFFFF",
                 borderRadius: 999,
-                borderWidth: 1,
-                borderColor: passwordError ? "#EF4444" : "#D1D5DB",
+                borderWidth: 1.5,
+                borderColor: passwordError ? "#EF4444" : "#E5E7EB",
                 paddingHorizontal: 16,
-                marginBottom: 40,
+                height: 54,
+                marginBottom: 16,
               }}
             >
+              <Ionicons
+                name="lock-closed"
+                size={20}
+                color="#6B7280"
+                style={{ marginRight: 12, marginLeft: 2 }}
+              />
               <TextInput
                 placeholder="Password"
-                placeholderTextColor="#A3A3A3"
+                placeholderTextColor="#9CA3AF"
                 style={{
                   flex: 1,
-                  paddingVertical: 16,
-                  fontSize: 16,
+                  fontSize: 15,
                   color: "#1F2937",
+                  paddingVertical: 0,
                 }}
                 secureTextEntry={!showPassword}
                 value={password}
@@ -480,194 +585,170 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 returnKeyType="done"
                 onSubmitEditing={handleSignIn}
                 ref={passwordRef}
-                onFocus={() =>
-                  setTimeout(
-                    () =>
-                      scrollViewRef.current?.scrollToEnd({ animated: true }),
-                    100,
-                  )
-                }
               />
-
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                <Icon
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={{ padding: 4 }}
+              >
+                <Ionicons
                   name={showPassword ? "eye-off" : "eye"}
                   size={20}
-                  color="#6B7280"
+                  color="#6C3CD1"
                 />
               </TouchableOpacity>
             </View>
 
-            {/* Enable Biometric Login Checkbox */}
-            {isBiometricAvailable && (
-              <View
+            {/* Remember Me Toggle */}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: 22,
+                paddingHorizontal: 4,
+              }}
+            >
+              <Switch
+                value={rememberMe}
+                onValueChange={handleToggleRememberMe}
+                trackColor={{ false: "#D1D5DB", true: "#6C3CD1" }}
+                thumbColor={"#FFFFFF"}
                 style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "flex-start",
-                  marginBottom: 28,
-                  marginTop: -16,
-                  paddingHorizontal: 6,
+                  transform: [
+                    { scaleX: Platform.OS === "ios" ? 0.85 : 0.95 },
+                    { scaleY: Platform.OS === "ios" ? 0.85 : 0.95 },
+                  ],
+                }}
+              />
+              <Text
+                style={{
+                  marginLeft: 8,
+                  fontSize: 14,
+                  color: "#4B5563",
+                  fontWeight: "500",
                 }}
               >
-                <Checkbox
-                  value={enableBiometricCheckbox}
-                  onValueChange={setEnableBiometricCheckbox}
-                  color={enableBiometricCheckbox ? "#6C3CD1" : undefined}
-                  style={{
-                    borderRadius: 4,
-                    width: 20,
-                    height: 20,
-                  }}
-                />
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={() =>
-                    setEnableBiometricCheckbox(!enableBiometricCheckbox)
-                  }
-                  style={{ marginLeft: 10 }}
-                >
-                  <Text
-                    style={{
-                      color: "#4B5563",
-                      fontSize: 14,
-                      fontWeight: "500",
-                    }}
-                  >
-                    Enable Biometric Login
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
+                Remember me
+              </Text>
+            </View>
 
-            {/* Button */}
-            <View style={{ alignItems: "center" }}>
-              <View
+            {/* Primary Sign In Button */}
+            <TouchableOpacity
+              onPress={handleSignIn}
+              disabled={loading}
+              activeOpacity={0.85}
+              style={{
+                width: "100%",
+                borderRadius: 999,
+                shadowColor: "#6C3CD1",
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: 0.35,
+                shadowRadius: 10,
+                elevation: 8,
+                marginBottom: 26,
+              }}
+            >
+              <LinearGradient
+                colors={["#7C3AED", "#6C3CD1"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
                 style={{
                   borderRadius: 999,
-                  shadowColor: "#6E3DD1",
-                  shadowOffset: { width: 0, height: 8 },
-                  shadowOpacity: 0.45,
-                  shadowRadius: 12,
-                  elevation: 12,
+                  height: 54,
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
-                <TouchableOpacity
-                  onPress={handleSignIn}
-                  disabled={loading}
-                  activeOpacity={0.8}
-                  style={{ borderRadius: 999 }}
-                >
-                  <LinearGradient
-                    colors={["#9B60E8", "#6E3DD1"]}
+                {loading ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <Text
                     style={{
-                      borderRadius: 999,
-                      paddingVertical: 16,
-                      width: SCREEN_HEIGHT > 900 ? 260 : 220,
-                      alignItems: "center",
+                      color: "#FFFFFF",
+                      fontSize: 17,
+                      fontWeight: "700",
                     }}
                   >
-                    <Text
-                      style={{
-                        color: "white",
-                        fontSize: SCREEN_HEIGHT > 900 ? 20 : 18,
-                        fontWeight: "700",
-                      }}
-                    >
-                      {loading ? "Signing in…" : "Sign in"}
-                    </Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-              </View>
+                    Sign in
+                  </Text>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
 
-              {/* Animated Fingerprint Sign In directly beneath the Sign-In button */}
-              {hasStoredBiometrics && (
-                <View style={{ alignItems: "center", marginTop: 24 }}>
-                  <View
-                    style={{
-                      width: 68,
-                      height: 68,
-                      justifyContent: "center",
-                      alignItems: "center",
-                    }}
-                  >
-                    {/* Pulsing Ripple Halo */}
-                    <Animated.View
-                      style={{
-                        position: "absolute",
-                        width: 64,
-                        height: 64,
-                        borderRadius: 32,
-                        backgroundColor: "#6C3CD1",
-                        transform: [{ scale: rippleScale }],
-                        opacity: rippleOpacity,
-                      }}
-                    />
-
-                    {/* Circular Fingerprint Icon Button */}
-                    <Animated.View
-                      style={{ transform: [{ scale: buttonPulseAnim }] }}
-                    >
-                      <TouchableOpacity
-                        onPress={handleBiometricLogin}
-                        disabled={loading}
-                        activeOpacity={0.8}
-                        style={{
-                          width: 56,
-                          height: 56,
-                          borderRadius: 28,
-                          backgroundColor: "#F4EEFD",
-                          borderWidth: 1.5,
-                          borderColor: "#D8C7F8",
-                          justifyContent: "center",
-                          alignItems: "center",
-                          shadowColor: "#6C3CD1",
-                          shadowOffset: { width: 0, height: 4 },
-                          shadowOpacity: 0.25,
-                          shadowRadius: 8,
-                          elevation: 6,
-                        }}
-                      >
-                        <LinearGradient
-                          colors={["#9B60E8", "#6E3DD1"]}
-                          style={{
-                            width: 48,
-                            height: 48,
-                            borderRadius: 24,
-                            justifyContent: "center",
-                            alignItems: "center",
-                          }}
-                        >
-                          <Icon name="finger-print" size={26} color="#FFFFFF" />
-                        </LinearGradient>
-                      </TouchableOpacity>
-                    </Animated.View>
-                  </View>
-
-                  <TouchableOpacity
-                    onPress={handleBiometricLogin}
-                    disabled={loading}
-                    activeOpacity={0.7}
-                    style={{ marginTop: 8 }}
-                  >
-                    <Text
-                      style={{
-                        color: "#6C3CD1",
-                        fontSize: 14,
-                        fontWeight: "600",
-                        letterSpacing: 0.2,
-                      }}
-                    >
-                      Sign in with Fingerprint
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              )}
+            {/* "OR AUTHENTICATE WITH" Separator */}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: 22,
+              }}
+            >
+              <View
+                style={{ flex: 1, height: 1, backgroundColor: "#E5E7EB" }}
+              />
+              <Text
+                style={{
+                  paddingHorizontal: 12,
+                  fontSize: 11,
+                  fontWeight: "700",
+                  color: "#6B7280",
+                  letterSpacing: 0.8,
+                }}
+              >
+                OR AUTHENTICATE WITH
+              </Text>
+              <View
+                style={{ flex: 1, height: 1, backgroundColor: "#E5E7EB" }}
+              />
             </View>
+
+            {/* Biometric Button: "Enable Biometrics" vs "Use Biometrics" */}
+            <TouchableOpacity
+              onPress={
+                hasStoredBiometrics
+                  ? handleBiometricLogin
+                  : handleEnableBiometricsAndLogin
+              }
+              disabled={loading}
+              activeOpacity={0.85}
+              style={{
+                backgroundColor: "#F7F3FF",
+                borderWidth: 1.5,
+                borderColor: "#EADFFC",
+                borderRadius: 999,
+                height: 52,
+                paddingHorizontal: 28,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                alignSelf: "center",
+                shadowColor: "#6C3CD1",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.12,
+                shadowRadius: 8,
+                elevation: 3,
+              }}
+            >
+              <FontAwesome5
+                name="fingerprint"
+                size={20}
+                color="#6C3CD1"
+                style={{ marginRight: 10 }}
+              />
+              <Text
+                style={{
+                  color: "#6C3CD1",
+                  fontSize: 15,
+                  fontWeight: "700",
+                }}
+              >
+                {hasStoredBiometrics ? "Use Biometrics" : "Enable Biometrics"}
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
 
+      {/* Verification Radar Modal */}
       <BiometricAuthModal
         visible={isBiometricModalVisible}
         status={biometricModalStatus}
