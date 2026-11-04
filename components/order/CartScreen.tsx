@@ -82,10 +82,15 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     customerscreencustomerid,
     buyerType,
   } = route.params || {};
+  const from = (route.params as any)?.from;
   const fromOrderSummary = (route.params as any)?.fromOrderSummary;
 
   // Max quantity applies to wholesale customers only
-  const isWholesale = String(buyerType || "").toLowerCase() === "wholesale";
+  const isWholesale =
+    String(buyerType || "").toLowerCase() === "wholesale" ||
+    from === "ViewCustomerScreen";
+  const effectiveBuyerType = isWholesale ? "Wholesale" : (buyerType || "Retail");
+  const effectiveFrom = from || (isWholesale ? "ViewCustomerScreen" : undefined);
 
   const incomingDeliveryCharge = route.params?.deliveryCharge ?? 0;
   const incomingSelectedAddress = route.params?.selectedAddress ?? null;
@@ -112,13 +117,15 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
         navigation.navigate("CreateCustomPackage" as any, {
           id,
           isPackage,
+          selectedProducts: cartItems,
           selectedProductIds: cartItems.map((item) => item.id),
           customerId,
           title,
           name,
           number,
           customerscreencustomerid,
-          buyerType,
+          buyerType: effectiveBuyerType,
+          from: effectiveFrom,
         });
         return true;
       };
@@ -571,8 +578,8 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
             name,
             number,
             customerscreencustomerid,
-            buyerType: isWholesale ? "Wholesale" : (buyerType || "Retail"),
-            from: (route.params as any)?.from,
+            buyerType: effectiveBuyerType,
+            from: effectiveFrom,
           });
         }}
         rightComponent={

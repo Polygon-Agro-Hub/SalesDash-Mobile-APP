@@ -217,7 +217,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
 
   // Shared back navigation (header button + Android hardware button)
   const handleBack = useCallback(() => {
-    if (isWholesale) {
+    if (isWholesale || from === "ViewCustomerScreen") {
       navigation.navigate("ViewCustomerScreen" as any, {
         id,
         customerId: customerscreencustomerid || customerId,
@@ -240,6 +240,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
   }, [
     navigation,
     isWholesale,
+    from,
     id,
     customerId,
     customerscreencustomerid,

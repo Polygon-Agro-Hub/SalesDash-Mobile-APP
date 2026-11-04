@@ -178,6 +178,8 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
   const handleGoBack = () => {
     const isPackage = route.params?.isPackage;
     const isPackageNum = isPackage === 1 || isPackage === "1" ? 1 : 0;
+    const incomingBuyerType = (route.params as any)?.buyerType;
+    const incomingFrom = (route.params as any)?.from;
 
     if (isPackageNum === 1) {
       navigation.navigate("OrderScreen" as any, {
@@ -200,6 +202,8 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
         discount: route.params?.discount,
         selectedDate: route.params?.selectedDate,
         selectedTimeSlot: route.params?.selectedTimeSlot,
+        buyerType: incomingBuyerType,
+        from: incomingFrom,
       });
     } else {
       navigation.navigate("CratScreen" as any, {
@@ -226,6 +230,8 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
         orderData: route.params?.orderData,
         selectedAddress: selectedAddress ?? undefined,
         deliveryCharge: 0,
+        buyerType: incomingBuyerType,
+        from: incomingFrom,
       });
     }
   };
