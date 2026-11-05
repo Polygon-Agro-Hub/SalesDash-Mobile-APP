@@ -2,9 +2,14 @@ import * as LocalAuthentication from "expo-local-authentication";
 import * as SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const BIOMETRIC_ENABLED_KEY = "isBiometricEnabled";
-const SECURE_EMP_ID_KEY = "biometric_emp_id";
-const SECURE_PASSWORD_KEY = "biometric_password";
+// Unique SalesDash namespaces to prevent collision with other Expo apps on the same device
+const BIOMETRIC_ENABLED_KEY = "salesdash_isBiometricEnabled_v1";
+const SECURE_EMP_ID_KEY = "salesdash_biometric_emp_id_v1";
+const SECURE_PASSWORD_KEY = "salesdash_biometric_password_v1";
+
+const STORE_OPTIONS: SecureStore.SecureStoreOptions = {
+  keychainService: "com.polygonagro.SalesDash",
+};
 
 export interface BiometricAvailability {
   hasHardware: boolean;
@@ -41,11 +46,8 @@ export const getBiometricTypeLabel = async (): Promise<string> => {
 
 export const isBiometricEnabled = async (): Promise<boolean> => {
   try {
-    const enabled = await AsyncStorage.getItem(BIOMETRIC_ENABLED_KEY);
-    if (enabled !== "true") return false;
-    const empId = await SecureStore.getItemAsync(SECURE_EMP_ID_KEY);
-    const password = await SecureStore.getItemAsync(SECURE_PASSWORD_KEY);
-    return Boolean(empId && password);
+    const creds = await getBiometricCredentials();
+    return Boolean(creds?.empId && creds?.password);
   } catch (error) {
     console.warn("Error checking if biometric is enabled:", error);
     return false;
@@ -57,9 +59,17 @@ export const saveBiometricCredentials = async (
   password: string,
 ): Promise<boolean> => {
   try {
-    await SecureStore.setItemAsync(SECURE_EMP_ID_KEY, empId.trim());
-    await SecureStore.setItemAsync(SECURE_PASSWORD_KEY, password);
+    const cleanEmpId = empId.trim().toUpperCase();
+
+    // Store in SalesDash isolated keychain / keystore
+    await SecureStore.setItemAsync(SECURE_EMP_ID_KEY, cleanEmpId, STORE_OPTIONS);
+    await SecureStore.setItemAsync(SECURE_PASSWORD_KEY, password, STORE_OPTIONS);
     await AsyncStorage.setItem(BIOMETRIC_ENABLED_KEY, "true");
+
+    // Clean any legacy un-namespaced keys from other Expo apps to prevent leakage
+    await SecureStore.deleteItemAsync("biometric_emp_id").catch(() => {});
+    await SecureStore.deleteItemAsync("biometric_password").catch(() => {});
+
     return true;
   } catch (error) {
     console.error("Error saving biometric credentials:", error);
@@ -72,11 +82,21 @@ export const getBiometricCredentials = async (): Promise<{
   password: string;
 } | null> => {
   try {
-    const empId = await SecureStore.getItemAsync(SECURE_EMP_ID_KEY);
-    const password = await SecureStore.getItemAsync(SECURE_PASSWORD_KEY);
-    if (empId && password) {
-      return { empId, password };
+    // 1. Check namespaced SalesDash store first
+    let empId = await SecureStore.getItemAsync(SECURE_EMP_ID_KEY, STORE_OPTIONS);
+    let password = await SecureStore.getItemAsync(SECURE_PASSWORD_KEY, STORE_OPTIONS);
+
+    // 2. Validate that the empId belongs to SalesDash (must start with "SA")
+    if (empId && password && empId.trim().toUpperCase().startsWith("SA")) {
+      return { empId: empId.trim().toUpperCase(), password };
     }
+
+    // 3. If an old non-SalesDash ID is stored (e.g. "DRV..."), purge it immediately
+    if (empId && !empId.trim().toUpperCase().startsWith("SA")) {
+      console.warn("Purging foreign credential from SalesDash biometric store:", empId);
+      await clearBiometricCredentials();
+    }
+
     return null;
   } catch (error) {
     console.error("Error retrieving biometric credentials:", error);
@@ -86,8 +106,10 @@ export const getBiometricCredentials = async (): Promise<{
 
 export const clearBiometricCredentials = async (): Promise<void> => {
   try {
-    await SecureStore.deleteItemAsync(SECURE_EMP_ID_KEY);
-    await SecureStore.deleteItemAsync(SECURE_PASSWORD_KEY);
+    await SecureStore.deleteItemAsync(SECURE_EMP_ID_KEY, STORE_OPTIONS).catch(() => {});
+    await SecureStore.deleteItemAsync(SECURE_PASSWORD_KEY, STORE_OPTIONS).catch(() => {});
+    await SecureStore.deleteItemAsync("biometric_emp_id").catch(() => {});
+    await SecureStore.deleteItemAsync("biometric_password").catch(() => {});
     await AsyncStorage.setItem(BIOMETRIC_ENABLED_KEY, "false");
   } catch (error) {
     console.warn("Error clearing biometric credentials:", error);

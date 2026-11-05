@@ -62,7 +62,6 @@ import PackageConfirmation from "@/components/order/PackageConfirmation";
 import OrderConfimedOTPScreen from "@/components/otp/OrderConfimedOTPScreen";
 import { updateGlobalUnreadCount } from "@/components/reminder/ReminderScreen";
 import environment from "@/environment/environment";
-import { requestTrackingIfNeeded } from "@/utils/ios/trackingPermissions";
 import CameraAccess from "@/components/permission/CameraAccess";
 import LocationAccess from "@/components/permission/LocationAccess";
 import NotificationAccess from "@/components/permission/NotificationAccess";
@@ -173,10 +172,6 @@ function AppContent() {
     showOkButton: undefined as boolean | undefined,
     okButtonText: undefined as string | undefined,
   });
-
-  useEffect(() => {
-    requestTrackingIfNeeded();
-  }, []);
 
   useEffect(() => {
     socketService.connect();

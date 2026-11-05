@@ -11,7 +11,7 @@ import {
   BackHandler,
   Switch,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
 import {
@@ -27,7 +27,6 @@ import SidebarSkeleton from "./SidebarSkeleton";
 import LoadingPage from "../common/LoadingPage";
 import biometricService from "@/services/biometric/biometric.service";
 import * as Application from "expo-application";
-import CrashReportModal from "../common/CrashReportModal";
 
 type SidebarScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -52,40 +51,7 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
   const [isBiometricAvailable, setIsBiometricAvailable] = useState(false);
   const [isBiometricActive, setIsBiometricActive] = useState(false);
   const [biometricLabel, setBiometricLabel] = useState("Biometrics");
-  const [crashModalVisible, setCrashModalVisible] = useState(false);
-  const [simulateCrash, setSimulateCrash] = useState(false);
 
-  if (simulateCrash) {
-    throw new Error(
-      "Simulated Test Crash: SalesDash Automated Crash Report Verification from Sidebar"
-    );
-  }
-
-  const handleCrashButtonPress = () => {
-    Alert.alert(
-      "Crash Reporting & Testing",
-      "Choose an action to test the crash reporting system:",
-      [
-        {
-          text: "Simulate Real Crash (Auto-Send)",
-          style: "destructive",
-          onPress: () => {
-            setSimulateCrash(true);
-          },
-        },
-        {
-          text: "Send Manual Feedback",
-          onPress: () => {
-            setCrashModalVisible(true);
-          },
-        },
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-      ]
-    );
-  };
 
   useFocusEffect(
     useCallback(() => {
@@ -462,9 +428,9 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
                             alignItems: "center",
                           }}
                         >
-                          <Ionicons
-                            name="finger-print-outline"
-                            size={hp(3)}
+                          <FontAwesome5
+                            name="fingerprint"
+                            size={hp(2.5)}
                             color="#8F8F8F"
                           />
                         </View>
@@ -477,7 +443,7 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
                           }}
                           className="text-gray-800"
                         >
-                          Biometric Sign-In
+                          Use Biometrics
                         </Text>
 
                         <Switch
@@ -565,40 +531,6 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
                       />
                     </TouchableOpacity>
 
-                    {/* Send Crash Report / Report Problem */}
-                    <TouchableOpacity
-                      className="flex-row items-center py-2"
-                      onPress={handleCrashButtonPress}
-                    >
-                      <View
-                        style={{
-                          width: hp(5),
-                          height: hp(5),
-                          borderRadius: hp(2.5),
-                          backgroundColor: "#FEE2E2",
-                          justifyContent: "center",
-                          alignItems: "center",
-                        }}
-                      >
-                        <Ionicons
-                          name="bug-outline"
-                          size={hp(2.8)}
-                          color="#DC2626"
-                        />
-                      </View>
-                      <Text
-                        style={{ flex: 1, marginLeft: wp(4), fontSize: hp(2) }}
-                        className="text-gray-800"
-                      >
-                        Send Crash Report
-                      </Text>
-                      <Ionicons
-                        name="chevron-forward-outline"
-                        size={hp(2.5)}
-                        color="#8F8F8F"
-                        style={{ marginRight: wp(2) }}
-                      />
-                    </TouchableOpacity>
 
                     <View className="mb-4">
                       <View className="border-b border-gray-200 my-5" />
@@ -637,13 +569,10 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
                       </TouchableOpacity>
                     </View>
 
-                    {/* App Version & Branding Footer */}
+                    {/* App Version Footer */}
                     <View style={{ alignItems: "center", paddingVertical: hp(2), marginBottom: hp(2) }}>
                       <Text style={{ fontSize: hp(1.5), color: "#9CA3AF", fontWeight: "600" }}>
-                        Version {Application.nativeApplicationVersion || "1.0.6"} (Build {Application.nativeBuildVersion || "20"})
-                      </Text>
-                      <Text style={{ fontSize: hp(1.3), color: "#CBD5E1", marginTop: 4 }}>
-                        © Polygon Agrotech (Pvt) Ltd
+                        Version {Application.nativeApplicationVersion || "1.0.6"}
                       </Text>
                     </View>
                   </View>
@@ -654,11 +583,6 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
         )}
       </View>
 
-      <CrashReportModal
-        visible={crashModalVisible}
-        onClose={() => setCrashModalVisible(false)}
-        screenName="Sidebar / Manual Diagnostic"
-      />
     </KeyboardAvoidingView>
   );
 };

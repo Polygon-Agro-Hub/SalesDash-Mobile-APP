@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -26,6 +27,10 @@ export const BiometricAuthModal: React.FC<BiometricAuthModalProps> = ({
   onCancel,
   biometricLabel = "Fingerprint",
 }) => {
+  if (Platform.OS !== "android") {
+    return null;
+  }
+
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const scaleSuccessAnim = useRef(new Animated.Value(0)).current;
@@ -167,8 +172,8 @@ export const BiometricAuthModal: React.FC<BiometricAuthModalProps> = ({
                   height: 136,
                   borderRadius: 68,
                   borderWidth: 3,
-                  borderColor: "#10B981",
-                  backgroundColor: "#ECFDF5",
+                  borderColor: "#6C3CD1",
+                  backgroundColor: "#F4EEFD",
                 }}
               />
             )}
@@ -221,11 +226,11 @@ export const BiometricAuthModal: React.FC<BiometricAuthModalProps> = ({
                   width: 104,
                   height: 104,
                   borderRadius: 52,
-                  backgroundColor: "#10B981",
+                  backgroundColor: "#6C3CD1",
                   justifyContent: "center",
                   alignItems: "center",
                   transform: [{ scale: scaleSuccessAnim }],
-                  shadowColor: "#10B981",
+                  shadowColor: "#6C3CD1",
                   shadowOffset: { width: 0, height: 6 },
                   shadowOpacity: 0.35,
                   shadowRadius: 10,
@@ -300,7 +305,7 @@ export const BiometricAuthModal: React.FC<BiometricAuthModalProps> = ({
                 style={{
                   fontSize: 20,
                   fontWeight: "700",
-                  color: "#10B981",
+                  color: "#6C3CD1",
                   textAlign: "center",
                   marginBottom: 6,
                 }}
