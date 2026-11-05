@@ -52,6 +52,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
   const [isBiometricAvailable, setIsBiometricAvailable] = useState(false);
   const [hasStoredBiometrics, setHasStoredBiometrics] = useState(false);
+  const [storedBiometricEmpId, setStoredBiometricEmpId] = useState<string | null>(null);
   const [isBiometricModalVisible, setIsBiometricModalVisible] = useState(false);
   const [biometricModalStatus, setBiometricModalStatus] = useState<
     "scanning" | "success" | "error"
@@ -81,13 +82,17 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           if (!isActive) return;
           if (avail.hasHardware && avail.isEnrolled) {
             setIsBiometricAvailable(true);
+            const bioCreds = await biometricService.getBiometricCredentials();
             const enabled = await biometricService.isBiometricEnabled();
             if (isActive) {
-              setHasStoredBiometrics(enabled);
+              const hasBio = Boolean(enabled && bioCreds?.empId && bioCreds?.password);
+              setHasStoredBiometrics(hasBio);
+              setStoredBiometricEmpId(hasBio && bioCreds?.empId ? bioCreds.empId.trim().toUpperCase() : null);
             }
           } else {
             setIsBiometricAvailable(false);
             setHasStoredBiometrics(false);
+            setStoredBiometricEmpId(null);
           }
         } catch (err) {
           console.warn("Error initializing login screen:", err);
@@ -176,13 +181,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             ]);
           }
 
-          // Save Biometrics credentials if requested OR if biometrics was already active
-          if (saveBioOnSuccess || hasStoredBiometrics) {
+          // Save Biometrics credentials only if requested (Enable Biometrics)
+          if (saveBioOnSuccess) {
             await biometricService.saveBiometricCredentials(
               loginEmpId.trim(),
               loginPassword,
             );
             setHasStoredBiometrics(true);
+            setStoredBiometricEmpId(loginEmpId.trim().toUpperCase());
           }
 
           socketService.connect().catch(() => {});
@@ -350,6 +356,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           "No saved SalesDash credentials found. Please sign in with your password to enable biometric login.",
         );
         setHasStoredBiometrics(false);
+        setStoredBiometricEmpId(null);
         return;
       }
 
@@ -366,6 +373,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
       if (verified) {
         setEmpId(creds.empId);
+        setPassword(creds.password);
+        setStoredBiometricEmpId(creds.empId.trim().toUpperCase());
 
         if (Platform.OS === "android") {
           setBiometricModalStatus("success");
@@ -389,6 +398,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       }
     }
   };
+
+  // Biometrics is usable ONLY if credentials exist AND the current input matches the stored biometric user (or input is empty)
+  const isMatchingBiometricUser = Boolean(
+    hasStoredBiometrics &&
+      storedBiometricEmpId &&
+      (empId.trim() === "" ||
+        empId.trim().toUpperCase() === storedBiometricEmpId.toUpperCase()),
+  );
 
   return (
     <KeyboardAvoidingView
@@ -725,7 +742,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             {/* Biometric Button: "Enable Biometrics" vs "Use Biometrics" */}
             <TouchableOpacity
               onPress={
-                hasStoredBiometrics
+                isMatchingBiometricUser
                   ? handleBiometricLogin
                   : handleEnableBiometricsAndLogin
               }
@@ -762,7 +779,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                   fontWeight: "700",
                 }}
               >
-                {hasStoredBiometrics ? "Use Biometrics" : "Enable Biometrics"}
+                {isMatchingBiometricUser ? "Use Biometrics" : "Enable Biometrics"}
               </Text>
             </TouchableOpacity>
           </View>
