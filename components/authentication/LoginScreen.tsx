@@ -352,7 +352,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     if (!avail.hasHardware || !avail.isEnrolled) {
       Alert.alert(
         "Biometric Setup",
-        "No biometric sensor or enrolled fingerprint found on this device. Please set up fingerprint/face unlock in your phone settings first.",
+        "No biometric sensor or enrolled Face ID / Fingerprint found on this device. Please set up Face ID or Fingerprint unlock in your phone settings first.",
       );
       return;
     }
@@ -361,7 +361,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     const verified = await biometricService.authenticateWithBiometrics(
       Platform.OS === "ios"
         ? "Verify identity to enable biometric sign-in"
-        : "Confirm fingerprint to enable biometric login",
+        : "Confirm Face ID / Fingerprint to enable biometric login",
     );
 
     if (verified) {
@@ -394,7 +394,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       const verified = await biometricService.authenticateWithBiometrics(
         Platform.OS === "ios"
           ? "Sign in with Face ID / Touch ID"
-          : "Confirm your fingerprint to sign in",
+          : "Confirm your Face ID / Fingerprint to Sign in",
       );
 
       if (verified) {
@@ -819,7 +819,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         <BiometricAuthModal
           visible={isBiometricModalVisible}
           status={biometricModalStatus}
-          biometricLabel="Fingerprint"
+          biometricLabel="Face ID / Fingerprint"
           onCancel={() => setIsBiometricModalVisible(false)}
         />
       )}
