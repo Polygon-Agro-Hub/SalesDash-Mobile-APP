@@ -470,16 +470,22 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
     }
   };
 
- const handleBack = useCallback(() => {
+const handleBack = useCallback(() => {
   const tab: "Retail" | "Wholesale" =
     buyerType === "Wholesale" ? "Wholesale" : "Retail";
 
   switch (route.params?.from) {
     case "ExistingCustomerDetailsScreen":
-      navigation.navigate("Main" as any, { screen: "ExistingCustomerDetailsScreen" });
+      navigation.navigate("Main" as any, {
+        screen: "ExistingCustomerDetailsScreen",
+        params: { initialTab: tab },
+      });
       break;
     case "NewCustomerDetailsScreen":
-      navigation.navigate("Main" as any, { screen: "NewCustomerDetailsScreen" });
+      navigation.navigate("Main" as any, {
+        screen: "NewCustomerDetailsScreen",
+        params: { initialTab: tab },
+      });
       break;
     case "TotalValueOfCustomersScreen":
       navigation.navigate("Main" as any, { screen: "TotalValueOfCustomersScreen" });
@@ -1676,15 +1682,17 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 setIsAccessDeniedVisible(true);
                 return;
               }
-              navigation.navigate("Main" as any, {
-                screen: "EditCustomerScreen",
-                params: {
-                  id,
-                  customerId,
-                  name: customerName,
-                  title: customerTitle,
-                },
-              });
+             navigation.navigate("Main" as any, {
+  screen: "EditCustomerScreen",
+  params: {
+    id,
+    customerId,
+    name: customerName,
+    title: customerTitle,
+    from: route.params?.from,
+    buyerType: buyerType || "Retail",
+  },
+});
             }}
             style={{
               width: 40,

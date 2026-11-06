@@ -190,11 +190,13 @@ export type RootStackParamList = {
     message?: string;
   };
   EditCustomerScreen: {
-    id: string;
-    customerId: string;
-    name: string;
-    title: string;
-  };
+  id: number | string;
+  customerId: string;
+  name: string;
+  title: string;
+  from?: string;
+  buyerType?: "Retail" | "Wholesale";
+};
   OtpScreenUp: {
     phoneNumber: string;
     id: string;
