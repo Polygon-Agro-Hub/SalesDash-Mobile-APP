@@ -93,7 +93,7 @@ export type RootStackParamList = {
   LoginScreen: undefined;
   ChangePasswordScreen: undefined;
   DashboardScreen: undefined;
-  CustomersScreen: undefined;
+  CustomersScreen: { initialTab?: "Retail" | "Wholesale" } | undefined;
   SidebarScreen: undefined;
   ProfileScreen: undefined;
   AddComplaintScreen: undefined;
@@ -155,6 +155,8 @@ export type RootStackParamList = {
     customerId: string;
     id: string;
     title: string;
+    buyerType?: string;
+    from?: "CustomersScreen" | "ExistingCustomerDetailsScreen" | "NewCustomerDetailsScreen" | "TotalValueOfCustomersScreen";
   };
   AddCustomersScreen: {
     selectedLatitude?: number;
@@ -181,6 +183,7 @@ export type RootStackParamList = {
     number?: string;
     title?: string;
     id?: string;
+    buyerType?: string;
   };
   BannedScreen: {
     statusType?: "not_approved" | "rejected" | "pending";
@@ -278,6 +281,8 @@ export type RootStackParamList = {
     selectedAddress?: any;
     deliveryCharge?: number;
     isFinalizeImdt?: number;
+    buyerType?: string;
+    from?: string;
   };
   SelectPaymentMethod: {
     items?: CartItem[];
@@ -401,8 +406,17 @@ export type RootStackParamList = {
   };
   CreateCustomPackage: {
     id: string;
-    isCustomPackage: string;
-    isSelectPackage: string;
+    isCustomPackage?: string;
+    isSelectPackage?: string;
+    isPackage?: number;
+    customerId?: string;
+    name?: string;
+    title?: string;
+    number?: string;
+    customerscreencustomerid?: string;
+    selectedProductIds?: number[];
+    buyerType?: string;
+    from?: string;
   };
   CratScreen: {
     selectedProducts: CartItem[];
@@ -423,6 +437,8 @@ export type RootStackParamList = {
     timeDisplay?: string;
     paymentMethod?: string;
     fromOrderSummary?: boolean;
+    buyerType?: string;
+    from?: string;
   };
   ExcludeListAdd: {
     customerId: number;
@@ -454,12 +470,15 @@ export type RootStackParamList = {
   };
   ResidentialAddress: {
     customerId: string;
+    buyerType?: string;
   };
   DeliveryAddressBooks: {
     customerId: string;
+    buyerType?: string;
   };
   AddDeliveryAddress: {
     customerId: string;
+    buyerType?: string;
     addressId?: number;
     addressType?: "House" | "Apartment";
     selectedLatitude?: number;
@@ -509,4 +528,9 @@ export type RootStackParamList = {
     number?: string;
     customerscreencustomerid?: string;
   };
+  PackagesScreen:undefined;
+  ExistingCustomerDetailsScreen:undefined;
+  NewCustomerDetailsScreen:undefined;
+  MonthlyOrdersTargets:undefined;
+  TotalValueOfCustomersScreen:undefined;
 };

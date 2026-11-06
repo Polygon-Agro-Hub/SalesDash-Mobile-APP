@@ -169,7 +169,7 @@ const NotificationAccess: React.FC<NotificationAccessProps> = ({
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#121212" }}>
+    <View style={{ flex: 1, backgroundColor: "#121212" }}>
       <StatusBar barStyle="light-content" backgroundColor="#121212" />
       <ScrollView
         className="flex-1 px-5"
@@ -325,7 +325,7 @@ const NotificationAccess: React.FC<NotificationAccessProps> = ({
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 

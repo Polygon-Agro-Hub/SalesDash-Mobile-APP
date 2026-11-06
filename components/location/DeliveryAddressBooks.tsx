@@ -39,6 +39,7 @@ interface DeliveryAddressBooksProps {
   route: {
     params: {
       customerId: string;
+      buyerType?: string;
     };
   };
 }
@@ -184,7 +185,7 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
   navigation,
   route,
 }) => {
-  const { customerId } = route.params || {};
+  const { customerId, buyerType } = route.params || {};
 
   const [loading, setLoading] = useState(true);
   const [addresses, setAddresses] = useState<SavedAddress[]>([]);
@@ -296,6 +297,7 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
       customerId,
       addressId: address.id,
       addressType: address.type,
+      buyerType,
     });
   };
 
@@ -338,7 +340,7 @@ const DeliveryAddressBooks: React.FC<DeliveryAddressBooksProps> = ({
   );
 
   const handleAddNew = () => {
-    navigation.navigate("AddDeliveryAddress" as any, { customerId });
+    navigation.navigate("AddDeliveryAddress" as any, { customerId, buyerType });
   };
 
   if (loading) {

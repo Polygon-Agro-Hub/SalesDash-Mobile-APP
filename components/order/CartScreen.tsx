@@ -29,6 +29,8 @@ interface CartItem {
   startValue: number;
   changeby: number;
   minValue: number;
+  // Maximum allowed quantity in KG. null = no limit (retail, or not set).
+  maxValue: number | null;
 }
 
 interface CratScreenProps {
@@ -55,9 +57,19 @@ interface CratScreenProps {
       customerscreencustomerid: string;
       deliveryCharge?: number;
       selectedAddress?: any;
+      buyerType?: string;
     };
   };
 }
+
+// Tolerance for floating point comparisons (e.g. 0.1 + 0.2)
+const EPSILON = 1e-6;
+
+const parseMax = (value: any): number | null => {
+  if (value === null || value === undefined || value === "") return null;
+  const n = typeof value === "string" ? parseFloat(value) : Number(value);
+  return Number.isFinite(n) && n > 0 ? n : null;
+};
 
 const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
   const {
@@ -68,8 +80,17 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     name,
     number,
     customerscreencustomerid,
+    buyerType,
   } = route.params || {};
+  const from = (route.params as any)?.from;
   const fromOrderSummary = (route.params as any)?.fromOrderSummary;
+
+  // Max quantity applies to wholesale customers only
+  const isWholesale =
+    String(buyerType || "").toLowerCase() === "wholesale" ||
+    from === "ViewCustomerScreen";
+  const effectiveBuyerType = isWholesale ? "Wholesale" : (buyerType || "Retail");
+  const effectiveFrom = from || (isWholesale ? "ViewCustomerScreen" : undefined);
 
   const incomingDeliveryCharge = route.params?.deliveryCharge ?? 0;
   const incomingSelectedAddress = route.params?.selectedAddress ?? null;
@@ -96,12 +117,15 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
         navigation.navigate("CreateCustomPackage" as any, {
           id,
           isPackage,
+          selectedProducts: cartItems,
           selectedProductIds: cartItems.map((item) => item.id),
           customerId,
           title,
           name,
           number,
           customerscreencustomerid,
+          buyerType: effectiveBuyerType,
+          from: effectiveFrom,
         });
         return true;
       };
@@ -124,6 +148,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
             route.params.selectedProducts.map(async (item) => {
               let changebyValue = item.changeby;
               let startValue = item.startValue;
+              let maxQuantityRaw = item.maxQuantity;
 
               try {
                 const storedToken = await AsyncStorage.getItem("authToken");
@@ -134,6 +159,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
                 if (response.data.data) {
                   changebyValue = response.data.data.changeby;
                   startValue = response.data.data.startValue;
+                  maxQuantityRaw = response.data.data.maxQuantity;
                 }
               } catch (error) {
                 console.error(
@@ -154,6 +180,9 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
 
               const unitType =
                 item.unitType?.toLowerCase() === "g" ? "g" : "kg";
+
+              // Only wholesale customers get a max limit (in KG)
+              const maxValue = isWholesale ? parseMax(maxQuantityRaw) : null;
 
               let initialQuantity: number;
               if (fromOrderSummary) {
@@ -183,12 +212,18 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
                 } else {
                   pricePerKg = item.discountedPrice;
                   normalPricePerKg = item.normalPrice;
-                  discountPerKg = item.discount;
+                  discountPerKg = Math.max(0, item.discount || 0);
                 }
               } else {
                 pricePerKg = item.discountedPrice;
                 normalPricePerKg = item.normalPrice;
                 discountPerKg = item.discount;
+              }
+
+              // Clamp the starting quantity to the max (after pricing is computed)
+              if (maxValue !== null) {
+                const maxInUnit = unitType === "g" ? maxValue * 1000 : maxValue;
+                initialQuantity = Math.min(initialQuantity, maxInUnit);
               }
 
               return {
@@ -204,6 +239,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
                 unitType: unitType,
                 startValue: changebyNum,
                 minValue: startValueNum,
+                maxValue,
               };
             }),
           );
@@ -238,7 +274,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
         const rebuiltItems = await Promise.all(
           route.params.items.map(async (raw: any) => {
             const unitType = raw.unitType?.toLowerCase() === "g" ? "g" : "kg";
-            const qty =
+            let qty =
               typeof raw.qty === "string" ? parseFloat(raw.qty) : raw.qty || 0;
             const weightInKg = unitType === "g" ? qty / 1000 : qty;
 
@@ -259,6 +295,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
 
             let startValue = unitType === "g" ? 100 : 0.5;
             let minValue = unitType === "g" ? 100 : 0.5;
+            let maxValue: number | null = null;
 
             try {
               const apiUrl = `${environment.API_BASE_URL}api/packages/getChnageby/${raw.id}`;
@@ -276,9 +313,19 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
                     : response.data.data.changeby;
                 minValue = fetchedMin || minValue;
                 startValue = fetchedStep || fetchedMin || startValue;
+
+                if (isWholesale) {
+                  maxValue = parseMax(response.data.data.maxQuantity);
+                }
               }
             } catch (err) {
               console.error(`Error fetching changeby for item ${raw.id}:`, err);
+            }
+
+            // Clamp restored quantity to the max
+            if (maxValue !== null) {
+              const maxInUnit = unitType === "g" ? maxValue * 1000 : maxValue;
+              qty = Math.min(qty, maxInUnit);
             }
 
             return {
@@ -294,6 +341,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
               quantity: qty,
               startValue,
               minValue,
+              maxValue,
             } as CartItem;
           }),
         );
@@ -331,6 +379,18 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     const minValue =
       item.unitType === "g" ? item.minValue * 1000 : item.minValue;
     return item.changeby <= minValue;
+  };
+
+  // Max in the item's CURRENT unit (null = no limit)
+  const getMaxInUnit = (item: CartItem): number | null => {
+    if (!isWholesale || item.maxValue === null) return null;
+    return item.unitType === "g" ? item.maxValue * 1000 : item.maxValue;
+  };
+
+  const isAtMax = (item: CartItem) => {
+    const maxInUnit = getMaxInUnit(item);
+    if (maxInUnit === null) return false;
+    return item.changeby >= maxInUnit - EPSILON;
   };
 
   const calculateItemTotal = (item: CartItem) => {
@@ -375,9 +435,18 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     setCartItems(
       cartItems.map((item) => {
         if (item.id === id) {
+          if (isAtMax(item)) return item; // already at the limit
+
           const incrementAmount =
             item.unitType === "g" ? item.startValue * 1000 : item.startValue;
-          const newValue = item.changeby + incrementAmount;
+          let newValue = item.changeby + incrementAmount;
+
+          // Never go past the maximum (last step lands exactly on the max)
+          const maxInUnit = getMaxInUnit(item);
+          if (maxInUnit !== null) {
+            newValue = Math.min(newValue, maxInUnit);
+          }
+
           return { ...item, changeby: newValue, quantity: newValue };
         }
         return item;
@@ -443,7 +512,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
           id: item.id,
           name: item.name,
           price: roundToTwoDecimals(item.discountedPrice * weightInKg),
-          discount: roundToTwoDecimals(item.discount * weightInKg),
+          discount: Math.max(0, roundToTwoDecimals(item.discount * weightInKg)),
           qty: item.changeby,
           unitType: item.unitType,
           isPackage: isPackage,
@@ -468,9 +537,11 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
         name,
 
         selectedAddressId: incomingSelectedAddress?.id,
+        buyerType: isWholesale ? "Wholesale" : (buyerType || "Retail"),
+        from: (route.params as any)?.from,
       });
     } else {
-      alert("Please add at least one item to your cart");
+      Alert.alert("Please add at least one item to your cart");
     }
   };
 
@@ -500,12 +571,15 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
           navigation.navigate("CreateCustomPackage" as any, {
             id,
             isPackage,
+            selectedProducts: cartItems,
             selectedProductIds: cartItems.map((item) => item.id),
             customerId,
             title,
             name,
             number,
             customerscreencustomerid,
+            buyerType: effectiveBuyerType,
+            from: effectiveFrom,
           });
         }}
         rightComponent={
@@ -629,11 +703,12 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
 
                         <TouchableOpacity
                           onPress={() => increaseQuantity(item.id)}
+                          disabled={isAtMax(item)}
                         >
                           <Ionicons
                             name="add-circle"
                             size={24}
-                            color="#5D5D5D"
+                            color={isAtMax(item) ? "#D3D3D3" : "#5D5D5D"}
                           />
                         </TouchableOpacity>
                       </View>

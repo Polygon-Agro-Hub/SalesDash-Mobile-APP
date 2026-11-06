@@ -9,6 +9,7 @@ npm-debug.*
 *.orig.*
 *.jks
 /ios
+/android
 .env
 web-build/
 

@@ -327,6 +327,8 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
       number,
       customerscreencustomerid,
       isFinalizeImdt: route.params?.isFinalizeImdt,
+      buyerType: (route.params as any)?.buyerType,
+      from: (route.params as any)?.from,
     };
 
     navigation.navigate("OrderSummeryScreen" as any, navigationData);
@@ -366,6 +368,8 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
     calculatedOrders: (route.params as any)?.calculatedOrders,
     packageType: (route.params as any)?.packageType,
     endDate: (route.params as any)?.endDate,
+    buyerType: (route.params as any)?.buyerType,
+    from: (route.params as any)?.from,
   });
 
   useFocusEffect(
@@ -592,7 +596,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
 
       <AlertModal
         visible={showCartAlert}
-        title="Some Items No Longer Available!"
+        title="Items No Longer Available!"
         message="Sorry, the package / a product in your cart is no longer available to order. Please go to your cart and update it before continuing."
         type="error"
         autoClose={false}
