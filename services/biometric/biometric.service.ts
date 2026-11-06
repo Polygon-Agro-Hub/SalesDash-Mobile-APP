@@ -1,6 +1,7 @@
 import * as LocalAuthentication from "expo-local-authentication";
 import * as SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from "react-native";
 
 // Unique SalesDash namespaces to prevent collision with other Expo apps on the same device
 const BIOMETRIC_ENABLED_KEY = "salesdash_isBiometricEnabled_v1";
@@ -29,15 +30,34 @@ export const checkBiometricAvailability = async (): Promise<BiometricAvailabilit
   }
 };
 
+// Debug helper. NOTE: on Android this list can be incomplete (e.g. some Samsung
+// phones report only fingerprint while the system prompt still offers face),
+// so never use it to hide or block face unlock.
+export const getBiometricSupport = async (): Promise<{
+  supportsFace: boolean;
+  supportsFingerprint: boolean;
+}> => {
+  const { biometricTypes } = await checkBiometricAvailability();
+  const supportsFace = biometricTypes.includes(
+    LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION,
+  );
+  const supportsFingerprint = biometricTypes.includes(
+    LocalAuthentication.AuthenticationType.FINGERPRINT,
+  );
+  console.log("Biometric support:", { biometricTypes, supportsFace, supportsFingerprint });
+  return { supportsFace, supportsFingerprint };
+};
+
 export const getBiometricTypeLabel = async (): Promise<string> => {
   try {
-    const { biometricTypes } = await checkBiometricAvailability();
-    if (biometricTypes.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
-      return "Face ID";
-    }
-    if (biometricTypes.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) {
-      return "Fingerprint";
-    }
+    // On Android the system prompt decides what is offered (face and/or
+    // fingerprint), so use a generic label that is correct on every phone.
+    if (Platform.OS === "android") return "Biometrics";
+
+    const { supportsFace, supportsFingerprint } = await getBiometricSupport();
+    if (supportsFace && supportsFingerprint) return "Face ID / Touch ID";
+    if (supportsFace) return "Face ID";
+    if (supportsFingerprint) return "Touch ID";
     return "Biometrics";
   } catch {
     return "Biometrics";
@@ -83,8 +103,8 @@ export const getBiometricCredentials = async (): Promise<{
 } | null> => {
   try {
     // 1. Check namespaced SalesDash store first
-    let empId = await SecureStore.getItemAsync(SECURE_EMP_ID_KEY, STORE_OPTIONS);
-    let password = await SecureStore.getItemAsync(SECURE_PASSWORD_KEY, STORE_OPTIONS);
+    const empId = await SecureStore.getItemAsync(SECURE_EMP_ID_KEY, STORE_OPTIONS);
+    const password = await SecureStore.getItemAsync(SECURE_PASSWORD_KEY, STORE_OPTIONS);
 
     // 2. Validate that the empId belongs to SalesDash (must start with "SA")
     if (empId && password && empId.trim().toUpperCase().startsWith("SA")) {
@@ -128,8 +148,11 @@ export const authenticateWithBiometrics = async (
     const result = await LocalAuthentication.authenticateAsync({
       promptMessage,
       cancelLabel: "Cancel",
-      fallbackLabel: "Use Password",
+      fallbackLabel: "Use Password", // iOS only
       disableDeviceFallback: false,
+      // Android only: also allow weaker (Class 2) biometrics such as face unlock,
+      // on phones where the manufacturer exposes it to apps.
+      biometricsSecurityLevel: "weak",
     });
 
     return result.success;
@@ -141,6 +164,7 @@ export const authenticateWithBiometrics = async (
 
 export default {
   checkBiometricAvailability,
+  getBiometricSupport,
   getBiometricTypeLabel,
   isBiometricEnabled,
   saveBiometricCredentials,
