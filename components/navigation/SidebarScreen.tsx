@@ -26,6 +26,7 @@ import CustomHeader from "../common/CustomHeader";
 import SidebarSkeleton from "./SidebarSkeleton";
 import LoadingPage from "../common/LoadingPage";
 import biometricService from "@/services/biometric/biometric.service";
+import * as SecureStore from "expo-secure-store";
 import * as Application from "expo-application";
 
 type SidebarScreenNavigationProp = StackNavigationProp<
@@ -53,27 +54,39 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
   const [biometricLabel, setBiometricLabel] = useState("Biometrics");
 
 
+  const checkBiometrics = async (targetEmpId?: string) => {
+    try {
+      const avail = await biometricService.checkBiometricAvailability();
+      if (avail.hasHardware && avail.isEnrolled) {
+        setIsBiometricAvailable(true);
+        const label = await biometricService.getBiometricTypeLabel();
+        setBiometricLabel(label);
+
+        const activeId =
+          targetEmpId ||
+          formData.empId ||
+          (await AsyncStorage.getItem("salesdash_current_emp_id")) ||
+          undefined;
+
+        const enabled = await biometricService.isBiometricEnabled(activeId);
+        setIsBiometricActive(enabled);
+      } else {
+        setIsBiometricAvailable(false);
+        setIsBiometricActive(false);
+      }
+    } catch (err) {
+      console.warn("Error checking biometric status in sidebar:", err);
+      setIsBiometricAvailable(false);
+      setIsBiometricActive(false);
+    }
+  };
+
   useFocusEffect(
     useCallback(() => {
       setComplaintsExpanded(false);
       setImageLoading(true);
       setProfileLoading(true);
       getUserProfile();
-
-      const checkBiometrics = async () => {
-        const avail = await biometricService.checkBiometricAvailability();
-        if (avail.hasHardware && avail.isEnrolled) {
-          setIsBiometricAvailable(true);
-          const label = await biometricService.getBiometricTypeLabel();
-          setBiometricLabel(label);
-          const enabled = await biometricService.isBiometricEnabled();
-          setIsBiometricActive(enabled);
-        } else {
-          setIsBiometricAvailable(false);
-          setIsBiometricActive(false);
-        }
-      };
-
       checkBiometrics();
     }, []),
   );
@@ -87,6 +100,7 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
 
     const avail = await biometricService.checkBiometricAvailability();
     if (!avail.hasHardware || !avail.isEnrolled) {
+      setIsBiometricActive(false);
       Alert.alert(
         "Biometrics Unavailable",
         "Please set up a fingerprint or Face ID in your device settings first.",
@@ -94,22 +108,65 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
       return;
     }
 
+    const currentEmpId =
+      formData.empId ||
+      (await AsyncStorage.getItem("salesdash_current_emp_id")) ||
+      "";
+
     const creds = await biometricService.getBiometricCredentials();
-    if (creds?.empId && creds?.password) {
+    const credsMatchCurrent = Boolean(
+      creds?.empId &&
+        creds?.password &&
+        currentEmpId &&
+        creds.empId.trim().toUpperCase() === currentEmpId.trim().toUpperCase(),
+    );
+
+    if (credsMatchCurrent && creds) {
       const verified = await biometricService.authenticateWithBiometrics(
         `Verify ${biometricLabel} to enable Biometric Sign-In`,
       );
       if (verified) {
-        await AsyncStorage.setItem("isBiometricEnabled", "true");
+        await biometricService.setBiometricEnabled(true);
         setIsBiometricActive(true);
         Alert.alert("Success", "Biometric Sign-In has been enabled.");
+      } else {
+        setIsBiometricActive(false);
       }
-    } else {
-      Alert.alert(
-        "Enable Biometric Sign-In",
-        "To securely link your biometrics, please check 'Enable Biometric Login' the next time you sign in with your Employee ID and password.",
-      );
+      return;
     }
+
+    // If no biometric credentials for current user, check if Remember Me has saved their password
+    const savedEmp = await AsyncStorage.getItem("salesdash_saved_empid");
+    const isRemembered = await AsyncStorage.getItem("salesdash_remember_me");
+    if (
+      isRemembered === "true" &&
+      savedEmp &&
+      currentEmpId &&
+      savedEmp.trim().toUpperCase() === currentEmpId.trim().toUpperCase()
+    ) {
+      const savedPwd = await SecureStore.getItemAsync("salesdash_saved_password");
+      if (savedPwd) {
+        const verified = await biometricService.authenticateWithBiometrics(
+          `Verify ${biometricLabel} to enable Biometric Sign-In`,
+        );
+        if (verified) {
+          await biometricService.saveBiometricCredentials(currentEmpId, savedPwd);
+          setIsBiometricActive(true);
+          Alert.alert("Success", "Biometric Sign-In has been enabled.");
+          return;
+        } else {
+          setIsBiometricActive(false);
+          return;
+        }
+      }
+    }
+
+    // Password is not known in secure storage, inform user to enable it from sign-in
+    setIsBiometricActive(false);
+    Alert.alert(
+      "Enable Biometric Sign-In",
+      "To securely link your biometrics, please tap 'Enable Biometrics' on the sign-in screen when logging in with your Employee ID and password.",
+    );
   };
 
   const getUserProfile = async () => {
@@ -127,6 +184,14 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
         },
       );
 
+      const empId = response.data?.data?.empId;
+      if (empId) {
+        await AsyncStorage.setItem(
+          "salesdash_current_emp_id",
+          empId.trim().toUpperCase(),
+        );
+      }
+
       // Preload the image before setting formData
       if (response.data.data.image) {
         Image.prefetch(response.data.data.image)
@@ -134,16 +199,19 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
             setFormData(response.data.data);
             setImageLoading(false);
             setProfileLoading(false);
+            checkBiometrics(empId);
           })
           .catch(() => {
             setFormData(response.data.data);
             setImageLoading(false);
             setProfileLoading(false);
+            checkBiometrics(empId);
           });
       } else {
         setFormData(response.data.data);
         setImageLoading(false);
         setProfileLoading(false);
+        checkBiometrics(empId);
       }
     } catch (error) {
       Alert.alert("Error", "Failed to fetch user profile");
@@ -156,7 +224,10 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
   const handleLogout = async () => {
     setLoading(true);
     try {
-      await AsyncStorage.removeItem("authToken");
+      await AsyncStorage.multiRemove([
+        "authToken",
+        "salesdash_current_emp_id",
+      ]);
       setTimeout(() => {
         navigation.replace("LoginScreen");
       }, 5000);
