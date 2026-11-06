@@ -36,7 +36,7 @@ export const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
     onLocationSelect,
     style,
 }) => {
-    const webViewRef = useRef<WebView>(null);
+    const webViewRef = useRef<any>(null);
     const [isMapReady, setIsMapReady] = useState(false);
 
     // Build the initial HTML with Leaflet and OpenStreetMap

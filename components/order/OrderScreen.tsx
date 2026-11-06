@@ -438,9 +438,16 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
             if (!prev) return selectedPkg;
             return {
               ...selectedPkg,
-              startDate: prev.startDate !== undefined ? prev.startDate : selectedPkg.startDate,
-              endDate: prev.endDate !== undefined ? prev.endDate : selectedPkg.endDate,
-              packageType: prev.packageType !== undefined ? prev.packageType : selectedPkg.packageType,
+              startDate:
+                prev.startDate !== undefined
+                  ? prev.startDate
+                  : selectedPkg.startDate,
+              endDate:
+                prev.endDate !== undefined ? prev.endDate : selectedPkg.endDate,
+              packageType:
+                prev.packageType !== undefined
+                  ? prev.packageType
+                  : selectedPkg.packageType,
             };
           });
         }
@@ -491,18 +498,18 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
           if (!prev) return pkg;
           return {
             ...pkg,
-            startDate: prev.startDate !== undefined ? prev.startDate : pkg.startDate,
+            startDate:
+              prev.startDate !== undefined ? prev.startDate : pkg.startDate,
             endDate: prev.endDate !== undefined ? prev.endDate : pkg.endDate,
-            packageType: prev.packageType !== undefined ? prev.packageType : pkg.packageType,
+            packageType:
+              prev.packageType !== undefined
+                ? prev.packageType
+                : pkg.packageType,
           };
         });
       }
     }
-  }, [
-    packages,
-    route.params?.packageId,
-    route.params?.isEdit,
-  ]);
+  }, [packages, route.params?.packageId, route.params?.isEdit]);
 
   const handleConfirm = useCallback(async () => {
     setLoading(true);
@@ -685,14 +692,21 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
           if (!prev || prev.id !== packageId) return prev;
           return {
             ...prev,
-            startDate: data.startDate !== undefined ? data.startDate : undefined,
+            startDate:
+              data.startDate !== undefined ? data.startDate : undefined,
             endDate: data.endDate !== undefined ? data.endDate : undefined,
-            packageType: data.packageType !== undefined ? data.packageType : prev.packageType,
+            packageType:
+              data.packageType !== undefined
+                ? data.packageType
+                : prev.packageType,
           };
         });
       }
     } catch (err) {
-      console.warn("Could not fetch extra package details in OrderScreen:", err);
+      console.warn(
+        "Could not fetch extra package details in OrderScreen:",
+        err,
+      );
     }
   }, []);
 
@@ -729,7 +743,9 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
 
       const currentPkgId = packageValue
         ? parseInt(packageValue, 10)
-        : (route.params?.packageId ? Number(route.params.packageId) : null);
+        : route.params?.packageId
+          ? Number(route.params.packageId)
+          : null;
 
       if (currentPkgId) {
         const freshPkg = freshPackages.find((p) => p.id === currentPkgId);
@@ -740,9 +756,16 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
             }
             return {
               ...freshPkg,
-              startDate: prev.startDate !== undefined ? prev.startDate : freshPkg.startDate,
-              endDate: prev.endDate !== undefined ? prev.endDate : freshPkg.endDate,
-              packageType: prev.packageType !== undefined ? prev.packageType : freshPkg.packageType,
+              startDate:
+                prev.startDate !== undefined
+                  ? prev.startDate
+                  : freshPkg.startDate,
+              endDate:
+                prev.endDate !== undefined ? prev.endDate : freshPkg.endDate,
+              packageType:
+                prev.packageType !== undefined
+                  ? prev.packageType
+                  : freshPkg.packageType,
             };
           });
           fetchPackageDetails(currentPkgId);
@@ -758,7 +781,9 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     fetchPackages();
 
     const unsubscribe = socketService.onPackageUpdate(() => {
-      console.log("🔄 [OrderScreen] Refreshing packages from socket update event");
+      console.log(
+        "🔄 [OrderScreen] Refreshing packages from socket update event",
+      );
       fetchPackages();
     });
 
@@ -773,7 +798,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     }, [fetchPackages]),
   );
 
-  useEffect(() => { }, [route.params]);
+  useEffect(() => {}, [route.params]);
 
   const handlePackageChange = (value: string | null) => {
     if (value) {
@@ -1058,8 +1083,8 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     const discountAmount =
       Math.round(
         (editingItem.pricePerKg - editingItem.discountedPricePerKg) *
-        quantityInKg *
-        100,
+          quantityInKg *
+          100,
       ) / 100;
 
     const updatedItem: AdditionalItem = {
@@ -1279,12 +1304,16 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
 
           <TouchableOpacity
             onPress={() => setPackageModalVisible(true)}
-            className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-full px-4 py-3 flex-row justify-between items-center min-h-[48px]"
+            className="bg-[#F6F6F6] border border-[#F6F6F6] rounded-3xl px-4 py-3 flex-row items-center min-h-[48px]"
           >
-            <Text className={packageValue ? "text-black" : "text-gray-500"}>
+            <Text
+              className={`flex-1 pr-2 ${packageValue ? "text-black" : "text-gray-500"}`}
+              numberOfLines={2}
+              ellipsizeMode="tail"
+            >
               {packageValue
                 ? packageItems.find((item) => item.value === packageValue)
-                  ?.label || "Select a package"
+                    ?.label || "Select a package"
                 : "Select a package"}
             </Text>
             <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
@@ -1313,10 +1342,11 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
               {items.map((item, index) => (
                 <View
                   key={index}
-                  className={`flex-row justify-between items-center py-2 px-4 ${index !== items.length - 1
+                  className={`flex-row justify-between items-center py-2 px-4 ${
+                    index !== items.length - 1
                       ? "border-b border-[#CDCDCD]"
                       : ""
-                    }`}
+                  }`}
                 >
                   <Text className="text-gray-800 font-medium flex-1">
                     {item.name}
@@ -1332,7 +1362,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
           </View>
         )}
 
-        
         {/* Seasonal Package Section (Only for One Time packages) */}
         <SeasonalPackageBanner
           packageId={packageValue || selectedPackage?.id}
@@ -1371,10 +1400,11 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                 <TouchableOpacity
                   key={item.id}
                   onPress={() => toggleItemSelection(item.id)}
-                  className={`flex-row items-center py-4 px-4 ${index !== additionalItems.length - 1
+                  className={`flex-row items-center py-4 px-4 ${
+                    index !== additionalItems.length - 1
                       ? "border-b border-[#CDCDCD]"
                       : ""
-                    } ${selectedItems.includes(item.id) ? "bg-white" : "bg-white"}`}
+                  } ${selectedItems.includes(item.id) ? "bg-white" : "bg-white"}`}
                 >
                   {/* Checkbox icon */}
                   <Ionicons
@@ -1521,7 +1551,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                 <Text className={productValue ? "text-black" : "text-gray-500"}>
                   {productValue
                     ? productItems.find((item) => item.value === productValue)
-                      ?.label || "Select a product..."
+                        ?.label || "Select a product..."
                     : "Select a product..."}
                 </Text>
                 <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
@@ -1611,7 +1641,8 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
                   )}{" "}
                   for this product
                 </Text>
-              </View>) : null}
+              </View>
+            ) : null}
 
             {/* Action Buttons */}
             <View className="gap-3">

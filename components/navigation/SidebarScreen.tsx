@@ -9,8 +9,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   BackHandler,
+  Switch,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
 import {
@@ -24,6 +25,9 @@ import { useFocusEffect } from "@react-navigation/native";
 import CustomHeader from "../common/CustomHeader";
 import SidebarSkeleton from "./SidebarSkeleton";
 import LoadingPage from "../common/LoadingPage";
+import biometricService from "@/services/biometric/biometric.service";
+import * as SecureStore from "expo-secure-store";
+import * as Application from "expo-application";
 
 type SidebarScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -45,6 +49,37 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
   const [imageLoading, setImageLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [isBiometricAvailable, setIsBiometricAvailable] = useState(false);
+  const [isBiometricActive, setIsBiometricActive] = useState(false);
+  const [biometricLabel, setBiometricLabel] = useState("Biometrics");
+
+
+  const checkBiometrics = async (targetEmpId?: string) => {
+    try {
+      const avail = await biometricService.checkBiometricAvailability();
+      if (avail.hasHardware && avail.isEnrolled) {
+        setIsBiometricAvailable(true);
+        const label = await biometricService.getBiometricTypeLabel();
+        setBiometricLabel(label);
+
+        const activeId =
+          targetEmpId ||
+          formData.empId ||
+          (await AsyncStorage.getItem("salesdash_current_emp_id")) ||
+          undefined;
+
+        const enabled = await biometricService.isBiometricEnabled(activeId);
+        setIsBiometricActive(enabled);
+      } else {
+        setIsBiometricAvailable(false);
+        setIsBiometricActive(false);
+      }
+    } catch (err) {
+      console.warn("Error checking biometric status in sidebar:", err);
+      setIsBiometricAvailable(false);
+      setIsBiometricActive(false);
+    }
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -52,8 +87,87 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
       setImageLoading(true);
       setProfileLoading(true);
       getUserProfile();
+      checkBiometrics();
     }, []),
   );
+
+  const handleToggleBiometric = async (value: boolean) => {
+    if (!value) {
+      await biometricService.clearBiometricCredentials();
+      setIsBiometricActive(false);
+      return;
+    }
+
+    const avail = await biometricService.checkBiometricAvailability();
+    if (!avail.hasHardware || !avail.isEnrolled) {
+      setIsBiometricActive(false);
+      Alert.alert(
+        "Biometrics Unavailable",
+        "Please set up a fingerprint or Face ID in your device settings first.",
+      );
+      return;
+    }
+
+    const currentEmpId =
+      formData.empId ||
+      (await AsyncStorage.getItem("salesdash_current_emp_id")) ||
+      "";
+
+    const creds = await biometricService.getBiometricCredentials();
+    const credsMatchCurrent = Boolean(
+      creds?.empId &&
+        creds?.password &&
+        currentEmpId &&
+        creds.empId.trim().toUpperCase() === currentEmpId.trim().toUpperCase(),
+    );
+
+    if (credsMatchCurrent && creds) {
+      const verified = await biometricService.authenticateWithBiometrics(
+        `Verify ${biometricLabel} to enable Biometric Sign-In`,
+      );
+      if (verified) {
+        await biometricService.setBiometricEnabled(true);
+        setIsBiometricActive(true);
+        Alert.alert("Success", "Biometric Sign-In has been enabled.");
+      } else {
+        setIsBiometricActive(false);
+      }
+      return;
+    }
+
+    // If no biometric credentials for current user, check if Remember Me has saved their password
+    const savedEmp = await AsyncStorage.getItem("salesdash_saved_empid");
+    const isRemembered = await AsyncStorage.getItem("salesdash_remember_me");
+    if (
+      isRemembered === "true" &&
+      savedEmp &&
+      currentEmpId &&
+      savedEmp.trim().toUpperCase() === currentEmpId.trim().toUpperCase()
+    ) {
+      const savedPwd = await SecureStore.getItemAsync("salesdash_saved_password");
+      if (savedPwd) {
+        const verified = await biometricService.authenticateWithBiometrics(
+          `Verify ${biometricLabel} to enable Biometric Sign-In`,
+        );
+        if (verified) {
+          await biometricService.saveBiometricCredentials(currentEmpId, savedPwd);
+          setIsBiometricActive(true);
+          Alert.alert("Success", "Biometric Sign-In has been enabled.");
+          return;
+        } else {
+          setIsBiometricActive(false);
+          return;
+        }
+      }
+    }
+
+    // Password is not known in secure storage, inform user to enable it from sign-in
+    setIsBiometricActive(false);
+    Alert.alert(
+      "Enable Biometric Sign-In",
+      "To securely link your biometrics, please tap 'Enable Biometrics' on the sign-in screen when logging in with your Employee ID and password.",
+    );
+  };
 
   const getUserProfile = async () => {
     try {
@@ -70,6 +184,14 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
         },
       );
 
+      const empId = response.data?.data?.empId;
+      if (empId) {
+        await AsyncStorage.setItem(
+          "salesdash_current_emp_id",
+          empId.trim().toUpperCase(),
+        );
+      }
+
       // Preload the image before setting formData
       if (response.data.data.image) {
         Image.prefetch(response.data.data.image)
@@ -77,16 +199,19 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
             setFormData(response.data.data);
             setImageLoading(false);
             setProfileLoading(false);
+            checkBiometrics(empId);
           })
           .catch(() => {
             setFormData(response.data.data);
             setImageLoading(false);
             setProfileLoading(false);
+            checkBiometrics(empId);
           });
       } else {
         setFormData(response.data.data);
         setImageLoading(false);
         setProfileLoading(false);
+        checkBiometrics(empId);
       }
     } catch (error) {
       Alert.alert("Error", "Failed to fetch user profile");
@@ -99,7 +224,10 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
   const handleLogout = async () => {
     setLoading(true);
     try {
-      await AsyncStorage.removeItem("authToken");
+      await AsyncStorage.multiRemove([
+        "authToken",
+        "salesdash_current_emp_id",
+      ]);
       setTimeout(() => {
         navigation.replace("LoginScreen");
       }, 5000);
@@ -356,6 +484,49 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
                       />
                     </TouchableOpacity>
 
+                    {isBiometricAvailable && (
+                      <View
+                        style={{ marginBottom: hp(2) }}
+                        className="flex-row items-center py-3"
+                      >
+                        <View
+                          style={{
+                            width: hp(5),
+                            height: hp(5),
+                            borderRadius: hp(2.5),
+                            backgroundColor: "#F4F9FB",
+                            justifyContent: "center",
+                            alignItems: "center",
+                          }}
+                        >
+                          <FontAwesome5
+                            name="fingerprint"
+                            size={hp(2.5)}
+                            color="#8F8F8F"
+                          />
+                        </View>
+
+                        <Text
+                          style={{
+                            flex: 1,
+                            marginLeft: wp(4),
+                            fontSize: hp(2),
+                          }}
+                          className="text-gray-800"
+                        >
+                          Use Biometrics
+                        </Text>
+
+                        <Switch
+                          value={isBiometricActive}
+                          onValueChange={handleToggleBiometric}
+                          trackColor={{ false: "#D1D5DB", true: "#6C3CD1" }}
+                          thumbColor="#FFFFFF"
+                          style={{ marginRight: wp(2) }}
+                        />
+                      </View>
+                    )}
+
                     <TouchableOpacity
                       style={{ marginBottom: hp(2) }}
                       className="flex-row items-center py-3"
@@ -431,7 +602,8 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
                       />
                     </TouchableOpacity>
 
-                    <View className="mb-8">
+
+                    <View className="mb-4">
                       <View className="border-b border-gray-200 my-5" />
                       <TouchableOpacity
                         className="flex-row items-center"
@@ -467,6 +639,13 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
                         </Text>
                       </TouchableOpacity>
                     </View>
+
+                    {/* App Version Footer */}
+                    <View style={{ alignItems: "center", paddingVertical: hp(2), marginBottom: hp(2) }}>
+                      <Text style={{ fontSize: hp(1.5), color: "#9CA3AF", fontWeight: "600" }}>
+                        Version {Application.nativeApplicationVersion || "1.0.6"}
+                      </Text>
+                    </View>
                   </View>
                 </>
               )}
@@ -474,6 +653,7 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
           </View>
         )}
       </View>
+
     </KeyboardAvoidingView>
   );
 };

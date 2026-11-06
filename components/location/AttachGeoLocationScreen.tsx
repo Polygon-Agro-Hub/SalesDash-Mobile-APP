@@ -39,7 +39,7 @@ const AttachGeoLocationScreen: React.FC<AttachGeoLocationScreenProps> = ({
   navigation,
   route,
 }) => {
-  const webViewRef = useRef<WebView>(null);
+  const webViewRef = useRef<any>(null);
 
   const currentLatitude = route.params?.currentLatitude;
   const currentLongitude = route.params?.currentLongitude;

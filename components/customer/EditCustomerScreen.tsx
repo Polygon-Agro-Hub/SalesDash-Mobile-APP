@@ -50,7 +50,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
   navigation,
   route,
 }) => {
-  const { id, customerId, name, title } = route.params;
+  const { id, customerId, name, title, from, buyerType } = route.params;
 
   const [firstName, setFirstName] = useState<string>("");
   const [lastName, setLastName] = useState<string>("");
@@ -689,14 +689,14 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
               ) {
                 setPhoneError("This mobile number is already registered.");
                 showAlert(
-                  "Mobile Number Already Exists",
+                  "Already registered",
                   "This mobile number is already registered. Please use a different mobile number.",
                 );
                 return;
               } else if (errorMessage.includes("Email already exists")) {
                 setEmailError("This email address is already registered.");
                 showAlert(
-                  "Email Already Exists",
+                  "Already registered",
                   "This email address is already registered. Please use a different email address.",
                 );
                 return;
@@ -708,7 +708,10 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
                 );
                 return;
               } else {
-                const formattedMessage = errorMessage.replace(/"email"/g, '"Email"');
+                const formattedMessage = errorMessage.replace(
+                  /"email"/g,
+                  '"Email"',
+                );
                 showAlert("Validation Error", formattedMessage);
                 return;
               }
@@ -794,15 +797,7 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
             showAlert(
               "Success",
               "Customer's Basic Details updated successfully.",
-              () => {
-                navigation.navigate("ViewCustomerScreen" as any, {
-                  id,
-                  customerId,
-                  name: `${firstName} ${lastName}`,
-                  title: selectedCategory,
-                  number: phoneNumber,
-                });
-              },
+              goBackToViewCustomer,
             );
           }
         } catch (updateError: any) {
@@ -815,13 +810,13 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
             if (errorMessage.includes("Email already exists")) {
               setEmailError("This email address is already registered.");
               showAlert(
-                "Email Already Exists",
+                "Already registered",
                 "This email address is already registered. Please use a different email address.",
               );
             } else if (errorMessage.includes("Mobile Number already exists")) {
               setPhoneError("This mobile number is already registered.");
               showAlert(
-                "Mobile Number Already Exists",
+                "Already registered",
                 "This mobile number is already registered. Please use a different mobile number.",
               );
             } else if (errorMessage.includes("NIC already exists")) {
@@ -893,16 +888,22 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     }
   };
 
+  const goBackToViewCustomer = () => {
+    navigation.navigate("ViewCustomerScreen" as any, {
+      id,
+      customerId,
+      name: `${firstName} ${lastName}`.trim(),
+      title: selectedCategory,
+      number: phoneNumber,
+      from: from ?? "CustomersScreen",
+      buyerType: buyerType || "Retail",
+    });
+  };
+
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        navigation.navigate("ViewCustomerScreen" as any, {
-          id,
-          customerId,
-          name: `${firstName} ${lastName}`,
-          title: selectedCategory,
-          number: phoneNumber,
-        });
+        goBackToViewCustomer();
         return true;
       };
 
@@ -916,8 +917,8 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
       navigation,
       id,
       customerId,
-      name,
-      title,
+      from,
+      buyerType,
       firstName,
       lastName,
       selectedCategory,
@@ -1140,56 +1141,48 @@ const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
     return <LoadingPage message="Loading Customer Data..." fullScreen={true} />;
   }
 
-return (
-  <View style={{ flex: 1, backgroundColor: "white" }}>
-    <CustomHeader
-      title="Edit Customer Details"
-      titleColor="#6C3CD1"
-      showBackButton={true}
-      navigation={navigation}
-      onBackPress={() => {
-        navigation.navigate("ViewCustomerScreen" as any, {
-          id,
-          customerId,
-          name: `${firstName} ${lastName}`,
-          title: selectedCategory,
-          number: phoneNumber,
-        });
-      }}
-    />
-    <KeyboardAwareScrollView
-      style={{ flex: 1 }}
-      contentContainerStyle={{ flexGrow: 1 }}
-      showsVerticalScrollIndicator={false}
-      keyboardShouldPersistTaps="handled"
-      enableOnAndroid={true}
-      enableAutomaticScroll={true}
-      extraScrollHeight={Platform.OS === "ios" ? 20 : 20}
-      keyboardOpeningTime={0}
-    >
-      <View className="px-6 mx-auto w-full max-w-[500px]">
-        {renderBasicDetailsForm()}
-      </View>
-    </KeyboardAwareScrollView>
+  return (
+    <View style={{ flex: 1, backgroundColor: "white" }}>
+      <CustomHeader
+        title="Edit Customer Details"
+        titleColor="#6C3CD1"
+        showBackButton={true}
+        navigation={navigation}
+        onBackPress={goBackToViewCustomer}
+      />
+      <KeyboardAwareScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        enableOnAndroid={true}
+        enableAutomaticScroll={true}
+        extraScrollHeight={Platform.OS === "ios" ? 20 : 20}
+        keyboardOpeningTime={0}
+      >
+        <View className="px-6 mx-auto w-full max-w-[500px]">
+          {renderBasicDetailsForm()}
+        </View>
+      </KeyboardAwareScrollView>
 
-    <GlobalSearchModal
-      visible={titleModalVisible}
-      onClose={() => setTitleModalVisible(false)}
-      title="Select Title"
-      data={items}
-      selectedItems={selectedCategory ? [selectedCategory] : []}
-      onSelect={(items) => {
-        if (items.length > 0) {
-          setSelectedCategory(items[0]);
-        }
-        handleFieldTouch("title");
-      }}
-      searchPlaceholder="Search title..."
-      multiSelect={false}
-      showSearch={false}
-    />
-  </View>
-);
+      <GlobalSearchModal
+        visible={titleModalVisible}
+        onClose={() => setTitleModalVisible(false)}
+        title="Select Title"
+        data={items}
+        selectedItems={selectedCategory ? [selectedCategory] : []}
+        onSelect={(items) => {
+          if (items.length > 0) {
+            setSelectedCategory(items[0]);
+          }
+          handleFieldTouch("title");
+        }}
+        searchPlaceholder="Search title..."
+        multiSelect={false}
+        showSearch={false}
+      />
+    </View>
+  );
 };
 
 export default EditCustomerScreen;

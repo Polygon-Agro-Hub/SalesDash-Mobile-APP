@@ -519,6 +519,9 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
   };
 
   // ─── SEASONAL PACKAGE CUTOFF & BANNER LOGIC ─────────────────────────────
+  // NOTE: The package type is decided ONLY from package data, never from the
+  // "Delivery Type" dropdown (scheduleType). This keeps the banner stable when
+  // switching between One Time / Once a Week / Twice a Week.
   const seasonalInfo = useMemo(() => {
     const rawType =
       currentPackageType ||
@@ -548,36 +551,14 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     );
 
     const isExplicitOneTime =
-      rawType.trim().toLowerCase() === "one time" ||
-      rawType.toLowerCase().includes("one") ||
-      scheduleType === "One Time" ||
-      anyOneTimeInItems;
+      rawType.toLowerCase().includes("one") || anyOneTimeInItems;
 
     const isExplicitRecurring =
-      rawType.trim().toLowerCase() === "recurring" ||
-      rawType.toLowerCase().includes("recur") ||
-      anyRecurringInItems;
+      rawType.toLowerCase().includes("recur") || anyRecurringInItems;
 
-    const hasPackage =
-      !!route.params?.packageId ||
-      !!(orderData as any)?.packageId ||
-      String(route.params?.isPackage) === "1" ||
-      String(isPackage) === "1" ||
-      isExplicitOneTime ||
-      isExplicitRecurring;
-
-    if (!hasPackage && !rawType && !rawEndDate && !rawStartDate) {
-      return null;
-    }
-
-    // Priority: If both exist (or One Time exists), prioritize One Time
-    const isOneTime =
-      isExplicitOneTime || (!!rawEndDate && !isExplicitRecurring);
-    const isRecurring = !isOneTime && (isExplicitRecurring || hasPackage);
-
-    if (!isOneTime && !isRecurring) {
-      return null;
-    }
+    // One Time if the package says so, or if nothing says "recurring"
+    const isOneTime = isExplicitOneTime || !isExplicitRecurring;
+    const isRecurring = !isOneTime;
 
     const parseDateStr = (dateStr: any) => {
       if (!dateStr) return null;
@@ -611,11 +592,12 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     const isAfter6PM = now.getHours() >= 18;
     const gapDays = isAfter6PM ? 3 : 2;
 
-    const minAvailDate = getMinDeliveryDate(); // today + (>=18 ? 4 : 3) days
+    const minAvailDate = getMinDeliveryDate(); // earliest possible date (today + gap)
     minAvailDate.setHours(0, 0, 0, 0);
 
-    // For One Time package: DO NOT COUNT start date! Always allow starting from earliest possible date (minAvailDate)
-    const earliestStartDate = !isOneTime ? parseDateStr(rawStartDate) : null;
+    // Recurring package: package start date can push the real start later
+    // (used for calendar limits and order filtering).
+    const earliestStartDate = isRecurring ? parseDateStr(rawStartDate) : null;
     const effectiveStartDate =
       earliestStartDate && earliestStartDate > minAvailDate
         ? earliestStartDate
@@ -651,45 +633,55 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       "December",
     ];
 
-    const startMonth = MONTH_SHORT[effectiveStartDate.getMonth()];
-    const startDay = effectiveStartDate.getDate();
+    // Banner ALWAYS shows the earliest possible date (e.g. 22),
+    // never the package start date, and never changes with the dropdown.
+    const displayStartDate = minAvailDate;
+    const startMonth = MONTH_SHORT[displayStartDate.getMonth()];
+    const startDay = displayStartDate.getDate();
     const startDayOrdinal = getOrdinal(startDay);
+    const startYear = displayStartDate.getFullYear();
 
     if (isOneTime && rawEndDate) {
       const earliestExpiryDate = parseDateStr(rawEndDate);
       if (earliestExpiryDate) {
+        // Last orderable date = package end date - 2 days
         const cutoffDate = new Date(earliestExpiryDate.getTime());
         cutoffDate.setDate(cutoffDate.getDate() - 2);
         cutoffDate.setHours(23, 59, 59, 999);
 
-        const expiryDay = cutoffDate.getDate();
+        // Shared formatter: "11th October 2026"
+        const fmtLong = (d: Date) =>
+          `${getOrdinal(d.getDate())} ${MONTH_LONG[d.getMonth()]} ${d.getFullYear()}`;
+
+        // "Packages expiring on ..." must show the ACTUAL package end date
+        const expiryDay = earliestExpiryDate.getDate();
         const expiryDayOrdinal = getOrdinal(expiryDay);
-        const expiryMonthFull = MONTH_LONG[cutoffDate.getMonth()];
-        const expiryText = `${expiryDayOrdinal} ${expiryMonthFull}`;
+        const expiryMonthFull = MONTH_LONG[earliestExpiryDate.getMonth()];
+        const expiryYear = earliestExpiryDate.getFullYear();
+        const expiryText = fmtLong(earliestExpiryDate);
 
-        const endMonth = MONTH_SHORT[cutoffDate.getMonth()];
-        const endDay = cutoffDate.getDate();
-        const endDayOrdinal = getOrdinal(endDay);
+        // Same string for the note and the "Available schedule dates" line
+        const rangeText = `${fmtLong(displayStartDate)} – ${fmtLong(cutoffDate)}`;
 
-        const rangeTextLong = `${startMonth} ${startDayOrdinal} - ${endMonth} ${endDayOrdinal}`;
-        const rangeTextShort = `${startMonth} ${startDay} – ${endMonth} ${endDay}`;
         const isAvailableNow = effectiveStartDate <= cutoffDate;
 
         return {
           isOneTime: true,
           isRecurring: false,
+          isSeasonalExpiry: true,
           gapDays,
           expiryDay,
           expiryDayOrdinal,
           expiryMonthFull,
+          expiryYear,
           expiryText,
           cutoffDate,
           minAvailDate,
           earliestStartDate: null,
           effectiveStartDate,
-          rangeTextLong,
-          rangeTextShort,
-          startDateFormatted: `${startMonth} ${startDay}`,
+          rangeTextLong: rangeText,
+          rangeTextShort: rangeText,
+          startDateFormatted: `${startMonth} ${startDay}, ${startYear}`,
           isAvailableNow,
         };
       }
@@ -699,10 +691,12 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       return {
         isOneTime: true,
         isRecurring: false,
+        isSeasonalExpiry: false,
         gapDays,
         expiryDay: null,
         expiryDayOrdinal: "",
         expiryMonthFull: "",
+        expiryYear: null,
         expiryText: "",
         cutoffDate: null,
         minAvailDate,
@@ -710,7 +704,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
         effectiveStartDate,
         rangeTextLong: "",
         rangeTextShort: "",
-        startDateFormatted: `${startMonth} ${startDay}`,
+        startDateFormatted: `${startMonth} ${startDay}, ${startYear}`,
         isAvailableNow: true,
       };
     }
@@ -719,10 +713,12 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     return {
       isOneTime: false,
       isRecurring: true,
+      isSeasonalExpiry: false,
       gapDays,
       expiryDay: null,
       expiryDayOrdinal: "",
       expiryMonthFull: "",
+      expiryYear: null,
       expiryText: "",
       cutoffDate: null,
       minAvailDate,
@@ -730,14 +726,13 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       effectiveStartDate,
       rangeTextLong: "",
       rangeTextShort: "",
-      startDateFormatted: `${startMonth} ${startDay}`,
+      startDateFormatted: `${startMonth} ${startDay}, ${startYear}`,
       isAvailableNow: true,
     };
   }, [
     currentPackageType,
     currentEndDate,
     currentStartDate,
-    scheduleType,
     route.params?.packageId,
     route.params?.packageType,
     route.params?.endDate,
@@ -784,7 +779,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     return {
       day: cutoff.getDate(),
       monthFull: ALL_MONTHS[cutoff.getMonth()],
-      formatted: `${ALL_MONTHS[cutoff.getMonth()]} ${cutoff.getDate()}`,
+      year: cutoff.getFullYear(),
+      formatted: `${ALL_MONTHS[cutoff.getMonth()]} ${cutoff.getDate()}, ${cutoff.getFullYear()}`,
     };
   }, [currentEndDate, route.params?.endDate, route.params?.packageId]);
 
@@ -937,6 +933,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       const onBackPress = () => {
         navigation.navigate("DeliveryAddress" as any, {
           ...route.params,
+          buyerType: (route.params as any)?.buyerType,
+          from: (route.params as any)?.from,
         });
         return true;
       };
@@ -974,6 +972,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       orderData: route.params?.orderData,
       selectedAddress: selectedAddress ?? undefined,
       deliveryCharge: deliveryFee,
+      buyerType: (route.params as any)?.buyerType,
+      from: (route.params as any)?.from,
     });
   };
 
@@ -1193,6 +1193,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
             onBackPress={() => {
               navigation.navigate("DeliveryAddress" as any, {
                 ...route.params,
+                buyerType: (route.params as any)?.buyerType,
+                from: (route.params as any)?.from,
               });
             }}
           />
@@ -1216,8 +1218,16 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
               </View>
 
               <ScrollView
-                className="px-6 mt-[-5]"
+                style={{ flex: 1 }}
+                contentContainerStyle={{
+                  paddingHorizontal: 24,
+                  paddingBottom: 60,
+                }}
                 keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+                nestedScrollEnabled={true}
+                bounces={true}
+                overScrollMode="always"
               >
                 {/* ─── SEASONAL PACKAGE BANNER ───────────────────────────── */}
                 {seasonalInfo && (
@@ -1232,7 +1242,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                       marginBottom: 10,
                     }}
                   >
-                    {seasonalInfo.isOneTime ? (
+                    {seasonalInfo.isSeasonalExpiry ? (
                       <>
                         <Text
                           style={{
@@ -1245,15 +1255,17 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                           {seasonalInfo.gapDays}-day gap is required. The
                           Packages expiring on the{" "}
                           {seasonalInfo.expiryDayOrdinal}{" "}
-                          {seasonalInfo.expiryMonthFull} can be ordered between
-                          the {seasonalInfo.rangeTextLong}.
+                          {seasonalInfo.expiryMonthFull}{" "}
+                          {seasonalInfo.expiryYear} can be ordered between the{" "}
+                          {seasonalInfo.rangeTextLong}.
                         </Text>
 
                         <View
                           style={{
                             flexDirection: "row",
-                            alignItems: "center",
+                            alignItems: "flex-start",
                             marginTop: 10,
+                            width: "100%",
                           }}
                         >
                           <View
@@ -1263,19 +1275,31 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                               borderRadius: 4,
                               backgroundColor: "#6B3BCF",
                               marginRight: 8,
+                              marginTop: 5,
+                              flexShrink: 0,
                             }}
                           />
-                          <Text
-                            style={{
-                              fontSize: 13,
-                              color: "#1E293B",
-                            }}
-                          >
-                            Available schedule dates:{" "}
-                            <Text style={{ fontWeight: "700" }}>
+                          <View style={{ flex: 1 }}>
+                            <Text
+                              style={{
+                                fontSize: 13,
+                                color: "#1E293B",
+                                lineHeight: 19,
+                              }}
+                            >
+                              Available schedule dates:
+                            </Text>
+                            <Text
+                              style={{
+                                fontSize: 13,
+                                fontWeight: "700",
+                                color: "#1E293B",
+                                lineHeight: 19,
+                              }}
+                            >
                               {seasonalInfo.rangeTextShort}
                             </Text>
-                          </Text>
+                          </View>
                         </View>
                       </>
                     ) : (
@@ -1622,7 +1646,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                           marginBottom: 16,
                         }}
                       >
-                        {seasonalInfo.isOneTime ? (
+                        {seasonalInfo.isSeasonalExpiry ? (
                           <>
                             <Text
                               style={{
@@ -1635,8 +1659,9 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                               A {seasonalInfo.gapDays}-day gap is required. The
                               Packages expiring on the{" "}
                               {seasonalInfo.expiryDayOrdinal}{" "}
-                              {seasonalInfo.expiryMonthFull} can be ordered
-                              between the {seasonalInfo.rangeTextLong}.
+                              {seasonalInfo.expiryMonthFull}{" "}
+                              {seasonalInfo.expiryYear} can be ordered between
+                              the {seasonalInfo.rangeTextLong}.
                             </Text>
 
                             <View
@@ -1644,7 +1669,6 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                                 flexDirection: "row",
                                 alignItems: "flex-start",
                                 marginTop: 10,
-                                paddingHorizontal: 4,
                                 width: "100%",
                               }}
                             >
@@ -1659,19 +1683,27 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                                   flexShrink: 0,
                                 }}
                               />
-                              <Text
-                                style={{
-                                  flex: 1,
-                                  fontSize: 13,
-                                  color: "#1E293B",
-                                  lineHeight: 19,
-                                }}
-                              >
-                                Available schedule dates:{" "}
-                                <Text style={{ fontWeight: "700" }}>
+                              <View style={{ flex: 1 }}>
+                                <Text
+                                  style={{
+                                    fontSize: 13,
+                                    color: "#1E293B",
+                                    lineHeight: 19,
+                                  }}
+                                >
+                                  Available schedule dates:
+                                </Text>
+                                <Text
+                                  style={{
+                                    fontSize: 13,
+                                    fontWeight: "700",
+                                    color: "#1E293B",
+                                    lineHeight: 19,
+                                  }}
+                                >
                                   {seasonalInfo.rangeTextShort}
                                 </Text>
-                              </Text>
+                              </View>
                             </View>
                           </>
                         ) : (

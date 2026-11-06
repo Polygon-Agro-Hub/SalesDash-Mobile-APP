@@ -33,6 +33,7 @@ interface AddDeliveryAddressProps {
   route: {
     params: {
       customerId: string;
+      buyerType?: string;
       addressId?: number;
       addressType?: "House" | "Apartment";
       selectedLatitude?: number;
@@ -77,7 +78,8 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
   navigation,
   route,
 }) => {
-  const { customerId, addressId, addressType } = route.params;
+  const { customerId, addressId, addressType, buyerType: paramBuyerType } = route.params;
+  const [customerBuyerType, setCustomerBuyerType] = useState<string>(paramBuyerType || "");
   const isEditMode = !!addressId;
 
   const [loading, setLoading] = useState(isEditMode);
@@ -105,7 +107,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
   const [unitNoError, setUnitNoError] = useState("");
   const [floorNoError, setFloorNoError] = useState("");
 
-  const [buildingType, setBuildingType] = useState<string>(addressType || "");
+  const [buildingType, setBuildingType] = useState<string>(paramBuyerType === "Wholesale" ? "House" : (addressType || ""));
   const [buildingTypeModalVisible, setBuildingTypeModalVisible] =
     useState(false);
   const [buildingTypeError, setBuildingTypeError] = useState("");
@@ -297,6 +299,14 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
         `${environment.API_BASE_URL}api/customer/get-customer-data/${customerId}`,
       );
       const profileNearestCity = response.data?.customer?.nearesCity;
+      const bType = response.data?.customer?.buyerType;
+      if (bType) {
+        setCustomerBuyerType(bType);
+        if (bType === "Wholesale") {
+          setBuildingType("House");
+          setBuildingTypeError("");
+        }
+      }
       if (profileNearestCity) {
         setNearestCity(profileNearestCity);
       }
@@ -324,7 +334,8 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
       setBillingName(data.billingName || "");
       setPhoneNumber1(normalizeLegacyPhoneNumber(data.billingPhone1 || ""));
       setPhoneNumber2(normalizeLegacyPhoneNumber(data.billingPhone2 || ""));
-      setBuildingType(data.type || addressType || "");
+      const isWholesale = customerBuyerType === "Wholesale" || paramBuyerType === "Wholesale";
+      setBuildingType(isWholesale ? "House" : (data.type || addressType || ""));
       setHouseNo(data.houseNo || "");
       setStreetName(data.streetName || "");
       setNearestCity(data.nearestCity || "");
@@ -466,7 +477,9 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
       alertTitle = "Required";
       alertMessage = "Please select a title.";
     }
-    if (!buildingType.trim()) {
+    const isWholesaleUser = customerBuyerType === "Wholesale" || paramBuyerType === "Wholesale";
+    const effectiveBuildingType = isWholesaleUser ? "House" : buildingType;
+    if (!isWholesaleUser && !effectiveBuildingType.trim()) {
       setBuildingTypeError(requiredMessage(FIELD_LABELS.buildingType));
       hasError = true;
       alertTitle = "Required";
@@ -939,37 +952,41 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
           <View className="mb-4" />
         )}
 
-        {/* Building Type */}
-        <Text className="text-sm mb-4">Building Type *</Text>
-        <TouchableOpacity
-          onPress={() => setBuildingTypeModalVisible(true)}
-          className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] flex-row items-center justify-between"
-          style={{
-            borderWidth: buildingTypeError ? 1 : 0,
-            borderColor: buildingTypeError ? "#DC2626" : "transparent",
-          }}
-        >
-          <Text
-            style={{
-              color: buildingType ? "black" : "#9CA3AF",
-              fontSize: 15,
-              fontStyle: buildingType ? "normal" : "italic",
-            }}
-          >
-            {buildingType || "Select Building Type"}
-          </Text>
-          <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
-        </TouchableOpacity>
-        {buildingTypeError ? (
-          <Text className="text-red-500 text-xs pl-4 mt-1 mb-4">
-            {buildingTypeError}
-          </Text>
-        ) : (
-          <View className="mb-5" />
+        {/* Building Type - Hidden for Wholesale users */}
+        {customerBuyerType !== "Wholesale" && paramBuyerType !== "Wholesale" && (
+          <>
+            <Text className="text-sm mb-4">Building Type *</Text>
+            <TouchableOpacity
+              onPress={() => setBuildingTypeModalVisible(true)}
+              className="bg-[#F6F6F6] rounded-3xl px-4 h-[50px] flex-row items-center justify-between"
+              style={{
+                borderWidth: buildingTypeError ? 1 : 0,
+                borderColor: buildingTypeError ? "#DC2626" : "transparent",
+              }}
+            >
+              <Text
+                style={{
+                  color: buildingType ? "black" : "#9CA3AF",
+                  fontSize: 15,
+                  fontStyle: buildingType ? "normal" : "italic",
+                }}
+              >
+                {buildingType || "Select Building Type"}
+              </Text>
+              <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
+            </TouchableOpacity>
+            {buildingTypeError ? (
+              <Text className="text-red-500 text-xs pl-4 mt-1 mb-4">
+                {buildingTypeError}
+              </Text>
+            ) : (
+              <View className="mb-5" />
+            )}
+          </>
         )}
 
         {/* ===================== APARTMENT FIELDS ===================== */}
-        {buildingType === "Apartment" && (
+        {buildingType === "Apartment" && customerBuyerType !== "Wholesale" && paramBuyerType !== "Wholesale" && (
           <>
             <Text className="text-sm mb-4 ">Apartment / Building No *</Text>
             <TextInput
@@ -1186,7 +1203,7 @@ const AddDeliveryAddress: React.FC<AddDeliveryAddressProps> = ({
         )}
 
         {/* ===================== HOUSE FIELDS ===================== */}
-        {buildingType === "House" && (
+        {(buildingType === "House" || customerBuyerType === "Wholesale" || paramBuyerType === "Wholesale") && (
           <>
             <Text className="text-sm mb-4">Building / House No *</Text>
             <TextInput

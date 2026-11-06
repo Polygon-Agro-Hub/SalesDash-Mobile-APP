@@ -168,8 +168,8 @@ export const SeasonalPackageBanner: React.FC<SeasonalPackageBannerProps> = ({
       </View>
 
       <Text style={styles.bodyText}>
-        This package will no longer be available{"\n"}
-        for delivery after this date : {deliveryCutoffDate}.{"\n"}
+        This package will no longer be available
+        for delivery after this date : {deliveryCutoffDate}.
         We appreciate your understanding and support.
       </Text>
     </View>

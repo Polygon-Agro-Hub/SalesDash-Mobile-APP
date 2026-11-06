@@ -1,3 +1,4 @@
+import ErrorBoundary from "@/components/common/ErrorBoundary";
 import { useEffect, useState } from "react";
 import { Alert, Platform, StatusBar, LogBox } from "react-native";
 import { NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
@@ -18,7 +19,7 @@ import Splash from "@/components/authentication/Splash";
 import ChangePasswordScreen from "@/components/authentication/ChangePasswordScreen";
 import LoginScreen from "@/components/authentication/LoginScreen";
 import DashboardScreen from "@/components/dashboard/DashboardScreen";
-import ViewScreen from "@/components/order/ViewScreen";
+import ViewScreen from "@/components/package/ViewScreen";
 import CustomersScreen from "@/components/customer/CustomersScreen";
 import SidebarScreen from "@/components/navigation/SidebarScreen";
 import ProfileScreen from "@/components/authentication/ProfileScreen";
@@ -61,13 +62,17 @@ import PackageConfirmation from "@/components/order/PackageConfirmation";
 import OrderConfimedOTPScreen from "@/components/otp/OrderConfimedOTPScreen";
 import { updateGlobalUnreadCount } from "@/components/reminder/ReminderScreen";
 import environment from "@/environment/environment";
-import { requestTrackingIfNeeded } from "@/utils/ios/trackingPermissions";
 import CameraAccess from "@/components/permission/CameraAccess";
 import LocationAccess from "@/components/permission/LocationAccess";
 import NotificationAccess from "@/components/permission/NotificationAccess";
 import socketService from "@/services/socket/socket.service";
 import pushNotificationService from "@/services/notification/pushNotification.service";
 import { navigationRef } from "@/services/navigation/navigationService";
+import PackagesScreen from "@/components/package/Packagesscreen";
+import ExistingCustomerDetailsScreen from"@/components/customer/ExistingCustomerDetailsScreen";
+import NewCustomerDetailsScreen from "@/components/customer/NewCustomerDetailsScreen";
+import MonthlyOrdersTargets from "@/components/orders_targets/MonthlyOrdersTargets";
+import TotalValueOfCustomersScreen from "@/components/customer/TotalValueOfCustomersScreen";
 export { navigationRef };
 
 // Disable console logs in production mode to improve React Native thread performance
@@ -90,12 +95,13 @@ LogBox.ignoreLogs([
 // MainTabNavigator component handles the bottom tab navigation and sets up the Android navigation bar appearance.
 function MainTabNavigator() {
   useEffect(() => {
-    async function setupNavBar() {
-      if (Platform.OS === "android") {
-        await ExpoNavigationBar.setStyle("dark");
+    if (Platform.OS === "android") {
+      try {
+        ExpoNavigationBar.setStyle("dark");
+      } catch (e) {
+        console.warn("NavigationBar setup error:", e);
       }
     }
-    setupNavBar();
   }, []);
   return (
     <Tab.Navigator
@@ -133,6 +139,22 @@ function MainTabNavigator() {
       />
       <Tab.Screen name="ProfileScreen" component={ProfileScreen} />
       <Tab.Screen name="ViewComplainScreen" component={ViewComplainScreen} />
+       <Tab.Screen
+              name="ExistingCustomerDetailsScreen"
+              component={ExistingCustomerDetailsScreen as any}
+            />
+            <Tab.Screen
+              name="NewCustomerDetailsScreen"
+              component={NewCustomerDetailsScreen as any}
+            />
+             <Tab.Screen
+              name="MonthlyOrdersTargets"
+              component={MonthlyOrdersTargets as any}
+            />
+            <Tab.Screen
+              name="TotalValueOfCustomersScreen"
+              component={TotalValueOfCustomersScreen as any}
+            />
     </Tab.Navigator>
   );
 }
@@ -150,10 +172,6 @@ function AppContent() {
     showOkButton: undefined as boolean | undefined,
     okButtonText: undefined as string | undefined,
   });
-
-  useEffect(() => {
-    requestTrackingIfNeeded();
-  }, []);
 
   useEffect(() => {
     socketService.connect();
@@ -408,6 +426,15 @@ function AppContent() {
               name="NotificationAccess"
               component={NotificationAccess as any}
             />
+            <Stack.Screen
+              name="PackagesScreen"
+              component={PackagesScreen as any}
+            />
+            <Stack.Screen
+              name="TotalValueOfCustomersScreen"
+              component={TotalValueOfCustomersScreen as any}
+            />
+           
             <Stack.Screen name="Main" component={MainTabNavigator} />
           </Stack.Navigator>
         </NavigationContainer>
@@ -428,12 +455,14 @@ function AppContent() {
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <LanguageProvider>
-        <AppUpdateProvider>
-          <AppContent />
-        </AppUpdateProvider>
-      </LanguageProvider>
-    </SafeAreaProvider>
+    <ErrorBoundary>
+      <SafeAreaProvider>
+        <LanguageProvider>
+          <AppUpdateProvider>
+            <AppContent />
+          </AppUpdateProvider>
+        </LanguageProvider>
+      </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }

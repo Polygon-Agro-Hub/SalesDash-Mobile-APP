@@ -48,6 +48,8 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({
       title: title,
       number: number,
       customerscreencustomerid: customerscreencustomerid,
+      buyerType: "Retail",
+      from: "SelectOrderType",
     });
   };
 
