@@ -383,9 +383,26 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
   };
 
   const readFileAsBase64 = async (fileUri: string): Promise<string> => {
-    // Strategy 1: Read via fetch + blob + FileReader
-    // React Native's native fetch reads local Android file:// and content:// URIs directly
-    // without triggering Expo's internal scoped path restrictions.
+    const cleanUri = fileUri.startsWith("file://") ? decodeURI(fileUri) : fileUri;
+
+    // Strategy 1 (Fast & native for file:// on iOS and local files): FileSystem.readAsStringAsync
+    try {
+      const fsData = await FileSystem.readAsStringAsync(fileUri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      if (fsData) return fsData;
+    } catch (fsErr) {
+      if (cleanUri !== fileUri) {
+        try {
+          const fsData = await FileSystem.readAsStringAsync(cleanUri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          if (fsData) return fsData;
+        } catch (_) {}
+      }
+    }
+
+    // Strategy 2: Read via fetch + blob + FileReader (ideal for Android content:// URIs)
     try {
       const response = await fetch(fileUri);
       const blob = await response.blob();
@@ -407,19 +424,9 @@ const AddCustomersScreen: React.FC<AddCustomersScreenProps> = ({
       if (rawBase64) return rawBase64;
     } catch (fetchErr) {
       console.warn(
-        "fetch/FileReader failed, falling back to FileSystem:",
+        "fetch/FileReader fallback failed:",
         fetchErr,
       );
-    }
-
-    // Strategy 2: FileSystem.readAsStringAsync
-    try {
-      const fsData = await FileSystem.readAsStringAsync(fileUri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-      if (fsData) return fsData;
-    } catch (fsErr) {
-      console.warn("FileSystem.readAsStringAsync failed:", fsErr);
     }
 
     // Strategy 3: Copy to app's cacheDirectory before reading
@@ -566,6 +573,11 @@ const validateBRFile = (
 
   const pickBRImage = async (mode: "camera" | "gallery" | "document") => {
     try {
+      // Ensure any modal dismissal transition has completed on iOS
+      if (Platform.OS === "ios") {
+        await new Promise((resolve) => setTimeout(resolve, 150));
+      }
+
       if (mode === "camera") {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== "granted") {
@@ -731,6 +743,7 @@ const validateBRFile = (
         const result = await DocumentPicker.getDocumentAsync({
           type: [
             "application/pdf",
+            "image/*",
             "image/jpeg",
             "image/png",
             "image/heic",
@@ -829,6 +842,18 @@ const validateBRFile = (
 
     const handleBRUploadPress = () => {
     setUploadOptionsModalVisible(true);
+  };
+
+  const handleSelectUploadOption = (mode: "camera" | "gallery" | "document") => {
+    setUploadOptionsModalVisible(false);
+    // On iOS, waiting for the React Native Modal to finish dismissing avoids UIKit
+    // presentation collision ("Attempt to present while dismissal is in progress")
+    setTimeout(
+      () => {
+        pickBRImage(mode);
+      },
+      Platform.OS === "ios" ? 450 : 50,
+    );
   };
 
   const validateEmail = (email: string): boolean => {
@@ -3136,10 +3161,7 @@ const validateBRFile = (
                 {/* Option 1: Take Photo */}
                 <TouchableOpacity
                   activeOpacity={0.7}
-                  onPress={() => {
-                    setUploadOptionsModalVisible(false);
-                    pickBRImage("camera");
-                  }}
+                  onPress={() => handleSelectUploadOption("camera")}
                   style={{
                     flexDirection: "row",
                     alignItems: "center",
@@ -3179,10 +3201,7 @@ const validateBRFile = (
                 {/* Option 2: Choose from Gallery */}
                 <TouchableOpacity
                   activeOpacity={0.7}
-                  onPress={() => {
-                    setUploadOptionsModalVisible(false);
-                    pickBRImage("gallery");
-                  }}
+                  onPress={() => handleSelectUploadOption("gallery")}
                   style={{
                     flexDirection: "row",
                     alignItems: "center",
@@ -3222,10 +3241,7 @@ const validateBRFile = (
                 {/* Option 3: Browse Documents */}
                 <TouchableOpacity
                   activeOpacity={0.7}
-                  onPress={() => {
-                    setUploadOptionsModalVisible(false);
-                    pickBRImage("document");
-                  }}
+                  onPress={() => handleSelectUploadOption("document")}
                   style={{
                     flexDirection: "row",
                     alignItems: "center",

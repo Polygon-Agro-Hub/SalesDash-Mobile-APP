@@ -728,19 +728,29 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
     return <LoadingPage message="Loading More Orders..." fullScreen={false} />;
   };
 
-  // Reads a picked file as base64. Tries several strategies because on Android
-  // a picked file (cache copy or content:// uri) is sometimes not directly readable.
+  // Reads a picked file as base64. Tries several strategies to support both iOS (file://)
+  // and Android (content:// and file://) reliably.
   const readFileAsBase64 = async (uri: string, name: string): Promise<string> => {
-    // 1. direct read
+    const cleanUri = uri.startsWith("file://") ? decodeURI(uri) : uri;
+
+    // 1. Direct read via FileSystem (primary for local file:// URIs)
     try {
-      return await FileSystem.readAsStringAsync(uri, {
+      const data = await FileSystem.readAsStringAsync(uri, {
         encoding: FileSystem.EncodingType.Base64,
       });
+      if (data) return data;
     } catch (e) {
-      console.warn("Direct read failed, trying copy to cache:", e);
+      if (cleanUri !== uri) {
+        try {
+          const data = await FileSystem.readAsStringAsync(cleanUri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          if (data) return data;
+        } catch (_) {}
+      }
     }
 
-    // 2. copy into the app cache (works for content:// uris), then read
+    // 2. Copy into the app cache, then read
     try {
       const ext = getExt(name) || getExt(uri) || "bin";
       const dest = `${FileSystem.cacheDirectory}br_${Date.now()}.${ext}`;
@@ -749,31 +759,39 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
         encoding: FileSystem.EncodingType.Base64,
       });
       FileSystem.deleteAsync(dest, { idempotent: true }).catch(() => {});
-      return data;
+      if (data) return data;
     } catch (e) {
-      console.warn("Copy to cache failed, trying File API:", e);
+      console.warn("Copy to cache failed:", e);
     }
 
-    // 3. new expo-file-system File API
+    // 3. New expo-file-system File API if available
     try {
       const { File } = require("expo-file-system");
-      return await new File(uri).base64();
-    } catch (e) {
-      console.warn("File API failed, trying fetch/blob:", e);
+      if (File) {
+        const fileData = await new File(uri).base64();
+        if (fileData) return fileData;
+      }
+    } catch (_) {}
+
+    // 4. fetch + blob + FileReader (fallback for Android content://)
+    try {
+      const res = await fetch(uri);
+      const blob = await res.blob();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const result = reader.result as string;
+          resolve(result.split(",")[1] || "");
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      if (base64) return base64;
+    } catch (fetchErr) {
+      console.warn("fetch/blob fallback failed:", fetchErr);
     }
 
-    // 4. fetch + blob + FileReader
-    const res = await fetch(uri);
-    const blob = await res.blob();
-    return await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        resolve(result.split(",")[1] || "");
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
+    throw new Error("Unable to read document file for upload");
   };
 
     const compressImageIfNeeded = async (
@@ -927,6 +945,11 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
 
   const pickReuploadBRImage = async (mode: "camera" | "gallery" | "document") => {
     try {
+      // Ensure any in-flight modal dismissal transition has settled on iOS
+      if (Platform.OS === "ios") {
+        await new Promise((resolve) => setTimeout(resolve, 150));
+      }
+
       if (mode === "camera") {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== "granted") {
@@ -976,14 +999,13 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
         const result = await DocumentPicker.getDocumentAsync({
           type: [
             "application/pdf",
+            "image/*",
             "image/jpeg",
             "image/png",
             "image/heic",
             "image/heif",
           ],
-          // false -> keep the original content:// uri; readFileAsBase64 copies it itself.
-          // (the picker's own cache copy can be unreadable on Android)
-          copyToCacheDirectory: false,
+          copyToCacheDirectory: true,
         });
         if (!result.canceled && result.assets?.[0]) {
           const a = result.assets[0];
@@ -999,6 +1021,18 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       console.error("Error picking BR document:", err);
       Alert.alert("Error", "Could not pick document. Please try again.");
     }
+  };
+
+  const handleSelectReuploadOption = (mode: "camera" | "gallery" | "document") => {
+    setUploadOptionsModalVisible(false);
+    // On iOS, waiting for the React Native Modal to finish dismissing avoids UIKit
+    // presentation collision ("Attempt to present while dismissal is in progress")
+    setTimeout(
+      () => {
+        pickReuploadBRImage(mode);
+      },
+      Platform.OS === "ios" ? 450 : 50,
+    );
   };
 
   const handleReuploadSubmit = async () => {
@@ -2491,10 +2525,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 {/* Option 1: Take Photo */}
                 <TouchableOpacity
                   activeOpacity={0.7}
-                  onPress={() => {
-                    setUploadOptionsModalVisible(false);
-                    pickReuploadBRImage("camera");
-                  }}
+                  onPress={() => handleSelectReuploadOption("camera")}
                   style={{
                     flexDirection: "row",
                     alignItems: "center",
@@ -2534,10 +2565,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 {/* Option 2: Choose from Gallery */}
                 <TouchableOpacity
                   activeOpacity={0.7}
-                  onPress={() => {
-                    setUploadOptionsModalVisible(false);
-                    pickReuploadBRImage("gallery");
-                  }}
+                  onPress={() => handleSelectReuploadOption("gallery")}
                   style={{
                     flexDirection: "row",
                     alignItems: "center",
@@ -2577,10 +2605,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 {/* Option 3: Browse Documents */}
                 <TouchableOpacity
                   activeOpacity={0.7}
-                  onPress={() => {
-                    setUploadOptionsModalVisible(false);
-                    pickReuploadBRImage("document");
-                  }}
+                  onPress={() => handleSelectReuploadOption("document")}
                   style={{
                     flexDirection: "row",
                     alignItems: "center",
