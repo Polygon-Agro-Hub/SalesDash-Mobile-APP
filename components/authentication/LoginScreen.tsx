@@ -147,8 +147,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           const avail = await biometricService.checkBiometricAvailability();
           if (avail.hasHardware && avail.isEnrolled) {
             const bioCreds = await biometricService.getBiometricCredentials();
-            const enabled = await biometricService.isBiometricEnabled();
             const storedId = normalizeId(bioCreds?.empId);
+            const enabled = await biometricService.isBiometricEnabled(storedId);
             const hasBio = Boolean(
               enabled && isSalesDashId(storedId) && bioCreds?.password,
             );
@@ -246,7 +246,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           const expirationTime = new Date(
             timestamp.getTime() + 8 * 60 * 60 * 1000,
           );
+          const cleanEmpId = normalizeId(loginEmpId);
           await AsyncStorage.setItem("authToken", token);
+          await AsyncStorage.setItem("salesdash_current_emp_id", cleanEmpId);
           await AsyncStorage.multiSet([
             ["tokenStoredTime", timestamp.toISOString()],
             ["tokenExpirationTime", expirationTime.toISOString()],
@@ -273,13 +275,25 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           // Save Biometrics credentials only after a successful login
           // and only for a SalesDash ID (this replaces any previous user)
           if (saveBioOnSuccess && isSalesDashId(loginEmpId)) {
-            const cleanId = normalizeId(loginEmpId);
             await biometricService.saveBiometricCredentials(
-              cleanId,
+              cleanEmpId,
               loginPassword,
             );
             setHasStoredBiometrics(true);
-            setStoredBiometricEmpId(cleanId);
+            setStoredBiometricEmpId(cleanEmpId);
+          } else if (!saveBioOnSuccess) {
+            // When signing in with credentials without enabling biometrics:
+            // Check if existing biometric credentials belong to a different employee.
+            // If so, clear them so this user does not inherit another user's biometrics.
+            const existingBio = await biometricService.getBiometricCredentials();
+            if (
+              existingBio?.empId &&
+              normalizeId(existingBio.empId) !== cleanEmpId
+            ) {
+              await biometricService.clearBiometricCredentials();
+              setHasStoredBiometrics(false);
+              setStoredBiometricEmpId(null);
+            }
           }
 
           socketService.connect().catch(() => {});

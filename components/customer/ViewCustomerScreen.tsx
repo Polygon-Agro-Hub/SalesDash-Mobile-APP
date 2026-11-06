@@ -19,6 +19,7 @@ import {
   Dimensions,
 } from "react-native";
 import { RouteProp, useFocusEffect } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
@@ -199,6 +200,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
   route,
   navigation,
 }) => {
+  const insets = useSafeAreaInsets();
   const ORDERS_PER_PAGE = 5;
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [searchText, setSearchText] = useState("");
@@ -468,16 +470,22 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
     }
   };
 
- const handleBack = useCallback(() => {
+const handleBack = useCallback(() => {
   const tab: "Retail" | "Wholesale" =
     buyerType === "Wholesale" ? "Wholesale" : "Retail";
 
   switch (route.params?.from) {
     case "ExistingCustomerDetailsScreen":
-      navigation.navigate("Main" as any, { screen: "ExistingCustomerDetailsScreen" });
+      navigation.navigate("Main" as any, {
+        screen: "ExistingCustomerDetailsScreen",
+        params: { initialTab: tab },
+      });
       break;
     case "NewCustomerDetailsScreen":
-      navigation.navigate("Main" as any, { screen: "NewCustomerDetailsScreen" });
+      navigation.navigate("Main" as any, {
+        screen: "NewCustomerDetailsScreen",
+        params: { initialTab: tab },
+      });
       break;
     case "TotalValueOfCustomersScreen":
       navigation.navigate("Main" as any, { screen: "TotalValueOfCustomersScreen" });
@@ -726,19 +734,29 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
     return <LoadingPage message="Loading More Orders..." fullScreen={false} />;
   };
 
-  // Reads a picked file as base64. Tries several strategies because on Android
-  // a picked file (cache copy or content:// uri) is sometimes not directly readable.
+  // Reads a picked file as base64. Tries several strategies to support both iOS (file://)
+  // and Android (content:// and file://) reliably.
   const readFileAsBase64 = async (uri: string, name: string): Promise<string> => {
-    // 1. direct read
+    const cleanUri = uri.startsWith("file://") ? decodeURI(uri) : uri;
+
+    // 1. Direct read via FileSystem (primary for local file:// URIs)
     try {
-      return await FileSystem.readAsStringAsync(uri, {
+      const data = await FileSystem.readAsStringAsync(uri, {
         encoding: FileSystem.EncodingType.Base64,
       });
+      if (data) return data;
     } catch (e) {
-      console.warn("Direct read failed, trying copy to cache:", e);
+      if (cleanUri !== uri) {
+        try {
+          const data = await FileSystem.readAsStringAsync(cleanUri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          if (data) return data;
+        } catch (_) {}
+      }
     }
 
-    // 2. copy into the app cache (works for content:// uris), then read
+    // 2. Copy into the app cache, then read
     try {
       const ext = getExt(name) || getExt(uri) || "bin";
       const dest = `${FileSystem.cacheDirectory}br_${Date.now()}.${ext}`;
@@ -747,31 +765,39 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
         encoding: FileSystem.EncodingType.Base64,
       });
       FileSystem.deleteAsync(dest, { idempotent: true }).catch(() => {});
-      return data;
+      if (data) return data;
     } catch (e) {
-      console.warn("Copy to cache failed, trying File API:", e);
+      console.warn("Copy to cache failed:", e);
     }
 
-    // 3. new expo-file-system File API
+    // 3. New expo-file-system File API if available
     try {
       const { File } = require("expo-file-system");
-      return await new File(uri).base64();
-    } catch (e) {
-      console.warn("File API failed, trying fetch/blob:", e);
+      if (File) {
+        const fileData = await new File(uri).base64();
+        if (fileData) return fileData;
+      }
+    } catch (_) {}
+
+    // 4. fetch + blob + FileReader (fallback for Android content://)
+    try {
+      const res = await fetch(uri);
+      const blob = await res.blob();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const result = reader.result as string;
+          resolve(result.split(",")[1] || "");
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      if (base64) return base64;
+    } catch (fetchErr) {
+      console.warn("fetch/blob fallback failed:", fetchErr);
     }
 
-    // 4. fetch + blob + FileReader
-    const res = await fetch(uri);
-    const blob = await res.blob();
-    return await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        resolve(result.split(",")[1] || "");
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
+    throw new Error("Unable to read document file for upload");
   };
 
     const compressImageIfNeeded = async (
@@ -925,6 +951,11 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
 
   const pickReuploadBRImage = async (mode: "camera" | "gallery" | "document") => {
     try {
+      // Ensure any in-flight modal dismissal transition has settled on iOS
+      if (Platform.OS === "ios") {
+        await new Promise((resolve) => setTimeout(resolve, 150));
+      }
+
       if (mode === "camera") {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== "granted") {
@@ -974,14 +1005,13 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
         const result = await DocumentPicker.getDocumentAsync({
           type: [
             "application/pdf",
+            "image/*",
             "image/jpeg",
             "image/png",
             "image/heic",
             "image/heif",
           ],
-          // false -> keep the original content:// uri; readFileAsBase64 copies it itself.
-          // (the picker's own cache copy can be unreadable on Android)
-          copyToCacheDirectory: false,
+          copyToCacheDirectory: true,
         });
         if (!result.canceled && result.assets?.[0]) {
           const a = result.assets[0];
@@ -997,6 +1027,18 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
       console.error("Error picking BR document:", err);
       Alert.alert("Error", "Could not pick document. Please try again.");
     }
+  };
+
+  const handleSelectReuploadOption = (mode: "camera" | "gallery" | "document") => {
+    setUploadOptionsModalVisible(false);
+    // On iOS, waiting for the React Native Modal to finish dismissing avoids UIKit
+    // presentation collision ("Attempt to present while dismissal is in progress")
+    setTimeout(
+      () => {
+        pickReuploadBRImage(mode);
+      },
+      Platform.OS === "ios" ? 450 : 50,
+    );
   };
 
   const handleReuploadSubmit = async () => {
@@ -1674,15 +1716,17 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
                 setIsAccessDeniedVisible(true);
                 return;
               }
-              navigation.navigate("Main" as any, {
-                screen: "EditCustomerScreen",
-                params: {
-                  id,
-                  customerId,
-                  name: customerName,
-                  title: customerTitle,
-                },
-              });
+             navigation.navigate("Main" as any, {
+  screen: "EditCustomerScreen",
+  params: {
+    id,
+    customerId,
+    name: customerName,
+    title: customerTitle,
+    from: route.params?.from,
+    buyerType: buyerType || "Retail",
+  },
+});
             }}
             style={{
               width: 40,
@@ -2424,9 +2468,11 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
               backgroundColor: "#FFFFFF",
               borderTopLeftRadius: 24,
               borderTopRightRadius: 24,
-              paddingHorizontal: 20,
-              paddingTop: 20,
-              paddingBottom: Platform.OS === "ios" ? 36 : 24,
+              paddingHorizontal: 22,
+              paddingTop: 24,
+              paddingBottom: Platform.OS === "android" ? Math.max(insets.bottom, 48) + 32 : Math.max(insets.bottom, 34) + 16,
+              minHeight: SCREEN_HEIGHT * 0.58,
+              maxHeight: SCREEN_HEIGHT * 0.90,
               shadowColor: "#000",
               shadowOffset: { width: 0, height: -3 },
               shadowOpacity: 0.1,
@@ -2434,201 +2480,204 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
               elevation: 10,
             }}
           >
-            {/* Header */}
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: 6,
-              }}
+            <ScrollView
+              bounces={false}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ flexGrow: 1, justifyContent: "space-between" }}
             >
-              <Text
-                style={{
-                  fontSize: 17,
-                  fontWeight: "700",
-                  color: "#1E293B",
-                }}
-              >
-                Upload BR Document
-              </Text>
+              <View>
+                {/* Header */}
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: 8,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 18,
+                      fontWeight: "700",
+                      color: "#1E293B",
+                    }}
+                  >
+                    Upload BR Document
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => setUploadOptionsModalVisible(false)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 16,
+                      backgroundColor: "#F1F5F9",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Ionicons name="close" size={18} color="#64748B" />
+                  </TouchableOpacity>
+                </View>
+
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: "#64748B",
+                    marginBottom: 18,
+                  }}
+                >
+                  Choose an option to upload the official business certificate:
+                </Text>
+
+                {/* Option 1: Take Photo */}
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => handleSelectReuploadOption("camera")}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    paddingVertical: 14,
+                    paddingHorizontal: 14,
+                    borderRadius: 14,
+                    backgroundColor: "#F8FAFC",
+                    marginBottom: 12,
+                    borderWidth: 1,
+                    borderColor: "#E2E8F0",
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 42,
+                      height: 42,
+                      borderRadius: 21,
+                      backgroundColor: "#F3E8FF",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginRight: 14,
+                    }}
+                  >
+                    <Ionicons name="camera-outline" size={22} color="#6B3BCF" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 15, fontWeight: "600", color: "#1E293B" }}>
+                      Take Photo
+                    </Text>
+                    <Text style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>
+                      Capture document using camera
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+                </TouchableOpacity>
+
+                {/* Option 2: Choose from Gallery */}
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => handleSelectReuploadOption("gallery")}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    paddingVertical: 14,
+                    paddingHorizontal: 14,
+                    borderRadius: 14,
+                    backgroundColor: "#F8FAFC",
+                    marginBottom: 12,
+                    borderWidth: 1,
+                    borderColor: "#E2E8F0",
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 42,
+                      height: 42,
+                      borderRadius: 21,
+                      backgroundColor: "#F3E8FF",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginRight: 14,
+                    }}
+                  >
+                    <Ionicons name="images-outline" size={22} color="#6B3BCF" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 15, fontWeight: "600", color: "#1E293B" }}>
+                      Choose from Gallery
+                    </Text>
+                    <Text style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>
+                      Select an image from photo library
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+                </TouchableOpacity>
+
+                {/* Option 3: Browse Documents */}
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => handleSelectReuploadOption("document")}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    paddingVertical: 14,
+                    paddingHorizontal: 14,
+                    borderRadius: 14,
+                    backgroundColor: "#F8FAFC",
+                    marginBottom: 14,
+                    borderWidth: 1,
+                    borderColor: "#E2E8F0",
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 42,
+                      height: 42,
+                      borderRadius: 21,
+                      backgroundColor: "#F3E8FF",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginRight: 14,
+                    }}
+                  >
+                    <Ionicons name="document-text-outline" size={22} color="#6B3BCF" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 15, fontWeight: "600", color: "#1E293B" }}>
+                      Browse Documents (PDF/Image)
+                    </Text>
+                    <Text style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>
+                      Upload PDF or image files (max 10MB)
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+                </TouchableOpacity>
+              </View>
+
+              {/* Cancel Button */}
               <TouchableOpacity
+                activeOpacity={0.7}
                 onPress={() => setUploadOptionsModalVisible(false)}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 style={{
-                  width: 30,
-                  height: 30,
-                  borderRadius: 15,
+                  paddingVertical: 14,
+                  borderRadius: 14,
                   backgroundColor: "#F1F5F9",
                   alignItems: "center",
                   justifyContent: "center",
+                  borderWidth: 1,
+                  borderColor: "#E2E8F0",
+                  marginTop: 8,
+                  marginBottom: Platform.OS === "android" ? 20 : 6,
                 }}
               >
-                <Ionicons name="close" size={18} color="#64748B" />
+                <Text
+                  style={{
+                    fontSize: 15,
+                    fontWeight: "600",
+                    color: "#475569",
+                  }}
+                >
+                  Cancel
+                </Text>
               </TouchableOpacity>
-            </View>
-
-            <Text
-              style={{
-                fontSize: 13,
-                color: "#64748B",
-                marginBottom: 18,
-              }}
-            >
-              Choose an option to upload the official business certificate:
-            </Text>
-
-            {/* Option 1: Take Photo */}
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => {
-                setUploadOptionsModalVisible(false);
-                pickReuploadBRImage("camera");
-              }}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                paddingVertical: 14,
-                paddingHorizontal: 14,
-                borderRadius: 14,
-                backgroundColor: "#F8FAFC",
-                marginBottom: 10,
-                borderWidth: 1,
-                borderColor: "#E2E8F0",
-              }}
-            >
-              <View
-                style={{
-                  width: 42,
-                  height: 42,
-                  borderRadius: 21,
-                  backgroundColor: "#F3E8FF",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginRight: 14,
-                }}
-              >
-                <Ionicons name="camera-outline" size={22} color="#6B3BCF" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 15, fontWeight: "600", color: "#1E293B" }}>
-                  Take Photo
-                </Text>
-                <Text style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>
-                  Capture document using camera
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
-            </TouchableOpacity>
-
-            {/* Option 2: Choose from Gallery */}
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => {
-                setUploadOptionsModalVisible(false);
-                pickReuploadBRImage("gallery");
-              }}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                paddingVertical: 14,
-                paddingHorizontal: 14,
-                borderRadius: 14,
-                backgroundColor: "#F8FAFC",
-                marginBottom: 10,
-                borderWidth: 1,
-                borderColor: "#E2E8F0",
-              }}
-            >
-              <View
-                style={{
-                  width: 42,
-                  height: 42,
-                  borderRadius: 21,
-                  backgroundColor: "#F3E8FF",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginRight: 14,
-                }}
-              >
-                <Ionicons name="images-outline" size={22} color="#6B3BCF" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 15, fontWeight: "600", color: "#1E293B" }}>
-                  Choose from Gallery
-                </Text>
-                <Text style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>
-                  Select an image from photo library
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
-            </TouchableOpacity>
-
-            {/* Option 3: Browse Documents */}
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => {
-                setUploadOptionsModalVisible(false);
-                pickReuploadBRImage("document");
-              }}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                paddingVertical: 14,
-                paddingHorizontal: 14,
-                borderRadius: 14,
-                backgroundColor: "#F8FAFC",
-                marginBottom: 14,
-                borderWidth: 1,
-                borderColor: "#E2E8F0",
-              }}
-            >
-              <View
-                style={{
-                  width: 42,
-                  height: 42,
-                  borderRadius: 21,
-                  backgroundColor: "#F3E8FF",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginRight: 14,
-                }}
-              >
-                <Ionicons name="document-text-outline" size={22} color="#6B3BCF" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 15, fontWeight: "600", color: "#1E293B" }}>
-                  Browse Documents (PDF/Image)
-                </Text>
-                <Text style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>
-                  Upload PDF or image files (max 10MB)
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
-            </TouchableOpacity>
-
-            {/* Cancel Button */}
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => setUploadOptionsModalVisible(false)}
-              style={{
-                paddingVertical: 14,
-                borderRadius: 14,
-                backgroundColor: "#F1F5F9",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 15,
-                  fontWeight: "600",
-                  color: "#64748B",
-                }}
-              >
-                Cancel
-              </Text>
-            </TouchableOpacity>
+            </ScrollView>
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
