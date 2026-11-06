@@ -1,10 +1,12 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
 import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
+import * as ScreenCapture from "expo-screen-capture";
 import environment from "@/environment/environment";
 import pushNotificationService from "@/services/notification/pushNotification.service";
 import socketService from "@/services/socket/socket.service";
@@ -23,6 +25,7 @@ import {
   ScrollView,
   Switch,
   ActivityIndicator,
+  AppState,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import biometricService from "@/services/biometric/biometric.service";
@@ -39,6 +42,26 @@ interface LoginScreenProps {
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
+// Only IDs with this prefix belong to the SalesDash app
+const EMP_ID_PREFIX = "SA";
+
+// Remember Me password lives in SecureStore (not plain AsyncStorage)
+const REMEMBER_PWD_KEY = "salesdash_saved_password";
+
+// How long the "Verified!" popup stays visible on Android
+const SUCCESS_POPUP_MS = 1600;
+
+// How long the password stays visible before it auto-hides
+const PASSWORD_VISIBLE_MS = 5000;
+
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+const normalizeId = (id?: string | null): string =>
+  (id ?? "").trim().toUpperCase();
+
+const isSalesDashId = (id?: string | null): boolean =>
+  normalizeId(id).startsWith(EMP_ID_PREFIX);
+
 const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [empId, setEmpId] = useState("");
   const [password, setPassword] = useState("");
@@ -52,10 +75,52 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
   const [isBiometricAvailable, setIsBiometricAvailable] = useState(false);
   const [hasStoredBiometrics, setHasStoredBiometrics] = useState(false);
+  const [storedBiometricEmpId, setStoredBiometricEmpId] = useState<
+    string | null
+  >(null);
   const [isBiometricModalVisible, setIsBiometricModalVisible] = useState(false);
   const [biometricModalStatus, setBiometricModalStatus] = useState<
-    "scanning" | "success" | "error"
+    "scanning" | "success"
   >("scanning");
+
+  // Password privacy:
+  //  - tap the eye to show / hide the password
+  //  - while the password is VISIBLE, screenshots / screen recording are blocked
+  //  - when it is hidden again, screenshots work normally
+  //  - the password auto-hides after PASSWORD_VISIBLE_MS
+  //  - the password hides on any screenshot attempt or when the app goes to background
+  useEffect(() => {
+    if (showPassword) {
+      ScreenCapture.preventScreenCaptureAsync("salesdash-password").catch(() => {});
+    } else {
+      ScreenCapture.allowScreenCaptureAsync("salesdash-password").catch(() => {});
+    }
+    return () => {
+      ScreenCapture.allowScreenCaptureAsync("salesdash-password").catch(() => {});
+    };
+  }, [showPassword]);
+
+  useEffect(() => {
+    if (!showPassword) return;
+    const timer = setTimeout(() => setShowPassword(false), PASSWORD_VISIBLE_MS);
+    return () => clearTimeout(timer);
+  }, [showPassword, password]);
+
+  useEffect(() => {
+    let shot: { remove: () => void } | null = null;
+    try {
+      shot = ScreenCapture.addScreenshotListener(() => setShowPassword(false));
+    } catch (e) {
+      console.warn("Screenshot listener unavailable:", e);
+    }
+    const appStateSub = AppState.addEventListener("change", (state) => {
+      if (state !== "active") setShowPassword(false);
+    });
+    return () => {
+      shot?.remove();
+      appStateSub.remove();
+    };
+  }, []);
 
   // Load Remembered Credentials and check Biometrics state on focus
   useFocusEffect(
@@ -64,31 +129,53 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
       const initScreen = async () => {
         try {
-          // Check Remember Me
-          const savedRemember = await AsyncStorage.getItem("salesdash_remember_me");
+          // 1) Remember Me credentials
+          let rememberedEmp = "";
+          let rememberedPwd = "";
+          const savedRemember = await AsyncStorage.getItem(
+            "salesdash_remember_me",
+          );
           if (savedRemember === "true") {
-            const savedEmp = await AsyncStorage.getItem("salesdash_saved_empid");
-            const savedPwd = await AsyncStorage.getItem("salesdash_saved_password");
-            if (isActive) {
-              setRememberMe(true);
-              if (savedEmp) setEmpId(savedEmp);
-              if (savedPwd) setPassword(savedPwd);
-            }
+            rememberedEmp =
+              (await AsyncStorage.getItem("salesdash_saved_empid")) ?? "";
+            rememberedPwd =
+              (await SecureStore.getItemAsync(REMEMBER_PWD_KEY)) ?? "";
           }
 
-          // Check Biometrics status
+          // 2) Biometrics status (only SalesDash users are accepted)
+          let bioId: string | null = null;
           const avail = await biometricService.checkBiometricAvailability();
-          if (!isActive) return;
           if (avail.hasHardware && avail.isEnrolled) {
-            setIsBiometricAvailable(true);
+            const bioCreds = await biometricService.getBiometricCredentials();
             const enabled = await biometricService.isBiometricEnabled();
-            if (isActive) {
-              setHasStoredBiometrics(enabled);
-            }
-          } else {
-            setIsBiometricAvailable(false);
-            setHasStoredBiometrics(false);
+            const storedId = normalizeId(bioCreds?.empId);
+            const hasBio = Boolean(
+              enabled && isSalesDashId(storedId) && bioCreds?.password,
+            );
+            bioId = hasBio ? storedId : null;
           }
+
+          if (!isActive) return;
+
+          setIsBiometricAvailable(
+            Boolean(avail.hasHardware && avail.isEnrolled),
+          );
+          setHasStoredBiometrics(Boolean(bioId));
+          setStoredBiometricEmpId(bioId);
+
+          // 3) Pre-fill the form (e.g. after logout):
+          //    Remember Me wins, otherwise show the biometric user's Employee ID.
+          if (rememberedEmp) {
+            setRememberMe(true);
+            setEmpId(rememberedEmp.trim().toUpperCase());
+            setPassword(rememberedPwd);
+          } else {
+            setRememberMe(false);
+            setEmpId(bioId ?? "");
+            setPassword("");
+          }
+          setEmpIdError("");
+          setPasswordError("");
         } catch (err) {
           console.warn("Error initializing login screen:", err);
         }
@@ -104,6 +191,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       return () => {
         isActive = false;
         subscription.remove();
+        // Hide the password again when leaving the screen
+        setShowPassword(false);
       };
     }, []),
   );
@@ -125,8 +214,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       await AsyncStorage.multiRemove([
         "salesdash_remember_me",
         "salesdash_saved_empid",
+        // legacy plain-text key from older versions
         "salesdash_saved_password",
       ]);
+      await SecureStore.deleteItemAsync(REMEMBER_PWD_KEY).catch(() => {});
     }
   };
 
@@ -166,23 +257,29 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             await AsyncStorage.multiSet([
               ["salesdash_remember_me", "true"],
               ["salesdash_saved_empid", loginEmpId.trim()],
-              ["salesdash_saved_password", loginPassword],
             ]);
+            await SecureStore.setItemAsync(REMEMBER_PWD_KEY, loginPassword);
+            // remove legacy plain-text password if it exists
+            await AsyncStorage.removeItem("salesdash_saved_password");
           } else {
             await AsyncStorage.multiRemove([
               "salesdash_remember_me",
               "salesdash_saved_empid",
               "salesdash_saved_password",
             ]);
+            await SecureStore.deleteItemAsync(REMEMBER_PWD_KEY).catch(() => {});
           }
 
-          // Save Biometrics credentials if requested OR if biometrics was already active
-          if (saveBioOnSuccess || hasStoredBiometrics) {
+          // Save Biometrics credentials only after a successful login
+          // and only for a SalesDash ID (this replaces any previous user)
+          if (saveBioOnSuccess && isSalesDashId(loginEmpId)) {
+            const cleanId = normalizeId(loginEmpId);
             await biometricService.saveBiometricCredentials(
-              loginEmpId.trim(),
+              cleanId,
               loginPassword,
             );
             setHasStoredBiometrics(true);
+            setStoredBiometricEmpId(cleanId);
           }
 
           socketService.connect().catch(() => {});
@@ -264,8 +361,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
     if (hasError) return;
 
-    const cleanEmpId = empId.trim().toUpperCase();
-    if (cleanEmpId.length < 2 || cleanEmpId.substring(0, 2) !== "SA") {
+    const cleanEmpId = normalizeId(empId);
+    if (!isSalesDashId(cleanEmpId)) {
       Alert.alert(
         "Unauthorized Access",
         "You are not authorized to access this system. Please use a valid Employee ID.",
@@ -304,8 +401,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       return;
     }
 
-    const cleanEmpId = empId.trim().toUpperCase();
-    if (cleanEmpId.length < 2 || cleanEmpId.substring(0, 2) !== "SA") {
+    const cleanEmpId = normalizeId(empId);
+    if (!isSalesDashId(cleanEmpId)) {
       Alert.alert(
         "Unauthorized Access",
         "You are not authorized to access this system. Please use a valid Employee ID.",
@@ -317,7 +414,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     if (!avail.hasHardware || !avail.isEnrolled) {
       Alert.alert(
         "Biometric Setup",
-        "No biometric sensor or enrolled fingerprint found on this device. Please set up fingerprint/face unlock in your phone settings first.",
+        "No biometric sensor or enrolled Face ID / Fingerprint found on this device. Please set up Face ID or Fingerprint unlock in your phone settings first.",
       );
       return;
     }
@@ -325,8 +422,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     // Verify biometric hardware once to confirm user identity
     const verified = await biometricService.authenticateWithBiometrics(
       Platform.OS === "ios"
-        ? "Verify identity to enable biometric sign-in"
-        : "Confirm fingerprint to enable biometric login",
+        ? "Verify your identity to sign in"
+        : "Verify your identity to sign in",
     );
 
     if (verified) {
@@ -339,56 +436,53 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const handleBiometricLogin = async () => {
     try {
       const creds = await biometricService.getBiometricCredentials();
-      if (
-        !creds ||
-        !creds.empId ||
-        !creds.password ||
-        !creds.empId.toUpperCase().startsWith("SA")
-      ) {
+      const credId = normalizeId(creds?.empId);
+
+      if (!creds || !credId || !creds.password || !isSalesDashId(credId)) {
         Alert.alert(
           "Biometric Sign-In",
           "No saved SalesDash credentials found. Please sign in with your password to enable biometric login.",
         );
         setHasStoredBiometrics(false);
+        setStoredBiometricEmpId(null);
         return;
-      }
-
-      if (Platform.OS === "android") {
-        setIsBiometricModalVisible(true);
-        setBiometricModalStatus("scanning");
       }
 
       const verified = await biometricService.authenticateWithBiometrics(
         Platform.OS === "ios"
-          ? "Sign in with Face ID / Touch ID"
-          : "Confirm your fingerprint to sign in",
+          ? "Verify your identity to sign in"
+          : "Verify your identity to sign in",
       );
 
       if (verified) {
-        setEmpId(creds.empId);
+        setEmpId(credId);
+        setPassword(creds.password);
+        setStoredBiometricEmpId(credId);
 
         if (Platform.OS === "android") {
+          // Show "Verified!" only now, after the scan succeeded
           setBiometricModalStatus("success");
-          setTimeout(async () => {
-            setIsBiometricModalVisible(false);
-            await performLogin(creds.empId, creds.password, false);
-          }, 650);
-        } else {
-          // On iOS, Face ID / Touch ID handles its own native animation and checkmark
-          await performLogin(creds.empId, creds.password, false);
-        }
-      } else {
-        if (Platform.OS === "android") {
+          setIsBiometricModalVisible(true);
+          await sleep(SUCCESS_POPUP_MS); // let the user read "Verified!"
           setIsBiometricModalVisible(false);
         }
+        await performLogin(credId, creds.password, false);
       }
+      // failed or cancelled: nothing is shown
     } catch (error) {
       console.error("Biometric login error:", error);
-      if (Platform.OS === "android") {
-        setIsBiometricModalVisible(false);
-      }
+      setIsBiometricModalVisible(false);
     }
   };
+
+  // "Use Biometrics" only when stored biometrics exist AND the typed ID is empty
+  // or exactly equals the stored biometric user. Any other ID => "Enable Biometrics".
+  const typedId = normalizeId(empId);
+  const isMatchingBiometricUser = Boolean(
+    hasStoredBiometrics &&
+      storedBiometricEmpId &&
+      (typedId === "" || typedId === storedBiometricEmpId),
+  );
 
   return (
     <KeyboardAvoidingView
@@ -538,8 +632,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 value={empId}
                 onChangeText={(text) => {
                   if (text.includes(" ")) return;
-                  const upperText = text.toUpperCase();
-                  setEmpId(upperText);
+                  setEmpId(text.toUpperCase());
                   if (empIdError) setEmpIdError("");
                 }}
                 autoCapitalize="characters"
@@ -608,7 +701,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 ref={passwordRef}
               />
               <TouchableOpacity
-                onPress={() => setShowPassword(!showPassword)}
+                onPress={() => setShowPassword((prev) => !prev)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 style={{ padding: 4 }}
               >
                 <Ionicons
@@ -725,7 +819,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             {/* Biometric Button: "Enable Biometrics" vs "Use Biometrics" */}
             <TouchableOpacity
               onPress={
-                hasStoredBiometrics
+                isMatchingBiometricUser
                   ? handleBiometricLogin
                   : handleEnableBiometricsAndLogin
               }
@@ -762,19 +856,20 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                   fontWeight: "700",
                 }}
               >
-                {hasStoredBiometrics ? "Use Biometrics" : "Enable Biometrics"}
+                {isMatchingBiometricUser
+                  ? "Use Biometrics"
+                  : "Enable Biometrics"}
               </Text>
             </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
 
-      {/* Verification Radar Modal (Android Only) */}
+      {/* "Verified!" popup (Android only) */}
       {Platform.OS === "android" && (
         <BiometricAuthModal
           visible={isBiometricModalVisible}
           status={biometricModalStatus}
-          biometricLabel="Fingerprint"
           onCancel={() => setIsBiometricModalVisible(false)}
         />
       )}

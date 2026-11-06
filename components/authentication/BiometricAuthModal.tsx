@@ -14,7 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 interface BiometricAuthModalProps {
   visible: boolean;
-  status: "scanning" | "success" | "error";
+  status: "scanning" | "success";
   onCancel: () => void;
   biometricLabel?: string;
 }
@@ -27,10 +27,7 @@ export const BiometricAuthModal: React.FC<BiometricAuthModalProps> = ({
   onCancel,
   biometricLabel = "Fingerprint",
 }) => {
-  if (Platform.OS !== "android") {
-    return null;
-  }
-
+  // All hooks first (rules of hooks)
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const scaleSuccessAnim = useRef(new Animated.Value(0)).current;
@@ -57,7 +54,7 @@ export const BiometricAuthModal: React.FC<BiometricAuthModalProps> = ({
     };
   }, [visible, status]);
 
-  // Breathing pulse for logo/fingerprint in scanning mode
+  // Breathing pulse for logo in scanning mode
   useEffect(() => {
     let pulseLoop: Animated.CompositeAnimation | null = null;
     if (visible && status === "scanning") {
@@ -104,6 +101,9 @@ export const BiometricAuthModal: React.FC<BiometricAuthModalProps> = ({
     outputRange: ["0deg", "360deg"],
   });
 
+  // Android only (checked after hooks)
+  if (Platform.OS !== "android") return null;
+
   return (
     <Modal
       visible={visible}
@@ -145,7 +145,6 @@ export const BiometricAuthModal: React.FC<BiometricAuthModalProps> = ({
               marginBottom: 20,
             }}
           >
-            {/* Spinning Radar Ring (Apple Pay style) */}
             {status === "scanning" && (
               <Animated.View
                 style={{
@@ -163,7 +162,6 @@ export const BiometricAuthModal: React.FC<BiometricAuthModalProps> = ({
               />
             )}
 
-            {/* Static Success / Error Outer Ring */}
             {status === "success" && (
               <View
                 style={{
@@ -178,21 +176,7 @@ export const BiometricAuthModal: React.FC<BiometricAuthModalProps> = ({
               />
             )}
 
-            {status === "error" && (
-              <View
-                style={{
-                  position: "absolute",
-                  width: 136,
-                  height: 136,
-                  borderRadius: 68,
-                  borderWidth: 3,
-                  borderColor: "#EF4444",
-                  backgroundColor: "#FEF2F2",
-                }}
-              />
-            )}
 
-            {/* Center Content: Logo while scanning, Checkmark on success */}
             {status === "scanning" && (
               <Animated.View
                 style={{
@@ -241,20 +225,6 @@ export const BiometricAuthModal: React.FC<BiometricAuthModalProps> = ({
               </Animated.View>
             )}
 
-            {status === "error" && (
-              <View
-                style={{
-                  width: 104,
-                  height: 104,
-                  borderRadius: 52,
-                  backgroundColor: "#EF4444",
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <Ionicons name="close" size={56} color="#FFFFFF" />
-              </View>
-            )}
           </View>
 
           {/* Status Label & Microcopy */}
@@ -282,7 +252,7 @@ export const BiometricAuthModal: React.FC<BiometricAuthModalProps> = ({
                     textAlign: "center",
                   }}
                 >
-                  Scanning {biometricLabel}...
+                  Verify your identity
                 </Text>
               </View>
               <Text
@@ -294,7 +264,7 @@ export const BiometricAuthModal: React.FC<BiometricAuthModalProps> = ({
                   paddingHorizontal: 8,
                 }}
               >
-                Touch the fingerprint sensor or hold your finger to sign in
+                Use your face or fingerprint to sign in
               </Text>
             </>
           )}
@@ -324,32 +294,8 @@ export const BiometricAuthModal: React.FC<BiometricAuthModalProps> = ({
             </>
           )}
 
-          {status === "error" && (
-            <>
-              <Text
-                style={{
-                  fontSize: 18,
-                  fontWeight: "700",
-                  color: "#EF4444",
-                  textAlign: "center",
-                  marginBottom: 6,
-                }}
-              >
-                Verification Failed
-              </Text>
-              <Text
-                style={{
-                  fontSize: 13,
-                  color: "#6B7280",
-                  textAlign: "center",
-                }}
-              >
-                Could not verify your identity. Please try again or use your password.
-              </Text>
-            </>
-          )}
 
-          {/* Cancel Button */}
+          {/* Cancel Button (hidden on success so the popup can't be interrupted) */}
           {status !== "success" && (
             <TouchableOpacity
               onPress={onCancel}
