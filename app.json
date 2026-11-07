@@ -70,7 +70,10 @@
         "NSPhotoLibraryAddUsageDescription": "Photo library access is required to save related images.",
         "NSLocationWhenInUseUsageDescription": "Allow $(PRODUCT_NAME) to access your location to attach geo location to records.",
         "NSUserNotificationUsageDescription": "Notifications are used to send important updates.",
-        "NSFaceIDUsageDescription": "Allow SalesDash to use Face ID for fast and secure login."
+        "NSFaceIDUsageDescription": "Allow SalesDash to use Face ID for fast and secure login.",
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
       }
     },
     "web": {
