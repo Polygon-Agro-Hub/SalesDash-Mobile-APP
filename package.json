@@ -114,13 +114,5 @@
     "react-i18next": {
       "typescript": "$typescript"
     }
-  },
-  "expo": {
-    "autolinking": {
-      "buildFromSource": [
-        "expo-camera",
-        "expo-modules-core"
-      ]
-    }
   }
 }
