@@ -805,6 +805,21 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
 
       rawPackageItems: route.params?.rawPackageItems,
       rawAdditionalItems: route.params?.rawAdditionalItems,
+      selectedAddress: route.params?.selectedAddress,
+      deliveryCharge: deliveryFee,
+      isFinalizeImdt: route.params?.isFinalizeImdt,
+      scheduleType,
+      sheduleType: scheduleType,
+      selectedDays,
+      recurringDays: selectedDays,
+      validityWeeks,
+      validityPeriod,
+      calculatedOrders,
+      buyerType: effectiveBuyerType,
+      from: effectiveFrom,
+      isWholesale: isWholesale,
+      epsdDate: (route.params as any)?.epsdDate,
+      fromOrderSummary: true,
     });
   }, [
     safeOrderItems,
@@ -862,6 +877,8 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           calculatedOrders,
           buyerType: effectiveBuyerType,
           from: effectiveFrom,
+          isWholesale: isWholesale,
+          epsdDate: (route.params as any)?.epsdDate,
         }));
         return true;
       };
@@ -1138,6 +1155,19 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                       fromOrderSummary: true,
                       buyerType: effectiveBuyerType,
                       from: effectiveFrom,
+                      scheduleType,
+                      sheduleType: scheduleType,
+                      selectedDays,
+                      recurringDays: selectedDays,
+                      validityWeeks,
+                      validityPeriod,
+                      calculatedOrders,
+                      isWholesale: isWholesale,
+                      epsdDate: (route.params as any)?.epsdDate,
+                      selectedAddress: route.params?.selectedAddress,
+                      deliveryCharge: deliveryFee,
+                      isFinalizeImdt: route.params?.isFinalizeImdt,
+                      packageId: route.params?.packageId,
                     });
                   } else if (isPackage === 1) {
                     navigateBackToOrderScreen();
@@ -1170,6 +1200,19 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                       fromOrderSummary: true,
                       buyerType: effectiveBuyerType,
                       from: effectiveFrom,
+                      scheduleType,
+                      sheduleType: scheduleType,
+                      selectedDays,
+                      recurringDays: selectedDays,
+                      validityWeeks,
+                      validityPeriod,
+                      calculatedOrders,
+                      isWholesale: isWholesale,
+                      epsdDate: (route.params as any)?.epsdDate,
+                      selectedAddress: route.params?.selectedAddress,
+                      deliveryCharge: deliveryFee,
+                      isFinalizeImdt: route.params?.isFinalizeImdt,
+                      packageId: route.params?.packageId,
                     });
                   }
                 }}
@@ -1265,6 +1308,16 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                     isFinalizeImdt: route.params?.isFinalizeImdt,
                     buyerType: effectiveBuyerType,
                     from: effectiveFrom,
+                    scheduleType,
+                    sheduleType: scheduleType,
+                    selectedDays,
+                    recurringDays: selectedDays,
+                    validityWeeks,
+                    validityPeriod,
+                    calculatedOrders,
+                    isWholesale: isWholesale,
+                    epsdDate: (route.params as any)?.epsdDate,
+                    fromOrderSummary: true,
                   })
                 }
                 className="border border-[#6C3CD1] px-3 rounded-full"

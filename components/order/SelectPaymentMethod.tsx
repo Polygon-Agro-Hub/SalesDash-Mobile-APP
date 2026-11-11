@@ -86,6 +86,18 @@ interface SelectPaymentMethodProps {
       selectedAddress?: any;
       deliveryCharge?: number;
       isFinalizeImdt?: number | boolean;
+      scheduleType?: "One Time" | "Once a Week" | "Twice a Week" | string;
+      sheduleType?: "One Time" | "Once a Week" | "Twice a Week" | string;
+      selectedDays?: string[];
+      recurringDays?: string[];
+      validityWeeks?: string;
+      validityPeriod?: number | null;
+      calculatedOrders?: any[];
+      isWholesale?: boolean;
+      epsdDate?: string;
+      buyerType?: string;
+      from?: string;
+      fromOrderSummary?: boolean;
       orderData?: {
         userId: number;
         isPackage: number;
@@ -168,6 +180,18 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
     isNewCustomer,
     isFinalizeImdt,
   } = route.params || {};
+
+  const scheduleType =
+    (route.params as any)?.scheduleType ||
+    (route.params as any)?.sheduleType;
+  const sheduleType = scheduleType;
+  const selectedDays =
+    (route.params as any)?.selectedDays ||
+    (route.params as any)?.recurringDays;
+  const recurringDays = selectedDays;
+  const validityWeeks = (route.params as any)?.validityWeeks;
+  const validityPeriod = (route.params as any)?.validityPeriod;
+  const calculatedOrders = (route.params as any)?.calculatedOrders;
 
   const incomingBuyerType = (route.params as any)?.buyerType;
   const incomingFrom = (route.params as any)?.from;
@@ -340,6 +364,28 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
       epsdDate: (route.params as any)?.epsdDate,
       buyerType: effectiveBuyerType,
       from: effectiveFrom,
+      scheduleType:
+        scheduleType ||
+        (route.params as any)?.scheduleType ||
+        (route.params as any)?.sheduleType,
+      sheduleType:
+        sheduleType ||
+        (route.params as any)?.sheduleType ||
+        (route.params as any)?.scheduleType,
+      selectedDays:
+        selectedDays ||
+        (route.params as any)?.selectedDays ||
+        (route.params as any)?.recurringDays,
+      recurringDays:
+        recurringDays ||
+        (route.params as any)?.recurringDays ||
+        (route.params as any)?.selectedDays,
+      validityWeeks:
+        validityWeeks || (route.params as any)?.validityWeeks,
+      validityPeriod:
+        validityPeriod || (route.params as any)?.validityPeriod,
+      calculatedOrders:
+        calculatedOrders || (route.params as any)?.calculatedOrders,
     };
 
     navigation.navigate("OrderSummeryScreen" as any, navigationData);
@@ -381,11 +427,17 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
     endDate: (route.params as any)?.endDate,
     buyerType: effectiveBuyerType,
     from: effectiveFrom,
+    isWholesale: isWholesale || (route.params as any)?.isWholesale,
+    epsdDate: (route.params as any)?.epsdDate,
   });
 
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
+        if ((route.params as any)?.fromOrderSummary) {
+          navigation.goBack();
+          return true;
+        }
         navigation.dispatch(StackActions.popTo("ScheduleScreen", buildScheduleParams()));
         return true;
       };
@@ -410,9 +462,13 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
         titleColor="#6C3CD1"
         showBackButton={true}
         navigation={navigation}
-        onBackPress={() =>
-          navigation.dispatch(StackActions.popTo("ScheduleScreen", buildScheduleParams()))
-        }
+        onBackPress={() => {
+          if ((route.params as any)?.fromOrderSummary) {
+            navigation.goBack();
+          } else {
+            navigation.dispatch(StackActions.popTo("ScheduleScreen", buildScheduleParams()));
+          }
+        }}
       />
       <View className="flex-1 bg-white items-center">
         <View className="flex-1 w-full max-w-[500px]">

@@ -448,7 +448,40 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     if (previousTimeSlot) {
       setSelectedTimeSlot(previousTimeSlot);
     }
-  }, [previousSelectedDate, previousTimeSlot]);
+
+    const incomingType =
+      route.params?.scheduleType || (route.params as any)?.sheduleType;
+    if (incomingType) {
+      setScheduleType(incomingType);
+    }
+    const incomingDays =
+      route.params?.recurringDays && route.params.recurringDays.length > 0
+        ? route.params.recurringDays
+        : (route.params as any)?.selectedDays &&
+            (route.params as any).selectedDays.length > 0
+          ? (route.params as any).selectedDays
+          : null;
+    if (incomingDays) {
+      setSelectedDays(incomingDays);
+    }
+    const incomingWeeks =
+      route.params?.validityWeeks ||
+      ((route.params as any)?.validityPeriod
+        ? String((route.params as any).validityPeriod).padStart(2, "0")
+        : null);
+    if (incomingWeeks) {
+      setSelectedWeeks(incomingWeeks === "01" ? "02" : incomingWeeks);
+    }
+  }, [
+    previousSelectedDate,
+    previousTimeSlot,
+    route.params?.scheduleType,
+    (route.params as any)?.sheduleType,
+    route.params?.recurringDays,
+    (route.params as any)?.selectedDays,
+    route.params?.validityWeeks,
+    (route.params as any)?.validityPeriod,
+  ]);
 
   function processInitialData(originalItems: any[], orderItems: any[]) {
     if (orderItems && orderItems.length > 0) {

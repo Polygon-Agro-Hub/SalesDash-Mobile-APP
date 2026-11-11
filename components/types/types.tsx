@@ -324,6 +324,18 @@ export type RootStackParamList = {
     selectedAddress?: any;
     deliveryCharge?: number;
     isFinalizeImdt?: number;
+    scheduleType?: "One Time" | "Once a Week" | "Twice a Week" | string;
+    sheduleType?: "One Time" | "Once a Week" | "Twice a Week" | string;
+    selectedDays?: string[];
+    recurringDays?: string[];
+    validityWeeks?: string;
+    validityPeriod?: number | null;
+    calculatedOrders?: any[];
+    isWholesale?: boolean;
+    buyerType?: string;
+    from?: string;
+    epsdDate?: string;
+    fromOrderSummary?: boolean;
   };
   OrderSummeryScreen: {
     items?: CartItem[];
@@ -362,6 +374,18 @@ export type RootStackParamList = {
 
     selectedAddress?: any;
     isFinalizeImdt?: number;
+    scheduleType?: "One Time" | "Once a Week" | "Twice a Week" | string;
+    sheduleType?: "One Time" | "Once a Week" | "Twice a Week" | string;
+    selectedDays?: string[];
+    recurringDays?: string[];
+    validityWeeks?: string;
+    validityPeriod?: number | null;
+    calculatedOrders?: any[];
+    isWholesale?: boolean;
+    buyerType?: string;
+    from?: string;
+    epsdDate?: string;
+    fromOrderSummary?: boolean;
   };
   OrderConfirmedScreen: {
     orderId: number;
