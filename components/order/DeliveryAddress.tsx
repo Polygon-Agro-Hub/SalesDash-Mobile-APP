@@ -175,11 +175,17 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
 
   const isDeliveryFeeReady = !!selectedAddress && !!matchedCityCharge;
 
+  const incomingBuyerType = (route.params as any)?.buyerType;
+  const incomingFrom = (route.params as any)?.from;
+  const isWholesale =
+    String(incomingBuyerType || "").toLowerCase() === "wholesale" ||
+    incomingFrom === "ViewCustomerScreen";
+  const effectiveBuyerType = isWholesale ? "Wholesale" : (incomingBuyerType || "Retail");
+  const effectiveFrom = incomingFrom || (isWholesale ? "ViewCustomerScreen" : undefined);
+
   const handleGoBack = () => {
     const isPackage = route.params?.isPackage;
     const isPackageNum = isPackage === 1 || isPackage === "1" ? 1 : 0;
-    const incomingBuyerType = (route.params as any)?.buyerType;
-    const incomingFrom = (route.params as any)?.from;
 
     if (isPackageNum === 1) {
       navigation.navigate("OrderScreen" as any, {
@@ -202,8 +208,8 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
         discount: route.params?.discount,
         selectedDate: route.params?.selectedDate,
         selectedTimeSlot: route.params?.selectedTimeSlot,
-        buyerType: incomingBuyerType,
-        from: incomingFrom,
+        buyerType: effectiveBuyerType,
+        from: effectiveFrom,
       });
     } else {
       navigation.navigate("CratScreen" as any, {
@@ -230,8 +236,8 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
         orderData: route.params?.orderData,
         selectedAddress: selectedAddress ?? undefined,
         deliveryCharge: 0,
-        buyerType: incomingBuyerType,
-        from: incomingFrom,
+        buyerType: effectiveBuyerType,
+        from: effectiveFrom,
       });
     }
   };
@@ -289,8 +295,8 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
       selectedAddress: selectedAddress,
       deliveryCharge: charge,
       fullTotal: computedFullTotal,
-      buyerType: (route.params as any)?.buyerType,
-      from: (route.params as any)?.from,
+      buyerType: effectiveBuyerType,
+      from: effectiveFrom,
     });
   };
 

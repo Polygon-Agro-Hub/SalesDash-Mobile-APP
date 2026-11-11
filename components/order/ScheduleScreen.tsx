@@ -939,8 +939,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       const onBackPress = () => {
         navigation.navigate("DeliveryAddress" as any, {
           ...route.params,
-          buyerType: (route.params as any)?.buyerType,
-          from: (route.params as any)?.from,
+          buyerType: isWholesale ? "Wholesale" : ((route.params as any)?.buyerType || customerData?.buyerType || "Retail"),
+          from: (route.params as any)?.from || (isWholesale ? "ViewCustomerScreen" : undefined),
         });
         return true;
       };
@@ -978,8 +978,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       orderData: route.params?.orderData,
       selectedAddress: selectedAddress ?? undefined,
       deliveryCharge: deliveryFee,
-      buyerType: (route.params as any)?.buyerType,
-      from: (route.params as any)?.from,
+      buyerType: isWholesale ? "Wholesale" : ((route.params as any)?.buyerType || customerData?.buyerType || "Retail"),
+      from: (route.params as any)?.from || (isWholesale ? "ViewCustomerScreen" : undefined),
     });
   };
 
@@ -1118,6 +1118,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
               date: o.dateStr,
             })),
       ...(orderData && { orderData: orderData }),
+      buyerType: isWholesale ? "Wholesale" : ((route.params as any)?.buyerType || customerData?.buyerType || "Retail"),
+      from: (route.params as any)?.from || (isWholesale ? "ViewCustomerScreen" : undefined),
     };
 
     navigation.navigate("SelectPaymentMethod" as any, navigationParams);
@@ -1199,8 +1201,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
             onBackPress={() => {
               navigation.navigate("DeliveryAddress" as any, {
                 ...route.params,
-                buyerType: (route.params as any)?.buyerType,
-                from: (route.params as any)?.from,
+                buyerType: isWholesale ? "Wholesale" : ((route.params as any)?.buyerType || customerData?.buyerType || "Retail"),
+                from: (route.params as any)?.from || (isWholesale ? "ViewCustomerScreen" : undefined),
               });
             }}
           />

@@ -93,8 +93,12 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
             },
           )
           .then((res) => {
-            if (res.data?.buyerType) {
-              setFetchedBuyerType(res.data.buyerType);
+            const bType =
+              res.data?.customer?.buyerType ||
+              res.data?.data?.buyerType ||
+              res.data?.buyerType;
+            if (bType) {
+              setFetchedBuyerType(bType);
             }
           })
           .catch(() => {});
