@@ -278,12 +278,16 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
       let orderPayload;
 
       // ── Determine EPSD and auto-confirm status ──────────────────────────
+      const isWholesale =
+        String((route.params as any)?.buyerType || "").toLowerCase() === "wholesale" ||
+        (route.params as any)?.from === "ViewCustomerScreen";
+
       const isEpsdDate = (dateStr?: string | null) => {
         if (!dateStr) return false;
         const normalized = dateStr.replace(/\//g, "-");
         const target = new Date(normalized);
         if (isNaN(target.getTime())) return false;
-        const epsd = getMinDeliveryDate();
+        const epsd = getMinDeliveryDate(isWholesale);
         return (
           target.getFullYear() === epsd.getFullYear() &&
           target.getMonth() === epsd.getMonth() &&
