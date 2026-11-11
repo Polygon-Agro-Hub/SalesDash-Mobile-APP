@@ -48,6 +48,7 @@ interface CustomerData {
   lastName?: string;
   phoneNumber?: string;
   buildingType?: string;
+  buyerType?: string;
   buildingDetails?: {
     buildingNo?: string;
     unitNo?: string;
@@ -255,6 +256,11 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     return processInitialData(originalItems, orderItems);
   });
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
+  const buyerType =
+    (route.params as any)?.buyerType || customerData?.buyerType;
+  const isWholesale =
+    String(buyerType || "").toLowerCase() === "wholesale" ||
+    (route.params as any)?.from === "ViewCustomerScreen";
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showTimeSlotModal, setShowTimeSlotModal] = useState(false);
@@ -590,9 +596,9 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     // Current hour gap check (6:00 PM cutoff)
     const now = new Date();
     const isAfter6PM = now.getHours() >= 18;
-    const gapDays = isAfter6PM ? 3 : 2;
+    const gapDays = isWholesale ? (isAfter6PM ? 2 : 1) : (isAfter6PM ? 3 : 2);
 
-    const minAvailDate = getMinDeliveryDate(); // earliest possible date (today + gap)
+    const minAvailDate = getMinDeliveryDate(isWholesale); // earliest possible date (today + gap)
     minAvailDate.setHours(0, 0, 0, 0);
 
     // Recurring package: package start date can push the real start later
@@ -801,7 +807,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     }
 
     const numWeeks = parseInt(selectedWeeks, 10) || 4;
-    const minDate = getMinDeliveryDate();
+    const minDate = getMinDeliveryDate(isWholesale);
 
     const dayIndices = selectedDays.map((id) => {
       const found = DAYS_OF_WEEK.find((d) => d.id === id);
@@ -862,7 +868,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     if (calculatedOrders.length === 0) return false;
     if (seasonalInfo && !seasonalInfo.isAvailableNow) return false;
 
-    const minDeliveryDate = getMinDeliveryDate();
+    const minDeliveryDate = getMinDeliveryDate(isWholesale);
     minDeliveryDate.setHours(0, 0, 0, 0);
 
     if (seasonalInfo?.earliestStartDate) {
@@ -933,8 +939,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       const onBackPress = () => {
         navigation.navigate("DeliveryAddress" as any, {
           ...route.params,
-          buyerType: (route.params as any)?.buyerType,
-          from: (route.params as any)?.from,
+          buyerType: isWholesale ? "Wholesale" : ((route.params as any)?.buyerType || customerData?.buyerType || "Retail"),
+          from: (route.params as any)?.from || (isWholesale ? "ViewCustomerScreen" : undefined),
         });
         return true;
       };
@@ -972,8 +978,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       orderData: route.params?.orderData,
       selectedAddress: selectedAddress ?? undefined,
       deliveryCharge: deliveryFee,
-      buyerType: (route.params as any)?.buyerType,
-      from: (route.params as any)?.from,
+      buyerType: isWholesale ? "Wholesale" : ((route.params as any)?.buyerType || customerData?.buyerType || "Retail"),
+      from: (route.params as any)?.from || (isWholesale ? "ViewCustomerScreen" : undefined),
     });
   };
 
@@ -992,7 +998,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
         return;
       }
 
-      const dateValidation = validateDeliveryDate(selectedDate);
+      const dateValidation = validateDeliveryDate(selectedDate, isWholesale);
       if (!dateValidation.isValid) {
         Alert.alert("Invalid Date", dateValidation.error);
         return;
@@ -1112,6 +1118,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
               date: o.dateStr,
             })),
       ...(orderData && { orderData: orderData }),
+      buyerType: isWholesale ? "Wholesale" : ((route.params as any)?.buyerType || customerData?.buyerType || "Retail"),
+      from: (route.params as any)?.from || (isWholesale ? "ViewCustomerScreen" : undefined),
     };
 
     navigation.navigate("SelectPaymentMethod" as any, navigationParams);
@@ -1193,8 +1201,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
             onBackPress={() => {
               navigation.navigate("DeliveryAddress" as any, {
                 ...route.params,
-                buyerType: (route.params as any)?.buyerType,
-                from: (route.params as any)?.from,
+                buyerType: isWholesale ? "Wholesale" : ((route.params as any)?.buyerType || customerData?.buyerType || "Retail"),
+                from: (route.params as any)?.from || (isWholesale ? "ViewCustomerScreen" : undefined),
               });
             }}
           />
@@ -1478,11 +1486,12 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                 minDate={
                   seasonalInfo?.effectiveStartDate
                     ? seasonalInfo.effectiveStartDate
-                    : undefined
+                    : getMinDeliveryDate(isWholesale)
                 }
                 maxDate={
                   seasonalInfo?.cutoffDate ? seasonalInfo.cutoffDate : undefined
                 }
+                isWholesale={isWholesale}
                 onSelectDate={(newDate) => {
                   setSelectedDate(newDate);
                   setIsDateSelected(true);

@@ -16,13 +16,16 @@ interface CustomCalendarModalProps {
   onSelectDate: (dateStr: string) => void;
   minDate?: Date;
   maxDate?: Date;
+  isWholesale?: boolean;
 }
 
 // ─── WEB VALIDATION LOGIC REPLICATED ──────────────────────────────────────────
-export const getMinDeliveryDate = (): Date => {
+export const getMinDeliveryDate = (isWholesale?: boolean): Date => {
   const now = new Date();
   const isAfterCutoff = now.getHours() >= 18; // 6:00 PM cutoff
-  const extraDays = isAfterCutoff ? 4 : 3;
+  const extraDays = isWholesale
+    ? (isAfterCutoff ? 3 : 2)
+    : (isAfterCutoff ? 4 : 3);
 
   const minDate = new Date(
     now.getFullYear(),
@@ -33,7 +36,10 @@ export const getMinDeliveryDate = (): Date => {
   return minDate;
 };
 
-export const validateDeliveryDate = (dateStr?: string | null): { isValid: boolean; error: string } => {
+export const validateDeliveryDate = (
+  dateStr?: string | null,
+  isWholesale?: boolean
+): { isValid: boolean; error: string } => {
   if (!dateStr || !dateStr.trim()) {
     return { isValid: false, error: "Delivery date is required." };
   }
@@ -42,11 +48,19 @@ export const validateDeliveryDate = (dateStr?: string | null): { isValid: boolea
   const selected = new Date(normalized);
   selected.setHours(0, 0, 0, 0);
 
-  const minDate = getMinDeliveryDate();
+  const minDate = getMinDeliveryDate(isWholesale);
   const now = new Date();
   const isAfterCutoff = now.getHours() >= 18;
 
   if (selected < minDate) {
+    if (isWholesale) {
+      return {
+        isValid: false,
+        error: isAfterCutoff
+          ? "Please select a date at least 3 days from today after 6:00 PM cutoff."
+          : "Please select a date at least 2 days from today.",
+      };
+    }
     return {
       isValid: false,
       error: isAfterCutoff
@@ -81,8 +95,9 @@ const CustomCalendarModal: React.FC<CustomCalendarModalProps> = ({
   onSelectDate,
   minDate: customMinDate,
   maxDate: customMaxDate,
+  isWholesale = false,
 }) => {
-  const minDate = useMemo(() => customMinDate || getMinDeliveryDate(), [customMinDate]);
+  const minDate = useMemo(() => customMinDate || getMinDeliveryDate(isWholesale), [customMinDate, isWholesale]);
   const maxDate = useMemo(() => {
     if (customMaxDate) return customMaxDate;
     const max = new Date();
@@ -336,7 +351,9 @@ const CustomCalendarModal: React.FC<CustomCalendarModalProps> = ({
                 fontWeight: "500",
               }}
             >
-              Orders require 3 days preparation (4 days after 6:00 PM cutoff).
+              {isWholesale
+                ? "Wholesale orders require 1 day preparation (2 days after 6:00 PM cutoff)."
+                : "Orders require 3 days preparation (4 days after 6:00 PM cutoff)."}
             </Text>
           </View>
 
