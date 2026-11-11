@@ -148,9 +148,10 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
 
   const incomingBuyerType = (route.params as any)?.buyerType;
   const incomingFrom = (route.params as any)?.from;
+  // isWholesale is determined solely by buyerType.
+  // Do NOT use incomingFrom === "ViewCustomerScreen" — retail users also arrive from there.
   const isWholesale =
-    String(incomingBuyerType || "").toLowerCase() === "wholesale" ||
-    incomingFrom === "ViewCustomerScreen";
+    String(incomingBuyerType || "").toLowerCase() === "wholesale";
   const effectiveBuyerType = isWholesale ? "Wholesale" : (incomingBuyerType || "Retail");
   const effectiveFrom = incomingFrom || (isWholesale ? "ViewCustomerScreen" : undefined);
 
