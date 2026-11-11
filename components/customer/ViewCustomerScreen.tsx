@@ -421,6 +421,7 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
               if (combined) setCustomerName(combined);
               if (freshT) setCustomerTitle(freshT);
               if (freshP) setCustomerNumber(freshP);
+              if (customer.buyerType) setBuyerType(customer.buyerType);
             }
 
             if (building) {
