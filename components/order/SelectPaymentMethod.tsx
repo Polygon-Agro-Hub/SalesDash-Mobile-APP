@@ -171,10 +171,9 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
 
   const incomingBuyerType = (route.params as any)?.buyerType;
   const incomingFrom = (route.params as any)?.from;
-  // isWholesale is determined solely by buyerType.
-  // Do NOT use incomingFrom === "ViewCustomerScreen" — retail users also arrive from there.
   const isWholesale =
-    String(incomingBuyerType || "").toLowerCase() === "wholesale";
+    String(incomingBuyerType || "").toLowerCase() === "wholesale" ||
+    incomingFrom === "ViewCustomerScreen";
   const effectiveBuyerType = isWholesale ? "Wholesale" : (incomingBuyerType || "Retail");
   const effectiveFrom = incomingFrom || (isWholesale ? "ViewCustomerScreen" : undefined);
 
@@ -337,6 +336,8 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
       number,
       customerscreencustomerid,
       isFinalizeImdt: route.params?.isFinalizeImdt,
+      isWholesale: isWholesale || (route.params as any)?.isWholesale,
+      epsdDate: (route.params as any)?.epsdDate,
       buyerType: effectiveBuyerType,
       from: effectiveFrom,
     };

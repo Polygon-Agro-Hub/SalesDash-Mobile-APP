@@ -260,6 +260,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     (route.params as any)?.buyerType || customerData?.buyerType;
   const isWholesale =
     String(buyerType || "").toLowerCase() === "wholesale" ||
+    Boolean((route.params as any)?.isWholesale) ||
     (route.params as any)?.from === "ViewCustomerScreen";
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -1120,6 +1121,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       ...(orderData && { orderData: orderData }),
       buyerType: isWholesale ? "Wholesale" : ((route.params as any)?.buyerType || customerData?.buyerType || "Retail"),
       from: (route.params as any)?.from || (isWholesale ? "ViewCustomerScreen" : undefined),
+      isWholesale: isWholesale,
+      epsdDate: `${(seasonalInfo?.minAvailDate || getMinDeliveryDate(isWholesale)).getFullYear()}/${String((seasonalInfo?.minAvailDate || getMinDeliveryDate(isWholesale)).getMonth() + 1).padStart(2, "0")}/${String((seasonalInfo?.minAvailDate || getMinDeliveryDate(isWholesale)).getDate()).padStart(2, "0")}`,
     };
 
     navigation.navigate("SelectPaymentMethod" as any, navigationParams);
