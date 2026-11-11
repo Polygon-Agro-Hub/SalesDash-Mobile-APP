@@ -16,6 +16,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
 import { LinearGradient } from "expo-linear-gradient";
 import { RouteProp, useFocusEffect } from "@react-navigation/native";
+import { StackActions } from "@react-navigation/native";
 import CustomHeader from "../common/CustomHeader";
 import { AlertModal } from "../common/AlertModal";
 import { Feather, MaterialIcons } from "@expo/vector-icons";
@@ -167,6 +168,15 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
     isNewCustomer,
     isFinalizeImdt,
   } = route.params || {};
+
+  const incomingBuyerType = (route.params as any)?.buyerType;
+  const incomingFrom = (route.params as any)?.from;
+  // isWholesale is determined solely by buyerType.
+  // Do NOT use incomingFrom === "ViewCustomerScreen" — retail users also arrive from there.
+  const isWholesale =
+    String(incomingBuyerType || "").toLowerCase() === "wholesale";
+  const effectiveBuyerType = isWholesale ? "Wholesale" : (incomingBuyerType || "Retail");
+  const effectiveFrom = incomingFrom || (isWholesale ? "ViewCustomerScreen" : undefined);
 
   const isPackageNum = isPackage === 1 || isPackage === "1" ? 1 : 0;
 
@@ -327,8 +337,8 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
       number,
       customerscreencustomerid,
       isFinalizeImdt: route.params?.isFinalizeImdt,
-      buyerType: (route.params as any)?.buyerType,
-      from: (route.params as any)?.from,
+      buyerType: effectiveBuyerType,
+      from: effectiveFrom,
     };
 
     navigation.navigate("OrderSummeryScreen" as any, navigationData);
@@ -368,14 +378,14 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
     calculatedOrders: (route.params as any)?.calculatedOrders,
     packageType: (route.params as any)?.packageType,
     endDate: (route.params as any)?.endDate,
-    buyerType: (route.params as any)?.buyerType,
-    from: (route.params as any)?.from,
+    buyerType: effectiveBuyerType,
+    from: effectiveFrom,
   });
 
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        navigation.navigate("ScheduleScreen" as any, buildScheduleParams());
+        navigation.dispatch(StackActions.popTo("ScheduleScreen", buildScheduleParams()));
         return true;
       };
 
@@ -400,7 +410,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
         showBackButton={true}
         navigation={navigation}
         onBackPress={() =>
-          navigation.navigate("ScheduleScreen" as any, buildScheduleParams())
+          navigation.dispatch(StackActions.popTo("ScheduleScreen", buildScheduleParams()))
         }
       />
       <View className="flex-1 bg-white items-center">
@@ -605,7 +615,18 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
         buttonWidth="60%"
         onClose={() => {
           setShowCartAlert(false);
-          if (isNewCustomer) {
+          if (isWholesale) {
+            navigation.navigate("CreateCustomPackage" as any, {
+              id: id || customerId || customerid,
+              customerId: customerId || customerid,
+              title,
+              name,
+              number,
+              customerscreencustomerid,
+              buyerType: "Wholesale",
+              from: "ViewCustomerScreen",
+            });
+          } else if (isNewCustomer) {
             navigation.navigate("SelectOrderTypeNewCustomer" as any, {
               id: Number(id || customerId || customerid),
               name,
@@ -614,13 +635,15 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
               phoneNumber: number || "",
             });
           } else {
-            navigation.navigate("SelectOrderType" as any, {
-              id,
+            navigation.navigate("CreateCustomPackage" as any, {
+              id: id || customerId || customerid,
               customerId: customerId || customerid,
               title,
               name,
               number,
               customerscreencustomerid,
+              buyerType: effectiveBuyerType,
+              from: "SelectOrderType",
             });
           }
         }}

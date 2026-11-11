@@ -537,8 +537,8 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
         name,
 
         selectedAddressId: incomingSelectedAddress?.id,
-        buyerType: isWholesale ? "Wholesale" : (buyerType || "Retail"),
-        from: (route.params as any)?.from,
+        buyerType: effectiveBuyerType,
+        from: effectiveFrom,
       });
     } else {
       Alert.alert("Please add at least one item to your cart");

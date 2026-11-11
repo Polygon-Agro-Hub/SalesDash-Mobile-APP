@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RouteProp, useFocusEffect } from "@react-navigation/native";
+import { StackActions } from "@react-navigation/native";
 import { RootStackParamList } from "../types/types";
 import { LinearGradient } from "expo-linear-gradient";
 import environment from "@/environment/environment";
@@ -144,6 +145,15 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
     customerscreencustomerid = "",
     id,
   } = route.params || {};
+
+  const incomingBuyerType = (route.params as any)?.buyerType;
+  const incomingFrom = (route.params as any)?.from;
+  // isWholesale is determined solely by buyerType.
+  // Do NOT use incomingFrom === "ViewCustomerScreen" — retail users also arrive from there.
+  const isWholesale =
+    String(incomingBuyerType || "").toLowerCase() === "wholesale";
+  const effectiveBuyerType = isWholesale ? "Wholesale" : (incomingBuyerType || "Retail");
+  const effectiveFrom = incomingFrom || (isWholesale ? "ViewCustomerScreen" : undefined);
 
   const scheduleType: "One Time" | "Once a Week" | "Twice a Week" =
     (route.params as any)?.scheduleType ||
@@ -278,10 +288,6 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
       let orderPayload;
 
       // ── Determine EPSD and auto-confirm status ──────────────────────────
-      const isWholesale =
-        String((route.params as any)?.buyerType || "").toLowerCase() === "wholesale" ||
-        (route.params as any)?.from === "ViewCustomerScreen";
-
       const isEpsdDate = (dateStr?: string | null) => {
         if (!dateStr) return false;
         const normalized = dateStr.replace(/\//g, "-");
@@ -734,7 +740,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        navigation.navigate("SelectPaymentMethod" as any, {
+        navigation.dispatch(StackActions.popTo("SelectPaymentMethod", {
           items,
           subtotal,
           discount,
@@ -767,7 +773,9 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           validityWeeks,
           validityPeriod,
           calculatedOrders,
-        });
+          buyerType: effectiveBuyerType,
+          from: effectiveFrom,
+        }));
         return true;
       };
 
@@ -840,7 +848,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         showBackButton={true}
         navigation={navigation}
         onBackPress={() =>
-          navigation.navigate("SelectPaymentMethod" as any, {
+          navigation.dispatch(StackActions.popTo("SelectPaymentMethod", {
             items,
             subtotal,
             discount,
@@ -873,7 +881,9 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
             validityWeeks,
             validityPeriod,
             calculatedOrders,
-          })
+            buyerType: effectiveBuyerType,
+            from: effectiveFrom,
+          }))
         }
       />
 
@@ -909,7 +919,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
 
                 <TouchableOpacity
                   onPress={() => {
-                    navigation.navigate("ScheduleScreen" as any, {
+                    navigation.dispatch(StackActions.popTo("ScheduleScreen", {
                       total,
                       packageId: route.params?.packageId,
                       items,
@@ -941,7 +951,9 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                       validityWeeks,
                       validityPeriod,
                       calculatedOrders,
-                    });
+                      buyerType: effectiveBuyerType,
+                      from: effectiveFrom,
+                    }));
                   }}
                   disabled={isSubmitting || isSubmitted}
                   style={{ opacity: isSubmitting || isSubmitted ? 0.6 : 1 }}
@@ -1033,8 +1045,8 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                       selectedTimeSlot,
                       paymentMethod,
                       fromOrderSummary: true,
-                      buyerType: (route.params as any)?.buyerType,
-                      from: (route.params as any)?.from,
+                      buyerType: effectiveBuyerType,
+                      from: effectiveFrom,
                     });
                   } else if (isPackage === 1) {
                     navigateBackToOrderScreen();
@@ -1065,8 +1077,8 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                       selectedTimeSlot,
                       paymentMethod,
                       fromOrderSummary: true,
-                      buyerType: (route.params as any)?.buyerType,
-                      from: (route.params as any)?.from,
+                      buyerType: effectiveBuyerType,
+                      from: effectiveFrom,
                     });
                   }
                 }}
@@ -1160,6 +1172,8 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                     selectedAddress: route.params?.selectedAddress,
                     deliveryCharge: deliveryFee,
                     isFinalizeImdt: route.params?.isFinalizeImdt,
+                    buyerType: effectiveBuyerType,
+                    from: effectiveFrom,
                   })
                 }
                 className="border border-[#6C3CD1] px-3 rounded-full"
