@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -198,8 +198,11 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
   const isWholesale =
     String(incomingBuyerType || "").toLowerCase() === "wholesale" ||
     incomingFrom === "ViewCustomerScreen";
-  const effectiveBuyerType = isWholesale ? "Wholesale" : (incomingBuyerType || "Retail");
-  const effectiveFrom = incomingFrom || (isWholesale ? "ViewCustomerScreen" : undefined);
+  const effectiveBuyerType = isWholesale
+    ? "Wholesale"
+    : incomingBuyerType || "Retail";
+  const effectiveFrom =
+    incomingFrom || (isWholesale ? "ViewCustomerScreen" : undefined);
 
   const isPackageNum = isPackage === 1 || isPackage === "1" ? 1 : 0;
 
@@ -214,6 +217,10 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
   const [loadingCredit, setLoadingCredit] = useState(true);
   const [isValidating, setIsValidating] = useState(false);
   const [showCartAlert, setShowCartAlert] = useState(false);
+
+  // When true, the beforeRemove safety net lets the screen leave freely
+  // (set right before intentionally navigating forward).
+  const allowLeaveRef = useRef(false);
 
   const orderTotal = fullTotal || total || 0;
   const userId = customerId || customerid || id;
@@ -380,14 +387,13 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
         recurringDays ||
         (route.params as any)?.recurringDays ||
         (route.params as any)?.selectedDays,
-      validityWeeks:
-        validityWeeks || (route.params as any)?.validityWeeks,
-      validityPeriod:
-        validityPeriod || (route.params as any)?.validityPeriod,
+      validityWeeks: validityWeeks || (route.params as any)?.validityWeeks,
+      validityPeriod: validityPeriod || (route.params as any)?.validityPeriod,
       calculatedOrders:
         calculatedOrders || (route.params as any)?.calculatedOrders,
     };
 
+    allowLeaveRef.current = true; // intentional forward navigation
     navigation.navigate("OrderSummeryScreen" as any, navigationData);
   };
 
@@ -416,14 +422,16 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
     selectedAddress: route.params?.selectedAddress,
     deliveryCharge: route.params?.deliveryCharge,
     isFinalizeImdt: route.params?.isFinalizeImdt,
-    scheduleType: (route.params as any)?.scheduleType,
-    sheduleType: (route.params as any)?.sheduleType,
-    selectedDays: (route.params as any)?.selectedDays,
-    recurringDays: (route.params as any)?.recurringDays,
-    validityWeeks: (route.params as any)?.validityWeeks,
-    validityPeriod: (route.params as any)?.validityPeriod,
-    calculatedOrders: (route.params as any)?.calculatedOrders,
+    isNewCustomer,
+    scheduleType,
+    sheduleType: scheduleType,
+    selectedDays,
+    recurringDays: selectedDays,
+    validityWeeks,
+    validityPeriod,
+    calculatedOrders,
     packageType: (route.params as any)?.packageType,
+    startDate: (route.params as any)?.startDate,
     endDate: (route.params as any)?.endDate,
     buyerType: effectiveBuyerType,
     from: effectiveFrom,
@@ -431,24 +439,47 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
     epsdDate: (route.params as any)?.epsdDate,
   });
 
+  // Single place that sends the user back to ScheduleScreen
+  // (system back, header back, iOS swipe back all use this).
+  const goToSchedule = useCallback(() => {
+    allowLeaveRef.current = true;
+    navigation.dispatch(
+      StackActions.popTo("ScheduleScreen", buildScheduleParams()),
+    );
+  }, [navigation, route.params]);
+
+  // Android hardware back
   useFocusEffect(
     useCallback(() => {
-      const onBackPress = () => {
-        if ((route.params as any)?.fromOrderSummary) {
-          navigation.goBack();
-          return true;
-        }
-        navigation.dispatch(StackActions.popTo("ScheduleScreen", buildScheduleParams()));
-        return true;
-      };
-
       const backHandler = BackHandler.addEventListener(
         "hardwareBackPress",
-        onBackPress,
+        () => {
+          goToSchedule();
+          return true;
+        },
       );
-
       return () => backHandler.remove();
-    }, [navigation, route.params]),
+    }, [goToSchedule]),
+  );
+
+  // iOS swipe-back / any other pop (safety net)
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("beforeRemove", (e) => {
+      if (allowLeaveRef.current) return;
+      const type = e.data.action.type;
+      // Only intercept back-style actions
+      if (type !== "GO_BACK" && type !== "POP") return;
+      e.preventDefault();
+      goToSchedule();
+    });
+    return unsubscribe;
+  }, [navigation, goToSchedule]);
+
+  // Reset the flag whenever the screen is focused again
+  useFocusEffect(
+    useCallback(() => {
+      allowLeaveRef.current = false;
+    }, []),
   );
 
   return (
@@ -462,13 +493,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
         titleColor="#6C3CD1"
         showBackButton={true}
         navigation={navigation}
-        onBackPress={() => {
-          if ((route.params as any)?.fromOrderSummary) {
-            navigation.goBack();
-          } else {
-            navigation.dispatch(StackActions.popTo("ScheduleScreen", buildScheduleParams()));
-          }
-        }}
+        onBackPress={goToSchedule}
       />
       <View className="flex-1 bg-white items-center">
         <View className="flex-1 w-full max-w-[500px]">
@@ -672,6 +697,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
         buttonWidth="60%"
         onClose={() => {
           setShowCartAlert(false);
+          allowLeaveRef.current = true; // intentional navigation away
           if (isWholesale) {
             navigation.navigate("CreateCustomPackage" as any, {
               id: id || customerId || customerid,

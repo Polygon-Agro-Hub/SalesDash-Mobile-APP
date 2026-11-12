@@ -151,10 +151,13 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
   const incomingFrom = (route.params as any)?.from;
   // isWholesale is determined by buyerType or wholesale flow
   const isWholesale =
-    String(incomingBuyerType || customerData?.buyerType || "").toLowerCase() === "wholesale" ||
-    incomingFrom === "ViewCustomerScreen";
-  const effectiveBuyerType = isWholesale ? "Wholesale" : (incomingBuyerType || customerData?.buyerType || "Retail");
-  const effectiveFrom = incomingFrom || (isWholesale ? "ViewCustomerScreen" : undefined);
+    String(incomingBuyerType || customerData?.buyerType || "").toLowerCase() ===
+      "wholesale" || incomingFrom === "ViewCustomerScreen";
+  const effectiveBuyerType = isWholesale
+    ? "Wholesale"
+    : incomingBuyerType || customerData?.buyerType || "Retail";
+  const effectiveFrom =
+    incomingFrom || (isWholesale ? "ViewCustomerScreen" : undefined);
 
   const scheduleType: "One Time" | "Once a Week" | "Twice a Week" =
     (route.params as any)?.scheduleType ||
@@ -184,6 +187,11 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
   const safeItems = Array.isArray(items) ? items : [];
   const safeOrderItems = Array.isArray(orderItems) ? orderItems : [];
   const timeDisplay = selectedTimeSlot || "Not set";
+  const displayDate =
+    selectedDate ||
+    calculatedOrders?.[0]?.date ||
+    (calculatedOrders?.[0] as any)?.dateStr ||
+    "";
   const totalDeliveryPlus = fullTotal;
   const subTotalDeliveryPlus = totalDeliveryPlus + discount;
 
@@ -227,7 +235,10 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
               fetchedCustomerData.buyerType = bType;
             }
           } catch (profileErr) {
-            console.warn("Could not fetch customer buyerType profile:", profileErr);
+            console.warn(
+              "Could not fetch customer buyerType profile:",
+              profileErr,
+            );
           }
           setCustomerData(fetchedCustomerData);
           const customerCity =
@@ -333,7 +344,8 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           incomingFrom === "ViewCustomerScreen" ||
           (route.params as any)?.from === "ViewCustomerScreen" ||
           String(customerData?.buyerType || "").toLowerCase() === "wholesale" ||
-          String((route.params as any)?.buyerType || "").toLowerCase() === "wholesale";
+          String((route.params as any)?.buyerType || "").toLowerCase() ===
+            "wholesale";
 
         const now = new Date();
         const todayYear = now.getFullYear();
@@ -348,7 +360,8 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         todayObj.setHours(0, 0, 0, 0);
 
         const diffDays = Math.round(
-          (targetDateObj.getTime() - todayObj.getTime()) / (1000 * 60 * 60 * 24),
+          (targetDateObj.getTime() - todayObj.getTime()) /
+            (1000 * 60 * 60 * 24),
         );
 
         if (effectiveIsWholesale) {
@@ -382,7 +395,8 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         incomingFrom === "ViewCustomerScreen" ||
         (route.params as any)?.from === "ViewCustomerScreen" ||
         String(customerData?.buyerType || "").toLowerCase() === "wholesale" ||
-        String((route.params as any)?.buyerType || "").toLowerCase() === "wholesale";
+        String((route.params as any)?.buyerType || "").toLowerCase() ===
+          "wholesale";
 
       if (isPackage === 0) {
         const isCardPayment = paymentMethod === "Card";
@@ -462,7 +476,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
           paymentMethod: paymentMethod,
           isPaid: isCardPaymentPkg ? 0 : 1,
           status: "confirmed",
-           isFinalizeImdt: isFinalizeImmediate ? 1 : 0,
+          isFinalizeImdt: isFinalizeImmediate ? 1 : 0,
           isConfirmed: isConfirmed,
           buyerType: effectiveBuyerType,
           isWholesale: effectiveIsWholesale ? 1 : 0,
@@ -728,38 +742,51 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
     if (!dateStr) return "";
 
     const monthMap: Record<string, string> = {
-      Jan: "01",
-      Feb: "02",
-      Mar: "03",
-      Apr: "04",
-      May: "05",
-      Jun: "06",
-      Jul: "07",
-      Aug: "08",
-      Sep: "09",
-      Oct: "10",
-      Nov: "11",
-      Dec: "12",
+      jan: "01",
+      feb: "02",
+      mar: "03",
+      apr: "04",
+      may: "05",
+      jun: "06",
+      jul: "07",
+      aug: "08",
+      sep: "09",
+      oct: "10",
+      nov: "11",
+      dec: "12",
     };
-    const ddMmmYyyy = dateStr.match(/^(\d{1,2})\s([A-Za-z]{3})\s(\d{4})$/);
-    if (ddMmmYyyy) {
-      const dd = ddMmmYyyy[1].padStart(2, "0");
-      const mmm = ddMmmYyyy[2];
-      const yyyy = ddMmmYyyy[3];
-      const mm =
-        monthMap[mmm.charAt(0).toUpperCase() + mmm.slice(1).toLowerCase()];
-      if (mm) return `${yyyy}/${mm}/${dd}`;
-    }
 
-    const ymd = dateStr.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})/);
+    const str = String(dateStr).trim();
+
+    // yyyy-mm-dd, yyyy/mm/dd (also with a time part)
+    const ymd = str.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})/);
     if (ymd) {
-      const yyyy = ymd[1];
-      const mm = ymd[2].padStart(2, "0");
-      const dd = ymd[3].padStart(2, "0");
-      return `${yyyy}/${mm}/${dd}`;
+      return `${ymd[1]}/${ymd[2].padStart(2, "0")}/${ymd[3].padStart(2, "0")}`;
     }
 
-    const date = new Date(dateStr);
+    // dd-mm-yyyy or dd/mm/yyyy
+    const dmy = str.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
+    if (dmy) {
+      return `${dmy[3]}/${dmy[2].padStart(2, "0")}/${dmy[1].padStart(2, "0")}`;
+    }
+
+    // "17 Nov 2026", "17 November 2026", "17 Nov, 2026"
+    const dMonY = str.match(/^(\d{1,2})\s+([A-Za-z]+),?\s+(\d{4})$/);
+    if (dMonY) {
+      const mm = monthMap[dMonY[2].slice(0, 3).toLowerCase()];
+      if (mm) return `${dMonY[3]}/${mm}/${dMonY[1].padStart(2, "0")}`;
+    }
+
+    // "November 17, 2026", "Nov 17 2026", "Tuesday, November 17, 2026"
+    const monDY = str.match(
+      /([A-Za-z]+)\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})/,
+    );
+    if (monDY) {
+      const mm = monthMap[monDY[1].slice(0, 3).toLowerCase()];
+      if (mm) return `${monDY[3]}/${mm}/${monDY[2].padStart(2, "0")}`;
+    }
+
+    const date = new Date(str);
     if (!isNaN(date.getTime())) {
       const yyyy = date.getFullYear();
       const mm = String(date.getMonth() + 1).padStart(2, "0");
@@ -767,7 +794,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
       return `${yyyy}/${mm}/${dd}`;
     }
 
-    return dateStr;
+    return str;
   };
 
   const navigateBackToOrderScreen = useCallback(() => {
@@ -842,44 +869,46 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        navigation.dispatch(StackActions.popTo("SelectPaymentMethod", {
-          items,
-          subtotal,
-          discount,
-          total,
-          id: customerId,
-          title: customerData?.title,
-          name: `${customerData?.firstName} ${customerData?.lastName}`,
-          number: customerData?.phoneNumber,
-          customerscreencustomerid: customerscreencustomerid,
-          fullTotal,
-          selectedDate,
-          timeDisplay,
-          isPackage,
-          packageId: route.params?.packageId,
-          selectedTimeSlot,
-          customerId,
-          customerid: customerid?.toString() || customerId?.toString(),
-          orderItems,
-          selectedMethod: paymentMethod,
-          orderData: route.params?.orderData,
-          rawPackageItems: route.params?.rawPackageItems,
-          rawAdditionalItems: route.params?.rawAdditionalItems,
-          selectedAddress: route.params?.selectedAddress,
-          deliveryCharge: deliveryFee,
-          isFinalizeImdt: route.params?.isFinalizeImdt,
-          scheduleType,
-          sheduleType: scheduleType,
-          selectedDays,
-          recurringDays: selectedDays,
-          validityWeeks,
-          validityPeriod,
-          calculatedOrders,
-          buyerType: effectiveBuyerType,
-          from: effectiveFrom,
-          isWholesale: isWholesale,
-          epsdDate: (route.params as any)?.epsdDate,
-        }));
+        navigation.dispatch(
+          StackActions.popTo("SelectPaymentMethod", {
+            items,
+            subtotal,
+            discount,
+            total,
+            id: customerId,
+            title: customerData?.title,
+            name: `${customerData?.firstName} ${customerData?.lastName}`,
+            number: customerData?.phoneNumber,
+            customerscreencustomerid: customerscreencustomerid,
+            fullTotal,
+            selectedDate,
+            timeDisplay,
+            isPackage,
+            packageId: route.params?.packageId,
+            selectedTimeSlot,
+            customerId,
+            customerid: customerid?.toString() || customerId?.toString(),
+            orderItems,
+            selectedMethod: paymentMethod,
+            orderData: route.params?.orderData,
+            rawPackageItems: route.params?.rawPackageItems,
+            rawAdditionalItems: route.params?.rawAdditionalItems,
+            selectedAddress: route.params?.selectedAddress,
+            deliveryCharge: deliveryFee,
+            isFinalizeImdt: route.params?.isFinalizeImdt,
+            scheduleType,
+            sheduleType: scheduleType,
+            selectedDays,
+            recurringDays: selectedDays,
+            validityWeeks,
+            validityPeriod,
+            calculatedOrders,
+            buyerType: effectiveBuyerType,
+            from: effectiveFrom,
+            isWholesale: isWholesale,
+            epsdDate: (route.params as any)?.epsdDate,
+          }),
+        );
         return true;
       };
 
@@ -952,44 +981,46 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         showBackButton={true}
         navigation={navigation}
         onBackPress={() =>
-          navigation.dispatch(StackActions.popTo("SelectPaymentMethod", {
-            items,
-            subtotal,
-            discount,
-            total,
-            fullTotal,
-            id: customerId,
-            title: customerData?.title,
-            number: customerData?.phoneNumber,
-            customerscreencustomerid: customerscreencustomerid,
-            name: `${customerData?.firstName} ${customerData?.lastName}`,
-            selectedDate,
-            timeDisplay,
-            isPackage,
-            packageId: route.params?.packageId,
-            selectedTimeSlot,
-            customerId,
-            customerid: customerid?.toString() || customerId?.toString(),
-            orderItems,
-            selectedMethod: paymentMethod,
-            orderData: route.params?.orderData,
-            rawPackageItems: route.params?.rawPackageItems,
-            rawAdditionalItems: route.params?.rawAdditionalItems,
-            selectedAddress: route.params?.selectedAddress,
-            deliveryCharge: deliveryFee,
-            isFinalizeImdt: route.params?.isFinalizeImdt,
-            scheduleType,
-            sheduleType: scheduleType,
-            selectedDays,
-            recurringDays: selectedDays,
-            validityWeeks,
-            validityPeriod,
-            calculatedOrders,
-            buyerType: effectiveBuyerType,
-            from: effectiveFrom,
-            isWholesale: isWholesale,
-            epsdDate: (route.params as any)?.epsdDate,
-          }))
+          navigation.dispatch(
+            StackActions.popTo("SelectPaymentMethod", {
+              items,
+              subtotal,
+              discount,
+              total,
+              fullTotal,
+              id: customerId,
+              title: customerData?.title,
+              number: customerData?.phoneNumber,
+              customerscreencustomerid: customerscreencustomerid,
+              name: `${customerData?.firstName} ${customerData?.lastName}`,
+              selectedDate,
+              timeDisplay,
+              isPackage,
+              packageId: route.params?.packageId,
+              selectedTimeSlot,
+              customerId,
+              customerid: customerid?.toString() || customerId?.toString(),
+              orderItems,
+              selectedMethod: paymentMethod,
+              orderData: route.params?.orderData,
+              rawPackageItems: route.params?.rawPackageItems,
+              rawAdditionalItems: route.params?.rawAdditionalItems,
+              selectedAddress: route.params?.selectedAddress,
+              deliveryCharge: deliveryFee,
+              isFinalizeImdt: route.params?.isFinalizeImdt,
+              scheduleType,
+              sheduleType: scheduleType,
+              selectedDays,
+              recurringDays: selectedDays,
+              validityWeeks,
+              validityPeriod,
+              calculatedOrders,
+              buyerType: effectiveBuyerType,
+              from: effectiveFrom,
+              isWholesale: isWholesale,
+              epsdDate: (route.params as any)?.epsdDate,
+            }),
+          )
         }
       />
 
@@ -1017,7 +1048,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                   </View>
 
                   <Text className="text-[#808FA2] text-sm ">
-                    Scheduled to {formatDate(selectedDate)}
+                    Scheduled to {formatDate(displayDate)}
                   </Text>
 
                   <Text className="text-[#808FA2] text-sm">{timeDisplay}</Text>
@@ -1025,43 +1056,45 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
 
                 <TouchableOpacity
                   onPress={() => {
-                    navigation.dispatch(StackActions.popTo("ScheduleScreen", {
-                      total,
-                      packageId: route.params?.packageId,
-                      items,
-                      subtotal,
-                      id: customerId,
-                      title: customerData?.title,
-                      customerscreencustomerid: customerscreencustomerid,
-                      name: `${customerData?.firstName} ${customerData?.lastName}`,
-                      number: customerData?.phoneNumber,
-                      discount,
-                      selectedDate,
-                      timeDisplay,
-                      isPackage,
-                      customerId,
-                      customerid:
-                        customerid.toString() || customerId.toString(),
-                      orderItems,
-                      orderData: route.params?.orderData,
-                      rawPackageItems: route.params?.rawPackageItems,
-                      rawAdditionalItems: route.params?.rawAdditionalItems,
-                      selectedAddress: route.params?.selectedAddress,
-                      deliveryCharge: deliveryFee,
-                      fullTotal,
-                      isFinalizeImdt: route.params?.isFinalizeImdt,
-                      scheduleType,
-                      sheduleType: scheduleType,
-                      selectedDays,
-                      recurringDays: selectedDays,
-                      validityWeeks,
-                      validityPeriod,
-                      calculatedOrders,
-                      buyerType: effectiveBuyerType,
-                      from: effectiveFrom,
-                      isWholesale: isWholesale,
-                      epsdDate: (route.params as any)?.epsdDate,
-                    }));
+                    navigation.dispatch(
+                      StackActions.popTo("ScheduleScreen", {
+                        total,
+                        packageId: route.params?.packageId,
+                        items,
+                        subtotal,
+                        id: customerId,
+                        title: customerData?.title,
+                        customerscreencustomerid: customerscreencustomerid,
+                        name: `${customerData?.firstName} ${customerData?.lastName}`,
+                        number: customerData?.phoneNumber,
+                        discount,
+                        selectedDate,
+                        timeDisplay,
+                        isPackage,
+                        customerId,
+                        customerid:
+                          customerid.toString() || customerId.toString(),
+                        orderItems,
+                        orderData: route.params?.orderData,
+                        rawPackageItems: route.params?.rawPackageItems,
+                        rawAdditionalItems: route.params?.rawAdditionalItems,
+                        selectedAddress: route.params?.selectedAddress,
+                        deliveryCharge: deliveryFee,
+                        fullTotal,
+                        isFinalizeImdt: route.params?.isFinalizeImdt,
+                        scheduleType,
+                        sheduleType: scheduleType,
+                        selectedDays,
+                        recurringDays: selectedDays,
+                        validityWeeks,
+                        validityPeriod,
+                        calculatedOrders,
+                        buyerType: effectiveBuyerType,
+                        from: effectiveFrom,
+                        isWholesale: isWholesale,
+                        epsdDate: (route.params as any)?.epsdDate,
+                      }),
+                    );
                   }}
                   disabled={isSubmitting || isSubmitted}
                   style={{ opacity: isSubmitting || isSubmitted ? 0.6 : 1 }}

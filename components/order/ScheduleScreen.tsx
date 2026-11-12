@@ -286,9 +286,15 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     return calculateInitialDiscount(originalDiscount, orderItems);
   });
 
+  // Initial schedule type: read BOTH spellings so a value that came back from
+  // another screen is never lost.
   const [scheduleType, setScheduleType] = useState<
     "One Time" | "Once a Week" | "Twice a Week"
-  >(route.params?.scheduleType || "One Time");
+  >(
+    (route.params?.scheduleType as any) ||
+      ((route.params as any)?.sheduleType as any) ||
+      "One Time",
+  );
 
   const [selectedTimeSlot, setSelectedTimeSlot] = useState(
     previousTimeSlot || "",
@@ -356,14 +362,22 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
   const [isDateSelected, setIsDateSelected] = useState(!!previousSelectedDate);
   const [showDateModal, setShowDateModal] = useState(false);
 
-  const [selectedDays, setSelectedDays] = useState<string[]>(
-    route.params?.recurringDays && route.params.recurringDays.length > 0
-      ? route.params.recurringDays
-      : ["Tu"],
-  );
+  // Initial days: accept recurringDays OR selectedDays
+  const [selectedDays, setSelectedDays] = useState<string[]>(() => {
+    const fromRecurring = route.params?.recurringDays;
+    const fromSelected = (route.params as any)?.selectedDays;
+    if (fromRecurring && fromRecurring.length > 0) return fromRecurring;
+    if (fromSelected && fromSelected.length > 0) return fromSelected;
+    return ["Tu"];
+  });
 
+  // Initial weeks: accept validityWeeks OR validityPeriod
   const [selectedWeeks, setSelectedWeeks] = useState<string>(() => {
-    const passed = route.params?.validityWeeks;
+    const passed =
+      route.params?.validityWeeks ||
+      ((route.params as any)?.validityPeriod
+        ? String((route.params as any).validityPeriod).padStart(2, "0")
+        : undefined);
     if (passed === "01") return "02";
     return passed || "02";
   });
@@ -439,6 +453,14 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
 
   const timeSlots = TIME_SLOTS;
 
+  // Keep delivery fee in sync if params change (e.g. address re-confirmed)
+  useEffect(() => {
+    if (typeof route.params?.deliveryCharge === "number") {
+      setDeliveryFee(route.params.deliveryCharge);
+    }
+  }, [route.params?.deliveryCharge]);
+
+  // Re-sync local schedule state when route params change
   useEffect(() => {
     if (previousSelectedDate) {
       setSelectedDate(previousSelectedDate);
@@ -630,7 +652,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     // Current hour gap check (6:00 PM cutoff)
     const now = new Date();
     const isAfter6PM = now.getHours() >= 18;
-    const gapDays = isWholesale ? (isAfter6PM ? 2 : 1) : (isAfter6PM ? 3 : 2);
+    const gapDays = isWholesale ? (isAfter6PM ? 2 : 1) : isAfter6PM ? 3 : 2;
 
     const minAvailDate = getMinDeliveryDate(isWholesale); // earliest possible date (today + gap)
     minAvailDate.setHours(0, 0, 0, 0);
@@ -678,7 +700,6 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     const displayStartDate = minAvailDate;
     const startMonth = MONTH_SHORT[displayStartDate.getMonth()];
     const startDay = displayStartDate.getDate();
-    const startDayOrdinal = getOrdinal(startDay);
     const startYear = displayStartDate.getFullYear();
 
     if (isOneTime && rawEndDate) {
@@ -896,7 +917,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       calculatedOrders: formattedOrders,
       unfilteredFirstScheduledDate: rawFirstDate,
     };
-  }, [scheduleType, selectedDays, selectedWeeks, seasonalInfo]);
+  }, [scheduleType, selectedDays, selectedWeeks, seasonalInfo, isWholesale]);
 
   const isFirstOrderPayToday = useMemo(() => {
     if (calculatedOrders.length === 0) return false;
@@ -917,7 +938,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     firstOrderDate.setHours(0, 0, 0, 0);
 
     return firstOrderDate.getTime() === minDeliveryDate.getTime();
-  }, [calculatedOrders, seasonalInfo]);
+  }, [calculatedOrders, seasonalInfo, isWholesale]);
 
   const isScheduleReady = useMemo(() => {
     if (scheduleType === "One Time") {
@@ -968,14 +989,56 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     return timeSlot;
   };
 
+  // ─── BACK PARAMS ─────────────────────────────────────────────────────────
+  // Whenever the user leaves this screen going backwards, send the CURRENT
+  // (live) schedule state with them. Without this the schedule type / days /
+  // weeks live only in local state and are lost, so coming back shows the
+  // default "One Time".
+  const buildBackParams = useCallback(() => {
+    const isOneTime = scheduleType === "One Time";
+    return {
+      ...route.params,
+      selectedDate: selectedDate || undefined,
+      timeDisplay: selectedTimeSlot || undefined,
+      selectedTimeSlot: selectedTimeSlot || undefined,
+      scheduleType,
+      sheduleType: scheduleType,
+      selectedDays: isOneTime ? undefined : selectedDays,
+      recurringDays: isOneTime ? undefined : selectedDays,
+      validityWeeks: isOneTime ? undefined : selectedWeeks,
+      validityPeriod: isOneTime ? undefined : parseInt(selectedWeeks, 10) || 4,
+      calculatedOrders: isOneTime
+        ? undefined
+        : calculatedOrders.map((o) => ({
+            index: o.index,
+            label: o.label,
+            date: o.dateStr,
+          })),
+      buyerType: isWholesale
+        ? "Wholesale"
+        : (route.params as any)?.buyerType ||
+          customerData?.buyerType ||
+          "Retail",
+      from:
+        (route.params as any)?.from ||
+        (isWholesale ? "ViewCustomerScreen" : undefined),
+    };
+  }, [
+    route.params,
+    scheduleType,
+    selectedDate,
+    selectedTimeSlot,
+    selectedDays,
+    selectedWeeks,
+    calculatedOrders,
+    isWholesale,
+    customerData,
+  ]);
+
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        navigation.navigate("DeliveryAddress" as any, {
-          ...route.params,
-          buyerType: isWholesale ? "Wholesale" : ((route.params as any)?.buyerType || customerData?.buyerType || "Retail"),
-          from: (route.params as any)?.from || (isWholesale ? "ViewCustomerScreen" : undefined),
-        });
+        navigation.navigate("DeliveryAddress" as any, buildBackParams());
         return true;
       };
 
@@ -985,37 +1048,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       );
 
       return () => backHandler.remove();
-    }, [navigation, route.params]),
+    }, [navigation, buildBackParams]),
   );
-
-  const handleGoBackToCart = () => {
-    navigation.navigate("CratScreen" as any, {
-      id: route.params?.id,
-      customerId: route.params?.customerId,
-      customerscreencustomerid: route.params?.customerscreencustomerid,
-      number: route.params?.number,
-      title: route.params?.title,
-      name: route.params?.name,
-      isPackage: route.params?.isPackage,
-      items: route.params?.items,
-      subtotal: route.params?.subtotal,
-      discount: route.params?.discount,
-      total: route.params?.total,
-      fullTotal: route.params?.fullTotal,
-      selectedDate: route.params?.selectedDate,
-      timeDisplay: route.params?.timeDisplay,
-      selectedTimeSlot: route.params?.selectedTimeSlot,
-      paymentMethod: (route.params as any)?.paymentMethod,
-      rawPackageItems: route.params?.rawPackageItems,
-      rawAdditionalItems: route.params?.rawAdditionalItems,
-      orderItems: route.params?.orderItems,
-      orderData: route.params?.orderData,
-      selectedAddress: selectedAddress ?? undefined,
-      deliveryCharge: deliveryFee,
-      buyerType: isWholesale ? "Wholesale" : ((route.params as any)?.buyerType || customerData?.buyerType || "Retail"),
-      from: (route.params as any)?.from || (isWholesale ? "ViewCustomerScreen" : undefined),
-    });
-  };
 
   const handleProceed = () => {
     if (!isDeliveryFeeReady) {
@@ -1134,6 +1168,9 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       selectedAddress: selectedAddress,
       deliveryCharge: deliveryFee,
       isNewCustomer: route.params?.isNewCustomer,
+      packageType: currentPackageType || route.params?.packageType,
+      startDate: currentStartDate ?? route.params?.startDate,
+      endDate: currentEndDate ?? route.params?.endDate,
       scheduleType: scheduleType,
       sheduleType: scheduleType,
       selectedDays: scheduleType === "One Time" ? undefined : selectedDays,
@@ -1152,8 +1189,14 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
               date: o.dateStr,
             })),
       ...(orderData && { orderData: orderData }),
-      buyerType: isWholesale ? "Wholesale" : ((route.params as any)?.buyerType || customerData?.buyerType || "Retail"),
-      from: (route.params as any)?.from || (isWholesale ? "ViewCustomerScreen" : undefined),
+      buyerType: isWholesale
+        ? "Wholesale"
+        : (route.params as any)?.buyerType ||
+          customerData?.buyerType ||
+          "Retail",
+      from:
+        (route.params as any)?.from ||
+        (isWholesale ? "ViewCustomerScreen" : undefined),
       isWholesale: isWholesale,
       epsdDate: `${(seasonalInfo?.minAvailDate || getMinDeliveryDate(isWholesale)).getFullYear()}/${String((seasonalInfo?.minAvailDate || getMinDeliveryDate(isWholesale)).getMonth() + 1).padStart(2, "0")}/${String((seasonalInfo?.minAvailDate || getMinDeliveryDate(isWholesale)).getDate()).padStart(2, "0")}`,
     };
@@ -1221,6 +1264,96 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     );
   };
 
+  const renderSeasonalBanner = (marginStyle: {
+    marginTop?: number;
+    marginBottom: number;
+  }) => {
+    if (!seasonalInfo) return null;
+    return (
+      <View
+        style={{
+          backgroundColor: "#F4EDFF",
+          borderWidth: 1,
+          borderColor: "#D8C5F8",
+          borderRadius: 16,
+          padding: 14,
+          ...marginStyle,
+        }}
+      >
+        {seasonalInfo.isSeasonalExpiry ? (
+          <>
+            <Text style={{ fontSize: 13, color: "#1E293B", lineHeight: 19 }}>
+              <Text style={{ fontWeight: "700" }}>Note : </Text>A{" "}
+              {seasonalInfo.gapDays}-day gap is required. The Packages expiring
+              on the {seasonalInfo.expiryDayOrdinal}{" "}
+              {seasonalInfo.expiryMonthFull} {seasonalInfo.expiryYear} can be
+              ordered between the {seasonalInfo.rangeTextLong}.
+            </Text>
+
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "flex-start",
+                marginTop: 10,
+                width: "100%",
+              }}
+            >
+              <View
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: 4,
+                  backgroundColor: "#6B3BCF",
+                  marginRight: 8,
+                  marginTop: 5,
+                  flexShrink: 0,
+                }}
+              />
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{ fontSize: 13, color: "#1E293B", lineHeight: 19 }}
+                >
+                  Available schedule dates:
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: "700",
+                    color: "#1E293B",
+                    lineHeight: 19,
+                  }}
+                >
+                  {seasonalInfo.rangeTextShort}
+                </Text>
+              </View>
+            </View>
+          </>
+        ) : (
+          <>
+            <Text style={{ fontSize: 13, color: "#1E293B", lineHeight: 19 }}>
+              <Text style={{ fontWeight: "700" }}>Note : </Text>A{" "}
+              {seasonalInfo.gapDays}-day gap is required.
+            </Text>
+            <Text
+              style={{
+                fontSize: 13,
+                color: "#1E293B",
+                lineHeight: 19,
+                marginTop: 4,
+              }}
+            >
+              Scheduling available from{" "}
+              <Text style={{ fontWeight: "700" }}>
+                {seasonalInfo.startDateFormatted}
+              </Text>{" "}
+              onward.
+            </Text>
+          </>
+        )}
+      </View>
+    );
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -1235,11 +1368,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
             showBackButton={true}
             navigation={navigation}
             onBackPress={() => {
-              navigation.navigate("DeliveryAddress" as any, {
-                ...route.params,
-                buyerType: isWholesale ? "Wholesale" : ((route.params as any)?.buyerType || customerData?.buyerType || "Retail"),
-                from: (route.params as any)?.from || (isWholesale ? "ViewCustomerScreen" : undefined),
-              });
+              navigation.navigate("DeliveryAddress" as any, buildBackParams());
             }}
           />
           <View className="flex-1 bg-white items-center">
@@ -1274,108 +1403,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                 overScrollMode="always"
               >
                 {/* ─── SEASONAL PACKAGE BANNER ───────────────────────────── */}
-                {seasonalInfo && (
-                  <View
-                    style={{
-                      backgroundColor: "#F4EDFF",
-                      borderWidth: 1,
-                      borderColor: "#D8C5F8",
-                      borderRadius: 16,
-                      padding: 14,
-                      marginTop: 10,
-                      marginBottom: 10,
-                    }}
-                  >
-                    {seasonalInfo.isSeasonalExpiry ? (
-                      <>
-                        <Text
-                          style={{
-                            fontSize: 13,
-                            color: "#1E293B",
-                            lineHeight: 19,
-                          }}
-                        >
-                          <Text style={{ fontWeight: "700" }}>Note : </Text>A{" "}
-                          {seasonalInfo.gapDays}-day gap is required. The
-                          Packages expiring on the{" "}
-                          {seasonalInfo.expiryDayOrdinal}{" "}
-                          {seasonalInfo.expiryMonthFull}{" "}
-                          {seasonalInfo.expiryYear} can be ordered between the{" "}
-                          {seasonalInfo.rangeTextLong}.
-                        </Text>
-
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "flex-start",
-                            marginTop: 10,
-                            width: "100%",
-                          }}
-                        >
-                          <View
-                            style={{
-                              width: 8,
-                              height: 8,
-                              borderRadius: 4,
-                              backgroundColor: "#6B3BCF",
-                              marginRight: 8,
-                              marginTop: 5,
-                              flexShrink: 0,
-                            }}
-                          />
-                          <View style={{ flex: 1 }}>
-                            <Text
-                              style={{
-                                fontSize: 13,
-                                color: "#1E293B",
-                                lineHeight: 19,
-                              }}
-                            >
-                              Available schedule dates:
-                            </Text>
-                            <Text
-                              style={{
-                                fontSize: 13,
-                                fontWeight: "700",
-                                color: "#1E293B",
-                                lineHeight: 19,
-                              }}
-                            >
-                              {seasonalInfo.rangeTextShort}
-                            </Text>
-                          </View>
-                        </View>
-                      </>
-                    ) : (
-                      <>
-                        <Text
-                          style={{
-                            fontSize: 13,
-                            color: "#1E293B",
-                            lineHeight: 19,
-                          }}
-                        >
-                          <Text style={{ fontWeight: "700" }}>Note : </Text>A{" "}
-                          {seasonalInfo.gapDays}-day gap is required.
-                        </Text>
-                        <Text
-                          style={{
-                            fontSize: 13,
-                            color: "#1E293B",
-                            lineHeight: 19,
-                            marginTop: 4,
-                          }}
-                        >
-                          Scheduling available from{" "}
-                          <Text style={{ fontWeight: "700" }}>
-                            {seasonalInfo.startDateFormatted}
-                          </Text>{" "}
-                          onward.
-                        </Text>
-                      </>
-                    )}
-                  </View>
-                )}
+                {renderSeasonalBanner({ marginTop: 10, marginBottom: 10 })}
 
                 {/* ─── ONE TIME FLOW ─────────────────────────────── */}
                 {scheduleType === "One Time" && (
@@ -1680,107 +1708,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                     }}
                   >
                     {/* Seasonal Package Info Banner in Recurring Modal */}
-                    {seasonalInfo && (
-                      <View
-                        style={{
-                          backgroundColor: "#F4EDFF",
-                          borderWidth: 1,
-                          borderColor: "#D8C5F8",
-                          borderRadius: 16,
-                          padding: 14,
-                          marginBottom: 16,
-                        }}
-                      >
-                        {seasonalInfo.isSeasonalExpiry ? (
-                          <>
-                            <Text
-                              style={{
-                                fontSize: 13,
-                                color: "#1E293B",
-                                lineHeight: 19,
-                              }}
-                            >
-                              <Text style={{ fontWeight: "700" }}>Note : </Text>
-                              A {seasonalInfo.gapDays}-day gap is required. The
-                              Packages expiring on the{" "}
-                              {seasonalInfo.expiryDayOrdinal}{" "}
-                              {seasonalInfo.expiryMonthFull}{" "}
-                              {seasonalInfo.expiryYear} can be ordered between
-                              the {seasonalInfo.rangeTextLong}.
-                            </Text>
-
-                            <View
-                              style={{
-                                flexDirection: "row",
-                                alignItems: "flex-start",
-                                marginTop: 10,
-                                width: "100%",
-                              }}
-                            >
-                              <View
-                                style={{
-                                  width: 8,
-                                  height: 8,
-                                  borderRadius: 4,
-                                  backgroundColor: "#6B3BCF",
-                                  marginRight: 8,
-                                  marginTop: 5,
-                                  flexShrink: 0,
-                                }}
-                              />
-                              <View style={{ flex: 1 }}>
-                                <Text
-                                  style={{
-                                    fontSize: 13,
-                                    color: "#1E293B",
-                                    lineHeight: 19,
-                                  }}
-                                >
-                                  Available schedule dates:
-                                </Text>
-                                <Text
-                                  style={{
-                                    fontSize: 13,
-                                    fontWeight: "700",
-                                    color: "#1E293B",
-                                    lineHeight: 19,
-                                  }}
-                                >
-                                  {seasonalInfo.rangeTextShort}
-                                </Text>
-                              </View>
-                            </View>
-                          </>
-                        ) : (
-                          <>
-                            <Text
-                              style={{
-                                fontSize: 13,
-                                color: "#1E293B",
-                                lineHeight: 19,
-                              }}
-                            >
-                              <Text style={{ fontWeight: "700" }}>Note : </Text>
-                              A {seasonalInfo.gapDays}-day gap is required.
-                            </Text>
-                            <Text
-                              style={{
-                                fontSize: 13,
-                                color: "#1E293B",
-                                lineHeight: 19,
-                                marginTop: 4,
-                              }}
-                            >
-                              Scheduling available from{" "}
-                              <Text style={{ fontWeight: "700" }}>
-                                {seasonalInfo.startDateFormatted}
-                              </Text>{" "}
-                              onward.
-                            </Text>
-                          </>
-                        )}
-                      </View>
-                    )}
+                    {renderSeasonalBanner({ marginBottom: 16 })}
 
                     {calculatedOrders.map((order) => (
                       <View key={order.index} style={{ marginBottom: 12 }}>
