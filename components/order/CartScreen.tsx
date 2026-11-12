@@ -781,9 +781,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
             {/* Full Total */}
             <View className="flex-row justify-between py-5">
               <Text className="font-semibold text-base text-[#414347]">
-                {incomingDeliveryCharge > 0
-                  ? "Full Total (incl. Delivery)"
-                  : "Full Total"}
+                Full Total
               </Text>
               <Text className="font-bold text-xl text-[#212121]">
                 Rs.{" "}
