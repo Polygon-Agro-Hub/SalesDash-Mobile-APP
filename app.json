@@ -2,7 +2,7 @@
   "expo": {
     "name": "SalesDash",
     "slug": "SalesDash",
-    "version": "1.0.10",
+    "version": "1.0.11",
     "orientation": "portrait",
     "icon": "./assets/images/public/favicon.png",
     "userInterfaceStyle": "light",
@@ -135,7 +135,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "8306f3c5-4a59-4db0-8e8d-35a573b1d92d"
+        "projectId": ""
       }
     }
   }
