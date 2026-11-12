@@ -2,7 +2,7 @@
   "expo": {
     "name": "SalesDash",
     "slug": "SalesDash",
-    "version": "1.0.8",
+    "version": "1.0.10",
     "orientation": "portrait",
     "icon": "./assets/images/public/favicon.png",
     "userInterfaceStyle": "light",
@@ -15,7 +15,7 @@
     "android": {
       "package": "com.polygonagro.SalesDash",
       "googleServicesFile": "./google-services.json",
-      "versionCode": 21,
+      "versionCode": 22,
       "softwareKeyboardLayoutMode": "resize",
       "predictiveBackGestureEnabled": false,
       "adaptiveIcon": {
@@ -84,11 +84,12 @@
         {
           "android": {
             "compileSdkVersion": 37,
-            "targetSdkVersion": 35,
+            "targetSdkVersion": 36,
             "minSdkVersion": 24,
-            "enableProguardInReleaseBuilds": false,
-            "enableShrinkResourcesInReleaseBuilds": false,
-            "enableMinifyInReleaseBuilds": false
+            "enableProguardInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "enableMinifyInReleaseBuilds": true,
+            "extraProguardRules": "-keep class expo.modules.** { *; }\n-keep class expo.** { *; }"
           },
           "ios": {
             "deploymentTarget": "16.4"
@@ -134,7 +135,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": ""
+        "projectId": "cc16d554-91e4-4761-a028-c3d495bdb82f"
       }
     }
   }

@@ -537,8 +537,19 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
         name,
 
         selectedAddressId: incomingSelectedAddress?.id,
-        buyerType: isWholesale ? "Wholesale" : (buyerType || "Retail"),
-        from: (route.params as any)?.from,
+        buyerType: effectiveBuyerType,
+        from: effectiveFrom,
+        scheduleType: (route.params as any)?.scheduleType || (route.params as any)?.sheduleType,
+        sheduleType: (route.params as any)?.sheduleType || (route.params as any)?.scheduleType,
+        selectedDays: (route.params as any)?.selectedDays || (route.params as any)?.recurringDays,
+        recurringDays: (route.params as any)?.recurringDays || (route.params as any)?.selectedDays,
+        validityWeeks: (route.params as any)?.validityWeeks,
+        validityPeriod: (route.params as any)?.validityPeriod,
+        calculatedOrders: (route.params as any)?.calculatedOrders,
+        isFinalizeImdt: (route.params as any)?.isFinalizeImdt,
+        packageId: (route.params as any)?.packageId,
+        isWholesale: isWholesale || (route.params as any)?.isWholesale,
+        epsdDate: (route.params as any)?.epsdDate,
       });
     } else {
       Alert.alert("Please add at least one item to your cart");

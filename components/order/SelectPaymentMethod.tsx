@@ -16,6 +16,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
 import { LinearGradient } from "expo-linear-gradient";
 import { RouteProp, useFocusEffect } from "@react-navigation/native";
+import { StackActions } from "@react-navigation/native";
 import CustomHeader from "../common/CustomHeader";
 import { AlertModal } from "../common/AlertModal";
 import { Feather, MaterialIcons } from "@expo/vector-icons";
@@ -85,6 +86,18 @@ interface SelectPaymentMethodProps {
       selectedAddress?: any;
       deliveryCharge?: number;
       isFinalizeImdt?: number | boolean;
+      scheduleType?: "One Time" | "Once a Week" | "Twice a Week" | string;
+      sheduleType?: "One Time" | "Once a Week" | "Twice a Week" | string;
+      selectedDays?: string[];
+      recurringDays?: string[];
+      validityWeeks?: string;
+      validityPeriod?: number | null;
+      calculatedOrders?: any[];
+      isWholesale?: boolean;
+      epsdDate?: string;
+      buyerType?: string;
+      from?: string;
+      fromOrderSummary?: boolean;
       orderData?: {
         userId: number;
         isPackage: number;
@@ -167,6 +180,26 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
     isNewCustomer,
     isFinalizeImdt,
   } = route.params || {};
+
+  const scheduleType =
+    (route.params as any)?.scheduleType ||
+    (route.params as any)?.sheduleType;
+  const sheduleType = scheduleType;
+  const selectedDays =
+    (route.params as any)?.selectedDays ||
+    (route.params as any)?.recurringDays;
+  const recurringDays = selectedDays;
+  const validityWeeks = (route.params as any)?.validityWeeks;
+  const validityPeriod = (route.params as any)?.validityPeriod;
+  const calculatedOrders = (route.params as any)?.calculatedOrders;
+
+  const incomingBuyerType = (route.params as any)?.buyerType;
+  const incomingFrom = (route.params as any)?.from;
+  const isWholesale =
+    String(incomingBuyerType || "").toLowerCase() === "wholesale" ||
+    incomingFrom === "ViewCustomerScreen";
+  const effectiveBuyerType = isWholesale ? "Wholesale" : (incomingBuyerType || "Retail");
+  const effectiveFrom = incomingFrom || (isWholesale ? "ViewCustomerScreen" : undefined);
 
   const isPackageNum = isPackage === 1 || isPackage === "1" ? 1 : 0;
 
@@ -327,8 +360,32 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
       number,
       customerscreencustomerid,
       isFinalizeImdt: route.params?.isFinalizeImdt,
-      buyerType: (route.params as any)?.buyerType,
-      from: (route.params as any)?.from,
+      isWholesale: isWholesale || (route.params as any)?.isWholesale,
+      epsdDate: (route.params as any)?.epsdDate,
+      buyerType: effectiveBuyerType,
+      from: effectiveFrom,
+      scheduleType:
+        scheduleType ||
+        (route.params as any)?.scheduleType ||
+        (route.params as any)?.sheduleType,
+      sheduleType:
+        sheduleType ||
+        (route.params as any)?.sheduleType ||
+        (route.params as any)?.scheduleType,
+      selectedDays:
+        selectedDays ||
+        (route.params as any)?.selectedDays ||
+        (route.params as any)?.recurringDays,
+      recurringDays:
+        recurringDays ||
+        (route.params as any)?.recurringDays ||
+        (route.params as any)?.selectedDays,
+      validityWeeks:
+        validityWeeks || (route.params as any)?.validityWeeks,
+      validityPeriod:
+        validityPeriod || (route.params as any)?.validityPeriod,
+      calculatedOrders:
+        calculatedOrders || (route.params as any)?.calculatedOrders,
     };
 
     navigation.navigate("OrderSummeryScreen" as any, navigationData);
@@ -368,14 +425,20 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
     calculatedOrders: (route.params as any)?.calculatedOrders,
     packageType: (route.params as any)?.packageType,
     endDate: (route.params as any)?.endDate,
-    buyerType: (route.params as any)?.buyerType,
-    from: (route.params as any)?.from,
+    buyerType: effectiveBuyerType,
+    from: effectiveFrom,
+    isWholesale: isWholesale || (route.params as any)?.isWholesale,
+    epsdDate: (route.params as any)?.epsdDate,
   });
 
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        navigation.navigate("ScheduleScreen" as any, buildScheduleParams());
+        if ((route.params as any)?.fromOrderSummary) {
+          navigation.goBack();
+          return true;
+        }
+        navigation.dispatch(StackActions.popTo("ScheduleScreen", buildScheduleParams()));
         return true;
       };
 
@@ -399,9 +462,13 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
         titleColor="#6C3CD1"
         showBackButton={true}
         navigation={navigation}
-        onBackPress={() =>
-          navigation.navigate("ScheduleScreen" as any, buildScheduleParams())
-        }
+        onBackPress={() => {
+          if ((route.params as any)?.fromOrderSummary) {
+            navigation.goBack();
+          } else {
+            navigation.dispatch(StackActions.popTo("ScheduleScreen", buildScheduleParams()));
+          }
+        }}
       />
       <View className="flex-1 bg-white items-center">
         <View className="flex-1 w-full max-w-[500px]">
@@ -605,7 +672,18 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
         buttonWidth="60%"
         onClose={() => {
           setShowCartAlert(false);
-          if (isNewCustomer) {
+          if (isWholesale) {
+            navigation.navigate("CreateCustomPackage" as any, {
+              id: id || customerId || customerid,
+              customerId: customerId || customerid,
+              title,
+              name,
+              number,
+              customerscreencustomerid,
+              buyerType: "Wholesale",
+              from: "ViewCustomerScreen",
+            });
+          } else if (isNewCustomer) {
             navigation.navigate("SelectOrderTypeNewCustomer" as any, {
               id: Number(id || customerId || customerid),
               name,
@@ -614,13 +692,15 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
               phoneNumber: number || "",
             });
           } else {
-            navigation.navigate("SelectOrderType" as any, {
-              id,
+            navigation.navigate("CreateCustomPackage" as any, {
+              id: id || customerId || customerid,
               customerId: customerId || customerid,
               title,
               name,
               number,
               customerscreencustomerid,
+              buyerType: effectiveBuyerType,
+              from: "SelectOrderType",
             });
           }
         }}

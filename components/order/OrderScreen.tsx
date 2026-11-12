@@ -568,6 +568,17 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
           packageTotalAmount +
           additionalItems.reduce((sum, item) => sum + item.totalAmount, 0),
         discount: additionalItems.reduce((sum, item) => sum + item.discount, 0),
+        scheduleType: (route.params as any)?.scheduleType || (route.params as any)?.sheduleType,
+        sheduleType: (route.params as any)?.sheduleType || (route.params as any)?.scheduleType,
+        selectedDays: (route.params as any)?.selectedDays || (route.params as any)?.recurringDays,
+        recurringDays: (route.params as any)?.recurringDays || (route.params as any)?.selectedDays,
+        validityWeeks: (route.params as any)?.validityWeeks,
+        validityPeriod: (route.params as any)?.validityPeriod,
+        calculatedOrders: (route.params as any)?.calculatedOrders,
+        isWholesale: (route.params as any)?.isWholesale,
+        buyerType: (route.params as any)?.buyerType,
+        from: (route.params as any)?.from,
+        epsdDate: (route.params as any)?.epsdDate,
       });
     } catch (error) {
       console.error("Error confirming order:", error);
