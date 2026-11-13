@@ -82,6 +82,7 @@ interface CustomerInfo {
   phoneNumber2?: string;
   phoneCode2?: string;
   title: string;
+  buyerType?: string;
 }
 
 interface BuildingDetails {
@@ -122,6 +123,7 @@ interface Order {
   scheduleType: string;
   total: string;
   userId: number;
+  buyerType?: string;
 }
 
 interface CustomerData {
@@ -130,6 +132,7 @@ interface CustomerData {
   lastName?: string;
   phoneNumber?: string;
   email?: string;
+  buyerType?: string;
 }
 
 const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
@@ -338,6 +341,23 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
         (item, index, self) =>
           index === self.findIndex((t) => t.productId === item.productId),
       );
+
+      // Determine dynamic service fee for non-package orders:
+      // max(0, fullTotal - sum(additional items price) - deliveryFee)
+      const sumAdditionalPrice = uniqueAdditionalItems.reduce(
+        (sum, item) => sum + (parseFloat(item.price?.toString() || "0") || 0),
+        0,
+      );
+      const poFullTotal = parseFloat(
+        order?.fullTotal ||
+          (route.params as any)?.fullTotal ||
+          (route.params as any)?.total ||
+          "0",
+      );
+      const dynamicServiceFee =
+        order?.isPackage === 0
+          ? Math.max(0, poFullTotal - sumAdditionalPrice - deliveryChargeAmount)
+          : 0;
 
       const additionalItemsTotal =
         uniqueAdditionalItems.reduce((sum, item) => {
@@ -846,7 +866,7 @@ ${
              ? `
         <div style="display: flex; justify-content: space-between; margin-right: 20px; " class="ptext" >
           <p>Service Fee</p>
-          <p>Rs. 180.00</p>
+          <p>Rs. ${dynamicServiceFee.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
         </div>`
              : ""
          }
