@@ -403,6 +403,8 @@ export type RootStackParamList = {
     selectedTimeSlot: string;
     orderData?: any;
     isPackage: number;
+    buyerType?: string;
+    isWholesale?: boolean;
   };
   View_CancelOrderScreen: {
     orderId: number;

@@ -151,6 +151,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
   const incomingFrom = (route.params as any)?.from;
   // isWholesale is determined by buyerType or wholesale flow
   const isWholesale =
+    Boolean((route.params as any)?.isWholesale) ||
     String(incomingBuyerType || customerData?.buyerType || "").toLowerCase() ===
       "wholesale" || incomingFrom === "ViewCustomerScreen";
   const effectiveBuyerType = isWholesale
@@ -194,6 +195,14 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
     "";
   const totalDeliveryPlus = fullTotal;
   const subTotalDeliveryPlus = totalDeliveryPlus + discount;
+  const sumAdditionalPrice = safeItems.reduce(
+    (sum, item) => sum + (parseFloat(item.price?.toString() || "0") || 0),
+    0,
+  );
+  const serviceFee =
+    isPackage === 0
+      ? Math.max(0, fullTotal - sumAdditionalPrice - deliveryFee)
+      : 0;
 
   useEffect(() => {
     const fetchCustomerDataAndDeliveryFee = async () => {
@@ -564,6 +573,8 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         validityWeeks,
         validityPeriod,
         calculatedOrders,
+        buyerType: effectiveBuyerType,
+        isWholesale: isWholesale,
       });
 
       setIsSubmitting(false);
@@ -1270,7 +1281,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
               <View className="flex-row justify-between mt-3">
                 <Text className="text-[#8492A3] font-medium">Subtotal</Text>
                 <Text className="text-black font-semibold mr-14">
-                  Rs. {formatPrice(subTotalDeliveryPlus - 180 - deliveryFee)}
+                  Rs. {formatPrice(subTotalDeliveryPlus - serviceFee - deliveryFee)}
                 </Text>
               </View>
             )}
@@ -1293,7 +1304,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
               <View className="flex-row justify-between mt-2">
                 <Text className="text-[#8492A3] font-medium">Service Fee</Text>
                 <Text className="text-gray-500 mr-14 font-medium">
-                  Rs. 180.00
+                  Rs. {formatPrice(serviceFee)}
                 </Text>
               </View>
             )}

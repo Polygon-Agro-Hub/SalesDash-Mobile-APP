@@ -80,12 +80,23 @@ interface Order {
   sheduleTime?: string;
   sheduleType?: string;
   title?: string;
+  buyerType?: string;
+  isPackage?: number;
+  additionalItems?: Array<{
+    productId?: number;
+    displayName?: string;
+    price?: number | string;
+    qty?: number | string;
+    unit?: string;
+    discount?: number | string;
+  }>;
   customerInfo?: {
     title?: string;
     firstName?: string;
     lastName?: string;
     phoneNumber?: string;
     buildingType?: string;
+    buyerType?: string;
   };
 }
 
@@ -102,6 +113,7 @@ interface CustomerData {
   lastName?: string;
   phoneNumber?: string;
   buildingType?: string;
+  buyerType?: string;
   buildingDetails?: {
     buildingNo?: string;
     unitNo?: string;
@@ -161,6 +173,20 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
         : undefined;
     return nestedStatus || order.status || "";
   })();
+
+  // Determine dynamic service fee for non-package orders:
+  // max(0, fullTotal - sum(additional items price) - deliveryFee)
+  const sumAdditionalPrice = (order?.additionalItems || []).reduce(
+    (sum: number, item: any) =>
+      sum + (parseFloat(item.price?.toString() || "0") || 0),
+    0,
+  );
+  const poFullTotal = parseFloat(order?.fullTotal || "0");
+  const isNonPackage = isPackage === 0 || order?.isPackage === 0;
+  const serviceFee =
+    isNonPackage && poFullTotal > 0
+      ? Math.max(0, poFullTotal - sumAdditionalPrice - deliveryFee)
+      : 0;
 
   const isHoldOrder = holdEvents.some((e) => e.isHold);
   const wasOnHold = holdEvents.length > 0;
@@ -871,7 +897,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       }).format(
-                        parseFloat(order.total || "0") - deliveryFee - 180,
+                        parseFloat(order.total || "0") - deliveryFee - serviceFee,
                       )}
                     </Text>
                   </View>
@@ -893,7 +919,9 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                 {isPackage === 0 && (
                   <View className="flex-row justify-between mb-2">
                     <Text className="text-[#8492A3]">Service Fee</Text>
-                    <Text className="text-[#8492A3]">Rs. 180.00</Text>
+                    <Text className="text-[#8492A3]">
+                      Rs. {formatPrice(serviceFee)}
+                    </Text>
                   </View>
                 )}
                 <View className="flex-row justify-between pt-2">
