@@ -11,7 +11,6 @@ import {
 } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
-import { LinearGradient } from "expo-linear-gradient";
 import axios from "axios";
 import environment from "@/environment/environment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -180,8 +179,37 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
   const isWholesale =
     String(incomingBuyerType || "").toLowerCase() === "wholesale" ||
     incomingFrom === "ViewCustomerScreen";
-  const effectiveBuyerType = isWholesale ? "Wholesale" : (incomingBuyerType || "Retail");
-  const effectiveFrom = incomingFrom || (isWholesale ? "ViewCustomerScreen" : undefined);
+  const effectiveBuyerType = isWholesale
+    ? "Wholesale"
+    : incomingBuyerType || "Retail";
+  const effectiveFrom =
+    incomingFrom || (isWholesale ? "ViewCustomerScreen" : undefined);
+
+  // Schedule state that must survive the round trip
+  // Schedule -> DeliveryAddress -> Cart -> DeliveryAddress -> Schedule.
+  // Both spellings (scheduleType / sheduleType, selectedDays / recurringDays)
+  // are always sent so nothing downstream is lost.
+  const scheduleCarryParams = () => {
+    const p: any = route.params || {};
+    const type = p.scheduleType || p.sheduleType;
+    const days = p.selectedDays || p.recurringDays;
+    return {
+      scheduleType: type,
+      sheduleType: type,
+      selectedDays: days,
+      recurringDays: days,
+      validityWeeks: p.validityWeeks,
+      validityPeriod: p.validityPeriod,
+      calculatedOrders: p.calculatedOrders,
+      isFinalizeImdt: p.isFinalizeImdt,
+      isWholesale: p.isWholesale,
+      epsdDate: p.epsdDate,
+      packageType: p.packageType,
+      startDate: p.startDate,
+      endDate: p.endDate,
+      isNewCustomer: p.isNewCustomer,
+    };
+  };
 
   const handleGoBack = () => {
     const isPackage = route.params?.isPackage;
@@ -210,6 +238,7 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
         selectedTimeSlot: route.params?.selectedTimeSlot,
         buyerType: effectiveBuyerType,
         from: effectiveFrom,
+        ...scheduleCarryParams(),
       });
     } else {
       navigation.navigate("CratScreen" as any, {
@@ -238,6 +267,7 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
         deliveryCharge: 0,
         buyerType: effectiveBuyerType,
         from: effectiveFrom,
+        ...scheduleCarryParams(),
       });
     }
   };
@@ -288,8 +318,11 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
     const isPackage = route.params?.isPackage;
     const isPackageNum = isPackage === 1 || isPackage === "1" ? 1 : 0;
 
+    // route.params already holds the schedule fields (when coming back from
+    // Schedule/Cart), and scheduleCarryParams() guarantees both spellings.
     navigation.navigate("ScheduleScreen" as any, {
       ...route.params,
+      ...scheduleCarryParams(),
       isPackage: isPackageNum,
       packageId: isPackageNum === 1 ? route.params?.packageId : null,
       selectedAddress: selectedAddress,
@@ -301,7 +334,10 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
   };
 
   const handleAddNewAddress = () => {
-    navigation.navigate("AddDeliveryAddress" as any, { customerId: id, buyerType: (route.params as any)?.buyerType });
+    navigation.navigate("AddDeliveryAddress" as any, {
+      customerId: id,
+      buyerType: (route.params as any)?.buyerType,
+    });
   };
 
   const handleEditAddress = (address: AddressBookItem) => {

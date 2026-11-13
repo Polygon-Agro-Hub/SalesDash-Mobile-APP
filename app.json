@@ -2,7 +2,7 @@
   "expo": {
     "name": "SalesDash",
     "slug": "SalesDash",
-    "version": "1.0.10",
+    "version": "1.0.11",
     "orientation": "portrait",
     "icon": "./assets/images/public/favicon.png",
     "userInterfaceStyle": "light",
@@ -15,7 +15,7 @@
     "android": {
       "package": "com.polygonagro.SalesDash",
       "googleServicesFile": "./google-services.json",
-      "versionCode": 22,
+      "versionCode": 24,
       "softwareKeyboardLayoutMode": "resize",
       "predictiveBackGestureEnabled": false,
       "adaptiveIcon": {
@@ -135,7 +135,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "cc16d554-91e4-4761-a028-c3d495bdb82f"
+        "projectId": ""
       }
     }
   }
