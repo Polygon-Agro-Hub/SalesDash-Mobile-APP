@@ -87,6 +87,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
 
   // Max quantity applies to wholesale customers only
   const isWholesale =
+    Boolean((route.params as any)?.isWholesale) ||
     String(buyerType || "").toLowerCase() === "wholesale" ||
     from === "ViewCustomerScreen";
   const effectiveBuyerType = isWholesale ? "Wholesale" : (buyerType || "Retail");
@@ -485,7 +486,8 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     return roundToTwoDecimals(total + itemDiscount);
   }, 0);
 
-  const SERVICE_FEE = 180;
+  // Service fee of 180 is only added for retail users, not wholesale
+  const SERVICE_FEE = isWholesale ? 0 : 180;
   const fullTotal = roundToTwoDecimals(totalDiscountedValue + SERVICE_FEE);
 
   const grandTotal = roundToTwoDecimals(fullTotal + incomingDeliveryCharge);
@@ -758,12 +760,14 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
                 </Text>
               </View>
 
-              <View className="flex-row justify-between py-2">
-                <Text className="text-[#8492A3]">Service Fee</Text>
-                <Text className="font-medium text-[#686868]">
-                  + Rs. {SERVICE_FEE.toFixed(2)}
-                </Text>
-              </View>
+              {!isWholesale && (
+                <View className="flex-row justify-between py-2">
+                  <Text className="text-[#8492A3]">Service Fee</Text>
+                  <Text className="font-medium text-[#686868]">
+                    + Rs. {SERVICE_FEE.toFixed(2)}
+                  </Text>
+                </View>
+              )}
 
               {incomingDeliveryCharge > 0 && (
                 <View className="flex-row justify-between py-2">

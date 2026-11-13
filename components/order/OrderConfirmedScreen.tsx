@@ -82,6 +82,7 @@ interface CustomerInfo {
   phoneNumber2?: string;
   phoneCode2?: string;
   title: string;
+  buyerType?: string;
 }
 
 interface BuildingDetails {
@@ -122,6 +123,7 @@ interface Order {
   scheduleType: string;
   total: string;
   userId: number;
+  buyerType?: string;
 }
 
 interface CustomerData {
@@ -130,6 +132,7 @@ interface CustomerData {
   lastName?: string;
   phoneNumber?: string;
   email?: string;
+  buyerType?: string;
 }
 
 const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
@@ -332,6 +335,15 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
       const totalBeforeDiscount = parseFloat(order?.total || "0");
       const totalAmount = totalBeforeDiscount - discountAmount;
       const deliveryChargeAmount = parseFloat(order?.deliveryCharge || "0");
+      const isWholesaleOrder =
+        Boolean((route.params as any)?.isWholesale) ||
+        String(
+          (route.params as any)?.buyerType ||
+          order?.buyerType ||
+          order?.customerInfo?.buyerType ||
+          customerData?.buyerType ||
+          "",
+        ).toLowerCase() === "wholesale";
 
       // Ensure additional items are unique by productId
       const uniqueAdditionalItems = (order?.additionalItems || []).filter(
@@ -842,7 +854,7 @@ ${
             : ""
         }
          ${
-           order?.isPackage === 0
+           order?.isPackage === 0 && !isWholesaleOrder
              ? `
         <div style="display: flex; justify-content: space-between; margin-right: 20px; " class="ptext" >
           <p>Service Fee</p>

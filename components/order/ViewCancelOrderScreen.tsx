@@ -80,12 +80,14 @@ interface Order {
   sheduleTime?: string;
   sheduleType?: string;
   title?: string;
+  buyerType?: string;
   customerInfo?: {
     title?: string;
     firstName?: string;
     lastName?: string;
     phoneNumber?: string;
     buildingType?: string;
+    buyerType?: string;
   };
 }
 
@@ -102,6 +104,7 @@ interface CustomerData {
   lastName?: string;
   phoneNumber?: string;
   buildingType?: string;
+  buyerType?: string;
   buildingDetails?: {
     buildingNo?: string;
     unitNo?: string;
@@ -161,6 +164,15 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
         : undefined;
     return nestedStatus || order.status || "";
   })();
+
+  const isWholesale =
+    String(
+      order?.buyerType ||
+      order?.customerInfo?.buyerType ||
+      customerData?.buyerType ||
+      "",
+    ).toLowerCase() === "wholesale";
+  const serviceFee = isWholesale ? 0 : 180;
 
   const isHoldOrder = holdEvents.some((e) => e.isHold);
   const wasOnHold = holdEvents.length > 0;
@@ -871,7 +883,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       }).format(
-                        parseFloat(order.total || "0") - deliveryFee - 180,
+                        parseFloat(order.total || "0") - deliveryFee - serviceFee,
                       )}
                     </Text>
                   </View>
@@ -890,7 +902,7 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                     Rs. {formatPrice(deliveryFee)}
                   </Text>
                 </View>
-                {isPackage === 0 && (
+                {isPackage === 0 && !isWholesale && (
                   <View className="flex-row justify-between mb-2">
                     <Text className="text-[#8492A3]">Service Fee</Text>
                     <Text className="text-[#8492A3]">Rs. 180.00</Text>
