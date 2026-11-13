@@ -15,7 +15,7 @@
     "android": {
       "package": "com.polygonagro.SalesDash",
       "googleServicesFile": "./google-services.json",
-      "versionCode": 23,
+      "versionCode": 24,
       "softwareKeyboardLayoutMode": "resize",
       "predictiveBackGestureEnabled": false,
       "adaptiveIcon": {
