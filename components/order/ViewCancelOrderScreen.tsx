@@ -81,6 +81,15 @@ interface Order {
   sheduleType?: string;
   title?: string;
   buyerType?: string;
+  isPackage?: number;
+  additionalItems?: Array<{
+    productId?: number;
+    displayName?: string;
+    price?: number | string;
+    qty?: number | string;
+    unit?: string;
+    discount?: number | string;
+  }>;
   customerInfo?: {
     title?: string;
     firstName?: string;
@@ -165,14 +174,19 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
     return nestedStatus || order.status || "";
   })();
 
-  const isWholesale =
-    String(
-      order?.buyerType ||
-      order?.customerInfo?.buyerType ||
-      customerData?.buyerType ||
-      "",
-    ).toLowerCase() === "wholesale";
-  const serviceFee = isWholesale ? 0 : 180;
+  // Determine dynamic service fee for non-package orders:
+  // max(0, fullTotal - sum(additional items price) - deliveryFee)
+  const sumAdditionalPrice = (order?.additionalItems || []).reduce(
+    (sum: number, item: any) =>
+      sum + (parseFloat(item.price?.toString() || "0") || 0),
+    0,
+  );
+  const poFullTotal = parseFloat(order?.fullTotal || "0");
+  const isNonPackage = isPackage === 0 || order?.isPackage === 0;
+  const serviceFee =
+    isNonPackage && poFullTotal > 0
+      ? Math.max(0, poFullTotal - sumAdditionalPrice - deliveryFee)
+      : 0;
 
   const isHoldOrder = holdEvents.some((e) => e.isHold);
   const wasOnHold = holdEvents.length > 0;

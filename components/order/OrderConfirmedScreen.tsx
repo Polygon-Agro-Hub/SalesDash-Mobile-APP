@@ -335,21 +335,29 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
       const totalBeforeDiscount = parseFloat(order?.total || "0");
       const totalAmount = totalBeforeDiscount - discountAmount;
       const deliveryChargeAmount = parseFloat(order?.deliveryCharge || "0");
-      const isWholesaleOrder =
-        Boolean((route.params as any)?.isWholesale) ||
-        String(
-          (route.params as any)?.buyerType ||
-          order?.buyerType ||
-          order?.customerInfo?.buyerType ||
-          customerData?.buyerType ||
-          "",
-        ).toLowerCase() === "wholesale";
 
       // Ensure additional items are unique by productId
       const uniqueAdditionalItems = (order?.additionalItems || []).filter(
         (item, index, self) =>
           index === self.findIndex((t) => t.productId === item.productId),
       );
+
+      // Determine dynamic service fee for non-package orders:
+      // max(0, fullTotal - sum(additional items price) - deliveryFee)
+      const sumAdditionalPrice = uniqueAdditionalItems.reduce(
+        (sum, item) => sum + (parseFloat(item.price?.toString() || "0") || 0),
+        0,
+      );
+      const poFullTotal = parseFloat(
+        order?.fullTotal ||
+          (route.params as any)?.fullTotal ||
+          (route.params as any)?.total ||
+          "0",
+      );
+      const dynamicServiceFee =
+        order?.isPackage === 0
+          ? Math.max(0, poFullTotal - sumAdditionalPrice - deliveryChargeAmount)
+          : 0;
 
       const additionalItemsTotal =
         uniqueAdditionalItems.reduce((sum, item) => {
@@ -858,7 +866,7 @@ ${
              ? `
         <div style="display: flex; justify-content: space-between; margin-right: 20px; " class="ptext" >
           <p>Service Fee</p>
-          <p>Rs. ${isWholesaleOrder ? "0.00" : "180.00"}</p>
+          <p>Rs. ${dynamicServiceFee.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
         </div>`
              : ""
          }

@@ -195,7 +195,14 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
     "";
   const totalDeliveryPlus = fullTotal;
   const subTotalDeliveryPlus = totalDeliveryPlus + discount;
-  const serviceFee = isWholesale ? 0 : 180;
+  const sumAdditionalPrice = safeItems.reduce(
+    (sum, item) => sum + (parseFloat(item.price?.toString() || "0") || 0),
+    0,
+  );
+  const serviceFee =
+    isPackage === 0
+      ? Math.max(0, fullTotal - sumAdditionalPrice - deliveryFee)
+      : 0;
 
   useEffect(() => {
     const fetchCustomerDataAndDeliveryFee = async () => {
