@@ -854,11 +854,11 @@ ${
             : ""
         }
          ${
-           order?.isPackage === 0 && !isWholesaleOrder
+           order?.isPackage === 0
              ? `
         <div style="display: flex; justify-content: space-between; margin-right: 20px; " class="ptext" >
           <p>Service Fee</p>
-          <p>Rs. 180.00</p>
+          <p>Rs. ${isWholesaleOrder ? "0.00" : "180.00"}</p>
         </div>`
              : ""
          }

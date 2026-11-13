@@ -760,14 +760,12 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
                 </Text>
               </View>
 
-              {!isWholesale && (
-                <View className="flex-row justify-between py-2">
-                  <Text className="text-[#8492A3]">Service Fee</Text>
-                  <Text className="font-medium text-[#686868]">
-                    + Rs. {SERVICE_FEE.toFixed(2)}
-                  </Text>
-                </View>
-              )}
+              <View className="flex-row justify-between py-2">
+                <Text className="text-[#8492A3]">Service Fee</Text>
+                <Text className="font-medium text-[#686868]">
+                  + Rs. {SERVICE_FEE.toFixed(2)}
+                </Text>
+              </View>
 
               {incomingDeliveryCharge > 0 && (
                 <View className="flex-row justify-between py-2">

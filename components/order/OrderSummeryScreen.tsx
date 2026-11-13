@@ -1293,11 +1293,11 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
               </Text>
             </View>
 
-            {isPackage === 0 && !isWholesale && (
+            {isPackage === 0 && (
               <View className="flex-row justify-between mt-2">
                 <Text className="text-[#8492A3] font-medium">Service Fee</Text>
                 <Text className="text-gray-500 mr-14 font-medium">
-                  Rs. 180.00
+                  Rs. {formatPrice(serviceFee)}
                 </Text>
               </View>
             )}

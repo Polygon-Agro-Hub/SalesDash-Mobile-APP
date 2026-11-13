@@ -902,10 +902,12 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
                     Rs. {formatPrice(deliveryFee)}
                   </Text>
                 </View>
-                {isPackage === 0 && !isWholesale && (
+                {isPackage === 0 && (
                   <View className="flex-row justify-between mb-2">
                     <Text className="text-[#8492A3]">Service Fee</Text>
-                    <Text className="text-[#8492A3]">Rs. 180.00</Text>
+                    <Text className="text-[#8492A3]">
+                      Rs. {formatPrice(serviceFee)}
+                    </Text>
                   </View>
                 )}
                 <View className="flex-row justify-between pt-2">
