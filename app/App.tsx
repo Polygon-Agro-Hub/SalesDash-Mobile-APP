@@ -13,6 +13,7 @@ import {
 } from "react-native-safe-area-context";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { AppUpdateProvider } from "@/features/app-update";
+import { TimeValidationProvider } from "@/features/time-validation";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import NavigationBar from "@/components/navigation/Navbar";
 import Splash from "@/components/authentication/Splash";
@@ -49,6 +50,7 @@ import ExcludeItemEditSummery from "@/components/excludeItems/ExcludeItemEditSum
 import ExcludeAddMore from "@/components/excludeItems/ExcludeAddMore";
 import PrivacyPolicy from "@/components/policies/PrivacyPolicy";
 import TermsConditions from "@/components/policies/TermsConditions";
+import DateInaccurateScreen from "@/components/common/DateInaccurateScreen";
 import NetInfo from "@react-native-community/netinfo";
 import AttachGeoLocationScreen from "@/components/location/AttachGeoLocationScreen";
 import ViewLocationScreen from "@/components/location/ViewLocationScreen";
@@ -371,6 +373,10 @@ function AppContent() {
               component={TermsConditions as any}
             />
             <Stack.Screen
+              name="DateInaccurateScreen"
+              component={DateInaccurateScreen as any}
+            />
+            <Stack.Screen
               name="ExcludeListAdd"
               component={ExcludeListAdd as any}
             />
@@ -459,7 +465,9 @@ export default function App() {
       <SafeAreaProvider>
         <LanguageProvider>
           <AppUpdateProvider>
-            <AppContent />
+            <TimeValidationProvider>
+              <AppContent />
+            </TimeValidationProvider>
           </AppUpdateProvider>
         </LanguageProvider>
       </SafeAreaProvider>
