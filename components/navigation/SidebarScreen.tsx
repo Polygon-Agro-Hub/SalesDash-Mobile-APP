@@ -11,7 +11,7 @@ import {
   BackHandler,
   Switch,
 } from "react-native";
-import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
+import { Ionicons, FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
 import {
@@ -601,6 +601,42 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
                         style={{ marginRight: wp(2) }}
                       />
                     </TouchableOpacity>
+
+                    {environment.isDeveloper && (
+                      <TouchableOpacity
+                        className="flex-row items-center py-3"
+                        onPress={() => navigation.navigate("DateInaccurateScreen")}
+                      >
+                        <View
+                          style={{
+                            width: hp(5),
+                            height: hp(5),
+                            borderRadius: hp(2.5),
+                            backgroundColor: "#F1E8FF",
+                            justifyContent: "center",
+                            alignItems: "center",
+                          }}
+                        >
+                          <MaterialCommunityIcons
+                            name="clock-alert-outline"
+                            size={hp(3)}
+                            color="#6C3CD1"
+                          />
+                        </View>
+                        <Text
+                          style={{ flex: 1, marginLeft: wp(4), fontSize: hp(2) }}
+                          className="text-gray-800"
+                        >
+                          Time Validation UI
+                        </Text>
+                        <Ionicons
+                          name="chevron-forward-outline"
+                          size={hp(2.5)}
+                          color="#8F8F8F"
+                          style={{ marginRight: wp(2) }}
+                        />
+                      </TouchableOpacity>
+                    )}
 
 
                     <View className="mb-4">

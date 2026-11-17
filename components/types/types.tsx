@@ -110,6 +110,7 @@ export type RootStackParamList = {
   };
   PrivacyPolicy: undefined;
   TermsConditions: undefined;
+  DateInaccurateScreen: undefined;
   CameraAccess?: {
     returnScreen?: keyof RootStackParamList;
     returnParams?: any;
