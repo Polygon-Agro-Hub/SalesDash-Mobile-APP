@@ -288,7 +288,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
 
       let statusCode;
       if (
-        environment.isDevelopment &&
+        environment.isDeveloper &&
         Platform.OS === "android" &&
         otpCode === "05578"
       ) {
