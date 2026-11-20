@@ -1,4 +1,4 @@
-import { View, Image, Text } from "react-native";
+import { View, Image, Text, Alert } from "react-native";
 import React, { useEffect } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -15,8 +15,57 @@ interface SplashProps {
 }
 
 const Splash: React.FC<SplashProps> = ({ navigation }) => {
+  // Function to handle logout and alert when 14-day token has expired
+  const handleExpiredToken = async () => {
+    await AsyncStorage.multiRemove([
+      "authToken",
+      "refreshToken",
+      "tokenStoredTime",
+      "tokenExpirationTime",
+      "userToken",
+    ]);
+    Alert.alert("Token Expired", "Your token has expired. Please log in again.");
+    navigation.navigate("LoginScreen");
+  };
+
+  // Attempt to refresh token using stored refresh token
+  const tryRefreshToken = async (): Promise<string | null> => {
+    try {
+      const storedRefreshToken = await AsyncStorage.getItem("refreshToken");
+      if (!storedRefreshToken) return null;
+
+      const response = await fetch(
+        `${environment.API_BASE_URL}api/auth/refresh-token`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({ refreshToken: storedRefreshToken }),
+        }
+      );
+
+      const data = await response.json();
+      if (response.ok && data.success && data.data?.token) {
+        await AsyncStorage.setItem("authToken", data.data.token);
+        if (data.data.refreshToken) {
+          await AsyncStorage.setItem("refreshToken", data.data.refreshToken);
+        }
+        return data.data.token;
+      }
+      return null;
+    } catch (err) {
+      console.warn("Splash refresh token error:", err);
+      return null;
+    }
+  };
+
   // Function to check password update status
-  const checkPasswordUpdateStatus = async (authToken: string) => {
+  const checkPasswordUpdateStatus = async (
+    authToken: string,
+    hasRetried = false
+  ) => {
     try {
       const response = await fetch(
         `${environment.API_BASE_URL}api/auth/user/password-update`,
@@ -29,6 +78,17 @@ const Splash: React.FC<SplashProps> = ({ navigation }) => {
           },
         },
       );
+
+      // If access token is expired (401), attempt to silently refresh with refreshToken
+      if (response.status === 401 && !hasRetried) {
+        const newToken = await tryRefreshToken();
+        if (newToken) {
+          return checkPasswordUpdateStatus(newToken, true);
+        } else {
+          // If 14 days passed or refresh token is invalid, show expired token alert
+          return handleExpiredToken();
+        }
+      }
 
       // First check the response content type
       const contentType = response.headers.get("content-type");
@@ -64,25 +124,24 @@ const Splash: React.FC<SplashProps> = ({ navigation }) => {
         } else {
           await AsyncStorage.multiRemove([
             "authToken",
+            "refreshToken",
             "tokenStoredTime",
             "tokenExpirationTime",
+            "userToken",
           ]);
           navigation.navigate("LoginScreen");
         }
       } else {
-        await AsyncStorage.multiRemove([
-          "authToken",
-          "tokenStoredTime",
-          "tokenExpirationTime",
-        ]);
-        navigation.navigate("LoginScreen");
+        return handleExpiredToken();
       }
     } catch (error) {
       console.error("Error checking password status:", error);
       await AsyncStorage.multiRemove([
         "authToken",
+        "refreshToken",
         "tokenStoredTime",
         "tokenExpirationTime",
+        "userToken",
       ]);
       navigation.navigate("LoginScreen");
     }
@@ -93,27 +152,24 @@ const Splash: React.FC<SplashProps> = ({ navigation }) => {
       try {
         // Check if auth token exists
         const authToken = await AsyncStorage.getItem("authToken");
-        const expirationTime = await AsyncStorage.getItem(
-          "tokenExpirationTime",
-        );
 
         // Timer to navigate after 3 seconds
         setTimeout(async () => {
-          if (expirationTime && authToken) {
-            const currentTime = new Date();
-            const tokenExpiry = new Date(expirationTime);
-
-            if (currentTime < tokenExpiry) {
-              await checkPasswordUpdateStatus(authToken);
-            } else {
-              await AsyncStorage.multiRemove([
-                "authToken",
-                "tokenStoredTime",
-                "tokenExpirationTime",
-              ]);
-              navigation.navigate("LoginScreen");
-            }
+          if (authToken) {
+            // Validate token status directly via backend API (expiration handled on server)
+            await checkPasswordUpdateStatus(authToken);
           } else {
+            const refreshToken = await AsyncStorage.getItem("refreshToken");
+            if (refreshToken) {
+              const newToken = await tryRefreshToken();
+              if (newToken) {
+                await checkPasswordUpdateStatus(newToken, true);
+                return;
+              } else {
+                await handleExpiredToken();
+                return;
+              }
+            }
             navigation.navigate("LoginScreen");
           }
         }, 3000);
