@@ -3,7 +3,7 @@ const devHostIp = getDevServerHostIp();
 
 const environment = {
   // If isDeveloper is true, user can use OTP as 05578 in Android only and view developer diagnostic screens
-  isDeveloper: true,
+  isDeveloper: false,
   // LOCAL --------------------
   API_BASE_URL: `http://${devHostIp}:3000/agro-api/salesdash/`,
 
