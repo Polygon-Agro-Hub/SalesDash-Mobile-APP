@@ -352,7 +352,7 @@ function AppContent() {
 
             // If already retried with a refreshed token and still failed, do not retry again
             if (originalRequest._retry) {
-              await handleForceLogout("Session Expired", "Your session has expired. Please log in again.");
+              await handleForceLogout("Token Expired", "Your token has expired. Please log in again.");
               return new Promise(() => {});
             }
 
@@ -378,7 +378,7 @@ function AppContent() {
             if (!storedRefreshToken) {
               isRefreshing = false;
               processQueue(new Error("No refresh token available"), null);
-              await handleForceLogout("Session Expired", "Your session has expired. Please log in again.");
+              await handleForceLogout("Token Expired", "Your token has expired. Please log in again.");
               return new Promise(() => {});
             }
 
@@ -412,7 +412,7 @@ function AppContent() {
               }
             } catch (refreshErr) {
               processQueue(refreshErr, null);
-              await handleForceLogout("Session Expired", "Your session has expired. Please log in again.");
+              await handleForceLogout("Token Expired", "Your token has expired. Please log in again.");
               return new Promise(() => {});
             } finally {
               isRefreshing = false;
