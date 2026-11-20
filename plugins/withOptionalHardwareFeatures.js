@@ -1,4 +1,4 @@
-const { withAndroidManifest } = require("expo/config-plugins");
+const { withAndroidManifest } = require("@expo/config-plugins");
 
 /**
  * Custom Expo config plugin — withOptionalHardwareFeatures
@@ -19,6 +19,14 @@ const { withAndroidManifest } = require("expo/config-plugins");
  */
 
 const OPTIONAL_FEATURES = [
+  // Screen & Orientation features — fixing Google Play Console warning for tablets, desktops, and XR
+  "android.hardware.screen.portrait",
+  "android.hardware.screen.landscape",
+
+  // Connectivity — prevents excluding cellular-only or Wi-Fi only devices
+  "android.hardware.wifi",
+  "android.hardware.telephony",
+
   // Camera features — adding CAMERA permission implicitly requires these,
   // which filters out tablets and devices without autofocus or back cameras.
   "android.hardware.camera",
@@ -31,10 +39,6 @@ const OPTIONAL_FEATURES = [
   "android.hardware.location",
   "android.hardware.location.gps",
   "android.hardware.location.network",
-
-  // Connectivity — prevents excluding Wi-Fi only tablets
-  "android.hardware.telephony",
-  "android.hardware.wifi",
 
   // Audio output & input
   "android.hardware.microphone",
@@ -58,11 +62,20 @@ const withOptionalHardwareFeatures = (config) => {
       manifest.manifest = {};
     }
 
-    if (!Array.isArray(manifest.manifest["uses-feature"])) {
-      manifest.manifest["uses-feature"] = [];
+    const androidManifest = manifest.manifest;
+
+    if (!androidManifest.$) {
+      androidManifest.$ = {};
+    }
+    if (!androidManifest.$["xmlns:tools"]) {
+      androidManifest.$["xmlns:tools"] = "http://schemas.android.com/tools";
     }
 
-    const existingFeatures = manifest.manifest["uses-feature"];
+    if (!Array.isArray(androidManifest["uses-feature"])) {
+      androidManifest["uses-feature"] = [];
+    }
+
+    const existingFeatures = androidManifest["uses-feature"];
 
     OPTIONAL_FEATURES.forEach((featureName) => {
       const existing = existingFeatures.find(
@@ -72,11 +85,13 @@ const withOptionalHardwareFeatures = (config) => {
       if (existing) {
         if (!existing.$) existing.$ = {};
         existing.$["android:required"] = "false";
+        existing.$["tools:replace"] = "android:required";
       } else {
         existingFeatures.push({
           $: {
             "android:name": featureName,
             "android:required": "false",
+            "tools:replace": "android:required",
           },
         });
       }
