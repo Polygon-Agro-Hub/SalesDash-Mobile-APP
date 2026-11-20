@@ -262,6 +262,10 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     String(buyerType || "").toLowerCase() === "wholesale" ||
     Boolean((route.params as any)?.isWholesale) ||
     (route.params as any)?.from === "ViewCustomerScreen";
+
+  // Alacarte-only: retail buyer with NO package in cart (isPackage !== 1)
+  // Applies the 1-day gap rule: earliest schedule = today + 2 (before 6PM) / today + 3 (after 6PM)
+  const isAlacarteOnly = !isWholesale && Number(route.params?.isPackage) !== 1;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showTimeSlotModal, setShowTimeSlotModal] = useState(false);
@@ -652,9 +656,13 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     // Current hour gap check (6:00 PM cutoff)
     const now = new Date();
     const isAfter6PM = now.getHours() >= 18;
-    const gapDays = isWholesale ? (isAfter6PM ? 2 : 1) : isAfter6PM ? 3 : 2;
+    const gapDays = isAlacarteOnly
+      ? (isAfter6PM ? 2 : 1)
+      : isWholesale
+        ? (isAfter6PM ? 2 : 1)
+        : isAfter6PM ? 3 : 2;
 
-    const minAvailDate = getMinDeliveryDate(isWholesale); // earliest possible date (today + gap)
+    const minAvailDate = getMinDeliveryDate(isWholesale, undefined, isAlacarteOnly); // earliest possible date (today + gap)
     minAvailDate.setHours(0, 0, 0, 0);
 
     // Recurring package: package start date can push the real start later
@@ -701,6 +709,9 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     const startMonth = MONTH_SHORT[displayStartDate.getMonth()];
     const startDay = displayStartDate.getDate();
     const startYear = displayStartDate.getFullYear();
+    // Long format: "11th October 2026" (used in banner for alacarte / non-seasonal)
+    const startDateLong = `${getOrdinal(startDay)} ${MONTH_LONG[displayStartDate.getMonth()]} ${startYear}`;
+    const startDateShort = `${startMonth} ${startDay}, ${startYear}`;
 
     if (isOneTime && rawEndDate) {
       const earliestExpiryDate = parseDateStr(rawEndDate);
@@ -742,7 +753,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
           effectiveStartDate,
           rangeTextLong: rangeText,
           rangeTextShort: rangeText,
-          startDateFormatted: `${startMonth} ${startDay}, ${startYear}`,
+          startDateFormatted: startDateLong,
           isAvailableNow,
         };
       }
@@ -765,7 +776,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
         effectiveStartDate,
         rangeTextLong: "",
         rangeTextShort: "",
-        startDateFormatted: `${startMonth} ${startDay}, ${startYear}`,
+        startDateFormatted: startDateLong,
         isAvailableNow: true,
       };
     }
@@ -787,7 +798,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       effectiveStartDate,
       rangeTextLong: "",
       rangeTextShort: "",
-      startDateFormatted: `${startMonth} ${startDay}, ${startYear}`,
+      startDateFormatted: startDateLong,
       isAvailableNow: true,
     };
   }, [
@@ -802,6 +813,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     isPackage,
     items,
     orderData,
+    isWholesale,
+    isAlacarteOnly,
   ]);
 
   // Expiry cutoff date formatted as "Month Day" (strictly End Date - 2 days)
@@ -862,7 +875,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     }
 
     const numWeeks = parseInt(selectedWeeks, 10) || 4;
-    const minDate = getMinDeliveryDate(isWholesale);
+    const minDate = getMinDeliveryDate(isWholesale, undefined, isAlacarteOnly);
 
     const dayIndices = selectedDays.map((id) => {
       const found = DAYS_OF_WEEK.find((d) => d.id === id);
@@ -923,7 +936,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     if (calculatedOrders.length === 0) return false;
     if (seasonalInfo && !seasonalInfo.isAvailableNow) return false;
 
-    const minDeliveryDate = getMinDeliveryDate(isWholesale);
+    const minDeliveryDate = getMinDeliveryDate(isWholesale, undefined, isAlacarteOnly);
     minDeliveryDate.setHours(0, 0, 0, 0);
 
     if (seasonalInfo?.earliestStartDate) {
@@ -1066,7 +1079,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
         return;
       }
 
-      const dateValidation = validateDeliveryDate(selectedDate, isWholesale);
+      const dateValidation = validateDeliveryDate(selectedDate, isWholesale, isAlacarteOnly);
       if (!dateValidation.isValid) {
         Alert.alert("Invalid Date", dateValidation.error);
         return;
@@ -1198,7 +1211,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
         (route.params as any)?.from ||
         (isWholesale ? "ViewCustomerScreen" : undefined),
       isWholesale: isWholesale,
-      epsdDate: `${(seasonalInfo?.minAvailDate || getMinDeliveryDate(isWholesale)).getFullYear()}/${String((seasonalInfo?.minAvailDate || getMinDeliveryDate(isWholesale)).getMonth() + 1).padStart(2, "0")}/${String((seasonalInfo?.minAvailDate || getMinDeliveryDate(isWholesale)).getDate()).padStart(2, "0")}`,
+      epsdDate: `${(seasonalInfo?.minAvailDate || getMinDeliveryDate(isWholesale, undefined, isAlacarteOnly)).getFullYear()}/${String((seasonalInfo?.minAvailDate || getMinDeliveryDate(isWholesale, undefined, isAlacarteOnly)).getMonth() + 1).padStart(2, "0")}/${String((seasonalInfo?.minAvailDate || getMinDeliveryDate(isWholesale, undefined, isAlacarteOnly)).getDate()).padStart(2, "0")}`,
     };
 
     navigation.navigate("SelectPaymentMethod" as any, navigationParams);
@@ -1334,20 +1347,35 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
               <Text style={{ fontWeight: "700" }}>Note : </Text>A{" "}
               {seasonalInfo.gapDays}-day gap is required.
             </Text>
-            <Text
+            <View
               style={{
-                fontSize: 13,
-                color: "#1E293B",
-                lineHeight: 19,
-                marginTop: 4,
+                flexDirection: "row",
+                alignItems: "flex-start",
+                marginTop: 8,
+                width: "100%",
               }}
             >
-              Scheduling available from{" "}
-              <Text style={{ fontWeight: "700" }}>
-                {seasonalInfo.startDateFormatted}
-              </Text>{" "}
-              onward.
-            </Text>
+              <View
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: 4,
+                  backgroundColor: "#6B3BCF",
+                  marginRight: 8,
+                  marginTop: 5,
+                  flexShrink: 0,
+                }}
+              />
+              <Text
+                style={{ fontSize: 13, color: "#1E293B", lineHeight: 19, flex: 1 }}
+              >
+                Scheduling available from{" "}
+                <Text style={{ fontWeight: "700" }}>
+                  {seasonalInfo.startDateFormatted}
+                </Text>{" "}
+                onward.
+              </Text>
+            </View>
           </>
         )}
       </View>
@@ -1550,12 +1578,13 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
                 minDate={
                   seasonalInfo?.effectiveStartDate
                     ? seasonalInfo.effectiveStartDate
-                    : getMinDeliveryDate(isWholesale)
+                    : getMinDeliveryDate(isWholesale, undefined, isAlacarteOnly)
                 }
                 maxDate={
                   seasonalInfo?.cutoffDate ? seasonalInfo.cutoffDate : undefined
                 }
                 isWholesale={isWholesale}
+                isAlacarteOnly={isAlacarteOnly}
                 onSelectDate={(newDate) => {
                   setSelectedDate(newDate);
                   setIsDateSelected(true);
