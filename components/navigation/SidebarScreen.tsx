@@ -10,6 +10,8 @@ import {
   Platform,
   BackHandler,
   Switch,
+  Modal,
+  TextInput,
 } from "react-native";
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -52,6 +54,9 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
   const [isBiometricAvailable, setIsBiometricAvailable] = useState(false);
   const [isBiometricActive, setIsBiometricActive] = useState(false);
   const [biometricLabel, setBiometricLabel] = useState("Biometrics");
+  const [isDevModalVisible, setIsDevModalVisible] = useState(false);
+  const [devAccessCode, setDevAccessCode] = useState("");
+  const [devCodeError, setDevCodeError] = useState("");
 
 
   const checkBiometrics = async (targetEmpId?: string) => {
@@ -226,6 +231,7 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
     try {
       await AsyncStorage.multiRemove([
         "authToken",
+        "refreshToken",
         "salesdash_current_emp_id",
       ]);
       setTimeout(() => {
@@ -605,30 +611,36 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
                     {environment.isDeveloper && (
                       <TouchableOpacity
                         className="flex-row items-center py-3"
-                        onPress={() => navigation.navigate("DateInaccurateScreen")}
+                        onPress={() => {
+                          setDevAccessCode("");
+                          setDevCodeError("");
+                          setIsDevModalVisible(true);
+                        }}
                       >
                         <View
                           style={{
                             width: hp(5),
                             height: hp(5),
                             borderRadius: hp(2.5),
-                            backgroundColor: "#F1E8FF",
+                            backgroundColor: "#F3E8FF",
                             justifyContent: "center",
                             alignItems: "center",
                           }}
                         >
-                          <MaterialCommunityIcons
-                            name="clock-alert-outline"
-                            size={hp(3)}
-                            color="#6C3CD1"
+                          <Ionicons
+                            name="code-slash-outline"
+                            size={hp(2.8)}
+                            color="#7C3AED"
                           />
                         </View>
-                        <Text
-                          style={{ flex: 1, marginLeft: wp(4), fontSize: hp(2) }}
-                          className="text-gray-800"
-                        >
-                          Time Validation UI
-                        </Text>
+                        <View style={{ flex: 1, marginLeft: wp(4) }}>
+                          <Text
+                            style={{ fontSize: hp(2), fontWeight: "600" }}
+                            className="text-gray-800"
+                          >
+                            Developer Mode
+                          </Text>
+                        </View>
                         <Ionicons
                           name="chevron-forward-outline"
                           size={hp(2.5)}
@@ -689,6 +701,177 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
           </View>
         )}
       </View>
+
+      {/* Developer PIN Access Modal */}
+      <Modal
+        visible={isDevModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsDevModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: wp(6),
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderRadius: 16,
+              padding: wp(6),
+              width: "100%",
+              maxWidth: 360,
+              alignItems: "center",
+            }}
+          >
+            <View
+              style={{
+                width: hp(6),
+                height: hp(6),
+                borderRadius: hp(3),
+                backgroundColor: "#F3E8FF",
+                justifyContent: "center",
+                alignItems: "center",
+                marginBottom: 12,
+              }}
+            >
+              <Ionicons name="key-outline" size={hp(3.2)} color="#7C3AED" />
+            </View>
+
+            <Text
+              style={{
+                fontSize: hp(2.2),
+                fontWeight: "700",
+                color: "#111827",
+                marginBottom: 6,
+              }}
+            >
+              Developer Access
+            </Text>
+
+            <Text
+              style={{
+                fontSize: hp(1.6),
+                color: "#6B7280",
+                textAlign: "center",
+                marginBottom: 16,
+              }}
+            >
+              Enter developer PIN to access Developer Mode and live countdown tools:
+            </Text>
+
+            <TextInput
+              style={{
+                width: "100%",
+                borderWidth: 1.5,
+                borderColor: devCodeError ? "#EF4444" : "#D1D5DB",
+                borderRadius: 10,
+                paddingHorizontal: 16,
+                paddingVertical: 12,
+                fontSize: hp(2.2),
+                textAlign: "center",
+                letterSpacing: 4,
+                fontWeight: "700",
+                color: "#111827",
+                backgroundColor: "#F9FAFB",
+              }}
+              placeholder="••••"
+              placeholderTextColor="#9CA3AF"
+              keyboardType="number-pad"
+              secureTextEntry
+              maxLength={6}
+              value={devAccessCode}
+              onChangeText={(text) => {
+                setDevAccessCode(text);
+                if (devCodeError) setDevCodeError("");
+              }}
+            />
+
+            {devCodeError ? (
+              <Text
+                style={{
+                  color: "#EF4444",
+                  fontSize: hp(1.5),
+                  marginTop: 6,
+                  fontWeight: "600",
+                }}
+              >
+                {devCodeError}
+              </Text>
+            ) : null}
+
+            <View
+              style={{
+                flexDirection: "row",
+                width: "100%",
+                marginTop: 20,
+                gap: 10,
+              }}
+            >
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  paddingVertical: 12,
+                  borderRadius: 8,
+                  backgroundColor: "#F3F4F6",
+                  alignItems: "center",
+                }}
+                onPress={() => {
+                  setIsDevModalVisible(false);
+                  setDevAccessCode("");
+                  setDevCodeError("");
+                }}
+              >
+                <Text
+                  style={{
+                    color: "#4B5563",
+                    fontWeight: "600",
+                    fontSize: hp(1.8),
+                  }}
+                >
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  paddingVertical: 12,
+                  borderRadius: 8,
+                  backgroundColor: "#7C3AED",
+                  alignItems: "center",
+                }}
+                onPress={() => {
+                  const cleanCode = devAccessCode.trim();
+                  if (cleanCode === "5578" || cleanCode === "05578") {
+                    setIsDevModalVisible(false);
+                    setDevAccessCode("");
+                    setDevCodeError("");
+                    navigation.navigate("DeveloperScreen");
+                  } else {
+                    setDevCodeError("Incorrect PIN. Access Denied.");
+                  }
+                }}
+              >
+                <Text
+                  style={{
+                    color: "#FFFFFF",
+                    fontWeight: "700",
+                    fontSize: hp(1.8),
+                  }}
+                >
+                  Unlock
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
     </KeyboardAvoidingView>
   );

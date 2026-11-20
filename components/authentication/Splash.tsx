@@ -64,6 +64,7 @@ const Splash: React.FC<SplashProps> = ({ navigation }) => {
         } else {
           await AsyncStorage.multiRemove([
             "authToken",
+            "refreshToken",
             "tokenStoredTime",
             "tokenExpirationTime",
           ]);
@@ -72,6 +73,7 @@ const Splash: React.FC<SplashProps> = ({ navigation }) => {
       } else {
         await AsyncStorage.multiRemove([
           "authToken",
+          "refreshToken",
           "tokenStoredTime",
           "tokenExpirationTime",
         ]);
@@ -81,6 +83,7 @@ const Splash: React.FC<SplashProps> = ({ navigation }) => {
       console.error("Error checking password status:", error);
       await AsyncStorage.multiRemove([
         "authToken",
+        "refreshToken",
         "tokenStoredTime",
         "tokenExpirationTime",
       ]);
@@ -93,26 +96,12 @@ const Splash: React.FC<SplashProps> = ({ navigation }) => {
       try {
         // Check if auth token exists
         const authToken = await AsyncStorage.getItem("authToken");
-        const expirationTime = await AsyncStorage.getItem(
-          "tokenExpirationTime",
-        );
 
         // Timer to navigate after 3 seconds
         setTimeout(async () => {
-          if (expirationTime && authToken) {
-            const currentTime = new Date();
-            const tokenExpiry = new Date(expirationTime);
-
-            if (currentTime < tokenExpiry) {
-              await checkPasswordUpdateStatus(authToken);
-            } else {
-              await AsyncStorage.multiRemove([
-                "authToken",
-                "tokenStoredTime",
-                "tokenExpirationTime",
-              ]);
-              navigation.navigate("LoginScreen");
-            }
+          if (authToken) {
+            // Validate token status directly via backend API (expiration handled on server)
+            await checkPasswordUpdateStatus(authToken);
           } else {
             navigation.navigate("LoginScreen");
           }
