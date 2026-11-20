@@ -321,33 +321,18 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
   };
 
   useEffect(() => {
-    const checkTokenExpiration = async () => {
+    const checkAuthToken = async () => {
       try {
-        const expirationTime = await AsyncStorage.getItem(
-          "tokenExpirationTime",
-        );
         const userToken = await AsyncStorage.getItem("authToken");
-
-        if (expirationTime && userToken) {
-          if (new Date() >= new Date(expirationTime)) {
-            await AsyncStorage.multiRemove([
-              "userToken",
-              "tokenStoredTime",
-              "tokenExpirationTime",
-            ]);
-            Alert.alert(
-              "Sorry",
-              "No authenticated user found, please login again",
-            );
-            navigation.reset({ index: 0, routes: [{ name: "LoginScreen" }] });
-          }
+        if (!userToken) {
+          navigation.reset({ index: 0, routes: [{ name: "LoginScreen" }] });
         }
       } catch (error) {
-        console.error("Error checking token expiration:", error);
+        console.error("Error checking auth token:", error);
         navigation.reset({ index: 0, routes: [{ name: "LoginScreen" }] });
       }
     };
-    checkTokenExpiration();
+    checkAuthToken();
   }, [navigation]);
 
 

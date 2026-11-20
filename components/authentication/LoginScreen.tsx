@@ -228,6 +228,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   ) => {
     await AsyncStorage.multiRemove([
       "authToken",
+      "refreshToken",
       "tokenStoredTime",
       "tokenExpirationTime",
     ]);
@@ -240,19 +241,16 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       );
 
       if (response.data.success) {
-        const { token, passwordUpdate } = response.data.data;
+        const { token, refreshToken, passwordUpdate } = response.data.data;
         if (token) {
           const timestamp = new Date();
-          const expirationTime = new Date(
-            timestamp.getTime() + 8 * 60 * 60 * 1000,
-          );
           const cleanEmpId = normalizeId(loginEmpId);
           await AsyncStorage.setItem("authToken", token);
+          if (refreshToken) {
+            await AsyncStorage.setItem("refreshToken", refreshToken);
+          }
           await AsyncStorage.setItem("salesdash_current_emp_id", cleanEmpId);
-          await AsyncStorage.multiSet([
-            ["tokenStoredTime", timestamp.toISOString()],
-            ["tokenExpirationTime", expirationTime.toISOString()],
-          ]);
+          await AsyncStorage.setItem("tokenStoredTime", timestamp.toISOString());
 
           // Save Remember Me credentials if toggle is enabled
           if (rememberMe) {
