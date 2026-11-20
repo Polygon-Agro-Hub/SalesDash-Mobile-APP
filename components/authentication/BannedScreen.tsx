@@ -42,6 +42,7 @@ const BannedScreen: React.FC<BannedScreenProps> = ({ route, navigation }) => {
     try {
       await AsyncStorage.multiRemove([
         "authToken",
+        "refreshToken",
         "tokenStoredTime",
         "tokenExpirationTime",
         "userToken",

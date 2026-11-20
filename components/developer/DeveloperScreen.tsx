@@ -1,0 +1,810 @@
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Switch,
+  Alert,
+  ActivityIndicator,
+  Platform,
+} from "react-native";
+import {
+  Ionicons,
+  MaterialCommunityIcons,
+  FontAwesome5,
+} from "@expo/vector-icons";
+import {
+  widthPercentageToDP as wp,
+  heightPercentageToDP as hp,
+} from "react-native-responsive-screen";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+import environment from "@/environment/environment";
+import {
+  decodeJwt,
+  developerOverlayService,
+  DecodedTokenInfo,
+} from "./developerOverlayService";
+import { getDevServerHostIp } from "@/environment/getHostIp";
+import CustomHeader from "../common/CustomHeader";
+
+interface DeveloperScreenProps {
+  navigation: any;
+}
+
+export const DeveloperScreen: React.FC<DeveloperScreenProps> = ({
+  navigation,
+}) => {
+  const [isOverlayActive, setIsOverlayActive] = useState<boolean>(false);
+  const [tokenInfo, setTokenInfo] = useState<DecodedTokenInfo | null>(null);
+  const [remainingTime, setRemainingTime] = useState<string>("Loading...");
+  const [isExpired, setIsExpired] = useState<boolean>(false);
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+
+  // Subscribe to floating overlay state
+  useEffect(() => {
+    const unsubscribe = developerOverlayService.addListener((visible) => {
+      setIsOverlayActive(visible);
+    });
+    return unsubscribe;
+  }, []);
+
+  // Live countdown timer for the screen
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+
+    const updateTokenData = async () => {
+      try {
+        let token = await AsyncStorage.getItem("authToken");
+        if (!token) {
+          setRemainingTime("No Auth Token Found");
+          setIsExpired(true);
+          setTokenInfo(null);
+          return;
+        }
+
+        token = token.replace(/^["']|["']$/g, "").trim();
+        const decoded = decodeJwt(token);
+        setTokenInfo(decoded);
+
+        let expMs = decoded?.exp ? decoded.exp * 1000 : 0;
+        if (!expMs) {
+          const storedTime = await AsyncStorage.getItem("tokenStoredTime");
+          if (storedTime) {
+            expMs = new Date(storedTime).getTime() + 12 * 60 * 60 * 1000;
+          }
+        }
+
+        if (expMs > 0) {
+          const nowMs = Date.now();
+          const diffMs = expMs - nowMs;
+
+          if (diffMs <= 0) {
+            setRemainingTime("EXPIRED");
+            setIsExpired(true);
+          } else {
+            setIsExpired(false);
+            const totalSeconds = Math.max(0, Math.floor(diffMs / 1000));
+            const days = Math.floor(totalSeconds / (3600 * 24));
+            const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+
+            if (days > 0) {
+              setRemainingTime(
+                `${days}d ${String(hours).padStart(2, "0")}h ${String(
+                  minutes
+                ).padStart(2, "0")}m ${String(seconds).padStart(2, "0")}s`
+              );
+            } else {
+              setRemainingTime(
+                `${String(hours).padStart(2, "0")}h ${String(minutes).padStart(
+                  2,
+                  "0"
+                )}m ${String(seconds).padStart(2, "0")}s`
+              );
+            }
+          }
+        } else {
+          setRemainingTime("Active");
+          setIsExpired(false);
+        }
+      } catch (err) {
+        console.warn("Error reading token:", err);
+      }
+    };
+
+    updateTokenData();
+    timer = setInterval(updateTokenData, 1000);
+
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, []);
+
+  const handleToggleOverlay = async (val: boolean) => {
+    setIsOverlayActive(val);
+    await developerOverlayService.setVisible(val);
+  };
+
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      const storedRefreshToken = await AsyncStorage.getItem("refreshToken");
+      if (!storedRefreshToken) {
+        Alert.alert(
+          "No Refresh Token",
+          "There is no refresh token stored. Please log in again to generate one."
+        );
+        return;
+      }
+
+      const res = await axios.post(
+        `${environment.API_BASE_URL}api/auth/refresh-token`,
+        { refreshToken: storedRefreshToken },
+        { timeout: 10000 }
+      );
+
+      if (res.data?.success && res.data?.data?.token) {
+        const newAccessToken = res.data.data.token;
+        const newRefreshToken = res.data.data.refreshToken;
+
+        await AsyncStorage.setItem("authToken", newAccessToken);
+        if (newRefreshToken) {
+          await AsyncStorage.setItem("refreshToken", newRefreshToken);
+        }
+
+        const decoded = decodeJwt(newAccessToken);
+        setTokenInfo(decoded);
+
+        Alert.alert(
+          "Token Refreshed",
+          "New 12-hour JWT access token and 14-day refresh token successfully generated by backend!"
+        );
+      } else {
+        Alert.alert("Refresh Failed", res.data?.message || "Unknown error");
+      }
+    } catch (err: any) {
+      console.error("Manual refresh error:", err);
+      Alert.alert(
+        "Refresh Error",
+        err.response?.data?.message || err.message || "Failed to refresh token"
+      );
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  return (
+    <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+      {/* Standard App Header */}
+      <CustomHeader
+        title="Developer Mode"
+        titleColor="#6C3CD1"
+        showBackButton={true}
+        navigation={navigation}
+        onBackPress={() => navigation.goBack()}
+      />
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingHorizontal: wp(5),
+          paddingTop: hp(1),
+          paddingBottom: hp(8),
+        }}
+      >
+        {/* SECTION 1: FLOATING LIVE TOKEN COUNTDOWN OVERLAY */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            marginBottom: hp(1.2),
+            marginTop: hp(1),
+          }}
+        >
+          <MaterialCommunityIcons
+            name="timer-sand"
+            size={hp(2.4)}
+            color="#6C3CD1"
+            style={{ marginRight: wp(2) }}
+          />
+          <Text
+            style={{
+              fontSize: hp(2),
+              fontWeight: "700",
+              color: "#1F2937",
+            }}
+          >
+            Live Token Countdown
+          </Text>
+        </View>
+
+        {/* Card: Floating Switch & Live Countdown */}
+        <View
+          style={{
+            backgroundColor: "#FFFFFF",
+            borderRadius: 16,
+            padding: wp(4.5),
+            borderWidth: 1,
+            borderColor: "#E5E7EB",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.05,
+            shadowRadius: 4,
+            elevation: 2,
+            marginBottom: hp(2),
+          }}
+        >
+          {/* Toggle Row */}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <View style={{ flex: 1, marginRight: wp(3) }}>
+              <Text
+                style={{
+                  fontSize: hp(1.8),
+                  fontWeight: "700",
+                  color: "#111827",
+                  marginBottom: 2,
+                }}
+              >
+                Floating Countdown HUD
+              </Text>
+              <Text
+                style={{
+                  fontSize: hp(1.4),
+                  color: "#6B7280",
+                  lineHeight: hp(2),
+                }}
+              >
+                Movable real-time widget showing days, hours, minutes, and seconds across all screens.
+              </Text>
+            </View>
+            <Switch
+              value={isOverlayActive}
+              onValueChange={handleToggleOverlay}
+              trackColor={{ false: "#D1D5DB", true: "#C4B5FD" }}
+              thumbColor={isOverlayActive ? "#6C3CD1" : "#F3F4F6"}
+            />
+          </View>
+
+          {/* Divider */}
+          <View
+            style={{
+              height: 1,
+              backgroundColor: "#E5E7EB",
+              marginVertical: hp(1.5),
+            }}
+          />
+
+          {/* Live Countdown Display */}
+          <View
+            style={{
+              backgroundColor: "#F9FAFB",
+              borderRadius: 12,
+              padding: wp(4),
+              borderWidth: 1,
+              borderColor: "#E5E7EB",
+              alignItems: "center",
+              marginBottom: hp(1.5),
+            }}
+          >
+            <Text
+              style={{
+                fontSize: hp(1.3),
+                fontWeight: "700",
+                color: "#6B7280",
+                letterSpacing: 1,
+                marginBottom: 4,
+              }}
+            >
+              JWT REMAINING TIME
+            </Text>
+            <Text
+              style={{
+                fontSize: hp(2.8),
+                fontWeight: "800",
+                color: isExpired ? "#DC2626" : "#059669",
+                fontVariant: ["tabular-nums"],
+                letterSpacing: 0.5,
+              }}
+            >
+              {remainingTime}
+            </Text>
+          </View>
+
+          {/* Token Details Rows */}
+          <View style={{ marginBottom: hp(1) }}>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                paddingVertical: hp(0.8),
+                borderBottomWidth: 1,
+                borderBottomColor: "#F3F4F6",
+              }}
+            >
+              <Text
+                style={{ fontSize: hp(1.5), color: "#6B7280", fontWeight: "500" }}
+              >
+                Employee ID
+              </Text>
+              <Text
+                style={{ fontSize: hp(1.5), color: "#111827", fontWeight: "700" }}
+              >
+                {tokenInfo?.empId || "N/A"}
+              </Text>
+            </View>
+
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                paddingVertical: hp(0.8),
+                borderBottomWidth: 1,
+                borderBottomColor: "#F3F4F6",
+              }}
+            >
+              <Text
+                style={{ fontSize: hp(1.5), color: "#6B7280", fontWeight: "500" }}
+              >
+                Token Status
+              </Text>
+              <Text
+                style={{
+                  fontSize: hp(1.5),
+                  fontWeight: "700",
+                  color: isExpired ? "#DC2626" : "#059669",
+                }}
+              >
+                {isExpired ? "Expired" : "Active"}
+              </Text>
+            </View>
+
+            {tokenInfo?.exp && (
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  paddingVertical: hp(0.8),
+                }}
+              >
+                <Text
+                  style={{ fontSize: hp(1.5), color: "#6B7280", fontWeight: "500" }}
+                >
+                  Expires At
+                </Text>
+                <Text
+                  style={{ fontSize: hp(1.5), color: "#111827", fontWeight: "600" }}
+                >
+                  {new Date(tokenInfo.exp * 1000).toLocaleTimeString([], {
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                  })}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {/* Test Token Refresh Button */}
+          <TouchableOpacity
+            onPress={handleManualRefresh}
+            disabled={isRefreshing}
+            style={{
+              backgroundColor: "#6C3CD1",
+              borderRadius: 10,
+              paddingVertical: hp(1.5),
+              alignItems: "center",
+              justifyContent: "center",
+              flexDirection: "row",
+              marginTop: hp(0.5),
+            }}
+            activeOpacity={0.8}
+          >
+            {isRefreshing ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <>
+                <Ionicons
+                  name="refresh-circle-outline"
+                  size={hp(2.4)}
+                  color="#FFFFFF"
+                  style={{ marginRight: wp(2) }}
+                />
+                <Text
+                  style={{
+                    color: "#FFFFFF",
+                    fontWeight: "700",
+                    fontSize: hp(1.7),
+                  }}
+                >
+                  Test Silent Token Refresh Now
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* SECTION 2: DEVELOPER CAPABILITIES */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            marginBottom: hp(1.2),
+            marginTop: hp(1.5),
+          }}
+        >
+          <FontAwesome5
+            name="tools"
+            size={hp(2)}
+            color="#6C3CD1"
+            style={{ marginRight: wp(2.5) }}
+          />
+          <Text
+            style={{
+              fontSize: hp(2),
+              fontWeight: "700",
+              color: "#1F2937",
+            }}
+          >
+            Developer Features
+          </Text>
+        </View>
+
+        {/* Card: Master OTP Bypass */}
+        <View
+          style={{
+            backgroundColor: "#FFFFFF",
+            borderRadius: 16,
+            padding: wp(4.5),
+            borderWidth: 1,
+            borderColor: "#E5E7EB",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.05,
+            shadowRadius: 4,
+            elevation: 2,
+            marginBottom: hp(2),
+          }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              marginBottom: hp(1.2),
+            }}
+          >
+            <View
+              style={{
+                width: hp(4.5),
+                height: hp(4.5),
+                borderRadius: hp(2.25),
+                backgroundColor: "#F3E8FF",
+                justifyContent: "center",
+                alignItems: "center",
+                marginRight: wp(3),
+              }}
+            >
+              <MaterialCommunityIcons
+                name="shield-key-outline"
+                size={hp(2.6)}
+                color="#6C3CD1"
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  fontSize: hp(1.8),
+                  fontWeight: "700",
+                  color: "#111827",
+                }}
+              >
+                Master OTP Bypass Code
+              </Text>
+              <Text
+                style={{
+                  fontSize: hp(1.4),
+                  fontWeight: "700",
+                  color: "#6C3CD1",
+                }}
+              >
+                Code: 05578 (Android Only)
+              </Text>
+            </View>
+          </View>
+
+          <Text
+            style={{
+              fontSize: hp(1.5),
+              color: "#4B5563",
+              lineHeight: hp(2.1),
+              marginBottom: hp(1),
+            }}
+          >
+            Typing <Text style={{ fontWeight: "700", color: "#DC2626" }}>05578</Text>{" "}
+            bypasses real SMS delivery and immediately verifies OTP for:
+          </Text>
+
+          <View style={{ marginLeft: wp(2) }}>
+            <Text
+              style={{
+                fontSize: hp(1.4),
+                color: "#4B5563",
+                lineHeight: hp(2),
+                marginBottom: 4,
+              }}
+            >
+              • <Text style={{ fontWeight: "700" }}>Order Confirmation OTP:</Text>{" "}
+              Confirms and places the order instantly.
+            </Text>
+            <Text
+              style={{
+                fontSize: hp(1.4),
+                color: "#4B5563",
+                lineHeight: hp(2),
+              }}
+            >
+              • <Text style={{ fontWeight: "700" }}>Customer Registration OTP:</Text>{" "}
+              Creates customer accounts without SMS.
+            </Text>
+          </View>
+        </View>
+
+        {/* Card: Time Validation Screen Tester */}
+        <View
+          style={{
+            backgroundColor: "#FFFFFF",
+            borderRadius: 16,
+            padding: wp(4.5),
+            borderWidth: 1,
+            borderColor: "#E5E7EB",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.05,
+            shadowRadius: 4,
+            elevation: 2,
+            marginBottom: hp(2),
+          }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              marginBottom: hp(1.2),
+            }}
+          >
+            <View
+              style={{
+                width: hp(4.5),
+                height: hp(4.5),
+                borderRadius: hp(2.25),
+                backgroundColor: "#FEF3C7",
+                justifyContent: "center",
+                alignItems: "center",
+                marginRight: wp(3),
+              }}
+            >
+              <MaterialCommunityIcons
+                name="clock-alert-outline"
+                size={hp(2.6)}
+                color="#D97706"
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  fontSize: hp(1.8),
+                  fontWeight: "700",
+                  color: "#111827",
+                }}
+              >
+                Time Validation UI Tester
+              </Text>
+              <Text
+                style={{
+                  fontSize: hp(1.4),
+                  fontWeight: "700",
+                  color: "#D97706",
+                }}
+              >
+                WhatsApp-style Date Mismatch
+              </Text>
+            </View>
+          </View>
+
+          <Text
+            style={{
+              fontSize: hp(1.5),
+              color: "#4B5563",
+              lineHeight: hp(2.1),
+              marginBottom: hp(1.5),
+            }}
+          >
+            Test and preview the full blocking screen that prevents users from manipulating device time or timezone.
+          </Text>
+
+          <TouchableOpacity
+            onPress={() => navigation.navigate("DateInaccurateScreen")}
+            style={{
+              borderWidth: 1.5,
+              borderColor: "#6C3CD1",
+              borderRadius: 10,
+              paddingVertical: hp(1.4),
+              alignItems: "center",
+              justifyContent: "center",
+              flexDirection: "row",
+            }}
+            activeOpacity={0.8}
+          >
+            <Ionicons
+              name="open-outline"
+              size={hp(2.2)}
+              color="#6C3CD1"
+              style={{ marginRight: wp(2) }}
+            />
+            <Text
+              style={{
+                color: "#6C3CD1",
+                fontWeight: "700",
+                fontSize: hp(1.6),
+              }}
+            >
+              Launch Date Inaccurate Screen
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* SECTION 3: ENVIRONMENT DIAGNOSTICS */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            marginBottom: hp(1.2),
+            marginTop: hp(1.5),
+          }}
+        >
+          <Ionicons
+            name="hardware-chip-outline"
+            size={hp(2.2)}
+            color="#6C3CD1"
+            style={{ marginRight: wp(2) }}
+          />
+          <Text
+            style={{
+              fontSize: hp(2),
+              fontWeight: "700",
+              color: "#1F2937",
+            }}
+          >
+            Environment Diagnostics
+          </Text>
+        </View>
+
+        {/* Card: Diagnostics */}
+        <View
+          style={{
+            backgroundColor: "#FFFFFF",
+            borderRadius: 16,
+            padding: wp(4.5),
+            borderWidth: 1,
+            borderColor: "#E5E7EB",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.05,
+            shadowRadius: 4,
+            elevation: 2,
+            marginBottom: hp(2),
+          }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              paddingVertical: hp(1),
+              borderBottomWidth: 1,
+              borderBottomColor: "#F3F4F6",
+            }}
+          >
+            <Text
+              style={{ fontSize: hp(1.5), fontWeight: "600", color: "#4B5563" }}
+            >
+              API Base URL
+            </Text>
+            <Text
+              style={{
+                fontSize: hp(1.4),
+                fontWeight: "600",
+                color: "#111827",
+                maxWidth: "60%",
+                textAlign: "right",
+              }}
+              numberOfLines={2}
+            >
+              {environment.API_BASE_URL}
+            </Text>
+          </View>
+
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              paddingVertical: hp(1),
+              borderBottomWidth: 1,
+              borderBottomColor: "#F3F4F6",
+            }}
+          >
+            <Text
+              style={{ fontSize: hp(1.5), fontWeight: "600", color: "#4B5563" }}
+            >
+              Dev Server Host IP
+            </Text>
+            <Text
+              style={{ fontSize: hp(1.5), fontWeight: "600", color: "#111827" }}
+            >
+              {getDevServerHostIp() || "N/A"}
+            </Text>
+          </View>
+
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              paddingVertical: hp(1),
+              borderBottomWidth: 1,
+              borderBottomColor: "#F3F4F6",
+            }}
+          >
+            <Text
+              style={{ fontSize: hp(1.5), fontWeight: "600", color: "#4B5563" }}
+            >
+              Platform
+            </Text>
+            <Text
+              style={{ fontSize: hp(1.5), fontWeight: "600", color: "#111827" }}
+            >
+              {Platform.OS.toUpperCase()} {Platform.Version}
+            </Text>
+          </View>
+
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              paddingVertical: hp(1),
+            }}
+          >
+            <Text
+              style={{ fontSize: hp(1.5), fontWeight: "600", color: "#4B5563" }}
+            >
+              isDeveloper Flag
+            </Text>
+            <Text
+              style={{
+                fontSize: hp(1.5),
+                fontWeight: "700",
+                color: "#059669",
+              }}
+            >
+              true
+            </Text>
+          </View>
+        </View>
+      </ScrollView>
+    </View>
+  );
+};
+
+export default DeveloperScreen;

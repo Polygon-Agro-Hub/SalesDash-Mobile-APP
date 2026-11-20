@@ -5,7 +5,7 @@ const environment = {
   // If isDeveloper is true, user can use OTP as 05578 in Android only and view developer diagnostic screens
   isDeveloper: false,
   // LOCAL --------------------
-  // API_BASE_URL: `http://${devHostIp}:3000/agro-api/salesdash/`,
+  //API_BASE_URL: `http://${devHostIp}:3000/agro-api/salesdash/`,
 
   // DEV --------------------
   // API_BASE_URL: "https://dev.polygonagro.com/dash-api/agro-api/salesdash/",
