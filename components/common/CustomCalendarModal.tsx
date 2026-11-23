@@ -16,6 +16,7 @@ interface CustomCalendarModalProps {
   minDate?: Date;
   maxDate?: Date;
   isWholesale?: boolean;
+  isAlacarteOnly?: boolean;
 }
 
 // ─── SAFE DATE PARSING & TIMEZONE LOGIC ──────────────────────────────────────────
@@ -83,12 +84,20 @@ export const getColomboNow = (): { now: Date; hours: number; isAfterCutoff: bool
 };
 
 // ─── WEB VALIDATION LOGIC REPLICATED ──────────────────────────────────────────
-export const getMinDeliveryDate = (isWholesale?: boolean, referenceDate?: Date): Date => {
+export const getMinDeliveryDate = (isWholesale?: boolean, referenceDate?: Date, isAlacarteOnly?: boolean): Date => {
   const { now, isAfterCutoff } = getColomboNow();
   const base = referenceDate || now;
-  const extraDays = isWholesale
+
+  // Alacarte-only (retail, no package): 1-day gap rule
+  //   Before 6 PM → today + 2 days (e.g. order on 9th → earliest 11th)
+  //   After  6 PM → today + 3 days
+  // Wholesale: 2-day gap (before 6 PM) / 3-day gap (after 6 PM)
+  // Retail with package: 3-day gap (before 6 PM) / 4-day gap (after 6 PM)
+  const extraDays = isAlacarteOnly
     ? (isAfterCutoff ? 3 : 2)
-    : (isAfterCutoff ? 4 : 3);
+    : isWholesale
+      ? (isAfterCutoff ? 3 : 2)
+      : (isAfterCutoff ? 4 : 3);
 
   const minDate = new Date(
     base.getFullYear(),
@@ -101,7 +110,8 @@ export const getMinDeliveryDate = (isWholesale?: boolean, referenceDate?: Date):
 
 export const validateDeliveryDate = (
   dateStr?: string | null,
-  isWholesale?: boolean
+  isWholesale?: boolean,
+  isAlacarteOnly?: boolean
 ): { isValid: boolean; error: string } => {
   if (!dateStr || !dateStr.trim()) {
     return { isValid: false, error: "Delivery date is required." };
@@ -112,10 +122,18 @@ export const validateDeliveryDate = (
     return { isValid: false, error: "Invalid delivery date format." };
   }
 
-  const minDate = getMinDeliveryDate(isWholesale);
+  const minDate = getMinDeliveryDate(isWholesale, undefined, isAlacarteOnly);
   const { isAfterCutoff } = getColomboNow();
 
   if (selected < minDate) {
+    if (isAlacarteOnly) {
+      return {
+        isValid: false,
+        error: isAfterCutoff
+          ? "Please select a date at least 3 days from today after 6:00 PM cutoff."
+          : "Please select a date at least 2 days from today (1-day gap required).",
+      };
+    }
     if (isWholesale) {
       return {
         isValid: false,
@@ -159,12 +177,13 @@ const CustomCalendarModal: React.FC<CustomCalendarModalProps> = ({
   minDate: customMinDate,
   maxDate: customMaxDate,
   isWholesale = false,
+  isAlacarteOnly = false,
 }) => {
   // Freshly evaluated minDate to prevent stale dates if modal stays open past cutoff or midnight
   const [currentMinDate, setCurrentMinDate] = useState<Date>(() =>
     customMinDate
-      ? parseLocalDate(customMinDate) || getMinDeliveryDate(isWholesale)
-      : getMinDeliveryDate(isWholesale)
+      ? parseLocalDate(customMinDate) || getMinDeliveryDate(isWholesale, undefined, isAlacarteOnly)
+      : getMinDeliveryDate(isWholesale, undefined, isAlacarteOnly)
   );
 
   const maxDate = useMemo(() => {
@@ -202,8 +221,8 @@ const CustomCalendarModal: React.FC<CustomCalendarModalProps> = ({
   useEffect(() => {
     if (visible) {
       const freshMin = customMinDate
-        ? parseLocalDate(customMinDate) || getMinDeliveryDate(isWholesale)
-        : getMinDeliveryDate(isWholesale);
+        ? parseLocalDate(customMinDate) || getMinDeliveryDate(isWholesale, undefined, isAlacarteOnly)
+        : getMinDeliveryDate(isWholesale, undefined, isAlacarteOnly);
       setCurrentMinDate(freshMin);
 
       const parsed = parseLocalDate(selectedDate);
@@ -450,9 +469,11 @@ const CustomCalendarModal: React.FC<CustomCalendarModalProps> = ({
                 fontWeight: "500",
               }}
             >
-              {isWholesale
-                ? "Wholesale orders require at least 2 days preparation (3 days after 6:00 PM cutoff)."
-                : "Orders require at least 3 days preparation (4 days after 6:00 PM cutoff)."}
+            {isAlacarteOnly
+              ? "Alacarte orders require at least 1-day gap (2 days after 6:00 PM cutoff)."
+              : isWholesale
+              ? "Wholesale orders require at least 2 days preparation (3 days after 6:00 PM cutoff)."
+              : "Orders require at least 3 days preparation (4 days after 6:00 PM cutoff)."}
             </Text>
           </View>
 
