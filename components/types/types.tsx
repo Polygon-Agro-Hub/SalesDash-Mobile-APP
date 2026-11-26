@@ -110,6 +110,8 @@ export type RootStackParamList = {
   };
   PrivacyPolicy: undefined;
   TermsConditions: undefined;
+  DateInaccurateScreen: undefined;
+  DeveloperScreen: undefined;
   CameraAccess?: {
     returnScreen?: keyof RootStackParamList;
     returnParams?: any;
@@ -190,11 +192,13 @@ export type RootStackParamList = {
     message?: string;
   };
   EditCustomerScreen: {
-    id: string;
-    customerId: string;
-    name: string;
-    title: string;
-  };
+  id: number | string;
+  customerId: string;
+  name: string;
+  title: string;
+  from?: string;
+  buyerType?: "Retail" | "Wholesale";
+};
   OtpScreenUp: {
     phoneNumber: string;
     id: string;
@@ -322,6 +326,18 @@ export type RootStackParamList = {
     selectedAddress?: any;
     deliveryCharge?: number;
     isFinalizeImdt?: number;
+    scheduleType?: "One Time" | "Once a Week" | "Twice a Week" | string;
+    sheduleType?: "One Time" | "Once a Week" | "Twice a Week" | string;
+    selectedDays?: string[];
+    recurringDays?: string[];
+    validityWeeks?: string;
+    validityPeriod?: number | null;
+    calculatedOrders?: any[];
+    isWholesale?: boolean;
+    buyerType?: string;
+    from?: string;
+    epsdDate?: string;
+    fromOrderSummary?: boolean;
   };
   OrderSummeryScreen: {
     items?: CartItem[];
@@ -360,6 +376,18 @@ export type RootStackParamList = {
 
     selectedAddress?: any;
     isFinalizeImdt?: number;
+    scheduleType?: "One Time" | "Once a Week" | "Twice a Week" | string;
+    sheduleType?: "One Time" | "Once a Week" | "Twice a Week" | string;
+    selectedDays?: string[];
+    recurringDays?: string[];
+    validityWeeks?: string;
+    validityPeriod?: number | null;
+    calculatedOrders?: any[];
+    isWholesale?: boolean;
+    buyerType?: string;
+    from?: string;
+    epsdDate?: string;
+    fromOrderSummary?: boolean;
   };
   OrderConfirmedScreen: {
     orderId: number;
@@ -377,6 +405,8 @@ export type RootStackParamList = {
     selectedTimeSlot: string;
     orderData?: any;
     isPackage: number;
+    buyerType?: string;
+    isWholesale?: boolean;
   };
   View_CancelOrderScreen: {
     orderId: number;

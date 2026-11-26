@@ -38,7 +38,7 @@ const OtpSuccesfulScreen: React.FC<OtpSuccesfulScreenProps> = ({
           name: name || "",
           title: title || "",
           number: number || "",
-                  buyerType: buyerType || "",
+          buyerType: buyerType || "",
         });
         return true;
       };
@@ -49,7 +49,7 @@ const OtpSuccesfulScreen: React.FC<OtpSuccesfulScreenProps> = ({
       );
 
       return () => backHandler.remove();
-    }, [navigation, id, customerId, name, title]),
+    }, [navigation, id, customerId, name, title, number, buyerType]),
   );
 
   return (
@@ -124,7 +124,7 @@ const OtpSuccesfulScreen: React.FC<OtpSuccesfulScreenProps> = ({
                 }}
               >
                 <Text className="text-center text-white font-bold text-lg">
-                  {buyerType === "Wholesale" ? "View Status" : "Go to Profile"}
+                  Go to Profile
                 </Text>
               </LinearGradient>
             </TouchableOpacity>

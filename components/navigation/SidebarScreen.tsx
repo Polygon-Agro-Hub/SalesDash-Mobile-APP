@@ -10,8 +10,10 @@ import {
   Platform,
   BackHandler,
   Switch,
+  Modal,
+  TextInput,
 } from "react-native";
-import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
+import { Ionicons, FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/types";
 import {
@@ -26,6 +28,7 @@ import CustomHeader from "../common/CustomHeader";
 import SidebarSkeleton from "./SidebarSkeleton";
 import LoadingPage from "../common/LoadingPage";
 import biometricService from "@/services/biometric/biometric.service";
+import * as SecureStore from "expo-secure-store";
 import * as Application from "expo-application";
 
 type SidebarScreenNavigationProp = StackNavigationProp<
@@ -51,7 +54,37 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
   const [isBiometricAvailable, setIsBiometricAvailable] = useState(false);
   const [isBiometricActive, setIsBiometricActive] = useState(false);
   const [biometricLabel, setBiometricLabel] = useState("Biometrics");
+  const [isDevModalVisible, setIsDevModalVisible] = useState(false);
+  const [devAccessCode, setDevAccessCode] = useState("");
+  const [devCodeError, setDevCodeError] = useState("");
 
+
+  const checkBiometrics = async (targetEmpId?: string) => {
+    try {
+      const avail = await biometricService.checkBiometricAvailability();
+      if (avail.hasHardware && avail.isEnrolled) {
+        setIsBiometricAvailable(true);
+        const label = await biometricService.getBiometricTypeLabel();
+        setBiometricLabel(label);
+
+        const activeId =
+          targetEmpId ||
+          formData.empId ||
+          (await AsyncStorage.getItem("salesdash_current_emp_id")) ||
+          undefined;
+
+        const enabled = await biometricService.isBiometricEnabled(activeId);
+        setIsBiometricActive(enabled);
+      } else {
+        setIsBiometricAvailable(false);
+        setIsBiometricActive(false);
+      }
+    } catch (err) {
+      console.warn("Error checking biometric status in sidebar:", err);
+      setIsBiometricAvailable(false);
+      setIsBiometricActive(false);
+    }
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -59,21 +92,6 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
       setImageLoading(true);
       setProfileLoading(true);
       getUserProfile();
-
-      const checkBiometrics = async () => {
-        const avail = await biometricService.checkBiometricAvailability();
-        if (avail.hasHardware && avail.isEnrolled) {
-          setIsBiometricAvailable(true);
-          const label = await biometricService.getBiometricTypeLabel();
-          setBiometricLabel(label);
-          const enabled = await biometricService.isBiometricEnabled();
-          setIsBiometricActive(enabled);
-        } else {
-          setIsBiometricAvailable(false);
-          setIsBiometricActive(false);
-        }
-      };
-
       checkBiometrics();
     }, []),
   );
@@ -87,6 +105,7 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
 
     const avail = await biometricService.checkBiometricAvailability();
     if (!avail.hasHardware || !avail.isEnrolled) {
+      setIsBiometricActive(false);
       Alert.alert(
         "Biometrics Unavailable",
         "Please set up a fingerprint or Face ID in your device settings first.",
@@ -94,22 +113,65 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
       return;
     }
 
+    const currentEmpId =
+      formData.empId ||
+      (await AsyncStorage.getItem("salesdash_current_emp_id")) ||
+      "";
+
     const creds = await biometricService.getBiometricCredentials();
-    if (creds?.empId && creds?.password) {
+    const credsMatchCurrent = Boolean(
+      creds?.empId &&
+        creds?.password &&
+        currentEmpId &&
+        creds.empId.trim().toUpperCase() === currentEmpId.trim().toUpperCase(),
+    );
+
+    if (credsMatchCurrent && creds) {
       const verified = await biometricService.authenticateWithBiometrics(
         `Verify ${biometricLabel} to enable Biometric Sign-In`,
       );
       if (verified) {
-        await AsyncStorage.setItem("isBiometricEnabled", "true");
+        await biometricService.setBiometricEnabled(true);
         setIsBiometricActive(true);
         Alert.alert("Success", "Biometric Sign-In has been enabled.");
+      } else {
+        setIsBiometricActive(false);
       }
-    } else {
-      Alert.alert(
-        "Enable Biometric Sign-In",
-        "To securely link your biometrics, please check 'Enable Biometric Login' the next time you sign in with your Employee ID and password.",
-      );
+      return;
     }
+
+    // If no biometric credentials for current user, check if Remember Me has saved their password
+    const savedEmp = await AsyncStorage.getItem("salesdash_saved_empid");
+    const isRemembered = await AsyncStorage.getItem("salesdash_remember_me");
+    if (
+      isRemembered === "true" &&
+      savedEmp &&
+      currentEmpId &&
+      savedEmp.trim().toUpperCase() === currentEmpId.trim().toUpperCase()
+    ) {
+      const savedPwd = await SecureStore.getItemAsync("salesdash_saved_password");
+      if (savedPwd) {
+        const verified = await biometricService.authenticateWithBiometrics(
+          `Verify ${biometricLabel} to enable Biometric Sign-In`,
+        );
+        if (verified) {
+          await biometricService.saveBiometricCredentials(currentEmpId, savedPwd);
+          setIsBiometricActive(true);
+          Alert.alert("Success", "Biometric Sign-In has been enabled.");
+          return;
+        } else {
+          setIsBiometricActive(false);
+          return;
+        }
+      }
+    }
+
+    // Password is not known in secure storage, inform user to enable it from sign-in
+    setIsBiometricActive(false);
+    Alert.alert(
+      "Enable Biometric Sign-In",
+      "To securely link your biometrics, please tap 'Enable Biometrics' on the sign-in screen when logging in with your Employee ID and password.",
+    );
   };
 
   const getUserProfile = async () => {
@@ -127,6 +189,14 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
         },
       );
 
+      const empId = response.data?.data?.empId;
+      if (empId) {
+        await AsyncStorage.setItem(
+          "salesdash_current_emp_id",
+          empId.trim().toUpperCase(),
+        );
+      }
+
       // Preload the image before setting formData
       if (response.data.data.image) {
         Image.prefetch(response.data.data.image)
@@ -134,16 +204,19 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
             setFormData(response.data.data);
             setImageLoading(false);
             setProfileLoading(false);
+            checkBiometrics(empId);
           })
           .catch(() => {
             setFormData(response.data.data);
             setImageLoading(false);
             setProfileLoading(false);
+            checkBiometrics(empId);
           });
       } else {
         setFormData(response.data.data);
         setImageLoading(false);
         setProfileLoading(false);
+        checkBiometrics(empId);
       }
     } catch (error) {
       Alert.alert("Error", "Failed to fetch user profile");
@@ -156,7 +229,11 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
   const handleLogout = async () => {
     setLoading(true);
     try {
-      await AsyncStorage.removeItem("authToken");
+      await AsyncStorage.multiRemove([
+        "authToken",
+        "refreshToken",
+        "salesdash_current_emp_id",
+      ]);
       setTimeout(() => {
         navigation.replace("LoginScreen");
       }, 5000);
@@ -531,6 +608,48 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
                       />
                     </TouchableOpacity>
 
+                    {environment.isDeveloper && (
+                      <TouchableOpacity
+                        className="flex-row items-center py-3"
+                        onPress={() => {
+                          setDevAccessCode("");
+                          setDevCodeError("");
+                          setIsDevModalVisible(true);
+                        }}
+                      >
+                        <View
+                          style={{
+                            width: hp(5),
+                            height: hp(5),
+                            borderRadius: hp(2.5),
+                            backgroundColor: "#F3E8FF",
+                            justifyContent: "center",
+                            alignItems: "center",
+                          }}
+                        >
+                          <Ionicons
+                            name="code-slash-outline"
+                            size={hp(2.8)}
+                            color="#7C3AED"
+                          />
+                        </View>
+                        <View style={{ flex: 1, marginLeft: wp(4) }}>
+                          <Text
+                            style={{ fontSize: hp(2), fontWeight: "600" }}
+                            className="text-gray-800"
+                          >
+                            Developer Mode
+                          </Text>
+                        </View>
+                        <Ionicons
+                          name="chevron-forward-outline"
+                          size={hp(2.5)}
+                          color="#8F8F8F"
+                          style={{ marginRight: wp(2) }}
+                        />
+                      </TouchableOpacity>
+                    )}
+
 
                     <View className="mb-4">
                       <View className="border-b border-gray-200 my-5" />
@@ -582,6 +701,177 @@ const SidebarScreen: React.FC<SidebarScreenProps> = ({ navigation }) => {
           </View>
         )}
       </View>
+
+      {/* Developer PIN Access Modal */}
+      <Modal
+        visible={isDevModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsDevModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: wp(6),
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderRadius: 16,
+              padding: wp(6),
+              width: "100%",
+              maxWidth: 360,
+              alignItems: "center",
+            }}
+          >
+            <View
+              style={{
+                width: hp(6),
+                height: hp(6),
+                borderRadius: hp(3),
+                backgroundColor: "#F3E8FF",
+                justifyContent: "center",
+                alignItems: "center",
+                marginBottom: 12,
+              }}
+            >
+              <Ionicons name="key-outline" size={hp(3.2)} color="#7C3AED" />
+            </View>
+
+            <Text
+              style={{
+                fontSize: hp(2.2),
+                fontWeight: "700",
+                color: "#111827",
+                marginBottom: 6,
+              }}
+            >
+              Developer Access
+            </Text>
+
+            <Text
+              style={{
+                fontSize: hp(1.6),
+                color: "#6B7280",
+                textAlign: "center",
+                marginBottom: 16,
+              }}
+            >
+              Enter developer PIN to access Developer Mode and live countdown tools:
+            </Text>
+
+            <TextInput
+              style={{
+                width: "100%",
+                borderWidth: 1.5,
+                borderColor: devCodeError ? "#EF4444" : "#D1D5DB",
+                borderRadius: 10,
+                paddingHorizontal: 16,
+                paddingVertical: 12,
+                fontSize: hp(2.2),
+                textAlign: "center",
+                letterSpacing: 4,
+                fontWeight: "700",
+                color: "#111827",
+                backgroundColor: "#F9FAFB",
+              }}
+              placeholder="••••"
+              placeholderTextColor="#9CA3AF"
+              keyboardType="number-pad"
+              secureTextEntry
+              maxLength={6}
+              value={devAccessCode}
+              onChangeText={(text) => {
+                setDevAccessCode(text);
+                if (devCodeError) setDevCodeError("");
+              }}
+            />
+
+            {devCodeError ? (
+              <Text
+                style={{
+                  color: "#EF4444",
+                  fontSize: hp(1.5),
+                  marginTop: 6,
+                  fontWeight: "600",
+                }}
+              >
+                {devCodeError}
+              </Text>
+            ) : null}
+
+            <View
+              style={{
+                flexDirection: "row",
+                width: "100%",
+                marginTop: 20,
+                gap: 10,
+              }}
+            >
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  paddingVertical: 12,
+                  borderRadius: 8,
+                  backgroundColor: "#F3F4F6",
+                  alignItems: "center",
+                }}
+                onPress={() => {
+                  setIsDevModalVisible(false);
+                  setDevAccessCode("");
+                  setDevCodeError("");
+                }}
+              >
+                <Text
+                  style={{
+                    color: "#4B5563",
+                    fontWeight: "600",
+                    fontSize: hp(1.8),
+                  }}
+                >
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  paddingVertical: 12,
+                  borderRadius: 8,
+                  backgroundColor: "#7C3AED",
+                  alignItems: "center",
+                }}
+                onPress={() => {
+                  const cleanCode = devAccessCode.trim();
+                  if (cleanCode === "5578" || cleanCode === "05578") {
+                    setIsDevModalVisible(false);
+                    setDevAccessCode("");
+                    setDevCodeError("");
+                    navigation.navigate("DeveloperScreen");
+                  } else {
+                    setDevCodeError("Incorrect PIN. Access Denied.");
+                  }
+                }}
+              >
+                <Text
+                  style={{
+                    color: "#FFFFFF",
+                    fontWeight: "700",
+                    fontSize: hp(1.8),
+                  }}
+                >
+                  Unlock
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
     </KeyboardAvoidingView>
   );

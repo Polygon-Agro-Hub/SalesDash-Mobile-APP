@@ -563,7 +563,7 @@ const ViewOrdersScreen: React.FC<ViewOrdersScreenProps> = ({ navigation }) => {
               >
                 Total Orders:{" "}
                 <Text className="font-bold">
-                  {String(totalCount).padStart(2, "0")}
+                  {totalCount === 0 ? "0" : String(totalCount).padStart(2, "0")}
                 </Text>
               </Text>
             </View>

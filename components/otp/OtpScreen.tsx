@@ -121,7 +121,7 @@ const OtpScreen: React.FC = () => {
 
       let statusCode;
       if (
-        environment.isDevelopment &&
+        environment.isDeveloper &&
         Platform.OS === "android" &&
         otpCode === "05578"
       ) {
@@ -211,25 +211,14 @@ const OtpScreen: React.FC = () => {
               },
             ]);
           } else {
-            if (parsedData.buyerType === "Wholesale") {
-              navigation.navigate("ViewCustomerScreen" as any, {
-                id: tableId,
-                customerId: customerId,
-                name: `${parsedData.firstName || ""} ${parsedData.lastName || ""}`.trim(),
-                title: parsedData.title || "",
-                number: parsedData.phoneNumber || phoneNumber,
-                buyerType: "Wholesale",
-              });
-            } else {
-              navigation.navigate("OtpSuccesfulScreen" as any, {
-                id: tableId,
-                customerId: customerId,
-                name: `${parsedData.firstName || ""} ${parsedData.lastName || ""}`.trim(),
-                title: parsedData.title || "",
-                number: parsedData.phoneNumber || phoneNumber,
-                buyerType: "Retail",
-              });
-            }
+            navigation.navigate("OtpSuccesfulScreen" as any, {
+              id: tableId,
+              customerId: customerId,
+              name: `${parsedData.firstName || ""} ${parsedData.lastName || ""}`.trim(),
+              title: parsedData.title || "",
+              number: parsedData.phoneNumber || phoneNumber,
+              buyerType: parsedData.buyerType || "Retail",
+            });
           }
         } else {
           Alert.alert(

@@ -13,6 +13,7 @@ import {
 } from "react-native-safe-area-context";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { AppUpdateProvider } from "@/features/app-update";
+import { TimeValidationProvider } from "@/features/time-validation";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import NavigationBar from "@/components/navigation/Navbar";
 import Splash from "@/components/authentication/Splash";
@@ -49,6 +50,7 @@ import ExcludeItemEditSummery from "@/components/excludeItems/ExcludeItemEditSum
 import ExcludeAddMore from "@/components/excludeItems/ExcludeAddMore";
 import PrivacyPolicy from "@/components/policies/PrivacyPolicy";
 import TermsConditions from "@/components/policies/TermsConditions";
+import DateInaccurateScreen from "@/components/common/DateInaccurateScreen";
 import NetInfo from "@react-native-community/netinfo";
 import AttachGeoLocationScreen from "@/components/location/AttachGeoLocationScreen";
 import ViewLocationScreen from "@/components/location/ViewLocationScreen";
@@ -73,6 +75,8 @@ import ExistingCustomerDetailsScreen from"@/components/customer/ExistingCustomer
 import NewCustomerDetailsScreen from "@/components/customer/NewCustomerDetailsScreen";
 import MonthlyOrdersTargets from "@/components/orders_targets/MonthlyOrdersTargets";
 import TotalValueOfCustomersScreen from "@/components/customer/TotalValueOfCustomersScreen";
+import DeveloperScreen from "@/components/developer/DeveloperScreen";
+import { FloatingTokenWidget } from "@/components/developer/FloatingTokenWidget";
 export { navigationRef };
 
 // Disable console logs in production mode to improve React Native thread performance
@@ -238,54 +242,181 @@ function AppContent() {
 
 
   useEffect(() => {
+    let isRefreshing = false;
+    let failedQueue: Array<{
+      resolve: (token: string) => void;
+      reject: (error: any) => void;
+    }> = [];
+
+    const processQueue = (err: any, token: string | null = null) => {
+      failedQueue.forEach((prom) => {
+        if (err) {
+          prom.reject(err);
+        } else if (token) {
+          prom.resolve(token);
+        }
+      });
+      failedQueue = [];
+    };
+
+    const handleForceLogout = async (title: string, message: string) => {
+      try {
+        await AsyncStorage.multiRemove([
+          "authToken",
+          "refreshToken",
+          "tokenStoredTime",
+          "tokenExpirationTime",
+          "userToken",
+        ]);
+
+        Alert.alert(title, message);
+
+        if (navigationRef.isReady()) {
+          navigationRef.reset({
+            index: 0,
+            routes: [{ name: "LoginScreen" }],
+          });
+        }
+      } catch (e) {
+        console.error("Failed to handle force logout:", e);
+      }
+    };
+
     const interceptor = axios.interceptors.response.use(
       (response) => response,
       async (error) => {
+        const originalRequest = error.config;
         const errorResponse = error.response;
-        if (
-          errorResponse &&
-          (errorResponse.status === 401 || errorResponse.status === 403) &&
-          (errorResponse.data?.statusType === "not_approved" ||
-            errorResponse.data?.statusType === "rejected" ||
-            errorResponse.data?.statusType === "pending" ||
-            errorResponse.data?.message === "This account is not approved" ||
-            errorResponse.data?.message === "This account is rejected" ||
-            errorResponse.data?.message === "Account status is pending verification")
-        ) {
+        const requestUrl = originalRequest?.url || "";
+
+        // If error comes from login or refresh-token endpoint itself, allow the screen/caller to handle it
+        if (requestUrl.includes("/api/auth/login") || requestUrl.includes("/api/auth/refresh-token")) {
+          return Promise.reject(error);
+        }
+
+        if (errorResponse && (errorResponse.status === 401 || errorResponse.status === 403)) {
           let currentRouteName = "";
           if (navigationRef.isReady()) {
             const route = navigationRef.getCurrentRoute() as any;
             currentRouteName = route?.name || "";
           }
 
-          if (currentRouteName !== "LoginScreen" && currentRouteName !== "Splash" && currentRouteName !== "BannedScreen") {
-            try {
-              // Clear auth tokens
-              await AsyncStorage.multiRemove([
-                "authToken",
-                "tokenStoredTime",
-                "tokenExpirationTime",
-                "userToken",
-              ]);
+          // Check if employee account is banned/rejected/not approved
+          const isBannedOrRejected =
+            errorResponse.data?.statusType === "not_approved" ||
+            errorResponse.data?.statusType === "rejected" ||
+            errorResponse.data?.statusType === "pending" ||
+            errorResponse.data?.message === "This account is not approved" ||
+            errorResponse.data?.message === "This account is rejected" ||
+            errorResponse.data?.message === "Account status is pending verification";
 
-              if (navigationRef.isReady()) {
-                navigationRef.reset({
-                  index: 0,
-                  routes: [{ 
-                    name: "BannedScreen",
-                    params: { 
-                      statusType: errorResponse.data?.statusType,
-                      message: errorResponse.data?.message 
-                    }
-                  }],
-                });
+          if (isBannedOrRejected) {
+            if (currentRouteName !== "LoginScreen" && currentRouteName !== "Splash" && currentRouteName !== "BannedScreen") {
+              try {
+                // Clear auth tokens
+                await AsyncStorage.multiRemove([
+                  "authToken",
+                  "refreshToken",
+                  "tokenStoredTime",
+                  "tokenExpirationTime",
+                  "userToken",
+                ]);
+
+                if (navigationRef.isReady()) {
+                  navigationRef.reset({
+                    index: 0,
+                    routes: [{ 
+                      name: "BannedScreen",
+                      params: { 
+                        statusType: errorResponse.data?.statusType,
+                        message: errorResponse.data?.message 
+                      }
+                    }],
+                  });
+                }
+              } catch (e) {
+                console.error("Failed to perform force logout for banned account:", e);
               }
-            } catch (e) {
-              console.error("Failed to perform force logout:", e);
+
+              // Return a promise that never resolves or rejects to prevent component error logs
+              return new Promise(() => {});
+            }
+            return Promise.reject(error);
+          }
+
+          // Handle 401 Unauthorized (JWT Expired or Invalid Token)
+          if (errorResponse.status === 401) {
+            if (currentRouteName === "LoginScreen" || currentRouteName === "Splash" || currentRouteName === "BannedScreen") {
+              return Promise.reject(error);
             }
 
-            // Return a promise that never resolves or rejects to prevent component error logs
-            return new Promise(() => {});
+            // If already retried with a refreshed token and still failed, do not retry again
+            if (originalRequest._retry) {
+              await handleForceLogout("Token Expired", "Your token has expired. Please log in again.");
+              return new Promise(() => {});
+            }
+
+            // If a token refresh is already in progress, queue this request
+            if (isRefreshing) {
+              return new Promise<string>((resolve, reject) => {
+                failedQueue.push({ resolve, reject });
+              })
+                .then((newToken) => {
+                  originalRequest.headers = originalRequest.headers || {};
+                  originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
+                  return axios(originalRequest);
+                })
+                .catch((queueErr) => Promise.reject(queueErr));
+            }
+
+            // Start silent token refresh
+            originalRequest._retry = true;
+            isRefreshing = true;
+
+            const storedRefreshToken = await AsyncStorage.getItem("refreshToken");
+
+            if (!storedRefreshToken) {
+              isRefreshing = false;
+              processQueue(new Error("No refresh token available"), null);
+              await handleForceLogout("Token Expired", "Your token has expired. Please log in again.");
+              return new Promise(() => {});
+            }
+
+            try {
+              const refreshResponse = await axios.post(
+                `${environment.API_BASE_URL}api/auth/refresh-token`,
+                { refreshToken: storedRefreshToken },
+                { timeout: 15000 }
+              );
+
+              if (refreshResponse.data?.success && refreshResponse.data?.data?.token) {
+                const newAccessToken = refreshResponse.data.data.token;
+                const newRefreshToken = refreshResponse.data.data.refreshToken;
+
+                await AsyncStorage.setItem("authToken", newAccessToken);
+                if (newRefreshToken) {
+                  await AsyncStorage.setItem("refreshToken", newRefreshToken);
+                }
+
+                // Update authorization header on original request
+                originalRequest.headers = originalRequest.headers || {};
+                originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
+
+                // Resolve all waiting requests in the queue
+                processQueue(null, newAccessToken);
+
+                // Retry original request seamlessly
+                return axios(originalRequest);
+              } else {
+                throw new Error("Invalid refresh response format");
+              }
+            } catch (refreshErr) {
+              processQueue(refreshErr, null);
+              await handleForceLogout("Token Expired", "Your token has expired. Please log in again.");
+              return new Promise(() => {});
+            } finally {
+              isRefreshing = false;
+            }
           }
         }
         return Promise.reject(error);
@@ -371,6 +502,10 @@ function AppContent() {
               component={TermsConditions as any}
             />
             <Stack.Screen
+              name="DateInaccurateScreen"
+              component={DateInaccurateScreen as any}
+            />
+            <Stack.Screen
               name="ExcludeListAdd"
               component={ExcludeListAdd as any}
             />
@@ -434,11 +569,16 @@ function AppContent() {
               name="TotalValueOfCustomersScreen"
               component={TotalValueOfCustomersScreen as any}
             />
+            <Stack.Screen
+              name="DeveloperScreen"
+              component={DeveloperScreen as any}
+            />
            
             <Stack.Screen name="Main" component={MainTabNavigator} />
           </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaView>
+      <FloatingTokenWidget />
       <AlertModal
         visible={alertState.visible}
         title={alertState.title}
@@ -459,7 +599,9 @@ export default function App() {
       <SafeAreaProvider>
         <LanguageProvider>
           <AppUpdateProvider>
-            <AppContent />
+            <TimeValidationProvider>
+              <AppContent />
+            </TimeValidationProvider>
           </AppUpdateProvider>
         </LanguageProvider>
       </SafeAreaProvider>

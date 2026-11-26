@@ -223,6 +223,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
         ]);
         await AsyncStorage.multiRemove([
           "authToken",
+          "refreshToken",
           "tokenStoredTime",
           "tokenExpirationTime",
         ]);

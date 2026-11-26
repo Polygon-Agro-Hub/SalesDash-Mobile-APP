@@ -7,6 +7,7 @@ import { Platform } from "react-native";
 const BIOMETRIC_ENABLED_KEY = "salesdash_isBiometricEnabled_v1";
 const SECURE_EMP_ID_KEY = "salesdash_biometric_emp_id_v1";
 const SECURE_PASSWORD_KEY = "salesdash_biometric_password_v1";
+export const CURRENT_EMP_ID_KEY = "salesdash_current_emp_id";
 
 const STORE_OPTIONS: SecureStore.SecureStoreOptions = {
   keychainService: "com.polygonagro.SalesDash",
@@ -64,13 +65,50 @@ export const getBiometricTypeLabel = async (): Promise<string> => {
   }
 };
 
-export const isBiometricEnabled = async (): Promise<boolean> => {
+export const isBiometricEnabled = async (currentEmpId?: string): Promise<boolean> => {
   try {
+    // 1. Check flag in AsyncStorage
+    const enabledFlag = await AsyncStorage.getItem(BIOMETRIC_ENABLED_KEY);
+    const legacyFlag = await AsyncStorage.getItem("isBiometricEnabled");
+    const isFlagTrue =
+      enabledFlag === "true" || (enabledFlag === null && legacyFlag === "true");
+    if (!isFlagTrue) {
+      return false;
+    }
+
+    // 2. Check credentials in SecureStore
     const creds = await getBiometricCredentials();
-    return Boolean(creds?.empId && creds?.password);
+    if (!creds?.empId || !creds?.password) {
+      return false;
+    }
+
+    // 3. Match against current user if provided or stored
+    let targetId = currentEmpId?.trim().toUpperCase();
+    if (!targetId) {
+      const storedCurrentId = await AsyncStorage.getItem(CURRENT_EMP_ID_KEY);
+      if (storedCurrentId) {
+        targetId = storedCurrentId.trim().toUpperCase();
+      }
+    }
+
+    if (targetId && creds.empId.trim().toUpperCase() !== targetId) {
+      return false;
+    }
+
+    return true;
   } catch (error) {
     console.warn("Error checking if biometric is enabled:", error);
     return false;
+  }
+};
+
+export const setBiometricEnabled = async (enabled: boolean): Promise<void> => {
+  try {
+    const val = enabled ? "true" : "false";
+    await AsyncStorage.setItem(BIOMETRIC_ENABLED_KEY, val);
+    await AsyncStorage.setItem("isBiometricEnabled", val);
+  } catch (error) {
+    console.warn("Error setting biometric enabled state:", error);
   }
 };
 
@@ -85,6 +123,7 @@ export const saveBiometricCredentials = async (
     await SecureStore.setItemAsync(SECURE_EMP_ID_KEY, cleanEmpId, STORE_OPTIONS);
     await SecureStore.setItemAsync(SECURE_PASSWORD_KEY, password, STORE_OPTIONS);
     await AsyncStorage.setItem(BIOMETRIC_ENABLED_KEY, "true");
+    await AsyncStorage.setItem("isBiometricEnabled", "true");
 
     // Clean any legacy un-namespaced keys from other Expo apps to prevent leakage
     await SecureStore.deleteItemAsync("biometric_emp_id").catch(() => {});
@@ -131,6 +170,7 @@ export const clearBiometricCredentials = async (): Promise<void> => {
     await SecureStore.deleteItemAsync("biometric_emp_id").catch(() => {});
     await SecureStore.deleteItemAsync("biometric_password").catch(() => {});
     await AsyncStorage.setItem(BIOMETRIC_ENABLED_KEY, "false");
+    await AsyncStorage.setItem("isBiometricEnabled", "false");
   } catch (error) {
     console.warn("Error clearing biometric credentials:", error);
   }
@@ -167,8 +207,10 @@ export default {
   getBiometricSupport,
   getBiometricTypeLabel,
   isBiometricEnabled,
+  setBiometricEnabled,
   saveBiometricCredentials,
   getBiometricCredentials,
   clearBiometricCredentials,
   authenticateWithBiometrics,
+  CURRENT_EMP_ID_KEY,
 };

@@ -66,6 +66,15 @@ const sortCustomersByName = (customerList: Customer[]): Customer[] => {
   });
 };
 
+// Reads the one-shot `initialTab` param from this screen's route (if any)
+const readInitialTabParam = (navigation: any): BuyerTab | undefined => {
+  const myRoute = navigation
+    .getState()
+    ?.routes?.find((r: any) => r.name === "NewCustomerDetailsScreen");
+  const tab = myRoute?.params?.initialTab;
+  return tab === "Retail" || tab === "Wholesale" ? tab : undefined;
+};
+
 const NewCustomerDetailsScreen: React.FC<NewCustomerDetailsScreenProps> = ({
   navigation,
 }) => {
@@ -83,6 +92,14 @@ const NewCustomerDetailsScreen: React.FC<NewCustomerDetailsScreenProps> = ({
   const [totalCount, setTotalCount] = useState(0);
   const isMounted = useRef(true);
   const isLoadingRef = useRef(false);
+  // Incremented on every fresh load so stale responses can be ignored
+  const requestIdRef = useRef(0);
+  // Remembers the last selected tab across focus events
+  const activeTabRef = useRef<BuyerTab>("Retail");
+
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
 
   // 1) Filter by the selected tab (NULL buyerType is treated as Retail)
   const tabCustomers = useMemo(() => {
@@ -138,8 +155,15 @@ const NewCustomerDetailsScreen: React.FC<NewCustomerDetailsScreenProps> = ({
     }
   };
 
+  const safeSetRefreshing = (isRefreshing: boolean) => {
+    if (isMounted.current) {
+      setRefreshing(isRefreshing);
+    }
+  };
+
   const handleTabChange = (tab: BuyerTab) => {
     if (tab === activeTab) return;
+    activeTabRef.current = tab; // remember the selection
     setActiveTab(tab);
     setSearchQuery("");
     safeSetCustomers([]);
@@ -149,19 +173,18 @@ const NewCustomerDetailsScreen: React.FC<NewCustomerDetailsScreenProps> = ({
     loadCustomers(1, true, false, tab);
   };
 
-  const safeSetRefreshing = (isRefreshing: boolean) => {
-    if (isMounted.current) {
-      setRefreshing(isRefreshing);
-    }
-  };
-
   const loadCustomers = async (
     page = 1,
     showFullLoading = true,
     isLoadMore = false,
-    tabToFetch: BuyerTab = activeTab,
+    tabToFetch: BuyerTab = activeTabRef.current,
   ) => {
-    if (isLoadingRef.current) return;
+    // Only "load more" is blocked while another request is running.
+    // A fresh load (tab change / focus / refresh) always goes through and
+    // supersedes any request still in flight.
+    if (isLoadMore && isLoadingRef.current) return;
+
+    const requestId = ++requestIdRef.current;
     isLoadingRef.current = true;
     if (showFullLoading) safeSetLoading(true);
     if (isLoadMore) safeSetLoadingMore(true);
@@ -170,7 +193,6 @@ const NewCustomerDetailsScreen: React.FC<NewCustomerDetailsScreenProps> = ({
       const storedToken = await AsyncStorage.getItem("authToken");
       if (!storedToken) {
         Alert.alert("Error", "No authentication token found");
-        safeSetLoading(false);
         return;
       }
 
@@ -181,6 +203,9 @@ const NewCustomerDetailsScreen: React.FC<NewCustomerDetailsScreenProps> = ({
           Authorization: `Bearer ${storedToken}`,
         },
       });
+
+      // A newer request has started, so drop this stale response
+      if (requestId !== requestIdRef.current) return;
 
       if (response.data.success && response.data.data) {
         const rawList = Array.isArray(response.data.data)
@@ -220,6 +245,8 @@ const NewCustomerDetailsScreen: React.FC<NewCustomerDetailsScreenProps> = ({
         }
       }
     } catch (error) {
+      if (requestId !== requestIdRef.current) return;
+
       console.error("Failed to fetch customers:", error);
       if (!isLoadMore) {
         safeSetCustomers([]);
@@ -236,10 +263,13 @@ const NewCustomerDetailsScreen: React.FC<NewCustomerDetailsScreenProps> = ({
         }
       }
     } finally {
-      isLoadingRef.current = false;
-      if (showFullLoading) safeSetLoading(false);
-      if (isLoadMore) safeSetLoadingMore(false);
-      safeSetRefreshing(false);
+      // Only the latest request is allowed to clear the loading flags
+      if (requestId === requestIdRef.current) {
+        isLoadingRef.current = false;
+        safeSetLoading(false);
+        safeSetLoadingMore(false);
+        safeSetRefreshing(false);
+      }
     }
   };
 
@@ -250,21 +280,33 @@ const NewCustomerDetailsScreen: React.FC<NewCustomerDetailsScreenProps> = ({
       hasMore &&
       searchQuery === ""
     ) {
-      loadCustomers(currentPage + 1, false, true, activeTab);
+      loadCustomers(currentPage + 1, false, true, activeTabRef.current);
     }
   };
 
-  // Focus listener: reset search + tab + state, then reload
+  // Focus listener: keep the previous tab (or use the `initialTab` param), then reload
   useEffect(() => {
+    isMounted.current = true;
+
     const unsubscribe = navigation.addListener("focus", () => {
+      const paramTab = readInitialTabParam(navigation);
+      const tabToShow: BuyerTab = paramTab ?? activeTabRef.current;
+      activeTabRef.current = tabToShow;
+
       if (isMounted.current) {
         setSearchQuery("");
-        setActiveTab("Retail");
+        setActiveTab(tabToShow);
         setCurrentPage(1);
         setHasMore(true);
         setError(null);
       }
-      loadCustomers(1, true, false, "Retail");
+
+      // clear the one-shot param so later focuses use the remembered tab
+      if (paramTab) {
+        navigation.setParams({ initialTab: undefined } as any);
+      }
+
+      loadCustomers(1, true, false, tabToShow);
     });
 
     const keyboardDidShowListener = Keyboard.addListener(
@@ -276,7 +318,14 @@ const NewCustomerDetailsScreen: React.FC<NewCustomerDetailsScreenProps> = ({
       () => setKeyboardVisible(false),
     );
 
-    loadCustomers(1, true, false);
+    // First mount: honour a tab passed in params, otherwise the default
+    const firstTab: BuyerTab =
+      readInitialTabParam(navigation) ?? activeTabRef.current;
+    if (firstTab !== activeTabRef.current) {
+      activeTabRef.current = firstTab;
+      setActiveTab(firstTab);
+    }
+    loadCustomers(1, true, false, firstTab);
 
     return () => {
       isMounted.current = false;
@@ -291,7 +340,7 @@ const NewCustomerDetailsScreen: React.FC<NewCustomerDetailsScreenProps> = ({
     setRefreshing(true);
     setCurrentPage(1);
     setHasMore(true);
-    await loadCustomers(1, false, false, activeTab);
+    await loadCustomers(1, false, false, activeTabRef.current);
   };
 
   const handleSearch = (query: string) => {
@@ -439,7 +488,6 @@ const NewCustomerDetailsScreen: React.FC<NewCustomerDetailsScreenProps> = ({
               </TouchableWithoutFeedback>
 
               {/* Retail / Wholesale tabs */}
-              {/* Retail / Wholesale tabs */}
               <TouchableWithoutFeedback onPress={() => {}} accessible={false}>
                 <View
                   style={{
@@ -503,7 +551,7 @@ const NewCustomerDetailsScreen: React.FC<NewCustomerDetailsScreenProps> = ({
                       onPress={() => {
                         setError(null);
                         setHasMore(true);
-                        loadCustomers(1, true, false);
+                        loadCustomers(1, true, false, activeTabRef.current);
                       }}
                       className="mt-4 bg-[#7743D4] px-6 py-2 rounded-lg"
                     >

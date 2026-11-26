@@ -87,6 +87,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
 
   // Max quantity applies to wholesale customers only
   const isWholesale =
+    Boolean((route.params as any)?.isWholesale) ||
     String(buyerType || "").toLowerCase() === "wholesale" ||
     from === "ViewCustomerScreen";
   const effectiveBuyerType = isWholesale ? "Wholesale" : (buyerType || "Retail");
@@ -485,7 +486,8 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     return roundToTwoDecimals(total + itemDiscount);
   }, 0);
 
-  const SERVICE_FEE = 180;
+  // Service fee of 180 is only added for retail users, not wholesale
+  const SERVICE_FEE = isWholesale ? 0 : 180;
   const fullTotal = roundToTwoDecimals(totalDiscountedValue + SERVICE_FEE);
 
   const grandTotal = roundToTwoDecimals(fullTotal + incomingDeliveryCharge);
@@ -537,8 +539,19 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
         name,
 
         selectedAddressId: incomingSelectedAddress?.id,
-        buyerType: isWholesale ? "Wholesale" : (buyerType || "Retail"),
-        from: (route.params as any)?.from,
+        buyerType: effectiveBuyerType,
+        from: effectiveFrom,
+        scheduleType: (route.params as any)?.scheduleType || (route.params as any)?.sheduleType,
+        sheduleType: (route.params as any)?.sheduleType || (route.params as any)?.scheduleType,
+        selectedDays: (route.params as any)?.selectedDays || (route.params as any)?.recurringDays,
+        recurringDays: (route.params as any)?.recurringDays || (route.params as any)?.selectedDays,
+        validityWeeks: (route.params as any)?.validityWeeks,
+        validityPeriod: (route.params as any)?.validityPeriod,
+        calculatedOrders: (route.params as any)?.calculatedOrders,
+        isFinalizeImdt: (route.params as any)?.isFinalizeImdt,
+        packageId: (route.params as any)?.packageId,
+        isWholesale: isWholesale || (route.params as any)?.isWholesale,
+        epsdDate: (route.params as any)?.epsdDate,
       });
     } else {
       Alert.alert("Please add at least one item to your cart");
@@ -770,9 +783,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
             {/* Full Total */}
             <View className="flex-row justify-between py-5">
               <Text className="font-semibold text-base text-[#414347]">
-                {incomingDeliveryCharge > 0
-                  ? "Full Total (incl. Delivery)"
-                  : "Full Total"}
+                Full Total
               </Text>
               <Text className="font-bold text-xl text-[#212121]">
                 Rs.{" "}

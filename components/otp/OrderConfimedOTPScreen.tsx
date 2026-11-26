@@ -185,6 +185,8 @@ const OrderConfimedOTPScreen: React.FC = () => {
           validityWeeks: (route.params as any)?.validityWeeks,
           validityPeriod: (route.params as any)?.validityPeriod,
           calculatedOrders: (route.params as any)?.calculatedOrders,
+          buyerType: (route.params as any)?.buyerType,
+          isWholesale: (route.params as any)?.isWholesale,
         };
       } else {
         Alert.alert(
@@ -286,7 +288,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
 
       let statusCode;
       if (
-        environment.isDevelopment &&
+        environment.isDeveloper &&
         Platform.OS === "android" &&
         otpCode === "05578"
       ) {
