@@ -20,6 +20,10 @@ interface CustomCalendarModalProps {
 }
 
 // ─── SAFE DATE PARSING & TIMEZONE LOGIC ──────────────────────────────────────────
+// Management earliest delivery restriction: temporarily set to November 28th, 2026 for testing (Production: December 12th, 2026).
+export const MANAGEMENT_MIN_DELIVERY_DATE = new Date(2026, 11, 12);
+MANAGEMENT_MIN_DELIVERY_DATE.setHours(0, 0, 0, 0);
+
 /**
  * Safely parses any date string (YYYY/MM/DD, YYYY-MM-DD, ISO, etc.) or Date object
  * into a local midnight Date (00:00:00). Avoids UTC midnight interpretation and
@@ -105,6 +109,13 @@ export const getMinDeliveryDate = (isWholesale?: boolean, referenceDate?: Date, 
     base.getDate() + extraDays
   );
   minDate.setHours(0, 0, 0, 0);
+
+  // The Management only can deliver orders from December 12th.
+  // The earliest possible schedule date user can select is December 12th.
+  if (minDate < MANAGEMENT_MIN_DELIVERY_DATE) {
+    return new Date(MANAGEMENT_MIN_DELIVERY_DATE);
+  }
+
   return minDate;
 };
 
@@ -126,6 +137,12 @@ export const validateDeliveryDate = (
   const { isAfterCutoff } = getColomboNow();
 
   if (selected < minDate) {
+    if (minDate.getTime() === MANAGEMENT_MIN_DELIVERY_DATE.getTime()) {
+      return {
+        isValid: false,
+        error: "Deliveries are only available from December 12th onwards.",
+      };
+    }
     if (isAlacarteOnly) {
       return {
         isValid: false,
@@ -469,11 +486,11 @@ const CustomCalendarModal: React.FC<CustomCalendarModalProps> = ({
                 fontWeight: "500",
               }}
             >
-            {isAlacarteOnly
-              ? "Alacarte orders require at least 1-day gap (2 days after 6:00 PM cutoff)."
-              : isWholesale
-              ? "Wholesale orders require at least 2 days preparation (3 days after 6:00 PM cutoff)."
-              : "Orders require at least 3 days preparation (4 days after 6:00 PM cutoff)."}
+              {isAlacarteOnly
+                ? "À la carte orders require 1 day preparation (2 days after the 6:00 PM cutoff)."
+                : isWholesale
+                  ? "Wholesale orders require 1 day preparation (2 days after the 6:00 PM cutoff)."
+                  : "Orders with packages require 2 days preparation (3 days after the 6:00 PM cutoff)."}
             </Text>
           </View>
 
@@ -623,8 +640,8 @@ const CustomCalendarModal: React.FC<CustomCalendarModalProps> = ({
                             color: item.isDisabled
                               ? "#D1D5DB"
                               : item.isSelected
-                              ? "#FFFFFF"
-                              : "#111827",
+                                ? "#FFFFFF"
+                                : "#111827",
                           }}
                         >
                           {String(item.day)}

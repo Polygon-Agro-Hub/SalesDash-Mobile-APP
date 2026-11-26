@@ -50,6 +50,7 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({
       isNewCustomer: true,
       buyerType: "Retail",
       from: "SelectOrderType",
+      customerOriginScreen: "NewCustomerDetailsScreen",
     });
   };
 
@@ -63,6 +64,7 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({
       number: phoneNumber,
       customerscreencustomerid: customerId,
       isNewCustomer: true,
+      customerOriginScreen: "NewCustomerDetailsScreen",
     });
   };
 
@@ -75,6 +77,8 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({
           number: phoneNumber,
           customerId: customerId,
           id: id,
+          from: "NewCustomerDetailsScreen",
+          customerOriginScreen: "NewCustomerDetailsScreen",
         });
         return true;
       };
@@ -102,6 +106,8 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({
             number: phoneNumber,
             customerId: customerId,
             id: id,
+            from: "NewCustomerDetailsScreen",
+            customerOriginScreen: "NewCustomerDetailsScreen",
           })
         }
       />

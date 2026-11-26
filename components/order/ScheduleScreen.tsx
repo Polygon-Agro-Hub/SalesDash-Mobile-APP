@@ -296,8 +296,8 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     "One Time" | "Once a Week" | "Twice a Week"
   >(
     (route.params?.scheduleType as any) ||
-      ((route.params as any)?.sheduleType as any) ||
-      "One Time",
+    ((route.params as any)?.sheduleType as any) ||
+    "One Time",
   );
 
   const [selectedTimeSlot, setSelectedTimeSlot] = useState(
@@ -484,7 +484,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       route.params?.recurringDays && route.params.recurringDays.length > 0
         ? route.params.recurringDays
         : (route.params as any)?.selectedDays &&
-            (route.params as any).selectedDays.length > 0
+          (route.params as any).selectedDays.length > 0
           ? (route.params as any).selectedDays
           : null;
     if (incomingDays) {
@@ -665,6 +665,21 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     const minAvailDate = getMinDeliveryDate(isWholesale, undefined, isAlacarteOnly); // earliest possible date (today + gap)
     minAvailDate.setHours(0, 0, 0, 0);
 
+    const standardExtraDays = isAlacarteOnly
+      ? (isAfter6PM ? 3 : 2)
+      : isWholesale
+        ? (isAfter6PM ? 3 : 2)
+        : isAfter6PM ? 4 : 3;
+
+    const standardMinDate = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() + standardExtraDays,
+    );
+    standardMinDate.setHours(0, 0, 0, 0);
+
+    const isClampedByManagement = standardMinDate < minAvailDate;
+
     // Recurring package: package start date can push the real start later
     // (used for calendar limits and order filtering).
     const earliestStartDate = isRecurring ? parseDateStr(rawStartDate) : null;
@@ -742,6 +757,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
           isRecurring: false,
           isSeasonalExpiry: true,
           gapDays,
+          isClampedByManagement,
           expiryDay,
           expiryDayOrdinal,
           expiryMonthFull,
@@ -765,6 +781,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
         isRecurring: false,
         isSeasonalExpiry: false,
         gapDays,
+        isClampedByManagement,
         expiryDay: null,
         expiryDayOrdinal: "",
         expiryMonthFull: "",
@@ -787,6 +804,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       isRecurring: true,
       isSeasonalExpiry: false,
       gapDays,
+      isClampedByManagement,
       expiryDay: null,
       expiryDayOrdinal: "",
       expiryMonthFull: "",
@@ -1023,15 +1041,15 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       calculatedOrders: isOneTime
         ? undefined
         : calculatedOrders.map((o) => ({
-            index: o.index,
-            label: o.label,
-            date: o.dateStr,
-          })),
+          index: o.index,
+          label: o.label,
+          date: o.dateStr,
+        })),
       buyerType: isWholesale
         ? "Wholesale"
         : (route.params as any)?.buyerType ||
-          customerData?.buyerType ||
-          "Retail",
+        customerData?.buyerType ||
+        "Retail",
       from:
         (route.params as any)?.from ||
         (isWholesale ? "ViewCustomerScreen" : undefined),
@@ -1143,11 +1161,11 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     const packageId =
       isPackageNum === 1
         ? route.params?.packageId ||
-          (orderItems && orderItems.length > 0
-            ? orderItems[0].packageId
-            : orderData
-              ? orderData.packageId
-              : undefined)
+        (orderItems && orderItems.length > 0
+          ? orderItems[0].packageId
+          : orderData
+            ? orderData.packageId
+            : undefined)
         : null;
 
     const effectiveFirstDate =
@@ -1197,16 +1215,16 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
         scheduleType === "One Time"
           ? undefined
           : calculatedOrders.map((o) => ({
-              index: o.index,
-              label: o.label,
-              date: o.dateStr,
-            })),
+            index: o.index,
+            label: o.label,
+            date: o.dateStr,
+          })),
       ...(orderData && { orderData: orderData }),
       buyerType: isWholesale
         ? "Wholesale"
         : (route.params as any)?.buyerType ||
-          customerData?.buyerType ||
-          "Retail",
+        customerData?.buyerType ||
+        "Retail",
       from:
         (route.params as any)?.from ||
         (isWholesale ? "ViewCustomerScreen" : undefined),
@@ -1296,9 +1314,11 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
         {seasonalInfo.isSeasonalExpiry ? (
           <>
             <Text style={{ fontSize: 13, color: "#1E293B", lineHeight: 19 }}>
-              <Text style={{ fontWeight: "700" }}>Note : </Text>A{" "}
-              {seasonalInfo.gapDays}-day gap is required. The Packages expiring
-              on the {seasonalInfo.expiryDayOrdinal}{" "}
+              <Text style={{ fontWeight: "700" }}>Note : </Text>
+              {!seasonalInfo.isClampedByManagement && (
+                <>A {seasonalInfo.gapDays}-day gap is required. </>
+              )}
+              The Packages expiring on the {seasonalInfo.expiryDayOrdinal}{" "}
               {seasonalInfo.expiryMonthFull} {seasonalInfo.expiryYear} can be
               ordered between the {seasonalInfo.rangeTextLong}.
             </Text>
@@ -1343,39 +1363,52 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
           </>
         ) : (
           <>
-            <Text style={{ fontSize: 13, color: "#1E293B", lineHeight: 19 }}>
-              <Text style={{ fontWeight: "700" }}>Note : </Text>A{" "}
-              {seasonalInfo.gapDays}-day gap is required.
-            </Text>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "flex-start",
-                marginTop: 8,
-                width: "100%",
-              }}
-            >
-              <View
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor: "#6B3BCF",
-                  marginRight: 8,
-                  marginTop: 5,
-                  flexShrink: 0,
-                }}
-              />
-              <Text
-                style={{ fontSize: 13, color: "#1E293B", lineHeight: 19, flex: 1 }}
-              >
+            {!seasonalInfo.isClampedByManagement ? (
+              <>
+                <Text style={{ fontSize: 13, color: "#1E293B", lineHeight: 19 }}>
+                  <Text style={{ fontWeight: "700" }}>Note : </Text>A{" "}
+                  {seasonalInfo.gapDays}-day gap is required.
+                </Text>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "flex-start",
+                    marginTop: 8,
+                    width: "100%",
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 4,
+                      backgroundColor: "#6B3BCF",
+                      marginRight: 8,
+                      marginTop: 5,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <Text
+                    style={{ fontSize: 13, color: "#1E293B", lineHeight: 19, flex: 1 }}
+                  >
+                    Scheduling available from{" "}
+                    <Text style={{ fontWeight: "700" }}>
+                      {seasonalInfo.startDateFormatted}
+                    </Text>{" "}
+                    onward.
+                  </Text>
+                </View>
+              </>
+            ) : (
+              <Text style={{ fontSize: 13, color: "#1E293B", lineHeight: 19 }}>
+                <Text style={{ fontWeight: "700" }}>Note : </Text>
                 Scheduling available from{" "}
                 <Text style={{ fontWeight: "700" }}>
                   {seasonalInfo.startDateFormatted}
                 </Text>{" "}
                 onward.
               </Text>
-            </View>
+            )}
           </>
         )}
       </View>

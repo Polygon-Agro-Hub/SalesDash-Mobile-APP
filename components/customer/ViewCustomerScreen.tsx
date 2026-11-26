@@ -471,11 +471,33 @@ const ViewCustomerScreen: React.FC<ViewCustomerScreenProps> = ({
     }
   };
 
+const customerOriginScreenRef = useRef<string | undefined>(
+  route.params?.from && route.params.from !== "ViewCustomerScreen"
+    ? route.params.from
+    : (route.params as any)?.customerOriginScreen
+);
+
+useEffect(() => {
+  const incoming =
+    route.params?.from && route.params.from !== "ViewCustomerScreen"
+      ? route.params.from
+      : (route.params as any)?.customerOriginScreen;
+  if (incoming) {
+    customerOriginScreenRef.current = incoming;
+  }
+}, [route.params?.from, (route.params as any)?.customerOriginScreen]);
+
 const handleBack = useCallback(() => {
   const tab: "Retail" | "Wholesale" =
     buyerType === "Wholesale" ? "Wholesale" : "Retail";
 
-  switch (route.params?.from) {
+  const targetFrom =
+    (route.params?.from && route.params.from !== "ViewCustomerScreen"
+      ? route.params.from
+      : (route.params as any)?.customerOriginScreen) ||
+    customerOriginScreenRef.current;
+
+  switch (targetFrom) {
     case "ExistingCustomerDetailsScreen":
       navigation.navigate("Main" as any, {
         screen: "ExistingCustomerDetailsScreen",
@@ -499,7 +521,7 @@ const handleBack = useCallback(() => {
       });
       break;
   }
-}, [navigation, route.params?.from, buyerType]);
+}, [navigation, route.params?.from, (route.params as any)?.customerOriginScreen, buyerType]);
 
   useFocusEffect(
     useCallback(() => {
@@ -2372,6 +2394,12 @@ const handleBack = useCallback(() => {
               disabled={creditBalance < 0 || (String(buyerType || "").toLowerCase() === "wholesale" && wholesaleApproveStatus !== "Approve")}
               onPress={() => {
                 const isWholesaleCustomer = String(buyerType || "").toLowerCase() === "wholesale";
+                const customerOrigin =
+                  (route.params?.from && route.params.from !== "ViewCustomerScreen"
+                    ? route.params.from
+                    : (route.params as any)?.customerOriginScreen) ||
+                  customerOriginScreenRef.current;
+
                 if (isWholesaleCustomer) {
                   navigation.navigate("CreateCustomPackage" as any, {
                     id,
@@ -2383,6 +2411,7 @@ const handleBack = useCallback(() => {
                     customerscreencustomerid: customerId,
                     buyerType: "Wholesale",
                     from: "ViewCustomerScreen",
+                    customerOriginScreen: customerOrigin,
                   });
                 } else {
                   navigation.navigate("SelectOrderType" as any, {
@@ -2394,6 +2423,7 @@ const handleBack = useCallback(() => {
                     customerscreencustomerid: customerId,
                     buyerType: "Retail",
                     from: "ViewCustomerScreen",
+                    customerOriginScreen: customerOrigin,
                   });
                 }
               }}

@@ -154,6 +154,7 @@ interface OrderScreenProps {
       isNewCustomer?: boolean;
       packageType?: string;
       endDate?: string;
+      customerOriginScreen?: string;
     };
   };
 }
@@ -219,6 +220,8 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     number,
     customerscreencustomerid,
   } = route.params || {};
+
+  const customerOriginScreen = (route.params as any)?.customerOriginScreen;
 
   const isPackageNum = Number(isPackage) === 1 ? 1 : 0;
   const [loading, setLoading] = useState<boolean>(false);
@@ -460,56 +463,44 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     packages,
   ]);
 
-  const hasRestoredPreviousSelection = useRef(false);
-
   useEffect(() => {
-    if (hasRestoredPreviousSelection.current) return;
     if (route.params?.isEdit) return;
 
     const prevPackageId = route.params?.packageId;
     const prevAdditionalItems = route.params?.rawAdditionalItems;
 
-    let restoredSomething = false;
-
     if (prevPackageId && !packageValue) {
       setPackageValue(prevPackageId.toString());
-      restoredSomething = true;
     }
 
     if (prevAdditionalItems && prevAdditionalItems.length > 0) {
       setAdditionalItems(prevAdditionalItems);
-      restoredSomething = true;
     }
-
-    if (restoredSomething) {
-      hasRestoredPreviousSelection.current = true;
-    }
-  }, [route.params?.packageId, route.params?.rawAdditionalItems, packageValue]);
+  }, [
+    route.params?.packageId,
+    route.params?.rawAdditionalItems,
+    route.params?.isEdit,
+    packageValue,
+  ]);
 
   useEffect(() => {
-    if (
-      !route.params?.isEdit &&
-      route.params?.packageId &&
-      packages.length > 0
-    ) {
-      const pkg = packages.find((p) => p.id === route.params?.packageId);
+    const currentPkgId = packageValue
+      ? parseInt(packageValue, 10)
+      : route.params?.packageId
+        ? Number(route.params.packageId)
+        : null;
+
+    if (currentPkgId && packages.length > 0) {
+      const pkg = packages.find((p) => p.id === currentPkgId);
       if (pkg) {
-        setSelectedPackage((prev) => {
-          if (!prev) return pkg;
-          return {
-            ...pkg,
-            startDate:
-              prev.startDate !== undefined ? prev.startDate : pkg.startDate,
-            endDate: prev.endDate !== undefined ? prev.endDate : pkg.endDate,
-            packageType:
-              prev.packageType !== undefined
-                ? prev.packageType
-                : pkg.packageType,
-          };
-        });
+        setSelectedPackage(pkg);
+      } else {
+        setPackageValue("");
+        setSelectedPackage(null);
+        setItems([]);
       }
     }
-  }, [packages, route.params?.packageId, route.params?.isEdit]);
+  }, [packages, packageValue, route.params?.packageId]);
 
   const handleConfirm = useCallback(async () => {
     setLoading(true);
@@ -545,7 +536,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         })),
       };
 
-      navigation.navigate("PackageConfirmation" as any, {
+      navigation.navigate("DeliveryAddress" as any, {
         orderData,
         customerid: route.params?.id,
         isPackage: isPackageNum,
@@ -579,6 +570,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         buyerType: (route.params as any)?.buyerType,
         from: (route.params as any)?.from,
         epsdDate: (route.params as any)?.epsdDate,
+        isFinalizeImdt: 1,
       });
     } catch (error) {
       console.error("Error confirming order:", error);
@@ -648,7 +640,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     setPricePerKg(discountedPrice);
   }, [productItems, productValue, selectedUnit, quantity, additionalItems]);
 
-  const fetchItemsForPackage = async (packageId: number) => {
+  const fetchItemsForPackage = useCallback(async (packageId: number) => {
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
       if (!storedToken) {
@@ -658,18 +650,30 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
 
       const response = await axios.get<{
         data: { name: string; qty: string }[];
-      }>(`${environment.API_BASE_URL}api/packages/${packageId}/items`, {
-        headers: { Authorization: `Bearer ${storedToken}` },
-      });
+      }>(
+        `${environment.API_BASE_URL}api/packages/${packageId}/items?_t=${Date.now()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${storedToken}`,
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+        },
+      );
 
       if (response.data && Array.isArray(response.data.data)) {
         setItems(response.data.data);
+      } else {
+        setItems([]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching items:", error);
-      Alert.alert("Error", "Failed to fetch items for the package");
+      if (error?.response?.status === 404) {
+        setItems([]);
+      }
     }
-  };
+  }, []);
 
   const fetchPackageDetails = useCallback(async (packageId: number) => {
     try {
@@ -703,13 +707,9 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
           if (!prev || prev.id !== packageId) return prev;
           return {
             ...prev,
-            startDate:
-              data.startDate !== undefined ? data.startDate : undefined,
-            endDate: data.endDate !== undefined ? data.endDate : undefined,
-            packageType:
-              data.packageType !== undefined
-                ? data.packageType
-                : prev.packageType,
+            startDate: data.startDate,
+            endDate: data.endDate,
+            packageType: data.packageType || prev.packageType,
           };
         });
       }
@@ -726,7 +726,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
       const storedToken = await AsyncStorage.getItem("authToken");
       if (!storedToken) {
         Alert.alert("Error", "No authentication token found");
-        return;
+        return [];
       }
 
       setToken(storedToken);
@@ -738,6 +738,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
             Authorization: `Bearer ${storedToken}`,
             "Cache-Control": "no-cache, no-store, must-revalidate",
             Pragma: "no-cache",
+            Expires: "0",
           },
         },
       );
@@ -761,32 +762,30 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
       if (currentPkgId) {
         const freshPkg = freshPackages.find((p) => p.id === currentPkgId);
         if (freshPkg) {
-          setSelectedPackage((prev) => {
-            if (!prev || prev.id !== currentPkgId) {
-              return freshPkg;
-            }
-            return {
-              ...freshPkg,
-              startDate:
-                prev.startDate !== undefined
-                  ? prev.startDate
-                  : freshPkg.startDate,
-              endDate:
-                prev.endDate !== undefined ? prev.endDate : freshPkg.endDate,
-              packageType:
-                prev.packageType !== undefined
-                  ? prev.packageType
-                  : freshPkg.packageType,
-            };
-          });
-          fetchPackageDetails(currentPkgId);
+          setSelectedPackage(freshPkg);
+          await Promise.all([
+            fetchPackageDetails(currentPkgId),
+            fetchItemsForPackage(currentPkgId),
+          ]);
+        } else {
+          setPackageValue("");
+          setSelectedPackage(null);
+          setItems([]);
         }
       }
+
+      return freshPackages;
     } catch (error) {
       Alert.alert("Error", "Failed to fetch packages");
       console.error(error);
+      return [];
     }
-  }, [packageValue, route.params?.packageId, fetchPackageDetails]);
+  }, [
+    packageValue,
+    route.params?.packageId,
+    fetchPackageDetails,
+    fetchItemsForPackage,
+  ]);
 
   useEffect(() => {
     fetchPackages();
@@ -803,12 +802,6 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     };
   }, [fetchPackages]);
 
-  useFocusEffect(
-    useCallback(() => {
-      fetchPackages();
-    }, [fetchPackages]),
-  );
-
   useEffect(() => {}, [route.params]);
 
   const handlePackageChange = (value: string | null) => {
@@ -818,13 +811,9 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
       if (!isNaN(packageId)) {
         const foundPkg = packages.find((pkg) => pkg.id === packageId);
         if (foundPkg) {
-          setSelectedPackage({
-            ...foundPkg,
-            packageType: foundPkg.packageType,
-            startDate: foundPkg.startDate,
-            endDate: foundPkg.endDate,
-          });
+          setSelectedPackage(foundPkg);
         }
+        setItems([]);
         fetchItemsForPackage(packageId);
         fetchPackageDetails(packageId);
       } else {
@@ -895,16 +884,24 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await fetchPackages();
+      const freshPkgs = await fetchPackages();
       const currentPkgId = packageValue
         ? parseInt(packageValue, 10)
         : selectedPackage?.id ||
           (route.params?.packageId ? Number(route.params.packageId) : null);
       if (currentPkgId) {
-        await Promise.all([
-          fetchItemsForPackage(currentPkgId),
-          fetchPackageDetails(currentPkgId),
-        ]);
+        const isStillActive =
+          freshPkgs && freshPkgs.some((p: Package) => p.id === currentPkgId);
+        if (isStillActive) {
+          await Promise.all([
+            fetchItemsForPackage(currentPkgId),
+            fetchPackageDetails(currentPkgId),
+          ]);
+        } else {
+          setPackageValue("");
+          setSelectedPackage(null);
+          setItems([]);
+        }
       }
       await fetchCrops();
     } catch (error) {
@@ -921,6 +918,69 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     fetchPackageDetails,
     fetchCrops,
   ]);
+
+  // Auto-refresh when navigating back or when OrderScreen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      let isMounted = true;
+
+      const refreshScreenData = async () => {
+        try {
+          const freshPkgs = await fetchPackages();
+
+          const currentPkgId = packageValue
+            ? parseInt(packageValue, 10)
+            : route.params?.packageId
+              ? Number(route.params.packageId)
+              : selectedPackage?.id || null;
+
+          if (currentPkgId && isMounted) {
+            const isStillActive =
+              freshPkgs &&
+              freshPkgs.some((p: Package) => p.id === currentPkgId);
+            if (isStillActive) {
+              if (!packageValue) {
+                setPackageValue(currentPkgId.toString());
+              }
+              await Promise.all([
+                fetchItemsForPackage(currentPkgId),
+                fetchPackageDetails(currentPkgId),
+              ]);
+            } else {
+              setPackageValue("");
+              setSelectedPackage(null);
+              setItems([]);
+            }
+          }
+
+          if (route.params?.rawAdditionalItems && isMounted) {
+            setAdditionalItems(route.params.rawAdditionalItems);
+          }
+
+          if (isMounted) {
+            await fetchCrops();
+          }
+        } catch (error) {
+          console.error("Auto refresh error in OrderScreen on focus:", error);
+        }
+      };
+
+      refreshScreenData();
+
+      return () => {
+        isMounted = false;
+      };
+    }, [
+      packageValue,
+      route.params?.packageId,
+      route.params?.rawAdditionalItems,
+      selectedPackage?.id,
+      fetchPackages,
+      fetchItemsForPackage,
+      fetchPackageDetails,
+      fetchCrops,
+    ]),
+  );
 
   const handleAddMore = () => {
     setShowAddModal(true);
@@ -1234,6 +1294,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
           name,
           number,
           customerscreencustomerid,
+          customerOriginScreen: customerOriginScreen || (route.params as any)?.customerOriginScreen,
         });
         return true;
       };
@@ -1292,6 +1353,7 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
             name,
             number,
             customerscreencustomerid,
+            customerOriginScreen: customerOriginScreen || (route.params as any)?.customerOriginScreen,
           });
         }}
       />
@@ -1336,7 +1398,8 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
           <View className="mb-8">
             <View className="flex-row items-center justify-between mb-4">
               <Text className="text-base font-semibold text-gray-900">
-                Package ({getTotalItemsCount()} items)
+                Package ({getTotalItemsCount()}{" "}
+                {getTotalItemsCount() === 1 ? "item" : "items"})
               </Text>
               <TouchableOpacity
                 onPress={handleAddMore}

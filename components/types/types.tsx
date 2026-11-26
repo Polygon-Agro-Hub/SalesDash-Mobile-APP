@@ -107,6 +107,9 @@ export type RootStackParamList = {
     name?: string;
     number?: string;
     customerscreencustomerid?: string;
+    buyerType?: string;
+    from?: string;
+    customerOriginScreen?: string;
   };
   PrivacyPolicy: undefined;
   TermsConditions: undefined;
@@ -158,7 +161,14 @@ export type RootStackParamList = {
     id: string;
     title: string;
     buyerType?: string;
-    from?: "CustomersScreen" | "ExistingCustomerDetailsScreen" | "NewCustomerDetailsScreen" | "TotalValueOfCustomersScreen";
+    from?:
+      | "CustomersScreen"
+      | "ExistingCustomerDetailsScreen"
+      | "NewCustomerDetailsScreen"
+      | "TotalValueOfCustomersScreen"
+      | "ViewCustomerScreen"
+      | string;
+    customerOriginScreen?: string;
   };
   AddCustomersScreen: {
     selectedLatitude?: number;
@@ -215,6 +225,7 @@ export type RootStackParamList = {
     number: string;
     customerscreencustomerid: string;
     isEdit?: boolean;
+    customerOriginScreen?: string;
     packageId?: number;
     packageItems?: Array<{
       id: number;
@@ -287,6 +298,7 @@ export type RootStackParamList = {
     isFinalizeImdt?: number;
     buyerType?: string;
     from?: string;
+    customerOriginScreen?: string;
   };
   SelectPaymentMethod: {
     items?: CartItem[];
@@ -447,6 +459,7 @@ export type RootStackParamList = {
     selectedProductIds?: number[];
     buyerType?: string;
     from?: string;
+    customerOriginScreen?: string;
   };
   CratScreen: {
     selectedProducts: CartItem[];
@@ -469,6 +482,7 @@ export type RootStackParamList = {
     fromOrderSummary?: boolean;
     buyerType?: string;
     from?: string;
+    customerOriginScreen?: string;
   };
   ExcludeListAdd: {
     customerId: number;
