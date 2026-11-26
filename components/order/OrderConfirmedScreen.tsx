@@ -21,7 +21,6 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
-import { Asset } from "expo-asset";
 import * as FileSystem from "expo-file-system/legacy";
 import axios from "axios";
 import environment from "@/environment/environment";
@@ -287,42 +286,21 @@ const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
     };
   }, []);
 
-  const convertLogoToBase64 = async () => {
-    try {
-      const assets = await Asset.loadAsync(
-        require("../../assets/images/order/logo.png"),
-      );
-      const asset = assets && assets[0];
-      if (asset) {
-        let uri = asset.localUri || asset.uri;
-
-        if (uri && !uri.startsWith("file://") && !uri.startsWith("/")) {
-          const targetPath = `${FileSystem.cacheDirectory}temp_logo.png`;
-          const downloaded = await FileSystem.downloadAsync(uri, targetPath);
-          uri = downloaded.uri;
-        }
-
-        if (uri) {
-          const base64 = await FileSystem.readAsStringAsync(uri, {
-            encoding: FileSystem.EncodingType.Base64,
-          });
-          return `data:image/png;base64,${base64}`;
-        }
-      }
-      return logoBase64Fallback;
-    } catch (error) {
-      console.error("Error converting logo to base64, using fallback:", error);
-      return logoBase64Fallback;
-    }
-  };
-
   const handleDownloadInvoice = async () => {
     if (isDownloading) return;
+
+    if (!order) {
+      Alert.alert(
+        "Order Details Not Ready",
+        "Please wait while order details are loading, or check your internet connection and try again.",
+      );
+      return;
+    }
 
     try {
       setIsDownloading(true);
 
-      const logoBase64 = await convertLogoToBase64();
+      const logoBase64 = logoBase64Fallback;
       const invoiceNumber =
         order?.orderStatus?.invoiceNumber ||
         passedInvoiceNumber ||
@@ -920,11 +898,23 @@ ${
 </html>
       `;
 
-      const { uri: pdfUri, base64: pdfBase64 } = await Print.printToFileAsync({
+      const generatePdfPromise = Print.printToFileAsync({
         html: htmlContent,
         width: 595,
         base64: true,
       });
+
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(
+          () => reject(new Error("Invoice generation timed out. Please try again.")),
+          15000,
+        ),
+      );
+
+      const { uri: pdfUri, base64: pdfBase64 } = (await Promise.race([
+        generatePdfPromise,
+        timeoutPromise,
+      ])) as { uri: string; base64: string };
 
       const fileName = `Invoice_${invoiceNumber}.pdf`;
 

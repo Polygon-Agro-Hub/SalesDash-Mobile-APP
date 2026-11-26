@@ -376,28 +376,17 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
         const isAlacarteOnly =
           !effectiveIsWholesale && Number(isPackage) !== 1;
 
-        if (isAlacarteOnly) {
-          // For retail alacarte (1-day gap):
-          // Before 6 PM: Only Today + 2 days (Nov 22 when today is Nov 20) is EPSD
-          if (!isAfter6PM && diffDays === 2) return true;
-          // After 6 PM: Only Today + 3 days (Nov 23) is post-cutoff EPSD
-          if (isAfter6PM && diffDays === 3) return true;
-          return false;
-        } else if (effectiveIsWholesale) {
-          // For wholesale:
-          // Before 6 PM: Only Today + 2 days (Nov 13 when today is Nov 11) is EPSD (isConfirmed: 1)
-          if (!isAfter6PM && diffDays === 2) return true;
-          // After 6 PM: Only Today + 3 days (Nov 14) is post-cutoff EPSD (isConfirmed: 1)
-          if (isAfter6PM && diffDays === 3) return true;
-          return false;
-        } else {
-          // For retail package:
-          // Before 6 PM: Today + 3 days (Nov 14) is EPSD (isConfirmed: 1)
-          if (!isAfter6PM && diffDays === 3) return true;
-          // After 6 PM: Today + 4 days (Nov 15) is EPSD (isConfirmed: 1)
-          if (isAfter6PM && diffDays === 4) return true;
-          return false;
+        const minDeliveryDate = getMinDeliveryDate(
+          effectiveIsWholesale,
+          undefined,
+          isAlacarteOnly,
+        );
+
+        if (targetDateObj.getTime() === minDeliveryDate.getTime()) {
+          return true;
         }
+
+        return false;
       };
 
       const targetDateForCheck =
