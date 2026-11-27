@@ -149,6 +149,11 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
 
   const incomingBuyerType = (route.params as any)?.buyerType;
   const incomingFrom = (route.params as any)?.from;
+  const incomingCustomerOriginScreen =
+    (route.params as any)?.customerOriginScreen ||
+    (incomingFrom !== "ViewCustomerScreen" && incomingFrom !== "SelectOrderType"
+      ? incomingFrom
+      : undefined);
   // isWholesale is determined by buyerType or wholesale flow
   const isWholesale =
     Boolean((route.params as any)?.isWholesale) ||
@@ -158,7 +163,9 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
     ? "Wholesale"
     : incomingBuyerType || customerData?.buyerType || "Retail";
   const effectiveFrom =
-    incomingFrom || (isWholesale ? "ViewCustomerScreen" : undefined);
+    incomingCustomerOriginScreen ||
+    incomingFrom ||
+    (isWholesale ? "ViewCustomerScreen" : undefined);
 
   const scheduleType: "One Time" | "Once a Week" | "Twice a Week" =
     (route.params as any)?.scheduleType ||
@@ -854,6 +861,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
       calculatedOrders,
       buyerType: effectiveBuyerType,
       from: effectiveFrom,
+      customerOriginScreen: incomingCustomerOriginScreen,
       isWholesale: isWholesale,
       epsdDate: (route.params as any)?.epsdDate,
       fromOrderSummary: true,
@@ -915,6 +923,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
             calculatedOrders,
             buyerType: effectiveBuyerType,
             from: effectiveFrom,
+            customerOriginScreen: incomingCustomerOriginScreen,
             isWholesale: isWholesale,
             epsdDate: (route.params as any)?.epsdDate,
           }),
@@ -1027,6 +1036,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
               calculatedOrders,
               buyerType: effectiveBuyerType,
               from: effectiveFrom,
+              customerOriginScreen: incomingCustomerOriginScreen,
               isWholesale: isWholesale,
               epsdDate: (route.params as any)?.epsdDate,
             }),
@@ -1101,6 +1111,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                         calculatedOrders,
                         buyerType: effectiveBuyerType,
                         from: effectiveFrom,
+                        customerOriginScreen: incomingCustomerOriginScreen,
                         isWholesale: isWholesale,
                         epsdDate: (route.params as any)?.epsdDate,
                       }),
@@ -1198,6 +1209,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                       fromOrderSummary: true,
                       buyerType: effectiveBuyerType,
                       from: effectiveFrom,
+                      customerOriginScreen: incomingCustomerOriginScreen,
                       scheduleType,
                       sheduleType: scheduleType,
                       selectedDays,
@@ -1243,6 +1255,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                       fromOrderSummary: true,
                       buyerType: effectiveBuyerType,
                       from: effectiveFrom,
+                      customerOriginScreen: incomingCustomerOriginScreen,
                       scheduleType,
                       sheduleType: scheduleType,
                       selectedDays,
@@ -1351,6 +1364,7 @@ const OrderSummeryScreen: React.FC<OrderSummeryScreenProps> = ({
                     isFinalizeImdt: route.params?.isFinalizeImdt,
                     buyerType: effectiveBuyerType,
                     from: effectiveFrom,
+                    customerOriginScreen: incomingCustomerOriginScreen,
                     scheduleType,
                     sheduleType: scheduleType,
                     selectedDays,

@@ -1050,7 +1050,13 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
         : (route.params as any)?.buyerType ||
         customerData?.buyerType ||
         "Retail",
+      customerOriginScreen:
+        (route.params as any)?.customerOriginScreen ||
+        ((route.params as any)?.from !== "ViewCustomerScreen" && (route.params as any)?.from !== "SelectOrderType"
+          ? (route.params as any)?.from
+          : undefined),
       from:
+        (route.params as any)?.customerOriginScreen ||
         (route.params as any)?.from ||
         (isWholesale ? "ViewCustomerScreen" : undefined),
     };
@@ -1225,7 +1231,13 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
         : (route.params as any)?.buyerType ||
         customerData?.buyerType ||
         "Retail",
+      customerOriginScreen:
+        (route.params as any)?.customerOriginScreen ||
+        ((route.params as any)?.from !== "ViewCustomerScreen" && (route.params as any)?.from !== "SelectOrderType"
+          ? (route.params as any)?.from
+          : undefined),
       from:
+        (route.params as any)?.customerOriginScreen ||
         (route.params as any)?.from ||
         (isWholesale ? "ViewCustomerScreen" : undefined),
       isWholesale: isWholesale,
