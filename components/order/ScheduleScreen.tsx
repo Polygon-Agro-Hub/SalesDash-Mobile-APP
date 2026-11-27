@@ -740,12 +740,12 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
         const fmtLong = (d: Date) =>
           `${getOrdinal(d.getDate())} ${MONTH_LONG[d.getMonth()]} ${d.getFullYear()}`;
 
-        // "Packages expiring on ..." must show the ACTUAL package end date
-        const expiryDay = earliestExpiryDate.getDate();
+        // "Packages expiring on ..." displays the cutoff date (last orderable date)
+        const expiryDay = cutoffDate.getDate();
         const expiryDayOrdinal = getOrdinal(expiryDay);
-        const expiryMonthFull = MONTH_LONG[earliestExpiryDate.getMonth()];
-        const expiryYear = earliestExpiryDate.getFullYear();
-        const expiryText = fmtLong(earliestExpiryDate);
+        const expiryMonthFull = MONTH_LONG[cutoffDate.getMonth()];
+        const expiryYear = cutoffDate.getFullYear();
+        const expiryText = fmtLong(cutoffDate);
 
         // Same string for the note and the "Available schedule dates" line
         const rangeText = `${fmtLong(displayStartDate)} – ${fmtLong(cutoffDate)}`;
@@ -953,6 +953,11 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
   const isFirstOrderPayToday = useMemo(() => {
     if (calculatedOrders.length === 0) return false;
     if (seasonalInfo && !seasonalInfo.isAvailableNow) return false;
+    // When delivery date is clamped to a future date by management restriction (e.g. today is Nov 27, clamped to Dec 12),
+    // Dec 12 is NOT the natural earliest date from today (today + gap), so do NOT show the text.
+    // When today reaches Dec 10, Dec 12 becomes the natural earliest date (isClampedByManagement is false),
+    // and this text will correctly appear.
+    if (seasonalInfo?.isClampedByManagement) return false;
 
     const minDeliveryDate = getMinDeliveryDate(isWholesale, undefined, isAlacarteOnly);
     minDeliveryDate.setHours(0, 0, 0, 0);
@@ -969,7 +974,7 @@ const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
     firstOrderDate.setHours(0, 0, 0, 0);
 
     return firstOrderDate.getTime() === minDeliveryDate.getTime();
-  }, [calculatedOrders, seasonalInfo, isWholesale]);
+  }, [calculatedOrders, seasonalInfo, isWholesale, isAlacarteOnly]);
 
   const isScheduleReady = useMemo(() => {
     if (scheduleType === "One Time") {
