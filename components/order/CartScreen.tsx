@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import environment from "@/environment/environment";
 import CustomHeader from "../common/CustomHeader";
 import LoadingPage from "../common/LoadingPage";
+import socketService from "@/services/socket/socket.service";
 
 interface CartItem {
   id: number;
@@ -83,6 +84,11 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     buyerType,
   } = route.params || {};
   const from = (route.params as any)?.from;
+  const customerOriginScreen =
+    (route.params as any)?.customerOriginScreen ||
+    (from !== "ViewCustomerScreen" && from !== "SelectOrderType"
+      ? from
+      : undefined);
   const fromOrderSummary = (route.params as any)?.fromOrderSummary;
 
   // Max quantity applies to wholesale customers only
@@ -91,12 +97,18 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     String(buyerType || "").toLowerCase() === "wholesale" ||
     from === "ViewCustomerScreen";
   const effectiveBuyerType = isWholesale ? "Wholesale" : (buyerType || "Retail");
-  const effectiveFrom = from || (isWholesale ? "ViewCustomerScreen" : undefined);
+  const effectiveFrom = customerOriginScreen || from || (isWholesale ? "ViewCustomerScreen" : undefined);
 
   const incomingDeliveryCharge = route.params?.deliveryCharge ?? 0;
   const incomingSelectedAddress = route.params?.selectedAddress ?? null;
 
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const cartItemsRef = useRef<CartItem[]>(cartItems);
+
+  useEffect(() => {
+    cartItemsRef.current = cartItems;
+  }, [cartItems]);
+
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -104,13 +116,152 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     return Math.round((value + Number.EPSILON) * 100) / 100;
   };
 
+  const fetchLiveCropPrices = useCallback(
+    async (productIds: number[]) => {
+      try {
+        const storedToken = await AsyncStorage.getItem("authToken");
+        if (!storedToken || productIds.length === 0) return {};
+
+        const response = await axios.get(
+          `${environment.API_BASE_URL}api/packages/crops/all?_t=${Date.now()}`,
+          {
+            headers: {
+              Authorization: `Bearer ${storedToken}`,
+              "Cache-Control": "no-cache, no-store, must-revalidate",
+              Pragma: "no-cache",
+              Expires: "0",
+            },
+            params: {
+              id,
+              buyerType: isWholesale ? "Wholesale" : "Retail",
+            },
+          },
+        );
+
+        const priceMap: Record<
+          string,
+          {
+            normalPrice: number;
+            discountedPrice: number;
+            displayName: string;
+            startValue?: number;
+            changeby?: number;
+            maxQuantity?: number | null;
+          }
+        > = {};
+
+        const crops = response.data?.data || [];
+        crops.forEach((crop: any) => {
+          const cropIdNum = Number(crop.id);
+          const varietyIdNum = Number(crop.varietyId);
+          const isMatch = productIds.some(
+            (pid) => pid === cropIdNum || (varietyIdNum && pid === varietyIdNum),
+          );
+
+          if (isMatch) {
+            const normalPrice = parseFloat(crop.normalPrice) || 0;
+            const discountedPrice =
+              parseFloat(crop.discountedPrice) || normalPrice;
+            const priceObj = {
+              normalPrice,
+              discountedPrice,
+              displayName: crop.displayName,
+              startValue: crop.startValue
+                ? parseFloat(crop.startValue)
+                : undefined,
+              changeby: crop.changeby
+                ? parseFloat(crop.changeby)
+                : undefined,
+              maxQuantity: crop.maxQuantity
+                ? parseMax(crop.maxQuantity)
+                : null,
+            };
+
+            priceMap[crop.id.toString()] = priceObj;
+            if (crop.varietyId) {
+              priceMap[crop.varietyId.toString()] = priceObj;
+            }
+          }
+        });
+
+        return priceMap;
+      } catch (err) {
+        console.error("Error fetching live crop prices in CartScreen:", err);
+        return {};
+      }
+    },
+    [id, isWholesale],
+  );
+
+  const refreshCartItemPrices = useCallback(
+    async (itemsToRefresh?: CartItem[]) => {
+      const targetItems = itemsToRefresh || cartItemsRef.current;
+      if (!targetItems || targetItems.length === 0) return;
+
+      const productIds = targetItems
+        .map((item) => Number(item.id))
+        .filter((pid) => !isNaN(pid) && pid > 0);
+
+      if (productIds.length === 0) return;
+
+      const livePrices = await fetchLiveCropPrices(productIds);
+      if (Object.keys(livePrices).length === 0) return;
+
+      setCartItems((prevItems) => {
+        const updated = prevItems.map((item) => {
+          const livePrice =
+            livePrices[item.id.toString()] ||
+            livePrices[String(item.id)];
+
+          if (!livePrice) return item;
+
+          const normalPricePerKg = livePrice.normalPrice;
+          const discountedPricePerKg = livePrice.discountedPrice;
+          const discountPerKg = Math.max(
+            0,
+            normalPricePerKg - discountedPricePerKg,
+          );
+
+          return {
+            ...item,
+            name: livePrice.displayName || item.name,
+            price: discountedPricePerKg,
+            discountedPrice: discountedPricePerKg,
+            normalPrice: normalPricePerKg,
+            discount: discountPerKg,
+          };
+        });
+
+        cartItemsRef.current = updated;
+        return updated;
+      });
+    },
+    [fetchLiveCropPrices],
+  );
+
   useFocusEffect(
     useCallback(() => {
       setCartItems((prevItems) =>
         prevItems.map((item) => ({ ...item, selected: false })),
       );
-    }, []),
+
+      // Refresh prices on-time whenever screen gains focus
+      refreshCartItemPrices();
+    }, [refreshCartItemPrices]),
   );
+
+  useEffect(() => {
+    const unsubscribe = socketService.onPackageUpdate(() => {
+      console.log(
+        "🔄 [CartScreen] Refreshing cart item prices from socket event",
+      );
+      refreshCartItemPrices();
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [refreshCartItemPrices]);
 
   useFocusEffect(
     useCallback(() => {
@@ -126,7 +277,8 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
           number,
           customerscreencustomerid,
           buyerType: effectiveBuyerType,
-          from: effectiveFrom,
+          from: customerOriginScreen || effectiveFrom,
+          customerOriginScreen,
         });
         return true;
       };
@@ -246,6 +398,8 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
           );
 
           setCartItems(initializedItems);
+          cartItemsRef.current = initializedItems;
+          refreshCartItemPrices(initializedItems);
         } catch (error) {
           console.error("Error initializing cart items:", error);
         } finally {
@@ -255,7 +409,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     };
 
     initializeCartItems();
-  }, [route.params, fromOrderSummary]);
+  }, [route.params, fromOrderSummary, refreshCartItemPrices]);
 
   useEffect(() => {
     const restoreFromReturnedItems = async () => {
@@ -348,6 +502,8 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
         );
 
         setCartItems(rebuiltItems);
+        cartItemsRef.current = rebuiltItems;
+        refreshCartItemPrices(rebuiltItems);
       } catch (error) {
         console.error("Error restoring cart items:", error);
       } finally {
@@ -356,7 +512,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     };
 
     restoreFromReturnedItems();
-  }, [route.params?.items, route.params?.selectedProducts]);
+  }, [route.params?.items, route.params?.selectedProducts, refreshCartItemPrices]);
 
   useEffect(() => {
     const hasSelectedItems = cartItems.some((item) => item.selected);
@@ -540,7 +696,8 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
 
         selectedAddressId: incomingSelectedAddress?.id,
         buyerType: effectiveBuyerType,
-        from: effectiveFrom,
+        from: customerOriginScreen || effectiveFrom,
+        customerOriginScreen,
         scheduleType: (route.params as any)?.scheduleType || (route.params as any)?.sheduleType,
         sheduleType: (route.params as any)?.sheduleType || (route.params as any)?.scheduleType,
         selectedDays: (route.params as any)?.selectedDays || (route.params as any)?.recurringDays,
@@ -548,7 +705,9 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
         validityWeeks: (route.params as any)?.validityWeeks,
         validityPeriod: (route.params as any)?.validityPeriod,
         calculatedOrders: (route.params as any)?.calculatedOrders,
-        isFinalizeImdt: (route.params as any)?.isFinalizeImdt,
+        isFinalizeImdt:
+          (route.params as any)?.isFinalizeImdt ??
+          (isPackage === 1 || isPackage === "1" ? 1 : 0),
         packageId: (route.params as any)?.packageId,
         isWholesale: isWholesale || (route.params as any)?.isWholesale,
         epsdDate: (route.params as any)?.epsdDate,
@@ -592,7 +751,8 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
             number,
             customerscreencustomerid,
             buyerType: effectiveBuyerType,
-            from: effectiveFrom,
+            from: customerOriginScreen || effectiveFrom,
+            customerOriginScreen,
           });
         }}
         rightComponent={

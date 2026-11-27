@@ -336,7 +336,7 @@ const ViewScreen: React.FC<ViewScreenProps> = ({ navigation, route }) => {
             <Text className="text-gray-800 text-lg font-bold mx-6">
               All (
               {items.reduce((total, item) => total + parseInt(item.qty), 0)}{" "}
-              items)
+              {items.reduce((total, item) => total + parseInt(item.qty), 0) === 1 ? "item" : "items"})
             </Text>
             {items.map((item, index) => (
               <View

@@ -23,6 +23,7 @@ import LoadingPage from "../common/LoadingPage";
 import CustomHeader from "../common/CustomHeader";
 import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import socketService from "@/services/socket/socket.service";
 
 type CreateCustomPackageNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -43,6 +44,7 @@ interface CreateCustomPackageProps {
       customerscreencustomerid: string;
       buyerType?: string;
       from?: string;
+      customerOriginScreen?: string;
     };
   };
 }
@@ -77,6 +79,12 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
     buyerType,
     from,
   } = route.params || {};
+
+  const origin =
+    (route.params as any)?.customerOriginScreen ||
+    (from !== "ViewCustomerScreen" && from !== "SelectOrderType"
+      ? from
+      : undefined);
 
   const [fetchedBuyerType, setFetchedBuyerType] = useState<string>("");
 
@@ -163,50 +171,67 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
 
   // Fetch products. The backend returns ONLY the correct category
   // (wholesale buyer -> wholesale items, retail buyer -> retail items).
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true);
-        setError("");
+  const fetchProducts = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
 
-        const storedToken = await AsyncStorage.getItem("authToken");
-        if (!storedToken) {
-          setError("No authentication token found");
-          setLoading(false);
-          return;
-        }
-
-        const apiUrl = `${environment.API_BASE_URL}api/packages/crops/all`;
-        const response = await axios.get(apiUrl, {
-          headers: { Authorization: `Bearer ${storedToken}` },
-          params: { id, buyerType: isWholesale ? "Wholesale" : "Retail" },
-        });
-
-        const list = response.data?.data ?? [];
-        setProducts(
-          list.map((item: any) => ({
-            ...item,
-            normalPrice: parseFloat(item.normalPrice),
-            discountedPrice: parseFloat(item.discountedPrice),
-            startValue: parseFloat(item.startValue),
-            selected: selectedProductIds?.includes(item.id) ?? false,
-          })),
-        );
-      } catch (err: any) {
-        // Treat "no crops" (404) as an empty list, not an error
-        if (err?.response?.status === 404) {
-          setProducts([]);
-        } else {
-          console.error("Failed to fetch product:", err);
-          setError("Failed to load products. Please try again.");
-        }
-      } finally {
+      const storedToken = await AsyncStorage.getItem("authToken");
+      if (!storedToken) {
+        setError("No authentication token found");
         setLoading(false);
+        return;
       }
-    };
 
+      const apiUrl = `${environment.API_BASE_URL}api/packages/crops/all?_t=${Date.now()}`;
+      const response = await axios.get(apiUrl, {
+        headers: {
+          Authorization: `Bearer ${storedToken}`,
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+        params: { id, buyerType: isWholesale ? "Wholesale" : "Retail" },
+      });
+
+      const list = response.data?.data ?? [];
+      const currentSelectedIds = route.params?.selectedProductIds;
+      setProducts(
+        list.map((item: any) => ({
+          ...item,
+          normalPrice: parseFloat(item.normalPrice),
+          discountedPrice: parseFloat(item.discountedPrice),
+          startValue: parseFloat(item.startValue),
+          selected: currentSelectedIds?.includes(item.id) ?? selectedProductIds?.includes(item.id) ?? false,
+        })),
+      );
+    } catch (err: any) {
+      // Treat "no crops" (404) as an empty list, not an error
+      if (err?.response?.status === 404) {
+        setProducts([]);
+      } else {
+        console.error("Failed to fetch product:", err);
+        setError("Failed to load products. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [id, isWholesale, route.params?.selectedProductIds, selectedProductIds]);
+
+  useEffect(() => {
     fetchProducts();
-  }, [id, isWholesale]);
+
+    const unsubscribe = socketService.onPackageUpdate(() => {
+      console.log(
+        "🔄 [CreateCustomPackage] Refreshing crops from socket update event",
+      );
+      fetchProducts();
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [fetchProducts]);
 
   // Search only. Category filtering is done by the backend.
   const filteredProducts = products.filter((product) => {
@@ -228,23 +253,21 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
     );
   };
 
-  // Re-apply selection when returning from the cart
+  // Re-apply selection and refresh prices when returning to CreateCustomPackage
   useFocusEffect(
     useCallback(() => {
-      const currentSelectedIds = route.params?.selectedProductIds;
-      if (currentSelectedIds && currentSelectedIds.length > 0) {
-        setProducts((prevProducts) =>
-          prevProducts.map((product) => ({
-            ...product,
-            selected: currentSelectedIds.includes(product.id),
-          })),
-        );
-      }
-    }, [route.params?.selectedProductIds]),
+      fetchProducts();
+    }, [fetchProducts]),
   );
 
   // Shared back navigation (header button + Android hardware button)
   const handleBack = useCallback(() => {
+    const origin =
+      (route.params as any)?.customerOriginScreen ||
+      (from !== "ViewCustomerScreen" && from !== "SelectOrderType"
+        ? from
+        : undefined);
+
     if (isWholesale || from === "ViewCustomerScreen") {
       navigation.navigate("ViewCustomerScreen" as any, {
         id,
@@ -253,6 +276,8 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
         name,
         number,
         buyerType: "Wholesale",
+        from: origin,
+        customerOriginScreen: origin,
       });
     } else {
       navigation.navigate("SelectOrderType" as any, {
@@ -263,6 +288,8 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
         number,
         customerscreencustomerid,
         buyerType: "Retail",
+        from: origin,
+        customerOriginScreen: origin,
       });
     }
   }, [
@@ -275,6 +302,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
     title,
     name,
     number,
+    route.params,
   ]);
 
   useFocusEffect(
@@ -338,7 +366,8 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
         number,
         customerscreencustomerid,
         buyerType: isWholesale ? "Wholesale" : effectiveBuyerType || "Retail",
-        from: from || (isWholesale ? "ViewCustomerScreen" : "SelectOrderType"),
+        from: origin || from || (isWholesale ? "ViewCustomerScreen" : "SelectOrderType"),
+        customerOriginScreen: origin,
       });
     } else {
       Alert.alert("Please select at least one product");

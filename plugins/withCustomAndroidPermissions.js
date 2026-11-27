@@ -75,7 +75,7 @@ function withCustomAndroidPermissions(config) {
     // Fixes Google Play Console review blockers (same as Polygon GoviMart project):
     // - "android.hardware.screen.portrait affects Phone, Tablet, Desktop, and Android XR users"
     // - "android.hardware.wifi affects Phone, Tablet, Desktop, and Android XR users"
-    // Also marks camera and location features as optional for maximum device compatibility.
+    // Also marks camera, location, audio, biometric features as optional for maximum device compatibility.
     const optionalFeatures = [
       "android.hardware.screen.portrait",
       "android.hardware.screen.landscape",
@@ -83,9 +83,19 @@ function withCustomAndroidPermissions(config) {
       "android.hardware.telephony",
       "android.hardware.camera",
       "android.hardware.camera.autofocus",
+      "android.hardware.camera.front",
+      "android.hardware.camera.any",
+      "android.hardware.camera.flash",
       "android.hardware.location",
       "android.hardware.location.gps",
       "android.hardware.location.network",
+      "android.hardware.microphone",
+      "android.hardware.audio.output",
+      "android.hardware.touchscreen",
+      "android.hardware.faketouch",
+      "android.hardware.bluetooth",
+      "android.hardware.fingerprint",
+      "android.hardware.biometrics",
     ];
 
     if (!Array.isArray(androidManifest["uses-feature"])) {
