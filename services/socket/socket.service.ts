@@ -166,15 +166,25 @@ class SocketService {
       this.socket.on("newNotification", handleSocketNotification);
       this.socket.on("new_notification", handleSocketNotification);
 
-      // Listen for package updates in real-time
+      // Listen for package and item/crop updates in real-time
       const handlePackageUpdate = (data: any) => {
-        console.log("📦 [SocketService] Real-time package update event received:", data);
+        console.log("📦 [SocketService] Real-time package/item update event received:", data);
         this.dispatchPackageUpdate(data);
       };
 
       this.socket.on("packageUpdated", handlePackageUpdate);
       this.socket.on("package_updated", handlePackageUpdate);
       this.socket.on("packagesUpdated", handlePackageUpdate);
+      this.socket.on("cropUpdated", handlePackageUpdate);
+      this.socket.on("crop_updated", handlePackageUpdate);
+      this.socket.on("cropsUpdated", handlePackageUpdate);
+      this.socket.on("crops_updated", handlePackageUpdate);
+      this.socket.on("itemUpdated", handlePackageUpdate);
+      this.socket.on("item_updated", handlePackageUpdate);
+      this.socket.on("itemsUpdated", handlePackageUpdate);
+      this.socket.on("items_updated", handlePackageUpdate);
+      this.socket.on("priceUpdated", handlePackageUpdate);
+      this.socket.on("price_updated", handlePackageUpdate);
 
       this.socket.on("connect_error", () => {
         this.isConnecting = false;
