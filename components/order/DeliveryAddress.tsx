@@ -176,6 +176,11 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
 
   const incomingBuyerType = (route.params as any)?.buyerType;
   const incomingFrom = (route.params as any)?.from;
+  const incomingCustomerOriginScreen =
+    (route.params as any)?.customerOriginScreen ||
+    (incomingFrom !== "ViewCustomerScreen" && incomingFrom !== "SelectOrderType"
+      ? incomingFrom
+      : undefined);
   const isWholesale =
     String(incomingBuyerType || "").toLowerCase() === "wholesale" ||
     incomingFrom === "ViewCustomerScreen";
@@ -183,7 +188,9 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
     ? "Wholesale"
     : incomingBuyerType || "Retail";
   const effectiveFrom =
-    incomingFrom || (isWholesale ? "ViewCustomerScreen" : undefined);
+    incomingCustomerOriginScreen ||
+    incomingFrom ||
+    (isWholesale ? "ViewCustomerScreen" : undefined);
 
   // Schedule state that must survive the round trip
   // Schedule -> DeliveryAddress -> Cart -> DeliveryAddress -> Schedule.
@@ -238,6 +245,7 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
         selectedTimeSlot: route.params?.selectedTimeSlot,
         buyerType: effectiveBuyerType,
         from: effectiveFrom,
+        customerOriginScreen: incomingCustomerOriginScreen,
         ...scheduleCarryParams(),
       });
     } else {
@@ -267,6 +275,7 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
         deliveryCharge: 0,
         buyerType: effectiveBuyerType,
         from: effectiveFrom,
+        customerOriginScreen: incomingCustomerOriginScreen,
         ...scheduleCarryParams(),
       });
     }
@@ -330,6 +339,7 @@ const DeliveryAddress: React.FC<DeliveryAddressProps> = ({
       fullTotal: computedFullTotal,
       buyerType: effectiveBuyerType,
       from: effectiveFrom,
+      customerOriginScreen: incomingCustomerOriginScreen,
     });
   };
 

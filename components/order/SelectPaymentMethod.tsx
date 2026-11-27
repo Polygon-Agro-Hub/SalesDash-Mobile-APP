@@ -195,6 +195,11 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
 
   const incomingBuyerType = (route.params as any)?.buyerType;
   const incomingFrom = (route.params as any)?.from;
+  const customerOriginScreen =
+    (route.params as any)?.customerOriginScreen ||
+    (incomingFrom !== "ViewCustomerScreen" && incomingFrom !== "SelectOrderType"
+      ? incomingFrom
+      : undefined);
   const isWholesale =
     String(incomingBuyerType || "").toLowerCase() === "wholesale" ||
     incomingFrom === "ViewCustomerScreen";
@@ -202,7 +207,9 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
     ? "Wholesale"
     : incomingBuyerType || "Retail";
   const effectiveFrom =
-    incomingFrom || (isWholesale ? "ViewCustomerScreen" : undefined);
+    customerOriginScreen ||
+    incomingFrom ||
+    (isWholesale ? "ViewCustomerScreen" : undefined);
 
   const isPackageNum = isPackage === 1 || isPackage === "1" ? 1 : 0;
 
@@ -371,6 +378,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
       epsdDate: (route.params as any)?.epsdDate,
       buyerType: effectiveBuyerType,
       from: effectiveFrom,
+      customerOriginScreen,
       scheduleType:
         scheduleType ||
         (route.params as any)?.scheduleType ||
@@ -435,6 +443,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
     endDate: (route.params as any)?.endDate,
     buyerType: effectiveBuyerType,
     from: effectiveFrom,
+    customerOriginScreen,
     isWholesale: isWholesale || (route.params as any)?.isWholesale,
     epsdDate: (route.params as any)?.epsdDate,
   });
@@ -707,7 +716,8 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
               number,
               customerscreencustomerid,
               buyerType: "Wholesale",
-              from: "ViewCustomerScreen",
+              from: effectiveFrom,
+              customerOriginScreen,
             });
           } else if (isNewCustomer) {
             navigation.navigate("SelectOrderTypeNewCustomer" as any, {
@@ -716,6 +726,7 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
               title,
               customerId: customerId || customerid,
               phoneNumber: number || "",
+              customerOriginScreen: customerOriginScreen || "NewCustomerDetailsScreen",
             });
           } else {
             navigation.navigate("CreateCustomPackage" as any, {
@@ -726,7 +737,8 @@ const SelectPaymentMethod: React.FC<SelectPaymentMethodProps> = ({
               number,
               customerscreencustomerid,
               buyerType: effectiveBuyerType,
-              from: "SelectOrderType",
+              from: effectiveFrom,
+              customerOriginScreen,
             });
           }
         }}

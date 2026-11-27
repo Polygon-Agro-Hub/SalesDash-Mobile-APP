@@ -80,6 +80,12 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
     from,
   } = route.params || {};
 
+  const origin =
+    (route.params as any)?.customerOriginScreen ||
+    (from !== "ViewCustomerScreen" && from !== "SelectOrderType"
+      ? from
+      : undefined);
+
   const [fetchedBuyerType, setFetchedBuyerType] = useState<string>("");
 
   useEffect(() => {
@@ -360,7 +366,8 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
         number,
         customerscreencustomerid,
         buyerType: isWholesale ? "Wholesale" : effectiveBuyerType || "Retail",
-        from: from || (isWholesale ? "ViewCustomerScreen" : "SelectOrderType"),
+        from: origin || from || (isWholesale ? "ViewCustomerScreen" : "SelectOrderType"),
+        customerOriginScreen: origin,
       });
     } else {
       Alert.alert("Please select at least one product");

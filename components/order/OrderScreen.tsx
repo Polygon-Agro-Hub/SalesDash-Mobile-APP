@@ -221,7 +221,12 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     customerscreencustomerid,
   } = route.params || {};
 
-  const customerOriginScreen = (route.params as any)?.customerOriginScreen;
+  const customerOriginScreen =
+    (route.params as any)?.customerOriginScreen ||
+    ((route.params as any)?.from !== "ViewCustomerScreen" &&
+    (route.params as any)?.from !== "SelectOrderType"
+      ? (route.params as any)?.from
+      : undefined);
 
   const isPackageNum = Number(isPackage) === 1 ? 1 : 0;
   const [loading, setLoading] = useState<boolean>(false);
@@ -624,7 +629,11 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         calculatedOrders: (route.params as any)?.calculatedOrders,
         isWholesale: (route.params as any)?.isWholesale,
         buyerType: (route.params as any)?.buyerType,
-        from: (route.params as any)?.from,
+        from: customerOriginScreen || (route.params as any)?.from,
+        customerOriginScreen:
+          customerOriginScreen ||
+          (route.params as any)?.customerOriginScreen ||
+          (route.params as any)?.from,
         epsdDate: (route.params as any)?.epsdDate,
         isFinalizeImdt: 1,
       });
@@ -1439,6 +1448,10 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
           name,
           number,
           customerscreencustomerid,
+          from:
+            customerOriginScreen ||
+            (route.params as any)?.customerOriginScreen ||
+            (route.params as any)?.from,
           customerOriginScreen:
             customerOriginScreen || (route.params as any)?.customerOriginScreen,
           packageId: packageValue ? parseInt(packageValue, 10) : undefined,
@@ -1518,6 +1531,10 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
             name,
             number,
             customerscreencustomerid,
+            from:
+              customerOriginScreen ||
+              (route.params as any)?.customerOriginScreen ||
+              (route.params as any)?.from,
             customerOriginScreen:
               customerOriginScreen ||
               (route.params as any)?.customerOriginScreen,

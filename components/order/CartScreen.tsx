@@ -84,6 +84,11 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     buyerType,
   } = route.params || {};
   const from = (route.params as any)?.from;
+  const customerOriginScreen =
+    (route.params as any)?.customerOriginScreen ||
+    (from !== "ViewCustomerScreen" && from !== "SelectOrderType"
+      ? from
+      : undefined);
   const fromOrderSummary = (route.params as any)?.fromOrderSummary;
 
   // Max quantity applies to wholesale customers only
@@ -92,7 +97,7 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
     String(buyerType || "").toLowerCase() === "wholesale" ||
     from === "ViewCustomerScreen";
   const effectiveBuyerType = isWholesale ? "Wholesale" : (buyerType || "Retail");
-  const effectiveFrom = from || (isWholesale ? "ViewCustomerScreen" : undefined);
+  const effectiveFrom = customerOriginScreen || from || (isWholesale ? "ViewCustomerScreen" : undefined);
 
   const incomingDeliveryCharge = route.params?.deliveryCharge ?? 0;
   const incomingSelectedAddress = route.params?.selectedAddress ?? null;
@@ -272,7 +277,8 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
           number,
           customerscreencustomerid,
           buyerType: effectiveBuyerType,
-          from: effectiveFrom,
+          from: customerOriginScreen || effectiveFrom,
+          customerOriginScreen,
         });
         return true;
       };
@@ -690,7 +696,8 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
 
         selectedAddressId: incomingSelectedAddress?.id,
         buyerType: effectiveBuyerType,
-        from: effectiveFrom,
+        from: customerOriginScreen || effectiveFrom,
+        customerOriginScreen,
         scheduleType: (route.params as any)?.scheduleType || (route.params as any)?.sheduleType,
         sheduleType: (route.params as any)?.sheduleType || (route.params as any)?.scheduleType,
         selectedDays: (route.params as any)?.selectedDays || (route.params as any)?.recurringDays,
@@ -744,7 +751,8 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
             number,
             customerscreencustomerid,
             buyerType: effectiveBuyerType,
-            from: effectiveFrom,
+            from: customerOriginScreen || effectiveFrom,
+            customerOriginScreen,
           });
         }}
         rightComponent={
