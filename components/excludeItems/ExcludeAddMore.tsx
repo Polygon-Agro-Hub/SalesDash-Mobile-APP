@@ -24,6 +24,7 @@ import NoDataFound from "../common/NoDataFound";
 import CustomHeader from "../common/CustomHeader";
 import ToggleSwitch from "../common/ToggleSwitch";
 import LoadingPage from "../common/LoadingPage";
+import { AlertModal } from "../common/AlertModal";
 
 type ExcludeAddMoreNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -133,6 +134,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
   const [loading, setLoading] = useState(false);
   const [listLoading, setListLoading] = useState(true);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [showLimitModal, setShowLimitModal] = useState<boolean>(false);
 
   const toggleInclude = useCallback((cropId: number) => {
     setSelectedExcludeCrops((prev) => prev.filter((cId) => cId !== cropId));
@@ -144,12 +146,19 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
   }, []);
 
   const toggleExclude = useCallback((cropId: number) => {
-    setSelectedIncludeCrops((prev) => prev.filter((cId) => cId !== cropId));
-    setSelectedExcludeCrops((prev) =>
-      prev.includes(cropId)
-        ? prev.filter((cId) => cId !== cropId)
-        : [...prev, cropId],
-    );
+    setSelectedExcludeCrops((prev) => {
+      if (prev.includes(cropId)) {
+        return prev.filter((cId) => cId !== cropId);
+      }
+      if (prev.length >= 5) {
+        setShowLimitModal(true);
+        return prev;
+      }
+      setSelectedIncludeCrops((incPrev) =>
+        incPrev.filter((cId) => cId !== cropId),
+      );
+      return [...prev, cropId];
+    });
   }, []);
 
   const handleBackPress = useCallback(() => {
@@ -633,6 +642,15 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
           </TouchableOpacity>
         </View>
       )}
+
+      <AlertModal
+        visible={showLimitModal}
+        title="Selection Limit Reached!"
+        message="You can select a maximum of 5 exclude items. Please deselect an item before selecting another."
+        type="error"
+        showOkButton={true}
+        onClose={() => setShowLimitModal(false)}
+      />
     </KeyboardAvoidingView>
   );
 };

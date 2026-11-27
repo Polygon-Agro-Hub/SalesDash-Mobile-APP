@@ -87,6 +87,11 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({
   const isWholesale =
     String(effectiveBuyerType || "").toLowerCase() === "wholesale";
 
+  const customerOriginScreen =
+    (route.params as any)?.customerOriginScreen ||
+    (route.params as any)?.fromScreen ||
+    (route.params?.from !== "ViewCustomerScreen" ? route.params?.from : undefined);
+
   // Wholesale buyers cannot order packages - redirect directly to CreateCustomPackage
   useEffect(() => {
     if (isWholesale) {
@@ -100,6 +105,7 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({
         customerscreencustomerid: customerscreencustomerid || customerId,
         buyerType: "Wholesale",
         from: "ViewCustomerScreen",
+        customerOriginScreen,
       });
     }
   }, [
@@ -111,6 +117,7 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({
     title,
     number,
     customerscreencustomerid,
+    customerOriginScreen,
   ]);
 
   const handleCreateCustomPackage = () => {
@@ -124,6 +131,7 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({
       customerscreencustomerid: customerscreencustomerid,
       buyerType: isWholesale ? "Wholesale" : "Retail",
       from: isWholesale ? "ViewCustomerScreen" : "SelectOrderType",
+      customerOriginScreen,
     });
   };
 
@@ -137,6 +145,8 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({
           title: title,
           number: number,
           buyerType: isWholesale ? "Wholesale" : "Retail",
+          from: customerOriginScreen,
+          customerOriginScreen: customerOriginScreen,
         });
         return true;
       };
@@ -147,7 +157,7 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({
       );
 
       return () => backHandler.remove();
-    }, [navigation, id, customerId, customerscreencustomerid, name, title, number, isWholesale]),
+    }, [navigation, id, customerId, customerscreencustomerid, name, title, number, isWholesale, customerOriginScreen]),
   );
 
   const handleSelectPackage = () => {
@@ -168,6 +178,7 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({
       number: number,
       customerscreencustomerid: customerscreencustomerid,
       buyerType: "Retail",
+      customerOriginScreen,
     });
   };
 
@@ -187,6 +198,8 @@ const SelectOrderType: React.FC<SelectOrderTypeProps> = ({
             title: title,
             number: number,
             buyerType: isWholesale ? "Wholesale" : "Retail",
+            from: customerOriginScreen,
+            customerOriginScreen: customerOriginScreen,
           })
         }
       />

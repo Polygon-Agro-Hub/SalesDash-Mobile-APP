@@ -43,6 +43,7 @@ interface CreateCustomPackageProps {
       customerscreencustomerid: string;
       buyerType?: string;
       from?: string;
+      customerOriginScreen?: string;
     };
   };
 }
@@ -245,6 +246,12 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
 
   // Shared back navigation (header button + Android hardware button)
   const handleBack = useCallback(() => {
+    const origin =
+      (route.params as any)?.customerOriginScreen ||
+      (from !== "ViewCustomerScreen" && from !== "SelectOrderType"
+        ? from
+        : undefined);
+
     if (isWholesale || from === "ViewCustomerScreen") {
       navigation.navigate("ViewCustomerScreen" as any, {
         id,
@@ -253,6 +260,8 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
         name,
         number,
         buyerType: "Wholesale",
+        from: origin,
+        customerOriginScreen: origin,
       });
     } else {
       navigation.navigate("SelectOrderType" as any, {
@@ -263,6 +272,8 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
         number,
         customerscreencustomerid,
         buyerType: "Retail",
+        from: origin,
+        customerOriginScreen: origin,
       });
     }
   }, [
@@ -275,6 +286,7 @@ const CreateCustomPackage: React.FC<CreateCustomPackageProps> = ({
     title,
     name,
     number,
+    route.params,
   ]);
 
   useFocusEffect(

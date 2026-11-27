@@ -1044,81 +1044,58 @@ const View_CancelOrderScreen: React.FC<View_CancelOrderScreenProps> = ({
               This will permanently delete the order placed by customer and
               cannot be undone.
             </Text>
-            <View
+            <TouchableOpacity
+              onPress={confirmCancelOrder}
+              disabled={cancelling}
+              activeOpacity={0.8}
               style={{
+                backgroundColor: "#000",
+                paddingVertical: 14,
                 borderRadius: 24,
+                alignItems: "center",
+                justifyContent: "center",
+                minHeight: 48,
+                marginBottom: 12,
+                opacity: cancelling ? 0.8 : 1,
                 shadowColor: "#000",
                 shadowOpacity: 0.12,
                 shadowOffset: { width: 0, height: 4 },
                 shadowRadius: 6,
                 elevation: 4,
-                marginBottom: 12,
               }}
             >
-              <TouchableOpacity
-                onPress={confirmCancelOrder}
-                disabled={cancelling}
-                activeOpacity={0.8}
-                style={{ borderRadius: 24, opacity: cancelling ? 0.8 : 1 }}
-              >
-                <View
-                  style={{
-                    backgroundColor: "#000",
-                    paddingVertical: 14,
-                    borderRadius: 24,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    minHeight: 48,
-                  }}
+              {cancelling ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text
+                  style={{ color: "#fff", fontWeight: "600", fontSize: 15 }}
                 >
-                  {cancelling ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <Text
-                      style={{ color: "#fff", fontWeight: "600", fontSize: 15 }}
-                    >
-                      Confirm
-                    </Text>
-                  )}
-                </View>
-              </TouchableOpacity>
-            </View>
-            <View
+                  Confirm
+                </Text>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                if (!cancelling) setCancelModalVisible(false);
+              }}
+              disabled={cancelling}
+              activeOpacity={0.8}
               style={{
+                backgroundColor: "#E5E7EB",
+                paddingVertical: 14,
                 borderRadius: 24,
-                shadowColor: "#000",
-                shadowOpacity: 0.08,
-                shadowOffset: { width: 0, height: 3 },
-                shadowRadius: 5,
-                elevation: 3,
+                alignItems: "center",
+                justifyContent: "center",
+                minHeight: 48,
+                opacity: cancelling ? 0.5 : 1,
               }}
             >
-              <TouchableOpacity
-                onPress={() => {
-                  if (!cancelling) setCancelModalVisible(false);
-                }}
-                disabled={cancelling}
-                activeOpacity={0.8}
-                style={{ borderRadius: 24, opacity: cancelling ? 0.5 : 1 }}
+              <Text
+                style={{ color: "#000", fontWeight: "600", fontSize: 15 }}
               >
-                <View
-                  style={{
-                    backgroundColor: "#E5E7EB",
-                    paddingVertical: 14,
-                    borderRadius: 24,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    minHeight: 48,
-                  }}
-                >
-                  <Text
-                    style={{ color: "#000", fontWeight: "600", fontSize: 15 }}
-                  >
-                    Cancel
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            </View>
+                Cancel
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>

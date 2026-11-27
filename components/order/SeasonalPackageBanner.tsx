@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import environment from "@/environment/environment";
+import socketService from "@/services/socket/socket.service";
 
 interface SeasonalPackageBannerProps {
   packageId?: number | string | null;
@@ -144,6 +145,14 @@ export const SeasonalPackageBanner: React.FC<SeasonalPackageBannerProps> = ({
 
     // Always fetch fresh data directly from DB whenever package is selected or changes
     fetchLivePackageData(pkgIdNum);
+
+    const unsubscribe = socketService.onPackageUpdate(() => {
+      fetchLivePackageData(pkgIdNum);
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, [packageId, fetchLivePackageData]);
 
   const rawType = (packageType || "").trim().toLowerCase();

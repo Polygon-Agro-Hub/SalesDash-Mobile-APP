@@ -548,7 +548,9 @@ const CratScreen: React.FC<CratScreenProps> = ({ navigation, route }) => {
         validityWeeks: (route.params as any)?.validityWeeks,
         validityPeriod: (route.params as any)?.validityPeriod,
         calculatedOrders: (route.params as any)?.calculatedOrders,
-        isFinalizeImdt: (route.params as any)?.isFinalizeImdt,
+        isFinalizeImdt:
+          (route.params as any)?.isFinalizeImdt ??
+          (isPackage === 1 || isPackage === "1" ? 1 : 0),
         packageId: (route.params as any)?.packageId,
         isWholesale: isWholesale || (route.params as any)?.isWholesale,
         epsdDate: (route.params as any)?.epsdDate,
