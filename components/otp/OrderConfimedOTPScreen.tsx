@@ -38,6 +38,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
   const navigation = useNavigation<OrderConfimedOTPScreenNavigationProp>();
   const [otp, setOtp] = useState<string[]>(["", "", "", "", ""]);
   const inputRefs = useRef<(TextInput | null)[]>([]);
+  const isSubmittingRef = useRef(false);
   const [timer, setTimer] = useState(60);
   const [resendDisabled, setResendDisabled] = useState(true);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
@@ -141,9 +142,17 @@ const OrderConfimedOTPScreen: React.FC = () => {
       return null;
     }
 
+    if (pendingOrderPayload?._isLocked) {
+      console.warn("Pending order data is already locked/in-flight.");
+      return null;
+    }
+
     if (pendingOrderPayload && pendingOrderPayload.orderData) {
       delete pendingOrderPayload.orderData.isPaySMS;
     }
+
+    // Clear and lock pendingOrderData BEFORE initiating the network call
+    await AsyncStorage.removeItem("pendingOrderData");
 
     try {
       const orderResponse = await axios.post(
@@ -159,7 +168,6 @@ const OrderConfimedOTPScreen: React.FC = () => {
       );
 
       if (orderResponse.data.success) {
-        await AsyncStorage.removeItem("pendingOrderData");
         const processOrderId = orderResponse.data.data.processOrderId;
         const parentOrderId = orderResponse.data.data.orderId;
         const invoiceNumber = orderResponse.data.data.invoiceNumber;
@@ -252,15 +260,20 @@ const OrderConfimedOTPScreen: React.FC = () => {
   };
 
   const verifyOTP = async () => {
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+
     const otpCode = otp.join("");
 
     if (otpCode.length !== 5) {
       setIsOtpInvalid(true);
+      isSubmittingRef.current = false;
       return;
     }
 
     if (timer <= 0) {
       Alert.alert("Error", "OTP has expired. Please request a new one.");
+      isSubmittingRef.current = false;
       return;
     }
 
@@ -275,6 +288,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
 
       if (!referenceId || !token) {
         Alert.alert("Error", "Missing OTP reference or authentication token.");
+        isSubmittingRef.current = false;
         return;
       }
 
@@ -304,6 +318,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
       } else {
         setIsOtpInvalid(true);
         Alert.alert("Error", "Invalid OTP. Please try again.");
+        isSubmittingRef.current = false;
       }
     } catch (error: any) {
       console.error("Full error during OTP verification:", error);
@@ -317,6 +332,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
         errorMessage = error.message;
       }
       Alert.alert("Error", errorMessage);
+      isSubmittingRef.current = false;
     } finally {
       setLoading(false);
     }
@@ -324,6 +340,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
 
   const handleResendOtp = async () => {
     try {
+      isSubmittingRef.current = false;
       setOtp(["", "", "", "", ""]);
       setResendDisabled(true);
       setTimer(60);
@@ -384,7 +401,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
     if (index === otp.length - 1 && text.length === 1) {
       Keyboard.dismiss();
 
-      if (isValid && timer > 0) {
+      if (isValid && timer > 0 && !isSubmittingRef.current) {
         verifyOTP();
       }
     }
@@ -523,6 +540,7 @@ const OrderConfimedOTPScreen: React.FC = () => {
                     keyboardType="numeric"
                     maxLength={1}
                     value={digit}
+                    editable={!loading && !isSubmittingRef.current}
                     onChangeText={(text) => handleOtpChange(text, index)}
                     onKeyPress={(e) => handleKeyPress(e, index)}
                     onFocus={handleInputFocus}
@@ -565,7 +583,12 @@ const OrderConfimedOTPScreen: React.FC = () => {
                 >
                   <TouchableOpacity
                     onPress={verifyOTP}
-                    disabled={!isOtpComplete || loading || timer <= 0}
+                    disabled={
+                      !isOtpComplete ||
+                      loading ||
+                      timer <= 0 ||
+                      isSubmittingRef.current
+                    }
                     activeOpacity={0.7}
                     style={{
                       width: "60%",
@@ -580,14 +603,20 @@ const OrderConfimedOTPScreen: React.FC = () => {
                   >
                     <LinearGradient
                       colors={
-                        !isOtpComplete || loading || timer <= 0
+                        !isOtpComplete ||
+                        loading ||
+                        timer <= 0 ||
+                        isSubmittingRef.current
                           ? ["#A0A0A0", "#808080"]
                           : ["#6839CF", "#874DDB"]
                       }
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 0 }}
                       className={`h-[50px] items-center justify-center rounded-full ${
-                        !isOtpComplete || loading || timer <= 0
+                        !isOtpComplete ||
+                        loading ||
+                        timer <= 0 ||
+                        isSubmittingRef.current
                           ? "opacity-50"
                           : ""
                       }`}
