@@ -230,6 +230,12 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
   const [quantity, setQuantity] = useState<number>(1);
   const [pricePerKg, setPricePerKg] = useState<number>(0);
   const [additionalItems, setAdditionalItems] = useState<AdditionalItem[]>([]);
+  const additionalItemsRef = useRef<AdditionalItem[]>(additionalItems);
+
+  useEffect(() => {
+    additionalItemsRef.current = additionalItems;
+  }, [additionalItems]);
+
   const [productItems, setProductItems] = useState<ProductItem[]>([]);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [editingItem, setEditingItem] = useState<AdditionalItem | null>(null);
@@ -292,10 +298,15 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
       if (!storedToken || productIds.length === 0) return {};
 
       const response = await axios.get(
-        `${environment.API_BASE_URL}api/packages/crops/all`,
+        `${environment.API_BASE_URL}api/packages/crops/all?_t=${Date.now()}`,
         {
-          headers: { Authorization: `Bearer ${storedToken}` },
-          params: { id },
+          headers: {
+            Authorization: `Bearer ${storedToken}`,
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+          params: { id, buyerType: (route.params as any)?.buyerType },
         },
       );
 
@@ -310,9 +321,16 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         }
       > = {};
 
-      response.data.data.forEach((item: any) => {
-        if (productIds.includes(item.id)) {
-          productPrices[item.id.toString()] = {
+      const cropsList = response.data?.data || [];
+      cropsList.forEach((item: any) => {
+        const itemIdNum = Number(item.id);
+        const varietyIdNum = Number(item.varietyId);
+        const isMatch = productIds.some(
+          (pid) => pid === itemIdNum || (varietyIdNum && pid === varietyIdNum),
+        );
+
+        if (isMatch) {
+          const priceObj = {
             normalPrice: parseFloat(item.normalPrice) || 0,
             discountedPrice:
               parseFloat(item.discountedPrice) ||
@@ -322,6 +340,10 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
             changeby: item.changeby || "1",
             startValue: item.startValue || "1",
           };
+          productPrices[item.id.toString()] = priceObj;
+          if (item.varietyId) {
+            productPrices[item.varietyId.toString()] = priceObj;
+          }
         }
       });
 
@@ -330,96 +352,123 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
       console.error("Error fetching product prices:", error);
       return {};
     }
-  }, []);
+  }, [id, (route.params as any)?.buyerType]);
+
+  const refreshAdditionalItemPrices = useCallback(
+    async (itemsToRefresh: any[]) => {
+      if (!itemsToRefresh || itemsToRefresh.length === 0) return;
+
+      const productIds = itemsToRefresh
+        .map((item: any) =>
+          Number(item.productId || item.id || item.cropId || item.mpItemId),
+        )
+        .filter(
+          (id): id is number =>
+            typeof id === "number" && !isNaN(id) && id > 0,
+        );
+
+      if (productIds.length === 0) return;
+
+      const productPrices = await fetchProductPrices(productIds);
+
+      const mappedAdditionalItems: AdditionalItem[] = itemsToRefresh
+        .map((item: any) => {
+          const rawId =
+            item.productId || item.id || item.mpItemId || item.cropId;
+          const productId = Number(rawId);
+
+          if (!productId || isNaN(productId)) {
+            console.warn("Skipping item with invalid productId:", item);
+            return null;
+          }
+
+          const quantity = parseFloat(item.quantity || item.qty) || 1;
+          const unit =
+            (item.unit || item.quantityType || "kg").toLowerCase() === "kg"
+              ? "Kg"
+              : "g";
+          const quantityInKg = unit === "Kg" ? quantity : quantity / 1000;
+
+          const productPrice =
+            productPrices[productId.toString()] ||
+            (item.varietyId
+              ? productPrices[item.varietyId.toString()]
+              : undefined);
+
+          let pricePerKg, discountedPricePerKg, discountAmount, displayName;
+          let changeby = item.changeby || "1";
+          let startValue = item.startValue || "1";
+
+          if (productPrice) {
+            pricePerKg = productPrice.normalPrice;
+            discountedPricePerKg = productPrice.discountedPrice;
+            discountAmount =
+              (pricePerKg - discountedPricePerKg) * quantityInKg;
+            displayName = productPrice.displayName;
+            changeby = productPrice.changeby || changeby;
+            startValue = productPrice.startValue || startValue;
+          } else if (item.pricePerKg && item.discountedPricePerKg) {
+            pricePerKg = Number(item.pricePerKg);
+            discountedPricePerKg = Number(item.discountedPricePerKg);
+            discountAmount =
+              (pricePerKg - discountedPricePerKg) * quantityInKg;
+            displayName = item.name;
+          } else {
+            const totalPrice = Number(item.price || item.totalPrice) || 0;
+            const totalDiscount = Number(item.discount) || 0;
+
+            discountedPricePerKg =
+              quantityInKg > 0 ? totalPrice / quantityInKg : 0;
+            pricePerKg =
+              quantityInKg > 0
+                ? (totalPrice + totalDiscount) / quantityInKg
+                : 0;
+            discountAmount = totalDiscount;
+            displayName = item.name;
+          }
+
+          const totalAmount = quantityInKg * discountedPricePerKg;
+
+          return {
+            id: productId,
+            name: displayName,
+            quantity: quantity,
+            unit: unit,
+            pricePerKg: pricePerKg,
+            discountedPricePerKg: Math.max(0, discountedPricePerKg),
+            discount: discountAmount,
+            totalAmount: totalAmount,
+            selected: false,
+            changeby: changeby,
+            startValue: startValue,
+          } as AdditionalItem;
+        })
+        .filter((item): item is AdditionalItem => item !== null);
+
+      setAdditionalItems(mappedAdditionalItems);
+      additionalItemsRef.current = mappedAdditionalItems;
+    },
+    [fetchProductPrices],
+  );
 
   useEffect(() => {
     const initializeAdditionalItems = async () => {
-      if (route.params?.isEdit && route.params?.additionalItems) {
-        const productIds = route.params.additionalItems
-          .map((item) => item.productId)
-          .filter(
-            (id): id is number => typeof id === "number" && id !== undefined,
-          );
+      const incomingItems =
+        (route.params?.isEdit && route.params?.additionalItems) ||
+        route.params?.rawAdditionalItems;
 
-        const productPrices = await fetchProductPrices(productIds);
-
-        const mappedAdditionalItems: AdditionalItem[] =
-          route.params.additionalItems
-            .filter((item) => item.productId !== undefined)
-            .map((item) => {
-              const productId = item.productId || item.mpItemId || item.cropId;
-
-              if (!productId || typeof productId !== "number") {
-                console.warn("Skipping item with invalid productId:", item);
-                return null;
-              }
-
-              const quantity = parseFloat(item.quantity) || 1;
-              const unit =
-                (item.quantityType || "kg").toLowerCase() === "kg" ? "Kg" : "g";
-              const quantityInKg = unit === "Kg" ? quantity : quantity / 1000;
-
-              const productPrice = productPrices[productId.toString()];
-              let pricePerKg, discountedPricePerKg, discountAmount, displayName;
-              let changeby = "1";
-              let startValue = "1";
-
-              if (productPrice) {
-                pricePerKg = productPrice.normalPrice;
-                discountedPricePerKg = productPrice.discountedPrice;
-                discountAmount =
-                  (pricePerKg - discountedPricePerKg) * quantityInKg;
-                displayName = productPrice.displayName;
-                changeby = productPrice.changeby;
-                startValue = productPrice.startValue;
-              } else if (item.pricePerKg && item.discountedPricePerKg) {
-                pricePerKg = Number(item.pricePerKg);
-                discountedPricePerKg = Number(item.discountedPricePerKg);
-                discountAmount =
-                  (pricePerKg - discountedPricePerKg) * quantityInKg;
-                displayName = item.name;
-                changeby = item.changeby || "1";
-                startValue = item.startValue || "1";
-              } else {
-                const totalPrice = Number(item.price || item.totalPrice) || 0;
-                const totalDiscount = Number(item.discount) || 0;
-
-                discountedPricePerKg =
-                  quantityInKg > 0 ? totalPrice / quantityInKg : 0;
-                pricePerKg =
-                  quantityInKg > 0
-                    ? (totalPrice + totalDiscount) / quantityInKg
-                    : 0;
-                discountAmount = totalDiscount;
-                displayName = item.name;
-                changeby = item.changeby || "1";
-                startValue = item.startValue || "1";
-              }
-
-              const totalAmount = quantityInKg * discountedPricePerKg;
-
-              return {
-                id: productId,
-                name: displayName,
-                quantity: quantity,
-                unit: unit,
-                pricePerKg: pricePerKg,
-                discountedPricePerKg: Math.max(0, discountedPricePerKg),
-                discount: discountAmount,
-                totalAmount: totalAmount,
-                selected: false,
-                changeby: changeby,
-                startValue: startValue,
-              } as AdditionalItem;
-            })
-            .filter((item): item is AdditionalItem => item !== null);
-
-        setAdditionalItems(mappedAdditionalItems);
+      if (incomingItems && incomingItems.length > 0) {
+        await refreshAdditionalItemPrices(incomingItems);
       }
     };
 
     initializeAdditionalItems();
-  }, [route.params?.isEdit, route.params?.additionalItems, fetchProductPrices]);
+  }, [
+    route.params?.isEdit,
+    route.params?.additionalItems,
+    route.params?.rawAdditionalItems,
+    refreshAdditionalItemPrices,
+  ]);
 
   useEffect(() => {
     if (route.params?.isEdit && route.params?.packageId) {
@@ -498,6 +547,13 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         setPackageValue("");
         setSelectedPackage(null);
         setItems([]);
+        setAdditionalItems([]);
+        additionalItemsRef.current = [];
+        if (route.params) {
+          route.params.rawAdditionalItems = undefined;
+          route.params.additionalItems = undefined;
+          route.params.packageId = undefined;
+        }
       }
     }
   }, [packages, packageValue, route.params?.packageId]);
@@ -721,6 +777,52 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     }
   }, []);
 
+  const fetchCrops = useCallback(async () => {
+    try {
+      setProductDropdownLoading(true);
+      const storedToken = token || (await AsyncStorage.getItem("authToken"));
+      const response = await axios.get(
+        `${environment.API_BASE_URL}api/packages/crops/all?_t=${Date.now()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${storedToken}`,
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+          params: { id, buyerType: (route.params as any)?.buyerType },
+        },
+      );
+
+      const retailItems = (response.data?.data || [])
+        .filter(
+          (item: CropItem) =>
+            item.category?.toLowerCase() === "retail" ||
+            !item.category,
+        )
+        .map((item: CropItem) => ({
+          label: item.displayName,
+          value: item.varietyId.toString(),
+          id: item.id,
+          unitType: item.unitType,
+          price: item.normalPrice,
+          discountedPrice: item.discountedPrice,
+          discount: (
+            parseFloat(item.normalPrice) - parseFloat(item.discountedPrice)
+          ).toFixed(2),
+          changeby: item.changeby || "1",
+          startValue: item.startValue || "1",
+        }));
+
+      setProductItems(retailItems);
+    } catch (error) {
+      console.error("Error fetching crops:", error);
+      Alert.alert("Error", "Failed to load products");
+    } finally {
+      setProductDropdownLoading(false);
+    }
+  }, [id, token, (route.params as any)?.buyerType]);
+
   const fetchPackages = useCallback(async () => {
     try {
       const storedToken = await AsyncStorage.getItem("authToken");
@@ -771,6 +873,13 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
           setPackageValue("");
           setSelectedPackage(null);
           setItems([]);
+          setAdditionalItems([]);
+          additionalItemsRef.current = [];
+          if (route.params) {
+            route.params.rawAdditionalItems = undefined;
+            route.params.additionalItems = undefined;
+            route.params.packageId = undefined;
+          }
         }
       }
 
@@ -790,17 +899,42 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
   useEffect(() => {
     fetchPackages();
 
-    const unsubscribe = socketService.onPackageUpdate(() => {
+    const unsubscribe = socketService.onPackageUpdate(async () => {
       console.log(
-        "🔄 [OrderScreen] Refreshing packages from socket update event",
+        "🔄 [OrderScreen] Refreshing packages, crops, and additional items from socket update event",
       );
-      fetchPackages();
+      const freshPkgs = await fetchPackages();
+      const currentPkgId = packageValue
+        ? parseInt(packageValue, 10)
+        : route.params?.packageId
+          ? Number(route.params.packageId)
+          : selectedPackage?.id || null;
+
+      if (
+        currentPkgId &&
+        freshPkgs &&
+        !freshPkgs.some((p: Package) => p.id === currentPkgId)
+      ) {
+        setPackageValue("");
+        setSelectedPackage(null);
+        setItems([]);
+        setAdditionalItems([]);
+        additionalItemsRef.current = [];
+        if (route.params) {
+          route.params.rawAdditionalItems = undefined;
+          route.params.additionalItems = undefined;
+          route.params.packageId = undefined;
+        }
+      } else if (additionalItemsRef.current.length > 0) {
+        refreshAdditionalItemPrices(additionalItemsRef.current);
+      }
+      fetchCrops();
     });
 
     return () => {
       unsubscribe();
     };
-  }, [fetchPackages]);
+  }, [fetchPackages, fetchCrops, refreshAdditionalItemPrices, packageValue, route.params, selectedPackage?.id]);
 
   useEffect(() => {}, [route.params]);
 
@@ -820,79 +954,47 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         console.error("Invalid package ID:", value);
         setItems([]);
         setSelectedPackage(null);
+        setAdditionalItems([]);
+        additionalItemsRef.current = [];
+        if (route.params) {
+          route.params.rawAdditionalItems = undefined;
+          route.params.additionalItems = undefined;
+          route.params.packageId = undefined;
+        }
       }
     } else {
       setPackageValue("");
       setItems([]);
       setSelectedPackage(null);
+      setAdditionalItems([]);
+      additionalItemsRef.current = [];
+      if (route.params) {
+        route.params.rawAdditionalItems = undefined;
+        route.params.additionalItems = undefined;
+        route.params.packageId = undefined;
+      }
     }
   };
-
-  useFocusEffect(
-    useCallback(() => {
-      const onBackPress = () => {
-        navigation.goBack();
-        return true; // Prevent default behavior
-      };
-
-      const subscription = BackHandler.addEventListener(
-        "hardwareBackPress",
-        onBackPress,
-      );
-
-      return () => subscription.remove();
-    }, [navigation]),
-  );
-
-  const fetchCrops = useCallback(async () => {
-    try {
-      setProductDropdownLoading(true);
-      const storedToken = token || (await AsyncStorage.getItem("authToken"));
-      const response = await axios.get(
-        `${environment.API_BASE_URL}api/packages/crops/all`,
-        {
-          headers: { Authorization: `Bearer ${storedToken}` },
-          params: { id },
-        },
-      );
-
-      const retailItems = response.data.data
-        .filter((item: CropItem) => item.category === "Retail")
-        .map((item: CropItem) => ({
-          label: item.displayName,
-          value: item.varietyId.toString(),
-          id: item.id,
-          unitType: item.unitType,
-          price: item.normalPrice,
-          discountedPrice: item.discountedPrice,
-          discount: (
-            parseFloat(item.normalPrice) - parseFloat(item.discountedPrice)
-          ).toFixed(2),
-          changeby: item.changeby || "1",
-          startValue: item.startValue || "1",
-        }));
-
-      setProductItems(retailItems);
-    } catch (error) {
-      console.error("Error fetching crops:", error);
-      Alert.alert("Error", "Failed to load products");
-    } finally {
-      setProductDropdownLoading(false);
-    }
-  }, [id, token]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
+      const itemsToRefresh =
+        additionalItemsRef.current.length > 0
+          ? additionalItemsRef.current
+          : (route.params?.rawAdditionalItems || route.params?.additionalItems || []);
+
       const freshPkgs = await fetchPackages();
       const currentPkgId = packageValue
         ? parseInt(packageValue, 10)
         : selectedPackage?.id ||
           (route.params?.packageId ? Number(route.params.packageId) : null);
+      let packageStillValid = false;
       if (currentPkgId) {
         const isStillActive =
           freshPkgs && freshPkgs.some((p: Package) => p.id === currentPkgId);
         if (isStillActive) {
+          packageStillValid = true;
           await Promise.all([
             fetchItemsForPackage(currentPkgId),
             fetchPackageDetails(currentPkgId),
@@ -901,9 +1003,24 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
           setPackageValue("");
           setSelectedPackage(null);
           setItems([]);
+          setAdditionalItems([]);
+          additionalItemsRef.current = [];
+          if (route.params) {
+            route.params.rawAdditionalItems = undefined;
+            route.params.additionalItems = undefined;
+            route.params.packageId = undefined;
+          }
         }
       }
-      await fetchCrops();
+
+      await Promise.all([
+        (async () => {
+          if (packageStillValid && itemsToRefresh.length > 0) {
+            await refreshAdditionalItemPrices(itemsToRefresh);
+          }
+        })(),
+        fetchCrops(),
+      ]);
     } catch (error) {
       console.error("Refresh error in OrderScreen:", error);
     } finally {
@@ -913,9 +1030,12 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
     packageValue,
     selectedPackage?.id,
     route.params?.packageId,
+    route.params?.rawAdditionalItems,
+    route.params?.additionalItems,
     fetchPackages,
     fetchItemsForPackage,
     fetchPackageDetails,
+    refreshAdditionalItemPrices,
     fetchCrops,
   ]);
 
@@ -934,11 +1054,13 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
               ? Number(route.params.packageId)
               : selectedPackage?.id || null;
 
+          let packageStillValid = false;
           if (currentPkgId && isMounted) {
             const isStillActive =
               freshPkgs &&
               freshPkgs.some((p: Package) => p.id === currentPkgId);
             if (isStillActive) {
+              packageStillValid = true;
               if (!packageValue) {
                 setPackageValue(currentPkgId.toString());
               }
@@ -950,16 +1072,34 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
               setPackageValue("");
               setSelectedPackage(null);
               setItems([]);
+              setAdditionalItems([]);
+              additionalItemsRef.current = [];
+              if (route.params) {
+                route.params.rawAdditionalItems = undefined;
+                route.params.additionalItems = undefined;
+                route.params.packageId = undefined;
+              }
             }
           }
 
-          if (route.params?.rawAdditionalItems && isMounted) {
-            setAdditionalItems(route.params.rawAdditionalItems);
-          }
-
-          if (isMounted) {
-            await fetchCrops();
-          }
+          await Promise.all([
+            (async () => {
+              if (packageStillValid && isMounted) {
+                const itemsToRefresh =
+                  additionalItemsRef.current.length > 0
+                    ? additionalItemsRef.current
+                    : (route.params?.rawAdditionalItems || route.params?.additionalItems || []);
+                if (itemsToRefresh.length > 0) {
+                  await refreshAdditionalItemPrices(itemsToRefresh);
+                }
+              }
+            })(),
+            (async () => {
+              if (isMounted) {
+                await fetchCrops();
+              }
+            })(),
+          ]);
         } catch (error) {
           console.error("Auto refresh error in OrderScreen on focus:", error);
         }
@@ -974,10 +1114,12 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
       packageValue,
       route.params?.packageId,
       route.params?.rawAdditionalItems,
+      route.params?.additionalItems,
       selectedPackage?.id,
       fetchPackages,
       fetchItemsForPackage,
       fetchPackageDetails,
+      refreshAdditionalItemPrices,
       fetchCrops,
     ]),
   );
@@ -1287,14 +1429,23 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        navigation.navigate("SelectOrderType" as any, {
+        const targetScreen = (route.params as any)?.isNewCustomer
+          ? "SelectOrderTypeNewCustomer"
+          : "SelectOrderType";
+        navigation.navigate(targetScreen as any, {
           id,
           customerId,
           title,
           name,
           number,
           customerscreencustomerid,
-          customerOriginScreen: customerOriginScreen || (route.params as any)?.customerOriginScreen,
+          customerOriginScreen:
+            customerOriginScreen || (route.params as any)?.customerOriginScreen,
+          packageId: packageValue ? parseInt(packageValue, 10) : undefined,
+          rawAdditionalItems:
+            additionalItemsRef.current.length > 0
+              ? additionalItemsRef.current
+              : undefined,
         });
         return true;
       };
@@ -1305,7 +1456,18 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
       );
 
       return () => backHandler.remove();
-    }, [navigation]),
+    }, [
+      navigation,
+      id,
+      customerId,
+      title,
+      name,
+      number,
+      customerscreencustomerid,
+      customerOriginScreen,
+      route.params,
+      packageValue,
+    ]),
   );
 
   useEffect(() => {
@@ -1346,14 +1508,24 @@ const OrderScreen: React.FC<OrderScreenProps> = ({ route, navigation }) => {
         showBackButton={true}
         navigation={navigation}
         onBackPress={() => {
-          navigation.navigate("SelectOrderType" as any, {
+          const targetScreen = (route.params as any)?.isNewCustomer
+            ? "SelectOrderTypeNewCustomer"
+            : "SelectOrderType";
+          navigation.navigate(targetScreen as any, {
             id,
             customerId,
             title,
             name,
             number,
             customerscreencustomerid,
-            customerOriginScreen: customerOriginScreen || (route.params as any)?.customerOriginScreen,
+            customerOriginScreen:
+              customerOriginScreen ||
+              (route.params as any)?.customerOriginScreen,
+            packageId: packageValue ? parseInt(packageValue, 10) : undefined,
+            rawAdditionalItems:
+              additionalItemsRef.current.length > 0
+                ? additionalItemsRef.current
+                : undefined,
           });
         }}
       />

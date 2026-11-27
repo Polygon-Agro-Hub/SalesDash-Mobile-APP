@@ -648,6 +648,7 @@ const ExcludeListAdd: React.FC<ExcludeListAddProps> = ({
         title="Selection Limit Reached!"
         message="You can select a maximum of 5 exclude items. Please deselect an item before selecting another."
         type="error"
+        autoClose={false}
         showOkButton={true}
         onClose={() => setShowLimitModal(false)}
       />
